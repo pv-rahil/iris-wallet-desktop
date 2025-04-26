@@ -1,0 +1,7 @@
+QFrame#header {
+    background-color: rgb(27, 35, 59);
+    color:white;
+    font:14px"Inter";
+    font-weight:600;
+    border-radius:8px;
+}

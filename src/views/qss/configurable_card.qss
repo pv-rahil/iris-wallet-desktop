@@ -1,0 +1,106 @@
+
+QLabel#suggesion_label{
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+    font-weight: 400;
+    color: #B3B6C3;
+}
+
+QLabel#title_label {
+    border: none;
+    background: transparent;
+    font: 14px "Inter";
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+QFrame{
+    border-radius: 8px;
+    background: transparent;
+    background-color: #151C34;
+}
+
+
+QFrame:hover {
+    font: 14px "Inter";
+    border-radius: 8px;
+    border: 1px solid rgb(102, 108, 129);
+}
+
+QLabel#title_desc {
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+    font-weight: 400;
+    color: #B3B6C3;
+}
+
+QPushButton#save_button {
+    font: 14px "Inter";
+    color: rgb(255, 255, 255);
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    background-color: rgb(1, 167, 129);
+    font-weight: 700;
+}
+
+QPushButton#save_button:hover{
+    font: 14px "Inter";
+    background-color: rgb(4, 213, 165);
+    border-radius: 4px;
+    font-weight: 750;
+}
+
+QPushButton#save_button:pressed{
+    background-color: rgb(179, 182, 195);
+    color: rgb(27, 35, 59);
+}
+
+QPushButton#save_button:disabled {
+    background-color: rgb(64, 143, 125);;
+    color:#ddc2c4;
+    font-weight: 600;
+}
+
+QLineEdit#input_value{
+    font: 15px "Inter";
+    color: rgb(102, 108, 129);
+    border-radius: 4px;
+    background-color: rgb(36, 44, 70);
+    padding-left:10px;
+}
+
+/* Styles for time_unit_combobox QComboBox */
+QComboBox {
+    font: 15px "Inter";
+    font-weight: 400;
+    border: none;
+    border-radius: 4px;
+    background-color: rgb(36, 44, 70);
+    color: rgb(102, 108, 129);
+    padding-left: 10px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: rgb(3, 11, 37);
+    selection-background-color: #292b3e;
+    color: #8e8ea0;
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+    border-radius:5px;
+    padding:2.5px;
+}
+
+QComboBox::drop-down {
+    border:none;
+    padding-right:15px;
+}
+
+QComboBox::down-arrow {
+    image: url(:/assets/down_arrow.png);
+    width: 16px;
+    height: 16px;
+    padding-left : 10px;
+    border-radius:4px;
+}

@@ -1,0 +1,95 @@
+QWidget#widget_channel {
+    background-image: url(:/assets/iris-background.png);
+    background: transparent;
+    font: 8px "Inter";
+    border: none;
+    color: rgb(255, 255, 255);
+}
+
+QFrame#header_frame {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+}
+
+QLabel#header_logo_channel {
+    padding-left: 10px;
+}
+
+QLineEdit#channel_tittle {
+    font: 18px "Inter";
+    border: none;
+    background-color: rgb(3, 11, 37);
+    color: rgb(255, 255, 255);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+QPushButton#refresh_unspent_list {
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    width: 24px;
+    height: 24px;
+}
+
+QPushButton#refresh_unspent_list:hover {
+    padding: 15px;
+    background-color: #2980b9;
+    color: white;
+}
+
+QLabel#sub_title {
+    font: 15px "Inter";
+    color: rgb(102, 108, 129);
+    background: transparent;
+    border: none;
+    padding: 5px;
+}
+
+QFrame#frame_4 {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(27, 35, 59);
+}
+
+QLabel#btc_logo_3 {
+    /* Add any additional styles if needed */
+}
+
+QLabel#asset_name {
+    font: 16px "Inter";
+    border: none;
+    background: transparent;
+}
+
+QLabel#address {
+    color: rgb(102, 108, 129);
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+}
+
+QLabel#amount_3 {
+    border: none;
+    background: transparent;
+    font: 14px "Inter";
+}
+
+QLabel#token_symbol_3 {
+    padding-right: 8px;
+    color: rgb(149, 155, 174);
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+}
+
+QScrollArea#scroll_area{
+    background:transparent;
+}
+
+QWidget#scroll_area_widget_contents{
+    background:transparent;
+}

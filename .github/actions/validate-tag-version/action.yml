@@ -1,0 +1,23 @@
+name: Validate Tag and Code Version
+description: Validate that Git tag version matches the code version inside src/version.py
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate Tag and Code Version
+      run: |
+        TAG_VERSION=$(git describe --tags)
+        echo "TAG_VERSION=${TAG_VERSION}" >> $GITHUB_ENV
+
+        echo "Tag version: $TAG_VERSION"
+
+        CODE_VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+        echo "Code version: $CODE_VERSION"
+
+        if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+          echo "❌ Tag version ($TAG_VERSION) does not match code version ($CODE_VERSION)."
+          exit 1
+        else
+          echo "✅ Tag version matches code version."
+        fi
+      shell: bash

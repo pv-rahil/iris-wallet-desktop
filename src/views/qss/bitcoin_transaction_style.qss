@@ -1,0 +1,91 @@
+/* Styles for BitcoinTransactionDetail QWidget */
+#BitcoinTransactionDetail {
+    background: transparent;
+}
+
+/* Styles for bitcoin_single_transaction_detail_widget */
+#bitcoin_single_transaction_detail_widget {
+    background: transparent;
+    background-color: #030B25;
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+}
+
+/* Styles for line_detail_tx QFrame */
+#line_detail_tx {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+/* Styles for transaction_detail_frame QFrame */
+#transaction_detail_frame {
+    background: transparent;
+    background-color: #1B233B;
+    border: none;
+    border-radius: 8px;
+    color: #FFFFFF;
+}
+
+/* Styles for tx_id_label QLabel */
+#tx_id_label {
+    font: 18px "Inter";
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+/* Styles for tx_id_value QTextEdit */
+QTextEdit#tx_id_value {
+    background: transparent;
+    font: 15px "Inter";
+    color: #03CA9B;
+    font-weight: 400;
+}
+
+/* Styles for date_label QLabel */
+#date_label {
+    font: 18px "Inter";
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+/* Styles for date_value QLabel */
+#date_value {
+    font: 15px "Inter";
+    color: #B3B6C3;
+    font-weight: 400;
+}
+
+/* Styles for bitcoin_title_value QLabel */
+#bitcoin_title_value {
+    font: 24px "Inter";
+    color: rgb(208, 211, 221);
+    background: transparent;
+    border: none;
+    padding-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Styles for close_btn QPushButton */
+#close_btn {
+    background: transparent;
+    border: none;
+}
+
+/* Styles for amount_label QLabel */
+#amount_label {
+    font: 14px "Inter";
+    color: #B3B6C3;
+    background: transparent;
+    border: none;
+    font-weight: 400;
+}
+
+/* Styles for amount_value QLabel */
+#amount_value {
+    font: 24px "Inter";
+    color: #03CA9B;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    padding-bottom: 20px;
+}

@@ -1,0 +1,88 @@
+/* Styles for the main faucets widget */
+QFrame#faucets_widget {
+    border-radius: 8px;
+    background: transparent;
+    background-color: #151C34;
+}
+
+/* Styles for general QLabel elements inside the faucets widget */
+QFrame#faucets_widget QLabel {
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+    font-weight: 400;
+    color: #B3B6C3;
+}
+
+/*Styles for QLabel icon for the faucets */
+QLabel#faucets_icon{
+    padding-left: 10px;
+}
+
+/* Styles for specific QLabel elements inside the faucets widget */
+QFrame#faucets_widget QLabel {
+    border: none;
+    background: transparent;
+    font: 14px "Inter";
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+/* Styles for the title frame inside the faucets widget */
+QFrame#faucets_title_frame {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+}
+
+/* Styles for the title label inside the faucets widget */
+QLineEdit#faucets_title_label {
+    font: 18px "Inter";
+    border: none;
+    background-color: rgb(3, 11, 37);
+    color: rgb(255, 255, 255);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+
+/* Styles for the 'Get faucets' title label */
+QLabel#get_faucets_title_label {
+    font: 18px "Inter";
+    color: #FFFFFF;
+    border: none;
+    background: transparent;
+    font-weight: 600;
+}
+
+/* Styles for individual faucet frames */
+QFrame#faucet_frame {
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    background-color: #151C34;
+}
+
+QFrame#faucet_frame:hover {
+    border: 1px solid white;
+}
+
+/* Styles for faucet name labels */
+QLabel#faucet_name_label {
+    font: 15px "Inter";
+    color: #FFFFFF;
+    border: none;
+    font-weight: 400;
+}
+
+/* Styles for the faucet request button */
+QPushButton#faucet_request_button {
+    font: 12px "Inter";
+    color: #FFFFFF;
+    border: none;
+    background-color: #2A56EA;
+    font-weight: 500;
+    border-radius: 6px;
+}

@@ -1,0 +1,102 @@
+/* Styles for QFrame */
+QFrame {
+    border-radius: 8px;
+    background: rgb(3, 11, 37);
+}
+
+/* Styles for QLabel */
+QLabel {
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+    color: #B3B6C3;
+}
+
+QLabel#app_version_label, #key_label, #value_label {
+    font: 16px "Inter";
+    font-weight: 400;
+    color: #959BAE;
+}
+
+QLabel#privacy_policy_label, QLabel#terms_service_label {
+    font: 18px "Inter";
+    color: #5AEB71;
+    border: none;
+    background: transparent;
+}
+
+/* Styles for QLineEdit */
+QLineEdit {
+    font: 18px "Inter";
+    border: none;
+    background-color: rgb(3, 11, 37);
+    color: rgb(255, 255, 255);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+/* Styles for about icon */
+QLabel#about_icon {
+    padding-left:10px;
+}
+
+/* Styles for QPushButton (SecondaryButton) */
+QPushButton {
+    font: 15px "Inter";
+    background: transparent;
+    border: 2px solid #586871;
+    color: #D0D3DD;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+QPushButton:hover {
+    color: white;
+    background-color: rgb(22, 88, 73);
+    border: 1px solid rgb(1, 167, 129);
+}
+
+QPushButton:pressed {
+    background-color: #3575a0;
+}
+
+QPushButton:disabled {
+    font-weight: 600;
+    border: 1px solid #3e4d57;
+    color: #3e4d57;
+}
+
+/* Styles for QLabel links */
+QLabel[url="privacy_policy_label"], QLabel[url="terms_service_label"] {
+    color: #03CA9B;
+    border: none;
+    background: transparent;
+}
+
+/* Styles for SecondaryButton (custom button class) */
+QPushButton#download_log {
+    font: 15px "Inter";
+    background: transparent;
+    border: 2px solid #586871;
+    color: #D0D3DD;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+QPushButton#download_log:hover {
+    color: white;
+    background-color: rgb(22, 88, 73);
+    border: 1px solid rgb(1, 167, 129);
+}
+
+QPushButton#download_log:pressed {
+    background-color: #3575a0;
+}
+
+QPushButton#download_log:disabled {
+    font-weight: 600;
+    border: 1px solid #3e4d57;
+    color: #3e4d57;
+}

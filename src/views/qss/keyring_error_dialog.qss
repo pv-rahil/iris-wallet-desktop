@@ -1,0 +1,53 @@
+#keyring {
+    background-color: #1B233B;
+    border-radius: 8px;
+    min-width: 335px;
+    min-height: 292px;
+    border: none;
+	color: rgb(255, 255, 255)
+}
+#info_label,#check_box {
+    color: #ebedd1;
+    font: 15px "Inter";
+    font-weight: 400;
+    border: none;
+    padding-left: 4px;
+}
+
+#check_box {
+    color: #B3B6C3;
+    font: 15px "Inter";
+    font-weight: 400;
+    border: none;
+}
+
+#mnemonic_title_label,#wallet_password_title_label {
+    font: 14px "Inter";
+    border: none;
+    color: #E6E1E5;
+    font-weight: 600;
+    padding-left: 10px;
+}
+
+
+#mnemonic_frame,#password_frame{
+background-color:#030B25;
+    border-radius: 8px;
+}
+#mnemonic_value_label,#wallet_password_value{
+color:#B3B6C3;
+    font: 14px "Inter";
+    padding-left: 10px;
+}
+#mnemonic_copy_button{
+background-color:transparent;
+border: 1px solid #586871;
+color: rgb(255, 255, 255);
+    font: 14px "Inter";
+font-weight: 700
+}
+
+#mnemonic_copy_button,#password_copy_button{
+border:none;
+background:transparent;
+}

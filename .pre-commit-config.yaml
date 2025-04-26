@@ -1,0 +1,55 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: debug-statements
+      - id: double-quote-string-fixer
+      - id: name-tests-test
+        exclude: '^(tests/repository_fixture/.*\.py|tests/service/.*/service_fixture/.*\.py|tests/service/.*/mocked_fun_return_values/.*\.py)$'
+      - id: requirements-txt-fixer
+      - id: check-xml
+  - repo: https://github.com/asottile/setup-cfg-fmt
+    rev: v2.5.0
+    hooks:
+      - id: setup-cfg-fmt
+  - repo: https://github.com/asottile/reorder-python-imports
+    rev: v3.12.0
+    hooks:
+      - id: reorder-python-imports
+        args: [--py38-plus, --add-import, "from __future__ import annotations"]
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v3.1.0
+    hooks:
+      - id: add-trailing-comma
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.2
+    hooks:
+      - id: pyupgrade
+        args: [--py38-plus]
+  - repo: https://github.com/hhatto/autopep8
+    rev: v2.1.0
+    hooks:
+      - id: autopep8
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        additional_dependencies: ["types-requests"]
+
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v3.2.5
+    hooks:
+      - id: pylint
+        args:
+            - --disable=E0401
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.4  # Use the latest version
+    hooks:
+      - id: codespell
+        name: Spell Checker
+        args: ["--skip=.git,.qrc,resources_rc.py,poetry.lock"]

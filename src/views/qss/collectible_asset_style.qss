@@ -1,0 +1,85 @@
+/* Main Widget */
+#collectibles_page {
+    background: none;
+    border: none;
+}
+
+/* Collectibles Widget */
+#collectibles_widget {
+    background: none;
+    border: none;
+}
+
+/* collectible_header_frame */
+#collectible_header_frame {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+}
+
+/* collectible_icon */
+#collectible_icon {
+    padding-left: 10px;
+}
+
+/* My Assets */
+#my_assets {
+    font: 18px "Inter";
+    border: none;
+    background-color: rgb(3, 11, 37);
+    color: rgb(255, 255, 255);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+
+/* Refresh Page Button */
+#refresh_page_button {
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    width: 24px;
+    height: 24px;
+}
+
+#refresh_page_button:hover {
+    padding: 15px;
+    background-color: #2980b9;
+    color: white;
+}
+
+/* Issue New Assets Button */
+#issue_new_assets_button {
+    color: rgb(3, 202, 155);
+    border: none;
+    font: 18px "Inter";
+    background: transparent;
+}
+
+#issue_new_assets_button:hover {
+    color: rgb(255, 255, 255);
+}
+
+/* Collectibles Label */
+#collectibles_label {
+    font: 18px "Inter";
+    color: rgb(102, 108, 129);
+    border: none;
+    padding-left: 10px;
+    background: transparent;
+}
+
+/* Grid Layout */
+#grid_layout {
+    spacing: 6px;
+    margin: 1px;
+    padding: 1px;
+}
+
+/* Collectibles Frame Card */
+#collectibles_frame_card {
+    background: transparent;
+    border: none;
+}

@@ -1,0 +1,14 @@
+services:
+  builder:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      USER_ID: 1000 # set this to your local uid
+      NETWORK: regtest
+      #LN_PORT: 9736
+      # APP_NAME_SUFFIX: app_2  # Pass the app suffix, Example: app_1,app_2,app_3 [Optional]
+    image: iris-wallet-desktop:build
+    privileged: true
+    volumes:
+      - ./appimages:/appimages

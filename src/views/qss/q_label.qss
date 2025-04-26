@@ -1,0 +1,64 @@
+QLabel#title {
+        font: 24px"Inter";
+        font-weight: 600;
+        border: none;
+        padding-bottom: 15px;
+        padding-top: 15px;
+        color: #D0D3DD;
+        background: transparent;
+}
+
+QLabel#welcome_text {
+        font: 16px"Inter";
+        font-weight: 700;
+        border: none;
+        background: transparent;
+        padding-bottom: 15px;
+        padding-top: 15px;
+        color: rgb(208, 211, 221);
+}
+QLabel {
+        font: 15px "inter";
+        color: rgb(179, 182, 195);
+        border: none;
+        background: transparent;
+        font-weight: 400;
+}
+
+QLabel#asset_name_label{
+       font: 14px "Inter";
+        color: #798094;
+        background: transparent;
+        border: none;
+        font-weight: 600;
+}
+
+QPlainTextEdit{
+font: 15px "inter";
+color: rgb(179, 182, 195);
+border: none;
+background: transparent;
+font-weight: 400;
+}
+
+QLabel#amount_value{
+font: 24px "Inter";
+color: #EB5A5A;
+background: transparent;
+border: none;
+font-weight: 600;
+}
+
+QLabel#asset_name_label_25,#total_supply_label,#fee_rate_label{
+font: 14px "Inter";
+color: #798094;
+background: transparent;
+border: none;
+font-weight: 600;
+}
+
+/* Error label */
+QLabel#spendable_balance_validation,#asset_amount_validation, #address_validation_label{
+    color: red;
+    border: none;
+}

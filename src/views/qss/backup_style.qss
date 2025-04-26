@@ -1,0 +1,76 @@
+/* Styles for QWidget (backup_widget) */
+QWidget #backup_widget {
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+}
+QWidget {
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+    border-radius: 8px;
+}
+
+/*Styles for Qlabel*/
+QLabel{
+    border: none
+}
+
+/* Styles for QLabel (backup_title_label) */
+QLabel#backup_title_label {
+    font: 24px "Inter";
+    color: rgb(208, 211, 221);
+    background: transparent;
+    border: none;
+    padding-top: 15px;
+}
+
+/* Styles for QPushButton (show_mnemonic_button, configure_backup_button, back_node_data_button) */
+QPushButton#show_mnemonic_button,#configure_backup_button,#back_node_data_button {
+    font: 12px "Inter";
+    color: #F5F7FE;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    background-color: #2A56EA;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* Styles for QPushButton (backup_close_btn) */
+QPushButton#backup_close_btn{
+    background: transparent;
+    border: none;
+}
+
+/* Styles for QFrame (show_mnemonic_frame, configure_backup_frame) */
+QFrame#show_mnemonic_frame,#configure_backup_frame {
+    background-color: #151C34;
+    border: none;
+}
+
+/* Styles for QFrame (mnemonic_frame) */
+QFrame#mnemonic_frame{
+    background: transparent;
+    background-color:#030B25;
+    border: none;
+    border-radius: 8px;
+    font: 15px "Inter";
+    color: #B3B6C3;
+    font-weight: 400;
+}
+
+QFrame#line_backup_widget {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+/* Styles for QLabel (backup_info_text, show_mnemonic_text, configure_backup_text) */
+QLabel#backup_info_text,#show_mnemonic_text,#configure_backup_text {
+    font: 15px "Inter";
+    color: #B3B6C3;
+    background: transparent;
+    border: none;
+    font-weight: 400;
+    line-height: 21px;
+}

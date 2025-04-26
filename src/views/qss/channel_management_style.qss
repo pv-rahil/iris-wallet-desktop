@@ -1,0 +1,146 @@
+/* Styles for the main channel management page */
+QWidget {
+    background: transparent;
+}
+
+
+/* Styles for widget_channel QWidget */
+#widget_channel {
+    background-image: url(:/assets/iris-background.png);
+    background: transparent;
+    font: 8px "Inter";
+    border: none;
+    color: rgb(255, 255, 255);
+}
+
+/* Styles for header_frame QFrame */
+#header_frame {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+}
+
+/* Styles for header_logo_channel QLabel */
+#label_8 {
+    padding-left: 10px;
+}
+
+/* Styles for channel_tittle QLineEdit */
+#channel_tittle {
+    font: 18px "Inter";
+    border: none;
+    background-color: rgb(3, 11, 37);
+    color: rgb(255, 255, 255);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+/* Styles for create_channel_button QPushButton */
+#create_channel {
+    color: rgb(3, 202, 155);
+    border: none;
+    font: 18px "Inter";
+    background: transparent;
+}
+#create_channel:hover {
+    color: rgb(255, 255, 255);
+}
+
+/* Styles for channel_refresh QPushButton */
+#refresh_page_button {
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    width: 24px;
+    height: 24px;
+}
+#refresh_page_button:hover {
+    padding: 15px;
+    background-color: #2980b9;
+    color: white;
+}
+
+/* Styles for sort_combobox QComboBox */
+QComboBox {
+    font: 15px "Inter";
+    color: rgb(102, 108, 129);
+    background: transparent;
+    border: none;
+    padding: 5px;
+}
+QComboBox QAbstractItemView {
+    background: #222831;
+    color: rgb(102, 108, 129);
+    selection-background-color: rgb(33, 37, 43);
+    selection-color: white;
+    border: none;
+}
+
+/* Styles for header QFrame */
+#header {
+    background: transparent;
+    background-color: rgb(27, 35, 59);
+    color: white;
+    font: 14px "Inter";
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+/* Styles for channel_list_widget QWidget */
+#channel_list_widget {
+    background: transparent;
+}
+
+/* Styles for btc_scroll_area QScrollArea */
+QScrollArea#btc_scroll_area{
+    background:transparent;
+    border: none;
+}
+
+QWidget#btc_scroll_area_widget_contents{
+    background:transparent;
+    border: none;
+}
+
+#asset_id_label,
+#asset_name_label,
+#local_balance_label,
+#status_label,
+#remote_balance_label{
+    border: none;
+    background: transparent;
+    font: 14px "Inter";
+    color: white;
+    font-weight: 600;
+}
+
+#remote_balance_value,
+#local_balance_value,
+#asset_id,
+#asset_name{
+    border: none;
+    background: transparent;
+    font: 14px "Inter";
+    color: white;
+}
+
+#list_frame{
+    background:transparent;
+    background-color: rgba(21, 28, 52, 1);
+    color:white;
+    font:14px Inter;
+    border-radius:8px;
+    border:none;
+}
+
+#channel_header{
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(27, 35, 59);
+}
+QToolTip{
+    background-color: rgba(21, 28, 52, 1);
+    color:white;
+}

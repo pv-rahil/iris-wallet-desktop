@@ -1,0 +1,3 @@
+[codespell]
+# Ignore specific words that are intentional and should not be corrected
+ignore-words-list = arbitral,datas

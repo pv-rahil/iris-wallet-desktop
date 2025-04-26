@@ -1,0 +1,44 @@
+#stacked_widget{
+    background-image: url(:/assets/iris-background.png);
+    font: 8px "Inter";
+    border: 0px solid white;
+    color: white;
+}
+#central_widget{
+    background-color: rgb(3, 11, 37);
+    color: white
+}
+
+QLabel {
+    font: 15px "inter";
+    color: rgb(179, 182, 195);
+    border: none;
+    background: transparent;
+    font-weight: 400;
+}
+
+
+#msg_box{
+    background-color: #1B233B;
+    color: white ;
+    border-radius: 8px;
+}
+
+
+QFrame #option_2_frame,#option_1_frame{
+    font: 15px "Inter";
+    border-radius: 8px;
+    border: 1px solid white;
+}
+
+QLabel#option_2_text_label, #option_1_text_label{
+    border:none
+}
+
+#password_validation{
+    font: 12px "Inter";
+    color: rgb(237, 51, 59);
+    background: transparent;
+    border: none;
+    font-weight: 400;
+}

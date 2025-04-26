@@ -1,0 +1,197 @@
+name: Iris Wallet Desktop CI
+
+on:
+  push:
+    tags:
+      - '*' # Trigger this workflow on any tag push
+
+jobs:
+  build-iris-wallet-desktop-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository with submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: true # Include submodules in the checkout
+          fetch-depth: 1 # Fetch the latest commit only
+
+      - name: Validate Tag and Code Version
+        uses: ./.github/actions/validate-tag-version
+
+      - name: Set up Python 3.12.3 environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+
+      - name: Install required system dependencies
+        run: |
+          sudo apt update
+          sudo apt install libxcb-cursor0 -y # Required by the application
+          sudo apt-get install ruby-dev build-essential libgirepository1.0-dev python3-dev -y && sudo gem i fpm -f
+          sudo apt-get update && sudo apt-get install -y libfuse2 # Required for AppImage creation
+
+      - name: Build the rgb-lightning-node binary
+        uses: ./.github/actions/build-rln-node
+
+      - name: Set environment variables from GitHub Secrets and generate config.py
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          AUTH_URI: ${{ secrets.AUTH_URI }}
+          TOKEN_URI: ${{ secrets.TOKEN_URI }}
+          AUTH_PROVIDER_CERT_URL: ${{ secrets.AUTH_PROVIDER_CERT_URL }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        run: |
+          cd src/utils
+          python generate_config.py
+
+      - name: Install Python dependencies
+        uses: ./.github/actions/install-python-dependencies
+
+      - name: Compile QT resources
+        run: |
+          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+
+      - name: Build and upload Regtest AppImage
+        uses: ./.github/actions/build-and-upload-appimage
+        with:
+          network: regtest
+          artifact-name: linux_appimage_regtest
+
+      - name: Build and upload Testnet AppImage
+        uses: ./.github/actions/build-and-upload-appimage
+        with:
+          network: testnet
+          artifact-name: linux_appimage_testnet
+
+  build-iris-wallet-desktop-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code with submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - name: Validate Tag and Code Version
+        uses: ./.github/actions/validate-tag-version
+
+      - name: Set up Python 3.12.3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+
+      - name: Build the rgb-lightning-node binary
+        uses: ./.github/actions/build-rln-node
+
+      - name: Set environment variables from secrets and create config.py
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          AUTH_URI: ${{ secrets.AUTH_URI }}
+          TOKEN_URI: ${{ secrets.TOKEN_URI }}
+          AUTH_PROVIDER_CERT_URL: ${{ secrets.AUTH_PROVIDER_CERT_URL }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        run: |
+          cd src/utils
+          python generate_config.py
+
+      - name: Install Python dependencies
+        uses: ./.github/actions/install-python-dependencies
+
+      - name: Compile QT resources
+        run: |
+          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+
+      - name: Build the application
+        run: |
+          # Build the regtest application for macOS
+          poetry run build-iris-wallet --network=regtest
+
+          # Build the testnet application for macOS
+          poetry run build-iris-wallet --network=testnet
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: iriswallet-*
+
+  release-artifacts:
+    if: needs.build-iris-wallet-desktop-macos.result == 'success' && needs.build-iris-wallet-desktop-linux.result == 'success'
+    runs-on: ubuntu-24.04
+    needs: [build-iris-wallet-desktop-macos, build-iris-wallet-desktop-linux]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare uploads folder
+        run: mkdir -p ./uploads
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos # Name of the macOS artifact
+          path: ./uploads # Destination path folder
+
+      - name: Download Testnet AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux_appimage_testnet
+          path: ./uploads
+
+      - name: Download Regtest AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux_appimage_regtest
+          path: ./uploads
+
+      - name: Extract Version and Artifacts Info
+        run: |
+          VERSION=$(grep '__version__' src/version.py | cut -d "'" -f 2)
+
+          echo "TESTNET_APPIMAGE_NAME=${TESTNET_APPIMAGE_NAME}" >> $GITHUB_ENV
+          echo "REGTEST_APPIMAGE_NAME=${REGTEST_APPIMAGE_NAME}" >> $GITHUB_ENV
+
+          cd uploads
+          REGTEST_APPNAME_MAC=$(ls iriswallet-${VERSION}-regtest-*.dmg 2>/dev/null || echo "")
+          TESTNET_APPNAME_MAC=$(ls iriswallet-${VERSION}-testnet-*.dmg 2>/dev/null || echo "")
+
+          TESTNET_APPIMAGE_NAME=$(ls iriswallet-${VERSION}-regtest-*.AppImage 2>/dev/null || echo "")
+          REGTEST_APPIMAGE_NAME=$(ls iriswallet-${VERSION}-testnet-*.AppImage 2>/dev/null || echo "")
+
+          echo "REGTEST_APPNAME_MAC=${REGTEST_APPNAME_MAC}" >> $GITHUB_ENV
+          echo "TESTNET_APPNAME_MAC=${TESTNET_APPNAME_MAC}" >> $GITHUB_ENV
+          echo "REGTEST_APPIMAGE_NAME=${REGTEST_APPIMAGE_NAME}" >> $GITHUB_ENV
+          echo "TESTNET_APPIMAGE_NAME=${TESTNET_APPIMAGE_NAME}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: |
+            ./uploads/${{ env.REGTEST_APPNAME_MAC }}
+            ./uploads/${{ env.TESTNET_APPNAME_MAC }}
+            ./uploads/${{ env.TESTNET_APPIMAGE_NAME }}
+            ./uploads/${{ env.REGTEST_APPIMAGE_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup-artifacts:
+    if: always()
+    runs-on: ubuntu-22.04
+    needs: [build-iris-wallet-desktop-macos, build-iris-wallet-desktop-linux, release-artifacts]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Delete Artifacts from Workflow Run
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            macos
+            linux_appimage_regtest
+            linux_appimage_testnet
+          failOnError: false

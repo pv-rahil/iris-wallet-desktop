@@ -1,0 +1,11 @@
+name: Install Python dependencies
+description: Install Python dependencies
+runs:
+  using: "composite"
+  steps:
+    - name: Install Python dependencies
+      run: |
+        pip install poetry
+        pip install pyinstaller
+        poetry install
+      shell: bash

@@ -1,0 +1,126 @@
+/* Styles for the main frame */
+QFrame#frame_2 {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+}
+
+/* Styles for the label inside the main frame */
+QLabel#label_8 {
+    padding-left: 10px;
+}
+
+/* Styles for the assets label inside the main frame */
+QLineEdit#assets_label {
+    font: 18px "Inter";
+    border: none;
+    background-color: rgb(3, 11, 37);
+    color: rgb(255, 255, 255);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+QLabel#amount{
+    font: 14px "Inter";
+    font-weight: 600;
+    color: #D0D3DD;
+}
+QLineEdit#assets_label:hover {
+    border: 2px solid rgb(222, 221, 218);
+}
+
+QLineEdit#assets_label::clear-button {
+    background-image: url(:/Downloads/X Circle.png);
+}
+
+/* Styles for the refresh button inside the main frame */
+QPushButton#refresh_page_button {
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    width: 24px;
+    height: 24px;
+}
+
+QPushButton#refresh_page_button:hover {
+    padding: 15px;
+    background-color: #2980b9;
+    color: white;
+}
+
+/* Styles for the issue new assets button inside the main frame */
+QPushButton#issue_new_assets_button {
+    color: rgb(3, 202, 155);
+    border: none;
+    font: 18px "Inter";
+    background: transparent;
+}
+
+QPushButton#issue_new_assets_button:hover {
+    color: rgb(255, 255, 255);
+}
+
+/* Styles for the fungibles label */
+QLabel#fungibles_label {
+    font: 18px "Inter";
+    color: rgb(102, 108, 129);
+    border: none;
+    padding-left: 10px;
+    background: transparent;
+}
+
+/* Styles for the collectibles frame card */
+QFrame#collectibles_frame_card {
+    background: transparent;
+    border: none;
+}
+
+/* Styles for the secondary frame */
+QFrame#frame_4,#header_frame {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(27, 35, 59);
+}
+
+QFrame#frame_4:hover {
+    font: 14px "Inter";
+    border-radius: 8px;
+    border: 1px solid rgb(102, 108, 129);
+}
+
+/* Styles for the asset name label inside the secondary frame */
+QLabel#asset_name {
+    font: 16px "Inter";
+    border: none;
+    background: transparent;
+    color: #D0D3DD;
+    font-weight:600;
+}
+
+/* Styles for the address inside the secondary frame */
+QLineEdit#address,#token_symbol {
+    color: #959BAE;
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+    font-weight: 400
+}
+
+
+QWidget#scrollAreaWidgetContents_2{
+    background: transparent;
+}
+
+QLabel#asset_logo{
+    border:none;
+}
+
+QLabel#name_header,#address_header,#amount_header,#outbound_amount_header,#symbol_header{
+    color: white;
+    font: 14px "Inter";
+    background: transparent;
+    border: none;
+    font-weight: 600;
+}

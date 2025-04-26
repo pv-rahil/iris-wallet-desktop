@@ -1,0 +1,94 @@
+/* Styles for the help widget */
+QWidget#help_widget {
+    border-radius: 8px;
+    background: transparent;
+}
+
+/* Styles for various QLabel elements in the help widget */
+QLabel#auth_imp_desc, QLabel#auth_login_desc, QLabel#show_asset_desc, QLabel#fee_rate_suggesion_label {
+    border: none;
+    background: transparent;
+    font: 15px "Inter";
+    font-weight: 400;
+    color: #B3B6C3;
+}
+
+QLabel#login_auth_label, QLabel#imp_operation_label, QLabel#hide_exhausted_label, QLabel#show_hidden_label, QLabel#set_fee_rate_label, QLabel#set_fee_rate_value_label {
+    border: none;
+    background: transparent;
+    font: 14px "Inter";
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+/* Styles for the help title frame */
+QFrame#help_title_frame {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+}
+
+/* Styles for the help title label frame */
+QLineEdit#help_title_label_frame {
+    font: 18px "Inter";
+    border: none;
+    background-color: rgb(3, 11, 37);
+    color: rgb(255, 255, 255);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+
+/* Styles for the help icon */
+QLabel#help_icon {
+    padding-left: 10px;
+}
+
+/* Styles for the help title label */
+QLabel#help_title_label {
+    font: 18px "Inter";
+    color: #666C81;
+    border: none;
+    background: transparent;
+    font-weight: 500;
+}
+
+/* Styles for the help card scroll area */
+QScrollArea#help_card_scroll_area {
+    background: transparent;
+    border: none;
+}
+/* Styles for the help card scroll area */
+QWidget#help_card_scroll_area_widget_contents {
+    background: transparent;
+    border: none;
+}
+
+/* Styles for the help card frame */
+QFrame#help_card_frame {
+    background: transparent;
+    border: none;
+    background-color: #151C34;
+    color: #03CA9B;
+    font: 15px "Inter";
+    font-weight: 400;
+    border-radius: 8px
+}
+
+/* Styles for the help card title label */
+QLabel#help_card_title_label {
+    font: 15px "Inter";
+    color: #FFFFFF;
+    border: none;
+    font-weight: 600;
+}
+
+/* Styles for the help card detail label */
+QLabel#help_card_detail_label {
+    color: #B3B6C3;
+    border: none;
+    font: 15px "Inter";
+    font-weight: 400;
+}

@@ -1,0 +1,23 @@
+
+/* Style for the confirmation dialog */
+QDialog#confirmation_dialog {
+    background-color: rgb(27, 35, 59);
+    color: rgb(255, 255, 255);
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+    font-family: "Inter";
+}
+
+/* Style for the message label inside the dialog */
+QLabel#message_label {
+    font: 14px "Inter";
+    color: rgb(255, 255, 255);
+    padding: 20px;
+    text-align: center;
+}
+
+/* Style for the button layout */
+QHBoxLayout {
+    margin-top: 20px;
+    justify-content: center;
+}

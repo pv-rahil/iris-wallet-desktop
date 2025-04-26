@@ -1,0 +1,61 @@
+/* General Style for Header Frame */
+#title_frame_main {
+    border-radius: 8px;
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+}
+
+/* Title Name Styling */
+#title_name {
+    font: 18px "Inter";
+    font-weight: 500;
+    border: none;
+    color: #D0D3DD;
+    padding-right: 24px;
+}
+
+/* Network Error Frame Styling */
+#network_error_frame {
+    border-radius: 8px;
+    background-color: #331D32;
+}
+
+#network_icon_frame {
+    background-color: #030B25;
+    border-radius: 4px;
+}
+
+/* Network Error Info Label Styling */
+#network_error_info_label {
+    font: 14px "Inter";
+    font-weight: 400;
+    color: #798094;
+}
+
+/* Action Button Styling */
+#action_button {
+    color: rgb(3, 202, 155);
+    border: none;
+    font: 18px "Inter";
+    background: transparent;
+    padding-right: 16px;
+}
+
+#action_button:hover {
+    color: rgb(255, 255, 255);
+}
+
+/* Refresh Button Styling */
+#refresh_page_button {
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    width: 24px;
+    height: 24px;
+}
+
+#refresh_page_button:hover {
+    padding: 15px;
+    background-color: #2980b9;
+    color: white;
+}

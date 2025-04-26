@@ -1,0 +1,83 @@
+/* Styles for the RestoreMnemonicWidget */
+QDialog#self {
+    border-radius: 8px;
+    border: none;
+    opacity: 50;
+    background: transparent;
+}
+
+/* Styles for the mnemonic frame */
+QFrame#mnemonic_frame {
+    background-color: #1B233B;
+    border-radius: 8px;
+    border: none;
+}
+
+/* Styles for the mnemonic detail text label */
+QLabel#mnemonic_detail_text_label {
+    color: #B3B6C3;
+    font: 15px "Inter";
+    font-weight: 400;
+    min-width: 295px;
+    min-height: 84px;
+}
+
+/* Styles for the mnemonic input field */
+QLineEdit#mnemonic_input {
+    background-color: #030B25;
+    font: 14px "Inter";
+    border: none;
+    color: #E6E1E5;
+    font-weight: 400;
+    padding-left: 10px;
+    min-width: 295px;
+    min-height: 56px;
+}
+
+/* Styles for the password input field */
+QLineEdit#password_input {
+    background-color: #030B25;
+    font: 14px "Inter";
+    border: none;
+    color: #E6E1E5;
+    font-weight: 400;
+    padding-left: 10px;
+}
+
+/* Styles for the cancel button */
+QPushButton#cancel_button {
+    font: 15px "Inter";
+    border: none;
+    background: transparent;
+    color: white;
+    font-weight: 500;
+    min-width: 74px;
+    min-height: 38px;
+    max-width: 74px;
+    max-height: 38px;
+}
+
+QPushButton#cancel_button:hover {
+    color: rgb(237, 51, 59);
+}
+
+/* Styles for the continue button */
+QPushButton#continue_button {
+    font: 15px "Inter";
+    border: none;
+    background: transparent;
+    color: #E6E1E5;
+    font-weight: 500;
+    min-width: 74px;
+    min-height: 38px;
+    max-width: 74px;
+    max-height: 38px;
+}
+
+QPushButton#continue_button:disabled {
+    color: #ddc2c4;
+}
+
+QPushButton#continue_button:hover {
+    color: #03CA9B;
+}

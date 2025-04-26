@@ -1,0 +1,133 @@
+QWidget#rgb_single_transaction_detail_widget{
+    background: transparent;
+    background-color: #030B25;
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px
+}
+
+QFrame#line_detail_tx{
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59) ;
+}
+
+QFrame#transaction_detail_frame{
+    border:none;
+    background: transparent;
+    background-color:#1B233B;
+    border-radius: 8px;
+    color:#FFFFFF;
+}
+
+QLabel#tx_id_label{
+    font: 18px \"Inter\";
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+/* Styles for the tx_id_value */
+QTextEdit#tx_id_value {
+    font: 15px "Inter";
+    color: #03CA9B;
+    font-weight: 400;
+    background:transparent;
+}
+
+/* Styles for the date_label */
+QLabel#date_label {
+    font: 18px "Inter";
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+/* Styles for the date_value */
+QLabel#date_value {
+    font: 15px "Inter";
+    color: #B3B6C3;
+    font-weight: 400;
+}
+
+/* Styles for the blinded_utxo_label */
+QLabel#blinded_utxo_label {
+    font: 18px "Inter";
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+/* Styles for the blinded_utxo_value */
+QPlainTextEdit#blinded_utxo_value {
+    font: 15px "Inter";
+    color: #B3B6C3;
+    font-weight: 400;
+}
+
+/* Styles for the unblinded_and_change_utxo_label */
+QLabel#unblinded_and_change_utxo_label {
+    font: 18px "Inter";
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+/* Styles for the unblinded_and_change_utxo_value */
+QTextEdit#unblinded_and_change_utxo_value {
+    font: 15px "Inter";
+    color: #03CA9B;
+    font-weight: 400;
+    background:transparent;
+}
+
+/* Styles for the consignment_endpoints_label */
+QLabel#consignment_endpoints_label {
+    font: 18px "Inter";
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+/* Styles for the consignment_endpoints_value */
+QLabel#consignment_endpoints_value {
+    font: 15px "Inter";
+    color: #B3B6C3;
+    font-weight: 400;
+    background:transparent;
+}
+
+/* Styles for the rgb_asset_name_value */
+QLabel#rgb_asset_name_value {
+    font: 24px "Inter";
+    border: none;
+    padding-bottom: 15px;
+    padding-top: 15px;
+    color: rgb(208, 211, 221);
+    background: transparent;
+    font-weight: 600;
+}
+
+/* Styles for the amount_label */
+QLabel#amount_label {
+    font: 14px "Inter";
+    color: #B3B6C3;
+    background: transparent;
+    border: none;
+    font-weight: 400;
+}
+
+/* Styles for the amount_value */
+QLabel#amount_value {
+    font: 24px "Inter";
+    color: #03CA9B;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    padding-bottom: 20px;
+}
+
+QLabel#consignment_endpoints_value {
+    font: 15px "Inter";
+    font-weight: 400;
+    color:#B3B6C3;
+    padding-bottom: 15px
+}
+
+QPushButton#close_btn {
+    background: transparent;
+    border: none;
+}

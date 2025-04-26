@@ -1,0 +1,67 @@
+/* Styles for the logo title image */
+QLabel#logo_title_img {
+    background: transparent;
+    border: none;
+}
+
+/* Styles for the logo title text */
+QLabel#logo_title {
+    font: 24px "Inter";
+    font-weight: 600;
+    color: white;
+}
+
+/* Styles for the issue RGB20 widget */
+QWidget#issue_rgb20_widget {
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+
+}
+
+/* Styles for line edit elements within the issue RGB20 widget */
+QLineEdit#issue_rgb20_input, QLineEdit#asset_name_input, QLineEdit#amount_input {
+    padding-left: 10px;
+    font: 15px "Inter";
+    color: rgb(102, 108, 129);
+    background-color: rgb(36, 44, 70);
+    border: transparent;
+    border-radius: 4px;
+}
+
+/* Styles for label elements within the issue RGB20 widget */
+QLabel#issue_rgb20_label, QLabel#asset_ticker_label, QLabel#asset_name_label, QLabel#total_supply_label {
+    font: 14px "Inter";
+    color: rgb(121, 128, 148);
+    background: transparent;
+    border: none;
+    font-weight: 600;
+}
+
+/* Styles for the issue RGB20 title */
+QLabel#set_wallet_password_label {
+    font: 24px "Inter";
+    border: none;
+    padding-bottom: 15px;
+    padding-top: 15px;
+    color: rgb(208, 211, 221);
+    background: transparent;
+
+}
+
+/* Styles for the RGB20 close button */
+QPushButton#rgb_20_close_btn {
+    background: transparent;
+    border: none;
+}
+
+QFrame#issue_rgb20_wallet_logo{
+    border:none
+}
+
+/* Styles for line elements within the issue RGB20 widget */
+QFrame#line_3, QFrame#bottom_line_frame {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}

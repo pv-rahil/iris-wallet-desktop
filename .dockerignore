@@ -1,0 +1,18 @@
+# ignore all
+*
+
+# de-ignore project files
+!/appimagetool-x86_64.AppImage
+!/build_appimage.sh
+!/build_script.py
+!/config.py
+!/docker-entrypoint.sh
+!/iris_wallet_desktop.spec
+!/poetry.lock
+!/pyproject.toml
+!/binary/
+!/src/
+
+# re-ignore select files/dirs (inside /src)
+__pycache__
+resources_rc.py

@@ -1,0 +1,18 @@
+QWidget#welcome_widget {
+    background: transparent;
+    background-color: rgb(21, 28, 52);
+    border-radius: 8px;
+}
+
+QFrame#TnC_line {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+QLabel#welcome_text_desc {
+        font: 14px"Inter";
+        font-weight: 400;
+        border: none;
+        background: transparent;
+        color: #B3B6C3;
+}

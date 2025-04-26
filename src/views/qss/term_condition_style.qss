@@ -1,0 +1,74 @@
+QWidget#TnCWidget {
+    background: transparent;
+    background-color: rgb(21, 28, 52);
+    border-radius: 8px;
+}
+
+QFrame#TnC_line {
+    border: none;
+    border-bottom: 2px solid rgb(27, 35, 59);
+}
+
+QPlainTextEdit#TnC_Text_Desc {
+    background-color: rgb(21, 28, 52);
+    border: 1px solid rgb(27, 35, 59);
+    color: white;
+    font: 14px "Inter";
+    padding: 5px;
+}
+
+QLabel#welcome_text {
+    font: 18px "Inter";
+    font-weight: 500;
+    color: white;
+}
+
+QFrame#wallet_logo {
+    background: transparent;
+    border: none;
+}
+
+QLabel#label {
+    background: transparent;
+    border: none;
+}
+
+QLabel#label_2 {
+    font: 24px "Inter";
+    font-weight: 600;
+    color: white;
+}
+
+QPushButton#PrimaryButton {
+    background-color: rgb(0, 122, 204);
+    border: none;
+    color: white;
+    font: 16px "Inter";
+    padding: 10px;
+    border-radius: 4px;
+}
+
+QPushButton#PrimaryButton:hover {
+    background-color: rgb(0, 102, 174);
+}
+
+QPushButton#PrimaryButton:pressed {
+    background-color: rgb(0, 82, 144);
+}
+
+QPushButton#SecondaryButton {
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(200, 200, 200);
+    color: black;
+    font: 16px "Inter";
+    padding: 10px;
+    border-radius: 4px;
+}
+
+QPushButton#SecondaryButton:hover {
+    background-color: rgb(230, 230, 230);
+}
+
+QPushButton#SecondaryButton:pressed {
+    background-color: rgb(210, 210, 210);
+}

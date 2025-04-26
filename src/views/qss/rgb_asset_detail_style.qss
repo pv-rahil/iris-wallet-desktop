@@ -1,0 +1,163 @@
+/* Styles for the RGB Asset Detail Widget */
+QWidget#rgb_asset_detail_widget {
+    background: transparent;
+    background-color: #030B25;
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+}
+
+/* Styles for the widget title asset name */
+QLabel#set_wallet_password_label_3 {
+    font: 24px "Inter";
+    border: none;
+    padding-top: 5px;
+    color: rgb(208, 211, 221);
+    background: transparent;
+}
+
+/* Styles for the receive asset button */
+QPushButton#receive_asset {
+    font: 12px "Inter";
+    color: rgb(255, 255, 255);
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    background-color: #2A56EA;
+    font-weight: 500;
+}
+
+QPushButton#receive_asset:hover {
+    font: 12px "Inter";
+    background-color: rgb(4, 213, 165);
+    border-radius: 6px;
+    font-weight: 550;
+}
+
+QPushButton#receive_asset:pressed {
+    background-color: rgb(179, 182, 195);
+    color: rgb(27, 35, 59);
+}
+
+/* Styles for the send asset button */
+QPushButton#send_asset {
+    font: 12px "Inter";
+    color: rgb(255, 255, 255);
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    background-color: #2A56EA;
+    font-weight: 500;
+}
+
+QPushButton#send_asset:hover {
+    font: 12px "Inter";
+    background-color: rgb(4, 213, 165);
+    border-radius: 6px;
+    font-weight: 550;
+}
+
+QPushButton#send_asset:pressed {
+    background-color: rgb(179, 182, 195);
+    color: rgb(27, 35, 59);
+}
+
+/* Styles for the transactions label */
+QLabel#transactions_label {
+    font: 16px "Inter";
+    color: #959BAE;
+    background: transparent;
+    border: none;
+    font-weight: 400;
+    padding-left: 3px;
+    padding-bottom: 10px;
+}
+
+/* Styles for the scroll area */
+QScrollArea#scroll_area {
+    border: none;
+    background:transparent;
+}
+
+/* Styles for the frame 5 */
+QFrame#frame_5 {
+    background: transparent;
+    background-color: #1B233B;
+    border-radius: 8px;
+    border: none;
+}
+
+/* Styles for the asset ID label */
+QLabel#asset_id_label {
+    font: 14px "Inter";
+    color: white;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    padding-left: 3px;
+}
+
+/* Styles for the asset ID detail */
+QPlainTextEdit#asset_id_detail {
+    font: 14px "Inter";
+    font-weight: 400;
+    border: none;
+    color: #798094;
+    background: transparent;
+}
+
+/* Styles for the frame 4 */
+QFrame#frame_4 {
+    background: transparent;
+    background-color: #1B233B;
+    border-radius: 8px;
+    border: none;
+}
+
+/* Styles for the collectible amount label */
+QLabel#asset_balance_label, #lightning_balance_label {
+    font: 14px "Inter";
+    color: white;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+}
+
+/* Styles for the collectible amount */
+QLabel#asset_total_balance, #asset_spendable_amount, #lightning_total_balance, #lightning_spendable_balance {
+    font: 14px "Inter";
+    color: #959BAE;
+    background: transparent;
+    border: none;
+    font-weight: 400;
+}
+
+QFrame#wallet_logo_frame{
+    border:none;
+}
+
+QPushButton#refresh_button{
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+}
+
+QPushButton#close_btn,#transaction_button {
+    background: transparent;
+    border: none;
+}
+QFrame#top_line{
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+QWidget#scroll_area_widget_contents{
+    background: transparent;
+}
+
+QLabel#asset_total_amount_label, #asset_spendable_amount_label, #lightning_total_balance_label, #lightning_spendable_balance_label {
+    font: 14px "Inter";
+    color: #D0D3DD;
+    background: transparent;
+    border: none;
+    font-weight: 500;
+}

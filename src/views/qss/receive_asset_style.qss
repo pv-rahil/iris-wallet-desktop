@@ -1,0 +1,84 @@
+/* Styles for the receive asset page */
+QWidget {
+    background: transparent;
+    background-color: #030B25;
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+
+}
+
+/* Styles for the asset title label */
+QLabel#asset_title {
+    font: 24px "Inter";
+    font-weight: 600;
+    border: none;
+    padding-bottom: 15px;
+    padding-top: 15px;
+    color: #D0D3DD;
+    background: transparent;
+
+}
+
+/* Styles for the close button */
+QPushButton#close_btn_3 {
+    background: transparent;
+    border: none;
+
+}
+
+/* Styles for the BTC balance layout label */
+QLabel#label {
+    border: none;
+    min-width: 335px;
+    min-height: 335px;
+}
+
+/* Styles for the asset name label */
+QLabel#asset_name_label_25 {
+    font: 14px "Inter";
+    color: #798094;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+
+}
+
+/* Styles for the receiver address label */
+QLabel#label_2 {
+    color: #FFFFFF;
+    font: 13px "Inter";
+    background: transparent;
+    border: 1px solid #242C46;
+    border-radius: 4px;
+    padding: 5px 5px 5px 5px;
+}
+
+/* Styles for the wallet address description text */
+QLabel#wallet_address_description_text {
+    color: #798094;
+    font: 14px "Inter";
+    background: transparent;
+    border: none;
+    font-weight: 400;
+}
+
+/* Styles for the line at the bottom */
+QFrame#line_8 {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+/* Styles for the copy button */
+QPushButton#copy_button {
+    font: 15px "Inter";
+    background: transparent;
+    border: 1px solid rgb(88, 104, 113);
+    border-radius: 4px;
+    color: rgb(128, 139, 147);
+    font-weight: 700;
+}
+
+QPushButton#copy_button:hover {
+    color: rgb(149, 155, 174);
+    border-radius: 4px;
+}

@@ -1,0 +1,51 @@
+QWidget {
+    background: transparent;
+    background-color: #030B25;
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+}
+
+QLabel#issue_ticker_title {
+    font: 24px "Inter";
+    font-weight: 600;
+    border: none;
+    padding-bottom: 15px;
+    padding-top: 15px;
+    color: #D0D3DD;
+    background: transparent;
+}
+
+QPushButton#close_button {
+    background: transparent;
+    border: none;
+}
+
+QFrame#top_line,
+QFrame#bottom_line {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+QLabel#success_logo {
+    margin-bottom: 30px;
+    background: transparent;
+    border: none;
+}
+
+QLabel#bold_title {
+    font: 24px "Inter";
+    background: transparent;
+    border: none;
+    color: white;
+    text-align: center;
+}
+
+QPlainTextEdit#desc_msg {
+    font: 16px "Inter";
+    padding-right: 60px;
+    padding-left: 60px;
+    background: transparent;
+    border: none;
+    color: white;
+    text-align: center;
+}

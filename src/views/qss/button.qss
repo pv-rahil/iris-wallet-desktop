@@ -1,0 +1,105 @@
+QPushButton#primary_button {
+    font: 15px "Inter";
+    background: transparent;
+    color: white;
+    border-radius: 4px;
+    font-weight: 700;
+    background-color: rgb(1, 167, 129);
+}
+
+QPushButton#primary_button:hover {
+    color: white;
+    background-color: rgb(4, 213, 165);
+    font-weight: 750;
+}
+
+QPushButton#primary_button:pressed {
+    background-color: rgb(1, 167, 129);
+}
+
+QPushButton#primary_button:disabled {
+    background-color: rgb(64, 143, 125);;
+    color:#ddc2c4;
+    font-weight: 600;
+}
+
+QPushButton#secondary_button {
+    font: 15px "Inter";
+    background: transparent;
+    border: 1px solid #586871;
+    color: #586871;
+    border-radius: 4px;
+    font-weight: 700;
+}
+QPushButton#secondary_button:hover {
+    color: white;
+    background-color: #331D32;
+    border: 1px solid rgb(255, 0, 51);
+}
+QPushButton#secondary_button:pressed {
+    background-color: #3575a0;
+}
+QPushButton#secondary_button:disabled {
+    font-weight: 600;
+    border: 1px solid  #3e4d57;
+    color: #3e4d57;
+}
+
+QPushButton#sidebar_button{
+    font: 15px"Inter";
+    font-weight: 400;
+    color: rgb(179, 182, 195);
+    padding-left: 16px;
+    padding-right: 16px;
+    background-image: url(:/assets/right_small.png);
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-origin: content;
+    }
+QPushButton#sidebar_button:hover{
+    color: #ffffff;
+    background-color: rgb(27, 35, 59);
+    border-radius: 8px;
+    font: 15px"Inter";
+    font-weight: 400;
+   }
+QPushButton#sidebar_button:checked{
+    background-color: rgb(27, 35, 59);
+    border-radius: 8px;
+    font: 15px"Inter";
+    font-weight: 400;
+    color: #ffffff
+   }
+QPushButton#sidebar_button:pressed {
+    background-color: #1f618d;
+   }
+
+QPushButton#transfer_button {
+    font: 12px "Inter";
+    color: rgb(255, 255, 255);
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    background-color: #2A56EA;
+    border-radius: 4px;
+    font-weight: 500;
+    }
+
+QPushButton#transfer_button:hover{
+    font: 12px "Inter";
+    background-color: rgb(4, 213, 165);
+    border-radius: 6px;
+    font-weight: 550;
+    }
+
+QPushButton#transfer_button:pressed {
+    background-color: rgb(179, 182, 195);
+    color: rgb(27, 35, 59);
+    }
+
+QPushButton#transfer_button:disabled{
+    background-color: #051650;
+    font: 12px "Inter";
+    color: #959BAE;
+    border-radius:6px;
+}

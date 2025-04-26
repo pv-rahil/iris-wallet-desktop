@@ -1,0 +1,32 @@
+name: Build and Upload AppImage
+description: Build and upload an AppImage for the given network.
+
+inputs:
+  network:
+    required: true
+    type: string
+  artifact-name:
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build AppImage for ${{ inputs.network }}
+      run: |
+        ARCH=$(uname -m)
+        VERSION=$(grep '__version__' src/version.py | cut -d "'" -f 2)
+        poetry run build-iris-wallet --network=${{ inputs.network }} --distribution=appimage
+        APPIMAGE_NAME="iriswallet-${VERSION}-${ARCH}.AppImage"
+        RENAME_APPIMAGE_NAME="iriswallet-${VERSION}-${{ inputs.network }}-${ARCH}.AppImage"
+        mv ${APPIMAGE_NAME} ${RENAME_APPIMAGE_NAME}
+        echo "RENAME_APPIMAGE_NAME=${RENAME_APPIMAGE_NAME}" >> $GITHUB_ENV
+        chmod +x $RENAME_APPIMAGE_NAME
+        echo "Generated file: $RENAME_APPIMAGE_NAME"
+      shell: bash
+
+    - name: Upload ${{ inputs.network }} AppImage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ env.RENAME_APPIMAGE_NAME }}

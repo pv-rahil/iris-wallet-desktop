@@ -1,0 +1,18 @@
+[MAIN]
+extension-pkg-whitelist=PySide6
+ignore-patterns=non_python_files, resources_rc.py
+max-line-length=172
+disable=broad-except,global-statement,no-member,useless-parent-delegation
+[REPORTS]
+persistent=yes
+
+[PYLINT]
+jobs=2
+max-attributes=9
+[VARIABLES]
+# Maximum number of locals for function / method body
+max-locals=18
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=6  # You can change this number to your desired limit
+max-public-methods=26

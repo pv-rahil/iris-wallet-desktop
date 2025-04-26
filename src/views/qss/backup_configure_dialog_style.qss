@@ -1,0 +1,46 @@
+/* Styles for QFrame (mnemonic_frame) */
+QFrame#mnemonic_frame {
+    background-color: #1B233B;
+    border: 1px solid #B3B6C3;
+    border-radius: 8px;
+}
+
+/* Styles for QLabel (mnemonic_detail_text_label) */
+QLabel#mnemonic_detail_text_label {
+    color: #B3B6C3;
+    font: 15px "Inter";
+    font-weight: 400;
+    border: none;
+    padding: 0px;
+}
+
+/* Styles for QPushButton (cancel_button and continue_button) */
+QPushButton#cancel_button,
+QPushButton#continue_button {
+    font: 15px "Inter";
+    border: none;
+    background: transparent;
+    font-weight: 500;
+    min-width: 74px;
+    min-height: 38px;
+}
+
+QPushButton#cancel_button {
+    color: white;
+}
+
+QPushButton#cancel_button:hover {
+    color: rgb(237, 51, 59);
+}
+
+QPushButton#continue_button {
+    color: #E6E1E5;
+}
+
+QPushButton#continue_button:disabled {
+    color: #ddc2c4;
+}
+
+QPushButton#continue_button:hover {
+    color: #03CA9B;
+}
