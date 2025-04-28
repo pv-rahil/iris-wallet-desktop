@@ -392,34 +392,14 @@ class BtcWidget(QWidget):
         """
         self._view_model.bitcoin_view_model.on_send_bitcoin_click()
 
-    def navigate_to_selection_page(self, callback):
-        """This method is navigate to the selection page"""
-        title = 'Select transfer type'
-        btc_on_chain_logo_path = ':/assets/on_chain.png'
-        btc_on_chain_title = TransferType.ON_CHAIN.value
-        btc_off_chain_logo_path = ':/assets/off_chain.png'
-        btc_off_chain_title = TransferType.LIGHTNING.value
-        params = SelectionPageModel(
-            title=title,
-            logo_1_path=btc_on_chain_logo_path,
-            logo_1_title=btc_on_chain_title,
-            logo_2_path=btc_off_chain_logo_path,
-            logo_2_title=btc_off_chain_title,
-            asset_id=AssetType.BITCOIN.value,
-            callback=callback,
-            back_page_navigation=self._view_model.page_navigation.bitcoin_page,
-        )
-        self._view_model.page_navigation.wallet_method_page(params)
 
     def select_receive_transfer_type(self):
         """This method navigates the receive page"""
-        self.navigate_to_selection_page(
-            TransferStatusEnumModel.RECEIVE_BTC.value,
-        )
+        self._view_model.bitcoin_view_model.on_receive_bitcoin_click()
 
     def select_send_transfer_type(self):
         """This method navigates the send asset page according to the condition"""
-        self.navigate_to_selection_page(TransferStatusEnumModel.SEND_BTC.value)
+        self._view_model.bitcoin_view_model.on_send_bitcoin_click()
 
     def set_bitcoin_balance(self):
         """This method updates the displayed bitcoin balance in the UI.

@@ -8,6 +8,7 @@ from PySide6.QtCore import Signal
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.repository.wallet_holder import WalletHolder
 from src.model.btc_model import SendBtcRequestModel
 from src.model.btc_model import SendBtcResponseModel
 from src.model.enums.enums_model import NativeAuthType
@@ -52,12 +53,13 @@ class SendBitcoinViewModel(QObject, ThreadManager):
     def on_success_authentication_btc_send(self):
         """call back which send btc to address after success of authentication"""
         try:
+            online_wallet = WalletHolder.get_online()
             self.run_in_thread(
                 BtcRepository.send_btc,
                 {
                     'args': [
                         SendBtcRequestModel(
-                            amount=self.amount, address=self.address, fee_rate=self.fee_rate,
+                            online=online_wallet,amount=self.amount, address=self.address, fee_rate=self.fee_rate,
                         ),
                     ],
                     'callback': self.on_success,

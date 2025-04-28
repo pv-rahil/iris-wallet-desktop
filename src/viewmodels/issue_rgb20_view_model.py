@@ -10,6 +10,7 @@ from PySide6.QtCore import Signal
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.repository.wallet_holder import WalletHolder
 from src.model.enums.enums_model import NativeAuthType
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
@@ -36,11 +37,13 @@ class IssueRGB20ViewModel(QObject, ThreadManager):
     def on_success_native_auth_rgb20(self, success: bool):
         """Callback function after native authentication successful"""
         try:
+            online_wallet = WalletHolder.get_online()
             if not success:
                 raise CommonException('Authentication failed')
             if self.token_amount is None or self.asset_name is None or self.short_identifier is None:
                 raise CommonException('Few fields missing')
             asset = IssueAssetNiaRequestModel(
+                online = online_wallet,
                 amounts=[int(self.token_amount)],
                 name=self.asset_name,
                 ticker=self.short_identifier,

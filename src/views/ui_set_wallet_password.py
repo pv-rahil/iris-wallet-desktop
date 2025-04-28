@@ -474,24 +474,7 @@ class SetWalletPasswordWidget(QWidget):
 
     def close_navigation(self):
         """This method handled close button navigation"""
-        if self.originating_page == WalletType.EMBEDDED_TYPE_WALLET.value:
-            self._view_model.page_navigation.welcome_page()
-        if self.originating_page == WalletType.REMOTE_TYPE_WALLET.value:
-            title = 'connection_type'
-            embedded_path = ':/assets/embedded.png'
-            embedded_title = WalletType.EMBEDDED_TYPE_WALLET.value
-            connect_path = ':/assets/remote.png'
-            connect_title = WalletType.REMOTE_TYPE_WALLET.value
-            params = SelectionPageModel(
-                title=title,
-                logo_1_path=embedded_path,
-                logo_1_title=embedded_title,
-                logo_2_path=connect_path,
-                logo_2_title=connect_title,
-                asset_id='none',
-                callback='none',
-            )
-            self._view_model.page_navigation.wallet_connection_page(params)
+        self._view_model.page_navigation.welcome_page()
 
     def show_password_validation_label(self, message):
         """This method handled password validation."""

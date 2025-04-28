@@ -84,6 +84,7 @@ class EstimateFeeRequestModel(BaseModel):
 class SendBtcRequestModel(BaseModel):
     """Model representing a request to send Bitcoin."""
 
+    online: object
     amount: int
     address: str
     fee_rate: int
@@ -92,7 +93,6 @@ class SendBtcRequestModel(BaseModel):
 
 class GetBtcBalanceRequestModel(BaseModel):
 
-    wallet: object
     online: object
     skip_sync: bool = False
 
@@ -101,6 +101,11 @@ class UnspentListRequestModel (BaseModel):
 
     online : object
     settled_only: bool = False
+    skip_sync: bool = False
+
+class ListTransactionRequestModel (BaseModel):
+
+    online : object
     skip_sync: bool = False
 
 # -------------------- Response Models -----------------------

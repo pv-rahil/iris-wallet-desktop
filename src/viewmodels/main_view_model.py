@@ -8,7 +8,6 @@ from PySide6.QtCore import QObject
 
 from src.viewmodels.backup_view_model import BackupViewModel
 from src.viewmodels.bitcoin_view_model import BitcoinViewModel
-from src.viewmodels.channel_management_viewmodel import ChannelManagementViewModel
 from src.viewmodels.enter_password_view_model import EnterWalletPasswordViewModel
 from src.viewmodels.faucets_view_model import FaucetsViewModel
 from src.viewmodels.fee_rate_view_model import EstimateFeeViewModel
@@ -54,10 +53,6 @@ class MainViewModel(QObject):
             self.page_navigation,
         )
         self.send_bitcoin_view_model = SendBitcoinViewModel(
-            self.page_navigation,
-        )
-
-        self.channel_view_model = ChannelManagementViewModel(
             self.page_navigation,
         )
 

@@ -7,8 +7,9 @@ from __future__ import annotations
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.repository.wallet_holder import WalletHolder
 from src.data.service.helpers import main_asset_page_helper
-from src.model.btc_model import BalanceResponseModel
+from src.model.btc_model import BalanceResponseModel, GetBtcBalanceRequestModel
 from src.model.btc_model import OfflineAsset
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
@@ -36,6 +37,7 @@ class MainAssetPageDataService:
             MainPageDataResponseModel: The main page data containing asset details and BTC balance.
         """
         try:
+            online_wallet = WalletHolder.get_online()
             wallet_type: WalletType = SettingRepository.get_wallet_type()
             request_model = FilterAssetRequestModel(
                 filter_asset_schemas=[
@@ -49,7 +51,7 @@ class MainAssetPageDataService:
             asset_detail: GetAssetResponseModel = RgbRepository.get_assets(
                 request_model,
             )
-            btc_balance: BalanceResponseModel = BtcRepository.get_btc_balance()
+            btc_balance: BalanceResponseModel = BtcRepository.get_btc_balance(GetBtcBalanceRequestModel(online=online_wallet))
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
             btc_ticker: str = main_asset_page_helper.get_offline_asset_ticker(
                 network=stored_network,

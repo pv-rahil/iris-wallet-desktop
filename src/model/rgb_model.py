@@ -87,7 +87,7 @@ class AssetModel(BaseModel):
     issued_supply: int
     timestamp: int
     added_at: int
-    balance: AssetBalanceResponseModel
+    balance: Balance
     media: Media | None = None
     token: Token | None = None
 
@@ -128,6 +128,7 @@ class AssetIdModel(BaseModel):
 class CreateUtxosRequestModel(BaseModel):
     """Request model for creating UTXOs."""
 
+    online : object
     up_to: bool | None = False
     num: int = NO_OF_UTXO
     size: int = UTXO_SIZE_SAT
@@ -144,6 +145,7 @@ class DecodeRgbInvoiceRequestModel(BaseModel):
 class IssueAssetNiaRequestModel(BaseModel):
     """Request model for issuing assets nia."""
 
+    online : object
     amounts: list[int]
     ticker: str
     name: str

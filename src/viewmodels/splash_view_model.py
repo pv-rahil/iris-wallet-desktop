@@ -196,7 +196,6 @@ class SplashViewModel(QObject, ThreadManager):
     def handle_application_open(self):
         """This method handle application start"""
         try:
-            print(1)
             self.show_main_window_loader.emit(True, INFO_RESTARTING_RLN_NODE)
             keyring_status = SettingRepository.get_keyring_status()
             if keyring_status is True:
@@ -211,11 +210,10 @@ class SplashViewModel(QObject, ThreadManager):
                 self.sync_chain_info_label.emit(True)
                 init = WalletHolder.get_init_response()
                 network = CommonOperationService.get_bitcoin_network_from_enum(bitcoin_network.__network__)
-                print('----------------->',network)
                 wallet = WalletRequestModel(data_dir=app_paths.app_path,bitcoin_network=network,pubkey=init.account_xpub,mnemonic=init.mnemonic)
                 self.run_in_thread(
                     CommonOperationRepository.unlock, {
-                        'args': wallet,
+                        'args': [wallet],
                         'callback': self.on_success_of_unlock_api,
                         'error_callback': self.on_error_of_unlock_api,
                     },

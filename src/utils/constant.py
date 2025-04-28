@@ -68,8 +68,8 @@ BITCOIND_RPC_USER_REGTEST = 'user'
 BITCOIND_RPC_PASSWORD_REGTEST = 'password'
 BITCOIND_RPC_HOST_REGTEST = 'regtest-bitcoind.rgbtools.org'
 BITCOIND_RPC_PORT_REGTEST = 80
-INDEXER_URL_REGTEST = 'electrum.rgbtools.org:50041'
-PROXY_ENDPOINT_REGTEST = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
+INDEXER_URL_REGTEST = '127.0.0.1:50001'
+PROXY_ENDPOINT_REGTEST = 'rpc://127.0.0.1:3000/json-rpc'
 LDK_DATA_NAME_REGTEST = 'dataldkregtest'
 
 BITCOIND_RPC_USER_TESTNET = 'user'

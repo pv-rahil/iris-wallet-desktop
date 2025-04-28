@@ -4,7 +4,7 @@ from __future__ import annotations
 import requests
 
 from src.data.repository.wallet_holder import WalletHolder
-from src.model.rgb_model import AssetBalanceResponseModel
+from src.model.rgb_model import AssetBalanceResponseModel, Balance
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.rgb_model import CreateUtxosResponseModel
@@ -34,17 +34,14 @@ from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.check_colorable_available import check_colorable_available
 from src.utils.decorators.unlock_required import unlock_required
 from src.utils.endpoints import ASSET_BALANCE_ENDPOINT
-from src.utils.endpoints import CREATE_UTXO_ENDPOINT
 from src.utils.endpoints import DECODE_RGB_INVOICE_ENDPOINT
 from src.utils.endpoints import FAIL_TRANSFER_ENDPOINT
 from src.utils.endpoints import GET_ASSET_MEDIA
 from src.utils.endpoints import ISSUE_ASSET_ENDPOINT_CFA
 from src.utils.endpoints import ISSUE_ASSET_ENDPOINT_NIA
 from src.utils.endpoints import ISSUE_ASSET_ENDPOINT_UDA
-from src.utils.endpoints import LIST_ASSETS_ENDPOINT
 from src.utils.endpoints import LIST_TRANSFERS_ENDPOINT
 from src.utils.endpoints import POST_ASSET_MEDIA
-from src.utils.endpoints import REFRESH_TRANSFERS_ENDPOINT
 from src.utils.endpoints import RGB_INVOICE_ENDPOINT
 from src.utils.endpoints import SEND_ASSET_ENDPOINT
 from src.utils.request import Request
@@ -52,19 +49,6 @@ import rgb_lib
 
 class RgbRepository:
     """Repository for handling RGB-related operations."""
-
-    @staticmethod
-    @unlock_required
-    def create_utxo(create_utxos: CreateUtxosRequestModel):
-        """Create UTXOs."""
-        payload = create_utxos.dict()
-        with repository_custom_context():
-            response = Request.post(CREATE_UTXO_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            cache = Cache.get_cache_session()
-            if cache is not None:
-                cache.invalidate_cache()
-            return CreateUtxosResponseModel(status=True)
 
     @staticmethod
     @unlock_required
@@ -109,8 +93,6 @@ class RgbRepository:
             wallet = WalletHolder.get_wallet()
             online = WalletHolder.get_online()
             wallet.refresh(online=online,asset_id=None,filter=[],skip_sync=False)
-            # response = Request.post(REFRESH_TRANSFERS_ENDPOINT, payload)
-            # response.raise_for_status()  # Raises an exception for HTTP errors
             return RefreshTransferResponseModel(status=True)
 
     @staticmethod
@@ -147,13 +129,27 @@ class RgbRepository:
     @unlock_required
     def get_assets(filter_asset_request_model: FilterAssetRequestModel) -> GetAssetResponseModel:
         """Get assets."""
+        payload = filter_asset_request_model.dict()
+        payload['filter_asset_schemas'] = [rgb_lib.AssetSchema(value) for value in filter_asset_request_model.filter_asset_schemas]
         with repository_custom_context():
             wallet = WalletHolder.get_wallet()
-            data = wallet.list_assets(filter_asset_schemas=[])
+            data = wallet.list_assets(**payload)
+            response_data = {
+                "nia": [asset.__dict__ for asset in data.nia],
+                "uda": [asset.__dict__ for asset in data.uda],
+                "cfa": [asset.__dict__ for asset in data.cfa],
+            }
+
+            # Convert balance into proper Balance Pydantic model instances
+            for asset_list in [response_data["nia"], response_data["uda"], response_data["cfa"]]:
+                for asset in asset_list:
+                    if asset.get("balance"):
+                        asset["balance"] = Balance(**asset["balance"].__dict__)
+
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return GetAssetResponseModel(**data.__dict__)
+            return GetAssetResponseModel(**response_data)
 
     @staticmethod
     @unlock_required
@@ -161,15 +157,28 @@ class RgbRepository:
     def issue_asset_nia(asset: IssueAssetNiaRequestModel) -> IssueAssetResponseModel:
         """Issue asset."""
         payload = asset.dict()
+        
+        # Helper function to convert Balance objects into dictionaries
+        def convert_balance(asset_data):
+            if asset_data.get("balance"):
+                # If balance is a Balance object, convert it to a dict
+                asset_data["balance"] = asset_data["balance"].dict() if isinstance(asset_data["balance"], Balance) else asset_data["balance"]
+            return asset_data
+
         with repository_custom_context():
-            response = Request.post(ISSUE_ASSET_ENDPOINT_NIA, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            asset_data = data['asset']
+            wallet = WalletHolder.get_wallet()
+            asset_data = wallet.issue_asset_nia(**payload)
+            
+            # Convert balance to dictionary for proper validation
+            asset_data_dict = convert_balance(asset_data.dict())  # Convert if needed
+            
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return IssueAssetResponseModel(**asset_data)
+            
+            # Return the properly converted response model
+            return IssueAssetResponseModel(**asset_data_dict)
+
 
     @staticmethod
     @unlock_required
