@@ -9,15 +9,17 @@ from PySide6.QtCore import QProcess
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
 
-from src.data.repository.wallet_holder import WalletHolder
-from src.data.service.common_operation_service import CommonOperationService
 import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import NodeInfoResponseModel, WalletRequestModel
+from src.data.repository.wallet_holder import WalletHolder
+from src.data.service.common_operation_service import CommonOperationService
+from src.model.common_operation_model import NodeInfoResponseModel
 from src.model.common_operation_model import UnlockRequestModel
+from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import WalletType
+from src.utils.build_app_path import app_paths
 from src.utils.constant import COMPATIBLE_RLN_NODE_COMMITS
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import NODE_PUB_KEY
@@ -32,6 +34,7 @@ from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG_WHILE_UNLOCKING_LN_ON_SPLASH
 from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTARTING_RLN_NODE
 from src.utils.info_message import INFO_STARTING_RLN_NODE
 from src.utils.info_message import INFO_WALLET_RESET
@@ -49,7 +52,7 @@ from src.views.components.message_box import MessageBox
 from src.views.components.node_crash_dialog import CrashDialogBox
 from src.views.components.node_incompatibility import NodeIncompatibilityDialog
 from src.views.components.toast import ToastManager
-from src.utils.build_app_path import app_paths
+
 
 class SplashViewModel(QObject, ThreadManager):
     """This class represents splash page"""
@@ -209,8 +212,10 @@ class SplashViewModel(QObject, ThreadManager):
                 )
                 self.sync_chain_info_label.emit(True)
                 init = WalletHolder.get_init_response()
-                network = CommonOperationService.get_bitcoin_network_from_enum(bitcoin_network.__network__)
-                wallet = WalletRequestModel(data_dir=app_paths.app_path,bitcoin_network=network,pubkey=init.account_xpub,mnemonic=init.mnemonic)
+                network = get_bitcoin_network_from_enum(
+                    bitcoin_network.__network__)
+                wallet = WalletRequestModel(
+                    data_dir=app_paths.app_path, bitcoin_network=network, pubkey=init.account_xpub, mnemonic=init.mnemonic)
                 self.run_in_thread(
                     CommonOperationRepository.unlock, {
                         'args': [wallet],

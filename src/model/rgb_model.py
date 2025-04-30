@@ -7,6 +7,13 @@ from datetime import datetime
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import model_validator
+from requests_cache import Optional
+from rgb_lib import AssetCfa
+from rgb_lib import AssetIface
+from rgb_lib import AssetNia
+from rgb_lib import AssetSchema
+from rgb_lib import AssetUda
+from rgb_lib import Transfer
 
 from src.model.enums.enums_model import FilterAssetEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
@@ -53,7 +60,6 @@ class Media(BaseModel):
     """Model for list asset"""
     file_path: str
     digest: str
-    hex: str | None = None
     mime: str
 
 
@@ -128,7 +134,7 @@ class AssetIdModel(BaseModel):
 class CreateUtxosRequestModel(BaseModel):
     """Request model for creating UTXOs."""
 
-    online : object
+    online: object
     up_to: bool | None = False
     num: int = NO_OF_UTXO
     size: int = UTXO_SIZE_SAT
@@ -145,7 +151,7 @@ class DecodeRgbInvoiceRequestModel(BaseModel):
 class IssueAssetNiaRequestModel(BaseModel):
     """Request model for issuing assets nia."""
 
-    online : object
+    online: object
     amounts: list[int]
     ticker: str
     name: str
@@ -170,7 +176,7 @@ class IssueAssetUdaRequestModel(IssueAssetCfaRequestModel):
 class RefreshRequestModel(BaseModel):
     """Request model for refresh wallet"""
     online: object
-    asset_id: str|None = None
+    asset_id: str | None = None
     filter: list = []
     skip_sync: bool = False
 
@@ -202,9 +208,10 @@ class ListTransfersRequestModel(AssetIdModel):
 
 class FilterAssetRequestModel(BaseModel):
     """Remove"""
-    filter_asset_schemas: list[FilterAssetEnumModel] = Field(
-        default_factory=lambda: [FilterAssetEnumModel.NIA],
-    )
+    filter_asset_schemas: list[AssetSchema]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class GetAssetMediaModelRequestModel(BaseModel):
@@ -245,12 +252,32 @@ class DecodeRgbInvoiceResponseModel(BaseModel):
 
 class GetAssetResponseModel(BaseModel):
     """Response model for list assets."""
-    nia: list[AssetModel | None] | None = []
-    uda: list[AssetModel | None] | None = []
-    cfa: list[AssetModel | None] | None = []
+    nia: list[AssetNia | None] | None = []
+    uda: list[AssetUda | None] | None = []
+    cfa: list[AssetCfa | None] | None = []
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
-class IssueAssetResponseModel(AssetModel):
+class AssetNia(BaseModel):
+    asset_id: str
+    asset_iface: AssetIface
+    ticker: str
+    name: str
+    details: Optional[str]
+    precision: int
+    issued_supply: int
+    timestamp: int
+    added_at: int
+    balance: Balance
+    media: Optional[Media]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class IssueAssetResponseModel(AssetNia):
     """Response model for issuing assets."""
 
 
@@ -262,18 +289,7 @@ class ListTransferAssetResponseModel(BaseModel):
 
 class ListTransferAssetWithBalanceResponseModel(ListTransferAssetResponseModel):
     """Response model for listing asset transfers with asset balance"""
-    asset_balance: AssetBalanceResponseModel
-
-
-class ListOffAndOnChainTransfer(BaseModel):
-    """Response model for listing on-chain and off-chain asset transfers with respective details."""
-    onchain_transfers: list[TransferAsset | None] | None = []
-    off_chain_transfers: list[Payment | None] | None = []
-
-
-class ListOnAndOffChainTransfersWithBalance(ListOffAndOnChainTransfer):
-    """Response model for listing asset transfers with asset balance"""
-    asset_balance: AssetBalanceResponseModel
+    asset_balance: Balance
 
 
 class RefreshTransferResponseModel(StatusModel):

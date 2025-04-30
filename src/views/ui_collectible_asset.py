@@ -204,10 +204,7 @@ class CollectiblesAssetWidget(QWidget):
 
     def create_collectible_frame(self, coll_asset):
         """Create a single collectible frame"""
-        if coll_asset.media.hex is None:
-            image_path = coll_asset.media.file_path
-        else:
-            image_path = coll_asset.media.hex
+        image_path = coll_asset.media.file_path
         collectibles_frame = ClickableFrame(
             coll_asset.asset_id,
             coll_asset.name,
@@ -256,19 +253,9 @@ class CollectiblesAssetWidget(QWidget):
             '}\n',
         )
 
-        if coll_asset.media.hex is None:
+        if coll_asset.media.file_path:
             resized_image = resize_image(coll_asset.media.file_path, 242, 242)
             image_label.setPixmap(resized_image)
-        else:
-            pixmap = convert_hex_to_image(coll_asset.media.hex)
-            resized_image = resize_image(pixmap, 242, 242)
-            if not pixmap.isNull():
-                image_label.setPixmap(resized_image)
-            else:
-                logger.error(
-                    'Failed to load image: %s',
-                    coll_asset.media.file_path,
-                )
 
         form_layout.addRow(image_label)
 

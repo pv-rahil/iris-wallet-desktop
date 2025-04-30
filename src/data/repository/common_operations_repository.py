@@ -1,9 +1,12 @@
 """Module containing CommonOperationRepository."""
 from __future__ import annotations
 
+from rgb_lib import BitcoinNetwork
+from rgb_lib import rgb_lib
+
 from src.data.repository.setting_repository import SettingRepository
 from src.data.repository.wallet_holder import WalletHolder
-from src.model.common_operation_model import BackupRequestModel, WalletRequestModel
+from src.model.common_operation_model import BackupRequestModel
 from src.model.common_operation_model import BackupResponseModel
 from src.model.common_operation_model import ChangePasswordRequestModel
 from src.model.common_operation_model import ChangePassWordResponseModel
@@ -19,27 +22,20 @@ from src.model.common_operation_model import SendOnionMessageResponseModel
 from src.model.common_operation_model import ShutDownResponseModel
 from src.model.common_operation_model import SignMessageRequestModel
 from src.model.common_operation_model import SignMessageResponseModel
-from src.model.common_operation_model import UnlockRequestModel
-from src.model.common_operation_model import UnlockResponseModel
+from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.custom_context import repository_custom_context
-from src.utils.decorators.is_node_initialized import is_node_initialized
 from src.utils.decorators.lock_required import lock_required
 from src.utils.decorators.unlock_required import unlock_required
-from src.utils.endpoints import BACKUP_ENDPOINT
 from src.utils.endpoints import CHANGE_PASSWORD_ENDPOINT
-from src.utils.endpoints import INIT_ENDPOINT
 from src.utils.endpoints import LOCK_ENDPOINT
 from src.utils.endpoints import NETWORK_INFO_ENDPOINT
-from src.utils.endpoints import NODE_INFO_ENDPOINT
 from src.utils.endpoints import RESTORE_ENDPOINT
 from src.utils.endpoints import SEND_ONION_MESSAGE_ENDPOINT
 from src.utils.endpoints import SHUTDOWN_ENDPOINT
 from src.utils.endpoints import SIGN_MESSAGE_ENDPOINT
-from src.utils.endpoints import UNLOCK_ENDPOINT
 from src.utils.helpers import get_bitcoin_config
 from src.utils.request import Request
-from rgb_lib import rgb_lib,BitcoinNetwork
 
 
 class CommonOperationRepository:
@@ -51,7 +47,7 @@ class CommonOperationRepository:
     def init(init: InitRequestModel) -> InitResponseModel:
         """Initialize operation."""
         # payload = init.dict()
-        network = BitcoinNetwork(int(init.network))        
+        network = BitcoinNetwork(int(init.network))
         with repository_custom_context():
             # response = Request.post(INIT_ENDPOINT, payload)
             response = rgb_lib.generate_keys(network)
@@ -59,7 +55,7 @@ class CommonOperationRepository:
             return init_response
 
     @staticmethod
-    def unlock(unlock: WalletRequestModel) :
+    def unlock(unlock: WalletRequestModel):
         """Unlock operation."""
         with repository_custom_context():
             # response = Request.post(UNLOCK_ENDPOINT, payload)
@@ -67,31 +63,35 @@ class CommonOperationRepository:
             payload = unlock.dict()
 
             # Explicitly map 'bitcoin_network' to the correct enum and 'database_type' to DatabaseType
-            payload['bitcoin_network'] = BitcoinNetwork(int(unlock.bitcoin_network))
+            payload['bitcoin_network'] = BitcoinNetwork(
+                int(unlock.bitcoin_network),
+            )
 
             # Now we pass the unpacked dictionary to WalletData
-            wallet_data = rgb_lib.WalletData(**payload,database_type=rgb_lib.DatabaseType.SQLITE)
+            wallet_data = rgb_lib.WalletData(
+                **payload, database_type=rgb_lib.DatabaseType.SQLITE,
+            )
 
             # Initialize the wallet
             recv_wallet = rgb_lib.Wallet(wallet_data)
-            network : NetworkEnumModel = SettingRepository.get_wallet_network()
-            indexer_url = get_bitcoin_config(network,'').indexer_url
-            online_wallet = recv_wallet.go_online(False,indexer_url)
+            network: NetworkEnumModel = SettingRepository.get_wallet_network()
+            indexer_url = get_bitcoin_config(network, '').indexer_url
+            online_wallet = recv_wallet.go_online(False, indexer_url)
             WalletHolder.set_wallet(recv_wallet)
             WalletHolder.set_online(online_wallet)
-            
+
         return recv_wallet
 
     @staticmethod
     # @unlock_required
     def node_info() -> NodeInfoResponseModel:
-        # """Node info operation."""
+        """Node info operation."""
         # with repository_custom_context():
         #     response = Request.get(NODE_INFO_ENDPOINT)
         #     response.raise_for_status()  # Raises an exception for HTTP errors
         #     data = response.json()
         #     return NodeInfoResponseModel(**data)
-        pass
+        pass  # pylint:disable=unnecessary-pass
 
     @staticmethod
     # @unlock_required
@@ -112,7 +112,6 @@ class CommonOperationRepository:
             return LockResponseModel(status=True)
 
     @staticmethod
-    @lock_required
     def backup(backup: BackupRequestModel) -> BackupResponseModel:
         """Backup operation."""
         payload = backup.dict()

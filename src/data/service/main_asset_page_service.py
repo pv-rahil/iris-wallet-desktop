@@ -4,23 +4,27 @@ This module provides the service for the main asset page.
 """
 from __future__ import annotations
 
+from rgb_lib import AssetCfa
+from rgb_lib import AssetNia
+from rgb_lib import AssetSchema
+from rgb_lib import AssetUda
+
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.repository.wallet_holder import WalletHolder
 from src.data.service.helpers import main_asset_page_helper
-from src.model.btc_model import BalanceResponseModel, GetBtcBalanceRequestModel
+from src.model.btc_model import BalanceResponseModel
+from src.model.btc_model import GetBtcBalanceRequestModel
 from src.model.btc_model import OfflineAsset
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import AssetModel
-from src.model.rgb_model import FilterAssetEnumModel
 from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import GetAssetResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.utils.handle_exception import handle_exceptions
-from rgb_lib import AssetSchema
 
 
 class MainAssetPageDataService:
@@ -39,19 +43,19 @@ class MainAssetPageDataService:
         try:
             online_wallet = WalletHolder.get_online()
             wallet_type: WalletType = SettingRepository.get_wallet_type()
-            request_model = FilterAssetRequestModel(
-                filter_asset_schemas=[
-                    FilterAssetEnumModel.NIA,
-                    FilterAssetEnumModel.CFA,
-                    FilterAssetEnumModel.UDA,
-                ],
-            )
-            filtered_assets: list[AssetModel | None] = []
+            request_model = [
+                AssetSchema.NIA,
+                AssetSchema.CFA,
+                AssetSchema.UDA,
+            ]
+
+            filtered_assets: list[AssetNia | AssetCfa | AssetUda | None] = []
             RgbRepository.refresh_transfer()
             asset_detail: GetAssetResponseModel = RgbRepository.get_assets(
                 request_model,
             )
-            btc_balance: BalanceResponseModel = BtcRepository.get_btc_balance(GetBtcBalanceRequestModel(online=online_wallet))
+            btc_balance: BalanceResponseModel = BtcRepository.get_btc_balance(
+                GetBtcBalanceRequestModel(online=online_wallet))
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
             btc_ticker: str = main_asset_page_helper.get_offline_asset_ticker(
                 network=stored_network,
@@ -61,7 +65,7 @@ class MainAssetPageDataService:
             )
             is_exhausted_asset_enabled: IsHideExhaustedAssetEnabled = SettingRepository.is_exhausted_asset_enabled()
 
-            def has_non_zero_balance(asset: AssetModel | None) -> bool:
+            def has_non_zero_balance(asset: AssetNia | AssetCfa | AssetUda | None) -> bool:
                 if asset is None:
                     return False
                 balance = asset.balance

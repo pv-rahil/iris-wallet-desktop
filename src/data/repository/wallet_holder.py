@@ -1,15 +1,19 @@
-from cryptography.fernet import Fernet
+from __future__ import annotations
+
 import json
 import os
+
 import rgb_lib
-from src.utils.build_app_path import app_paths
+from cryptography.fernet import Fernet
 
 from src.model.common_operation_model import InitResponseModel
+from src.utils.build_app_path import app_paths
+
 
 class WalletHolder:
     _wallet: rgb_lib.Wallet = None
     _online: rgb_lib.Online = None
-    _init_response: InitResponseModel = None
+    _init_response = None
 
     _init_file_path = os.path.join(app_paths.app_path, 'wallet_init.dat')
     _encryption_key = b'xrMeekseyt4h5G9y_09SDjNBCuv1y1ljK1fYfN3Us3k='  # 32 bytes
@@ -21,7 +25,7 @@ class WalletHolder:
     @classmethod
     def get_wallet(cls) -> rgb_lib.Wallet:
         if cls._wallet is None:
-            raise RuntimeError("Wallet not initialized yet")
+            raise RuntimeError('Wallet not initialized yet')
         return cls._wallet
 
     @classmethod
@@ -31,7 +35,7 @@ class WalletHolder:
     @classmethod
     def get_online(cls) -> rgb_lib.Online:
         if cls._online is None:
-            raise RuntimeError("Online object not initialized yet")
+            raise RuntimeError('Online object not initialized yet')
         return cls._online
 
     @classmethod
@@ -43,16 +47,16 @@ class WalletHolder:
     def get_init_response(cls) -> InitResponseModel:
         if cls._init_response is None:
             cls._load_init_response_from_file()
-        
+
         if cls._init_response is None:
-            raise RuntimeError("Init response not set and no saved file found")
-        
+            raise RuntimeError('Init response not set and no saved file found')
+
         return cls._init_response
 
     @classmethod
     def save_init_response_to_file(cls):
         if cls._init_response is None:
-            raise ValueError("Init response not set yet")
+            raise ValueError('Init response not set yet')
 
         data = cls._init_response.model_dump_json().encode('utf-8')
         fernet = Fernet(cls._encryption_key)
@@ -76,7 +80,7 @@ class WalletHolder:
             json_data = json.loads(decrypted_data)
 
             cls._init_response = InitResponseModel(**json_data)
-            print("Init response loaded from saved file.")
+            print('Init response loaded from saved file.')
 
         except Exception as e:
             print(f"Error loading init file: {e}")

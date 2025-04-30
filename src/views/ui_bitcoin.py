@@ -4,6 +4,8 @@
  """
 from __future__ import annotations
 
+from datetime import datetime
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QRect
 from PySide6.QtCore import QSize
@@ -392,7 +394,6 @@ class BtcWidget(QWidget):
         """
         self._view_model.bitcoin_view_model.on_send_bitcoin_click()
 
-
     def select_receive_transfer_type(self):
         """This method navigates the receive page"""
         self._view_model.bitcoin_view_model.on_receive_bitcoin_click()
@@ -454,8 +455,8 @@ class BtcWidget(QWidget):
             self.transaction_detail_frame = TransactionDetailFrame(
                 self.btc_scroll_area_widget_contents,
                 TransactionDetailPageModel(
-                    tx_id=tx_id, amount=amount, confirmation_date=transaction_detail.confirmation_date,
-                    confirmation_time=transaction_detail.confirmation_normal_time, transaction_status=transaction_detail.transaction_status,
+                    tx_id=tx_id, amount=amount, confirmation_date=transaction_detail.confirmation_time,
+                    confirmation_time=transaction_detail.confirmation_time, transaction_status=transaction_detail.transaction_status,
                     transfer_status=transaction_detail.transfer_status,
                 ),
             )
@@ -466,8 +467,16 @@ class BtcWidget(QWidget):
                 QCursor(Qt.CursorShape.PointingHandCursor),
             )
             self.transaction_detail_frame.close_button.hide()
-            transaction_date = str(transaction_detail.confirmation_date)
-            transaction_time = str(transaction_detail.confirmation_normal_time)
+            if transaction_detail.confirmation_time:
+                timestamp = transaction_detail.confirmation_time.timestamp  # This is an int
+                transaction_date = str(datetime.fromtimestamp(
+                    timestamp).date().isoformat())
+                transaction_time = str(datetime.fromtimestamp(
+                    timestamp).time().isoformat())
+            else:
+                transaction_date = None
+                transaction_time = None
+
             transfer_status = str(transaction_detail.transfer_status.value)
             transfer_amount = amount
             transaction_type = str(transaction_detail.transaction_type)
@@ -493,7 +502,7 @@ class BtcWidget(QWidget):
             self.transaction_detail_frame.transaction_date.setText(
                 transaction_date,
             )
-            if transaction_date == 'None':
+            if transaction_date == None:
                 self.transaction_detail_frame.transaction_time.setStyleSheet(
                     'color:#959BAE;font-weight: 400; font-size:14px',
                 )

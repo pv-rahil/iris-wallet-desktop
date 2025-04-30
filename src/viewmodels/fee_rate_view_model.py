@@ -7,6 +7,7 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
 from src.data.repository.btc_repository import BtcRepository
+from src.data.repository.wallet_holder import WalletHolder
 from src.model.btc_model import EstimateFeeRequestModel
 from src.model.btc_model import EstimateFeeResponse
 from src.utils.common_utils import TRANSACTION_SPEEDS
@@ -34,7 +35,7 @@ class EstimateFeeViewModel(QObject, ThreadManager):
             tx_speed (str): The transaction speed selected by the user.
         """
         self.blocks = TRANSACTION_SPEEDS.get(tx_speed, 0)
-
+        online_wallet = WalletHolder.get_online()
         if self.blocks == 0:
             ToastManager.info(
                 description='Invalid transaction speed selected.',
@@ -47,7 +48,7 @@ class EstimateFeeViewModel(QObject, ThreadManager):
             self.run_in_thread(
                 BtcRepository.estimate_fee,
                 {
-                    'args': [EstimateFeeRequestModel(blocks=self.blocks)],
+                    'args': [EstimateFeeRequestModel(online=online_wallet, blocks=self.blocks)],
                     'callback': self.on_success_fee_estimation,
                     'error_callback': self.on_estimate_fee_error,
                 },

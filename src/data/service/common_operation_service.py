@@ -1,18 +1,21 @@
 """Service module for common operation in application"""
 from __future__ import annotations
 
-import rgb_lib
+from rgb_lib import BitcoinNetwork
 
 import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import InitRequestModel, WalletRequestModel
+from src.data.repository.wallet_holder import WalletHolder
+from src.model.common_operation_model import InitRequestModel
 from src.model.common_operation_model import InitResponseModel
 from src.model.common_operation_model import NetworkInfoResponseModel
 from src.model.common_operation_model import NodeInfoResponseModel
 from src.model.common_operation_model import UnlockResponseModel
+from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.node_info_model import NodeInfoModel
+from src.utils.build_app_path import app_paths
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
@@ -23,12 +26,10 @@ from src.utils.error_message import ERROR_UNABLE_GET_MNEMONIC
 from src.utils.error_message import ERROR_UNABLE_TO_GET_HASHED_MNEMONIC
 from src.utils.handle_exception import handle_exceptions
 from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import hash_mnemonic
 from src.utils.helpers import validate_mnemonic
 from src.utils.keyring_storage import set_value
-from rgb_lib import BitcoinNetwork
-from src.utils.build_app_path import app_paths
-from src.data.repository.wallet_holder import WalletHolder
 
 
 class CommonOperationService:
@@ -46,12 +47,17 @@ class CommonOperationService:
         """
         try:
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            network = CommonOperationService.get_bitcoin_network_from_enum(stored_network)
+            network = get_bitcoin_network_from_enum(
+                stored_network,
+            )
             response: InitResponseModel = CommonOperationRepository.init(
-                InitRequestModel(password=password,network=network),
+                InitRequestModel(password=password, network=network),
             )
             wallet = CommonOperationRepository.unlock(
-                WalletRequestModel(data_dir=app_paths.app_path,bitcoin_network=network,pubkey=response.account_xpub,mnemonic=response.mnemonic)
+                WalletRequestModel(
+                    data_dir=app_paths.app_path, bitcoin_network=network,
+                    pubkey=response.account_xpub, mnemonic=response.mnemonic,
+                ),
             )
             bitcoin_config = get_bitcoin_config(stored_network, password)
             online_wallet = wallet.go_online(False, bitcoin_config.indexer_url)
@@ -142,12 +148,3 @@ class CommonOperationService:
             raise CommonException(ERROR_UNABLE_TO_GET_HASHED_MNEMONIC)
 
         return hashed_mnemonic
-
-    def get_bitcoin_network_from_enum(network: NetworkEnumModel) -> BitcoinNetwork:
-        mapping = {
-            NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
-            NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
-            NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
-            # Optional: SIGNET is not in NetworkEnumModel
-        }
-        return mapping[network]

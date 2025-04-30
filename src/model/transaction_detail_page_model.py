@@ -4,6 +4,7 @@ Module containing models related to the transaction detail page.
 from __future__ import annotations
 
 from pydantic import BaseModel
+from rgb_lib import BlockTime
 
 from src.model.enums.enums_model import PaymentStatus
 from src.model.enums.enums_model import TransactionStatusEnumModel
@@ -23,8 +24,8 @@ class TransactionDetailPageModel(BaseModel):
     asset_id: str | None = None
     image_path: str | None = None
     asset_name: str | None = None
-    confirmation_date: str | None = None
-    confirmation_time: str | None = None
+    confirmation_date: BlockTime | str | None = None
+    confirmation_time: BlockTime | str | None = None
     updated_date: str | None = None
     updated_time: str | None = None
     transaction_status: TransactionStatusEnumModel | PaymentStatus | str
@@ -36,3 +37,6 @@ class TransactionDetailPageModel(BaseModel):
     asset_type: str | None = None
     is_off_chain: bool = False
     inbound: bool | None = None
+
+    class Config:
+        arbitrary_types_allowed = True

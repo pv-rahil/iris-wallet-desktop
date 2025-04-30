@@ -258,7 +258,7 @@ class ViewUnspentList(QWidget):
             ),
         )
         asset_name.setAccessibleDescription(UNSPENT_UTXO_OUTPOINT)
-        asset_name.setText(_list.utxo.outpoint)
+        asset_name.setText(str(_list.utxo.outpoint.txid))
 
         asset_detail_vertical_layout = QVBoxLayout()
         asset_detail_vertical_layout.setObjectName(

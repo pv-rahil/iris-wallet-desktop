@@ -19,26 +19,13 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtGui import QPainter
 from PySide6.QtGui import QPixmap
+from rgb_lib import BitcoinNetwork
 
 from src.data.repository.setting_repository import SettingRepository
 from src.flavour import __ldk_port__
 from src.model.common_operation_model import UnlockRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ANNOUNCE_ADDRESS
-from src.utils.constant import ANNOUNCE_ALIAS
-from src.utils.constant import BITCOIND_RPC_HOST_MAINNET
-from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
-from src.utils.constant import BITCOIND_RPC_HOST_TESTNET
-from src.utils.constant import BITCOIND_RPC_PASSWORD_MAINNET
-from src.utils.constant import BITCOIND_RPC_PASSWORD_REGTEST
-from src.utils.constant import BITCOIND_RPC_PASSWORD_TESTNET
-from src.utils.constant import BITCOIND_RPC_PORT_MAINNET
-from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
-from src.utils.constant import BITCOIND_RPC_PORT_TESTNET
-from src.utils.constant import BITCOIND_RPC_USER_MAINNET
-from src.utils.constant import BITCOIND_RPC_USER_REGTEST
-from src.utils.constant import BITCOIND_RPC_USER_TESTNET
 from src.utils.constant import DAEMON_PORT
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
@@ -49,12 +36,6 @@ from src.utils.constant import LIGHTNING_URL_KEY
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
-from src.utils.constant import SAVED_ANNOUNCE_ADDRESS
-from src.utils.constant import SAVED_ANNOUNCE_ALIAS
-from src.utils.constant import SAVED_BITCOIND_RPC_HOST
-from src.utils.constant import SAVED_BITCOIND_RPC_PASSWORD
-from src.utils.constant import SAVED_BITCOIND_RPC_PORT
-from src.utils.constant import SAVED_BITCOIND_RPC_USER
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.gauth import TOKEN_PICKLE_PATH
@@ -362,8 +343,17 @@ def get_bitcoin_config(network: NetworkEnumModel, password) -> UnlockRequestMode
             # announce_addresses=[dynamic_config[SAVED_ANNOUNCE_ADDRESS]],
             # announce_alias=dynamic_config[SAVED_ANNOUNCE_ALIAS],
             password=password,
-            network=network
+            network=network,
         )
         return bitcoin_config
     except Exception as exc:
         raise exc
+
+
+def get_bitcoin_network_from_enum(network: NetworkEnumModel) -> BitcoinNetwork:
+    mapping = {
+        NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
+        NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
+        NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
+    }
+    return mapping[network]

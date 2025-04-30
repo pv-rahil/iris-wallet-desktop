@@ -9,6 +9,7 @@ from typing import Callable
 
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
+from rgb_lib import RgbLibError
 
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.wallet_holder import WalletHolder
@@ -20,7 +21,6 @@ from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
-from rgb_lib import RgbLibError
 
 
 def create_utxos() -> None:
@@ -34,9 +34,9 @@ def create_utxos() -> None:
             fee_rate=default_fee_rate.fee_rate,
             num=2,
         )
-        payload = create_utxos_model.dict()
-        data = wallet.create_utxos(**payload)
-        print(data)
+        wallet.create_utxos(
+            online=create_utxos_model.online, up_to=create_utxos_model.up_to, num=create_utxos_model.num, size=create_utxos_model.size, fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
+        )
         cache = Cache.get_cache_session()
         if cache is not None:
             cache.invalidate_cache()

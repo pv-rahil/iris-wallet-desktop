@@ -7,29 +7,25 @@ from functools import wraps
 from typing import Any
 from typing import Callable
 
+import rgb_lib
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
-import rgb_lib
-from rgb_lib import BitcoinNetwork
 
-from src.data.repository.wallet_holder import WalletHolder
 import src.flavour as bitcoin_network
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import UnlockRequestModel, WalletRequestModel
+from src.data.repository.wallet_holder import WalletHolder
+from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.build_app_path import app_paths
 from src.utils.constant import WALLET_PASSWORD_KEY
-from src.utils.endpoints import NODE_INFO_ENDPOINT
-from src.utils.endpoints import UNLOCK_ENDPOINT
 from src.utils.error_message import ERROR_NODE_IS_LOCKED_CALL_UNLOCK
 from src.utils.error_message import ERROR_NODE_WALLET_NOT_INITIALIZED
 from src.utils.error_message import ERROR_PASSWORD_INCORRECT
 from src.utils.handle_exception import CommonException
-from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.keyring_storage import get_value
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
-from src.utils.request import Request
-from src.utils.build_app_path import app_paths
 
 
 def unlock_node() -> Any:
@@ -43,11 +39,16 @@ def unlock_node() -> Any:
                 network=bitcoin_network.__network__,
             )
         init = WalletHolder.get_init_response()
-        network = get_bitcoin_network_from_enum(bitcoin_network.__network__)
-        wallet_data_args = WalletRequestModel(data_dir=app_paths.app_path,bitcoin_network=network,pubkey=init.account_xpub,mnemonic=init.mnemonic)
-        wallet_data = rgb_lib.WalletData(**wallet_data_args,database_type=rgb_lib.DatabaseType.SQLITE)
+        network: NetworkEnumModel = SettingRepository.get_wallet_network()
+        network = get_bitcoin_network_from_enum(network)
+        wallet_data_args = WalletRequestModel(
+            data_dir=app_paths.app_path, bitcoin_network=network, pubkey=init.account_xpub, mnemonic=init.mnemonic,
+        )
+        wallet_data = rgb_lib.WalletData(
+            **wallet_data_args, database_type=rgb_lib.DatabaseType.SQLITE,
+        )
 
-            # Initialize the wallet
+        # Initialize the wallet
         wallet = rgb_lib.Wallet(wallet_data)
         WalletHolder.set_wallet(wallet)
         return True
@@ -114,15 +115,7 @@ def is_node_locked() -> bool:
 
     return False
 
-def get_bitcoin_network_from_enum(network: NetworkEnumModel) -> BitcoinNetwork:
-        mapping = {
-            NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
-            NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
-            NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
-            # Optional: SIGNET is not in NetworkEnumModel
-        }
-        return mapping[network]
-    
+
 def unlock_required(method: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to ensure the node is unlocked before proceeding with the decorated method."""
     @wraps(method)

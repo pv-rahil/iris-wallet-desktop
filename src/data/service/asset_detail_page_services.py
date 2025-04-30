@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from rgb_lib import TransferKind
+from rgb_lib import TransferStatus
+
 from src.data.repository.payments_repository import PaymentRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.enums.enums_model import AssetTransferStatusEnumModel
@@ -14,8 +17,9 @@ from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.payments_model import ListPaymentResponseModel
 from src.model.rgb_model import AssetBalanceResponseModel
 from src.model.rgb_model import AssetIdModel
-from src.model.rgb_model import ListOnAndOffChainTransfersWithBalance
+from src.model.rgb_model import Balance
 from src.model.rgb_model import ListTransferAssetResponseModel
+from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import TransactionTxModel
 from src.model.rgb_model import TransferAsset
@@ -27,7 +31,7 @@ from src.utils.handle_exception import handle_exceptions
 class AssetDetailPageService:
     'This class contain services for asset detail page'
     @staticmethod
-    def get_asset_transactions(list_transfers_request_model: ListTransfersRequestModel) -> ListOnAndOffChainTransfersWithBalance | None:
+    def get_asset_transactions(list_transfers_request_model: ListTransfersRequestModel) -> ListTransferAssetWithBalanceResponseModel | None:
         """
         Retrieves and processes asset transactions for a given asset ID. This function fetches the list of transactions
         associated with the asset, formats date and time fields, and sets appropriate transfer statuses based on the
@@ -47,53 +51,22 @@ class AssetDetailPageService:
             transactions: ListTransferAssetResponseModel = RgbRepository.list_transfers(
                 list_transfers_request_model,
             )
-            balance: AssetBalanceResponseModel = RgbRepository.get_asset_balance(
+            balance: Balance = RgbRepository.get_asset_balance(
                 AssetIdModel(asset_id=list_transfers_request_model.asset_id),
             )
-            lightning: ListPaymentResponseModel = PaymentRepository.list_payment()
 
-            if (not transactions or not transactions.transfers) and (not lightning or not lightning.payments):
-                return ListOnAndOffChainTransfersWithBalance(transfers=[], lightning=[], asset_balance=balance)
-            if lightning and lightning.payments:
-                for transaction in lightning.payments:
+            if transactions:
+                for transaction in transactions:
                     if transaction is None:
                         continue
-                    # Convert the timestamp to a datetime object and format it
-                    update_at = datetime.fromtimestamp(
-                        transaction.updated_at,
-                    )
-                    transaction.updated_at_date = update_at.strftime(
-                        '%Y-%m-%d',
-                    )
-                    transaction.updated_at_time = update_at.strftime(
-                        '%H:%M:%S',
-                    )
-                    # Convert the timestamp to a datetime object and format it
-                    create_at = datetime.fromtimestamp(transaction.created_at)
-                    transaction.created_at_date = create_at.strftime(
-                        '%Y-%m-%d',
-                    )
-                    transaction.created_at_time = create_at.strftime(
-                        '%H:%M:%S',
-                    )
-                    transaction.asset_amount_status = f'-{str(transaction.asset_amount)}' if not transaction.inbound else f'+{
-                        str(transaction.asset_amount)
-                    }'
-
-            if transactions and transactions.transfers:
-                for transaction in transactions.transfers:
-                    if transaction is None:
-                        continue
-
                     status_to_check = [
-                        TransactionStatusEnumModel.SETTLED,
-                        TransactionStatusEnumModel.FAILED,
-                        TransactionStatusEnumModel.CONFIRMED,
-                        TransactionStatusEnumModel.WAITING_CONFIRMATIONS,
-                        TransactionStatusEnumModel.WAITING_COUNTERPARTY,
+                        TransferStatus.SETTLED,
+                        TransferStatus.FAILED,
+                        TransferStatus.WAITING_CONFIRMATIONS,
+                        TransferStatus.WAITING_COUNTERPARTY,
                     ]
 
-                    if transaction.status in [status.value for status in status_to_check]:
+                    if transaction.status in [status for status in status_to_check]:
                         # Convert the timestamp to a datetime object and format it
                         update_at = datetime.fromtimestamp(
                             transaction.updated_at,
@@ -104,7 +77,6 @@ class AssetDetailPageService:
                         transaction.updated_at_time = update_at.strftime(
                             '%H:%M:%S',
                         )
-
                     # Convert the timestamp to a datetime object and format it
                     create_at = datetime.fromtimestamp(transaction.created_at)
                     transaction.created_at_date = create_at.strftime(
@@ -115,14 +87,22 @@ class AssetDetailPageService:
                     )
                     AssetDetailPageService.assign_transfer_status(transaction)
 
-            transactions.transfers = sorted(
-                transactions.transfers or [],
+            transactions = sorted(
+                transactions or [],
                 # Using an else clause just for safety in type checking
                 key=lambda x: x.idx if x is not None else -1,
                 reverse=True,
             )
+            transactions = [
+                TransferAsset(**vars(transaction)) for transaction in transactions
+            ]
+            balance = Balance(**vars(balance))
 
-            return ListOnAndOffChainTransfersWithBalance(onchain_transfers=transactions.transfers, off_chain_transfers=lightning.payments, asset_balance=balance)
+            return ListTransferAssetWithBalanceResponseModel(
+                transfers=transactions,
+                asset_balance=balance,
+            )
+
         except Exception as exc:
             return handle_exceptions(exc)
 
@@ -174,7 +154,7 @@ class AssetDetailPageService:
         Assign transfer statuses and amount status based on transaction kind.
         """
         # Assign transfer statuses based on the transaction kind
-        if transaction.kind == AssetTransferStatusEnumModel.ISSUANCE.value:
+        if transaction.kind == TransferKind.ISSUANCE:
             transaction.transfer_Status = TransferStatusEnumModel.INTERNAL
             transaction.amount_status = f'+{
                 str(transaction.amount)

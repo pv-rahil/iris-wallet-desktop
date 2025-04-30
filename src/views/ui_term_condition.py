@@ -110,9 +110,9 @@ class TermConditionWidget(QWidget):
             """,
         )
         self.tnc_text_desc.setReadOnly(True)
-        self.tnc_text_desc.verticalScrollBar().valueChanged.connect(
-            self.check_scroll_completion,
-        )
+        # self.tnc_text_desc.verticalScrollBar().valueChanged.connect(
+        #     self.check_scroll_completion,
+        # )
         self.tnc_text_desc.setOpenExternalLinks(True)
 
         self.grid_layout_10_tnc.addWidget(
@@ -149,7 +149,7 @@ class TermConditionWidget(QWidget):
         self.accept_btn.setAccessibleName(ACCEPT_BUTTON)
         self.accept_btn.setMinimumSize(QSize(318, 40))
         self.accept_btn.setMaximumSize(QSize(318, 40))
-        self.accept_btn.setDisabled(True)
+        # self.accept_btn.setDisabled(True)
 
         self.tnc_horizontal_layout.addWidget(self.accept_btn)
 
@@ -223,9 +223,8 @@ class TermConditionWidget(QWidget):
     def check_scroll_completion(self):
         """Enable the Accept button when the user scrolls to the end."""
         scrollbar = self.tnc_text_desc.verticalScrollBar()
-        self.accept_btn.setEnabled(True)
-        # if scrollbar.value() == scrollbar.maximum():
-        #     self.accept_btn.setEnabled(True)
+        if scrollbar.value() == scrollbar.maximum():
+            self.accept_btn.setEnabled(True)
 
     def load_terms_conditions(self):
         """Load Terms & Conditions text and format 'Privacy Policy' as a hyperlink while preserving formatting."""

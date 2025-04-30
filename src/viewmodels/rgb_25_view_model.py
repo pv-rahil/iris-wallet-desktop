@@ -18,7 +18,7 @@ from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
-from src.model.rgb_model import ListOnAndOffChainTransfersWithBalance
+from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendAssetResponseModel
@@ -65,7 +65,7 @@ class RGB25ViewModel(QObject, ThreadManager):
     def get_rgb25_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: str) -> None:
         """Retrieve RGB25 asset list."""
 
-        def on_success(response: ListOnAndOffChainTransfersWithBalance) -> None:
+        def on_success(response: ListTransferAssetWithBalanceResponseModel) -> None:
             """Handle success for the RGB25 asset detail list."""
             self.txn_list = response
             self.txn_list_loaded.emit(
