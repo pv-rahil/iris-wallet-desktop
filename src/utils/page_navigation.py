@@ -5,7 +5,6 @@ logic for the application's pages.
 from __future__ import annotations
 
 from src.model.rgb_model import RgbAssetPageLoadModel
-from src.model.selection_page_model import SelectionPageModel
 from src.model.success_model import SuccessPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.logging import logger
@@ -16,24 +15,19 @@ from src.views.ui_about import AboutWidget
 from src.views.ui_backup import Backup
 from src.views.ui_bitcoin import BtcWidget
 from src.views.ui_bitcoin_transaction import BitcoinTransactionDetail
-from src.views.ui_channel_management import ChannelManagement
 from src.views.ui_collectible_asset import CollectiblesAssetWidget
-from src.views.ui_create_channel import CreateChannelWidget
-from src.views.ui_create_ln_invoice import CreateLnInvoiceWidget
 from src.views.ui_enter_wallet_password import EnterWalletPassword
 from src.views.ui_faucets import FaucetsWidget
 from src.views.ui_fungible_asset import FungibleAssetWidget
 from src.views.ui_help import HelpWidget
 from src.views.ui_issue_rgb20 import IssueRGB20Widget
 from src.views.ui_issue_rgb25 import IssueRGB25Widget
-from src.views.ui_ln_endpoint import LnEndpointWidget
 from src.views.ui_network_selection_page import NetworkSelectionWidget
 from src.views.ui_receive_bitcoin import ReceiveBitcoinWidget
 from src.views.ui_receive_rgb_asset import ReceiveRGBAssetWidget
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
 from src.views.ui_rgb_asset_transaction_detail import RGBAssetTransactionDetail
 from src.views.ui_send_bitcoin import SendBitcoinWidget
-from src.views.ui_send_ln_invoice import SendLnInvoiceWidget
 from src.views.ui_send_rgb_asset import SendRGBAssetWidget
 from src.views.ui_set_wallet_password import SetWalletPasswordWidget
 from src.views.ui_settings import SettingsWidget
@@ -42,7 +36,6 @@ from src.views.ui_success import SuccessWidget
 from src.views.ui_swap import SwapWidget
 from src.views.ui_term_condition import TermConditionWidget
 from src.views.ui_view_unspent_list import ViewUnspentList
-from src.views.ui_wallet_or_transfer_selection import WalletOrTransferSelectionWidget
 from src.views.ui_welcome import WelcomeWidget
 
 
@@ -55,9 +48,6 @@ class PageNavigation:
         self.event_based_navigation = PageNavigationEventManager.get_instance()
         self.pages = {
             'Welcome': WelcomeWidget,
-            'LnEndpoint': LnEndpointWidget,
-            'WalletOrTransferSelectionWidget': WalletOrTransferSelectionWidget,
-            'WalletConnectionTypePage': WalletOrTransferSelectionWidget,
             'TermCondition': TermConditionWidget,
             'FungibleAssetWidget': FungibleAssetWidget,
             'CollectiblesAssetWidget': CollectiblesAssetWidget,
@@ -70,8 +60,6 @@ class PageNavigation:
             'RGB25Detail': RGBAssetDetailWidget,
             'SendBitcoin': SendBitcoinWidget,
             'ReceiveBitcoin': ReceiveBitcoinWidget,
-            'ChannelManagement': ChannelManagement,
-            'CreateChannel': CreateChannelWidget,
             'ViewUnspentList': ViewUnspentList,
             'EnterWalletPassword': EnterWalletPassword,
             'RGB25TransactionDetail': RGBAssetTransactionDetail,
@@ -80,8 +68,6 @@ class PageNavigation:
             'Swap': SwapWidget,
             'SuccessWidget': SuccessWidget,
             'Settings': SettingsWidget,
-            'CreateLnInvoiceWidget': CreateLnInvoiceWidget,
-            'SendLnInvoiceWidget': SendLnInvoiceWidget,
             'SplashScreenWidget': SplashScreenWidget,
             'AboutWidget': AboutWidget,
             'FaucetsWidget': FaucetsWidget,
@@ -95,20 +81,8 @@ class PageNavigation:
         self.event_based_navigation.toggle_sidebar_signal.connect(
             self.toggle_sidebar,
         )
-        self.event_based_navigation.ln_endpoint_page_signal.connect(
-            self.ln_endpoint_page,
-        )
         self.event_based_navigation.splash_screen_page_signal.connect(
             self.splash_screen_page,
-        )
-        self.event_based_navigation.wallet_method_page_signal.connect(
-            self.wallet_method_page,
-        )
-        self.event_based_navigation.network_selection_page_signal.connect(
-            self.network_selection_page,
-        )
-        self.event_based_navigation.wallet_connection_page_signal.connect(
-            self.wallet_connection_page,
         )
         self.event_based_navigation.welcome_page_signal.connect(
             self.welcome_page,
@@ -152,12 +126,6 @@ class PageNavigation:
         self.event_based_navigation.receive_bitcoin_page_signal.connect(
             self.receive_bitcoin_page,
         )
-        self.event_based_navigation.channel_management_page_signal.connect(
-            self.channel_management_page,
-        )
-        self.event_based_navigation.create_channel_page_signal.connect(
-            self.create_channel_page,
-        )
         self.event_based_navigation.view_unspent_list_page_signal.connect(
             self.view_unspent_list_page,
         )
@@ -173,12 +141,6 @@ class PageNavigation:
         self.event_based_navigation.swap_page_signal.connect(self.swap_page)
         self.event_based_navigation.settings_page_signal.connect(
             self.settings_page,
-        )
-        self.event_based_navigation.create_ln_invoice_page_signal.connect(
-            self.create_ln_invoice_page,
-        )
-        self.event_based_navigation.send_ln_invoice_page_signal.connect(
-            self.send_ln_invoice_page,
         )
         self.event_based_navigation.show_success_page_signal.connect(
             self.show_success_page,
@@ -227,41 +189,10 @@ class PageNavigation:
         else:
             logger.error('Page %s not found.', page_name)
 
-    def ln_endpoint_page(self, originating_page):
-        """This method display enter lightning node endpoint page."""
-        self.current_stack = {
-            'name': 'LnEndpoint',
-            'widget': self.pages['LnEndpoint'](self._ui.view_model, originating_page),
-        }
-        self.navigate_and_toggle(False)
 
     def splash_screen_page(self):
         """This method display splash screen page."""
         self.navigate_to_page('SplashScreenWidget')
-
-    def wallet_method_page(self, params: SelectionPageModel):
-        """This method display the wallet method page."""
-        self.current_stack = {
-            'name': 'WalletOrTransferSelectionWidget',
-            'widget': self.pages['WalletOrTransferSelectionWidget'](self._ui.view_model, params),
-        }
-        self.navigate_and_toggle(False)
-
-    def network_selection_page(self, originating_page, network):
-        """This method display the wallet network selection page."""
-        self.current_stack = {
-            'name': 'NetworkSelectionWidget',
-            'widget': self.pages['NetworkSelectionWidget'](self._ui.view_model, originating_page, network),
-        }
-        self.navigate_and_toggle(False)
-
-    def wallet_connection_page(self, params: SelectionPageModel):
-        """This method display the wallet connection page."""
-        self.current_stack = {
-            'name': 'WalletConnectionTypePage',
-            'widget': self.pages['WalletConnectionTypePage'](self._ui.view_model, params),
-        }
-        self.navigate_and_toggle(False)
 
     def welcome_page(self):
         """This method display the welcome page."""
@@ -331,14 +262,6 @@ class PageNavigation:
         """This method display the receive bitcoin page."""
         self.navigate_to_page('ReceiveBitcoin')
 
-    def channel_management_page(self):
-        """This method display the channel management page."""
-        self.navigate_to_page('ChannelManagement', show_sidebar=True)
-
-    def create_channel_page(self):
-        """This method display the create channel page."""
-        self.navigate_to_page('CreateChannel')
-
     def view_unspent_list_page(self):
         """This method display the view unspent list page."""
         self.navigate_to_page('ViewUnspentList', show_sidebar=True)
@@ -370,22 +293,6 @@ class PageNavigation:
     def settings_page(self):
         """This method display the settings page"""
         self.navigate_to_page('Settings', show_sidebar=True)
-
-    def create_ln_invoice_page(self, params, asset_name, asset_type=None):
-        """This method display the create ln invoice page"""
-        self.current_stack = {
-            'name': 'CreateLnInvoiceWidget',
-            'widget': self.pages['CreateLnInvoiceWidget'](self._ui.view_model, params, asset_name, asset_type),
-        }
-        self.navigate_and_toggle(False)
-
-    def send_ln_invoice_page(self, asset_type=None):
-        """This method display the send ln invoice page"""
-        self.current_stack = {
-            'name': 'SendLnInvoiceWidget',
-            'widget': self.pages['SendLnInvoiceWidget'](self._ui.view_model, asset_type),
-        }
-        self.navigate_and_toggle(False)
 
     def show_success_page(self, params: SuccessPageModel):
         """This method display the success page."""

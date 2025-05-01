@@ -45,5 +45,6 @@ class ReceiveBitcoinViewModel(QObject, ThreadManager):
 
     def on_error(self, error: CommonException):
         """This method handled on_error logic"""
+        print(error)
         self.error.emit(error.message)
         self.is_loading.emit(False)

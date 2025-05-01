@@ -13,11 +13,11 @@ class NetworkEnumModel(str, Enum):
     TESTNET = 'testnet'
 
 
-class FilterAssetEnumModel(str, Enum):
+class FilterAssetEnumModel(int, Enum):
     """Enum model for list asset"""
-    NIA = 'Nia'
-    UDA = 'Uda'
-    CFA = 'Cfa'
+    NIA = 0
+    UDA = 1
+    CFA = 2
 
 
 class TransactionStatusEnumModel(str, Enum):

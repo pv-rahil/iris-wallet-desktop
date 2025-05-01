@@ -9,17 +9,17 @@ from typing import Callable
 
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
+from rgb_lib import RgbLibError
 
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.data.repository.wallet_holder import colored_wallet
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.cache import Cache
-from src.utils.endpoints import CREATE_UTXO_ENDPOINT
 from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
-from src.utils.request import Request
 
 
 def create_utxos() -> None:
@@ -27,12 +27,15 @@ def create_utxos() -> None:
     try:
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         create_utxos_model = CreateUtxosRequestModel(
+            online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
             num=2,
         )
-        payload = create_utxos_model.dict()
-        response = Request.post(CREATE_UTXO_ENDPOINT, payload)
-        response.raise_for_status()
+        colored_wallet.wallet.create_utxos(
+            online=create_utxos_model.online, up_to=create_utxos_model.up_to,
+            num=create_utxos_model.num, size=create_utxos_model.size,
+            fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
+        )
         cache = Cache.get_cache_session()
         if cache is not None:
             cache.invalidate_cache()
@@ -72,22 +75,21 @@ def check_colorable_available() -> Callable[..., Any]:
             try:
                 # Attempt to execute the main function
                 return method(*args, **kwargs)
-            except CommonException as exc:
-                if exc.name == 'NoAvailableUtxos':
-                    # If the error is due to insufficient uncolored UTXOs, call the fallback
-                    try:
-                        create_utxos()  # Fallback call to create UTXOs
-                        # Retry the original function
-                        return method(*args, **kwargs)
-                    except CommonException:
-                        raise
-                    except Exception as fallback_exc:
-                        # If the fallback function fails, wrap the error in a CommonException
-                        raise CommonException(
-                            f"Failed to create UTXOs in fallback. Error: {
-                                str(fallback_exc)
-                            }",
-                        ) from fallback_exc
+            except RgbLibError.InsufficientAllocationSlots:
+                # If the error is due to insufficient uncolored UTXOs, call the fallback
+                try:
+                    create_utxos()  # Fallback call to create UTXOs
+                    # Retry the original function
+                    return method(*args, **kwargs)
+                except CommonException:
+                    raise
+                except Exception as fallback_exc:
+                    # If the fallback function fails, wrap the error in a CommonException
+                    raise CommonException(
+                        f"Failed to create UTXOs in fallback. Error: {
+                            str(fallback_exc)
+                        }",
+                    ) from fallback_exc
                 # If it's another type of error, re-raise it
                 raise
             except Exception as exc:

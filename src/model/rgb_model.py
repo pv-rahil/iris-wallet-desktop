@@ -5,13 +5,16 @@ from __future__ import annotations
 from datetime import datetime
 
 from pydantic import BaseModel
-from pydantic import Field
 from pydantic import model_validator
+from rgb_lib import AssetCfa
+from rgb_lib import AssetNia
+from rgb_lib import AssetSchema
+from rgb_lib import AssetUda
+from rgb_lib import Outpoint
+from rgb_lib import TransferStatus
+from rgb_lib import TransferTransportEndpoint
 
-from src.model.enums.enums_model import FilterAssetEnumModel
-from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.payments_model import BaseTimeStamps
-from src.model.payments_model import Payment
 from src.utils.constant import FEE_RATE_FOR_CREATE_UTXOS
 from src.utils.constant import NO_OF_UTXO
 from src.utils.constant import RGB_INVOICE_DURATION_SECONDS
@@ -53,7 +56,6 @@ class Media(BaseModel):
     """Model for list asset"""
     file_path: str
     digest: str
-    hex: str | None = None
     mime: str
 
 
@@ -87,7 +89,7 @@ class AssetModel(BaseModel):
     issued_supply: int
     timestamp: int
     added_at: int
-    balance: AssetBalanceResponseModel
+    balance: Balance
     media: Media | None = None
     token: Token | None = None
 
@@ -108,26 +110,30 @@ class TransferAsset(BaseTimeStamps):
     amount: int
     amount_status: str | None = None  # this for ui purpose
     kind: str
-    transfer_Status: TransferStatusEnumModel | None = None
+    transfer_Status: str | TransferStatus | None = None
     txid: str | None = None
     recipient_id: str | None = None
-    receive_utxo: str | None = None
-    change_utxo: str | None = None
+    receive_utxo: Outpoint | None = None
+    change_utxo: Outpoint | None = None
     expiration: int | None = None
-    transport_endpoints: list[TransportEndpoint | None] | None = []
+    transport_endpoints: list[TransferTransportEndpoint | None] | None = []
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 # -------------------- Request models -----------------------
 
 
 class AssetIdModel(BaseModel):
     """Request model for asset balance."""
-
     asset_id: str
 
 
 class CreateUtxosRequestModel(BaseModel):
     """Request model for creating UTXOs."""
 
+    online: object
     up_to: bool | None = False
     num: int = NO_OF_UTXO
     size: int = UTXO_SIZE_SAT
@@ -167,6 +173,9 @@ class IssueAssetUdaRequestModel(IssueAssetCfaRequestModel):
 
 class RefreshRequestModel(BaseModel):
     """Request model for refresh wallet"""
+    online: object
+    asset_id: str | None = None
+    filter: list = []
     skip_sync: bool = False
 
 
@@ -176,6 +185,7 @@ class RgbInvoiceRequestModel(BaseModel):
     min_confirmations: int
     asset_id: str | None = None
     duration_seconds: int = RGB_INVOICE_DURATION_SECONDS
+    transport_endpoints: list[str]
 
 
 class SendAssetRequestModel(BaseModel):
@@ -197,9 +207,11 @@ class ListTransfersRequestModel(AssetIdModel):
 
 class FilterAssetRequestModel(BaseModel):
     """Remove"""
-    filter_asset_schemas: list[FilterAssetEnumModel] = Field(
-        default_factory=lambda: [FilterAssetEnumModel.NIA],
-    )
+    filter_asset_schemas: list[AssetSchema]
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 
 class GetAssetMediaModelRequestModel(BaseModel):
@@ -240,12 +252,16 @@ class DecodeRgbInvoiceResponseModel(BaseModel):
 
 class GetAssetResponseModel(BaseModel):
     """Response model for list assets."""
-    nia: list[AssetModel | None] | None = []
-    uda: list[AssetModel | None] | None = []
-    cfa: list[AssetModel | None] | None = []
+    nia: list[AssetNia | None] | None = []
+    uda: list[AssetUda | None] | None = []
+    cfa: list[AssetCfa | None] | None = []
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 
-class IssueAssetResponseModel(AssetModel):
+class IssueAssetResponseModel(AssetNia):
     """Response model for issuing assets."""
 
 
@@ -257,18 +273,7 @@ class ListTransferAssetResponseModel(BaseModel):
 
 class ListTransferAssetWithBalanceResponseModel(ListTransferAssetResponseModel):
     """Response model for listing asset transfers with asset balance"""
-    asset_balance: AssetBalanceResponseModel
-
-
-class ListOffAndOnChainTransfer(BaseModel):
-    """Response model for listing on-chain and off-chain asset transfers with respective details."""
-    onchain_transfers: list[TransferAsset | None] | None = []
-    off_chain_transfers: list[Payment | None] | None = []
-
-
-class ListOnAndOffChainTransfersWithBalance(ListOffAndOnChainTransfer):
-    """Response model for listing asset transfers with asset balance"""
-    asset_balance: AssetBalanceResponseModel
+    asset_balance: Balance
 
 
 class RefreshTransferResponseModel(StatusModel):

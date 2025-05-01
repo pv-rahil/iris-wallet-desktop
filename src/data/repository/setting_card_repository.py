@@ -7,10 +7,6 @@ from src.model.common_operation_model import CheckIndexerUrlRequestModel
 from src.model.common_operation_model import CheckIndexerUrlResponseModel
 from src.model.common_operation_model import CheckProxyEndpointRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.setting_model import DefaultAnnounceAddress
-from src.model.setting_model import DefaultAnnounceAlias
-from src.model.setting_model import DefaultBitcoindHost
-from src.model.setting_model import DefaultBitcoindPort
 from src.model.setting_model import DefaultExpiryTime
 from src.model.setting_model import DefaultFeeRate
 from src.model.setting_model import DefaultIndexerUrl
@@ -248,88 +244,6 @@ class SettingCardRepository:
             if endpoint is None:
                 endpoint = proxy_endpoint
             return DefaultProxyEndpoint(endpoint=endpoint)
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
-    def get_default_bitcoind_host() -> DefaultBitcoindHost:
-        """
-        Gets the default bitcoind host value.
-
-        Returns:
-            DefaultBitcoindHost: A model indicating the default bitcoind host value.
-        """
-        try:
-            bitcoind_host = None
-            stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
-
-            if stored_network == NetworkEnumModel.MAINNET:
-                bitcoind_host = BITCOIND_RPC_HOST_MAINNET
-            elif stored_network == NetworkEnumModel.TESTNET:
-                bitcoind_host = BITCOIND_RPC_HOST_TESTNET
-            elif stored_network == NetworkEnumModel.REGTEST:
-                bitcoind_host = BITCOIND_RPC_HOST_REGTEST
-            host = local_store.get_value(SAVED_BITCOIND_RPC_HOST)
-            if host is None:
-                host = bitcoind_host
-            return DefaultBitcoindHost(host=host)
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
-    def get_default_bitcoind_port() -> DefaultBitcoindPort:
-        """
-        Gets the default bitcoind host value.
-
-        Returns:
-            DefaultBitcoindHost: A model indicating the default bitcoind host value.
-        """
-        try:
-            bitcoind_port = None
-            stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
-
-            if stored_network == NetworkEnumModel.MAINNET:
-                bitcoind_port = BITCOIND_RPC_PORT_MAINNET
-            elif stored_network == NetworkEnumModel.TESTNET:
-                bitcoind_port = BITCOIND_RPC_PORT_TESTNET
-            elif stored_network == NetworkEnumModel.REGTEST:
-                bitcoind_port = BITCOIND_RPC_PORT_REGTEST
-            port = local_store.get_value(SAVED_BITCOIND_RPC_PORT)
-            if port is None:
-                port = bitcoind_port
-            return DefaultBitcoindPort(port=port)
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
-    def get_default_announce_address() -> DefaultAnnounceAddress:
-        """
-        Gets the default announce address.
-
-        Returns:
-            DefaultAnnounceAddress: A model indicating the default announce address.
-        """
-        try:
-            address = local_store.get_value(SAVED_ANNOUNCE_ADDRESS)
-            if address is None:
-                address = ANNOUNCE_ADDRESS
-            return DefaultAnnounceAddress(address=address)
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
-    def get_default_announce_alias() -> DefaultAnnounceAlias:
-        """
-        Gets the default announce address.
-
-        Returns:
-            DefaultAnnounceAddress: A model indicating the default announce address.
-        """
-        try:
-            alias = local_store.get_value(SAVED_ANNOUNCE_ALIAS)
-            if alias is None:
-                alias = ANNOUNCE_ALIAS
-            return DefaultAnnounceAlias(alias=alias)
         except Exception as exe:
             return handle_exceptions(exe)
 

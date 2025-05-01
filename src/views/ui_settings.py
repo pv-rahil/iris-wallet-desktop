@@ -397,70 +397,6 @@ class SettingsWidget(QWidget):
             ),
         )
         self.set_proxy_endpoint_frame.setAccessibleName(SPECIFY_RGB_PROXY_URL)
-        self.set_bitcoind_rpc_host_frame = ConfigurableCardFrame(
-            self,
-            ConfigurableCardModel(
-                title_label=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'set_bitcoind_host', None,
-                ),
-                title_desc=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'set_bitcoind_host_desc',
-                    None,
-                ),
-                placeholder_value=self.bitcoind_host,
-            ),
-        )
-        self.set_bitcoind_rpc_host_frame.setAccessibleName(
-            SPECIFY_BITCOIND_HOST,
-        )
-        self.set_bitcoind_rpc_port_frame = ConfigurableCardFrame(
-            self,
-            ConfigurableCardModel(
-                title_label=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'set_bitcoind_port', None,
-                ),
-                title_desc=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'set_bitcoind_port_desc',
-                    None,
-                ),
-                placeholder_value=self.bitcoind_port,
-            ),
-        )
-        self.set_bitcoind_rpc_port_frame.setAccessibleName(
-            SPECIFY_BITCOIND_PORT,
-        )
-        self.set_announce_address_frame = ConfigurableCardFrame(
-            self,
-            ConfigurableCardModel(
-                title_label=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'set_announce_address', None,
-                ),
-                title_desc=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'set_announce_address_desc',
-                    None,
-                ),
-                placeholder_value=self.announce_address,
-            ),
-        )
-        self.set_announce_address_frame.setAccessibleName(SPECIFY_ANNOUNCE_ADD)
-        self.set_announce_alias_frame = ConfigurableCardFrame(
-            self,
-            ConfigurableCardModel(
-                title_label=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'set_announce_alias', None,
-                ),
-                title_desc=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'set_announce_alias_desc',
-                    None,
-                ),
-                placeholder_value=self.announce_alias,
-            ),
-        )
-        self.set_announce_alias_frame.setAccessibleName(SPECIFY_ANNOUNCE_ALIAS)
         self.set_minimum_confirmation_frame = ConfigurableCardFrame(
             self,
             ConfigurableCardModel(
@@ -484,9 +420,6 @@ class SettingsWidget(QWidget):
             self.ask_auth_login_frame,
             self.hide_exhausted_asset_frame,
             self.keyring_storage_frame,
-            self.set_fee_rate_frame,
-            self.set_expiry_time_frame,
-            self.set_minimum_confirmation_frame,
         ]
         for widget in stack_1_widgets:
             self.stack_1_vertical_layout.addWidget(widget, 0, Qt.AlignLeft)
@@ -498,12 +431,11 @@ class SettingsWidget(QWidget):
         )
 
         stack_2_widgets = [
+            self.set_fee_rate_frame,
+            self.set_expiry_time_frame,
+            self.set_minimum_confirmation_frame,
             self.set_indexer_url_frame,
             self.set_proxy_endpoint_frame,
-            self.set_bitcoind_rpc_host_frame,
-            self.set_bitcoind_rpc_port_frame,
-            self.set_announce_address_frame,
-            self.set_announce_alias_frame,
         ]
         for widget in stack_2_widgets:
             self.stack_2_vertical_layout.addWidget(widget, 0, Qt.AlignLeft)
@@ -624,10 +556,6 @@ class SettingsWidget(QWidget):
             self.set_expiry_time_frame: self.handle_expiry_time_frame,
             self.set_indexer_url_frame: self.handle_indexer_url_frame,
             self.set_proxy_endpoint_frame: self.handle_proxy_endpoint_frame,
-            self.set_bitcoind_rpc_host_frame: self.handle_bitcoind_host_frame,
-            self.set_bitcoind_rpc_port_frame: self.handle_bitcoind_port_frame,
-            self.set_announce_address_frame: self.handle_announce_address_frame,
-            self.set_announce_alias_frame: self.handle_announce_alias_frame,
             self.set_minimum_confirmation_frame: self.handle_minimum_confirmation_frame,
         }
         for widget, handler in click_handlers.items():
@@ -637,10 +565,6 @@ class SettingsWidget(QWidget):
             self.set_expiry_time_frame.save_button: self._set_expiry_time,
             self.set_indexer_url_frame.save_button: self._set_indexer_url,
             self.set_proxy_endpoint_frame.save_button: self._set_proxy_endpoint,
-            self.set_bitcoind_rpc_host_frame.save_button: self._set_bitcoind_host,
-            self.set_bitcoind_rpc_port_frame.save_button: self._set_bitcoind_port,
-            self.set_announce_address_frame.save_button: self._set_announce_address,
-            self.set_announce_alias_frame.save_button: self._set_announce_alias,
             self.set_minimum_confirmation_frame.save_button: self._set_min_confirmation,
         }
         for save_button, handler in save_handlers.items():
@@ -661,51 +585,15 @@ class SettingsWidget(QWidget):
 
     def _set_indexer_url(self):
         """Set the default indexer url based on user input. """
-        password = self._check_keyring_state()
-        if password:
-            self._view_model.setting_view_model.check_indexer_url_endpoint(
-                self.set_indexer_url_frame.input_value.text(), password,
-            )
+        self._view_model.setting_view_model.check_indexer_url_endpoint(
+            self.set_indexer_url_frame.input_value.text(),
+        )
 
     def _set_proxy_endpoint(self):
         """Set the default proxy endpoint based on user input."""
-        password = self._check_keyring_state()
-        if password:
-            self._view_model.setting_view_model.check_proxy_endpoint(
-                self.set_proxy_endpoint_frame.input_value.text(), password,
-            )
-
-    def _set_bitcoind_host(self):
-        """ Set the default bitcoind host based on user input."""
-        password = self._check_keyring_state()
-        if password:
-            self._view_model.setting_view_model.set_bitcoind_host(
-                self.set_bitcoind_rpc_host_frame.input_value.text(), password,
-            )
-
-    def _set_bitcoind_port(self):
-        """Set the default bitcoind port based on user input."""
-        password = self._check_keyring_state()
-        if password:
-            self._view_model.setting_view_model.set_bitcoind_port(
-                int(self.set_bitcoind_rpc_port_frame.input_value.text()), password,
-            )
-
-    def _set_announce_address(self):
-        """Set the default announce address based on user input."""
-        password = self._check_keyring_state()
-        if password:
-            self._view_model.setting_view_model.set_announce_address(
-                self.set_announce_address_frame.input_value.text(), password,
-            )
-
-    def _set_announce_alias(self):
-        """Set the default announce alias based on user input."""
-        password = self._check_keyring_state()
-        if password:
-            self._view_model.setting_view_model.set_announce_alias(
-                self.set_announce_alias_frame.input_value.text(), password,
-            )
+        self._view_model.setting_view_model.check_proxy_endpoint(
+            self.set_proxy_endpoint_frame.input_value.text(),
+        )
 
     def _set_min_confirmation(self):
         """Set the default minimum confirmation based on user input."""
@@ -751,10 +639,6 @@ class SettingsWidget(QWidget):
         self.expiry_time_unit = response.value_of_default_expiry_time.unit
         self.indexer_url = response.value_of_default_indexer_url.url
         self.proxy_endpoint = response.value_of_default_proxy_endpoint.endpoint
-        self.bitcoind_host = response.value_of_default_bitcoind_rpc_host.host
-        self.bitcoind_port = response.value_of_default_bitcoind_rpc_port.port
-        self.announce_address = response.value_of_default_announce_address.address
-        self.announce_alias = response.value_of_default_announce_alias.alias
         self.min_confirmation = response.value_of_default_min_confirmation.min_confirmation
 
     def handle_keyring_toggle_status(self):
@@ -823,10 +707,6 @@ class SettingsWidget(QWidget):
         frames = [
             self.set_indexer_url_frame,
             self.set_proxy_endpoint_frame,
-            self.set_bitcoind_rpc_host_frame,
-            self.set_bitcoind_rpc_port_frame,
-            self.set_announce_address_frame,
-            self.set_announce_alias_frame,
         ]
         for frame in frames:
             if is_loading:
@@ -863,14 +743,14 @@ class SettingsWidget(QWidget):
         """Sets various endpoints and configuration parameters
         based on the currently selected wallet network."""
         network_config_map = {
-            NetworkEnumModel.MAINNET: (INDEXER_URL_MAINNET, PROXY_ENDPOINT_MAINNET, BITCOIND_RPC_HOST_MAINNET, BITCOIND_RPC_PORT_MAINNET),
-            NetworkEnumModel.TESTNET: (INDEXER_URL_TESTNET, PROXY_ENDPOINT_TESTNET, BITCOIND_RPC_HOST_TESTNET, BITCOIND_RPC_PORT_TESTNET),
-            NetworkEnumModel.REGTEST: (INDEXER_URL_REGTEST, PROXY_ENDPOINT_REGTEST, BITCOIND_RPC_HOST_REGTEST, BITCOIND_RPC_PORT_REGTEST),
+            NetworkEnumModel.MAINNET: (INDEXER_URL_MAINNET, PROXY_ENDPOINT_MAINNET),
+            NetworkEnumModel.TESTNET: (INDEXER_URL_TESTNET, PROXY_ENDPOINT_TESTNET),
+            NetworkEnumModel.REGTEST: (INDEXER_URL_REGTEST, PROXY_ENDPOINT_REGTEST),
         }
         stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
         config = network_config_map.get(stored_network)
         if config:
-            self.indexer_url, self.proxy_endpoint, self.bitcoind_host, self.bitcoind_port = config
+            self.indexer_url, self.proxy_endpoint = config
         else:
             raise ValueError(f"Unsupported network type: {stored_network}")
 
@@ -960,35 +840,6 @@ class SettingsWidget(QWidget):
         self._set_frame_content(
             self.set_proxy_endpoint_frame,
             self.proxy_endpoint,
-        )
-
-    def handle_bitcoind_host_frame(self):
-        """Handle the frame for setting the bitcoind host."""
-        self._set_frame_content(
-            self.set_bitcoind_rpc_host_frame,
-            self.bitcoind_host,
-        )
-
-    def handle_bitcoind_port_frame(self):
-        """Handle the frame for setting the bitcoind port."""
-        self._set_frame_content(
-            self.set_bitcoind_rpc_port_frame,
-            self.bitcoind_port,
-            QIntValidator(),
-        )
-
-    def handle_announce_address_frame(self):
-        """Handle the frame for setting the announce address."""
-        self._set_frame_content(
-            self.set_announce_address_frame,
-            self.announce_address,
-        )
-
-    def handle_announce_alias_frame(self):
-        """Handle the frame for setting the announce alias."""
-        self._set_frame_content(
-            self.set_announce_alias_frame,
-            self.announce_alias,
         )
 
     def handle_minimum_confirmation_frame(self):

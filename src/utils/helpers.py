@@ -19,26 +19,13 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtGui import QPainter
 from PySide6.QtGui import QPixmap
+from rgb_lib import BitcoinNetwork
 
 from src.data.repository.setting_repository import SettingRepository
 from src.flavour import __ldk_port__
-from src.model.common_operation_model import UnlockRequestModel
+from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ANNOUNCE_ADDRESS
-from src.utils.constant import ANNOUNCE_ALIAS
-from src.utils.constant import BITCOIND_RPC_HOST_MAINNET
-from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
-from src.utils.constant import BITCOIND_RPC_HOST_TESTNET
-from src.utils.constant import BITCOIND_RPC_PASSWORD_MAINNET
-from src.utils.constant import BITCOIND_RPC_PASSWORD_REGTEST
-from src.utils.constant import BITCOIND_RPC_PASSWORD_TESTNET
-from src.utils.constant import BITCOIND_RPC_PORT_MAINNET
-from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
-from src.utils.constant import BITCOIND_RPC_PORT_TESTNET
-from src.utils.constant import BITCOIND_RPC_USER_MAINNET
-from src.utils.constant import BITCOIND_RPC_USER_REGTEST
-from src.utils.constant import BITCOIND_RPC_USER_TESTNET
 from src.utils.constant import DAEMON_PORT
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
@@ -49,12 +36,6 @@ from src.utils.constant import LIGHTNING_URL_KEY
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
-from src.utils.constant import SAVED_ANNOUNCE_ADDRESS
-from src.utils.constant import SAVED_ANNOUNCE_ALIAS
-from src.utils.constant import SAVED_BITCOIND_RPC_HOST
-from src.utils.constant import SAVED_BITCOIND_RPC_PASSWORD
-from src.utils.constant import SAVED_BITCOIND_RPC_PORT
-from src.utils.constant import SAVED_BITCOIND_RPC_USER
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.gauth import TOKEN_PICKLE_PATH
@@ -287,7 +268,7 @@ def get_build_info() -> dict | None:
     return None
 
 
-def get_bitcoin_config(network: NetworkEnumModel, password) -> UnlockRequestModel:
+def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
     """
     Retrieves the Bitcoin wallet configuration for the specified network.
 
@@ -305,64 +286,47 @@ def get_bitcoin_config(network: NetworkEnumModel, password) -> UnlockRequestMode
         Exception: If an error occurs while retrieving the configuration.
     """
     try:
-        # Constants shared across all networks
-        shared_config = {
-            SAVED_ANNOUNCE_ADDRESS: ANNOUNCE_ADDRESS,
-            SAVED_ANNOUNCE_ALIAS: ANNOUNCE_ALIAS,
-        }
 
         # Network-specific configurations
         config_mapping = {
-            NetworkEnumModel.MAINNET: {
-                SAVED_BITCOIND_RPC_USER: BITCOIND_RPC_USER_MAINNET,
-                SAVED_BITCOIND_RPC_PASSWORD: BITCOIND_RPC_PASSWORD_MAINNET,
-                SAVED_BITCOIND_RPC_HOST: BITCOIND_RPC_HOST_MAINNET,
-                SAVED_BITCOIND_RPC_PORT: BITCOIND_RPC_PORT_MAINNET,
+            BitcoinNetwork.MAINNET: {
                 SAVED_INDEXER_URL: INDEXER_URL_MAINNET,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_MAINNET,
             },
-            NetworkEnumModel.TESTNET: {
-                SAVED_BITCOIND_RPC_USER: BITCOIND_RPC_USER_TESTNET,
-                SAVED_BITCOIND_RPC_PASSWORD: BITCOIND_RPC_PASSWORD_TESTNET,
-                SAVED_BITCOIND_RPC_HOST: BITCOIND_RPC_HOST_TESTNET,
-                SAVED_BITCOIND_RPC_PORT: BITCOIND_RPC_PORT_TESTNET,
+            BitcoinNetwork.TESTNET: {
                 SAVED_INDEXER_URL: INDEXER_URL_TESTNET,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_TESTNET,
             },
-            NetworkEnumModel.REGTEST: {
-                SAVED_BITCOIND_RPC_USER: BITCOIND_RPC_USER_REGTEST,
-                SAVED_BITCOIND_RPC_PASSWORD: BITCOIND_RPC_PASSWORD_REGTEST,
-                SAVED_BITCOIND_RPC_HOST: BITCOIND_RPC_HOST_REGTEST,
-                SAVED_BITCOIND_RPC_PORT: BITCOIND_RPC_PORT_REGTEST,
+            BitcoinNetwork.REGTEST: {
                 SAVED_INDEXER_URL: INDEXER_URL_REGTEST,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_REGTEST,
             },
         }
         # Retrieve the appropriate configuration based on the network
         network_config = config_mapping.get(network) or {}
-
-        # Merge shared config with network-specific config
-        complete_config = {**network_config, **shared_config}
-
-        # Retrieve or set values in local_store dynamically using constants as keys
         dynamic_config = {}
-        for key, value in complete_config.items():
+        for key, value in network_config.items():
             dynamic_config[key] = SettingRepository.get_config_value(
                 key, value,
             )
 
         # Create and return the UnlockRequestModel
-        bitcoin_config = UnlockRequestModel(
-            bitcoind_rpc_username=dynamic_config[SAVED_BITCOIND_RPC_USER],
-            bitcoind_rpc_password=dynamic_config[SAVED_BITCOIND_RPC_PASSWORD],
-            bitcoind_rpc_host=dynamic_config[SAVED_BITCOIND_RPC_HOST],
-            bitcoind_rpc_port=dynamic_config[SAVED_BITCOIND_RPC_PORT],
+        bitcoin_config = ConfigModel(
             indexer_url=dynamic_config[SAVED_INDEXER_URL],
             proxy_endpoint=dynamic_config[SAVED_PROXY_ENDPOINT],
-            announce_addresses=[dynamic_config[SAVED_ANNOUNCE_ADDRESS]],
-            announce_alias=dynamic_config[SAVED_ANNOUNCE_ALIAS],
             password=password,
+            network=network,
         )
         return bitcoin_config
     except Exception as exc:
         raise exc
+
+
+def get_bitcoin_network_from_enum(network: NetworkEnumModel) -> BitcoinNetwork:
+    """Map a NetworkEnumModel to its corresponding BitcoinNetwork."""
+    mapping = {
+        NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
+        NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
+        NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
+    }
+    return mapping[network]

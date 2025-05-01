@@ -8,7 +8,6 @@ from src.data.service.asset_detail_page_services import AssetDetailPageService
 from src.model.payments_model import ListPaymentResponseModel
 from src.model.rgb_model import AssetBalanceResponseModel
 from src.model.rgb_model import AssetIdModel
-from src.model.rgb_model import ListOnAndOffChainTransfersWithBalance
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import TransferAsset
@@ -122,7 +121,7 @@ def test_no_transaction(mock_list_transfers, mock_get_asset_balance, request_moc
     assert result.off_chain_transfers == []
     assert result.asset_balance == mocked_data_list_no_transaction.asset_balance
     mock_list_payment.assert_called_once()
-    assert isinstance(result, ListOnAndOffChainTransfersWithBalance)
+    assert isinstance(result, ListTransferAssetWithBalanceResponseModel)
 
 
 def test_transaction_type_send(mock_list_transfers, mock_get_asset_balance, request_mock, mock_list_payment):
@@ -145,7 +144,7 @@ def test_transaction_type_send(mock_list_transfers, mock_get_asset_balance, requ
     )
 
     # Verify the result structure
-    assert isinstance(result, ListOnAndOffChainTransfersWithBalance)
+    assert isinstance(result, ListTransferAssetWithBalanceResponseModel)
     assert result.onchain_transfers == mocked_data_list_transaction_type_send.transfers
     assert result.asset_balance == mocked_data_list_transaction_type_send.asset_balance
     assert result.off_chain_transfers == []
@@ -172,7 +171,7 @@ def test_transaction_type_receive_blind(mock_list_transfers, mock_get_asset_bala
     )
 
     # Verify the result structure
-    assert isinstance(result, ListOnAndOffChainTransfersWithBalance)
+    assert isinstance(result, ListTransferAssetWithBalanceResponseModel)
     assert result.onchain_transfers == mocked_data_list_transaction_type_receive_blind.transfers
     assert result.asset_balance == mocked_data_list_transaction_type_receive_blind.asset_balance
     assert result.off_chain_transfers == []
@@ -199,7 +198,7 @@ def test_transaction_type_receive_witness(mock_list_transfers, mock_get_asset_ba
     )
 
     # Verify the result structure
-    assert isinstance(result, ListOnAndOffChainTransfersWithBalance)
+    assert isinstance(result, ListTransferAssetWithBalanceResponseModel)
     assert result.onchain_transfers == mocked_data_list_transaction_type_receive_witness.transfers
     assert result.asset_balance == mocked_data_list_transaction_type_receive_witness.asset_balance
     assert result.off_chain_transfers == []
@@ -226,7 +225,7 @@ def test_transaction_type_receive_issuence(mock_list_transfers, mock_get_asset_b
     )
 
     # Verify the result structure
-    assert isinstance(result, ListOnAndOffChainTransfersWithBalance)
+    assert isinstance(result, ListTransferAssetWithBalanceResponseModel)
     assert result.onchain_transfers == mocked_data_list_transaction_type_issuance.transfers
     assert result.asset_balance == mocked_data_list_transaction_type_issuance.asset_balance
     assert result.off_chain_transfers == []

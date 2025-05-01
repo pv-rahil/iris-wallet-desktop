@@ -12,28 +12,24 @@ from PySide6.QtWidgets import QApplication
 import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import NodeInfoResponseModel
-from src.model.common_operation_model import UnlockRequestModel
+from src.data.repository.wallet_holder import colored_wallet
+from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NativeAuthType
-from src.model.enums.enums_model import WalletType
+from src.utils.build_app_path import app_paths
 from src.utils.constant import COMPATIBLE_RLN_NODE_COMMITS
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import NODE_PUB_KEY
-from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_LN
 from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
-from src.utils.error_message import ERROR_NODE_INCOMPATIBILITY
 from src.utils.error_message import ERROR_NODE_WALLET_NOT_INITIALIZED
 from src.utils.error_message import ERROR_PASSWORD_INCORRECT
 from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG_WHILE_UNLOCKING_LN_ON_SPLASH
-from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTARTING_RLN_NODE
 from src.utils.info_message import INFO_STARTING_RLN_NODE
 from src.utils.info_message import INFO_WALLET_RESET
-from src.utils.keyring_storage import get_value
 from src.utils.ln_node_manage import LnNodeServerManager
 from src.utils.local_store import local_store
 from src.utils.logging import logger
@@ -131,9 +127,6 @@ class SplashViewModel(QObject, ThreadManager):
         """On success of unlock api it is forward the user to main page"""
         self.render_timer.stop()
         self._page_navigation.fungibles_asset_page()
-        node_pub_key: NodeInfoResponseModel = CommonOperationRepository.node_info()
-        if node_pub_key is not None:
-            local_store.set_value(NODE_PUB_KEY, node_pub_key.pubkey)
         self.show_main_window_loader.emit(False, INFO_RESTARTING_RLN_NODE)
 
     def on_error_of_unlock_api(self, error: Exception):
@@ -195,45 +188,30 @@ class SplashViewModel(QObject, ThreadManager):
         """This method handle application start"""
         try:
             self.show_main_window_loader.emit(True, INFO_RESTARTING_RLN_NODE)
-            self.is_error_handled = False
-            wallet_type: WalletType = SettingRepository.get_wallet_type()
-            if WalletType.EMBEDDED_TYPE_WALLET.value == wallet_type.value:
+            keyring_status = SettingRepository.get_keyring_status()
+            if keyring_status is True:
+                self._page_navigation.enter_wallet_password_page()
+            else:
+
                 self.splash_screen_message.emit(
                     QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_node_to_start', None,
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_node_to_unlock', None,
                     ),
                 )
-                if self.is_rln_commit_valid():
-                    self.wallet_transfer_selection_view_model.start_node_for_embedded_option()
-                else:
-                    logger.error(ERROR_NODE_INCOMPATIBILITY)
-                    self.handle_node_incompatibility()
-            else:
-                keyring_status = SettingRepository.get_keyring_status()
-                if keyring_status is True:
-                    self._page_navigation.enter_wallet_password_page()
-                else:
-
-                    self.splash_screen_message.emit(
-                        QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_node_to_unlock', None,
-                        ),
-                    )
-                    self.sync_chain_info_label.emit(True)
-                    wallet_password = get_value(
-                        WALLET_PASSWORD_KEY,
-                        network=bitcoin_network.__network__,
-                    )
-                    bitcoin_config: UnlockRequestModel = get_bitcoin_config(
-                        network=bitcoin_network.__network__, password=wallet_password,
-                    )
-                    self.run_in_thread(
-                        CommonOperationRepository.unlock, {
-                            'args': [bitcoin_config],
-                            'callback': self.on_success_of_unlock_api,
-                            'error_callback': self.on_error_of_unlock_api,
-                        },
-                    )
+                self.sync_chain_info_label.emit(True)
+                network = get_bitcoin_network_from_enum(
+                    bitcoin_network.__network__,
+                )
+                wallet = WalletRequestModel(
+                    data_dir=app_paths.app_path, bitcoin_network=network, pubkey=colored_wallet.init_response.account_xpub, mnemonic=colored_wallet.init_response.mnemonic,
+                )
+                self.run_in_thread(
+                    CommonOperationRepository.unlock, {
+                        'args': [wallet],
+                        'callback': self.on_success_of_unlock_api,
+                        'error_callback': self.on_error_of_unlock_api,
+                    },
+                )
         except CommonException as error:
             self.show_main_window_loader.emit(False, INFO_RESTARTING_RLN_NODE)
             logger.error(

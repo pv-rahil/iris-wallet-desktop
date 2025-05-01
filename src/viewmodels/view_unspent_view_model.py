@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import Unspent
 
 from src.data.repository.btc_repository import BtcRepository
-from src.model.btc_model import Unspent
+from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
 from src.utils.cache import Cache
 from src.utils.custom_exception import CommonException
@@ -48,6 +49,7 @@ class UnspentListViewModel(QObject, ThreadManager):
         def error(err: CommonException):
             """This method handles error."""
             self.loading_finished.emit(True)
+            print(err)
             ToastManager.error(
                 description=err.message,
             )
@@ -56,6 +58,7 @@ class UnspentListViewModel(QObject, ThreadManager):
             self.run_in_thread(
                 BtcRepository.list_unspents,
                 {
+                    'args': [UnspentListRequestModel(settled_only=False, skip_sync=False)],
                     'key': 'unspentlistviewmodel_get_unspent_list',
                     'use_cache': True,
                     'callback': success,

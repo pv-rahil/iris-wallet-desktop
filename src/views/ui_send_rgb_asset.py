@@ -8,6 +8,7 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 from rgb_lib import Invoice
+from rgb_lib import InvoiceData
 from rgb_lib import RgbLibError
 
 import src.resources_rc
@@ -142,7 +143,7 @@ class SendRGBAssetWidget(QWidget):
             default_min_confirmation = SettingCardRepository.get_default_min_confirmation()
 
             # Attempt to decode the RGB invoice
-            decoded_rgb_invoice: DecodeRgbInvoiceResponseModel = RgbRepository.decode_invoice(
+            decoded_rgb_invoice: InvoiceData = RgbRepository.decode_invoice(
                 DecodeRgbInvoiceRequestModel(invoice=provided_invoice),
             )
             try:

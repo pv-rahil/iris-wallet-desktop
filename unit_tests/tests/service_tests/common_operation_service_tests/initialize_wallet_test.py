@@ -7,9 +7,8 @@ from __future__ import annotations
 import pytest
 
 from src.data.service.common_operation_service import CommonOperationService
+from src.model.common_operation_model import ConfigModel
 from src.model.common_operation_model import InitRequestModel
-from src.model.common_operation_model import InitResponseModel
-from src.model.common_operation_model import UnlockRequestModel
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from unit_tests.repository_fixture.common_operations_repository_mock import mock_init
@@ -28,7 +27,6 @@ def test_initialize_wallet(mock_unlock, mock_init, mock_network_info):
     mock_init(mocked_data_init_api_response)
     mock_network_info(mocked_network_info_api_res)
     result = CommonOperationService.initialize_wallet('Random@123')
-    assert isinstance(result, InitResponseModel)
     assert result.mnemonic == 'skill lamp please gown put season degree collect decline account monitor insane'
 
 

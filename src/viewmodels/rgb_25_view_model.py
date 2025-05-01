@@ -5,20 +5,21 @@ for the Bitcoin page activities.
 """
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import AssetIface
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.asset_detail_page_services import AssetDetailPageService
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
-from src.model.rgb_model import ListOnAndOffChainTransfersWithBalance
+from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendAssetResponseModel
@@ -37,8 +38,8 @@ from src.views.components.toast import ToastManager
 class RGB25ViewModel(QObject, ThreadManager):
     """This class represents the activities of the bitcoin page."""
 
-    asset_info = Signal(str, str, str, str)
-    txn_list_loaded = Signal(str, str, str, str)
+    asset_info = Signal(str, str, str, Enum)
+    txn_list_loaded = Signal(str, str, str, Enum)
     send_rgb25_button_clicked = Signal(bool)
     message = Signal(ToastPreset, str)
     is_loading = Signal(bool)
@@ -62,10 +63,10 @@ class RGB25ViewModel(QObject, ThreadManager):
         self.min_confirmation = None
         self.txn_list = []
 
-    def get_rgb25_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: str) -> None:
+    def get_rgb25_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: Enum) -> None:
         """Retrieve RGB25 asset list."""
 
-        def on_success(response: ListOnAndOffChainTransfersWithBalance) -> None:
+        def on_success(response: ListTransferAssetWithBalanceResponseModel) -> None:
             """Handle success for the RGB25 asset detail list."""
             self.txn_list = response
             self.txn_list_loaded.emit(
@@ -100,9 +101,9 @@ class RGB25ViewModel(QObject, ThreadManager):
         self.send_rgb25_button_clicked.emit(False)
         ToastManager.success(description=INFO_ASSET_SENT.format(tx_id.txid))
 
-        if self.asset_type == AssetType.RGB25.value:
+        if self.asset_type == AssetIface.RGB25:
             self._page_navigation.collectibles_asset_page()
-        elif self.asset_type == AssetType.RGB20.value:
+        elif self.asset_type == AssetIface.RGB20:
             self._page_navigation.fungibles_asset_page()
 
     def on_error(self, error: CommonException) -> None:
@@ -219,6 +220,7 @@ class RGB25ViewModel(QObject, ThreadManager):
         def on_error(error: CommonException) -> None:
             """Handle error for failing a transfer."""
             self.is_loading.emit(False)
+            print(error)
             ToastManager.error(
                 description=f'{ERROR_SOMETHING_WENT_WRONG}: {error.message}',
             )

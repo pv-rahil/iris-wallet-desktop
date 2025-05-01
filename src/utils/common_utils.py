@@ -205,9 +205,7 @@ def zip_logger_folder(base_path) -> tuple[str, str, str]:
     # Generate the log folder name using the current epoch time value
     epoch_time = str(int(time.time()))
     network: NetworkEnumModel = SettingRepository.get_wallet_network()
-    ln_node_logs_path = app_paths.node_logs_path
     wallet_logs_path = app_paths.app_logs_path
-    ldk_logs_path = app_paths.ldk_logs_path
     zip_filename = f'{
         APP_NAME
     }-logs-{epoch_time}-{__version__}-{network.value}.zip'
@@ -236,15 +234,6 @@ def zip_logger_folder(base_path) -> tuple[str, str, str]:
     if os.path.exists(wallet_logs_path):
         copy_filtered(wallet_logs_path, os.path.join(output_dir, APP_NAME))
 
-    # Copy the additional folder to the temporary directory if it exists
-    if os.path.exists(ln_node_logs_path):
-        copy_filtered(ln_node_logs_path, os.path.join(output_dir, 'ln-node'))
-
-    # Include the dataldk logs file
-    if os.path.exists(ldk_logs_path):
-        ldk_output_dir = os.path.join(output_dir, 'ldk-logs')
-        os.makedirs(ldk_output_dir, exist_ok=True)
-        shutil.copy(ldk_logs_path, ldk_output_dir)
 
     # Find the 'log' file and add it to the temporary directory
     log_files = find_files_with_name(base_path, 'log')

@@ -418,7 +418,7 @@ class IssueRGB20Widget(QWidget):
 
     def handle_button_enabled(self):
         """Updates the enabled state of the send button."""
-        if (self.short_identifier_input.text() and self.amount_input.text() and self.asset_name_input.text() and self.amount_input.text() != '0'):
+        if (self.short_identifier_input.text() and self.amount_input.text() and self.asset_name_input.text()):
             self.issue_rgb20_btn.setDisabled(False)
         else:
             self.issue_rgb20_btn.setDisabled(True)

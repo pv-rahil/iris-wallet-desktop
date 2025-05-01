@@ -62,7 +62,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             self.show_assets,
         )
         self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
-        CommonOperationService.set_node_info()
         self.sidebar = None
         self.__loading_translucent_screen = None
         self.setStyleSheet(
@@ -103,7 +102,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.name_header = None
         self.address_header = None
         self.amount_header = None
-        self.outbound_amount_header = None
         self.symbol_header = None
         self.outbound_balance = None
 
@@ -213,14 +211,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount_header.setMinimumSize(QSize(98, 40))
         self.header_layout.addWidget(self.amount_header, 0, 3, Qt.AlignLeft)
 
-        self.outbound_amount_header = QLabel(self.header_frame)
-        self.outbound_amount_header.setWordWrap(True)
-        self.outbound_amount_header.setObjectName('outbound_amount_header')
-        self.outbound_amount_header.setMinimumSize(QSize(70, 40))
-        self.header_layout.addWidget(
-            self.outbound_amount_header, 0, 4, Qt.AlignLeft,
-        )
-
         self.symbol_header = QLabel(self.header_frame)
         self.symbol_header.setObjectName('symbol_header')
         self.header_layout.addWidget(self.symbol_header, 0, 5, Qt.AlignLeft)
@@ -260,11 +250,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount_header.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'on_chain_balance', None,
-            ),
-        )
-        self.outbound_amount_header.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'lightning_balance', None,
             ),
         )
         self.symbol_header.setText(
@@ -354,22 +339,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount.setText(str(asset.balance.future))
         self.grid_layout_fungible_frame.addWidget(
             self.amount, 0, 3, Qt.AlignLeft,
-        )
-
-        # Off-Chain Outbound Balance
-        self.outbound_balance = QLabel(self.fungible_frame)
-        self.outbound_balance.setObjectName('outbound_balance')
-        self.outbound_balance.setMinimumSize(QSize(80, 40))
-
-        if asset.asset_iface == AssetType.RGB20:
-            self.outbound_balance.setText(
-                str(asset.balance.offchain_outbound) if asset.balance.offchain_outbound else 'N/A',
-            )
-        else:
-            # Fallback for other asset types
-            self.outbound_balance.setText('N/A')
-        self.grid_layout_fungible_frame.addWidget(
-            self.outbound_balance, 0, 4, Qt.AlignLeft,
         )
 
         self.token_symbol = QLabel(self.fungible_frame)

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel
+from rgb_lib import BitcoinNetwork
 
 from src.model.btc_model import OfflineAsset
 from src.model.rgb_model import GetAssetResponseModel
@@ -54,6 +55,11 @@ class InitRequestModel(BaseModel):
     """Init request model."""
 
     password: str
+    network: BitcoinNetwork
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 
 class ChangePasswordRequestModel(BaseModel):
@@ -70,16 +76,24 @@ class BackupRequestModel(BaseModel):
     password: str
 
 
-class UnlockRequestModel(InitRequestModel):
+class ConfigModel(InitRequestModel):
     """Unlock request model."""
-    bitcoind_rpc_username: str
-    bitcoind_rpc_password: str
-    bitcoind_rpc_host: str
-    bitcoind_rpc_port: int
     indexer_url: str
     proxy_endpoint: str
-    announce_addresses: list[str]
-    announce_alias: str
+
+
+class WalletRequestModel(BaseModel):
+    """Wallet Request Model"""
+    data_dir: str
+    bitcoin_network: BitcoinNetwork
+    max_allocations_per_utxo: int = 1
+    pubkey: str
+    mnemonic: str
+    vanilla_keychain: int = 1
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 
 class RestoreRequestModel(BackupRequestModel):
@@ -87,12 +101,6 @@ class RestoreRequestModel(BackupRequestModel):
 
 
 # -------------------- Response models -----------------------
-
-class InitResponseModel(BaseModel):
-    """Init response model."""
-
-    mnemonic: str
-
 
 class BackupResponseModel(StatusModel):
     """Backup response model."""

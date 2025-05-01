@@ -391,12 +391,12 @@ class RGBAssetTransactionDetail(QWidget):
             if self.params.receive_utxo is not None:
                 self.url = get_bitcoin_explorer_url(self.params.receive_utxo)
                 unblinded_and_change_utxo_value = insert_zero_width_spaces(
-                    self.params.receive_utxo,
+                    self.params.receive_utxo.txid,
                 )
             if self.params.change_utxo is not None:
                 self.url = get_bitcoin_explorer_url(self.params.change_utxo)
                 unblinded_and_change_utxo_value = insert_zero_width_spaces(
-                    self.params.change_utxo,
+                    self.params.change_utxo.txid,
                 )
             if SettingRepository.get_wallet_network() != NetworkEnumModel.REGTEST:
                 self.unblinded_and_change_utxo_value.setText(

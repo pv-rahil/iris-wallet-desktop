@@ -7,12 +7,14 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetIface
 
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import ToastPreset
 from src.model.selection_page_model import AssetDataModel
+from src.model.setting_model import DefaultProxyEndpoint
 from src.utils.common_utils import copy_text
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.render_timer import RenderTimer
@@ -33,8 +35,6 @@ class ReceiveRGBAssetWidget(QWidget):
         self.originating_page = params.asset_type
         self.asset_id = params.asset_id
         self.close_page_navigation = params.close_page_navigation
-        self.expiry_time = params.expiry_time
-        self.expiry_unit = params.expiry_unit
         self.default_min_confirmation = SettingCardRepository.get_default_min_confirmation()
         self.receive_rgb_asset_page = ReceiveAssetWidget(
             self._view_model,
@@ -53,10 +53,11 @@ class ReceiveRGBAssetWidget(QWidget):
 
     def generate_invoice(self):
         """Call get rgb invoice to get invoice"""
+        print('i am here')
         if self.originating_page in [
-            'RGB20',
+            AssetIface.RGB20,
             'fungibles',
-            'RGB25',
+            AssetIface.RGB25,
             'collectibles',
             'channel_management',
             'view_unspent_list',
@@ -66,9 +67,13 @@ class ReceiveRGBAssetWidget(QWidget):
             'about',
             'backup',
         ]:
+            proxy_endpoint: DefaultProxyEndpoint = SettingCardRepository.get_default_proxy_endpoint()
             self._view_model.receive_rgb25_view_model.get_rgb_invoice(
-                self.default_min_confirmation.min_confirmation, self.asset_id,
+                minimum_confirmations=self.default_min_confirmation.min_confirmation, asset_id=self.asset_id, transport_endpoints=[
+                    proxy_endpoint.endpoint,
+                ],
             )
+            print(123)
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
@@ -95,14 +100,8 @@ class ReceiveRGBAssetWidget(QWidget):
         self._view_model.receive_rgb25_view_model.address.connect(
             self.update_address,
         )
-        self._view_model.ln_offchain_view_model.invoice_get_event.connect(
-            lambda address: self.update_address(address, ln_invoice=True),
-        )
         self._view_model.receive_rgb25_view_model.message.connect(
             self.handle_message,
-        )
-        self._view_model.ln_offchain_view_model.invoice_get_event.connect(
-            self.hide_loading_screen,
         )
         self._view_model.receive_rgb25_view_model.hide_loading.connect(
             self.hide_loading_screen,
@@ -112,19 +111,17 @@ class ReceiveRGBAssetWidget(QWidget):
         """
         Navigate to the specified page when the close button is clicked.
         """
-
-        if self.close_page_navigation == AssetType.RGB25.value:
+        print(self.close_page_navigation)
+        if self.close_page_navigation == AssetIface.RGB25:
             self._view_model.page_navigation.collectibles_asset_page()
-        elif self.close_page_navigation == AssetType.RGB20.value:
+        elif self.close_page_navigation == AssetIface.RGB20:
             self._view_model.page_navigation.fungibles_asset_page()
         else:
             navigation_map = {
                 'RGB20': self._view_model.page_navigation.fungibles_asset_page,
                 'fungibles': self._view_model.page_navigation.fungibles_asset_page,
-                'create_invoice': self._view_model.page_navigation.fungibles_asset_page,
                 'RGB25': self._view_model.page_navigation.collectibles_asset_page,
                 'collectibles': self._view_model.page_navigation.collectibles_asset_page,
-                'channel_management': self._view_model.page_navigation.channel_management_page,
                 'view_unspent_list': self._view_model.page_navigation.view_unspent_list_page,
                 'faucets': self._view_model.page_navigation.faucets_page,
                 'settings': self._view_model.page_navigation.settings_page,
@@ -144,25 +141,9 @@ class ReceiveRGBAssetWidget(QWidget):
                     }',
                 )
 
-    def update_address(self, address: str, ln_invoice: bool = False):
+    def update_address(self, address: str):
         """This method used to update new address"""
         self.receive_rgb_asset_page.update_qr_and_address(address)
-        if ln_invoice:
-            self.receive_rgb_asset_page.copy_button.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'copy_ln_invoice', None,
-                ),
-            )
-            self.receive_rgb_asset_page.address_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ln_invoice_label', None,
-                ),
-            )
-            self.receive_rgb_asset_page.wallet_address_description_text.setText(
-                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ln_invoice_info', None).format(
-                    self.expiry_time, self.expiry_unit,
-                ),
-            )
 
     def handle_message(self, msg_type: int, message: str):
         """This method handled to show message."""

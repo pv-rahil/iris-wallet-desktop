@@ -1,6 +1,11 @@
 """Module containing BTC repository."""
 from __future__ import annotations
 
+from rgb_lib import BtcBalance
+from rgb_lib import Transaction
+from rgb_lib import Unspent
+
+from src.data.repository.wallet_holder import colored_wallet
 from src.model.btc_model import AddressResponseModel
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import EstimateFeeRequestModel
@@ -8,18 +13,11 @@ from src.model.btc_model import EstimateFeeResponse
 from src.model.btc_model import SendBtcRequestModel
 from src.model.btc_model import SendBtcResponseModel
 from src.model.btc_model import TransactionListResponse
+from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
-from src.model.common_operation_model import SkipSyncModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.unlock_required import unlock_required
-from src.utils.endpoints import ADDRESS_ENDPOINT
-from src.utils.endpoints import BTC_BALANCE_ENDPOINT
-from src.utils.endpoints import ESTIMATE_FEE_ENDPOINT
-from src.utils.endpoints import LIST_TRANSACTIONS_ENDPOINT
-from src.utils.endpoints import LIST_UNSPENT_ENDPOINT
-from src.utils.endpoints import SEND_BTC_ENDPOINT
-from src.utils.request import Request
 
 
 class BtcRepository:
@@ -30,64 +28,64 @@ class BtcRepository:
     def get_address() -> AddressResponseModel:
         """Get a Bitcoin address."""
         with repository_custom_context():
-            response = Request.post(ADDRESS_ENDPOINT)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return AddressResponseModel(**data)
+            data = colored_wallet.wallet.get_address()
+            return AddressResponseModel(address=data)
 
     @staticmethod
     @unlock_required
     def get_btc_balance() -> BalanceResponseModel:
         """Get Bitcoin balance."""
         with repository_custom_context():
-            payload = SkipSyncModel().dict()
-            response = Request.post(BTC_BALANCE_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return BalanceResponseModel(**data)
+            data: BtcBalance = colored_wallet.wallet.get_btc_balance(
+                online=colored_wallet.online, skip_sync=False,
+            )
+
+            return BalanceResponseModel(
+                vanilla=data.vanilla,
+                colored=data.colored,
+            )
 
     @staticmethod
     @unlock_required
     def list_transactions() -> TransactionListResponse:
         """List Bitcoin transactions."""
         with repository_custom_context():
-            payload = SkipSyncModel().dict()
-            response = Request.post(LIST_TRANSACTIONS_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return TransactionListResponse(**data)
+            data: list[Transaction] = colored_wallet.wallet.list_transactions(
+                online=colored_wallet.online, skip_sync=False,
+            )
+            return TransactionListResponse(transactions=data)
 
     @staticmethod
     @unlock_required
-    def list_unspents() -> UnspentsListResponseModel:
+    def list_unspents(param: UnspentListRequestModel) -> UnspentsListResponseModel:
         """List unspent Bitcoin."""
         with repository_custom_context():
-            payload = SkipSyncModel().dict()
-            response = Request.post(LIST_UNSPENT_ENDPOINT, payload)
-            data = response.json()
-            return UnspentsListResponseModel(**data)
+            data: list[Unspent] = colored_wallet.wallet.list_unspents(
+                online=colored_wallet.online, skip_sync=param.skip_sync, settled_only=param.settled_only,
+            )
+
+            return UnspentsListResponseModel(unspents=data)
 
     @staticmethod
     @unlock_required
-    def send_btc(send_btc_value: SendBtcRequestModel) -> SendBtcResponseModel:
+    def send_btc(param: SendBtcRequestModel) -> SendBtcResponseModel:
         """Send Bitcoin."""
-        payload = send_btc_value.dict()
         with repository_custom_context():
-            response = Request.post(SEND_BTC_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
+            data = colored_wallet.wallet.send_btc(
+                online=colored_wallet.online, skip_sync=param.skip_sync,
+                address=param.address, amount=param.amount, fee_rate=param.fee_rate,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return SendBtcResponseModel(**data)
+            return SendBtcResponseModel(txid=data)
 
     @staticmethod
     @unlock_required
-    def estimate_fee(blocks: EstimateFeeRequestModel) -> EstimateFeeResponse:
+    def estimate_fee(param: EstimateFeeRequestModel) -> EstimateFeeResponse:
         """Get Estimate Fee"""
-        payload = blocks.dict()
         with repository_custom_context():
-            response = Request.post(ESTIMATE_FEE_ENDPOINT, payload)
-            response.raise_for_status()
-            data = response.json()
+            data = colored_wallet.wallet.get_fee_estimation(
+                online=colored_wallet.online, blocks=param.blocks,
+            )
             return EstimateFeeResponse(**data)

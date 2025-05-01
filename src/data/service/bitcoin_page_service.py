@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """
 This module provides the service for bitcoin page.
 """
@@ -108,7 +109,6 @@ class BitcoinPageService:
             sorted_transactions: TransactionListResponse = TransactionListResponse(
                 transactions=unconfirm_transaction_list + confirm_transactions_list,
             )
-
             return TransactionListWithBalanceResponse(transactions=sorted_transactions.transactions, balance=bitcoin_balance)
         except Exception as exc:
             return handle_exceptions(exc)

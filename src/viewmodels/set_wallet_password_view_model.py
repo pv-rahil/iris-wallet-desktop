@@ -13,10 +13,10 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QLineEdit
+from rgb_lib import Keys
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
-from src.model.common_operation_model import InitResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletType
@@ -121,7 +121,7 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
             self.common_sidebar.my_fungibles.setChecked(True)
         self._page_navigation.fungibles_asset_page()
 
-    def on_success(self, response: InitResponseModel):
+    def on_success(self, response: Keys):
         """
         Handles the successful completion of the set wallet password process.
 

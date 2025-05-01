@@ -1,29 +1,32 @@
 """Service module for common operation in application"""
 from __future__ import annotations
 
-import src.flavour as bitcoin_network
+from rgb_lib import Keys
+
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.repository.wallet_holder import colored_wallet
 from src.model.common_operation_model import InitRequestModel
-from src.model.common_operation_model import InitResponseModel
-from src.model.common_operation_model import NetworkInfoResponseModel
-from src.model.common_operation_model import NodeInfoResponseModel
 from src.model.common_operation_model import UnlockResponseModel
+from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.node_info_model import NodeInfoModel
+from src.utils.build_app_path import app_paths
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.decorators.unlock_required import is_node_locked
 from src.utils.error_message import ERROR_KEYRING_STORE_NOT_ACCESSIBLE
-from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_UNABLE_GET_MNEMONIC
 from src.utils.error_message import ERROR_UNABLE_TO_GET_HASHED_MNEMONIC
 from src.utils.handle_exception import handle_exceptions
 from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import hash_mnemonic
 from src.utils.helpers import validate_mnemonic
 from src.utils.keyring_storage import set_value
+# import src.flavour as bitcoin_network
+# from src.model.common_operation_model import NetworkInfoResponseModel
+# from src.utils.error_message import ERROR_NETWORK_MISMATCH
 
 
 class CommonOperationService:
@@ -34,24 +37,28 @@ class CommonOperationService:
     """
 
     @staticmethod
-    def initialize_wallet(password: str) -> InitResponseModel:
+    def initialize_wallet(password: str) -> Keys:
         """
         Initializes the wallet with the provided password, unlocks it, and verifies
         that the node's network matches the expected network.
         """
         try:
-            response: InitResponseModel = CommonOperationRepository.init(
-                InitRequestModel(password=password),
-            )
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            bitcoin_config = get_bitcoin_config(stored_network, password)
-            CommonOperationRepository.unlock(
-                bitcoin_config,
+            network = get_bitcoin_network_from_enum(
+                stored_network,
             )
-            network_info: NetworkInfoResponseModel = CommonOperationRepository.network_info()
-            node_network = str.lower(network_info.network)
-            if node_network != bitcoin_network.__network__:
-                raise CommonException(ERROR_NETWORK_MISMATCH)
+            response: Keys = CommonOperationRepository.init(
+                InitRequestModel(password=password, network=network),
+            )
+            wallet = CommonOperationRepository.unlock(
+                WalletRequestModel(
+                    data_dir=app_paths.app_path, bitcoin_network=network,
+                    pubkey=response.account_xpub, mnemonic=response.mnemonic,
+                ),
+            )
+            colored_wallet.set_wallet(wallet)
+            colored_wallet.set_init_response(response)
+
             return response
         except Exception as exc:
             return handle_exceptions(exc=exc)
@@ -64,7 +71,9 @@ class CommonOperationService:
         """
         try:
 
-            stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
+            stored_network = get_bitcoin_network_from_enum(
+                SettingRepository.get_wallet_network(),
+            )
             bitcoin_config = get_bitcoin_config(stored_network, password)
             status: bool = is_node_locked()
             if not status:
@@ -72,10 +81,10 @@ class CommonOperationService:
             response: UnlockResponseModel = CommonOperationRepository.unlock(
                 bitcoin_config,
             )
-            network_info: NetworkInfoResponseModel = CommonOperationRepository.network_info()
-            node_network = str.lower(network_info.network)
-            if node_network != bitcoin_network.__network__:
-                raise CommonException(ERROR_NETWORK_MISMATCH)
+            # network_info: NetworkInfoResponseModel = CommonOperationRepository.network_info()
+            # node_network = str.lower(network_info.network)
+            # if node_network != bitcoin_network.__network__:
+            #     raise CommonException(ERROR_NETWORK_MISMATCH)
             return response
         except Exception as exc:
             return handle_exceptions(exc=exc)
@@ -96,31 +105,6 @@ class CommonOperationService:
                 raise CommonException(ERROR_KEYRING_STORE_NOT_ACCESSIBLE)
             SettingRepository.set_keyring_status(status=False)
         except Exception as exc:
-            handle_exceptions(exc=exc)
-
-    @staticmethod
-    def set_node_info():
-        """
-        Fetch and store node information in the NodeInfoModel.
-
-        This method retrieves the node information from the CommonOperationRepository
-        and sets it in the NodeInfoModel for global access. It handles any exceptions
-        that may occur during the fetching or setting of the node information and logs
-        the error message if something goes wrong.
-
-        Raises:
-            Exception: If an error occurs while fetching or setting node information.
-        """
-        try:
-            # Fetch node information from the repository
-            # Store node information in the NodeInfoModel
-            node_info_model = NodeInfoModel()
-            if node_info_model.node_info is None:
-                node_info: NodeInfoResponseModel = CommonOperationRepository.node_info()
-                node_info_model.set_node_info(data=node_info)
-
-        except Exception as exc:
-            # Log and re-raise the exception if something goes wrong
             handle_exceptions(exc=exc)
 
     @staticmethod

@@ -33,7 +33,6 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
-from src.views.components.toast import ToastManager
 
 
 class ViewUnspentList(QWidget):
@@ -259,7 +258,7 @@ class ViewUnspentList(QWidget):
             ),
         )
         asset_name.setAccessibleDescription(UNSPENT_UTXO_OUTPOINT)
-        asset_name.setText(_list.utxo.outpoint)
+        asset_name.setText(str(_list.utxo.outpoint.txid))
 
         asset_detail_vertical_layout = QVBoxLayout()
         asset_detail_vertical_layout.setObjectName(

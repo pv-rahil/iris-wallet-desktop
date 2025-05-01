@@ -18,36 +18,17 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
-from accessible_constant import ANNOUNCE_ADDRESS_ACCESSIBLE_DESCRIPTION
-from accessible_constant import ANNOUNCE_ADDRESS_COPY_BUTTON
-from accessible_constant import ANNOUNCE_ALIAS_ACCESSIBLE_DESCRIPTION
-from accessible_constant import ANNOUNCE_ALIAS_COPY_BUTTON
-from accessible_constant import BITCOIND_HOST_ACCESSIBLE_DESCRIPTION
-from accessible_constant import BITCOIND_HOST_COPY_BUTTON
-from accessible_constant import BITCOIND_PORT_ACCESSIBLE_DESCRIPTION
-from accessible_constant import BITCOIND_PORT_COPY_BUTTON
 from accessible_constant import DOWNLOAD_DEBUG_LOG
 from accessible_constant import INDEXER_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import INDEXER_URL_COPY_BUTTON
-from accessible_constant import LN_PEER_LISTENING_PORT_ACCESSIBLE_DESCRIPTION
-from accessible_constant import LN_PEER_LISTENING_PORT_COPY_BUTTON
-from accessible_constant import NODE_PUBKEY_ACCESSIBLE_DESCRIPTION
-from accessible_constant import NODE_PUBKEY_COPY_BUTTON
 from accessible_constant import RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import RGB_PROXY_URL_COPY_BUTTON
-from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import NodeInfoResponseModel
-from src.model.common_operation_model import UnlockRequestModel
+from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletType
-from src.model.node_info_model import NodeInfoModel
 from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import download_file
 from src.utils.common_utils import network_info
 from src.utils.common_utils import zip_logger_folder
-from src.utils.constant import ANNOUNCE_ADDRESS
-from src.utils.constant import ANNOUNCE_ALIAS
-from src.utils.constant import CURRENT_RLN_NODE_COMMIT
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import LDK_PORT_KEY
 from src.utils.constant import PRIVACY_POLICY_URL
@@ -73,9 +54,6 @@ class AboutWidget(QWidget):
         self._view_model: MainViewModel = view_model
         self.network: str = ''
         network_info(self)
-        get_node_info = NodeInfoModel()
-        self.node_info: NodeInfoResponseModel = get_node_info.node_info
-        wallet_type: WalletType = SettingRepository.get_wallet_type()
         self.ldk_port = local_store.get_value(LDK_PORT_KEY)
         self.setStyleSheet(load_stylesheet('views/qss/about_style.qss'))
         self.grid_layout = QGridLayout(self)
@@ -108,46 +86,8 @@ class AboutWidget(QWidget):
             self.app_version_label, 0, Qt.AlignLeft,
         )
 
-        self.node_pub_key_frame = NodeInfoWidget(
-            translation_key='node_pubkey', value=self.node_info.pubkey, v_layout=self.about_vertical_layout,
-        )
-        self.node_pub_key_frame.value_label.setAccessibleDescription(
-            NODE_PUBKEY_ACCESSIBLE_DESCRIPTION,
-        )
-        self.node_pub_key_frame.node_pub_key_copy_button.setAccessibleName(
-            NODE_PUBKEY_COPY_BUTTON,
-        )
-        self.get_bitcoin_config: UnlockRequestModel = get_bitcoin_config(
+        self.get_bitcoin_config: ConfigModel = get_bitcoin_config(
             self.network, password='',
-        )
-        if wallet_type.value == WalletType.EMBEDDED_TYPE_WALLET.value:
-            self.ldk_port_frame = NodeInfoWidget(
-                translation_key='ln_ldk_port', value=self.ldk_port, v_layout=self.about_vertical_layout,
-            )
-            self.ldk_port_frame.value_label.setAccessibleDescription(
-                LN_PEER_LISTENING_PORT_ACCESSIBLE_DESCRIPTION,
-            )
-            self.ldk_port_frame.node_pub_key_copy_button.setAccessibleName(
-                LN_PEER_LISTENING_PORT_COPY_BUTTON,
-            )
-        self.bitcoind_host_frame = NodeInfoWidget(
-            translation_key='bitcoind_host', value=self.get_bitcoin_config.bitcoind_rpc_host, v_layout=self.about_vertical_layout,
-        )
-        self.bitcoind_host_frame.node_pub_key_copy_button.setAccessibleName(
-            BITCOIND_HOST_COPY_BUTTON,
-        )
-        self.bitcoind_host_frame.value_label.setAccessibleDescription(
-            BITCOIND_HOST_ACCESSIBLE_DESCRIPTION,
-        )
-
-        self.bitcoind_port_frame = NodeInfoWidget(
-            translation_key='bitcoind_port', value=self.get_bitcoin_config.bitcoind_rpc_port, v_layout=self.about_vertical_layout,
-        )
-        self.bitcoind_port_frame.node_pub_key_copy_button.setAccessibleName(
-            BITCOIND_PORT_COPY_BUTTON,
-        )
-        self.bitcoind_port_frame.value_label.setAccessibleDescription(
-            BITCOIND_PORT_ACCESSIBLE_DESCRIPTION,
         )
 
         self.indexer_url_frame = NodeInfoWidget(
@@ -170,44 +110,9 @@ class AboutWidget(QWidget):
             RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION,
         )
 
-        if self.get_bitcoin_config.announce_addresses[0] != ANNOUNCE_ADDRESS:
-            if isinstance(self.get_bitcoin_config.announce_addresses, list):
-                value = ', '.join(
-                    str(item) for item in self.get_bitcoin_config.announce_addresses
-                )
-            self.announce_address_frame = NodeInfoWidget(
-                translation_key='announce_address', value=value, v_layout=self.about_vertical_layout,
-            )
-            self.announce_address_frame.node_pub_key_copy_button.setAccessibleName(
-                ANNOUNCE_ADDRESS_COPY_BUTTON,
-            )
-            self.announce_address_frame.value_label.setAccessibleDescription(
-                ANNOUNCE_ADDRESS_ACCESSIBLE_DESCRIPTION,
-            )
-        if self.get_bitcoin_config.announce_alias != ANNOUNCE_ALIAS:
-            self.announce_alias_frame = NodeInfoWidget(
-                translation_key='announce_alias', value=self.get_bitcoin_config.announce_alias, v_layout=self.about_vertical_layout,
-            )
-            self.announce_alias_frame.node_pub_key_copy_button.setAccessibleName(
-                ANNOUNCE_ALIAS_COPY_BUTTON,
-            )
-            self.announce_alias_frame.value_label.setAccessibleDescription(
-                ANNOUNCE_ALIAS_ACCESSIBLE_DESCRIPTION,
-            )
-
         basepath = local_store.get_path()
         self.data_directory_path = NodeInfoWidget(
             translation_key='data_directory_path_label', value=basepath, v_layout=self.about_vertical_layout,
-        )
-
-        connection_type: WalletType = SettingRepository.get_wallet_type()
-
-        self.rln_node_connection_type = NodeInfoWidget(
-            translation_key='connection_type', value=connection_type.value.capitalize(), v_layout=self.about_vertical_layout,
-        )
-
-        self.rgb_ln_commit = NodeInfoWidget(
-            translation_key='rln_node_commit_id', value=CURRENT_RLN_NODE_COMMIT, v_layout=self.about_vertical_layout,
         )
 
         self.privacy_policy_label = QLabel(self.about_widget)
@@ -283,13 +188,6 @@ class AboutWidget(QWidget):
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'download_debug_log', None,
             ),
-        )
-        self.rln_node_connection_type.key_label.setText(
-            f"{
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'connection_type'
-                )
-            }:",
         )
 
     def setup_ui_connection(self):

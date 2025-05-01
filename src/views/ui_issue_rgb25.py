@@ -29,8 +29,6 @@ from accessible_constant import RGB25_ASSET_AMOUNT
 from accessible_constant import RGB25_ASSET_DESCRIPTION
 from accessible_constant import RGB25_ASSET_NAME
 from accessible_constant import RGB25_UPLOAD_FILE_BUTTON
-from src.model.common_operation_model import NodeInfoResponseModel
-from src.model.node_info_model import NodeInfoModel
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import resize_image
 from src.utils.common_utils import set_number_validator
@@ -378,14 +376,13 @@ class IssueRGB25Widget(QWidget):
 
     def show_file_preview(self, file_upload_message):
         """Preview the uploaded image"""
-        node_info = NodeInfoModel()
-        get_max_file_size: NodeInfoResponseModel = node_info.node_info
-        max_file_size = get_max_file_size.max_media_upload_size_mb * 1024 * 1024
+        get_max_file_size = 5
+        max_file_size = get_max_file_size * 1024 * 1024
         file_size = os.path.getsize(file_upload_message)
         if file_size > max_file_size:
             validation_text = QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'image_validation', None,
-            ).format(get_max_file_size.max_media_upload_size_mb)
+            ).format(get_max_file_size)
             self.file_path.setText(validation_text)
             self.issue_rgb25_button.setDisabled(True)
             self.issue_rgb_25_card.setMaximumSize(QSize(499, 608))

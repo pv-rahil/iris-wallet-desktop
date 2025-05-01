@@ -34,7 +34,6 @@ class EstimateFeeViewModel(QObject, ThreadManager):
             tx_speed (str): The transaction speed selected by the user.
         """
         self.blocks = TRANSACTION_SPEEDS.get(tx_speed, 0)
-
         if self.blocks == 0:
             ToastManager.info(
                 description='Invalid transaction speed selected.',

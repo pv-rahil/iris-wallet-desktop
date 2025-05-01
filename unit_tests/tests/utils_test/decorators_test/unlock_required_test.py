@@ -11,7 +11,7 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import UnlockRequestModel
+from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.decorators.unlock_required import is_node_locked
 from src.utils.decorators.unlock_required import unlock_node
@@ -38,7 +38,7 @@ def test_response():
 @patch('src.data.repository.setting_repository.SettingRepository.get_keyring_status', return_value=False)
 @patch('src.utils.decorators.unlock_required.get_value', return_value='mock_password')
 @patch(
-    'src.utils.decorators.unlock_required.get_bitcoin_config', return_value=UnlockRequestModel(
+    'src.utils.decorators.unlock_required.get_bitcoin_config', return_value=ConfigModel(
         password='mock_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='password',
@@ -81,7 +81,7 @@ def test_unlock_node_http_error(mock_post, mock_get_config, mock_get_keyring_sta
     # Setup mocks
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -126,7 +126,7 @@ def test_unlock_node_wallet_not_initialized(
     # Setup mocks
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -174,7 +174,7 @@ def test_unlock_node_connection_error(
     # Setup mocks
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -320,7 +320,7 @@ def test_unlock_node_password_incorrect(
     # Setup mocks
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -365,7 +365,7 @@ def test_unlock_node_wallet_not_initialized_detailed(
     # Setup mocks
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -417,7 +417,7 @@ def test_unlock_node_connection_error_detailed(
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
     mock_get_network.return_value = NetworkEnumModel.REGTEST
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -460,7 +460,7 @@ def test_unlock_node_http_error_without_json(
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
     mock_get_network.return_value = NetworkEnumModel.REGTEST
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -505,7 +505,7 @@ def test_unlock_node_http_error_without_response_text(
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
     mock_get_network.return_value = NetworkEnumModel.REGTEST
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',
@@ -550,7 +550,7 @@ def test_unlock_node_http_error_with_json_error(
     mock_get_keyring_status.return_value = False
     mock_get_value.return_value = 'test_password'
     mock_get_network.return_value = NetworkEnumModel.REGTEST
-    mock_get_config.return_value = UnlockRequestModel(
+    mock_get_config.return_value = ConfigModel(
         password='test_password',
         bitcoind_rpc_username='user',
         bitcoind_rpc_password='pass',

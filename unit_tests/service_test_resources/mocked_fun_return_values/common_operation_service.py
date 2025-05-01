@@ -3,7 +3,8 @@ Mocked data for the common operation service test
 """
 from __future__ import annotations
 
-from src.model.common_operation_model import InitResponseModel
+from rgb_lib import Keys
+
 from src.model.common_operation_model import NetworkInfoResponseModel
 from src.model.common_operation_model import UnlockResponseModel
 
@@ -13,7 +14,7 @@ mnemonic = {
 }
 
 # Mocked response of init api
-mocked_data_init_api_response = InitResponseModel(**mnemonic)
+mocked_data_init_api_response = Keys(mnemonic=mnemonic)
 
 network_info = {
     'network': 'Regtest',

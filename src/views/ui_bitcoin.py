@@ -4,6 +4,8 @@
  """
 from __future__ import annotations
 
+from datetime import datetime
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QRect
 from PySide6.QtCore import QSize
@@ -392,34 +394,13 @@ class BtcWidget(QWidget):
         """
         self._view_model.bitcoin_view_model.on_send_bitcoin_click()
 
-    def navigate_to_selection_page(self, callback):
-        """This method is navigate to the selection page"""
-        title = 'Select transfer type'
-        btc_on_chain_logo_path = ':/assets/on_chain.png'
-        btc_on_chain_title = TransferType.ON_CHAIN.value
-        btc_off_chain_logo_path = ':/assets/off_chain.png'
-        btc_off_chain_title = TransferType.LIGHTNING.value
-        params = SelectionPageModel(
-            title=title,
-            logo_1_path=btc_on_chain_logo_path,
-            logo_1_title=btc_on_chain_title,
-            logo_2_path=btc_off_chain_logo_path,
-            logo_2_title=btc_off_chain_title,
-            asset_id=AssetType.BITCOIN.value,
-            callback=callback,
-            back_page_navigation=self._view_model.page_navigation.bitcoin_page,
-        )
-        self._view_model.page_navigation.wallet_method_page(params)
-
     def select_receive_transfer_type(self):
         """This method navigates the receive page"""
-        self.navigate_to_selection_page(
-            TransferStatusEnumModel.RECEIVE_BTC.value,
-        )
+        self._view_model.bitcoin_view_model.on_receive_bitcoin_click()
 
     def select_send_transfer_type(self):
         """This method navigates the send asset page according to the condition"""
-        self.navigate_to_selection_page(TransferStatusEnumModel.SEND_BTC.value)
+        self._view_model.bitcoin_view_model.on_send_bitcoin_click()
 
     def set_bitcoin_balance(self):
         """This method updates the displayed bitcoin balance in the UI.
@@ -471,11 +452,14 @@ class BtcWidget(QWidget):
         for transaction_detail in sorted_transactions:
             tx_id = str(transaction_detail.txid)
             amount = str(transaction_detail.amount)
+            transaction_date, transaction_time = self.get_transaction_timestamp(
+                transaction_detail.confirmation_time,
+            )
             self.transaction_detail_frame = TransactionDetailFrame(
                 self.btc_scroll_area_widget_contents,
                 TransactionDetailPageModel(
-                    tx_id=tx_id, amount=amount, confirmation_date=transaction_detail.confirmation_date,
-                    confirmation_time=transaction_detail.confirmation_normal_time, transaction_status=transaction_detail.transaction_status,
+                    tx_id=tx_id, amount=amount, confirmation_date=transaction_date,
+                    confirmation_time=transaction_time, transaction_status=transaction_detail.transaction_status,
                     transfer_status=transaction_detail.transfer_status,
                 ),
             )
@@ -486,8 +470,7 @@ class BtcWidget(QWidget):
                 QCursor(Qt.CursorShape.PointingHandCursor),
             )
             self.transaction_detail_frame.close_button.hide()
-            transaction_date = str(transaction_detail.confirmation_date)
-            transaction_time = str(transaction_detail.confirmation_normal_time)
+
             transfer_status = str(transaction_detail.transfer_status.value)
             transfer_amount = amount
             transaction_type = str(transaction_detail.transaction_type)
@@ -513,7 +496,7 @@ class BtcWidget(QWidget):
             self.transaction_detail_frame.transaction_date.setText(
                 transaction_date,
             )
-            if transaction_date == 'None':
+            if transaction_date is None:
                 self.transaction_detail_frame.transaction_time.setStyleSheet(
                     'color:#959BAE;font-weight: 400; font-size:14px',
                 )
@@ -575,3 +558,11 @@ class BtcWidget(QWidget):
         self.refresh_button.setDisabled(False)
         self.send_asset_btn.setDisabled(False)
         self.receive_asset_btn.setDisabled(False)
+
+    def get_transaction_timestamp(self, confirmation_timestamp):
+        """Return formatted date and time for a given timestamp."""
+        if not confirmation_timestamp:
+            return None, None
+
+        dt_object = datetime.fromtimestamp(confirmation_timestamp.timestamp)
+        return dt_object.strftime('%Y-%m-%d'), dt_object.strftime('%H:%M:%S')
