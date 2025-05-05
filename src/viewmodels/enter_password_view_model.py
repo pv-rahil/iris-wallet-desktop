@@ -68,7 +68,7 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
         """Handle success callback after unlocking."""
         try:
             self.is_loading.emit(False)
-            if self.password and response.status:
+            if self.password and response:
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
                 keyring_status: bool = SettingRepository.get_keyring_status()
 
@@ -126,13 +126,13 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
 
         ToastManager.error(error.message or ERROR_SOMETHING_WENT_WRONG)
 
-    def set_wallet_password(self, enter_password_input: str):
+    def set_wallet_credentials(self, enter_password_input: str, mnemonic: str):
         """Set the wallet password to the keychain and handle the unlocking process."""
         self.password = enter_password_input
         self.is_loading.emit(True)
         self.run_in_thread(
-            CommonOperationService.enter_node_password, {
-                'args': [str(self.password)],
+            CommonOperationService.enter_wallet_password, {
+                'args': [str(self.password), mnemonic],
                 'callback': self.on_success,
                 'error_callback': self.on_error,
             },

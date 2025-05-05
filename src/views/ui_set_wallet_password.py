@@ -30,8 +30,6 @@ from accessible_constant import PASSWORD_VISIBILITY_BUTTON
 from accessible_constant import SET_WALLET_PASSWORD_CLOSE_BUTTON
 from accessible_constant import SET_WALLET_PASSWORD_PROCEED_BUTTON
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletType
-from src.model.selection_page_model import SelectionPageModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import SYNCING_CHAIN_LABEL_TIMER
 from src.utils.helpers import load_stylesheet

@@ -41,7 +41,7 @@ class RestoreViewModel(QObject, ThreadManager):
         self.sidebar = self._page_navigation.sidebar()
         if self.sidebar is not None:
             self.sidebar.my_fungibles.setChecked(True)
-        self._page_navigation.enter_wallet_password_page()
+        self._page_navigation.enter_wallet_password_page(self.mnemonic)
 
     def on_success(self, response):
         """Callback after successful restore"""

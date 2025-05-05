@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import CheckIndexerUrlRequestModel
-from src.model.common_operation_model import CheckIndexerUrlResponseModel
-from src.model.common_operation_model import CheckProxyEndpointRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.setting_model import DefaultExpiryTime
 from src.model.setting_model import DefaultFeeRate
@@ -16,14 +13,6 @@ from src.model.setting_model import IsDefaultEndpointSet
 from src.model.setting_model import IsDefaultExpiryTimeSet
 from src.model.setting_model import IsDefaultFeeRateSet
 from src.model.setting_model import IsDefaultMinConfirmationSet
-from src.utils.constant import ANNOUNCE_ADDRESS
-from src.utils.constant import ANNOUNCE_ALIAS
-from src.utils.constant import BITCOIND_RPC_HOST_MAINNET
-from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
-from src.utils.constant import BITCOIND_RPC_HOST_TESTNET
-from src.utils.constant import BITCOIND_RPC_PORT_MAINNET
-from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
-from src.utils.constant import BITCOIND_RPC_PORT_TESTNET
 from src.utils.constant import FEE_RATE
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
@@ -34,19 +23,10 @@ from src.utils.constant import MIN_CONFIRMATION
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
-from src.utils.constant import SAVED_ANNOUNCE_ADDRESS
-from src.utils.constant import SAVED_ANNOUNCE_ALIAS
-from src.utils.constant import SAVED_BITCOIND_RPC_HOST
-from src.utils.constant import SAVED_BITCOIND_RPC_PORT
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
-from src.utils.custom_context import repository_custom_context
-from src.utils.decorators.lock_required import lock_required
-from src.utils.endpoints import CHECK_INDEXER_URL_ENDPOINT
-from src.utils.endpoints import CHECK_PROXY_ENDPOINT
 from src.utils.handle_exception import handle_exceptions
 from src.utils.local_store import local_store
-from src.utils.request import Request
 
 
 class SettingCardRepository:
@@ -133,28 +113,6 @@ class SettingCardRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    @lock_required
-    def check_indexer_url(url: CheckIndexerUrlRequestModel) -> CheckIndexerUrlResponseModel:
-        """
-        Check the validity of the given indexer URL by sending a POST request to the check indexer URL endpoint.
-
-        Args:
-            url (CheckIndexerUrlRequestModel): The request model containing the URL to be checked.
-
-        Returns:
-            CheckIndexerUrlResponseModel: The response model containing the result of the URL check.
-
-        Raises:
-            HTTPError: If the request results in an HTTP error (4xx or 5xx).
-        """
-        with repository_custom_context():
-            payload = url.dict()
-            response = Request.post(CHECK_INDEXER_URL_ENDPOINT, payload)
-            response.raise_for_status()
-            data = response.json()
-            return CheckIndexerUrlResponseModel(**data)
-
-    @staticmethod
     def set_default_endpoints(key, value: str | int) -> IsDefaultEndpointSet:
         """
         Sets the default endpoint value.
@@ -203,24 +161,6 @@ class SettingCardRepository:
             return DefaultIndexerUrl(url=url)
         except Exception as exe:
             return handle_exceptions(exe)
-
-    @staticmethod
-    @lock_required
-    def check_proxy_endpoint(endpoint: CheckProxyEndpointRequestModel):
-        """
-        Check the validity of the given indexer endpoint by sending a POST request to the check indexer URL endpoint.
-
-        Args:
-            url (CheckProxyEndpointRequestModel): The request model containing the URL to be checked.
-
-        Raises:
-            HTTPError: If the request results in an HTTP error (4xx or 5xx).
-        """
-        with repository_custom_context():
-            payload = endpoint.dict()
-            response = Request.post(CHECK_PROXY_ENDPOINT, payload)
-            response.raise_for_status()
-            return
 
     @staticmethod
     def get_default_proxy_endpoint() -> DefaultProxyEndpoint:

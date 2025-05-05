@@ -19,7 +19,6 @@ from PySide6.QtWidgets import QWidget
 import src.resources_rc
 from accessible_constant import ABOUT_BUTTON
 from accessible_constant import BACKUP_BUTTON
-from accessible_constant import CHANNEL_MANAGEMENT_BUTTON
 from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
 from accessible_constant import FUNGIBLE_BUTTON

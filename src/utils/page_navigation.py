@@ -189,7 +189,6 @@ class PageNavigation:
         else:
             logger.error('Page %s not found.', page_name)
 
-
     def splash_screen_page(self):
         """This method display splash screen page."""
         self.navigate_to_page('SplashScreenWidget')
@@ -218,9 +217,13 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def enter_wallet_password_page(self):
+    def enter_wallet_password_page(self, params):
         """This method display the set wallet password page."""
-        self.navigate_to_page('EnterWalletPassword')
+        self.current_stack = {
+            'name': 'EnterWalletPassword',
+            'widget': self.pages['EnterWalletPassword'](self._ui.view_model, params),
+        }
+        self.navigate_and_toggle(False)
 
     def issue_rgb20_asset_page(self):
         """This method display the issue rgb20 asset page."""

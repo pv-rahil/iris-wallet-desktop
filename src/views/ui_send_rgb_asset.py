@@ -16,7 +16,6 @@ from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
-from src.model.rgb_model import DecodeRgbInvoiceResponseModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT

@@ -33,7 +33,9 @@ def test_enter_wallet_password_locked_same_network(mock_unlock, mock_network_inf
     lock_obj = mock_is_node_locked(True)
     mock_unlock(UnlockResponseModel(status=True))
     network_info_obj = mock_network_info(mocked_network_info_api_res)
-    result = CommonOperationService.enter_node_password(password='Random@123')
+    result = CommonOperationService.enter_wallet_password(
+        password='Random@123', mnemonic='test mnemonic',
+    )
     assert isinstance(result, UnlockResponseModel)
     assert result.status is True
     lock_obj.assert_called_once()
@@ -46,7 +48,9 @@ def test_enter_wallet_password_unlocked_same_network(mock_unlock, mock_network_i
     mock_unlock(UnlockResponseModel(status=True))
     lock_api_obj = mock_lock(True)
     network_info_obj = mock_network_info(mocked_network_info_api_res)
-    result = CommonOperationService.enter_node_password(password='Random@123')
+    result = CommonOperationService.enter_wallet_password(
+        password='Random@123', mnemonic='test mnemonic',
+    )
     assert isinstance(result, UnlockResponseModel)
     assert result.status is True
     lock_obj.assert_called_once()
@@ -60,7 +64,9 @@ def test_enter_wallet_password_locked_diff_network(mock_unlock, mock_network_inf
     mock_unlock(UnlockResponseModel(status=False))
     network_info_obj = mock_network_info(mocked_network_info_diff)
     with pytest.raises(CommonException) as exc_info:
-        CommonOperationService.enter_node_password(password='Random@123')
+        CommonOperationService.enter_wallet_password(
+            password='Random@123', mnemonic='test mnemonic',
+        )
     assert str(exc_info.value) == 'Network configuration does not match.'
     lock_obj.assert_called_once()
     network_info_obj.assert_called_once()
@@ -73,7 +79,9 @@ def test_enter_wallet_password_unlocked_diff_network(mock_unlock, mock_network_i
     _lock_api_obj = mock_lock(True)
     network_info_obj = mock_network_info(mocked_network_info_diff)
     with pytest.raises(CommonException) as exc_info:
-        CommonOperationService.enter_node_password(password='Random@123')
+        CommonOperationService.enter_wallet_password(
+            password='Random@123', mnemonic='test mnemonic',
+        )
     assert str(exc_info.value) == 'Network configuration does not match.'
     lock_obj.assert_called_once()
     network_info_obj.assert_called_once()

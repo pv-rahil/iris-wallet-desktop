@@ -119,7 +119,7 @@ class TransactionListWithBalanceResponse(TransactionListResponse):
     balance: BalanceResponseModel
 
 
-class UnspentsListResponseModel(BaseModel, Unspent):
+class UnspentsListResponseModel(BaseModel):
     """Model representing response of list unspents api"""
     unspents: list[Unspent | None]
 

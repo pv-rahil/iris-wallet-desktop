@@ -80,7 +80,7 @@ class RestoreService:
             logger.info('Calling restore api')
             response: RestoreResponseModel = CommonOperationRepository.restore(
                 RestoreRequestModel(
-                    backup_path=restore_file_path, password=password,
+                    backup_path=restore_file_path, password=password, data_dir=app_paths.app_path,
                 ),
             )
             return response

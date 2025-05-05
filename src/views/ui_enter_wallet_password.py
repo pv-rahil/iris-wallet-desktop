@@ -35,10 +35,10 @@ from src.views.components.wallet_logo_frame import WalletLogoFrame
 class EnterWalletPassword(QWidget):
     """This class represents all the UI elements of the enter wallet password page."""
 
-    def __init__(self, view_model):
+    def __init__(self, view_model, mnemonic=None):
         super().__init__()
         self._view_model: MainViewModel = view_model
-
+        self.mnemonic = mnemonic
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
 
@@ -289,7 +289,7 @@ class EnterWalletPassword(QWidget):
 
         self.login_wallet_button.clicked.connect(
             lambda: self.set_wallet_password(
-                self.enter_password_input,
+                self.enter_password_input, self.mnemonic,
             ),
         )
 
@@ -304,10 +304,10 @@ class EnterWalletPassword(QWidget):
         )
         self.timer.timeout.connect(self.syncing_chain_info_label.show)
 
-    def set_wallet_password(self, enter_password_input: QLineEdit):
+    def set_wallet_password(self, enter_password_input: QLineEdit, mnemonic: str):
         """Take password input from ui and pass view model method set_wallet_password"""
-        self._view_model.enter_wallet_password_view_model.set_wallet_password(
-            enter_password_input.text(),
+        self._view_model.enter_wallet_password_view_model.set_wallet_credentials(
+            enter_password_input.text(), mnemonic,
         )
 
     def toggle_password_visibility(self, line_edit):

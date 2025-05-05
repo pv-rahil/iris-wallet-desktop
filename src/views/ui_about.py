@@ -23,11 +23,11 @@ from accessible_constant import INDEXER_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import INDEXER_URL_COPY_BUTTON
 from accessible_constant import RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import RGB_PROXY_URL_COPY_BUTTON
+from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import download_file
-from src.utils.common_utils import network_info
 from src.utils.common_utils import zip_logger_folder
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import LDK_PORT_KEY
@@ -35,6 +35,7 @@ from src.utils.constant import PRIVACY_POLICY_URL
 from src.utils.constant import TERMS_OF_SERVICE_URL
 from src.utils.error_message import ERROR_WHILE_DOWNLOADING_LOGS
 from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_DOWNLOAD_CANCELED
 from src.utils.local_store import local_store
@@ -52,8 +53,9 @@ class AboutWidget(QWidget):
     def __init__(self, view_model):
         super().__init__()
         self._view_model: MainViewModel = view_model
-        self.network: str = ''
-        network_info(self)
+        self.network = get_bitcoin_network_from_enum(
+            SettingRepository.get_wallet_network(),
+        )
         self.ldk_port = local_store.get_value(LDK_PORT_KEY)
         self.setStyleSheet(load_stylesheet('views/qss/about_style.qss'))
         self.grid_layout = QGridLayout(self)

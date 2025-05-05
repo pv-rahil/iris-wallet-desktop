@@ -4,6 +4,7 @@ from __future__ import annotations
 from rgb_lib import AssetCfa
 from rgb_lib import AssetNia
 from rgb_lib import Assets
+from rgb_lib import AssetUda
 from rgb_lib import Balance
 from rgb_lib import Invoice
 from rgb_lib import ReceiveData
@@ -18,14 +19,10 @@ from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
 from src.model.rgb_model import FilterAssetRequestModel
-from src.model.rgb_model import GetAssetMediaModelRequestModel
-from src.model.rgb_model import GetAssetMediaModelResponseModel
 from src.model.rgb_model import IssueAssetCfaRequestModel
 from src.model.rgb_model import IssueAssetNiaRequestModel
-from src.model.rgb_model import IssueAssetResponseModel
 from src.model.rgb_model import IssueAssetUdaRequestModel
 from src.model.rgb_model import ListTransfersRequestModel
-from src.model.rgb_model import PostAssetMediaModelResponseModel
 from src.model.rgb_model import RefreshTransferResponseModel
 from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
@@ -33,10 +30,6 @@ from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.check_colorable_available import check_colorable_available
 from src.utils.decorators.unlock_required import unlock_required
-from src.utils.endpoints import GET_ASSET_MEDIA
-from src.utils.endpoints import ISSUE_ASSET_ENDPOINT_UDA
-from src.utils.endpoints import POST_ASSET_MEDIA
-from src.utils.request import Request
 
 
 class RgbRepository:
@@ -169,39 +162,17 @@ class RgbRepository:
     @staticmethod
     @unlock_required
     @check_colorable_available()
-    def issue_asset_uda(asset: IssueAssetUdaRequestModel) -> IssueAssetResponseModel:
+    def issue_asset_uda(asset: IssueAssetUdaRequestModel) -> AssetUda:
         """Issue asset."""
-        payload = asset.dict()
         with repository_custom_context():
-            response = Request.post(ISSUE_ASSET_ENDPOINT_UDA, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            asset_data = data['asset']
+            data: AssetUda = colored_wallet.wallet.issue_asset_uda(
+                online=colored_wallet.online, details=asset.ticker, name=asset.name, ticker=asset.ticker,
+                precision=asset.precision, media_file_path=asset.file_path, attachments_file_paths=asset.attachments_file_paths,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return IssueAssetResponseModel(**asset_data)
-
-    @staticmethod
-    @unlock_required
-    def get_asset_media_hex(digest: GetAssetMediaModelRequestModel) -> GetAssetMediaModelResponseModel:
-        """Get asset media hex from digest"""
-        payload = digest.dict()
-        with repository_custom_context():
-            response = Request.post(GET_ASSET_MEDIA, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return GetAssetMediaModelResponseModel(**data)
-
-    @staticmethod
-    @unlock_required
-    def post_asset_media(files) -> PostAssetMediaModelResponseModel:
-        """return digest for given image"""
-        with repository_custom_context():
-            response = Request.post(POST_ASSET_MEDIA, files=files)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return PostAssetMediaModelResponseModel(**data)
+            return data
 
     @staticmethod
     @unlock_required

@@ -62,6 +62,7 @@ def build_app_paths(base_path: str) -> AppPathsModel:
             restore_folder_path=os.path.join(
                 iriswallet_temp_folder_path, 'restore',
             ),
+            init_file_path=os.path.join(app_path, 'wallet_init.dat'),
 
         )
     except Exception as exc:

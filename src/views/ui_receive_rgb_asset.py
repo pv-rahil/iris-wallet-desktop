@@ -11,7 +11,6 @@ from rgb_lib import AssetIface
 
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import ToastPreset
 from src.model.selection_page_model import AssetDataModel
 from src.model.setting_model import DefaultProxyEndpoint
@@ -53,7 +52,6 @@ class ReceiveRGBAssetWidget(QWidget):
 
     def generate_invoice(self):
         """Call get rgb invoice to get invoice"""
-        print('i am here')
         if self.originating_page in [
             AssetIface.RGB20,
             'fungibles',
@@ -111,7 +109,6 @@ class ReceiveRGBAssetWidget(QWidget):
         """
         Navigate to the specified page when the close button is clicked.
         """
-        print(self.close_page_navigation)
         if self.close_page_navigation == AssetIface.RGB25:
             self._view_model.page_navigation.collectibles_asset_page()
         elif self.close_page_navigation == AssetIface.RGB20:

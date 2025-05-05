@@ -98,6 +98,7 @@ class WalletRequestModel(BaseModel):
 
 class RestoreRequestModel(BackupRequestModel):
     """Restore request model."""
+    data_dir: str
 
 
 # -------------------- Response models -----------------------
@@ -198,3 +199,4 @@ class AppPathsModel(BaseModel):
     config_file_path: str
     backup_folder_path: str
     restore_folder_path: str
+    init_file_path: str
