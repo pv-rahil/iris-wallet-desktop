@@ -87,7 +87,7 @@ class WalletRequestModel(BaseModel):
     data_dir: str
     bitcoin_network: BitcoinNetwork
     max_allocations_per_utxo: int = 1
-    pubkey: str
+    account_xpub: str
     mnemonic: str
     vanilla_keychain: int = 1
 
@@ -199,4 +199,4 @@ class AppPathsModel(BaseModel):
     config_file_path: str
     backup_folder_path: str
     restore_folder_path: str
-    init_file_path: str
+    mnemonic_file_path: str

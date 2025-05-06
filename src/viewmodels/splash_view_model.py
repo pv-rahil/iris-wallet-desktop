@@ -12,12 +12,14 @@ from PySide6.QtWidgets import QApplication
 import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.data.repository.wallet_holder import colored_wallet
 from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NativeAuthType
+from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.build_app_path import app_paths
+from src.utils.constant import ACCOUNT_XPUB
 from src.utils.constant import COMPATIBLE_RLN_NODE_COMMITS
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_LN
 from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
@@ -30,12 +32,14 @@ from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTARTING_RLN_NODE
 from src.utils.info_message import INFO_STARTING_RLN_NODE
 from src.utils.info_message import INFO_WALLET_RESET
+from src.utils.keyring_storage import get_value
 from src.utils.ln_node_manage import LnNodeServerManager
 from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.render_timer import RenderTimer
 from src.utils.reset_app import delete_app_data
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.viewmodels.wallet_and_transfer_selection_viewmodel import WalletTransferSelectionViewModel
 from src.views.components.error_report_dialog_box import ErrorReportDialog
@@ -192,7 +196,12 @@ class SplashViewModel(QObject, ThreadManager):
             if keyring_status is True:
                 self._page_navigation.enter_wallet_password_page()
             else:
+                network: NetworkEnumModel = SettingRepository.get_wallet_network()
+                password: str = get_value(WALLET_PASSWORD_KEY, network.value)
 
+                decrypted_mnemonic = mnemonic_store.decrypt(
+                    password=password, path=app_paths.mnemonic_file_path,
+                )
                 self.splash_screen_message.emit(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_node_to_unlock', None,
@@ -202,8 +211,9 @@ class SplashViewModel(QObject, ThreadManager):
                 network = get_bitcoin_network_from_enum(
                     bitcoin_network.__network__,
                 )
+                account_xpub = local_store.get_value(ACCOUNT_XPUB)
                 wallet = WalletRequestModel(
-                    data_dir=app_paths.app_path, bitcoin_network=network, pubkey=colored_wallet.init_response.account_xpub, mnemonic=colored_wallet.init_response.mnemonic,
+                    data_dir=app_paths.app_path, bitcoin_network=network, account_xpub=account_xpub, mnemonic=decrypted_mnemonic,
                 )
                 self.run_in_thread(
                     CommonOperationRepository.unlock, {

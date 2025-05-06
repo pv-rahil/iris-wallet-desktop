@@ -329,7 +329,6 @@ class KeyringErrorDialog(QDialog):
         """Handle when keyring toggle disable by user"""
         try:
             network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            delete_value(MNEMONIC_KEY, network.value)
             delete_value(WALLET_PASSWORD_KEY, network.value)
             delete_value(NATIVE_LOGIN_ENABLED)
             delete_value(IS_NATIVE_AUTHENTICATION_ENABLED)

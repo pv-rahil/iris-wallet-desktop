@@ -330,13 +330,13 @@ class SettingViewModel(QObject, ThreadManager):
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
 
-    def enable_keyring(self, mnemonic: str, password: str):
+    def enable_keyring(self, password: str):
         """Enable keyring status"""
         self.loading_status.emit(True)
         self.run_in_thread(
             CommonOperationService.keyring_toggle_enable_validation,
             {
-                'args': [mnemonic, password],
+                'args': [password],
                 'callback': self.on_success_of_keyring_validation,
                 'error_callback': self.on_error_of_keyring_enable_validation,
             },

@@ -12,6 +12,7 @@ ORGANIZATION_DOMAIN = 'com.rgb.iriswallet'
 LOG_FILE_MAX_SIZE = 1048576  # 1 mb
 LOG_FILE_MAX_BACKUP_COUNT = 5
 MNEMONIC_KEY = 'mnemonic'
+ACCOUNT_XPUB = 'account_xpub'
 WALLET_PASSWORD_KEY = 'wallet_password'
 LIGHTNING_URL_KEY = 'lightning_network_url'
 SAVED_BITCOIND_RPC_USER = 'bitcoind_rpc_username'

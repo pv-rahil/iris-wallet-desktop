@@ -15,6 +15,7 @@ from src.utils.constant import APP_DIR
 from src.utils.constant import APP_NAME
 from src.utils.constant import CACHE_FOLDER_NAME
 from src.utils.constant import LOG_FOLDER_NAME
+from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import NODE_DIR
 from src.utils.handle_exception import handle_exceptions
 from src.utils.local_store import local_store
@@ -62,7 +63,7 @@ def build_app_paths(base_path: str) -> AppPathsModel:
             restore_folder_path=os.path.join(
                 iriswallet_temp_folder_path, 'restore',
             ),
-            init_file_path=os.path.join(app_path, 'wallet_init.dat'),
+            mnemonic_file_path=os.path.join(app_path, MNEMONIC_KEY),
 
         )
     except Exception as exc:

@@ -28,17 +28,10 @@ from src.utils.page_navigation_events import PageNavigationEventManager
 def unlock_node() -> Any:
     """Unlock the node by sending a request to the unlock endpoint."""
     try:
-        # password = None
-        # keyring_status = SettingRepository.get_keyring_status()
-        # if keyring_status is False:
-        #     password = get_value(
-        #         WALLET_PASSWORD_KEY,
-        #         network=bitcoin_network.__network__,
-        #     )
         network: NetworkEnumModel = SettingRepository.get_wallet_network()
         network = get_bitcoin_network_from_enum(network)
         wallet_data_args = WalletRequestModel(
-            data_dir=app_paths.app_path, bitcoin_network=network, pubkey=colored_wallet.init_response.account_xpub, mnemonic=colored_wallet.init_response.mnemonic,
+            data_dir=app_paths.app_path, bitcoin_network=network, account_xpub=colored_wallet, mnemonic=colored_wallet,
         )
         wallet_data = rgb_lib.WalletData(
             **wallet_data_args, database_type=rgb_lib.DatabaseType.SQLITE,

@@ -63,6 +63,7 @@ from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_VALIDATION_OF_NODE_PASSWORD_AND_KEYRING_ACCESS
 from src.utils.keyring_storage import get_value
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.configurable_card import ConfigurableCardFrame
 from src.views.components.header_frame import HeaderFrame
@@ -668,7 +669,7 @@ class SettingsWidget(QWidget):
         stored_keyring_status = SettingRepository.get_keyring_status()
         if stored_keyring_status is False:
             network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            mnemonic: str = get_value(MNEMONIC_KEY, network.value)
+            mnemonic: str = mnemonic_store.decrypted_mnemonic
             password: str = get_value(WALLET_PASSWORD_KEY, network.value)
             keyring_dialog = KeyringErrorDialog(
                 mnemonic=mnemonic,

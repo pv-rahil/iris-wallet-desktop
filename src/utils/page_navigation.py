@@ -217,11 +217,11 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def enter_wallet_password_page(self, params):
+    def enter_wallet_password_page(self):
         """This method display the set wallet password page."""
         self.current_stack = {
             'name': 'EnterWalletPassword',
-            'widget': self.pages['EnterWalletPassword'](self._ui.view_model, params),
+            'widget': self.pages['EnterWalletPassword'](self._ui.view_model),
         }
         self.navigate_and_toggle(False)
 

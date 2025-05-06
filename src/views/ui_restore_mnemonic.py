@@ -172,10 +172,9 @@ class RestoreMnemonicWidget(QDialog):
 
     def handle_on_keyring_toggle_enable(self):
         """Handle when user enable toggle from setting page"""
-        mnemonic = str(self.mnemonic_input.text())
         password = str(self.password_input.text())
         self._view_model.setting_view_model.enable_keyring(
-            mnemonic=mnemonic, password=password,
+            password=password,
         )
         self.close()
 

@@ -126,13 +126,13 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
 
         ToastManager.error(error.message or ERROR_SOMETHING_WENT_WRONG)
 
-    def set_wallet_credentials(self, enter_password_input: str, mnemonic: str):
+    def set_wallet_credentials(self, enter_password_input: str):
         """Set the wallet password to the keychain and handle the unlocking process."""
         self.password = enter_password_input
         self.is_loading.emit(True)
         self.run_in_thread(
             CommonOperationService.enter_wallet_password, {
-                'args': [str(self.password), mnemonic],
+                'args': [str(self.password)],
                 'callback': self.on_success,
                 'error_callback': self.on_error,
             },

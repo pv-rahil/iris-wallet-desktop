@@ -38,6 +38,7 @@ from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
+from src.utils.custom_exception import CommonException
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.local_store import local_store
 from src.utils.logging import logger
@@ -322,11 +323,18 @@ def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
         raise exc
 
 
-def get_bitcoin_network_from_enum(network: NetworkEnumModel) -> BitcoinNetwork:
+def get_bitcoin_network_from_enum(network: NetworkEnumModel | BitcoinNetwork) -> BitcoinNetwork:
     """Map a NetworkEnumModel to its corresponding BitcoinNetwork."""
+    if isinstance(network, BitcoinNetwork):
+        return network
+
     mapping = {
         NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
         NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
         NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
     }
-    return mapping[network]
+
+    try:
+        return mapping[network]
+    except KeyError as e:
+        raise CommonException('Invalid network') from e

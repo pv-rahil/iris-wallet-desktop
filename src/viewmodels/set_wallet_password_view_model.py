@@ -3,34 +3,34 @@ for the term and setwalletpassword page activities.
 """
 from __future__ import annotations
 
-import os
 import random
 import re
 import string
+from functools import partial
 from typing import Any
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QLineEdit
-from rgb_lib import Keys
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletType
 from src.model.set_wallet_password_model import SetWalletPasswordModel
+from src.utils.build_app_path import app_paths
+from src.utils.constant import ACCOUNT_XPUB
 from src.utils.constant import CURRENT_RLN_NODE_COMMIT
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
-from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.handle_exception import CommonException
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
 from src.views.components.message_box import MessageBox
@@ -106,7 +106,7 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                 CommonOperationService.initialize_wallet,
                 {
                     'args': [str(password)],
-                    'callback': self.on_success,
+                    'callback': partial(self.on_success, password=password),
                     'error_callback': self.on_error,
                 },
             )
@@ -121,7 +121,7 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
             self.common_sidebar.my_fungibles.setChecked(True)
         self._page_navigation.fungibles_asset_page()
 
-    def on_success(self, response: Keys):
+    def on_success(self, response, password: str):
         """
         Handles the successful completion of the set wallet password process.
 
@@ -129,30 +129,32 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
         that the process has completed, and navigates to the main asset page.
         """
         try:
-            if response.mnemonic:
+            wallet_response, password = response
+            if wallet_response.mnemonic:
                 self.is_loading.emit(False)
                 SettingRepository.set_wallet_initialized()
                 SettingRepository.set_rln_node_commit_id(
                     CURRENT_RLN_NODE_COMMIT,
                 )
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
-                wallet_type: WalletType = SettingRepository.get_wallet_type()
-                if wallet_type.value == WalletType.EMBEDDED_TYPE_WALLET.value:
-                    set_value(MNEMONIC_KEY, response.mnemonic, network.value)
-                    if os.path.exists(TOKEN_PICKLE_PATH):
-                        SettingRepository.set_backup_configured(True)
-                is_mnemonic_stored = set_value(
-                    MNEMONIC_KEY, response.mnemonic, network.value,
+                encrypted_mnemonic = mnemonic_store.encrypt(
+                    password=password, mnemonic=wallet_response.mnemonic,
+                )
+                local_store.write_to_file(
+                    file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
+                )
+                local_store.set_value(
+                    ACCOUNT_XPUB, wallet_response.account_xpub,
                 )
                 is_password_stored = set_value(
                     WALLET_PASSWORD_KEY, self.password, network.value,
                 )
-                if is_password_stored and is_mnemonic_stored:
+                if is_password_stored:
                     SettingRepository.set_keyring_status(status=False)
                     self.forward_to_fungibles_page()
                 else:
                     keyring_warning_dialog = KeyringErrorDialog(
-                        mnemonic=response.mnemonic,
+                        mnemonic=wallet_response.mnemonic,
                         password=self.password,
                         navigate_to=self.forward_to_fungibles_page,
                     )

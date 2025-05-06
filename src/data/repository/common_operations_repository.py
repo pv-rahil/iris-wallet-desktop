@@ -36,7 +36,7 @@ class CommonOperationRepository:
         with repository_custom_context():
             wallet_data = rgb_lib.WalletData(
                 data_dir=unlock.data_dir, bitcoin_network=unlock.bitcoin_network, database_type=DatabaseType.SQLITE,
-                max_allocations_per_utxo=unlock.max_allocations_per_utxo, pubkey=unlock.pubkey, mnemonic=unlock.mnemonic,
+                max_allocations_per_utxo=unlock.max_allocations_per_utxo, pubkey=unlock.account_xpub, mnemonic=unlock.mnemonic,
                 vanilla_keychain=unlock.vanilla_keychain,
             )
             # Initialize the wallet

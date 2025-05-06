@@ -77,5 +77,7 @@ def handle_exceptions(exc):
         raise CommonException(exc.message) from exc
 
     # If no specific type matches, use a default error message
-    error_message = exc.message or str(exc) or ERROR_SOMETHING_WENT_WRONG
+    error_message = getattr(exc, 'message', None) or str(
+        exc,
+    ) or ERROR_SOMETHING_WENT_WRONG
     raise CommonException(error_message) from exc

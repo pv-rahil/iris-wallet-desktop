@@ -37,7 +37,7 @@ from src.utils.gauth import authenticate
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_G_DRIVE_CONFIG_SUCCESS
-from src.utils.keyring_storage import get_value
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.toast import ToastManager
@@ -499,8 +499,7 @@ class Backup(QWidget):
             IRIS_WALLET_TRANSLATIONS_CONTEXT, 'show_mnemonic', 'Show Mnemonic',
         )
         if self.show_mnemonic_button.text() == show_mnemonic_text_val:
-            network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            mnemonic_string: str = get_value(MNEMONIC_KEY, network.value)
+            mnemonic_string: str = mnemonic_store.decrypted_mnemonic
             mnemonic_array: list[str] = mnemonic_string.split()
             for i, mnemonic in enumerate(mnemonic_array, start=1):
                 label_name = f'mnemonic_text_label_{i}'
