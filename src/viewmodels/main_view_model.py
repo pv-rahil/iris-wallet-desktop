@@ -85,6 +85,7 @@ class MainViewModel(QObject):
 
         self.restore_view_model = RestoreViewModel(
             self.page_navigation,
+            self.splash_view_model,
         )
         self.wallet_transfer_selection_view_model = WalletTransferSelectionViewModel(
             self.page_navigation,

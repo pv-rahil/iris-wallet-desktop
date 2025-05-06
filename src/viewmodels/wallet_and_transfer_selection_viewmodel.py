@@ -23,7 +23,6 @@ from src.utils.helpers import get_node_arg_config
 from src.utils.info_message import INFO_LN_NODE_STOPPED
 from src.utils.info_message import INFO_LN_SERVER_ALREADY_RUNNING
 from src.utils.info_message import INFO_LN_SERVER_STARTED
-from src.utils.info_message import INFO_STARTING_RLN_NODE
 from src.utils.keyring_storage import get_value
 from src.utils.ln_node_manage import LnNodeServerManager
 from src.utils.logging import logger
@@ -67,9 +66,6 @@ class WalletTransferSelectionViewModel(QObject, ThreadManager):
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
             if self.is_node_data_exits and wallet.is_wallet_initialized:
                 if keyring_status is True:
-                    self.splash_view_model.show_main_window_loader.emit(
-                        False, INFO_STARTING_RLN_NODE,
-                    )
                     self._page_navigation.enter_wallet_password_page()
                 else:
                     bitcoin_config = get_bitcoin_config(
@@ -92,9 +88,6 @@ class WalletTransferSelectionViewModel(QObject, ThreadManager):
                             },
                         )
             else:
-                self.splash_view_model.show_main_window_loader.emit(
-                    False, INFO_STARTING_RLN_NODE,
-                )
                 self._page_navigation.welcome_page()
         except CommonException as exc:
             logger.error(
@@ -104,9 +97,6 @@ class WalletTransferSelectionViewModel(QObject, ThreadManager):
             ToastManager.error(
                 description=exc.message,
             )
-            self.splash_view_model.show_main_window_loader.emit(
-                False, INFO_STARTING_RLN_NODE,
-            )
         except Exception as exc:
             logger.error(
                 'Exception occurred at on_ln_node_start: %s, Message: %s',
@@ -114,9 +104,6 @@ class WalletTransferSelectionViewModel(QObject, ThreadManager):
             )
             ToastManager.error(
                 description=ERROR_SOMETHING_WENT_WRONG,
-            )
-            self.splash_view_model.show_main_window_loader.emit(
-                False, INFO_STARTING_RLN_NODE,
             )
 
     def on_error_of_unlock_node(self, error: Exception):

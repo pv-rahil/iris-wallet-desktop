@@ -47,9 +47,6 @@ class MainWindow:
         self.horizontal_layout.addWidget(self.sidebar)
         self.horizontal_layout.addWidget(self.stacked_widget)
         self.grid_layout_main.addLayout(self.horizontal_layout, 0, 0, 1, 1)
-        self.view_model.splash_view_model.show_main_window_loader.connect(
-            self.show_main_window_loading_screen,
-        )
         self.ln_node_server_manager.main_window_loader.connect(
             self.show_main_window_loading_screen,
         )

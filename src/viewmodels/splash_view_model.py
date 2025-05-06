@@ -29,8 +29,6 @@ from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG_WHILE_UNLOCKING_LN_ON_SPLASH
 from src.utils.helpers import get_bitcoin_network_from_enum
-from src.utils.info_message import INFO_RESTARTING_RLN_NODE
-from src.utils.info_message import INFO_STARTING_RLN_NODE
 from src.utils.info_message import INFO_WALLET_RESET
 from src.utils.keyring_storage import get_value
 from src.utils.ln_node_manage import LnNodeServerManager
@@ -56,7 +54,6 @@ class SplashViewModel(QObject, ThreadManager):
     decline_button_clicked = Signal(str)
     splash_screen_message = Signal(str)
     sync_chain_info_label = Signal(bool)
-    show_main_window_loader = Signal(bool, str)
 
     def __init__(self, page_navigation):
         super().__init__()
@@ -131,7 +128,6 @@ class SplashViewModel(QObject, ThreadManager):
         """On success of unlock api it is forward the user to main page"""
         self.render_timer.stop()
         self._page_navigation.fungibles_asset_page()
-        self.show_main_window_loader.emit(False, INFO_RESTARTING_RLN_NODE)
 
     def on_error_of_unlock_api(self, error: Exception):
         """Handle error of unlock API."""
@@ -184,23 +180,21 @@ class SplashViewModel(QObject, ThreadManager):
             self.error_dialog_box.exec()
             return
 
-        self.show_main_window_loader.emit(False, INFO_RESTARTING_RLN_NODE)
-
         self.is_from_retry = False
 
     def handle_application_open(self):
         """This method handle application start"""
         try:
-            self.show_main_window_loader.emit(True, INFO_RESTARTING_RLN_NODE)
             keyring_status = SettingRepository.get_keyring_status()
-            if keyring_status is True:
+            network: NetworkEnumModel = SettingRepository.get_wallet_network()
+            wallet_password: str = get_value(
+                WALLET_PASSWORD_KEY, network.value,
+            )
+            if keyring_status is True or wallet_password is None:
                 self._page_navigation.enter_wallet_password_page()
             else:
-                network: NetworkEnumModel = SettingRepository.get_wallet_network()
-                password: str = get_value(WALLET_PASSWORD_KEY, network.value)
-
                 decrypted_mnemonic = mnemonic_store.decrypt(
-                    password=password, path=app_paths.mnemonic_file_path,
+                    password=wallet_password, path=app_paths.mnemonic_file_path,
                 )
                 self.splash_screen_message.emit(
                     QCoreApplication.translate(
@@ -223,7 +217,6 @@ class SplashViewModel(QObject, ThreadManager):
                     },
                 )
         except CommonException as error:
-            self.show_main_window_loader.emit(False, INFO_RESTARTING_RLN_NODE)
             logger.error(
                 'Exception occurred at handle_application_open: %s, Message: %s',
                 type(error).__name__, str(error),
@@ -232,7 +225,6 @@ class SplashViewModel(QObject, ThreadManager):
                 description=error.message,
             )
         except Exception as error:
-            self.show_main_window_loader.emit(False, INFO_RESTARTING_RLN_NODE)
             logger.error(
                 'Exception occurred at handle_application_open: %s, Message: %s',
                 type(error).__name__, str(error),
@@ -297,9 +289,6 @@ class SplashViewModel(QObject, ThreadManager):
         delete_app_data(basepath, network=network_type.value)
         logger.info(INFO_WALLET_RESET)
         self._page_navigation.welcome_page()
-        self.show_main_window_loader.emit(
-            True, INFO_STARTING_RLN_NODE,
-        )
         self.wallet_transfer_selection_view_model.start_node_for_embedded_option()
 
     def is_rln_commit_valid(self) -> bool:

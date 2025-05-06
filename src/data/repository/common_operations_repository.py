@@ -1,6 +1,7 @@
 """Module containing CommonOperationRepository."""
 from __future__ import annotations
 
+from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
 from rgb_lib import Keys
 from rgb_lib import rgb_lib
@@ -73,3 +74,10 @@ class CommonOperationRepository:
             response.raise_for_status()  # Raises an exception for HTTP errors
             data = response.json()
             return SignMessageResponseModel(**data)
+
+    @staticmethod
+    def restore_keys(bitcoin_network: BitcoinNetwork, mnemonic: str) -> Keys:
+        """Restore keys operation."""
+        with repository_custom_context():
+            restore_keys = rgb_lib.restore_keys(bitcoin_network, mnemonic)
+            return restore_keys
