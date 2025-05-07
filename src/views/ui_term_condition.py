@@ -110,9 +110,9 @@ class TermConditionWidget(QWidget):
             """,
         )
         self.tnc_text_desc.setReadOnly(True)
-        # self.tnc_text_desc.verticalScrollBar().valueChanged.connect(
-        #     self.check_scroll_completion,
-        # )
+        self.tnc_text_desc.verticalScrollBar().valueChanged.connect(
+            self.check_scroll_completion,
+        )
         self.tnc_text_desc.setOpenExternalLinks(True)
 
         self.grid_layout_10_tnc.addWidget(

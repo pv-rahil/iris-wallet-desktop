@@ -27,11 +27,6 @@ from unittest.mock import patch
 
 import pytest
 
-from src.model.setting_model import DefaultAnnounceAddress
-from src.model.setting_model import DefaultAnnounceAlias
-from src.model.setting_model import DefaultBitcoindHost
-from src.model.setting_model import DefaultBitcoindPort
-from src.model.setting_model import DefaultExpiryTime
 from src.model.setting_model import DefaultFeeRate
 from src.model.setting_model import DefaultIndexerUrl
 from src.model.setting_model import DefaultMinConfirmation
@@ -284,30 +279,11 @@ def test_on_page_load(mock_toast_manager, mock_setting_card_repository, mock_set
     mock_setting_repository.is_exhausted_asset_enabled.return_value = IsHideExhaustedAssetEnabled(
         is_enabled=True,
     )
-    mock_setting_card_repository.get_default_fee_rate.return_value = DefaultFeeRate(
-        fee_rate=5,
-    )
-    mock_setting_card_repository.get_default_expiry_time.return_value = DefaultExpiryTime(
-        time=600,
-        unit='minutes',
-    )
     mock_setting_card_repository.get_default_indexer_url.return_value = DefaultIndexerUrl(
         url='http://localhost:8080',
     )
     mock_setting_card_repository.get_default_proxy_endpoint.return_value = DefaultProxyEndpoint(
         endpoint='http://localhost:8080',
-    )
-    mock_setting_card_repository.get_default_bitcoind_host.return_value = DefaultBitcoindHost(
-        host='localhost',
-    )
-    mock_setting_card_repository.get_default_bitcoind_port.return_value = DefaultBitcoindPort(
-        port=8332,
-    )
-    mock_setting_card_repository.get_default_announce_address.return_value = DefaultAnnounceAddress(
-        address='announce_addr',
-    )
-    mock_setting_card_repository.get_default_announce_alias.return_value = DefaultAnnounceAlias(
-        alias='alias',
     )
     mock_setting_card_repository.get_default_min_confirmation.return_value = DefaultMinConfirmation(
         min_confirmation=6,
@@ -325,23 +301,12 @@ def test_on_page_load(mock_toast_manager, mock_setting_card_repository, mock_set
         ),
         status_of_hide_asset=IsShowHiddenAssetEnabled(is_enabled=True),
         value_of_default_fee=DefaultFeeRate(fee_rate=5),
-        value_of_default_expiry_time=DefaultExpiryTime(
-            time=600, unit='minutes',
-        ),
         value_of_default_indexer_url=DefaultIndexerUrl(
             url='http://localhost:8080',
         ),
         value_of_default_proxy_endpoint=DefaultProxyEndpoint(
             endpoint='http://localhost:8080',
         ),
-        value_of_default_bitcoind_rpc_host=DefaultBitcoindHost(
-            host='localhost',
-        ),
-        value_of_default_bitcoind_rpc_port=DefaultBitcoindPort(port=8332),
-        value_of_default_announce_address=DefaultAnnounceAddress(
-            address='announce_addr',
-        ),
-        value_of_default_announce_alias=DefaultAnnounceAlias(alias='alias'),
         value_of_default_min_confirmation=DefaultMinConfirmation(
             min_confirmation=6,
         ),

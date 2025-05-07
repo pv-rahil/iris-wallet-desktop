@@ -11,7 +11,6 @@ from rgb_lib import BlockTime
 from rgb_lib import Outpoint
 from rgb_lib import TransferTransportEndpoint
 
-from src.model.enums.enums_model import PaymentStatus
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 
@@ -32,7 +31,7 @@ class TransactionDetailPageModel(BaseModel):
     confirmation_time: BlockTime | str | None = None
     updated_date: str | None = None
     updated_time: str | None = None
-    transaction_status: TransactionStatusEnumModel | PaymentStatus | str
+    transaction_status: TransactionStatusEnumModel | str
     transfer_status: TransferStatusEnumModel | None = None
     consignment_endpoints: list[TransferTransportEndpoint | None] | None = []
     recipient_id: str | None = None

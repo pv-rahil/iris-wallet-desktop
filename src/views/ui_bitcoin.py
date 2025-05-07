@@ -32,11 +32,9 @@ from accessible_constant import BITCOIN_TRANSACTION_DETAIL_FRAME
 from accessible_constant import RECEIVE_BITCOIN_BUTTON
 from accessible_constant import SEND_BITCOIN_BUTTON
 from src.model.btc_model import TransactionListResponse
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
-from src.model.selection_page_model import SelectionPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.common_utils import network_info
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT

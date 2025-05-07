@@ -37,7 +37,7 @@ def get_app_directory(app_name_suffix: str | None):
 def delete_app_data(directory_path: str, network=None):
     """
     Delete all files and directories in the specified directory.
-    If a network is specified, only delete the network-specific configuration file, cache directory, and lightning node data.
+    If a network is specified, only delete the network-specific configuration file, cache directory.
 
     Args:
         directory_path (str): The path to the directory from which files and directories will be deleted.
@@ -65,13 +65,12 @@ def delete_app_data(directory_path: str, network=None):
             if network:
 
                 config_file_path = app_paths.config_file_path
-                data_directory_path = app_paths.node_data_path
                 cache_directory_path = app_paths.cache_path
 
                 # Delete only network-specific files and directories
                 paths_to_delete = [
                     config_file_path,
-                    data_directory_path, cache_directory_path,
+                    cache_directory_path,
                 ]
 
                 for path in paths_to_delete:

@@ -42,10 +42,9 @@ from src.views.components.wallet_logo_frame import WalletLogoFrame
 class SetWalletPasswordWidget(QWidget):
     """This class represents all the UI elements of the set wallet password page."""
 
-    def __init__(self, view_model, originating_page):
+    def __init__(self, view_model):
         super().__init__()
         self._view_model: MainViewModel = view_model
-        self.originating_page = originating_page
         self.password_validation = None
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)

@@ -39,7 +39,6 @@ class ConfigurableCardFrame(ClickableFrame):
         self.suggestion_desc = None
         self.inner_horizontal_layout = None
         self.input_value = None
-        self.time_unit_combobox = None
         self.params: ConfigurableCardModel | None = params
         self.is_expanded = False
         self.setObjectName('card_frame')
@@ -114,7 +113,6 @@ class ConfigurableCardFrame(ClickableFrame):
         self.is_expanded = False
         self.suggestion_desc.hide()
         self.input_value.hide()
-        self.time_unit_combobox.hide()
         self.save_button.hide()
         self.title_desc.setMinimumSize(QSize(492, 45))
 
@@ -155,15 +153,9 @@ class ConfigurableCardFrame(ClickableFrame):
         self.input_value.setAccessibleName(INPUT_BOX_NAME)
         self.input_value.setMinimumSize(QSize(300, 35))
         self.input_value.setMaximumSize(QSize(492, 16777215))
-        self.time_unit_combobox = QComboBox()
-        self.time_unit_combobox.setMinimumSize(QSize(90, 35))
-        self.time_unit_combobox.setAccessibleDescription(EXPIRY_TIME_COMBO_BOX)
 
         self.inner_horizontal_layout.addWidget(
             self.input_value, alignment=Qt.AlignLeft,
-        )
-        self.inner_horizontal_layout.addWidget(
-            self.time_unit_combobox,
         )
         self.configurable_card_grid_layout.addLayout(
             self.inner_horizontal_layout, 2, 0, 1, 1,
@@ -185,20 +177,6 @@ class ConfigurableCardFrame(ClickableFrame):
         self.suggestion_desc.setText(
             self.params.suggestion_desc,
         )
-        self.add_translated_item('minutes')
-        self.add_translated_item('hours')
-        self.add_translated_item('days')
-        self.input_value.textChanged.connect(
-            self.check_input_and_toggle_save_button,
-        )
-
-    def add_translated_item(self, text: str):
-        """Adds a translated item to the time unit combo box."""
-        if self.time_unit_combobox:
-            translated_text = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, text, None,
-            )
-            self.time_unit_combobox.addItem(translated_text)
 
     def check_input_and_toggle_save_button(self):
         """Check if input_value is empty and enable/disable save button."""

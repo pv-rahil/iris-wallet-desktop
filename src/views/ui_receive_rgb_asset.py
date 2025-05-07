@@ -71,7 +71,6 @@ class ReceiveRGBAssetWidget(QWidget):
                     proxy_endpoint.endpoint,
                 ],
             )
-            print(123)
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""

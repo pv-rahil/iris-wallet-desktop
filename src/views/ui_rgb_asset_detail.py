@@ -391,7 +391,6 @@ class RGBAssetDetailWidget(QWidget):
 
     def select_receive_transfer_type(self):
         """This method handled after channel created"""
-        print(f"self.asset_type:{self.asset_type}")
         self._view_model.page_navigation.receive_rgb25_page(
             params=AssetDataModel(
                 asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(), close_page_navigation=self.asset_type,
@@ -512,7 +511,7 @@ class RGBAssetDetailWidget(QWidget):
     def handle_show_hide(self, transaction_detail_frame):
         """It handled to hide and show transaction details frame"""
         if self.transfer_status == TransferStatusEnumModel.INTERNAL.value:
-            if self.transaction_type == str(TransferKind.ISSUANCE.value):
+            if self.transaction_type == TransferKind.ISSUANCE:
                 transaction_detail_frame.transaction_type.setText(
                     'ISSUANCE',
                 )
@@ -678,10 +677,9 @@ class RGBAssetDetailWidget(QWidget):
             transaction.transfer_Status,
         )
         self.transfer_amount = amount
-        self.transaction_type = str(transaction.kind)
-        self.transaction_status = str(
-            transaction.status,
-        )
+        self.transaction_type = transaction.kind
+        self.transaction_status = transaction.status
+
         if self.transfer_status == TransferStatusEnumModel.SENT.value:
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#EB5A5A;font-weight: 600',
@@ -700,12 +698,12 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_detail_frame.transaction_date.setText(
             self.transaction_date,
         )
-        if self.transaction_status != str(TransferStatus.SETTLED.value):
+        if self.transaction_status != TransferStatus.SETTLED:
             self.transaction_detail_frame.transaction_time.setStyleSheet(
                 'color:#959BAE;font-weight: 400; font-size:14px',
             )
             self.transaction_detail_frame.transaction_time.setText(
-                self.map_status(int(self.transaction_status)),
+                self.map_status(self.transaction_status),
             )
             self.transaction_detail_frame.transaction_date.setText(
                 self.transaction_date,
@@ -758,11 +756,10 @@ class RGBAssetDetailWidget(QWidget):
 
     def map_status(self, transfer_status) -> str:
         """Map TransferStatus to corresponding TransactionStatusEnumModel."""
-        transfer_status = TransferStatus(transfer_status)
         status = {
             TransferStatus.WAITING_COUNTERPARTY: TransactionStatusEnumModel.WAITING_COUNTERPARTY.value,
             TransferStatus.WAITING_CONFIRMATIONS: TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value,
-            TransferStatus.SETTLED: TransactionStatusEnumModel.SETTLED.value,
+            # TransferStatus.SETTLED: TransactionStatusEnumModel.CONFIRMED.value,
             TransferStatus.FAILED: TransactionStatusEnumModel.FAILED.value,
         }
         return status.get(transfer_status, TransactionStatusEnumModel.FAILED)

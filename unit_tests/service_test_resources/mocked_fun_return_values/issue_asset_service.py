@@ -5,7 +5,6 @@ import os
 
 from src.model.rgb_model import IssueAssetCfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
-from src.model.rgb_model import PostAssetMediaModelResponseModel
 asset_image_path = os.path.abspath(
     os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'iris_logo.png',
@@ -32,9 +31,6 @@ mock_data_new_asset_issue_no_path_exits: IssueAssetCfaRequestModel = IssueAssetC
     file_path=asset_image_path_not_exits_image,
 )
 
-mock_data_post_asset_api_res: PostAssetMediaModelResponseModel = PostAssetMediaModelResponseModel(
-    digest='5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
-)
 
 example_data_of_issue_asset_api = {
     'asset_id': 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
@@ -57,6 +53,7 @@ example_data_of_issue_asset_api = {
         'digest': '5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
         'mime': 'text/plain',
     },
+    'ticker': None,
 }
 
 

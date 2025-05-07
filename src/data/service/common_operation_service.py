@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from rgb_lib import Keys
+from rgb_lib import RgbLibError
 from rgb_lib import Wallet
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
@@ -29,15 +30,15 @@ from src.utils.wallet_credential_encryption import mnemonic_store
 class CommonOperationService:
     """
     The CommonOperationService class provides static methods for managing the initialization
-    and unlocking of a wallet within a Lightning Network node environment. It ensures
-    that the wallet operates in the correct network context and handles exceptions during these operations.
+    and unlocking of a wallet. It ensures that the wallet operates in the correct network
+    context and handles exceptions during these operations.
     """
 
     @staticmethod
     def initialize_wallet(password: str) -> tuple[Keys, str]:
         """
         Initializes the wallet with the provided password, unlocks it, and verifies
-        that the node's network matches the expected network.
+        that the wallet's network matches the expected network.
         """
         try:
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
@@ -56,14 +57,14 @@ class CommonOperationService:
             colored_wallet.set_wallet(wallet)
             mnemonic_store.decrypted_mnemonic = response.mnemonic
             return response, password
-        except CommonException as exc:
+        except (CommonException, RgbLibError) as exc:
             return handle_exceptions(exc=exc)
 
     @staticmethod
     def enter_wallet_password(password: str) -> UnlockResponseModel:
         """
-        Unlocks the wallet with the provided password after ensuring the node is locked,
-        and verifies that the node's network matches the expected network.
+        Unlocks the wallet with the provided password,
+        and verifies that the wallet's network matches the expected network.
         """
         try:
             stored_network: NetworkEnumModel = get_bitcoin_network_from_enum(

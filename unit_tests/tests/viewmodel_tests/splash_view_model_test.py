@@ -16,17 +16,12 @@ import pytest
 from PySide6.QtCore import QProcess
 from PySide6.QtWidgets import QApplication
 
-from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletType
-from src.utils.constant import COMPATIBLE_RLN_NODE_COMMITS
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_LN
+from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL
 from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
-from src.utils.error_message import ERROR_NODE_WALLET_NOT_INITIALIZED
 from src.utils.error_message import ERROR_PASSWORD_INCORRECT
 from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
-from src.utils.info_message import INFO_STARTING_RLN_NODE
 from src.viewmodels.splash_view_model import SplashViewModel
 from src.views.components.message_box import MessageBox
 from src.views.components.toast import ToastManager
@@ -38,9 +33,6 @@ def splash_viewmodel():
     mock_navigation = MagicMock()
     model = SplashViewModel(mock_navigation)
     model.error_dialog_box = MagicMock()
-    model.ln_node_manager = MagicMock()
-    model.ln_node_manager.process = MagicMock()
-    model.ln_node_manager.process.state.return_value = QProcess.ProcessState.Running
     model.render_timer = MagicMock()
     model._page_navigation = MagicMock()
     model.is_error_handled = False
@@ -238,10 +230,6 @@ def test_on_error_of_unlock_api(
     # Reset mocks for next test
     mock_instance.enter_wallet_password_page_signal.emit.reset_mock()
 
-    # Test Case: ERROR_NODE_WALLET_NOT_INITIALIZED
-    splash_viewmodel.on_error_of_unlock_api(
-        CommonException(message=ERROR_NODE_WALLET_NOT_INITIALIZED),
-    )
     mock_instance.set_wallet_password_page_signal.emit.assert_called_once()
 
     # Reset mocks for next test
@@ -261,7 +249,7 @@ def test_on_error_of_unlock_api(
 
         # Call with exact error message
         splash_viewmodel.on_error_of_unlock_api(
-            CommonException(message=ERROR_CONNECTION_FAILED_WITH_LN),
+            CommonException(message=ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL),
         )
         mock_restart.assert_called_once()
 
@@ -274,7 +262,7 @@ def test_on_error_of_unlock_api(
     splash_viewmodel.ln_node_manager.process.state.return_value = QProcess.ProcessState.Running
 
     splash_viewmodel.on_error_of_unlock_api(
-        CommonException(message=ERROR_CONNECTION_FAILED_WITH_LN),
+        CommonException(message=ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL),
     )
     mock_error_dialog_instance.exec.assert_called_once()
     assert splash_viewmodel.is_error_handled is True
@@ -324,39 +312,6 @@ def test_on_success_of_unlock_api_no_node_info(mock_set_value, mock_qapp, mock_t
     page_navigation.fungibles_asset_page.assert_called_once()
     mock_common_repo.node_info.assert_called_once()
     mock_set_value.assert_not_called()
-
-
-@patch('src.viewmodels.splash_view_model.NodeIncompatibilityDialog')
-@patch('src.viewmodels.splash_view_model.SettingRepository')
-@patch('src.viewmodels.splash_view_model.ToastManager')
-@patch('src.viewmodels.splash_view_model.QApplication')
-def test_handle_application_open_embedded_wallet(mock_qapp, mock_toast_manager, mock_setting_repo, mock_node_incompatibility):
-    """Tests handle_application_open method with embedded wallet type, without showing UI dialogs."""
-
-    # Arrange
-    page_navigation = Mock()
-    view_model = SplashViewModel(page_navigation)
-    view_model.splash_screen_message = Mock()
-    view_model.wallet_transfer_selection_view_model = Mock()
-
-    # Mock repository responses
-    mock_setting_repo.get_wallet_type.return_value = WalletType.EMBEDDED_TYPE_WALLET
-    # Ensure the commit ID is in the list of compatible commit IDs
-    mock_setting_repo.get_rln_node_commit_id.return_value = COMPATIBLE_RLN_NODE_COMMITS[0]
-
-    # Mock `NodeIncompatibility` to prevent UI interactions
-    mock_node_instance = mock_node_incompatibility.return_value
-    mock_node_instance.node_incompatibility_dialog.clickedButton.return_value = None
-    mock_node_instance.confirmation_dialog.clickedButton.return_value = None
-
-    # Act
-    view_model.handle_application_open()
-
-    # Assert
-    mock_setting_repo.get_wallet_type.assert_called_once()
-    mock_setting_repo.get_rln_node_commit_id.assert_called_once()
-    view_model.splash_screen_message.emit.assert_called_once()
-    view_model.wallet_transfer_selection_view_model.start_node_for_embedded_option.assert_called_once()
 
 
 @patch('src.viewmodels.splash_view_model.SettingRepository')
@@ -410,7 +365,6 @@ def test_handle_application_open_keyring_enabled(mock_qapp, mock_toast_manager, 
     # Arrange
     page_navigation = Mock()
     view_model = SplashViewModel(page_navigation)
-    mock_setting_repo.get_wallet_type.return_value = WalletType.REMOTE_TYPE_WALLET
     mock_setting_repo.get_keyring_status.return_value = True
 
     # Act
@@ -434,7 +388,6 @@ def test_handle_application_open_keyring_disabled(mock_common_repo, mock_bitcoin
     view_model = SplashViewModel(page_navigation)
     view_model.splash_screen_message = Mock()
     view_model.sync_chain_info_label = Mock()
-    mock_setting_repo.get_wallet_type.return_value = WalletType.REMOTE_TYPE_WALLET
     mock_setting_repo.get_keyring_status.return_value = False
     mock_wallet_password = 'test_password'
     mock_get_value.return_value = mock_wallet_password
@@ -450,156 +403,3 @@ def test_handle_application_open_keyring_disabled(mock_common_repo, mock_bitcoin
     mock_get_value.assert_called_once()
     mock_bitcoin_config.assert_called_once()
     assert hasattr(view_model, 'worker')
-
-
-@patch('src.viewmodels.splash_view_model.QApplication')
-@patch('src.viewmodels.splash_view_model.CrashDialogBox', autospec=True)
-@patch('src.viewmodels.splash_view_model.logger')
-def test_restart_ln_node_after_crash_retry(
-    mock_logger, mock_crash_dialog, mock_qapp,
-):
-    """Test restart_ln_node_after_crash when user clicks Retry."""
-    view_model = SplashViewModel(Mock())
-    view_model.is_error_handled = False
-    view_model.is_from_retry = False
-    view_model.handle_application_open = Mock()
-
-    # Mock CrashDialogBox instance
-    mock_dialog_instance = mock_crash_dialog.return_value
-    mock_dialog_instance.message_box = Mock()
-    mock_dialog_instance.retry_button = Mock()
-
-    # Simulate user clicking "Retry"
-    mock_dialog_instance.message_box.clickedButton.return_value = (
-        mock_dialog_instance.retry_button
-    )
-
-    # Act
-    view_model.restart_ln_node_after_crash()
-
-    # Assert
-    assert view_model.is_error_handled is True
-    mock_logger.info.assert_called_once_with('Restarting RGB Lightning Node')
-    view_model.handle_application_open.assert_called_once()
-    mock_qapp.instance().exit.assert_not_called()
-
-
-@patch('src.viewmodels.splash_view_model.QApplication')
-@patch('src.viewmodels.splash_view_model.CrashDialogBox', autospec=True)
-@patch('src.viewmodels.splash_view_model.logger')
-def test_restart_ln_node_after_crash_exit(
-    mock_logger, mock_crash_dialog, mock_qapp,
-):
-    """Test restart_ln_node_after_crash when user clicks Exit."""
-    view_model = SplashViewModel(Mock())
-    view_model.is_error_handled = False
-
-    # Mock CrashDialogBox instance
-    mock_dialog_instance = mock_crash_dialog.return_value
-    mock_dialog_instance.message_box = Mock()
-    mock_dialog_instance.retry_button = Mock()
-
-    # Simulate user clicking a button other than Retry (Exit case)
-    mock_dialog_instance.message_box.clickedButton.return_value = Mock()
-
-    # Act
-    view_model.restart_ln_node_after_crash()
-
-    # Assert
-    assert view_model.is_error_handled is True
-    mock_qapp.instance().exit.assert_called_once()
-    mock_logger.info.assert_not_called()
-
-
-@patch('src.viewmodels.splash_view_model.NodeIncompatibilityDialog', autospec=True)
-@patch('src.viewmodels.splash_view_model.delete_app_data')
-@patch('src.viewmodels.splash_view_model.SettingRepository')
-@patch('src.viewmodels.splash_view_model.local_store')
-def test_delete_app_data(mock_local_store, mock_setting_repo, mock_delete_app_data, mock_node_incompatibility, splash_viewmodel, qtbot):
-    """Test delete_app_data method to ensure the correct flow when a node is incompatible."""
-
-    # Mock local_store.get_path()
-    mock_local_store.get_path.return_value = 'test/path'
-
-    # Mock SettingRepository.get_wallet_network() to return a proper enum value
-    mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.MAINNET
-
-    # Create a mock instance of the dialog
-    mock_dialog_instance = MagicMock()
-
-    # Ensure calling NodeIncompatibility() returns this instance
-    mock_node_incompatibility.return_value = mock_dialog_instance
-
-    # Prevent the dialog from being shown
-    mock_dialog_instance.exec_ = MagicMock()
-
-    # Simulate button clicks
-    mock_dialog_instance.node_incompatibility_dialog.clickedButton.return_value = (
-        mock_dialog_instance.on_delete_app_data_button
-    )
-    mock_dialog_instance.confirmation_dialog.clickedButton.return_value = (
-        mock_dialog_instance.confirm_delete_button
-    )
-
-    # Mock WalletTransferSelectionViewModel method
-    splash_viewmodel.wallet_transfer_selection_view_model = MagicMock()
-
-    # Use pytest-qt's waitSignal to capture the signal emission
-    with qtbot.waitSignal(splash_viewmodel.show_main_window_loader, timeout=1000) as signal_spy:
-        splash_viewmodel.on_delete_app_data()
-
-    # Ensure delete_app_data() was called with correct arguments
-    mock_delete_app_data.assert_called_once_with(
-        'test/path', network=NetworkEnumModel.MAINNET.value,
-    )
-
-    # Ensure navigation to welcome page
-    splash_viewmodel._page_navigation.welcome_page.assert_called_once()
-
-    # Ensure the main window loader signal was emitted with correct arguments
-    assert signal_spy.args[0] is True
-    assert signal_spy.args[1] == INFO_STARTING_RLN_NODE
-
-    # Ensure start_node_for_embedded_option() is called
-    splash_viewmodel.wallet_transfer_selection_view_model.start_node_for_embedded_option.assert_called_once()
-
-
-@patch('src.viewmodels.splash_view_model.NodeIncompatibilityDialog')
-@patch('src.viewmodels.splash_view_model.QApplication')
-def test_handle_node_incompatibility(mock_qapp, mock_node_incompatibility, splash_viewmodel):
-    """Test handle_node_incompatibility method ensuring correct flow without GUI pop-ups."""
-
-    # Create a mock instance of NodeIncompatibilityDialog
-    mock_node_instance = mock_node_incompatibility.return_value
-
-    # Mock delete app data button click
-    mock_node_instance.node_incompatibility_dialog.clickedButton.return_value = (
-        mock_node_instance.delete_app_data_button
-    )
-    mock_node_instance.confirmation_dialog.clickedButton.return_value = (
-        mock_node_instance.confirm_delete_button
-    )
-
-    # Mock necessary methods
-    splash_viewmodel.on_delete_app_data = MagicMock()
-    splash_viewmodel.handle_application_open = MagicMock()
-
-    # Act - Simulate handling node incompatibility
-    splash_viewmodel.handle_node_incompatibility()
-
-    # Assert - Ensure correct methods are called
-    mock_node_instance.show_confirmation_dialog.assert_called_once()
-    splash_viewmodel.on_delete_app_data.assert_called_once()
-    splash_viewmodel.handle_application_open.assert_not_called()
-    mock_qapp.instance().exit.assert_not_called()
-
-    # Test case where cancel is clicked instead
-    mock_node_instance.confirmation_dialog.clickedButton.return_value = (
-        mock_node_instance.cancel
-    )
-
-    splash_viewmodel.handle_node_incompatibility()
-
-    # Assert cancel behavior
-    splash_viewmodel.handle_application_open.assert_called_once()
-    splash_viewmodel.on_delete_app_data.assert_called_once()

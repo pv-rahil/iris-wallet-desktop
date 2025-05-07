@@ -12,13 +12,8 @@ from src.model.common_operation_model import BackupResponseModel
 from src.model.common_operation_model import InitRequestModel
 from src.model.common_operation_model import RestoreRequestModel
 from src.model.common_operation_model import RestoreResponseModel
-from src.model.common_operation_model import SignMessageRequestModel
-from src.model.common_operation_model import SignMessageResponseModel
 from src.model.common_operation_model import WalletRequestModel
 from src.utils.custom_context import repository_custom_context
-from src.utils.decorators.unlock_required import unlock_required
-from src.utils.endpoints import SIGN_MESSAGE_ENDPOINT
-from src.utils.request import Request
 
 
 class CommonOperationRepository:
@@ -63,17 +58,6 @@ class CommonOperationRepository:
                 password=restore.password, data_dir=restore.data_dir,
             )
             return RestoreResponseModel(status=True)
-
-    @staticmethod
-    @unlock_required
-    def sign_message(sign_message: SignMessageRequestModel) -> SignMessageResponseModel:
-        """Sign message operation."""
-        payload = sign_message.dict()
-        with repository_custom_context():
-            response = Request.post(SIGN_MESSAGE_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return SignMessageResponseModel(**data)
 
     @staticmethod
     def restore_keys(bitcoin_network: BitcoinNetwork, mnemonic: str) -> Keys:

@@ -4,21 +4,17 @@ from __future__ import annotations
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.setting_model import DefaultExpiryTime
 from src.model.setting_model import DefaultFeeRate
 from src.model.setting_model import DefaultIndexerUrl
 from src.model.setting_model import DefaultMinConfirmation
 from src.model.setting_model import DefaultProxyEndpoint
 from src.model.setting_model import IsDefaultEndpointSet
-from src.model.setting_model import IsDefaultExpiryTimeSet
 from src.model.setting_model import IsDefaultFeeRateSet
 from src.model.setting_model import IsDefaultMinConfirmationSet
 from src.utils.constant import FEE_RATE
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME_UNIT
 from src.utils.constant import MIN_CONFIRMATION
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
@@ -67,48 +63,6 @@ class SettingCardRepository:
             if fee_rate is None:
                 fee_rate = FEE_RATE
             return DefaultFeeRate(fee_rate=fee_rate)
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
-    def set_default_expiry_time(time: int, unit: str) -> IsDefaultExpiryTimeSet:
-        """
-        Sets the default expiry time and unit.
-
-        Args:
-            time (int): The expiry time to set.
-            unit (str): The expiry time unit to set
-
-        Returns:
-            ISDefaultExpiryTimeSet: A model indicating whether the default expiry time is set.
-        """
-        try:
-            local_store.set_value('defaultExpiryTime', time)
-            local_store.set_value('defaultExpiryTimeUnit', unit)
-
-            # Verify the setting was applied
-            if local_store.get_value('defaultExpiryTime', value_type=int) and local_store.get_value('defaultExpiryTimeUnit', value_type=str):
-                return IsDefaultExpiryTimeSet(is_enabled=True)
-            return IsDefaultExpiryTimeSet(is_enabled=False)
-
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
-    def get_default_expiry_time() -> DefaultExpiryTime:
-        """
-        Gets the default expiry time and its unit.
-
-        Returns:
-            DefaultExpiryTime: A model indicating the default expiry time and its unit.
-        """
-        try:
-            time = local_store.get_value('defaultExpiryTime')
-            unit = local_store.get_value('defaultExpiryTimeUnit')
-            if time is None and unit is None:
-                time = LN_INVOICE_EXPIRY_TIME
-                unit = LN_INVOICE_EXPIRY_TIME_UNIT
-            return DefaultExpiryTime(time=time, unit=unit)
         except Exception as exe:
             return handle_exceptions(exe)
 

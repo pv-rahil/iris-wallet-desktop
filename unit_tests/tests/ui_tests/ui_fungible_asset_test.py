@@ -22,7 +22,6 @@ from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
@@ -48,10 +47,9 @@ def mock_fungible_asset_view_model():
 @pytest.fixture
 def create_fungible_asset_widget(qtbot, mock_fungible_asset_view_model):
     """Fixture to create the FungibleAssetWidget."""
-    with patch('src.data.service.common_operation_service.CommonOperationRepository.node_info', return_value=MagicMock()):
-        widget = FungibleAssetWidget(mock_fungible_asset_view_model)
-        qtbot.addWidget(widget)
-        return widget
+    widget = FungibleAssetWidget(mock_fungible_asset_view_model)
+    qtbot.addWidget(widget)
+    return widget
 
 
 def test_fungible_asset_widget_initialization(create_fungible_asset_widget):
@@ -189,9 +187,6 @@ def test_show_assets_with_various_assets(create_fungible_asset_widget, qtbot):
     )
     assert widget.amount_header.text() == QCoreApplication.translate(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'on_chain_balance', None,
-    )
-    assert widget.outbound_amount_header.text() == QCoreApplication.translate(
-        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'lightning_balance', None,
     )
     assert widget.symbol_header.text() == QCoreApplication.translate(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'symbol_header', None,
@@ -364,31 +359,12 @@ def test_handle_backup_visibility(create_fungible_asset_widget):
         return_value=sidebar_mock,
     )
 
-    # Mock the SettingRepository to return CONNECT_TYPE_WALLET
-    with patch('src.views.ui_fungible_asset.SettingRepository.get_wallet_type') as mock_get_wallet_type:
-        # Test for CONNECT_TYPE_WALLET
-        mock_get_wallet_type.return_value = WalletType.REMOTE_TYPE_WALLET
+    # Call the method
+    widget.handle_backup_visibility()
 
-        # Call the method
-        widget.handle_backup_visibility()
-
-        # Verify that the backup button is hidden
-        sidebar_mock.backup.hide.assert_called_once()
-        sidebar_mock.backup.show.assert_not_called()
-
-        # Reset mocks for the next scenario
-        sidebar_mock.backup.hide.reset_mock()
-        sidebar_mock.backup.show.reset_mock()
-
-        # Test for EMBEDDED_TYPE_WALLET
-        mock_get_wallet_type.return_value = WalletType.EMBEDDED_TYPE_WALLET
-
-        # Call the method
-        widget.handle_backup_visibility()
-
-        # Verify that the backup button is shown
-        sidebar_mock.backup.show.assert_called_once()
-        sidebar_mock.backup.hide.assert_not_called()
+    # Verify that the backup button is shown
+    sidebar_mock.backup.show.assert_called_once()
+    sidebar_mock.backup.hide.assert_not_called()
 
 
 def test_refresh_asset(create_fungible_asset_widget):
@@ -504,9 +480,6 @@ def test_create_fungible_card(create_fungible_asset_widget, qtbot):
 
     # Verify amount is set
     assert widget.amount.text() == str(asset.balance.future)
-
-    # Verify outbound_balance is set for RGB20
-    assert widget.outbound_balance.text() == str(asset.balance.offchain_outbound)
 
     # Verify token_symbol is set
     assert widget.token_symbol.text() == asset.ticker

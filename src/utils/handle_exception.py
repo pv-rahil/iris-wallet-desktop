@@ -1,3 +1,4 @@
+# pylint: disable=too-many-function-args
 """
 Handles exceptions uniformly, providing specific error messages.
 """
@@ -8,10 +9,11 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 from requests.exceptions import Timeout
+from rgb_lib import RgbLibError
 
 from src.utils.custom_exception import CommonException
 from src.utils.custom_exception import ServiceOperationException
-from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_LN
+from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL
 from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_TYPE_VALIDATION
@@ -47,7 +49,9 @@ def handle_exceptions(exc):
 
     # Check if the exception is a RequestsConnectionError
     if isinstance(exc, RequestsConnectionError):
-        raise CommonException(ERROR_CONNECTION_FAILED_WITH_LN) from exc
+        raise CommonException(
+            ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL,
+        ) from exc
 
     # Check if the exception is a Timeout
     if isinstance(exc, Timeout):
@@ -75,6 +79,10 @@ def handle_exceptions(exc):
     # Check if the exception is a ServiceOperationException
     if isinstance(exc, ServiceOperationException):
         raise CommonException(exc.message) from exc
+
+    if isinstance(exc, RgbLibError):
+        error_class_name = exc.__class__.__name__
+        raise CommonException(error_class_name) from exc
 
     # If no specific type matches, use a default error message
     error_message = getattr(exc, 'message', None) or str(

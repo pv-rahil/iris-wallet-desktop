@@ -3,7 +3,7 @@ Utility functions for handling various operations in the application.
 
 These functions provide functionalities such as address shortening, stylesheet loading,
 pixmap creation, Google Auth token checking, mnemonic hashing and validation, port checking,
-and retrieving configuration arguments for node setup.
+and retrieving configuration arguments for wallet setup.
 """
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ import base64
 import hashlib
 import json
 import os
-import socket
 import sys
 
 from mnemonic import Mnemonic
@@ -22,17 +21,11 @@ from PySide6.QtGui import QPixmap
 from rgb_lib import BitcoinNetwork
 
 from src.data.repository.setting_repository import SettingRepository
-from src.flavour import __ldk_port__
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import NetworkEnumModel
-from src.utils.build_app_path import app_paths
-from src.utils.constant import DAEMON_PORT
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
-from src.utils.constant import LDK_PORT
-from src.utils.constant import LDK_PORT_KEY
-from src.utils.constant import LIGHTNING_URL_KEY
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
@@ -40,7 +33,6 @@ from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.custom_exception import CommonException
 from src.utils.gauth import TOKEN_PICKLE_PATH
-from src.utils.local_store import local_store
 from src.utils.logging import logger
 
 
@@ -176,68 +168,6 @@ def validate_mnemonic(mnemonic_phrase: str):
         raise ValueError('Invalid mnemonic phrase')
 
 
-def is_port_available(port: int) -> bool:
-    """
-    Checks if a given port is available on the local host.
-
-    Parameters:
-    port (int): The port number to check.
-
-    Returns:
-    bool: True if the port is available, False otherwise.
-    """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) != 0
-
-
-def get_available_port(port: int) -> int:
-    """
-    Finds and returns the next available port starting from the given port.
-
-    Parameters:
-    port (int): The starting port number to check for availability.
-
-    Returns:
-    int: The next available port number.
-    """
-    if is_port_available(port):
-        return port
-    return get_available_port(port + 1)
-
-
-def get_node_arg_config(network: NetworkEnumModel) -> list:
-    """
-    Retrieves the configuration arguments for setting up the node based on the network.
-
-    Parameters:
-    network (NetworkEnumModel): The network model enum indicating the network type.
-
-    Returns:
-    list: A list of arguments for configuring the node.
-
-    Raises:
-    Exception: If any error occurs during the retrieval of configuration arguments.
-    """
-    try:
-        daemon_port = get_available_port(DAEMON_PORT)
-        if __ldk_port__ is None:
-            ldk_port = get_available_port(LDK_PORT)
-        else:
-            ldk_port = __ldk_port__
-        node_data_path = app_paths.node_data_path
-        node_url = f'http://127.0.0.1:{daemon_port}'
-        local_store.set_value(LIGHTNING_URL_KEY, node_url)
-        local_store.set_value(LDK_PORT_KEY, ldk_port)
-        return [
-            node_data_path,
-            '--daemon-listening-port', str(daemon_port),
-            '--ldk-peer-listening-port', str(ldk_port),
-            '--network', network.value,
-        ]
-    except Exception as exc:
-        raise exc
-
-
 def get_build_info() -> dict | None:
     """Load build JSON file and return value in case of freeze."""
     if getattr(sys, 'frozen', False):
@@ -271,20 +201,20 @@ def get_build_info() -> dict | None:
 
 def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
     """
-    Retrieves the Bitcoin wallet configuration for the specified network.
+    Retrieves and configures Bitcoin wallet settings for the specified network.
 
-    Combines shared and network-specific settings (RPC credentials, indexer URL, proxy endpoint)
-    to create an `UnlockRequestModel` for the given network (MAINNET, TESTNET, or REGTEST).
+    This function maps network-specific configurations (indexer URL and proxy endpoint)
+    and combines them with user credentials to create a complete wallet configuration.
 
     Args:
-        network (NetworkEnumModel): The network type (MAINNET, TESTNET, REGTEST).
-        password (str): The wallet password.
+        network (BitcoinNetwork): The Bitcoin network type (MAINNET, TESTNET, or REGTEST).
+        password (str): The wallet password for authentication.
 
     Returns:
-        UnlockRequestModel: The configuration for unlocking the wallet.
+        ConfigModel: A configuration model containing network settings and credentials.
 
     Raises:
-        Exception: If an error occurs while retrieving the configuration.
+        Exception: If configuration retrieval or processing fails.
     """
     try:
 

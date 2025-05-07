@@ -16,54 +16,6 @@ from rgb_lib import Unspent
 # -------------------- Helper models -----------------------
 
 
-class ConfirmationTime(BaseModel):
-    """Model part of transaction list api response model"""
-    height: int
-    timestamp: int
-
-
-# class Transaction(BaseModel):
-#     """Model part of transaction list api response model"""
-#     transaction_type: str
-#     txid: str
-#     received: int
-#     sent: int
-#     fee: int
-#     amount: str | None = None
-#     transfer_status: TransferStatusEnumModel | None = None
-#     transaction_status: TransactionStatusEnumModel | None = None
-#     confirmation_normal_time: str | None = None
-#     confirmation_date: str | None = None
-#     confirmation_time: ConfirmationTime | None = None
-
-
-class Utxo(BaseModel):
-    """Model part of list unspents api response model"""
-    outpoint: str
-    btc_amount: int
-    colorable: bool
-
-
-class RgbAllocation(BaseModel):
-    """Model part of list unspents api response model"""
-    asset_id: str | None = None
-    amount: int
-    settled: bool
-
-
-# class Unspent(BaseModel):
-#     """Model part of list unspents api response model"""
-#     utxo: Utxo
-#     rgb_allocations: list[RgbAllocation | None]
-
-
-class BalanceStatus(BaseModel):
-    """Model representing the status of a Bitcoin balance."""
-    settled: int
-    future: int
-    spendable: int
-
-
 class OfflineAsset(BaseModel):
     """Model for offline asset"""
     asset_id: str | None = None
@@ -97,10 +49,6 @@ class UnspentListRequestModel (BaseModel):
     settled_only: bool = False
     skip_sync: bool = False
 
-
-class ListTransactionRequestModel (BaseModel):
-    """Model representing a request to list transaction."""
-    skip_sync: bool = False
 
 # -------------------- Response Models -----------------------
 

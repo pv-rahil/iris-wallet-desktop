@@ -10,22 +10,18 @@ from unittest.mock import patch
 
 import pytest
 from PySide6.QtCore import QCoreApplication
-from PySide6.QtCore import QSize
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QWidget
 
-from src.model.channels_model import Channel
 from src.model.enums.enums_model import AssetType
-from src.model.enums.enums_model import PaymentStatus
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
 from src.model.selection_page_model import AssetDataModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
-from src.views.components.transaction_detail_frame import TransactionDetailFrame
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
 
 asset_image_path = os.path.abspath(
@@ -305,36 +301,6 @@ def test_handle_show_hide(transfer_status, transaction_type, expected_text, expe
     assert transaction_detail_frame.transaction_type.isVisible() == expected_visibility
 
 
-def test_navigate_to_selection_page(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test the navigate_to_selection_page method."""
-    # Mock the view model's navigation
-    rgb_asset_detail_widget._view_model.page_navigation.wallet_method_page = MagicMock()
-
-    # Set up test parameters
-    rgb_asset_detail_widget.asset_id_detail.setPlainText(
-        'test_asset_id',
-    )  # Set a dummy asset ID
-    # Ensure a valid image path is used in the test
-    rgb_asset_detail_widget.image_path = '/path/to/valid/image.png'
-
-    # Call the method to test
-    rgb_asset_detail_widget.navigate_to_selection_page('receive')
-
-    # Verify that the wallet_method_page is called with the correct parameters
-    rgb_asset_detail_widget._view_model.page_navigation.wallet_method_page.assert_called_once()
-
-    params = rgb_asset_detail_widget._view_model.page_navigation.wallet_method_page.call_args[
-        0
-    ][0]
-    assert params.title == 'Select transfer type'
-    assert params.logo_1_path == ':/assets/on_chain.png'
-    assert params.logo_1_title == TransferType.ON_CHAIN.value
-    assert params.logo_2_path == ':/assets/off_chain.png'
-    assert params.logo_2_title == TransferType.LIGHTNING.value
-    assert params.asset_id == 'test_asset_id'
-    assert params.callback == 'receive'
-
-
 def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWidget, mocker):
     """Test the select_receive_transfer_type method based on channel state."""
 
@@ -491,49 +457,6 @@ def test_handle_asset_frame_click(rgb_asset_detail_widget: RGBAssetDetailWidget)
         ('asset_456', False),  # Case where no matching channel exists
     ],
 )
-def test_is_channel_open_for_asset(asset_id, expected_result):
-    """Test the is_channel_open_for_asset method for different channel conditions."""
-
-    # Mock the asset_id_detail widget to return the given asset_id
-    widget = RGBAssetDetailWidget(
-        view_model=MagicMock(
-        ), params=MagicMock(),
-    )  # Mock view_model and params
-    widget.asset_id_detail = MagicMock()
-    # Mock the return value of toPlainText()
-    widget.asset_id_detail.toPlainText.return_value = asset_id
-
-    # Mock the channels list
-    channel_1 = MagicMock(spec=Channel)
-    channel_1.is_usable = True
-    channel_1.ready = True
-    channel_1.asset_id = 'asset_123'  # This channel matches the asset_id being tested
-
-    channel_2 = MagicMock(spec=Channel)
-    channel_2.is_usable = False
-    channel_2.ready = True
-    channel_2.asset_id = 'asset_456'  # This channel doesn't match
-
-    channel_3 = MagicMock(spec=Channel)
-    channel_3.is_usable = True
-    channel_3.ready = False
-    channel_3.asset_id = 'asset_123'  # This channel is not ready
-
-    # Mock the ViewModel with a list of channels
-    view_model = MagicMock()
-    widget._view_model = view_model
-    widget._view_model.channel_view_model = MagicMock()
-    widget._view_model.channel_view_model.channels = [
-        channel_1, channel_2, channel_3,
-    ]
-
-    # Call the method
-    result = widget.is_channel_open_for_asset()
-
-    # Assert the result
-    assert result == expected_result
-
-
 @pytest.mark.parametrize(
     'asset_id, expected_total_balance, expected_spendable_balance', [
         ('asset_123', 1000, 1000),
@@ -541,168 +464,6 @@ def test_is_channel_open_for_asset(asset_id, expected_result):
         ('asset_999', 0, 0),
     ],
 )
-def test_set_lightning_balance(asset_id, expected_total_balance, expected_spendable_balance):
-    """Test the set_lightning_balance method for different channel conditions."""
-
-    # Mock the widget (RGBAssetDetailWidget)
-    widget = RGBAssetDetailWidget(view_model=MagicMock(), params=MagicMock())
-    widget.asset_id_detail = MagicMock()
-    widget.asset_id_detail.toPlainText.return_value = asset_id
-
-    # Mock the lightning balance labels
-    widget.lightning_total_balance = MagicMock()
-    widget.lightning_spendable_balance = MagicMock()
-
-    # Mock the show_loading_screen method
-    widget.show_loading_screen = MagicMock()
-
-    # Mock the channels list
-    channel_1 = MagicMock(spec=Channel)
-    channel_1.asset_id = 'asset_123'
-    channel_1.is_usable = True
-    channel_1.asset_local_amount = 500
-
-    channel_2 = MagicMock(spec=Channel)
-    channel_2.asset_id = 'asset_123'
-    channel_2.is_usable = True
-    channel_2.asset_local_amount = 300
-
-    channel_3 = MagicMock(spec=Channel)
-    channel_3.asset_id = 'asset_456'
-    channel_3.is_usable = False
-    channel_3.asset_local_amount = 200
-
-    channel_4 = MagicMock(spec=Channel)
-    channel_4.asset_id = 'asset_123'
-    channel_4.is_usable = True
-    channel_4.asset_local_amount = 200
-
-    # Mock the ViewModel with a list of channels
-    view_model = MagicMock()
-    widget._view_model = view_model
-    widget._view_model.channel_view_model = MagicMock()
-    widget._view_model.channel_view_model.channels = [
-        channel_1, channel_2, channel_3, channel_4,
-    ]
-
-    # Call the method
-    widget.set_lightning_balance()
-
-    # Assert the calculated total balance and spendable balance are as expected
-    widget.lightning_total_balance.setText.assert_called_with(
-        str(expected_total_balance),
-    )
-    widget.lightning_spendable_balance.setText.assert_called_with(
-        str(expected_spendable_balance),
-    )
-
-    # Assert that show_loading_screen(False) was called
-    widget.show_loading_screen.assert_called_with(False)
-
-
-@pytest.fixture
-def mock_transaction():
-    """Fixture to mock a transaction object."""
-    mock_tx = MagicMock()
-    mock_tx.asset_amount_status = 100
-    mock_tx.payee_pubkey = 'pubkey123'
-    mock_tx.asset_id = 'asset123'
-    mock_tx.status = PaymentStatus.SUCCESS.value
-    mock_tx.inbound = True
-    mock_tx.created_at_date = '2024-12-29'
-    mock_tx.created_at_time = '10:00:00'
-    mock_tx.updated_at_date = '2024-12-30'
-    mock_tx.updated_at_time = '11:00:00'
-    return mock_tx
-
-
-@patch('src.views.ui_rgb_asset_detail.TransactionDetailFrame')
-@patch('src.views.ui_rgb_asset_detail.QSize')
-def test_set_lightning_transaction_frame(mock_qsize, mock_transaction_detail_frame, mock_transaction):
-    """Test the set_lightning_transaction_frame method for lightning transactions."""
-
-    # Set up mocks for the UI components
-    mock_qsize.return_value = QSize(18, 18)  # Create a real QSize instance
-
-    # Mock the transaction detail frame and the associated methods/attributes
-    mock_frame = MagicMock(spec=TransactionDetailFrame)
-
-    # Mock specific attributes of the mock frame (e.g., transaction_amount, transaction_time)
-    mock_frame.transaction_amount = MagicMock()
-    mock_frame.transaction_time = MagicMock()
-    mock_frame.transaction_date = MagicMock()
-    mock_frame.transaction_type = MagicMock()
-    mock_frame.transfer_type = MagicMock()
-
-    # Mock the setStyleSheet method for transaction_time
-    mock_frame.transaction_time.setStyleSheet = MagicMock()
-
-    # Return the mocked frame when the TransactionDetailFrame is initialized
-    mock_transaction_detail_frame.return_value = mock_frame
-
-    # Create mock view_model and params since they are required for RGBAssetDetailWidget constructor
-    mock_view_model = MagicMock()
-    mock_params = MagicMock()
-
-    # Create the widget, passing the mock view_model and params
-    widget = RGBAssetDetailWidget(mock_view_model, mock_params)
-
-    # Test for 'SUCCESS' status when inbound is True (Green color)
-    mock_transaction.status = PaymentStatus.SUCCESS.value
-    mock_transaction.inbound = True
-    widget.set_lightning_transaction_frame(mock_transaction, 'Bitcoin', 'BTC')
-
-    # Assert the color for SUCCESS and inbound = True
-    assert mock_frame.transaction_amount.setStyleSheet.call_args[
-        0
-    ][0] == 'color:#01A781;font-weight: 600'
-
-    # Test for 'SUCCESS' status when inbound is False (Red color)
-    mock_transaction.inbound = False
-    widget.set_lightning_transaction_frame(mock_transaction, 'Bitcoin', 'BTC')
-
-    # Assert the color for SUCCESS and inbound = False
-    assert mock_frame.transaction_amount.setStyleSheet.call_args[
-        0
-    ][0] == 'color:#EB5A5A;font-weight: 600'
-
-    # Test for 'FAILED' status
-    mock_transaction.status = PaymentStatus.FAILED.value
-    widget.set_lightning_transaction_frame(mock_transaction, 'Bitcoin', 'BTC')
-
-    # Assert the color for FAILED status
-    assert mock_frame.transaction_amount.setStyleSheet.call_args[
-        0
-    ][0] == 'color:#EB5A5A;font-weight: 600'
-
-    # Test for 'PENDING' status
-    mock_transaction.status = PaymentStatus.PENDING.value
-    widget.set_lightning_transaction_frame(mock_transaction, 'Bitcoin', 'BTC')
-
-    # Assert the color for PENDING status
-    assert mock_frame.transaction_amount.setStyleSheet.call_args[
-        0
-    ][0] == 'color:#959BAE;font-weight: 600'
-
-    # Verify transaction_amount, transaction_time, and transaction_date text settings
-    assert mock_frame.transaction_amount.setText.call_args[0][0] == str(
-        mock_transaction.asset_amount_status,
-    )
-
-    # If the transaction status is not SUCCESS, the transaction_time should have a specific style
-    assert mock_frame.transaction_time.setStyleSheet.call_args[
-        0
-    ][0] == 'color:#959BAE;font-weight: 400; font-size:14px'
-
-    # Check if the transaction_time has the status text set (e.g., for FAILED or PENDING)
-    assert mock_frame.transaction_time.setText.call_args[0][0] == mock_transaction.status
-
-    # Check if the transaction_date is set correctly
-    assert mock_frame.transaction_date.setText.call_args[0][0] == str(
-        mock_transaction.updated_at_date,
-    )
-
-
 def test_handle_fail_transfer(rgb_asset_detail_widget: RGBAssetDetailWidget):
     """Test the handle_fail_transfer method with and without tx_id."""
 

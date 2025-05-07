@@ -1,40 +1,115 @@
-"""Unit tests for initialize wallet method  in common operation service"""
+"""Unit tests for initialize wallet method in common operation service"""
 # Disable the redefined-outer-name warning as
-# it's normal to pass mocked object in tests  function
+# it's normal to pass mocked object in tests function
 # pylint: disable=redefined-outer-name, unused-argument, unused-import
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
 import pytest
+from rgb_lib import BitcoinNetwork
+from rgb_lib import Keys
+from rgb_lib import RgbLibError
 
+from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
-from src.model.common_operation_model import ConfigModel
 from src.model.common_operation_model import InitRequestModel
+from src.model.common_operation_model import WalletRequestModel
+from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_NETWORK_MISMATCH
-from unit_tests.repository_fixture.common_operations_repository_mock import mock_init
-from unit_tests.repository_fixture.common_operations_repository_mock import mock_network_info
-from unit_tests.repository_fixture.common_operations_repository_mock import mock_unlock
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_data_init_api_response
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_network_info_api_res
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_network_info_diff
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_password
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_unlock_api_res
 
 
-def test_initialize_wallet(mock_unlock, mock_init, mock_network_info):
-    """Case 1 : Positive case or when build network and ln node network same"""
-    mock_unlock(mocked_unlock_api_res)
-    mock_init(mocked_data_init_api_response)
-    mock_network_info(mocked_network_info_api_res)
+@patch('src.data.service.common_operation_service.app_paths')
+@patch('src.data.service.common_operation_service.CommonOperationRepository')
+@patch('src.data.service.common_operation_service.SettingRepository')
+@patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
+@patch('src.data.service.common_operation_service.colored_wallet')
+@patch('src.data.service.common_operation_service.mnemonic_store')
+def test_initialize_wallet(
+    mock_mnemonic_store, mock_colored_wallet, mock_get_network, mock_setting_repo,
+    mock_repo, mock_app_paths,
+):
+    """Test successful wallet initialization"""
+    # Setup mocks
+    mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
+    mock_get_network.return_value = BitcoinNetwork.TESTNET.value
+    mock_app_paths.app_path = '/test/path'
+
+    mock_keys = MagicMock()
+    mock_keys.account_xpub = 'test_xpub'
+    mock_keys.mnemonic = 'skill lamp please gown put season degree collect decline account monitor insane'
+    mock_repo.init.return_value = mock_keys
+
+    mock_wallet = MagicMock()
+    mock_repo.unlock.return_value = mock_wallet
+
+    # Execute
     result = CommonOperationService.initialize_wallet('Random@123')
-    assert result.mnemonic == 'skill lamp please gown put season degree collect decline account monitor insane'
+
+    # Assert
+    assert result == (mock_keys, 'Random@123')
+    mock_setting_repo.get_wallet_network.assert_called_once()
+    mock_get_network.assert_called_once_with(
+        mock_setting_repo.get_wallet_network.return_value,
+    )
+    mock_repo.init.assert_called_once_with(
+        InitRequestModel(
+            password='Random@123',
+            network=BitcoinNetwork.TESTNET.value,
+        ),
+    )
+    mock_repo.unlock.assert_called_once_with(
+        WalletRequestModel(
+            data_dir='/test/path',
+            bitcoin_network=BitcoinNetwork.TESTNET.value,
+            account_xpub='test_xpub',
+            mnemonic='skill lamp please gown put season degree collect decline account monitor insane',
+        ),
+    )
+    mock_colored_wallet.set_wallet.assert_called_once_with(mock_wallet)
+    mock_mnemonic_store.decrypted_mnemonic = mock_keys.mnemonic
 
 
-def test_initialize_wallet_network_diff(mock_unlock, mock_init, mock_network_info):
-    """Case 2 : when build network and ln node network diff"""
-    mock_unlock(mocked_unlock_api_res)
-    mock_init(mocked_data_init_api_response)
-    mock_network_info(mocked_network_info_diff)
-    with pytest.raises(CommonException) as exc_info:
-        CommonOperationService.initialize_wallet('Random@123')
-    assert str(exc_info.value) == 'Network configuration does not match.'
+@patch('src.data.service.common_operation_service.handle_exceptions')
+@patch('src.data.service.common_operation_service.SettingRepository')
+@patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
+def test_initialize_wallet_exception(mock_get_network, mock_setting_repo, mock_handle_exceptions):
+    """Test exception handling in initialize wallet"""
+    # Setup mocks
+    mock_setting_repo.get_wallet_network.side_effect = CommonException(
+        'Test exception',
+    )
+    mock_handle_exceptions.return_value = 'Error response'
+
+    # Execute
+    result = CommonOperationService.initialize_wallet('Random@123')
+
+    # Assert
+    assert result == 'Error response'
+    mock_setting_repo.get_wallet_network.assert_called_once()
+    mock_handle_exceptions.assert_called_once()
+    mock_get_network.assert_not_called()
+
+
+@patch('src.data.service.common_operation_service.handle_exceptions')
+@patch('src.data.service.common_operation_service.CommonOperationRepository')
+@patch('src.data.service.common_operation_service.SettingRepository')
+@patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
+def test_initialize_wallet_rgb_lib_error(mock_get_network, mock_setting_repo, mock_repo, mock_handle_exceptions):
+    """Test RgbLibError handling in initialize wallet"""
+    # Setup mocks
+    mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
+    mock_get_network.return_value = BitcoinNetwork.TESTNET.value
+    mock_repo.init.side_effect = RgbLibError('RGB Lib error')
+    mock_handle_exceptions.return_value = 'RGB Lib error response'
+
+    # Execute
+    result = CommonOperationService.initialize_wallet('Random@123')
+
+    # Assert
+    assert result == 'RGB Lib error response'
+    mock_setting_repo.get_wallet_network.assert_called_once()
+    mock_get_network.assert_called_once()
+    mock_repo.init.assert_called_once()
+    mock_handle_exceptions.assert_called_once()

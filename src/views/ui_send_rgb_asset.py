@@ -7,6 +7,7 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetIface
 from rgb_lib import Invoice
 from rgb_lib import InvoiceData
 from rgb_lib import RgbLibError
@@ -118,13 +119,13 @@ class SendRGBAssetWidget(QWidget):
 
     def set_originating_page(self, asset_type):
         """This method sets the originating page for when closing send asset"""
-        if asset_type == 'RGB20':
-            self.asset_type = 'RGB20'
+        if asset_type == AssetIface.RGB20:
+            self.asset_type = AssetIface.RGB20
 
     def rgb_asset_page_navigation(self):
         """Navigate to the collectibles asset page."""
         self.sidebar = self._view_model.page_navigation.sidebar()
-        if self.asset_type == 'RGB20':
+        if self.asset_type == AssetIface.RGB20:
             self.sidebar.my_fungibles.setChecked(True)
             self._view_model.page_navigation.fungibles_asset_page()
         else:

@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.model.rgb_model import AssetBalanceResponseModel
+from src.model.rgb_model import Balance
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -48,8 +48,8 @@ def test_on_issue_click_success(
         issued_supply=4000,
         timestamp=123456789,
         added_at=123456789,
-        balance=AssetBalanceResponseModel(
-            spendable=10, future=10, settled=12, offchain_outbound=0, offchain_inbound=0,
+        balance=Balance(
+            spendable=10, future=10, settled=12,
         ),
     )
 
@@ -98,8 +98,8 @@ def test_on_success_native_auth(
         issued_supply=1000,
         timestamp=123556789,
         added_at=123456789,
-        balance=AssetBalanceResponseModel(
-            spendable=10, future=10, settled=12, offchain_outbound=0, offchain_inbound=0,
+        balance=Balance(
+            spendable=10, future=10, settled=12,
         ),
     )
 

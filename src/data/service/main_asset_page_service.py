@@ -17,6 +17,7 @@ from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import OfflineAsset
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import GetAssetResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.utils.handle_exception import handle_exceptions
@@ -36,11 +37,13 @@ class MainAssetPageDataService:
             MainPageDataResponseModel: The main page data containing asset details and BTC balance.
         """
         try:
-            request_model = [
-                AssetSchema.NIA,
-                AssetSchema.CFA,
-                AssetSchema.UDA,
-            ]
+            request_model = FilterAssetRequestModel(
+                filter_asset_schemas=[
+                    AssetSchema.NIA,
+                    AssetSchema.CFA,
+                    AssetSchema.UDA,
+                ],
+            )
 
             filtered_assets: list[AssetNia | AssetCfa | AssetUda | None] = []
             RgbRepository.refresh_transfer()

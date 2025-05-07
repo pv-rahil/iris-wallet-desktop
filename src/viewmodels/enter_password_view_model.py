@@ -18,6 +18,8 @@ from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.handle_exception import CommonException
+from src.utils.info_message import INFO_WALLET_PASSWORD_SET
+from src.utils.info_message import INFO_WALLET_UNLOCK_SUCCESSFULLY
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
@@ -84,7 +86,7 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
                         SettingRepository.set_wallet_initialized()
                         self.message.emit(
                             ToastPreset.SUCCESS,
-                            'Wallet password set successfully',
+                            INFO_WALLET_PASSWORD_SET,
                         )
                         self.forward_to_fungibles_page()
                     else:
@@ -92,7 +94,7 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
                         SettingRepository.set_wallet_initialized()
                         self.message.emit(
                             ToastPreset.SUCCESS,
-                            'Node unlock successfully with given password',
+                            INFO_WALLET_UNLOCK_SUCCESSFULLY,
                         )
                         self.forward_to_fungibles_page()
 

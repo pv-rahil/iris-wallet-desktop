@@ -13,7 +13,6 @@ from rgb_lib import SendResult
 from rgb_lib import Transfer
 
 from src.data.repository.wallet_holder import colored_wallet
-from src.model.rgb_model import AssetBalanceResponseModel
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
@@ -29,17 +28,15 @@ from src.model.rgb_model import SendAssetRequestModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.check_colorable_available import check_colorable_available
-from src.utils.decorators.unlock_required import unlock_required
 
 
 class RgbRepository:
     """Repository for handling RGB-related operations."""
 
     @staticmethod
-    @unlock_required
     def get_asset_balance(
         asset_balance: AssetIdModel,
-    ) -> AssetBalanceResponseModel:
+    ) -> Balance:
         """Get asset balance."""
         with repository_custom_context():
             data: Balance = colored_wallet.wallet.get_asset_balance(
@@ -49,7 +46,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     def decode_invoice(invoice: DecodeRgbInvoiceRequestModel):
         """Decode RGB invoice."""
         with repository_custom_context():
@@ -58,7 +54,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     def list_transfers(asset_id: ListTransfersRequestModel) -> list[Transfer]:
         """List transfers."""
         with repository_custom_context():
@@ -68,7 +63,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     def refresh_transfer():
         """Refresh transfers."""
         with repository_custom_context():
@@ -79,7 +73,6 @@ class RgbRepository:
             return RefreshTransferResponseModel(status=True)
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
     def rgb_invoice(invoice: RgbInvoiceRequestModel) -> ReceiveData:
         """Get RGB invoice."""
@@ -94,7 +87,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
     def send_asset(asset_detail: SendAssetRequestModel):
         """Send asset."""
@@ -118,12 +110,11 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     def get_assets(filter_asset_request_model: FilterAssetRequestModel) -> Assets:
         """Get assets."""
         with repository_custom_context():
             data: Assets = colored_wallet.wallet.list_assets(
-                filter_asset_schemas=filter_asset_request_model,
+                filter_asset_schemas=filter_asset_request_model.filter_asset_schemas,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -131,7 +122,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
     def issue_asset_nia(asset: IssueAssetNiaRequestModel) -> AssetNia:
         """Issue asset."""
@@ -145,7 +135,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
     def issue_asset_cfa(asset: IssueAssetCfaRequestModel) -> AssetCfa:
         """Issue asset."""
@@ -160,7 +149,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
     def issue_asset_uda(asset: IssueAssetUdaRequestModel) -> AssetUda:
         """Issue asset."""
@@ -175,7 +163,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @unlock_required
     def fail_transfer(transfer: FailTransferRequestModel) -> FailTransferResponseModel:
         """Mark the specified transfer as failed."""
         with repository_custom_context():

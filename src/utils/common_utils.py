@@ -30,7 +30,6 @@ from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QLineEdit
-from PySide6.QtWidgets import QMessageBox
 from PySide6.QtWidgets import QPlainTextEdit
 from PySide6.QtWidgets import QWidget
 
@@ -39,8 +38,6 @@ from src.data.service.helpers.main_asset_page_helper import get_offline_asset_ti
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import TokenSymbol
-from src.model.enums.enums_model import WalletType
-from src.model.selection_page_model import SelectionPageModel
 from src.utils.build_app_path import app_paths
 from src.utils.constant import APP_NAME
 from src.utils.constant import BITCOIN_EXPLORER_URL
@@ -54,7 +51,6 @@ from src.utils.error_message import ERROR_SAVE_LOGS
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_COPY_MESSAGE
 from src.utils.info_message import INFO_LOG_SAVE_DESCRIPTION
-from src.utils.ln_node_manage import LnNodeServerManager
 from src.utils.logging import logger
 from src.version import __version__
 from src.views.components.toast import ToastManager
@@ -233,7 +229,6 @@ def zip_logger_folder(base_path) -> tuple[str, str, str]:
     # Copy the main logs folder to the temporary directory if it exists
     if os.path.exists(wallet_logs_path):
         copy_filtered(wallet_logs_path, os.path.join(output_dir, APP_NAME))
-
 
     # Find the 'log' file and add it to the temporary directory
     log_files = find_files_with_name(base_path, 'log')
@@ -420,31 +415,6 @@ def network_info(parent):
         )
 
 
-def close_button_navigation(parent, back_page_navigation=None):
-    """Close button navigation method"""
-    if parent.originating_page == 'wallet_selection_page':
-        title = 'connection_type'
-        logo_1_path = ':/assets/embedded.png'
-        logo_1_title = 'embedded'
-        logo_2_path = ':/assets/remote.png'
-        logo_2_title = WalletType.REMOTE_TYPE_WALLET.value
-        params = SelectionPageModel(
-            title=title,
-            logo_1_path=logo_1_path,
-            logo_1_title=logo_1_title,
-            logo_2_path=logo_2_path,
-            logo_2_title=logo_2_title,
-            asset_id='none',
-            callback='none',
-            back_page_navigation=back_page_navigation,
-
-        )
-        parent.view_model.page_navigation.wallet_method_page(params)
-
-    if parent.originating_page == 'settings_page':
-        parent.view_model.page_navigation.settings_page()
-
-
 def find_files_with_name(path, keyword):
     """This method finds a file using the provided name."""
     found_files = []
@@ -465,35 +435,6 @@ def find_files_with_name(path, keyword):
     return found_files
 
 
-def sigterm_handler(_sig, _frame):
-    """
-    Handles the SIGTERM signal, which is sent to gracefully terminate the application.
-
-    When the signal is received, this method displays a QMessageBox warning the user about
-    the impending termination. If the user confirms by clicking "OK", it stops the Lightning
-    Node server via the LnNodeServerManager and quits the application. If the user cancels,
-    the application continues running.
-
-    Args:
-        sig (int): The signal number received (SIGTERM).
-    """
-    sigterm_warning_message = QApplication.translate(
-        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sigterm_warning_message', None,
-    )
-    qwarning = QMessageBox.warning(
-        None,
-        'Are you sure you want to exit?',
-        sigterm_warning_message,
-        QMessageBox.Ok | QMessageBox.Cancel,
-    )
-
-    if qwarning == QMessageBox.Ok:
-        # Stop the LN node server and quit the application
-        ln_node_manager = LnNodeServerManager.get_instance()
-        ln_node_manager.stop_server_from_close_button()
-        QApplication.instance().exit()
-
-
 def set_number_validator(input_widget: QLineEdit) -> None:
     """
     Sets a validator on the given QLineEdit to allow only positive integers.
@@ -504,20 +445,6 @@ def set_number_validator(input_widget: QLineEdit) -> None:
     number_pattern = QRegularExpression(r'^\d+$')
     validator = QRegularExpressionValidator(number_pattern, input_widget)
     input_widget.setValidator(validator)
-
-
-def sat_to_msat(sat) -> int:
-    """
-    Convert satoshis (sat) to millisatoshis (mSAT).
-
-    Args:
-        sat (int): The amount in satoshis.
-
-    Returns:
-        int: The equivalent amount in millisatoshis.
-    """
-    sat_int = int(sat)
-    return sat_int * 1000
 
 
 def set_placeholder_value(parent: QLineEdit):
@@ -595,27 +522,6 @@ TRANSACTION_SPEEDS = {
     'medium_checkBox': MEDIUM_TRANSACTION_FEE_BLOCKS,
     'fast_checkBox': FAST_TRANSACTION_FEE_BLOCKS,
 }
-
-
-def disable_rln_node_termination_handling(wallet_type: WalletType):
-    """
-    Disconnects the RLN node process termination handler when the user closes the application.
-
-    This ensures that the rln node termination handling logic does not trigger when the user explicitly exits.
-
-    Args:
-        wallet_type (WalletType): The type of the wallet being used.
-    """
-    if wallet_type.value == WalletType.EMBEDDED_TYPE_WALLET.value:
-        ln_node_manager = LnNodeServerManager.get_instance()
-
-        try:
-            ln_node_manager.process.finished.disconnect()
-        except CommonException as exc:
-            logger.error(
-                'Exception occurred: %s, Message: %s',
-                type(exc).__name__, str(exc),
-            )
 
 
 def cleanup_debug_logs(zip_file_path: str, logs_dir=None):

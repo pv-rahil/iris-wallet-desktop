@@ -5,15 +5,13 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock
-from unittest.mock import patch
 
 import pytest
+from PySide6.QtWidgets import QWidget
+from rgb_lib import TransactionType
 
-from src.model.btc_model import Transaction
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.selection_page_model import SelectionPageModel
 from src.views.ui_bitcoin import BtcWidget
 
 
@@ -27,22 +25,12 @@ def mock_bitcoin_widget_view_model():
 
 
 @pytest.fixture
-def nodeinfo_mock():
-    """Fixture to create nodeinfo mock"""
-    mock = MagicMock()
-    mock.is_ready = MagicMock(return_value=True)
-    mock.get_network_name = MagicMock(return_value='Testnet')
-    return mock
-
-
-@pytest.fixture
-def bitcoin_widget(qtbot, mock_bitcoin_widget_view_model, nodeinfo_mock):
+def bitcoin_widget(qtbot, mock_bitcoin_widget_view_model):
     """Fixture to create the BtcWidget instance and add it to qtbot."""
-    with patch('src.data.service.common_operation_service.CommonOperationRepository.node_info', return_value=nodeinfo_mock):
-        widget = BtcWidget(mock_bitcoin_widget_view_model)
-        qtbot.addWidget(widget)
-        # Ensure the main window is set for ToastManager to avoid ValueError
-        return widget
+    widget = BtcWidget(mock_bitcoin_widget_view_model)
+    qtbot.addWidget(widget)
+    # Ensure the main window is set for ToastManager to avoid ValueError
+    return widget
 
 
 def test_initial_ui_elements(bitcoin_widget):
@@ -101,100 +89,67 @@ def test_send_bitcoin(bitcoin_widget):
     bitcoin_widget._view_model.bitcoin_view_model.on_send_bitcoin_click.assert_called_once()
 
 
-def test_navigate_to_selection_page(bitcoin_widget):
-    """Test navigation to the selection page with Bitcoin parameters."""
-    params = SelectionPageModel(
-        title='Select transfer type',
-        logo_1_path=':/assets/on_chain.png',
-        logo_1_title='On chain',
-        logo_2_path=':/assets/off_chain.png',
-        logo_2_title='Lightning',  # Ensure this matches the actual implementation
-        asset_id=AssetType.BITCOIN.value,
-        callback='BITCOIN',
-        # Use the mocked page
-        back_page_navigation=bitcoin_widget._view_model.page_navigation.bitcoin_page,
-    )
-
-    bitcoin_widget.navigate_to_selection_page('BITCOIN')
-
-    bitcoin_widget._view_model.page_navigation.wallet_method_page.assert_called_once_with(
-        params,
-    )
-
-
 def test_select_receive_transfer_type(bitcoin_widget):
     """Test selection of the receive transfer type."""
     bitcoin_widget.select_receive_transfer_type()
 
-    bitcoin_widget._view_model.page_navigation.wallet_method_page.assert_called_once_with(
-        SelectionPageModel(
-            title='Select transfer type',
-            logo_1_path=':/assets/on_chain.png',
-            logo_1_title='On chain',
-            logo_2_path=':/assets/off_chain.png',
-            logo_2_title='Lightning',
-            asset_id=AssetType.BITCOIN.value,
-            callback='receive_btc',
-            back_page_navigation=bitcoin_widget._view_model.page_navigation.bitcoin_page,
-        ),
-    )
+    bitcoin_widget._view_model.bitcoin_view_model.on_receive_bitcoin_click.assert_called_once()
 
 
 def test_select_send_transfer_type(bitcoin_widget):
     """Test selection of the send transfer type."""
     bitcoin_widget.select_send_transfer_type()
 
-    bitcoin_widget._view_model.page_navigation.wallet_method_page.assert_called_once_with(
-        SelectionPageModel(
-            title='Select transfer type',
-            logo_1_path=':/assets/on_chain.png',
-            logo_1_title='On chain',
-            logo_2_path=':/assets/off_chain.png',
-            logo_2_title='Lightning',
-            asset_id=AssetType.BITCOIN.value,
-            callback='send_btc',
-            back_page_navigation=bitcoin_widget._view_model.page_navigation.bitcoin_page,
-        ),
-    )
+    bitcoin_widget._view_model.bitcoin_view_model.on_send_bitcoin_click.assert_called_once()
 
 
 def test_set_transaction_detail_frame(bitcoin_widget):
-    """Test setting up the transaction detail frame with mock transactions."""
-    transaction_list = [
-        Transaction(
-            transaction_type='CREATEUTXOS',
-            txid='tx1',
-            received=1000,
-            sent=0,
-            fee=10,
-            amount='0.01',
-            transaction_status=TransactionStatusEnumModel.SETTLED.value,  # Ensure valid enum value
-            transfer_status=TransferStatusEnumModel.RECEIVED.value,  # Ensure valid enum value
-            confirmation_normal_time='12:34:56',
-            confirmation_date='2024-08-30',
-            confirmation_time=None,
-        ),
-        Transaction(
-            transaction_type='CREATEUTXOS',
-            txid='tx2',
-            received=0,
-            sent=2000,
-            fee=15,
-            amount='0.02',
-            transaction_status=TransactionStatusEnumModel.SETTLED.value,  # Ensure valid enum value
-            transfer_status=TransferStatusEnumModel.SENT.value,  # Ensure valid enum value
-            confirmation_normal_time='12:34:56',
-            confirmation_date='2024-08-30',
-            confirmation_time=None,
-        ),
-    ]
+    """Test setting up the transaction detail frame in the UI."""
+    # Create mock transaction data
+    mock_transaction = MagicMock()
+    mock_transaction.txid = '123'
+    mock_transaction.amount = '1.5'
+    mock_transaction.confirmation_time.timestamp = 1234567890
+    mock_transaction.transaction_status = TransactionStatusEnumModel.WAITING_CONFIRMATIONS
+    mock_transaction.transfer_status = TransferStatusEnumModel.SEND
+    mock_transaction.transaction_type = TransactionType.USER
 
-    bitcoin_widget._view_model.bitcoin_view_model.transaction = transaction_list
+    # Create mock view model with transactions
+    mock_btc_view_model = MagicMock()
+    mock_btc_view_model.transaction = [mock_transaction]
+    bitcoin_widget._view_model.bitcoin_view_model = mock_btc_view_model
 
+    # Mock the grid layout and its methods
+    bitcoin_widget.btc_grid_layout_20 = MagicMock()
+    bitcoin_widget.btc_grid_layout_20.count.return_value = 0
+
+    # Mock the scroll area widget contents
+    bitcoin_widget.btc_scroll_area_widget_contents = QWidget()
+
+    # Mock the transactions widget and its click frame
+    mock_click_frame = MagicMock()
+    bitcoin_widget.transactions = MagicMock()
+    bitcoin_widget.transactions.click_frame = mock_click_frame
+
+    # Call the method to test
     bitcoin_widget.set_transaction_detail_frame()
 
-    bitcoin_widget.repaint()
-    bitcoin_widget.update()
+    # Verify transactions widget is shown
+    bitcoin_widget.transactions.show.assert_called_once()
+
+    # Verify transaction detail frame was created and added to layout
+    assert bitcoin_widget.btc_grid_layout_20.addWidget.call_count == 1
+
+    # Test with no transactions
+    mock_btc_view_model.transaction = []
+    bitcoin_widget.set_transaction_detail_frame()
+
+    # Verify transactions widget is hidden
+    bitcoin_widget.transactions.hide.assert_called_once()
+
+    assert bitcoin_widget.btc_grid_layout_20.addWidget.call_count == 2
+
+    bitcoin_widget.btc_grid_layout_20.addItem.assert_called_once()
 
 
 def test_set_bitcoin_balance(bitcoin_widget):

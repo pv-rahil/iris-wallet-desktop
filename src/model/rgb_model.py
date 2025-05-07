@@ -10,11 +10,12 @@ from rgb_lib import AssetCfa
 from rgb_lib import AssetNia
 from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
+from rgb_lib import Balance
 from rgb_lib import Outpoint
+from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
 from rgb_lib import TransferTransportEndpoint
 
-from src.model.payments_model import BaseTimeStamps
 from src.utils.constant import FEE_RATE_FOR_CREATE_UTXOS
 from src.utils.constant import NO_OF_UTXO
 from src.utils.constant import RGB_INVOICE_DURATION_SECONDS
@@ -59,13 +60,6 @@ class Media(BaseModel):
     mime: str
 
 
-class Balance(BaseModel):
-    """Model for list asset"""
-    settled: int
-    future: int
-    spendable: int
-
-
 class Token(BaseModel):
     """Model for list asset"""
     index: int
@@ -93,6 +87,10 @@ class AssetModel(BaseModel):
     media: Media | None = None
     token: Token | None = None
 
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
+
 
 class TransportEndpoint(BaseModel):
     """Model representing transport endpoints."""
@@ -102,14 +100,14 @@ class TransportEndpoint(BaseModel):
     used: bool
 
 
-class TransferAsset(BaseTimeStamps):
+class TransferAsset(BaseModel):
     """Model representing asset transfers."""
 
     idx: int
-    status: str
+    status: TransferStatus
     amount: int
     amount_status: str | None = None  # this for ui purpose
-    kind: str
+    kind: str | TransferKind
     transfer_Status: str | TransferStatus | None = None
     txid: str | None = None
     recipient_id: str | None = None
@@ -117,6 +115,12 @@ class TransferAsset(BaseTimeStamps):
     change_utxo: Outpoint | None = None
     expiration: int | None = None
     transport_endpoints: list[TransferTransportEndpoint | None] | None = []
+    created_at: int
+    updated_at: int
+    created_at_date: str | None = None  # for UI purpose
+    created_at_time: str | None = None  # for UI purpose
+    updated_at_date: str | None = None  # for UI purpose
+    updated_at_time: str | None = None  # for UI purpose
 
     class Config:
         """Pydantic configuration class allowing arbitrary types."""
@@ -156,11 +160,6 @@ class IssueAssetNiaRequestModel(BaseModel):
     precision: int = 0
 
 
-class IssueAssetCfaRequestModelWithDigest(IssueAssetNiaRequestModel):
-    """Request model for issuing assets."""
-    file_digest: str
-
-
 class IssueAssetCfaRequestModel(IssueAssetNiaRequestModel):
     """Request model for issuing assets."""
     file_path: str
@@ -169,14 +168,6 @@ class IssueAssetCfaRequestModel(IssueAssetNiaRequestModel):
 class IssueAssetUdaRequestModel(IssueAssetCfaRequestModel):
     """Request model for issuing assets."""
     attachments_file_paths: list[list[str]]
-
-
-class RefreshRequestModel(BaseModel):
-    """Request model for refresh wallet"""
-    online: object
-    asset_id: str | None = None
-    filter: list = []
-    skip_sync: bool = False
 
 
 class RgbInvoiceRequestModel(BaseModel):
@@ -214,11 +205,6 @@ class FilterAssetRequestModel(BaseModel):
         arbitrary_types_allowed = True
 
 
-class GetAssetMediaModelRequestModel(BaseModel):
-    """Response model for get asset medial api"""
-    digest: str
-
-
 class FailTransferRequestModel(BaseModel):
     """Response model for fail transfer"""
     batch_transfer_idx: int
@@ -226,28 +212,6 @@ class FailTransferRequestModel(BaseModel):
     skip_sync: bool = False
 
 # -------------------- Response models -----------------------
-
-
-class AssetBalanceResponseModel(Balance):
-    """Response model for asset balance."""
-    offchain_outbound: int
-    offchain_inbound: int
-
-
-class CreateUtxosResponseModel(StatusModel):
-    """Response model for creating UTXOs."""
-
-
-class DecodeRgbInvoiceResponseModel(BaseModel):
-    """Response model for decoding RGB invoices."""
-
-    recipient_id: str
-    asset_iface: str | None = None
-    asset_id: str | None = None
-    amount: str | None = None
-    network: str
-    expiration_timestamp: int
-    transport_endpoints: list[str]
 
 
 class GetAssetResponseModel(BaseModel):
@@ -275,6 +239,10 @@ class ListTransferAssetWithBalanceResponseModel(ListTransferAssetResponseModel):
     """Response model for listing asset transfers with asset balance"""
     asset_balance: Balance
 
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
+
 
 class RefreshTransferResponseModel(StatusModel):
     """Response model for refreshing asset transfers."""
@@ -293,16 +261,6 @@ class SendAssetResponseModel(BaseModel):
     """Response model for sending assets."""
 
     txid: str
-
-
-class GetAssetMediaModelResponseModel(BaseModel):
-    """Response model for get asset media api"""
-    bytes_hex: str
-
-
-class PostAssetMediaModelResponseModel(BaseModel):
-    """Response model for get asset media api"""
-    digest: str
 
 
 class RgbAssetPageLoadModel(BaseModel):

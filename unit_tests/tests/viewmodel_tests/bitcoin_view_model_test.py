@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 
+from src.model.btc_model import Balance
 from src.model.btc_model import BalanceResponseModel
-from src.model.btc_model import BalanceStatus
 from src.model.btc_model import Transaction
 from src.model.btc_model import TransactionListWithBalanceResponse
 from src.utils.cache import Cache
@@ -93,10 +93,10 @@ def test_get_transaction_list_success(mock_bitcoin_page_service, bitcoin_view_mo
             ),
         ],
         balance=BalanceResponseModel(
-            vanilla=BalanceStatus(
+            vanilla=Balance(
                 settled=1000, future=1000, spendable=150000000,
             ),
-            colored=BalanceStatus(
+            colored=Balance(
                 settled=2000, future=1000, spendable=30000000,
             ),
         ),

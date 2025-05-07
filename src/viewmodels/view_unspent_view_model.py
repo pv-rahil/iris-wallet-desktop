@@ -49,7 +49,6 @@ class UnspentListViewModel(QObject, ThreadManager):
         def error(err: CommonException):
             """This method handles error."""
             self.loading_finished.emit(True)
-            print(err)
             ToastManager.error(
                 description=err.message,
             )

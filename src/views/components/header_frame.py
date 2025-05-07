@@ -25,7 +25,6 @@ from PySide6.QtWidgets import QVBoxLayout
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.gauth import TOKEN_PICKLE_PATH
@@ -267,9 +266,8 @@ class HeaderFrame(QFrame, QObject):
         """
         is_backup_configured: IsBackupConfiguredModel = SettingRepository.is_backup_configured()
         token_path_exists = os.path.exists(TOKEN_PICKLE_PATH)
-        wallet_type: WalletType = SettingRepository.get_wallet_type().value
 
-        if not token_path_exists and not is_backup_configured.is_backup_configured and (wallet_type == WalletType.EMBEDDED_TYPE_WALLET.value):
+        if not token_path_exists and not is_backup_configured.is_backup_configured:
             # Show backup warning frame
             self.network_error_frame.setStyleSheet("""
                 QFrame {

@@ -12,10 +12,7 @@ import pytest
 from PySide6.QtWidgets import QLineEdit
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import InitResponseModel
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletType
-from src.utils.custom_exception import CommonException
 from src.utils.local_store import local_store
 from src.viewmodels.set_wallet_password_view_model import SetWalletPasswordViewModel
 
@@ -57,18 +54,6 @@ def mock_keyring_and_storage(monkeypatch):
 
 
 @pytest.fixture
-def init_mock(mocker):
-    """Fixture to create a mock CommonOperationRepository init method."""
-    mock_response = InitResponseModel(
-        mnemonic='skill lamp please gown put season degree collect decline account monitor insane',
-    )
-    return mocker.patch(
-        'src.data.repository.common_operations_repository.CommonOperationRepository.init',
-        return_value=mock_response,
-    )
-
-
-@pytest.fixture
 def set_wallet_initialized_mock(mocker):
     """Fixture to create a mock SettingRepository set_wallet_initialized method."""
     return mocker.patch(
@@ -98,14 +83,12 @@ def set_wallet_password_view_model(mock_page_navigation):
 
 @pytest.fixture
 def mocks(
-    init_mock,
     set_wallet_initialized_mock,
     unlock_mock,
     set_value_mock,
 ):
     """Fixture to create an object of the multiple mocks."""
     return {
-        'init_mock': init_mock,
         'set_wallet_initialized_mock': set_wallet_initialized_mock,
         'unlock_mock': unlock_mock,
         'set_value_mock': set_value_mock,
@@ -153,7 +136,6 @@ def test_set_wallet_password_common_exception(set_wallet_password_view_model, mo
     confirm_password_input_mock = mocker.MagicMock(spec=QLineEdit)
     validation_mock = mocker.MagicMock()
 
-    init_mock = mocks['init_mock']
     mock_message = Mock()
     set_wallet_password_view_model.message.connect(mock_message)
 
@@ -167,9 +149,7 @@ def test_set_wallet_password_common_exception(set_wallet_password_view_model, mo
             validation_mock,
         )
 
-    init_mock.side_effect = CommonException('Test exception')
     call_set_wallet_password('validpassword', 'validpassword')
-    set_wallet_password_view_model.worker.error.emit(init_mock.side_effect)
     mock_message.assert_called_once_with(ToastPreset.ERROR, 'Test exception')
 
 
@@ -255,9 +235,6 @@ def test_on_success(mock_keyring_error_dialog, mock_toast_manager, mock_set_valu
     mock_setting_repository.get_wallet_network.return_value = MagicMock(
         value='test_network',
     )
-    mock_setting_repository.get_wallet_type.return_value = MagicMock(
-        value=WalletType.EMBEDDED_TYPE_WALLET.value,
-    )
 
     # Mock os.path.exists
     with patch('os.path.exists') as mock_exists:
@@ -283,9 +260,6 @@ def test_on_success_keyring_error(mock_keyring_error_dialog, mock_toast_manager,
     # Mock SettingRepository methods
     mock_setting_repository.get_wallet_network.return_value = MagicMock(
         value='test_network',
-    )
-    mock_setting_repository.get_wallet_type.return_value = MagicMock(
-        value=WalletType.EMBEDDED_TYPE_WALLET.value,
     )
 
     # Mock set_value to return False (indicating failure to store value)

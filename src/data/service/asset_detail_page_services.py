@@ -91,7 +91,6 @@ class AssetDetailPageService:
             transactions = [
                 TransferAsset(**vars(transaction)) for transaction in transactions
             ]
-            balance = Balance(**vars(balance))
             return ListTransferAssetWithBalanceResponseModel(
                 transfers=transactions,
                 asset_balance=balance,

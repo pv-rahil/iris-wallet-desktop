@@ -79,12 +79,11 @@ def test_handle_on_keyring_toggle_enable(restore_mnemonic_widget, qtbot):
     """Test that enable_keyring is called with correct arguments and dialog closes."""
     restore_mnemonic_widget._view_model.setting_view_model.enable_keyring = MagicMock()
 
-    restore_mnemonic_widget.mnemonic_input.setText('mnemonic')
     restore_mnemonic_widget.password_input.setText('password')
     restore_mnemonic_widget.handle_on_keyring_toggle_enable()
 
     restore_mnemonic_widget._view_model.setting_view_model.enable_keyring.assert_called_once_with(
-        mnemonic='mnemonic', password='password',
+        password='password',
     )
     assert not restore_mnemonic_widget.isVisible()
 

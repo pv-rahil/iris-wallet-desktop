@@ -13,7 +13,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.views.ui_backup import Backup
 
@@ -205,35 +204,32 @@ def test_is_already_configured_no_token(backup_widget):
         assert not backup_widget.configure_backup_button.isHidden()
 
 
-def test_handle_mnemonic_visibility_show(backup_widget, qtbot):
-    """
-    Test showing the mnemonic when the show_mnemonic_button is clicked.
-    """
-    # Mocking the MNEMONIC_KEY value
+def test_handle_mnemonic_visibility_show(backup_widget):
+    """Test showing the mnemonic when the show_mnemonic_button is clicked."""
     mock_mnemonic_string = 'apple banana cherry date elderberry fig grape'
-    mock_network = NetworkEnumModel.MAINNET
-    with patch('src.views.ui_backup.SettingRepository.get_wallet_network', return_value=mock_network), \
-            patch('src.views.ui_backup.get_value', return_value=mock_mnemonic_string), \
+    with patch('src.views.ui_backup.mnemonic_store') as mock_store, \
             patch.object(backup_widget, 'show_mnemonic_widget') as mock_show_widget:
 
-        # Set the button text to "Show Mnemonic" for initial state
+        # Mock the decrypted mnemonic
+        mock_store.decrypted_mnemonic = mock_mnemonic_string
+
+        # Set the button to initial "Show Mnemonic" state
         backup_widget.show_mnemonic_button.setText(
             QApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'show_mnemonic', 'Show Mnemonic',
+                'show_mnemonic',
+                'Show Mnemonic',
             ),
         )
 
-        # Call the method
+        # Trigger visibility toggle
         backup_widget.handle_mnemonic_visibility()
 
         # Verify that the mnemonic labels are populated correctly
-        mnemonic_array = mock_mnemonic_string.split()
-        for i, mnemonic in enumerate(mnemonic_array, start=1):
-            label_name = f'mnemonic_text_label_{i}'
-            label = getattr(backup_widget, label_name)
-            expected_text = f"{i}. {mnemonic}"
-            assert label.text() == expected_text
+        mnemonic_list = mock_mnemonic_string.split()
+        for i, word in enumerate(mnemonic_list, start=1):
+            label = getattr(backup_widget, f'mnemonic_text_label_{i}')
+            assert label.text() == f"{i}. {word}"
 
         # Verify that the button text and icon are updated
         assert backup_widget.show_mnemonic_button.text() == backup_widget.hide_mnemonic_text

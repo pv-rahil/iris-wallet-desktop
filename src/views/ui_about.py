@@ -28,9 +28,9 @@ from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import download_file
+from src.utils.common_utils import network_info
 from src.utils.common_utils import zip_logger_folder
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import LDK_PORT_KEY
 from src.utils.constant import PRIVACY_POLICY_URL
 from src.utils.constant import TERMS_OF_SERVICE_URL
 from src.utils.error_message import ERROR_WHILE_DOWNLOADING_LOGS
@@ -44,7 +44,7 @@ from src.version import __version__
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.toast import ToastManager
-from src.views.components.wallet_detail_frame import NodeInfoWidget
+from src.views.components.wallet_detail_frame import WalletInfoWidget
 
 
 class AboutWidget(QWidget):
@@ -53,10 +53,8 @@ class AboutWidget(QWidget):
     def __init__(self, view_model):
         super().__init__()
         self._view_model: MainViewModel = view_model
-        self.network = get_bitcoin_network_from_enum(
-            SettingRepository.get_wallet_network(),
-        )
-        self.ldk_port = local_store.get_value(LDK_PORT_KEY)
+        self.network: str = ''
+        network_info(self)
         self.setStyleSheet(load_stylesheet('views/qss/about_style.qss'))
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setSpacing(0)
@@ -88,24 +86,27 @@ class AboutWidget(QWidget):
             self.app_version_label, 0, Qt.AlignLeft,
         )
 
+        stored_network = get_bitcoin_network_from_enum(
+            SettingRepository.get_wallet_network(),
+        )
         self.get_bitcoin_config: ConfigModel = get_bitcoin_config(
-            self.network, password='',
+            stored_network, password='',
         )
 
-        self.indexer_url_frame = NodeInfoWidget(
+        self.indexer_url_frame = WalletInfoWidget(
             translation_key='indexer_url', value=self.get_bitcoin_config.indexer_url, v_layout=self.about_vertical_layout,
         )
-        self.indexer_url_frame.node_pub_key_copy_button.setAccessibleName(
+        self.indexer_url_frame.copy_button.setAccessibleName(
             INDEXER_URL_COPY_BUTTON,
         )
         self.indexer_url_frame.value_label.setAccessibleDescription(
             INDEXER_URL_ACCESSIBLE_DESCRIPTION,
         )
 
-        self.proxy_url_frame = NodeInfoWidget(
+        self.proxy_url_frame = WalletInfoWidget(
             translation_key='proxy_url', value=self.get_bitcoin_config.proxy_endpoint, v_layout=self.about_vertical_layout,
         )
-        self.proxy_url_frame.node_pub_key_copy_button.setAccessibleName(
+        self.proxy_url_frame.copy_button.setAccessibleName(
             RGB_PROXY_URL_COPY_BUTTON,
         )
         self.proxy_url_frame.value_label.setAccessibleDescription(
@@ -113,7 +114,7 @@ class AboutWidget(QWidget):
         )
 
         basepath = local_store.get_path()
-        self.data_directory_path = NodeInfoWidget(
+        self.data_directory_path = WalletInfoWidget(
             translation_key='data_directory_path_label', value=basepath, v_layout=self.about_vertical_layout,
         )
 

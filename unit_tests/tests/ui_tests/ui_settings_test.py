@@ -12,12 +12,6 @@ from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QDialog
 
 from src.model.enums.enums_model import NetworkEnumModel
-from src.utils.constant import BITCOIND_RPC_HOST_MAINNET
-from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
-from src.utils.constant import BITCOIND_RPC_HOST_TESTNET
-from src.utils.constant import BITCOIND_RPC_PORT_MAINNET
-from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
-from src.utils.constant import BITCOIND_RPC_PORT_TESTNET
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
@@ -118,7 +112,7 @@ def test_handle_keyring_storage_disabled(setting_widget: SettingsWidget, mocker)
     )
     mocker.patch(
         'src.views.ui_settings.get_value', side_effect=[
-            'test_mnemonic', 'test_password',
+            'test_password',
         ],
     )
 
@@ -134,7 +128,7 @@ def test_handle_keyring_storage_disabled(setting_widget: SettingsWidget, mocker)
     # Verify the dialog was created and executed
     mock_keyring_dialog.assert_called_once_with(
         parent=setting_widget,
-        mnemonic='test_mnemonic',
+        mnemonic=None,
         password='test_password',
         originating_page='settings_page',
         navigate_to=setting_widget._view_model.page_navigation.settings_page,
@@ -195,25 +189,6 @@ def test_set_fee_rate_value(setting_widget):
     )
 
 
-def test_set_expiry_time(setting_widget):
-    """Test setting expiry time."""
-    # Mock components
-    setting_widget.set_expiry_time_frame = MagicMock()
-    setting_widget.set_expiry_time_frame.input_value.text.return_value = '24'
-    setting_widget.set_expiry_time_frame.time_unit_combobox.currentText.return_value = 'hours'
-
-    # Mock setting view model
-    setting_widget._view_model.setting_view_model = MagicMock()
-
-    # Call method
-    setting_widget._set_expiry_time()
-
-    # Verify setting view model was called with correct values
-    setting_widget._view_model.setting_view_model.set_default_expiry_time.assert_called_once_with(
-        '24', 'hours',
-    )
-
-
 def test_set_indexer_url(setting_widget):
     """Test setting indexer URL."""
     # Mock components and check_keyring_state
@@ -229,7 +204,7 @@ def test_set_indexer_url(setting_widget):
 
     # Verify setting view model was called with correct values
     setting_widget._view_model.setting_view_model.check_indexer_url_endpoint.assert_called_once_with(
-        'http://example.com', 'password123',
+        'http://example.com',
     )
 
 
@@ -248,83 +223,7 @@ def test_set_proxy_endpoint(setting_widget):
 
     # Verify setting view model was called with correct values
     setting_widget._view_model.setting_view_model.check_proxy_endpoint.assert_called_once_with(
-        'http://proxy.com', 'password123',
-    )
-
-
-def test_set_bitcoind_host(setting_widget):
-    """Test setting bitcoind host."""
-    # Mock components and check_keyring_state
-    setting_widget.set_bitcoind_rpc_host_frame = MagicMock()
-    setting_widget.set_bitcoind_rpc_host_frame.input_value.text.return_value = 'localhost'
-    setting_widget._check_keyring_state = MagicMock(return_value='password123')
-
-    # Mock setting view model
-    setting_widget._view_model.setting_view_model = MagicMock()
-
-    # Call method
-    setting_widget._set_bitcoind_host()
-
-    # Verify setting view model was called with correct values
-    setting_widget._view_model.setting_view_model.set_bitcoind_host.assert_called_once_with(
-        'localhost', 'password123',
-    )
-
-
-def test_set_bitcoind_port(setting_widget):
-    """Test setting bitcoind port."""
-    # Mock components and check_keyring_state
-    setting_widget.set_bitcoind_rpc_port_frame = MagicMock()
-    setting_widget.set_bitcoind_rpc_port_frame.input_value.text.return_value = '8332'
-    setting_widget._check_keyring_state = MagicMock(return_value='password123')
-
-    # Mock setting view model
-    setting_widget._view_model.setting_view_model = MagicMock()
-
-    # Call method
-    setting_widget._set_bitcoind_port()
-
-    # Verify setting view model was called with correct values
-    setting_widget._view_model.setting_view_model.set_bitcoind_port.assert_called_once_with(
-        8332, 'password123',
-    )
-
-
-def test_set_announce_address(setting_widget):
-    """Test setting announce address."""
-    # Mock components and check_keyring_state
-    setting_widget.set_announce_address_frame = MagicMock()
-    setting_widget.set_announce_address_frame.input_value.text.return_value = 'example.com'
-    setting_widget._check_keyring_state = MagicMock(return_value='password123')
-
-    # Mock setting view model
-    setting_widget._view_model.setting_view_model = MagicMock()
-
-    # Call method
-    setting_widget._set_announce_address()
-
-    # Verify setting view model was called with correct values
-    setting_widget._view_model.setting_view_model.set_announce_address.assert_called_once_with(
-        'example.com', 'password123',
-    )
-
-
-def test_set_announce_alias(setting_widget):
-    """Test setting announce alias."""
-    # Mock components and check_keyring_state
-    setting_widget.set_announce_alias_frame = MagicMock()
-    setting_widget.set_announce_alias_frame.input_value.text.return_value = 'my-node'
-    setting_widget._check_keyring_state = MagicMock(return_value='password123')
-
-    # Mock setting view model
-    setting_widget._view_model.setting_view_model = MagicMock()
-
-    # Call method
-    setting_widget._set_announce_alias()
-
-    # Verify setting view model was called with correct values
-    setting_widget._view_model.setting_view_model.set_announce_alias.assert_called_once_with(
-        'my-node', 'password123',
+        'http://proxy.com',
     )
 
 
@@ -410,14 +309,8 @@ def test_handle_on_page_load(setting_widget):
     mock_response.status_of_native_logging_auth.is_enabled = False
     mock_response.status_of_exhausted_asset.is_enabled = True
     mock_response.value_of_default_fee.fee_rate = '10'
-    mock_response.value_of_default_expiry_time.time = '24'
-    mock_response.value_of_default_expiry_time.unit = 'hours'
     mock_response.value_of_default_indexer_url.url = 'http://example.com'
     mock_response.value_of_default_proxy_endpoint.endpoint = 'http://proxy.com'
-    mock_response.value_of_default_bitcoind_rpc_host.host = 'localhost'
-    mock_response.value_of_default_bitcoind_rpc_port.port = 8332
-    mock_response.value_of_default_announce_address.address = 'example.com'
-    mock_response.value_of_default_announce_alias.alias = 'my-node'
     mock_response.value_of_default_min_confirmation.min_confirmation = 6
 
     # Mock the toggle buttons
@@ -441,14 +334,8 @@ def test_handle_on_page_load(setting_widget):
 
     # Verify all values were set correctly
     assert setting_widget.fee_rate == '10'
-    assert setting_widget.expiry_time == '24'
-    assert setting_widget.expiry_time_unit == 'hours'
     assert setting_widget.indexer_url == 'http://example.com'
     assert setting_widget.proxy_endpoint == 'http://proxy.com'
-    assert setting_widget.bitcoind_host == 'localhost'
-    assert setting_widget.bitcoind_port == 8332
-    assert setting_widget.announce_address == 'example.com'
-    assert setting_widget.announce_alias == 'my-node'
     assert setting_widget.min_confirmation == 6
 
 
@@ -462,14 +349,8 @@ def test_handle_on_page_load_with_empty_response(setting_widget):
     mock_response.status_of_native_logging_auth.is_enabled = False
     mock_response.status_of_exhausted_asset.is_enabled = False
     mock_response.value_of_default_fee.fee_rate = None
-    mock_response.value_of_default_expiry_time.time = None
-    mock_response.value_of_default_expiry_time.unit = None
     mock_response.value_of_default_indexer_url.url = None
     mock_response.value_of_default_proxy_endpoint.endpoint = None
-    mock_response.value_of_default_bitcoind_rpc_host.host = None
-    mock_response.value_of_default_bitcoind_rpc_port.port = None
-    mock_response.value_of_default_announce_address.address = None
-    mock_response.value_of_default_announce_alias.alias = None
     mock_response.value_of_default_min_confirmation.min_confirmation = None
 
     # Mock the toggle buttons
@@ -495,14 +376,8 @@ def test_handle_on_page_load_with_empty_response(setting_widget):
 
         # Verify all values were set to None
         assert setting_widget.fee_rate is None
-        assert setting_widget.expiry_time is None
-        assert setting_widget.expiry_time_unit is None
         assert setting_widget.indexer_url is None
         assert setting_widget.proxy_endpoint is None
-        assert setting_widget.bitcoind_host is None
-        assert setting_widget.bitcoind_port is None
-        assert setting_widget.announce_address is None
-        assert setting_widget.announce_alias is None
         assert setting_widget.min_confirmation is None
 
 
@@ -545,7 +420,6 @@ def test_set_frame_content(setting_widget, mocker):
     mock_frame = MagicMock()
     mock_frame.input_value = MagicMock()
     mock_frame.suggestion_desc = MagicMock()
-    mock_frame.time_unit_combobox = MagicMock()
     mock_frame.save_button = MagicMock()
 
     # Test with float input that's an integer
@@ -553,7 +427,6 @@ def test_set_frame_content(setting_widget, mocker):
     mock_frame.input_value.setText.assert_called_with('10')
     mock_frame.input_value.setPlaceholderText.assert_called_with('10')
     mock_frame.suggestion_desc.hide.assert_called_once()
-    mock_frame.time_unit_combobox.hide.assert_called_once()
 
     # Reset mocks
     mock_frame.reset_mock()
@@ -566,22 +439,11 @@ def test_set_frame_content(setting_widget, mocker):
     # Reset mocks
     mock_frame.reset_mock()
 
-    # Test with time unit combobox
-    mock_combobox = MagicMock()
-    setting_widget.expiry_time_unit = 'hours'
-    mock_combobox.findText.return_value = 1
-    setting_widget._set_frame_content(
-        mock_frame, 10, time_unit_combobox=mock_combobox,
-    )
-    mock_combobox.setCurrentIndex.assert_called_with(1)
-
 
 def test_update_save_button(setting_widget):
     """Test updating save button state."""
     # Create mock frame
     mock_frame = MagicMock()
-    mock_frame.input_value.text.return_value = '20'
-    mock_frame.time_unit_combobox.currentText.return_value = 'hours'
 
     # Test when input value has changed
     setting_widget._update_save_button(mock_frame, '10')
@@ -591,13 +453,6 @@ def test_update_save_button(setting_widget):
     mock_frame.input_value.text.return_value = '10'
     setting_widget._update_save_button(mock_frame, '10')
     mock_frame.save_button.setDisabled.assert_called_with(True)
-
-    # Test with time unit change
-    setting_widget.expiry_time_unit = 'minutes'
-    setting_widget._update_save_button(
-        mock_frame, '10', mock_frame.time_unit_combobox,
-    )
-    mock_frame.save_button.setDisabled.assert_called_with(False)
 
 
 def test_handle_fee_rate_frame(setting_widget):
@@ -616,44 +471,6 @@ def test_handle_fee_rate_frame(setting_widget):
     )
 
 
-def test_handle_expiry_time_frame(setting_widget):
-    """Test handling expiry time frame."""
-    # Mock frame and components
-    setting_widget.set_expiry_time_frame = MagicMock()
-    setting_widget.expiry_time = 24
-    setting_widget.expiry_time_unit = 'hours'
-
-    # Mock ToastManager
-    with patch('src.views.components.toast.ToastManager'):
-        # Call method
-        setting_widget.handle_expiry_time_frame()
-
-        # Verify QIntValidator was used and time unit was set
-        assert isinstance(
-            setting_widget.set_expiry_time_frame.input_value.setValidator.call_args[0][0],
-            QIntValidator,
-        )
-        setting_widget.set_expiry_time_frame.time_unit_combobox.setCurrentText.assert_called_with(
-            'hours',
-        )
-
-
-def test_handle_bitcoind_port_frame(setting_widget):
-    """Test handling bitcoind port frame."""
-    # Mock frame and components
-    setting_widget.set_bitcoind_rpc_port_frame = MagicMock()
-    setting_widget.bitcoind_port = 8332
-
-    # Call method
-    setting_widget.handle_bitcoind_port_frame()
-
-    # Verify QIntValidator was used
-    assert isinstance(
-        setting_widget.set_bitcoind_rpc_port_frame.input_value.setValidator.call_args[0][0],
-        QIntValidator,
-    )
-
-
 def test_handle_other_frames(setting_widget):
     """Test handling other simple frames."""
     # Test frames without special validators or components
@@ -665,18 +482,6 @@ def test_handle_other_frames(setting_widget):
         (
             'handle_proxy_endpoint_frame', 'set_proxy_endpoint_frame',
             'proxy_endpoint', 'http://proxy.com',
-        ),
-        (
-            'handle_bitcoind_host_frame', 'set_bitcoind_rpc_host_frame',
-            'bitcoind_host', 'localhost',
-        ),
-        (
-            'handle_announce_address_frame', 'set_announce_address_frame',
-            'announce_address', 'example.com',
-        ),
-        (
-            'handle_announce_alias_frame',
-            'set_announce_alias_frame', 'announce_alias', 'my-node',
         ),
         (
             'handle_minimum_confirmation_frame',
@@ -795,10 +600,6 @@ def test_update_loading_state_loading(setting_widget):
     frames = [
         'set_indexer_url_frame',
         'set_proxy_endpoint_frame',
-        'set_bitcoind_rpc_host_frame',
-        'set_bitcoind_rpc_port_frame',
-        'set_announce_address_frame',
-        'set_announce_alias_frame',
     ]
 
     for frame_name in frames:
@@ -821,10 +622,6 @@ def test_update_loading_state_not_loading(setting_widget):
     frames = [
         'set_indexer_url_frame',
         'set_proxy_endpoint_frame',
-        'set_bitcoind_rpc_host_frame',
-        'set_bitcoind_rpc_port_frame',
-        'set_announce_address_frame',
-        'set_announce_alias_frame',
     ]
 
     for frame_name in frames:
@@ -855,8 +652,6 @@ def test_set_endpoint_based_on_network_mainnet(setting_widget, mocker):
     # Verify correct endpoints were set
     assert setting_widget.indexer_url == INDEXER_URL_MAINNET
     assert setting_widget.proxy_endpoint == PROXY_ENDPOINT_MAINNET
-    assert setting_widget.bitcoind_host == BITCOIND_RPC_HOST_MAINNET
-    assert setting_widget.bitcoind_port == BITCOIND_RPC_PORT_MAINNET
 
 
 def test_set_endpoint_based_on_network_testnet(setting_widget, mocker):
@@ -873,8 +668,6 @@ def test_set_endpoint_based_on_network_testnet(setting_widget, mocker):
     # Verify correct endpoints were set
     assert setting_widget.indexer_url == INDEXER_URL_TESTNET
     assert setting_widget.proxy_endpoint == PROXY_ENDPOINT_TESTNET
-    assert setting_widget.bitcoind_host == BITCOIND_RPC_HOST_TESTNET
-    assert setting_widget.bitcoind_port == BITCOIND_RPC_PORT_TESTNET
 
 
 def test_set_endpoint_based_on_network_regtest(setting_widget, mocker):
@@ -891,8 +684,6 @@ def test_set_endpoint_based_on_network_regtest(setting_widget, mocker):
     # Verify correct endpoints were set
     assert setting_widget.indexer_url == INDEXER_URL_REGTEST
     assert setting_widget.proxy_endpoint == PROXY_ENDPOINT_REGTEST
-    assert setting_widget.bitcoind_host == BITCOIND_RPC_HOST_REGTEST
-    assert setting_widget.bitcoind_port == BITCOIND_RPC_PORT_REGTEST
 
 
 def test_set_endpoint_based_on_network_invalid(setting_widget, mocker):

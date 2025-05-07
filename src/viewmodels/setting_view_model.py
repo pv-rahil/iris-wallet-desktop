@@ -14,13 +14,11 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.repository.wallet_holder import colored_wallet
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.enums.enums_model import NativeAuthType
-from src.model.setting_model import DefaultExpiryTime
 from src.model.setting_model import DefaultFeeRate
 from src.model.setting_model import DefaultIndexerUrl
 from src.model.setting_model import DefaultMinConfirmation
 from src.model.setting_model import DefaultProxyEndpoint
 from src.model.setting_model import IsDefaultEndpointSet
-from src.model.setting_model import IsDefaultExpiryTimeSet
 from src.model.setting_model import IsDefaultFeeRateSet
 from src.model.setting_model import IsDefaultMinConfirmationSet
 from src.model.setting_model import IsHideExhaustedAssetEnabled
@@ -30,18 +28,14 @@ from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SettingPageLoadModel
 from src.utils.cache import Cache
 from src.utils.constant import FEE_RATE
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME_UNIT
 from src.utils.constant import MIN_CONFIRMATION
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
-from src.utils.error_message import ERROR_UNABLE_TO_SET_EXPIRY_TIME
 from src.utils.error_message import ERROR_UNABLE_TO_SET_FEE
 from src.utils.error_message import ERROR_UNABLE_TO_SET_MIN_CONFIRMATION
-from src.utils.info_message import INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 from src.utils.info_message import INFO_SET_FEE_RATE_SUCCESSFULLY
 from src.utils.info_message import INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
 from src.utils.worker import ThreadManager
@@ -55,13 +49,8 @@ class SettingViewModel(QObject, ThreadManager):
     hide_asset_event = Signal(bool)
     exhausted_asset_event = Signal(bool)
     fee_rate_set_event = Signal(str)
-    expiry_time_set_event = Signal(str, str)
     indexer_url_set_event = Signal(str)
     proxy_endpoint_set_event = Signal(str)
-    bitcoind_rpc_host_set_event = Signal(str)
-    bitcoind_rpc_port_set_event = Signal(int)
-    announce_address_set_event = Signal(list[str])
-    announce_alias_set_event = Signal(str)
     min_confirmation_set_event = Signal(int)
     on_page_load_event = Signal(SettingPageLoadModel)
     on_error_validation_keyring_event = Signal()
@@ -230,44 +219,6 @@ class SettingViewModel(QObject, ThreadManager):
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
 
-    def set_default_expiry_time(self, time: int, unit: str):
-        """
-        Sets the default expiry time and unit for invoices.
-        """
-        try:
-            success: IsDefaultExpiryTimeSet = SettingCardRepository.set_default_expiry_time(
-                time, unit,
-            )
-            if success.is_enabled:
-                ToastManager.success(
-                    description=INFO_SET_EXPIRY_TIME_SUCCESSFULLY,
-                )
-                self.expiry_time_set_event.emit(time, unit)
-                self.on_page_load()
-            else:
-                self.expiry_time_set_event.emit(
-                    str(LN_INVOICE_EXPIRY_TIME), str(
-                        LN_INVOICE_EXPIRY_TIME_UNIT,
-                    ),
-                )
-                ToastManager.error(
-                    description=ERROR_UNABLE_TO_SET_EXPIRY_TIME,
-                )
-        except CommonException as error:
-            self.expiry_time_set_event.emit(
-                str(LN_INVOICE_EXPIRY_TIME), str(LN_INVOICE_EXPIRY_TIME_UNIT),
-            )
-            ToastManager.error(
-                description=error.message,
-            )
-        except Exception:
-            self.expiry_time_set_event.emit(
-                str(LN_INVOICE_EXPIRY_TIME), str(LN_INVOICE_EXPIRY_TIME_UNIT),
-            )
-            ToastManager.error(
-                description=ERROR_SOMETHING_WENT_WRONG,
-            )
-
     def on_page_load(self):
         'This method call on setting page load'
         try:
@@ -284,7 +235,6 @@ class SettingViewModel(QObject, ThreadManager):
                 SettingRepository.is_exhausted_asset_enabled()
             )
             value_of_default_fee_res: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
-            value_of_default_expiry_time_res: DefaultExpiryTime = SettingCardRepository.get_default_expiry_time()
             value_of_default_indexer_url_res: DefaultIndexerUrl = SettingCardRepository.get_default_indexer_url()
             value_of_default_proxy_endpoint_res: DefaultProxyEndpoint = SettingCardRepository.get_default_proxy_endpoint()
             value_of_default_min_confirmation_res: DefaultMinConfirmation = SettingCardRepository.get_default_min_confirmation()
@@ -295,7 +245,6 @@ class SettingViewModel(QObject, ThreadManager):
                     status_of_hide_asset=status_of_hide_asset_res,
                     status_of_exhausted_asset=status_of_exhausted_asset_res,
                     value_of_default_fee=value_of_default_fee_res,
-                    value_of_default_expiry_time=value_of_default_expiry_time_res,
                     value_of_default_indexer_url=value_of_default_indexer_url_res,
                     value_of_default_proxy_endpoint=value_of_default_proxy_endpoint_res,
                     value_of_default_min_confirmation=value_of_default_min_confirmation_res,
@@ -313,12 +262,12 @@ class SettingViewModel(QObject, ThreadManager):
             self._page_navigation.fungibles_asset_page()
 
     def on_success_of_keyring_validation(self):
-        """This is a callback call on successfully unlock of node"""
+        """Callback function called when keyring is successfully unlocked"""
         self.loading_status.emit(False)
         self.on_success_validation_keyring_event.emit()
 
     def on_error_of_keyring_enable_validation(self, error: Exception):
-        """Callback function on error"""
+        """Callback function called when keyring validation encounters an error"""
         self.on_error_validation_keyring_event.emit()
         self.loading_status.emit(False)
         if isinstance(error, CommonException):

@@ -209,13 +209,14 @@ class PageNavigation:
         """This method display the collectibles asset page."""
         self.navigate_to_page('CollectiblesAssetWidget', show_sidebar=True)
 
-    def set_wallet_password_page(self, params):
+    def set_wallet_password_page(self):
         """This method display the set wallet password page."""
-        self.current_stack = {
-            'name': 'SetWalletPassword',
-            'widget': self.pages['SetWalletPassword'](self._ui.view_model, params),
-        }
-        self.navigate_and_toggle(False)
+        # self.current_stack = {
+        #     'name': 'SetWalletPassword',
+        #     'widget': self.pages['SetWalletPassword'](self._ui.view_model, params),
+        # }
+        # self.navigate_and_toggle(False)
+        self.navigate_to_page('SetWalletPassword')
 
     def enter_wallet_password_page(self):
         """This method display the set wallet password page."""

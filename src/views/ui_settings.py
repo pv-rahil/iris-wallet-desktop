@@ -29,39 +29,24 @@ from accessible_constant import KEYRING_TOGGLE_BUTTON
 from accessible_constant import SET_DEFAULT_EXP_TIME
 from accessible_constant import SET_DEFAULT_FEE_RATE
 from accessible_constant import SET_DEFAULT_MIN_EXPIRATION
-from accessible_constant import SPECIFY_ANNOUNCE_ADD
-from accessible_constant import SPECIFY_ANNOUNCE_ALIAS
-from accessible_constant import SPECIFY_BITCOIND_HOST
-from accessible_constant import SPECIFY_BITCOIND_PORT
 from accessible_constant import SPECIFY_INDEXER_URL
 from accessible_constant import SPECIFY_RGB_PROXY_URL
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigurableCardModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.setting_model import SettingPageLoadModel
-from src.utils.constant import ANNOUNCE_ADDRESS
-from src.utils.constant import ANNOUNCE_ALIAS
-from src.utils.constant import BITCOIND_RPC_HOST_MAINNET
-from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
-from src.utils.constant import BITCOIND_RPC_HOST_TESTNET
-from src.utils.constant import BITCOIND_RPC_PORT_MAINNET
-from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
-from src.utils.constant import BITCOIND_RPC_PORT_TESTNET
 from src.utils.constant import FEE_RATE
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME_UNIT
 from src.utils.constant import MIN_CONFIRMATION
-from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.helpers import load_stylesheet
-from src.utils.info_message import INFO_VALIDATION_OF_NODE_PASSWORD_AND_KEYRING_ACCESS
+from src.utils.info_message import INFO_VALIDATION_OF_KEYRING_ACCESS
 from src.utils.keyring_storage import get_value
 from src.utils.wallet_credential_encryption import mnemonic_store
 from src.viewmodels.main_view_model import MainViewModel
@@ -83,14 +68,10 @@ class SettingsWidget(QWidget):
         self.setStyleSheet(load_stylesheet('views/qss/settings_style.qss'))
         self.__loading_translucent_screen = None
         self.fee_rate = FEE_RATE
-        self.expiry_time = LN_INVOICE_EXPIRY_TIME
-        self.expiry_time_unit = LN_INVOICE_EXPIRY_TIME_UNIT
         self.indexer_url = None
         self.proxy_endpoint = None
         self.bitcoind_host = None
         self.bitcoind_port = None
-        self.announce_address = ANNOUNCE_ADDRESS
-        self.announce_alias = ANNOUNCE_ALIAS
         self.min_confirmation = MIN_CONFIRMATION
         self._set_endpoint_based_on_network()
         self.current_network = None
@@ -347,27 +328,7 @@ class SettingsWidget(QWidget):
             ),
         )
         self.set_fee_rate_frame.setAccessibleName(SET_DEFAULT_FEE_RATE)
-        self.set_expiry_time_frame = ConfigurableCardFrame(
-            self,
-            ConfigurableCardModel(
-                title_label=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'set_default_expiry_time', None,
-                ),
-                title_desc=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'set_default_expiry_time_desc',
-                    None,
-                ),
-                suggestion_desc=QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'input_expiry_time_desc',
-                    None,
-                ),
-                placeholder_value=self.expiry_time,
-            ),
 
-        )
-        self.set_expiry_time_frame.setAccessibleName(SET_DEFAULT_EXP_TIME)
         self.set_indexer_url_frame = ConfigurableCardFrame(
             self,
             ConfigurableCardModel(
@@ -433,7 +394,6 @@ class SettingsWidget(QWidget):
 
         stack_2_widgets = [
             self.set_fee_rate_frame,
-            self.set_expiry_time_frame,
             self.set_minimum_confirmation_frame,
             self.set_indexer_url_frame,
             self.set_proxy_endpoint_frame,
@@ -460,7 +420,7 @@ class SettingsWidget(QWidget):
         self.vertical_layout_6.addItem(self.widget__vertical_spacer)
         self.grid_layout.addWidget(self.settings_widget, 0, 0, 1, 1)
         self.__loading_translucent_screen = LoadingTranslucentScreen(
-            parent=self, description_text=INFO_VALIDATION_OF_NODE_PASSWORD_AND_KEYRING_ACCESS, dot_animation=True,
+            parent=self, description_text=INFO_VALIDATION_OF_KEYRING_ACCESS, dot_animation=True,
         )
         self.setup_ui_connection()
         self.retranslate_ui()
@@ -554,7 +514,6 @@ class SettingsWidget(QWidget):
         )
         click_handlers = {
             self.set_fee_rate_frame: self.handle_fee_rate_frame,
-            self.set_expiry_time_frame: self.handle_expiry_time_frame,
             self.set_indexer_url_frame: self.handle_indexer_url_frame,
             self.set_proxy_endpoint_frame: self.handle_proxy_endpoint_frame,
             self.set_minimum_confirmation_frame: self.handle_minimum_confirmation_frame,
@@ -563,7 +522,6 @@ class SettingsWidget(QWidget):
             widget.clicked.connect(handler)
         save_handlers = {
             self.set_fee_rate_frame.save_button: self._set_fee_rate_value,
-            self.set_expiry_time_frame.save_button: self._set_expiry_time,
             self.set_indexer_url_frame.save_button: self._set_indexer_url,
             self.set_proxy_endpoint_frame.save_button: self._set_proxy_endpoint,
             self.set_minimum_confirmation_frame.save_button: self._set_min_confirmation,
@@ -575,13 +533,6 @@ class SettingsWidget(QWidget):
         """Set the default fee rate value based on user input."""
         self._view_model.setting_view_model.set_default_fee_rate(
             self.set_fee_rate_frame.input_value.text(),
-        )
-
-    def _set_expiry_time(self):
-        """Set the default expiry time based on user input."""
-        self._view_model.setting_view_model.set_default_expiry_time(
-            self.set_expiry_time_frame.input_value.text(
-            ), self.set_expiry_time_frame.time_unit_combobox.currentText(),
         )
 
     def _set_indexer_url(self):
@@ -636,8 +587,6 @@ class SettingsWidget(QWidget):
             response.status_of_exhausted_asset.is_enabled,
         )
         self.fee_rate = response.value_of_default_fee.fee_rate
-        self.expiry_time = response.value_of_default_expiry_time.time
-        self.expiry_time_unit = response.value_of_default_expiry_time.unit
         self.indexer_url = response.value_of_default_indexer_url.url
         self.proxy_endpoint = response.value_of_default_proxy_endpoint.endpoint
         self.min_confirmation = response.value_of_default_min_confirmation.min_confirmation
@@ -755,7 +704,7 @@ class SettingsWidget(QWidget):
         else:
             raise ValueError(f"Unsupported network type: {stored_network}")
 
-    def _set_frame_content(self, frame, input_value, validator=None, time_unit_combobox=None, suggestion_desc=None):
+    def _set_frame_content(self, frame, input_value, validator=None, suggestion_desc=None):
         """
         Sets the content for a given frame, configuring the input value and optionally hiding/showing other widgets.
         """
@@ -769,39 +718,20 @@ class SettingsWidget(QWidget):
         if not suggestion_desc:
             frame.suggestion_desc.hide()
 
-        if time_unit_combobox:
-            index = time_unit_combobox.findText(
-                self.expiry_time_unit, Qt.MatchFixedString,
-            )
-            if index != -1:
-                time_unit_combobox.setCurrentIndex(index)
-        else:
-            frame.time_unit_combobox.hide()
-
         frame.input_value.textChanged.connect(
             lambda: self._update_save_button(frame, input_value),
         )
 
-        if time_unit_combobox:
-            frame.time_unit_combobox.currentTextChanged.connect(
-                lambda: self._update_save_button(
-                    frame, input_value, time_unit_combobox,
-                ),
-            )
-
         # Initial call to set the correct button state
-        self._update_save_button(frame, input_value, time_unit_combobox)
+        self._update_save_button(frame, input_value)
 
-    def _update_save_button(self, frame, input_value, time_unit_combobox=None):
+    def _update_save_button(self, frame, input_value):
         """
         Updates the state of the save button based on input value and time unit changes.
         """
         current_text = frame.input_value.text().strip()
-        current_unit = frame.time_unit_combobox.currentText() if time_unit_combobox else ''
 
-        time_unit_changed = current_unit != self.expiry_time_unit
-
-        if current_text and (current_text != str(input_value) or (time_unit_combobox and time_unit_changed)):
+        if current_text and (current_text != str(input_value)):
             frame.save_button.setDisabled(False)
         else:
             frame.save_button.setDisabled(True)
@@ -813,20 +743,6 @@ class SettingsWidget(QWidget):
             self.fee_rate,
             QIntValidator(),
             suggestion_desc=self.set_fee_rate_frame.suggestion_desc,
-        )
-
-    def handle_expiry_time_frame(self):
-        """Handle the frame for setting the expiry time and unit."""
-        self._set_frame_content(
-            self.set_expiry_time_frame,
-            self.expiry_time,
-            QIntValidator(),
-            suggestion_desc=self.set_expiry_time_frame.suggestion_desc,
-            time_unit_combobox=self.set_expiry_time_frame.time_unit_combobox,
-
-        )
-        self.set_expiry_time_frame.time_unit_combobox.setCurrentText(
-            str(self.expiry_time_unit),
         )
 
     def handle_indexer_url_frame(self):

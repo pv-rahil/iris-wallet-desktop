@@ -19,20 +19,15 @@ from PySide6.QtGui import QImage
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QLabel
-from PySide6.QtWidgets import QMessageBox
 from PySide6.QtWidgets import QPlainTextEdit
 
 from src.flavour import __network__
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import TokenSymbol
-from src.model.enums.enums_model import WalletType
-from src.model.selection_page_model import SelectionPageModel
 from src.utils.common_utils import cleanup_debug_logs
-from src.utils.common_utils import close_button_navigation
 from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import convert_timestamp
 from src.utils.common_utils import copy_text
-from src.utils.common_utils import disable_rln_node_termination_handling
 from src.utils.common_utils import download_file
 from src.utils.common_utils import find_files_with_name
 from src.utils.common_utils import generate_identicon
@@ -41,7 +36,6 @@ from src.utils.common_utils import load_translator
 from src.utils.common_utils import network_info
 from src.utils.common_utils import resize_image
 from src.utils.common_utils import set_qr_code
-from src.utils.common_utils import sigterm_handler
 from src.utils.common_utils import translate_value
 from src.utils.common_utils import zip_logger_folder
 from src.utils.constant import APP_DIR
@@ -50,8 +44,6 @@ from src.utils.constant import DEFAULT_LOCALE
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import LOG_FOLDER_NAME
 from src.utils.custom_exception import CommonException
-from src.utils.ln_node_manage import LnNodeServerManager
-from src.utils.logging import logger
 from src.version import __version__
 from src.views.components.toast import ToastManager
 
@@ -533,72 +525,6 @@ def test_find_files_with_name_empty_directory(mock_os_walk):
     assert result == []
 
 
-@patch('src.utils.page_navigation.PageNavigation')
-def test_close_button_navigation_wallet_selection_page(mock_page_navigation):
-    """Test close button navigation from wallet selection page."""
-    # Setup mocks
-    parent = MagicMock()
-    parent.originating_page = 'wallet_selection_page'
-
-    # Create mock page navigation instance
-    mock_navigation = MagicMock()
-    mock_page_navigation.return_value = mock_navigation
-
-    # Setup page navigation methods
-    parent.view_model.page_navigation = mock_navigation
-
-    # Call the method
-    close_button_navigation(parent)
-
-    # Assert that wallet_method_page was called
-    mock_navigation.wallet_method_page.assert_called_once()
-
-    # Create expected SelectionPageModel
-    expected_model = SelectionPageModel(
-        title='connection_type',
-        logo_1_path=':/assets/embedded.png',
-        logo_1_title='embedded',
-        logo_2_path=':/assets/remote.png',
-        logo_2_title='remote',
-        asset_id='none',
-        asset_name=None,
-        callback='none',
-        back_page_navigation=None,
-        rgb_asset_page_load_model=None,
-    )
-
-    # Call wallet_connection_page with model
-    mock_navigation.wallet_connection_page(expected_model)
-
-    # Verify wallet_connection_page was called with expected model
-    mock_navigation.wallet_connection_page.assert_called_once_with(
-        expected_model,
-    )
-
-
-@patch('src.utils.page_navigation.PageNavigation')
-def test_close_button_navigation_settings_page(mock_page_navigation):
-    """Test close button navigation from settings page."""
-    # Setup mocks
-    parent = MagicMock()
-    parent.originating_page = 'settings_page'
-
-    # Create mock page navigation instance
-    mock_navigation = MagicMock()
-    mock_page_navigation.return_value = mock_navigation
-
-    # Setup page navigation methods
-    parent.view_model.page_navigation = mock_navigation
-
-    # Call the method
-    close_button_navigation(parent)
-
-    # Assert that settings_page was called
-    mock_navigation.settings_page.assert_called_once()
-
- # Replace `your_module` with the actual module name
-
-
 # Mock SettingRepository
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network')
 @patch('src.views.components.toast.ToastManager.error')  # Mock ToastManager
@@ -954,61 +880,6 @@ def test_resize_image_file_not_found(mock_exists):
     ) == 'The file /mock/path/nonexistent.png does not exist.'
 
 
-@patch('PySide6.QtWidgets.QMessageBox.warning')
-@patch('src.utils.ln_node_manage.LnNodeServerManager.get_instance')
-@patch('PySide6.QtWidgets.QApplication.instance')
-def test_sigterm_handler(mock_qapp_instance, mock_ln_node_manager_get_instance, mock_qmessagebox_warning):
-    """
-    Unit test for sigterm_handler to ensure all branches are covered without displaying the GUI.
-    """
-    # Mock the QApplication instance
-    mock_qapp = MagicMock()
-    mock_qapp_instance.return_value = mock_qapp
-
-    # Mock the LnNodeServerManager instance
-    mock_ln_node_manager = MagicMock()
-    mock_ln_node_manager_get_instance.return_value = mock_ln_node_manager
-
-    # Case 1: User clicks "OK"
-    mock_qmessagebox_warning.return_value = QMessageBox.Ok
-    sigterm_handler(None, None)
-
-    # Assertions for the "OK" case
-    mock_qmessagebox_warning.assert_called_once_with(
-        None,
-        'Are you sure you want to exit?',
-        QApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT,
-            'sigterm_warning_message', None,
-        ),
-        QMessageBox.Ok | QMessageBox.Cancel,
-    )
-    mock_ln_node_manager.stop_server_from_close_button.assert_called_once()
-    mock_qapp.exit.assert_called_once()
-
-    # Reset mocks for next case
-    mock_qmessagebox_warning.reset_mock()
-    mock_ln_node_manager.stop_server_from_close_button.reset_mock()
-    mock_qapp.quit.reset_mock()
-
-    # Case 2: User clicks "Cancel"
-    mock_qmessagebox_warning.return_value = QMessageBox.Cancel
-    sigterm_handler(None, None)
-
-    # Assertions for the "Cancel" case
-    mock_qmessagebox_warning.assert_called_once_with(
-        None,
-        'Are you sure you want to exit?',
-        QApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT,
-            'sigterm_warning_message', None,
-        ),
-        QMessageBox.Ok | QMessageBox.Cancel,
-    )
-    mock_ln_node_manager.stop_server_from_close_button.assert_not_called()
-    mock_qapp.quit.assert_not_called()
-
-
 @patch('src.utils.common_utils.QPixmap')
 @patch('src.utils.common_utils.QImage')
 def test_set_qr_code_success(mock_qimage, mock_qpixmap):
@@ -1109,44 +980,6 @@ def test_translate_value_unexpected_exception(mock_logger):
 
     assert 'Unexpected Error' in str(excinfo.value)
     mock_logger.error.assert_not_called()
-
-
-@patch.object(LnNodeServerManager, 'get_instance')
-def test_disable_rln_node_termination_handling_embedded(mock_get_instance):
-    """Test that the RLN node process finished signal is disconnected for embedded wallets."""
-
-    # Create a mock instance of LnNodeServerManager
-    mock_ln_manager = MagicMock()
-    mock_get_instance.return_value = mock_ln_manager
-
-    # Call the function with an embedded wallet type
-    disable_rln_node_termination_handling(WalletType.EMBEDDED_TYPE_WALLET)
-
-    # Ensure process.finished.disconnect() was called
-    mock_ln_manager.process.finished.disconnect.assert_called_once()
-
-
-@patch.object(LnNodeServerManager, 'get_instance')
-@patch.object(logger, 'error')
-def test_disable_rln_node_termination_handling_exception(mock_logger_error, mock_get_instance):
-    """Test that an exception in disconnecting the signal is logged."""
-
-    # Create a mock instance of LnNodeServerManager
-    mock_ln_manager = MagicMock()
-    mock_get_instance.return_value = mock_ln_manager
-
-    # Simulate exception when disconnecting
-    mock_ln_manager.process.finished.disconnect.side_effect = CommonException(
-        'Test Error',
-    )
-
-    # Call the function with an embedded wallet type
-    disable_rln_node_termination_handling(WalletType.EMBEDDED_TYPE_WALLET)
-
-    # Ensure exception is logged
-    mock_logger_error.assert_called_once_with(
-        'Exception occurred: %s, Message: %s', 'CommonException', 'Test Error',
-    )
 
 
 @patch('os.path.exists')

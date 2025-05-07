@@ -28,10 +28,8 @@ from accessible_constant import CONFIGURE_BACKUP_BUTTON
 from accessible_constant import MNEMONIC_FRAME
 from accessible_constant import SHOW_MNEMONIC_BUTTON
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import MNEMONIC_KEY
 from src.utils.error_message import ERROR_G_DRIVE_CONFIG_FAILED
 from src.utils.gauth import authenticate
 from src.utils.gauth import TOKEN_PICKLE_PATH

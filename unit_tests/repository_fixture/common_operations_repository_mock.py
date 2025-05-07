@@ -41,17 +41,6 @@ def mock_unlock(mocker):
 
 
 @pytest.fixture
-def mock_network_info(mocker):
-    """Mock the network_info method of CommonOperationRepository."""
-    def _mock_network_info(value):
-        return mocker.patch(
-            'src.data.repository.common_operations_repository.CommonOperationRepository.network_info',
-            return_value=value,
-        )
-    return _mock_network_info
-
-
-@pytest.fixture
 def mock_lock(mocker):
     """Mock the lock method of CommonOperationRepository."""
     def _mock_lock(value):

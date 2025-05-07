@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 
 from src.model.rgb_model import RgbAssetPageLoadModel
-from src.model.selection_page_model import SelectionPageModel
 from src.model.success_model import SuccessPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.page_navigation import PageNavigation
@@ -62,14 +61,6 @@ def test_splash_screen_page(page_navigation):
     assert page_navigation.current_stack['name'] == 'SplashScreenWidget'
 
 
-def test_wallet_method_page(page_navigation):
-    """Test wallet_method_page navigation."""
-    params = MagicMock(spec=SelectionPageModel)
-    page_navigation.wallet_method_page(params)
-
-    assert page_navigation.current_stack['name'] == 'WalletOrTransferSelectionWidget'
-
-
 def test_network_selection_page(page_navigation):
     """Test network_selection_page navigation."""
     originating_page = 'test_page'
@@ -77,14 +68,6 @@ def test_network_selection_page(page_navigation):
     page_navigation.network_selection_page(originating_page, network)
 
     assert page_navigation.current_stack['name'] == 'NetworkSelectionWidget'
-
-
-def test_wallet_connection_page(page_navigation):
-    """Test wallet_connection_page navigation."""
-    params = MagicMock(spec=SelectionPageModel)
-    page_navigation.wallet_connection_page(params)
-
-    assert page_navigation.current_stack['name'] == 'WalletConnectionTypePage'
 
 
 def test_welcome_page(page_navigation):

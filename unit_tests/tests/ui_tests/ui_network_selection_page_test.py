@@ -77,20 +77,6 @@ def test_frame_click_event(network_selection_page_widget: NetworkSelectionWidget
     )
 
 
-def test_close_button_navigation(network_selection_page_widget: NetworkSelectionWidget, qtbot):
-    """Test the close button navigation."""
-    qtbot.mouseClick(
-        network_selection_page_widget.select_network_close_btn, Qt.LeftButton,
-    )
-    network_selection_page_widget.view_model.page_navigation.wallet_method_page.assert_called()
-
-    network_selection_page_widget.originating_page = 'settings_page'
-    qtbot.mouseClick(
-        network_selection_page_widget.select_network_close_btn, Qt.LeftButton,
-    )
-    network_selection_page_widget.view_model.page_navigation.settings_page.assert_called()
-
-
 def test_hide_mainnet_frame(network_selection_page_widget: NetworkSelectionWidget):
     """Test hiding of the mainnet frame."""
     network_selection_page_widget.hide_mainnet_frame()

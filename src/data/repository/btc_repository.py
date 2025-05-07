@@ -17,14 +17,12 @@ from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
-from src.utils.decorators.unlock_required import unlock_required
 
 
 class BtcRepository:
     """Repository for handling Bitcoin-related operations."""
 
     @staticmethod
-    @unlock_required
     def get_address() -> AddressResponseModel:
         """Get a Bitcoin address."""
         with repository_custom_context():
@@ -32,7 +30,6 @@ class BtcRepository:
             return AddressResponseModel(address=data)
 
     @staticmethod
-    @unlock_required
     def get_btc_balance() -> BalanceResponseModel:
         """Get Bitcoin balance."""
         with repository_custom_context():
@@ -46,7 +43,6 @@ class BtcRepository:
             )
 
     @staticmethod
-    @unlock_required
     def list_transactions() -> TransactionListResponse:
         """List Bitcoin transactions."""
         with repository_custom_context():
@@ -56,7 +52,6 @@ class BtcRepository:
             return TransactionListResponse(transactions=data)
 
     @staticmethod
-    @unlock_required
     def list_unspents(param: UnspentListRequestModel) -> UnspentsListResponseModel:
         """List unspent Bitcoin."""
         with repository_custom_context():
@@ -67,7 +62,6 @@ class BtcRepository:
             return UnspentsListResponseModel(unspents=data)
 
     @staticmethod
-    @unlock_required
     def send_btc(param: SendBtcRequestModel) -> SendBtcResponseModel:
         """Send Bitcoin."""
         with repository_custom_context():
@@ -81,11 +75,10 @@ class BtcRepository:
             return SendBtcResponseModel(txid=data)
 
     @staticmethod
-    @unlock_required
     def estimate_fee(param: EstimateFeeRequestModel) -> EstimateFeeResponse:
         """Get Estimate Fee"""
         with repository_custom_context():
             data = colored_wallet.wallet.get_fee_estimation(
                 online=colored_wallet.online, blocks=param.blocks,
             )
-            return EstimateFeeResponse(**data)
+            return EstimateFeeResponse(fee_rate=data)

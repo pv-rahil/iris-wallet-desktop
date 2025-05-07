@@ -35,7 +35,7 @@ class BackupService:
     @staticmethod
     def backup(mnemonic: str, password: str) -> bool:
         """
-        Creates a temporary backup of the node's data, uploads it to Google Drive,
+        Creates a temporary backup of the wallet's data, uploads it to Google Drive,
         and deletes the local backup after a successful upload.
 
         Returns:

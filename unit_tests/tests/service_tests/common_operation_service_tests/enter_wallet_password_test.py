@@ -1,20 +1,23 @@
-"""Unit tests for enter wallet password method  in common operation service"""
+"""Unit tests for enter wallet password method in common operation service"""
 # Disable the redefined-outer-name warning as
-# it's normal to pass mocked object in tests  function
+# it's normal to pass mocked object in tests function
 # pylint: disable=redefined-outer-name, unused-argument, protected-access, unused-import
 from __future__ import annotations
+
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import UnlockResponseModel
+from src.model.common_operation_model import WalletRequestModel
+from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.constant import ACCOUNT_XPUB
 from src.utils.custom_exception import CommonException
 from unit_tests.repository_fixture.common_operations_repository_mock import mock_lock
-from unit_tests.repository_fixture.common_operations_repository_mock import mock_network_info
 from unit_tests.repository_fixture.common_operations_repository_mock import mock_unlock
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_network_info_api_res
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_network_info_diff
 from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_password
 from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_unlock_api_res
 from unit_tests.service_test_resources.service_fixture.common_operation_service_mock import mock_is_node_locked
@@ -28,60 +31,63 @@ def reset_network():
     SettingRepository.get_wallet_network()
 
 
-def test_enter_wallet_password_locked_same_network(mock_unlock, mock_network_info, mock_is_node_locked):
-    """Case 1 : When ln node locked and build and ln node network same"""
-    lock_obj = mock_is_node_locked(True)
-    mock_unlock(UnlockResponseModel(status=True))
-    network_info_obj = mock_network_info(mocked_network_info_api_res)
+@patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
+@patch('src.data.service.common_operation_service.local_store')
+@patch('src.data.service.common_operation_service.mnemonic_store')
+@patch('src.data.service.common_operation_service.CommonOperationRepository.unlock')
+@patch('src.data.service.common_operation_service.app_paths')
+def test_enter_wallet_password_success(
+    mock_app_paths, mock_unlock_repo, mock_mnemonic_store,
+    mock_local_store, mock_get_network,
+):
+    """Test successful wallet password entry"""
+    # Setup mocks
+    mock_app_paths.app_path = '/test/path'
+    mock_app_paths.mnemonic_file_path = '/test/mnemonic/path'
+    mock_get_network.return_value = 1  # Testnet
+
+    mock_local_store.get_value.return_value = 'test_xpub'
+    mock_mnemonic_store.decrypt.return_value = 'test mnemonic'
+
+    mock_wallet = MagicMock()
+    mock_unlock_repo.return_value = mock_wallet
+
+    # Execute
     result = CommonOperationService.enter_wallet_password(
-        password='Random@123', mnemonic='test mnemonic',
+        password='Random@123',
     )
-    assert isinstance(result, UnlockResponseModel)
-    assert result.status is True
-    lock_obj.assert_called_once()
-    network_info_obj.assert_called_once()
+
+    # Assert
+    assert result == mock_wallet
+    mock_get_network.assert_called()
+    mock_local_store.get_value.assert_called_once_with(ACCOUNT_XPUB)
+    mock_mnemonic_store.decrypt.assert_called_once_with(
+        password='Random@123', path='/test/mnemonic/path',
+    )
+    mock_unlock_repo.assert_called_once_with(
+        WalletRequestModel(
+            data_dir='/test/path',
+            bitcoin_network=1,
+            account_xpub='test_xpub',
+            mnemonic='test mnemonic',
+        ),
+    )
 
 
-def test_enter_wallet_password_unlocked_same_network(mock_unlock, mock_network_info, mock_is_node_locked, mock_lock):
-    """Case 2 : When ln node unlocked and build and ln node network same"""
-    lock_obj = mock_is_node_locked(False)
-    mock_unlock(UnlockResponseModel(status=True))
-    lock_api_obj = mock_lock(True)
-    network_info_obj = mock_network_info(mocked_network_info_api_res)
+@patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
+@patch('src.data.service.common_operation_service.handle_exceptions')
+def test_enter_wallet_password_exception(mock_handle_exceptions, mock_get_network):
+    """Test exception handling in wallet password entry"""
+    # Setup mocks
+    mock_get_network.side_effect = Exception('Test exception')
+    mock_handle_exceptions.return_value = 'Error response'
+
+    # Execute
     result = CommonOperationService.enter_wallet_password(
-        password='Random@123', mnemonic='test mnemonic',
+        password='Random@123',
     )
-    assert isinstance(result, UnlockResponseModel)
-    assert result.status is True
-    lock_obj.assert_called_once()
-    lock_api_obj.assert_called_once()
-    network_info_obj.assert_called_once()
 
-
-def test_enter_wallet_password_locked_diff_network(mock_unlock, mock_network_info, mock_is_node_locked, mock_lock):
-    """Case 3 : When ln node locked and build and ln node network diff"""
-    lock_obj = mock_is_node_locked(True)
-    mock_unlock(UnlockResponseModel(status=False))
-    network_info_obj = mock_network_info(mocked_network_info_diff)
-    with pytest.raises(CommonException) as exc_info:
-        CommonOperationService.enter_wallet_password(
-            password='Random@123', mnemonic='test mnemonic',
-        )
-    assert str(exc_info.value) == 'Network configuration does not match.'
-    lock_obj.assert_called_once()
-    network_info_obj.assert_called_once()
-
-
-def test_enter_wallet_password_unlocked_diff_network(mock_unlock, mock_network_info, mock_is_node_locked, mock_lock):
-    """Case 4 : When ln node unlocked and build and ln node network diff"""
-    lock_obj = mock_is_node_locked(False)
-    mock_unlock(UnlockResponseModel(status=False))
-    _lock_api_obj = mock_lock(True)
-    network_info_obj = mock_network_info(mocked_network_info_diff)
-    with pytest.raises(CommonException) as exc_info:
-        CommonOperationService.enter_wallet_password(
-            password='Random@123', mnemonic='test mnemonic',
-        )
-    assert str(exc_info.value) == 'Network configuration does not match.'
-    lock_obj.assert_called_once()
-    network_info_obj.assert_called_once()
+    # Assert
+    assert result == 'Error response'
+    mock_get_network.assert_called_once()
+    mock_handle_exceptions.assert_called_once()

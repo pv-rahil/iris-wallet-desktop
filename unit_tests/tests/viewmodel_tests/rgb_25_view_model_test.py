@@ -13,7 +13,7 @@ import pytest
 
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.rgb_model import AssetBalanceResponseModel
+from src.model.rgb_model import Balance
 from src.model.rgb_model import FailTransferResponseModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import SendAssetResponseModel
@@ -61,20 +61,18 @@ def mock_asset_details_response():
                 amount_status='+69',
                 kind='Issuance',
                 transfer_Status=TransferStatusEnumModel.INTERNAL,
-                txid=None,
-                recipient_id=None,
                 receive_utxo=None,
-                change_utxo=None,
+                txid=None,
                 expiration=None,
+                recipient_id=None,
+                change_utxo=None,
                 transport_endpoints=[],
             ),
         ],
-        asset_balance=AssetBalanceResponseModel(
+        asset_balance=Balance(
             settled=69,
             future=69,
             spendable=69,
-            offchain_outbound=0,
-            offchain_inbound=0,
         ),
     )
 

@@ -90,15 +90,15 @@ def test_set_wallet_password(mock_enter_wallet_password_view_model, create_enter
     qtbot.addWidget(widget)
 
     # Mock the view model method
-    mock_enter_wallet_password_view_model.enter_wallet_password_view_model.set_wallet_password = MagicMock()
+    mock_enter_wallet_password_view_model.enter_wallet_password_view_model.set_wallet_credentials = MagicMock()
 
     # Enter password and click the login button
     qtbot.keyClicks(widget.enter_password_input, 'testpassword')
     qtbot.mouseClick(widget.login_wallet_button, Qt.LeftButton)
 
     # Check if the method was called with the correct password
-    assert mock_enter_wallet_password_view_model.enter_wallet_password_view_model.set_wallet_password.called
-    args, _ = mock_enter_wallet_password_view_model.enter_wallet_password_view_model.set_wallet_password.call_args
+    assert mock_enter_wallet_password_view_model.enter_wallet_password_view_model.set_wallet_credentials.called
+    args, _ = mock_enter_wallet_password_view_model.enter_wallet_password_view_model.set_wallet_credentials.call_args
     assert args[0] == 'testpassword'
 
 

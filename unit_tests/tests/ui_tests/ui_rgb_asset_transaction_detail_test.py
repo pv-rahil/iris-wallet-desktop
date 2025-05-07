@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 from PySide6.QtCore import QCoreApplication
+from rgb_lib import AssetIface
 
-from src.model.enums.enums_model import PaymentStatus
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.rgb_model import TransportEndpoint
@@ -56,7 +56,6 @@ def rgb_asset_transaction_detail_widget(qtbot):
     params.receive_utxo = 'utxo_1234'
     params.change_utxo = 'utxo_4567'
     params.asset_type = 'RGB20'
-    params.is_off_chain = False  # Add the missing attribute
 
     # Initialize the widget
     widget = RGBAssetTransactionDetail(view_model, params)
@@ -96,9 +95,17 @@ def test_set_rgb_asset_value(rgb_asset_transaction_detail_widget: RGBAssetTransa
     # Empty consignment_endpoints to simulate 'N/A' value
     rgb_asset_transaction_detail_widget.params.consignment_endpoints = []
 
+    # Mock the receive_utxo to be an object with txid attribute instead of a string
+    mock_utxo = MagicMock()
+    mock_utxo.txid = 'mock_txid_12345'
+    rgb_asset_transaction_detail_widget.params.receive_utxo = mock_utxo
+    rgb_asset_transaction_detail_widget.params.change_utxo = mock_utxo
+
     # Mock load_stylesheet function if used
     with patch('src.views.ui_rgb_asset_transaction_detail.load_stylesheet', return_value='mocked_stylesheet'):
-        rgb_asset_transaction_detail_widget.set_rgb_asset_value()
+        with patch('src.views.ui_rgb_asset_transaction_detail.insert_zero_width_spaces', return_value='formatted_txid'):
+            with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'):
+                rgb_asset_transaction_detail_widget.set_rgb_asset_value()
 
     # Check that the asset name and amount are set correctly
     assert rgb_asset_transaction_detail_widget.rgb_asset_name_value.text(
@@ -112,18 +119,18 @@ def test_set_rgb_asset_value(rgb_asset_transaction_detail_widget: RGBAssetTransa
         rgb_asset_transaction_detail_widget.set_rgb_asset_value()
 
     # Ensure the style sheet is applied
-    expected_style = "font: 24px \"Inter\";\ncolor: #798094;\nbackground: transparent;\nborder: none;\nfont-weight: 600;"
-    actual_style = rgb_asset_transaction_detail_widget.amount_value.styleSheet(
-    ).strip()  # Normalize whitespace
-    assert actual_style == expected_style.strip()
+    assert rgb_asset_transaction_detail_widget.amount_value.styleSheet() == 'mocked_stylesheet'
 
     # Test case when both confirmation_date and confirmation_time are provided
+    rgb_asset_transaction_detail_widget.params.transfer_status = TransferStatusEnumModel.INTERNAL
     rgb_asset_transaction_detail_widget.params.confirmation_date = '2024-12-29'
     rgb_asset_transaction_detail_widget.params.confirmation_time = '12:34:56'
 
     # Update the widget after setting parameters
     with patch('src.views.ui_rgb_asset_transaction_detail.load_stylesheet', return_value='mocked_stylesheet'):
-        rgb_asset_transaction_detail_widget.set_rgb_asset_value()
+        with patch('src.views.ui_rgb_asset_transaction_detail.insert_zero_width_spaces', return_value='formatted_txid'):
+            with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'):
+                rgb_asset_transaction_detail_widget.set_rgb_asset_value()
 
     # Ensure the concatenated date and time are set correctly
     expected_date_time_concat = f'{rgb_asset_transaction_detail_widget.params.confirmation_date} | {
@@ -131,85 +138,29 @@ def test_set_rgb_asset_value(rgb_asset_transaction_detail_widget: RGBAssetTransa
     }'
     assert rgb_asset_transaction_detail_widget.date_value.text() == expected_date_time_concat
 
-    # Test case when confirmation_date is missing
+    # Test case when confirmation_date and confirmation_time are missing
+    rgb_asset_transaction_detail_widget.params.transfer_status = TransferStatusEnumModel.INTERNAL
     rgb_asset_transaction_detail_widget.params.confirmation_date = None
-    rgb_asset_transaction_detail_widget.params.confirmation_time = '10:40 AM'
-    with patch('src.views.ui_rgb_asset_transaction_detail.load_stylesheet', return_value='mocked_stylesheet'):
-        rgb_asset_transaction_detail_widget.set_rgb_asset_value()
-    assert rgb_asset_transaction_detail_widget.date_label.text() == QCoreApplication.translate(
-        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'status', None,
-    )
-    assert rgb_asset_transaction_detail_widget.date_value.text(
-    ) == rgb_asset_transaction_detail_widget.params.transaction_status
-
-    # Test case when confirmation_time is missing
-    rgb_asset_transaction_detail_widget.params.confirmation_date = '2024-09-30'
     rgb_asset_transaction_detail_widget.params.confirmation_time = None
+
+    # Set receive_utxo to None to test that branch
+    rgb_asset_transaction_detail_widget.params.receive_utxo = None
+
     with patch('src.views.ui_rgb_asset_transaction_detail.load_stylesheet', return_value='mocked_stylesheet'):
-        rgb_asset_transaction_detail_widget.set_rgb_asset_value()
+        with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'):
+            rgb_asset_transaction_detail_widget.set_rgb_asset_value()
+
+    # Verify that the date label is set to 'status'
     assert rgb_asset_transaction_detail_widget.date_label.text() == QCoreApplication.translate(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'status', None,
     )
+    # Verify that the date value is set to the transaction status
     assert rgb_asset_transaction_detail_widget.date_value.text(
     ) == rgb_asset_transaction_detail_widget.params.transaction_status
 
-    # Test case for is_off_chain condition
-    # Set the parameter to True for the test
-    rgb_asset_transaction_detail_widget.params.is_off_chain = True
-    with patch.object(rgb_asset_transaction_detail_widget, 'handle_lightning_detail') as mock_handle_lightning_detail:
-        rgb_asset_transaction_detail_widget.set_rgb_asset_value()
-        # Ensure the method handle_lightning_detail is called
-        mock_handle_lightning_detail.assert_called_once()
-
-    # Reset is_off_chain for other tests
-    rgb_asset_transaction_detail_widget.params.is_off_chain = False
-
-
-def test_handle_lightning_detail(rgb_asset_transaction_detail_widget: RGBAssetTransactionDetail, qtbot):
-    """Test the handle_lightning_detail method."""
-
-    # Mock necessary parameters
-    rgb_asset_transaction_detail_widget.params.transaction_status = PaymentStatus.SUCCESS.value
-    rgb_asset_transaction_detail_widget.params.inbound = True  # Received transaction
-    rgb_asset_transaction_detail_widget.params.confirmation_date = '2024-12-29'
-    rgb_asset_transaction_detail_widget.params.confirmation_time = '12:34:56'
-    rgb_asset_transaction_detail_widget.params.updated_date = '2024-12-30'
-    rgb_asset_transaction_detail_widget.params.updated_time = '10:40:00'
-    rgb_asset_transaction_detail_widget.tx_id = 'test_payment_hash'
-
-    # Test case for successful received transaction
-    rgb_asset_transaction_detail_widget.handle_lightning_detail()
-    assert rgb_asset_transaction_detail_widget.amount_value.styleSheet(
-    ) == 'color:#01A781;font-weight: 600'
-    assert rgb_asset_transaction_detail_widget.tx_id_value.text() == 'test_payment_hash'
-    assert rgb_asset_transaction_detail_widget.tx_id_value.styleSheet() == 'color:#01A781;'
-    assert rgb_asset_transaction_detail_widget.date_value.text() == '2024-12-29 | 12:34:56'
-    assert rgb_asset_transaction_detail_widget.blinded_utxo_value.text(
-    ) == '2024-12-30 | 10:40:00'
-    assert rgb_asset_transaction_detail_widget.unblinded_and_change_utxo_value.text(
-    ) == PaymentStatus.SUCCESS.value
-
-    # Test case for successful sent transaction
-    rgb_asset_transaction_detail_widget.params.inbound = False
-    rgb_asset_transaction_detail_widget.handle_lightning_detail()
-    assert rgb_asset_transaction_detail_widget.amount_value.styleSheet(
-    ) == 'color:#EB5A5A;font-weight: 600'
-
-    # Test case for pending transaction
-    rgb_asset_transaction_detail_widget.params.transaction_status = PaymentStatus.PENDING.value
-    rgb_asset_transaction_detail_widget.handle_lightning_detail()
-    assert rgb_asset_transaction_detail_widget.amount_value.styleSheet(
-    ) == 'color:#959BAE;font-weight: 600'
-
-    # Verify hidden elements
-    assert not rgb_asset_transaction_detail_widget.consignment_endpoints_label.isVisible()
-    assert not rgb_asset_transaction_detail_widget.consignment_endpoints_value.isVisible()
-
-    # Verify widget sizing adjustments
-    assert rgb_asset_transaction_detail_widget.rgb_asset_single_transaction_detail_widget.minimumHeight() == 650
-    assert rgb_asset_transaction_detail_widget.rgb_asset_single_transaction_detail_widget.maximumHeight() == 650
-    assert rgb_asset_transaction_detail_widget.transaction_detail_frame.minimumHeight() == 400
-    assert rgb_asset_transaction_detail_widget.transaction_detail_frame.maximumHeight() == 400
+    # Verify the style sheet is applied to amount_value
+    expected_style = "font: 24px \"Inter\";\ncolor: #798094;\nbackground: transparent;\nborder: none;\nfont-weight: 600;"
+    assert rgb_asset_transaction_detail_widget.amount_value.styleSheet().strip() == expected_style
 
 
 def test_handle_close(rgb_asset_transaction_detail_widget: RGBAssetTransactionDetail, qtbot):
@@ -219,7 +170,7 @@ def test_handle_close(rgb_asset_transaction_detail_widget: RGBAssetTransactionDe
     rgb_asset_transaction_detail_widget.params.asset_id = '123'
     rgb_asset_transaction_detail_widget.params.asset_name = 'Test Asset'
     rgb_asset_transaction_detail_widget.params.image_path = 'path/to/image'
-    rgb_asset_transaction_detail_widget.params.asset_type = 'Test Type'
+    rgb_asset_transaction_detail_widget.params.asset_type = AssetIface.RGB25
 
     # Mock the view model methods (signal and navigation)
     rgb_asset_transaction_detail_widget._view_model.rgb25_view_model.asset_info = MagicMock()
