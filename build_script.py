@@ -33,12 +33,6 @@ def parse_arguments():
         required=True,
         help="Specify the network to build for: 'mainnet', 'testnet', or 'regtest'.",
     )
-
-    parser.add_argument(
-        '--ldk-port',
-        required=False,
-        help='Specify the LDK Port (Optional).',
-    )
     parser.add_argument(
         '--app-name',
         required=False,

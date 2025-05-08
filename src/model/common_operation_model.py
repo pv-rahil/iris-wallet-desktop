@@ -51,7 +51,7 @@ class WalletRequestModel(BaseModel):
     max_allocations_per_utxo: int = 1
     account_xpub: str
     mnemonic: str
-    vanilla_keychain: int = 1
+    vanilla_keychain: int | None = None
 
     class Config:
         """Pydantic configuration class allowing arbitrary types."""

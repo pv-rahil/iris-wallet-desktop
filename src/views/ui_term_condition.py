@@ -149,7 +149,7 @@ class TermConditionWidget(QWidget):
         self.accept_btn.setAccessibleName(ACCEPT_BUTTON)
         self.accept_btn.setMinimumSize(QSize(318, 40))
         self.accept_btn.setMaximumSize(QSize(318, 40))
-        # self.accept_btn.setDisabled(True)
+        self.accept_btn.setDisabled(True)
 
         self.tnc_horizontal_layout.addWidget(self.accept_btn)
 

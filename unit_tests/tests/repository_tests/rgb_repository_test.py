@@ -195,7 +195,7 @@ def test_get_assets(mock_wallet, mock_cache):
     # Assert
     assert result == mock_assets
     mock_wallet.list_assets.assert_called_once_with(
-        filter_asset_schemas=filter_request,
+        filter_asset_schemas=filter_request.filter_asset_schemas,
     )
     mock_cache.invalidate_cache.assert_called_once()
 

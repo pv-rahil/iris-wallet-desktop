@@ -13,7 +13,6 @@ from src.utils.constant import APP_DIR
 from src.utils.constant import APP_NAME
 from src.utils.constant import CACHE_FOLDER_NAME
 from src.utils.constant import LOG_FOLDER_NAME
-from src.utils.constant import NODE_DIR
 from src.utils.custom_exception import CommonException
 
 # Store the real os.path.join before mocking
@@ -28,7 +27,6 @@ def test_build_app_paths():
 
     # Expected paths
     expected_app_path = os.path.join(base_path, APP_DIR)
-    expected_node_path = os.path.join(base_path, NODE_DIR)
     expected_app_name_with_network = f"{APP_NAME}_{mock_network}"
     expected_temp_folder_path = os.path.join(
         mock_temp_dir, expected_app_name_with_network,
@@ -41,19 +39,12 @@ def test_build_app_paths():
     # Assert the constructed paths
     assert isinstance(app_paths, AppPathsModel)
     assert app_paths.app_path == expected_app_path
-    assert app_paths.node_data_path == expected_node_path
     assert app_paths.iriswallet_temp_folder_path == expected_temp_folder_path
     assert app_paths.cache_path == os.path.join(
         expected_app_path, CACHE_FOLDER_NAME,
     )
     assert app_paths.app_logs_path == os.path.join(
         expected_app_path, LOG_FOLDER_NAME,
-    )
-    assert app_paths.node_logs_path == os.path.join(
-        expected_node_path, LOG_FOLDER_NAME,
-    )
-    assert app_paths.ldk_logs_path == os.path.join(
-        expected_node_path, '.ldk', 'logs', 'logs.txt',
     )
     assert app_paths.pickle_file_path == os.path.join(
         expected_app_path, 'token.pickle',

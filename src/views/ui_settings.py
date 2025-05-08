@@ -26,7 +26,6 @@ from accessible_constant import HIDE_EXHAUSTED_ASSETS
 from accessible_constant import HIDE_EXHAUSTED_ASSETS_TOGGLE
 from accessible_constant import KEYRING_STORAGE
 from accessible_constant import KEYRING_TOGGLE_BUTTON
-from accessible_constant import SET_DEFAULT_EXP_TIME
 from accessible_constant import SET_DEFAULT_FEE_RATE
 from accessible_constant import SET_DEFAULT_MIN_EXPIRATION
 from accessible_constant import SPECIFY_INDEXER_URL

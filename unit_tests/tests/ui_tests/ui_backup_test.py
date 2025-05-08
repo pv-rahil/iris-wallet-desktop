@@ -176,7 +176,9 @@ def test_configure_backup_success(backup_widget, qtbot):
 
 def test_configure_backup_failure(backup_widget):
     """Test the configure backup method when authentication fails."""
-    with patch('src.views.ui_backup.authenticate', return_value=False):
+    with patch('src.views.ui_backup.authenticate', return_value=False), \
+            patch.object(backup_widget.configure_backup_button, 'isHidden', return_value=False), \
+            patch.object(backup_widget.back_node_data_button, 'isHidden', return_value=True):
         # Simulate failed backup configuration
         backup_widget.configure_backup()
 

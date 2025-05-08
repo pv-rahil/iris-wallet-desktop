@@ -81,8 +81,7 @@ def handle_exceptions(exc):
         raise CommonException(exc.message) from exc
 
     if isinstance(exc, RgbLibError):
-        error_class_name = exc.__class__.__name__
-        raise CommonException(error_class_name) from exc
+        raise CommonException(type(exc).__name__) from exc
 
     # If no specific type matches, use a default error message
     error_message = getattr(exc, 'message', None) or str(

@@ -1,15 +1,13 @@
 """
-End-to-End testing script for embedded and remote wallet modes.
+End-to-End testing script.
 """
 from __future__ import annotations
 
+import signal
 import subprocess
 import sys
 
-from accessible_constant import DEFAULT_WALLET_MODES
-
 E2E_SCRIPT = './run_e2e_tests.sh'
-# Default modes if none is provided
 
 
 def run_e2e(extra_args=None):
@@ -20,26 +18,29 @@ def run_e2e(extra_args=None):
     subprocess.run(cmd, check=True)
 
 
-def serve_allure_result(results_dir):
+def serve_allure_result():
     """Serves the Allure report for a specific results directory."""
-    subprocess.run(['allure', 'serve', results_dir], check=True)
+    try:
+        with subprocess.Popen(['allure', 'serve', 'allure-results']) as process:
+            process.wait()
+    except KeyboardInterrupt:
+        print('\nTerminating Allure server...')
+        process.send_signal(signal.SIGINT)
+        process.wait()
 
 
 def single_test():
-    """Runs a single test with an optional wallet mode and force build."""
+    """Runs a single test with optional force build."""
     if len(sys.argv) < 2:
-        print('Usage: single-test <test-file> [wallet-mode] [force build]')
+        print('Usage: single-test <test-file> [force-build]')
         sys.exit(1)
 
     test_file = sys.argv[1]
-    wallet_mode = None
     force_build = False
 
     # Parse optional arguments
     for arg in sys.argv[2:]:
-        if arg in DEFAULT_WALLET_MODES:
-            wallet_mode = arg
-        elif arg.lower() == 'force-build':
+        if arg.lower() == 'force-build':
             force_build = True
         else:
             print(f"Error: Unrecognized argument '{arg}'")
@@ -49,29 +50,21 @@ def single_test():
         print('Forcing application build before running tests...')
         run_e2e(['--force-build'])
 
-    if wallet_mode:
-        run_e2e([test_file, '--wallet-mode', wallet_mode])
-    else:
-        for mode in DEFAULT_WALLET_MODES:
-            print(f"Running test '{test_file}' with wallet mode: {mode}")
-            run_e2e([test_file, '--wallet-mode', mode])
+    run_e2e([test_file])
 
 
 def e2e_test():
-    """Runs all E2E tests with 'all' (required) and optional wallet mode & force build."""
-    force_build = None
+    """Runs all E2E tests with '--all' and optional force build."""
     if 'all' not in sys.argv:
         print("Error: The 'all' argument is required for e2e tests.")
         sys.exit(1)
 
-    wallet_mode = None
     extra_args = ['--all']
+    force_build = False
 
     # Parse optional arguments
     for arg in sys.argv[1:]:
-        if arg in DEFAULT_WALLET_MODES:
-            wallet_mode = arg
-        elif arg.lower() == 'force-build':
+        if arg.lower() == 'force-build':
             force_build = True
         elif arg.lower() != 'all':
             print(f"Error: Unrecognized argument '{arg}'")
@@ -81,22 +74,7 @@ def e2e_test():
         print('Forcing application build before running tests...')
         run_e2e(['--force-build'])
 
-    if wallet_mode:
-        run_e2e(extra_args + ['--wallet-mode', wallet_mode])
-    else:
-        for mode in DEFAULT_WALLET_MODES:
-            print(f"Running full test suite with wallet mode: {mode}")
-            run_e2e(extra_args + ['--wallet-mode', mode])
-
-
-def result_embedded():
-    """Serves the allure report for embedded wallet mode."""
-    serve_allure_result('allure-results-embedded')
-
-
-def result_remote():
-    """Serves the allure report for remote wallet mode."""
-    serve_allure_result('allure-results-remote')
+    run_e2e(extra_args)
 
 
 def run_regtest(extra_args=None):

@@ -7,7 +7,6 @@ from __future__ import annotations
 import base64
 import binascii
 import os
-import time
 import zipfile
 from unittest.mock import MagicMock
 from unittest.mock import Mock
@@ -29,17 +28,23 @@ from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import convert_timestamp
 from src.utils.common_utils import copy_text
 from src.utils.common_utils import download_file
+from src.utils.common_utils import extract_amount
 from src.utils.common_utils import find_files_with_name
 from src.utils.common_utils import generate_identicon
+from src.utils.common_utils import get_bitcoin_explorer_url
 from src.utils.common_utils import get_bitcoin_info_by_network
+from src.utils.common_utils import insert_zero_width_spaces
 from src.utils.common_utils import load_translator
 from src.utils.common_utils import network_info
 from src.utils.common_utils import resize_image
+from src.utils.common_utils import set_number_validator
+from src.utils.common_utils import set_placeholder_value
 from src.utils.common_utils import set_qr_code
 from src.utils.common_utils import translate_value
 from src.utils.common_utils import zip_logger_folder
 from src.utils.constant import APP_DIR
 from src.utils.constant import APP_NAME
+from src.utils.constant import BITCOIN_EXPLORER_URL
 from src.utils.constant import DEFAULT_LOCALE
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import LOG_FOLDER_NAME
@@ -275,26 +280,22 @@ def test_zip_logger_folder():
     `zip_logger_folder` function. You can further expand this test to cover edge cases
     and other scenarios.
     """
+    with patch('os.path.exists') as mock_exists, \
+            patch('shutil.make_archive'), \
+            patch('os.makedirs') as mock_makedirs, \
+            patch('shutil.copy'), \
+            patch('os.path.join', side_effect=os.path.join), \
+            patch('PySide6.QtCore.QDir.filePath') as mock_file_path, \
+            patch('time.time') as mock_time, \
+            patch('src.utils.common_utils.find_files_with_name') as mock_find_files:
 
-    @patch('os.path.exists')
-    @patch('shutil.make_archive')
-    @patch('os.makedirs')
-    @patch('shutil.copy')
-    @patch('os.path.join')
-    @patch('PySide6.QtCore.QDir.filePath')
-    def _test_zip_logger_folder(
-        mock_file_path,
-        mock_join,
-        mock_copy,
-        mock_makedirs,
-        mock_make_archive,
-        mock_exists,
-    ):
         # Set up mocks
         mock_exists.side_effect = [True, True, True, False]
         base_path = '/tmp'
-        epoch_time = str(int(time.time()))
-        # network = 'regtest'
+        mock_time.return_value = 1234567890
+        epoch_time = str(int(mock_time.return_value))
+        # Mock find_files_with_name to return empty list
+        mock_find_files.return_value = []
 
         # Mock the return value of QDir.filePath
         mock_file_path.return_value = os.path.join(
@@ -311,31 +312,17 @@ def test_zip_logger_folder():
         expected_output_dir = os.path.join(
             base_path, f'embedded-{APP_NAME}-logs{epoch_time}-{__network__}',
         )
-        expected_zip_file_path = os.path.join(base_path, zip_filename)
-        expected_wallet_logs_path = os.path.join(base_path, LOG_FOLDER_NAME)
-        expected_ln_node_logs_path = os.path.join(
-            base_path, f"dataldk{__network__}", '.ldk', 'logs', 'logs.txt',
-        )
-        _expected_calls = [
-            (
-                expected_wallet_logs_path, os.path.join(
-                    expected_output_dir, APP_NAME,
-                ),
-            ),
-            (
-                expected_ln_node_logs_path, os.path.join(
-                    expected_output_dir, 'ln-node',
-                ),
-            ),
-        ]
+        expected_zip_file_path = os.path.join(base_path, expected_zip_filename)
+        _expected_wallet_logs_path = os.path.join(base_path, LOG_FOLDER_NAME)
 
         # Assert
         assert zip_filename == expected_zip_filename
         assert output_dir == expected_output_dir
         assert zip_file_path == expected_zip_file_path
-        mock_makedirs.assert_called_with(expected_output_dir, exist_ok=True)
 
-    _test_zip_logger_folder()
+        # Verify makedirs calls - using assert_any_call instead of assert_called_with
+        # since the function might create multiple directories
+        mock_makedirs.assert_any_call(expected_output_dir, exist_ok=True)
 
 
 def test_convert_hex_to_image_invalid_data():
@@ -1049,3 +1036,97 @@ def test_cleanup_zip_and_logs_files_not_exist(mock_rmtree, mock_remove, mock_exi
     # Verify the calls
     mock_remove.assert_not_called()
     mock_rmtree.assert_not_called()
+
+
+def test_find_files_with_name_files_and_dirs(tmp_path):
+    """test find_files_with_name function with files and directories."""
+    # Setup mock directory structure
+    (tmp_path / 'match.txt').write_text('data')
+    (tmp_path / 'sub').mkdir()
+    (tmp_path / 'sub' / 'match.txt').write_text('data')
+    (tmp_path / 'matchdir').mkdir()
+
+    results = find_files_with_name(str(tmp_path), 'match.txt')
+    assert any('match.txt' in r for r in results)
+    assert all(os.path.exists(p) for p in results)
+
+
+@patch('src.utils.helpers.SettingRepository.get_wallet_network')
+def test_get_bitcoin_explorer_url_mainnet(mock_get_network):
+    """test get_bitcoin_explorer_url function with mainnet."""
+    mock_get_network.return_value.value = 'mainnet'
+    tx_id = 'abc123'
+    url = get_bitcoin_explorer_url(tx_id)
+    assert url == f"{BITCOIN_EXPLORER_URL}/tx/{tx_id}"
+
+
+@patch('src.utils.helpers.SettingRepository.get_wallet_network')
+def test_get_bitcoin_explorer_url_testnet(mock_get_network):
+    """test get_bitcoin_explorer_url function with testnet."""
+    mock_get_network.return_value.value = 'testnet'
+    tx_id = 'abc123'
+    url = get_bitcoin_explorer_url(tx_id)
+    assert url == f"{BITCOIN_EXPLORER_URL}/testnet/tx/{tx_id}"
+
+
+def test_insert_zero_width_spaces_default_interval():
+    """test insert_zero_width_spaces function with default interval."""
+    input_text = '1234567890abcdef'
+    result = insert_zero_width_spaces(input_text)
+    assert result == '12345678\u200B90abcdef'
+
+
+def test_insert_zero_width_spaces_custom_interval():
+    """test insert_zero_width_spaces function with custom interval."""
+    input_text = 'abcdefghij'
+    result = insert_zero_width_spaces(input_text, interval=3)
+    assert result == 'abc\u200Bdef\u200Bghi\u200Bj'
+
+
+@pytest.mark.parametrize(
+    'input_text, expected', [
+        ('1000 SATS', 1000),
+        (' 200 SATS', 200),
+        ('', 0),
+        ('abc SATS', 0),
+        ('500', 500),  # in case unit is not found
+    ],
+)
+def test_extract_amount(input_text, expected):
+    """test extract_amount function with different input texts and expected outputs."""
+    assert extract_amount(input_text) == expected
+
+
+@pytest.mark.parametrize(
+    'input_text, expected_output', [
+        ('0', '0'),
+        ('000123', '123'),
+        ('0123', '123'),
+        ('0000', '0'),
+    ],
+)
+def test_set_placeholder_value(input_text, expected_output):
+    """test set_placeholder_value function with different input texts and expected outputs."""
+    mock_line_edit = MagicMock()
+    mock_line_edit.text.return_value = input_text
+
+    set_placeholder_value(mock_line_edit)
+
+    mock_line_edit.setText.assert_called_once_with(expected_output)
+
+
+@patch('src.utils.common_utils.QRegularExpression')
+@patch('src.utils.common_utils.QRegularExpressionValidator')
+def test_set_number_validator(mock_validator_cls, mock_regex_cls):
+    """test set_number_validator function with mock objects."""
+    mock_input = MagicMock()
+    mock_validator = MagicMock()
+    mock_validator_cls.return_value = mock_validator
+
+    set_number_validator(mock_input)
+
+    mock_regex_cls.assert_called_once_with(r'^\d+$')
+    mock_validator_cls.assert_called_once_with(
+        mock_regex_cls.return_value, mock_input,
+    )
+    mock_input.setValidator.assert_called_once_with(mock_validator)

@@ -101,7 +101,7 @@ def test_network_info_common_exception(about_widget, mocker):
 
     assert about_widget.network == 'regtest'
     mock_toast.assert_called_once_with(
-        parent=None, title=None, description='',
+        parent=None, title=None, description='Test exception',
     )
 
 

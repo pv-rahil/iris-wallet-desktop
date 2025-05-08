@@ -10,6 +10,7 @@ It behaves similarly to the `app_paths` pattern used for file paths.
 from __future__ import annotations
 
 import rgb_lib
+from rgb_lib import RgbLibError
 
 from src.data.repository.setting_repository import SettingRepository
 from src.utils.custom_exception import CommonException
@@ -100,6 +101,8 @@ class ColoredWallet:
         if self._wallet:
             try:
                 self._online = self._wallet.go_online(True, indexer_url)
+            except RgbLibError.InvalidIndexer:
+                raise
             except Exception as exc:
                 logger.error(
                     'Failed to go online again with new indexer: %s, Message: %s',

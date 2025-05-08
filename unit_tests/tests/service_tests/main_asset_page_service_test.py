@@ -10,6 +10,7 @@ from rgb_lib import AssetSchema
 
 from src.data.service.main_asset_page_service import MainAssetPageDataService
 from src.model.common_operation_model import MainPageDataResponseModel
+from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import RefreshTransferResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from unit_tests.repository_fixture.btc_repository_mock import mock_get_btc_balance
@@ -73,11 +74,13 @@ def test_get_assets(
 
     # checking the method is called once
     get_asset.assert_called_once_with(
-        [
-            AssetSchema.NIA,
-            AssetSchema.CFA,
-            AssetSchema.UDA,
-        ],
+        FilterAssetRequestModel(
+            filter_asset_schemas=[
+                AssetSchema.NIA,
+                AssetSchema.CFA,
+                AssetSchema.UDA,
+            ],
+        ),
     )
     refresh_asset.assert_called_once()
     asset_name.assert_called_once()
@@ -112,12 +115,13 @@ def test_when_asset_exhausted(
     assert len(result.uda) == 1
     assert len(result.nia) == 1
     get_asset.assert_called_once_with(
-
-        [
-            AssetSchema.NIA,
-            AssetSchema.CFA,
-            AssetSchema.UDA,
-        ],
+        FilterAssetRequestModel(
+            filter_asset_schemas=[
+                AssetSchema.NIA,
+                AssetSchema.CFA,
+                AssetSchema.UDA,
+            ],
+        ),
     )
     refresh_asset.assert_called_once()
     asset_name.assert_called_once()

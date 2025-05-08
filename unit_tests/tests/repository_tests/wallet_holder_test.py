@@ -101,10 +101,10 @@ def test_go_online_again_error(mock_wallet):
     mock_wallet.go_online.side_effect = Exception('Test error')
 
     # Execute and verify
-    with pytest.raises(TypeError) as exc_info:
+    with pytest.raises(CommonException) as exc_info:
         colored_wallet.go_online_again('http://new-indexer')
 
-    assert 'CommonException.__init__() takes 2 positional arguments but 3 were given' in str(exc_info.value)
+    assert 'Failed to go online again' in str(exc_info.value)
     mock_wallet.go_online.assert_called_once_with(True, 'http://new-indexer')
 
 

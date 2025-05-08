@@ -10,18 +10,26 @@ from unittest.mock import mock_open
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import BitcoinNetwork
 
+from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.custom_exception import CommonException
 from src.utils.helpers import check_google_auth_token_available
 from src.utils.helpers import create_circular_pixmap
-from src.utils.helpers import get_available_port
+from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import get_build_info
-from src.utils.helpers import get_node_arg_config
 from src.utils.helpers import handle_asset_address
 from src.utils.helpers import hash_mnemonic
-from src.utils.helpers import is_port_available
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import validate_mnemonic
+
+
+# Constants for mocking
+MOCK_INDEXER_URL = 'mock_indexer_url'
+MOCK_PROXY_ENDPOINT = 'mock_proxy_endpoint'
+MOCK_PASSWORD = 'mock_password'
 
 
 @pytest.fixture
@@ -78,24 +86,6 @@ def test_validate_mnemonic_invalid():
         validate_mnemonic(mnemonic_phrase)
 
 
-def test_is_port_available(mocker):
-    """Test the `is_port_available` function to ensure it correctly identifies an available port."""
-    mocker.patch('socket.socket')
-    socket_instance = mocker.MagicMock()
-    socket_instance.connect_ex.return_value = 1
-    mocker.patch('socket.socket', return_value=socket_instance)
-    assert is_port_available(1234) is True
-
-
-def test_get_available_port(mocker):
-    """Test the `get_available_port` function to ensure it returns the next available port."""
-    mocker.patch(
-        'src.utils.helpers.is_port_available',
-        side_effect=lambda port: port != 1234,
-    )
-    assert get_available_port(1234) == 1235
-
-
 def test_get_build_info(mocker):
     """Test the `get_build_info` function to ensure it correctly parses and returns the build information."""
     build_info = {
@@ -123,32 +113,6 @@ def test_get_build_info_when_none_return(mocker):
     with mocker.patch('src.utils.helpers.logger'):
         result = get_build_info()
         assert result is None
-
-
-def test_get_node_arg_config(mocker):
-    """Test the `get_node_arg_config` function to ensure it returns the correct configuration for the given network."""
-    mock_local_store = mocker.patch('src.utils.helpers.local_store')
-    mock_local_store.set_value = MagicMock()
-    network = NetworkEnumModel.MAINNET
-
-    with patch('src.utils.helpers.logger') as mock_logger:
-        result = get_node_arg_config(network)
-        assert isinstance(result, list)
-        mock_logger.error.assert_not_called()
-
-
-def test_get_node_arg_config_on_error(mocker):
-    """Test the `get_node_arg_config` function to ensure it raises a ValueError when an error occurs."""
-    mock_local_store = mocker.patch('src.utils.helpers.local_store')
-    mock_local_store.set_value = MagicMock()
-    mock_get_available_port = mocker.patch(
-        'src.utils.helpers.get_available_port',
-    )
-    mock_get_available_port.side_effect = ValueError('Testing purpose')
-    network = NetworkEnumModel.MAINNET
-    with pytest.raises(ValueError) as exc_info:
-        get_node_arg_config(network)
-    assert str(exc_info.value) == 'Testing purpose'
 
 
 def test_load_stylesheet_success(mocker):
@@ -231,3 +195,45 @@ def test_create_circular_pixmap(mock_qcolor, mock_qpainter, mock_qpixmap, mock_q
     )
     mock_painter_instance.end.assert_called_once()
     assert result == mock_pixmap_instance
+
+
+@pytest.mark.parametrize(
+    'network_enum, expected_network', [
+        (NetworkEnumModel.MAINNET, BitcoinNetwork.MAINNET),
+        (NetworkEnumModel.TESTNET, BitcoinNetwork.TESTNET),
+        (NetworkEnumModel.REGTEST, BitcoinNetwork.REGTEST),
+        (BitcoinNetwork.MAINNET, BitcoinNetwork.MAINNET),  # Already BitcoinNetwork
+    ],
+)
+def test_get_bitcoin_network_from_enum_valid(network_enum, expected_network):
+    """Test valid conversions from network enum to BitcoinNetwork."""
+    assert get_bitcoin_network_from_enum(network_enum) == expected_network
+
+
+def test_get_bitcoin_network_from_enum_invalid():
+    """Test that invalid network raises CommonException."""
+    with pytest.raises(CommonException, match='Invalid network'):
+        get_bitcoin_network_from_enum('invalid_network')
+
+
+@patch('src.data.repository.setting_repository.SettingRepository.get_config_value')
+@pytest.mark.parametrize(
+    'network', [
+        BitcoinNetwork.MAINNET,
+        BitcoinNetwork.TESTNET,
+        BitcoinNetwork.REGTEST,
+    ],
+)
+def test_get_bitcoin_config(mock_get_config_value, network):
+    """Test get_bitcoin_config returns correct config for each network."""
+    mock_get_config_value.side_effect = [MOCK_INDEXER_URL, MOCK_PROXY_ENDPOINT]
+
+    config = get_bitcoin_config(network, MOCK_PASSWORD)
+
+    assert isinstance(config, ConfigModel)
+    assert config.indexer_url == MOCK_INDEXER_URL
+    assert config.proxy_endpoint == MOCK_PROXY_ENDPOINT
+    assert config.password == MOCK_PASSWORD
+    assert config.network == network
+
+    assert mock_get_config_value.call_count == 2

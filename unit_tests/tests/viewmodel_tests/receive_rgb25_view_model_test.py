@@ -44,7 +44,9 @@ def test_get_rgb_invoice_success(mock_rgb_invoice, receive_rgb25_view_model):
     mock_rgb_invoice.return_value = mock_invoice_response
 
     # Call get_rgb_invoice with a minimum confirmation argument
-    receive_rgb25_view_model.get_rgb_invoice(minimum_confirmations=1)
+    receive_rgb25_view_model.get_rgb_invoice(
+        minimum_confirmations=1, transport_endpoints=['endpoint1'],
+    )
     receive_rgb25_view_model.worker.result.emit(mock_invoice_response)
 
     mock_address_signal.assert_called_once_with(mock_invoice_response.invoice)

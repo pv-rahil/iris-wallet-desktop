@@ -49,12 +49,6 @@ class NativeAuthType(str, Enum):
     MAJOR_OPERATION = 'MAJOR_OPERATION'
 
 
-class WalletType(str, Enum):  # Remove after change in e2e
-    """Enum for wallet type"""
-    EMBEDDED_TYPE_WALLET = 'embedded'
-    REMOTE_TYPE_WALLET = 'remote'
-
-
 class AssetType(str, Enum):
     """Enum for asset type"""
     RGB20 = 'RGB20'

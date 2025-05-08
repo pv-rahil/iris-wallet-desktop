@@ -8,11 +8,9 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
-from src.model.enums.enums_model import WalletType
 
 ASSET_TICKER = 'TTK'
 RGB20_ASSET_NAME = 'Tether'
@@ -30,7 +28,7 @@ def test_issue_rgb20_without_sufficient_sats(wallets_and_operations: WalletTestS
 
     with allure.step('Create and fund first wallet for issue rgb20'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=FIRST_APPLICATION, application_url=FIRST_APPLICATION_URL, fund=False,
+            application=FIRST_APPLICATION, fund=False,
         )
 
     with allure.step('Issue rgb20 asset without sufficient sats'):

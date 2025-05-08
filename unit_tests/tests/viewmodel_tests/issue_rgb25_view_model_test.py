@@ -161,6 +161,7 @@ def test_on_success(mock_toast_manager, issue_rgb25_view_model):
         balance=Balance(
             spendable=10, future=10, settled=12,
         ),
+        media='testpath',
     )
 
     issue_rgb25_view_model.on_success(response)

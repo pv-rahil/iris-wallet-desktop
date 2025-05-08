@@ -1,4 +1,4 @@
-"""Unit tests for check_colorable_available decprator"""
+"""Unit tests for check_colorable_available decorator"""
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -7,40 +7,55 @@ from unittest.mock import patch
 import pytest
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
+from rgb_lib import RgbLibError
 
+from src.data.repository.setting_card_repository import SettingCardRepository
+from src.model.setting_model import DefaultFeeRate
 from src.utils.decorators.check_colorable_available import check_colorable_available
 from src.utils.decorators.check_colorable_available import create_utxos
 from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
+from src.utils.error_message import ERROR_INSUFFICIENT_FUNDS
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
-from src.utils.request import Request
+
+# Mock the colored_wallet module to avoid "Wallet not initialized" error
+colored_wallet = MagicMock()
+colored_wallet.wallet = MagicMock()
 
 # Test create_utxos function
 
 
-@patch.object(Request, 'post')
+@patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
 @patch('src.utils.cache.Cache.get_cache_session')
-def test_create_utxos_success(mock_get_cache, mock_post):
+@patch.object(SettingCardRepository, 'get_default_fee_rate')
+def test_create_utxos_success(mock_get_fee_rate, mock_get_cache):
     """Test successful execution of create_utxos."""
-    mock_post.return_value = MagicMock(status_code=200)
+    mock_fee_rate = DefaultFeeRate(fee_rate=1)
+    mock_get_fee_rate.return_value = mock_fee_rate
     mock_cache = MagicMock()
     mock_get_cache.return_value = mock_cache
+    colored_wallet.wallet.create_utxos.reset_mock()
 
     create_utxos()
 
-    mock_post.assert_called_once()
+    colored_wallet.wallet.create_utxos.assert_called_once()
     mock_cache.invalidate_cache.assert_called_once()
 
 
-@patch.object(Request, 'post')
-def test_create_utxos_http_error(mock_post):
+@patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch.object(SettingCardRepository, 'get_default_fee_rate')
+def test_create_utxos_http_error(mock_get_fee_rate):
     """Test create_utxos with HTTPError."""
+    mock_fee_rate = DefaultFeeRate(fee_rate=1)
+    mock_get_fee_rate.return_value = mock_fee_rate
+
     mock_response = MagicMock()
-    mock_response.status_code = 500
     mock_response.json.return_value = {
         'error': ERROR_CREATE_UTXO_FEE_RATE_ISSUE,
     }
-    mock_post.side_effect = HTTPError(response=mock_response)
+    colored_wallet.wallet.create_utxos.side_effect = HTTPError(
+        response=mock_response,
+    )
 
     with pytest.raises(CommonException) as exc_info:
         create_utxos()
@@ -48,21 +63,31 @@ def test_create_utxos_http_error(mock_post):
     assert str(exc_info.value) == ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 
 
-@patch.object(Request, 'post')
-def test_create_utxos_connection_error(mock_post):
+@patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch.object(SettingCardRepository, 'get_default_fee_rate')
+def test_create_utxos_connection_error(mock_get_fee_rate):
     """Test create_utxos with RequestsConnectionError."""
-    mock_post.side_effect = RequestsConnectionError()
+    mock_fee_rate = DefaultFeeRate(fee_rate=1)
+    mock_get_fee_rate.return_value = mock_fee_rate
+
+    colored_wallet.wallet.create_utxos.side_effect = RequestsConnectionError()
 
     with pytest.raises(CommonException) as exc_info:
         create_utxos()
 
-    assert str(exc_info.value) == 'Unable to connect to node'
+    assert str(exc_info.value) == 'Unable to connect to wallet'
 
 
-@patch.object(Request, 'post')
-def test_create_utxos_general_exception(mock_post):
+@patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch.object(SettingCardRepository, 'get_default_fee_rate')
+def test_create_utxos_general_exception(mock_get_fee_rate):
     """Test create_utxos with a general exception."""
-    mock_post.side_effect = Exception('Unexpected error')
+    mock_fee_rate = DefaultFeeRate(fee_rate=1)
+    mock_get_fee_rate.return_value = mock_fee_rate
+
+    colored_wallet.wallet.create_utxos.side_effect = Exception(
+        'Unexpected error',
+    )
 
     with pytest.raises(CommonException) as exc_info:
         create_utxos()
@@ -89,13 +114,33 @@ def test_check_colorable_available_decorator_success(mock_create_utxos):
 
 
 @patch('src.utils.decorators.check_colorable_available.create_utxos')
-def test_check_colorable_available_decorator_create_utxos(mock_create_utxos):
-    """Test check_colorable_available decorator fallback to create_utxos."""
-    # Create CommonException with name attribute
-    exc = CommonException('Error message', {'name': 'NoAvailableUtxos'})
+def test_check_colorable_available_decorator_insufficient_slots(mock_create_utxos):
+    """Test check_colorable_available decorator with insufficient allocation slots."""
+    # First call raises InsufficientAllocationSlots, second call succeeds
+    mock_method = MagicMock(
+        side_effect=[
+            RgbLibError.InsufficientAllocationSlots(),
+            'success',
+        ],
+    )
 
-    # Mock method that raises the exception twice
-    mock_method = MagicMock(side_effect=[exc, exc])
+    @check_colorable_available()
+    def decorated_method():
+        return mock_method()
+
+    result = decorated_method()
+
+    # Verify create_utxos was called and the method succeeded on retry
+    mock_create_utxos.assert_called_once()
+    assert result == 'success'
+
+
+@patch('src.utils.decorators.check_colorable_available.create_utxos')
+def test_check_colorable_available_decorator_insufficient_bitcoins(mock_create_utxos):
+    """Test check_colorable_available decorator with insufficient bitcoins."""
+    mock_method = MagicMock(
+        side_effect=RgbLibError.InsufficientBitcoins(needed=2, available=1),
+    )
 
     @check_colorable_available()
     def decorated_method():
@@ -104,15 +149,34 @@ def test_check_colorable_available_decorator_create_utxos(mock_create_utxos):
     with pytest.raises(CommonException) as exc_info:
         decorated_method()
 
-    # Verify create_utxos was called
-    mock_create_utxos.assert_called_once()
-
-    # Verify the exception has the correct name
-    assert exc_info.value.name == 'NoAvailableUtxos'
+    assert str(exc_info.value) == ERROR_INSUFFICIENT_FUNDS
+    mock_create_utxos.assert_not_called()
 
 
 @patch('src.utils.decorators.check_colorable_available.create_utxos')
-def test_check_colorable_available_decorator_exception(mock_create_utxos):
+def test_check_colorable_available_decorator_fallback_exception(mock_create_utxos):
+    """Test check_colorable_available decorator when fallback fails."""
+    # Method raises InsufficientAllocationSlots
+    mock_method = MagicMock(
+        side_effect=RgbLibError.InsufficientAllocationSlots(),
+    )
+
+    # Fallback create_utxos raises an exception
+    mock_create_utxos.side_effect = Exception('Fallback error')
+
+    @check_colorable_available()
+    def decorated_method():
+        return mock_method()
+
+    with pytest.raises(CommonException) as exc_info:
+        decorated_method()
+
+    assert 'Failed to create UTXOs in fallback' in str(exc_info.value)
+    mock_create_utxos.assert_called_once()
+
+
+@patch('src.utils.decorators.check_colorable_available.create_utxos')
+def test_check_colorable_available_decorator_unhandled_exception(mock_create_utxos):
     """Test check_colorable_available decorator with unhandled exception."""
     mock_method = MagicMock(side_effect=Exception('Unhandled error'))
 

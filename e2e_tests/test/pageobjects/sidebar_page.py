@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from accessible_constant import ABOUT_BUTTON
 from accessible_constant import BACKUP_BUTTON
-from accessible_constant import CHANNEL_MANAGEMENT_BUTTON
 from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
 from accessible_constant import FUNGIBLE_BUTTON
@@ -28,9 +27,6 @@ class SidebarPageObjects(BaseOperations):
         )
         self.collectibles_button = lambda: self.perform_action_on_element(
             role_name='radio button', name=COLLECTIBLE_BUTTON,
-        )
-        self.channel_management_button = lambda: self.perform_action_on_element(
-            role_name='radio button', name=CHANNEL_MANAGEMENT_BUTTON,
         )
         self.view_unspents_button = lambda: self.perform_action_on_element(
             role_name='radio button', name=VIEW_UNSPENT_LIST_BUTTON,
@@ -61,10 +57,6 @@ class SidebarPageObjects(BaseOperations):
     def click_collectibles_button(self):
         """Clicks the collectibles button if it is displayed."""
         return self.do_click(self.collectibles_button()) if self.do_is_displayed(self.collectibles_button()) else None
-
-    def click_channel_management_button(self):
-        """Clicks the channel management button if it is displayed."""
-        return self.do_click(self.channel_management_button()) if self.do_is_displayed(self.channel_management_button()) else None
 
     def click_view_unspents_button(self):
         """Clicks the view unspents button if it is displayed."""

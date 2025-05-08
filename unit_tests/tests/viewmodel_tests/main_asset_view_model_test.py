@@ -9,12 +9,14 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import AssetCfa
+from rgb_lib import AssetNia
+from rgb_lib import AssetUda
 
 from src.model.btc_model import Balance
 from src.model.btc_model import BalanceResponseModel
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.common_operation_model import OfflineAsset
-from src.model.rgb_model import AssetModel
 from src.utils.custom_exception import CommonException
 from src.viewmodels.main_asset_view_model import MainAssetViewModel
 
@@ -42,7 +44,7 @@ def mock_main_page_data_response():
     """Fixture for creating a mock for main page data object."""
     return MainPageDataResponseModel(
         nia=[
-            AssetModel(
+            AssetNia(
                 asset_id='1',
                 asset_iface='interface1',
                 name='Asset1',
@@ -54,8 +56,10 @@ def mock_main_page_data_response():
                 balance=Balance(
                     settled=100, future=50, spendable=150,
                 ),
+                media=None,
+                ticker='USD',
             ),
-            AssetModel(
+            AssetNia(
                 asset_id='2',
                 asset_iface='interface2',
                 name='Asset2',
@@ -67,10 +71,12 @@ def mock_main_page_data_response():
                 balance=Balance(
                     settled=200, future=100, spendable=300,
                 ),
+                media=None,
+                ticker='USD',
             ),
         ],
         uda=[
-            AssetModel(
+            AssetUda(
                 asset_id='3',
                 asset_iface='interface3',
                 name='Asset3',
@@ -82,8 +88,11 @@ def mock_main_page_data_response():
                 balance=Balance(
                     settled=300, future=150, spendable=450,
                 ),
+                ticker='USD',
+                token=None,
+
             ),
-            AssetModel(
+            AssetUda(
                 asset_id='4',
                 asset_iface='interface4',
                 name='Asset4',
@@ -95,10 +104,12 @@ def mock_main_page_data_response():
                 balance=Balance(
                     settled=400, future=200, spendable=600,
                 ),
+                ticker='USD',
+                token=None,
             ),
         ],
         cfa=[
-            AssetModel(
+            AssetCfa(
                 asset_id='5',
                 asset_iface='interface5',
                 name='Asset5',
@@ -110,8 +121,9 @@ def mock_main_page_data_response():
                 balance=Balance(
                     settled=500, future=250, spendable=750,
                 ),
+                media='filepath',
             ),
-            AssetModel(
+            AssetCfa(
                 asset_id='6',
                 asset_iface='interface6',
                 name='Asset6',
@@ -123,6 +135,7 @@ def mock_main_page_data_response():
                 balance=Balance(
                     settled=600, future=300, spendable=900,
                 ),
+                media='filepath',
             ),
         ],
         vanilla=OfflineAsset(

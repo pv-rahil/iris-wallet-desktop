@@ -8,7 +8,6 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
@@ -16,7 +15,6 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QLineEdit
 from PySide6.QtWidgets import QVBoxLayout
 
-from accessible_constant import EXPIRY_TIME_COMBO_BOX
 from accessible_constant import INPUT_BOX_NAME
 from src.model.common_operation_model import ConfigurableCardModel
 from src.utils.clickable_frame import ClickableFrame

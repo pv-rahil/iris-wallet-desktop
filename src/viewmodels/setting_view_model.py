@@ -3,6 +3,7 @@ for the term and conditions page activities.
 """
 from __future__ import annotations
 
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import RgbLibError
@@ -28,6 +29,7 @@ from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SettingPageLoadModel
 from src.utils.cache import Cache
 from src.utils.constant import FEE_RATE
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MIN_CONFIRMATION
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
@@ -35,7 +37,10 @@ from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_UNABLE_TO_SET_FEE
+from src.utils.error_message import ERROR_UNABLE_TO_SET_INDEXER_URL
 from src.utils.error_message import ERROR_UNABLE_TO_SET_MIN_CONFIRMATION
+from src.utils.error_message import ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
+from src.utils.info_message import INFO_SET_ENDPOINT_SUCCESSFULLY
 from src.utils.info_message import INFO_SET_FEE_RATE_SUCCESSFULLY
 from src.utils.info_message import INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
 from src.utils.worker import ThreadManager
@@ -312,13 +317,17 @@ class SettingViewModel(QObject, ThreadManager):
 
             self.is_loading.emit(False)
             ToastManager.success(
-                description='electrum url set successfully',
+                description=INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'indexer_endpoint',
+                    ),
+                ),
             )
 
-        except RgbLibError as e:
+        except RgbLibError.InvalidIndexer:
             self.is_loading.emit(False)
             ToastManager.error(
-                description=str(e),
+                description=ERROR_UNABLE_TO_SET_INDEXER_URL,
             )
 
     def check_proxy_endpoint(self, proxy_endpoint: str):
@@ -343,12 +352,20 @@ class SettingViewModel(QObject, ThreadManager):
             if success.is_enabled:
                 self.proxy_endpoint_set_event.emit(proxy_endpoint)
             ToastManager.success(
-                description='proxy endpoint set successfully',
+                description=INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'proxy_endpoint',
+                    ),
+                ),
             )
             self.is_loading.emit(False)
-        except (RgbLibError, ValueError) as e:
+        except RgbLibError.InvalidTransportEndpoint:
             self.is_loading.emit(False)
-            print(e)
+            ToastManager.error(
+                description=ERROR_UNABLE_TO_SET_PROXY_ENDPOINT,
+            )
+        except ValueError as e:
+            self.is_loading.emit(False)
             ToastManager.error(
                 description=str(e),
             )

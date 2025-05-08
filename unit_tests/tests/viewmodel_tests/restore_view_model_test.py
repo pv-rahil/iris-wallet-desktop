@@ -3,16 +3,17 @@
 # pylint: disable=redefined-outer-name,unused-argument,protected-access
 from __future__ import annotations
 
-from enum import Enum
 from unittest.mock import MagicMock
 
 import pytest
 
+from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_GOOGLE_CONFIGURE_FAILED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_WHILE_RESTORE
+from src.utils.info_message import INFO_RESTORE_COMPLETED
 from src.viewmodels.restore_view_model import RestoreViewModel
 
 
@@ -23,59 +24,60 @@ def restore_view_model():
     return RestoreViewModel(page_navigation)
 
 
-def test_forward_to_fungibles_page(restore_view_model):
-    """Test navigation to fungibles page."""
-    # Arrange
-    mock_sidebar = MagicMock()
-    restore_view_model._page_navigation.sidebar.return_value = mock_sidebar
-
-    # Act
-    restore_view_model.forward_to_fungibles_page()
-
-    # Assert
-    mock_sidebar.my_fungibles.setChecked.assert_called_once_with(True)
-    restore_view_model._page_navigation.enter_wallet_password_page.assert_called_once()
-
-
 def test_on_success_restore_successful(restore_view_model, mocker):
-    """Test successful restore with keyring storage working."""
+    """Test successful restore with keyring storage working and password set correctly."""
     # Arrange
     restore_view_model.is_loading = MagicMock()
     restore_view_model.message = MagicMock()
-    restore_view_model.forward_to_fungibles_page = MagicMock()
-    mock_set_wallet_initialized = mocker.patch(
-        'src.data.repository.setting_repository.SettingRepository.set_wallet_initialized',
-    )
-    mock_set_backup_configured = mocker.patch(
-        'src.data.repository.setting_repository.SettingRepository.set_backup_configured',
-    )
-    mock_set_keyring_status = mocker.patch(
-        'src.data.repository.setting_repository.SettingRepository.set_keyring_status',
-    )
-    mocker.patch('src.utils.keyring_storage.set_value', return_value=True)
-    test_network_enum = Enum(
-        'TestNetworkEnum', {'TEST_NETWORK': 'test_network'},
-    )
-    mocker.patch(
-        'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
-        return_value=test_network_enum.TEST_NETWORK,
-    )
+    restore_view_model.splash_view_model = MagicMock()
 
     restore_view_model.mnemonic = 'test mnemonic'
     restore_view_model.password = 'test password'
+
+    # Mock SettingRepository methods
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_wallet_initialized',
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_backup_configured',
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_keyring_status',
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+
+    # Mock encryption and file write
+    mocker.patch(
+        'src.viewmodels.restore_view_model.mnemonic_store.encrypt',
+        return_value=b'encrypted_data',
+    )
+    mocker.patch('src.viewmodels.restore_view_model.local_store.write_to_file')
+
+    # Mock restore_keys and xpub set
+    mock_keys = MagicMock(account_xpub='mock_xpub')
+    mocker.patch(
+        'src.data.repository.common_operations_repository.CommonOperationRepository.restore_keys', return_value=mock_keys,
+    )
+    mocker.patch('src.viewmodels.restore_view_model.local_store.set_value')
+
+    # Mock password storage returns True
+    mocker.patch(
+        'src.viewmodels.restore_view_model.set_value',
+        return_value=True,
+    )
 
     # Act
     restore_view_model.on_success(True)
 
     # Assert
     restore_view_model.is_loading.emit.assert_called_once_with(False)
-    mock_set_wallet_initialized.assert_called_once()
-    mock_set_backup_configured.assert_called_once_with(True)
-    mock_set_keyring_status.assert_called_once_with(status=False)
     restore_view_model.message.emit.assert_called_once_with(
-        ToastPreset.SUCCESS, 'Restore process completed.',
+        ToastPreset.SUCCESS, INFO_RESTORE_COMPLETED,
     )
-    restore_view_model.forward_to_fungibles_page.assert_called_once()
+    restore_view_model.splash_view_model.handle_application_open.assert_called_once()
 
 
 def test_on_success_restore_failed(restore_view_model):

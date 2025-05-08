@@ -243,7 +243,7 @@ def test_network_info_common_exception(bitcoin_transaction_detail_widget, qtbot)
         network_info(bitcoin_transaction_detail_widget)
         mock_logger.assert_called_once()
         mock_toast.assert_called_once_with(
-            parent=None, title=None, description='',
+            parent=None, title=None, description='Test error',
         )
 
 

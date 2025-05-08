@@ -29,12 +29,12 @@ from rgb_lib import TransferStatus
 
 from accessible_constant import ASSET_CLOSE_BUTTON
 from accessible_constant import ASSET_ID_COPY_BUTTON
-from accessible_constant import ASSET_ON_CHAIN_SPENDABLE_BALANCE
-from accessible_constant import ASSET_ON_CHAIN_TOTAL_BALANCE
 from accessible_constant import ASSET_RECEIVE_BUTTON
 from accessible_constant import ASSET_REFRESH_BUTTON
 from accessible_constant import ASSET_SEND_BUTTON
-from accessible_constant import RGB_TRANSACTION_DETAIL_ON_CHAIN_FRAME
+from accessible_constant import ASSET_SPENDABLE_BALANCE
+from accessible_constant import ASSET_TOTAL_BALANCE
+from accessible_constant import RGB_TRANSACTION_DETAIL_FRAME
 from accessible_constant import TRANSACTION_DETAIL_CLOSE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
@@ -262,7 +262,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_total_balance = QLabel(self.asset_balance_frame)
         self.asset_total_balance.setObjectName('asset_total_balance')
         self.asset_total_balance.setAccessibleDescription(
-            ASSET_ON_CHAIN_TOTAL_BALANCE,
+            ASSET_TOTAL_BALANCE,
         )
         self.asset_total_balance.setMinimumSize(QSize(60, 18))
         self.asset_balance_frame_layout.addWidget(
@@ -278,7 +278,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_spendable_amount = QLabel(self.asset_balance_frame)
         self.asset_spendable_amount.setObjectName('asset_spendable_amount')
         self.asset_spendable_amount.setAccessibleDescription(
-            ASSET_ON_CHAIN_SPENDABLE_BALANCE,
+            ASSET_SPENDABLE_BALANCE,
         )
         self.asset_balance_frame_layout.addWidget(
             self.asset_spendable_amount, 2, 1, 1, 1, Qt.AlignLeft,
@@ -666,7 +666,7 @@ class RGBAssetDetailWidget(QWidget):
             ),
         )
         self.transaction_detail_frame.setAccessibleName(
-            RGB_TRANSACTION_DETAIL_ON_CHAIN_FRAME,
+            RGB_TRANSACTION_DETAIL_FRAME,
         )
         self.transaction_detail_frame.close_button.setAccessibleName(
             TRANSACTION_DETAIL_CLOSE_BUTTON,
@@ -728,7 +728,7 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_detail_frame.transaction_amount.setText(
             self.transfer_amount,
         )
-        if self.transaction_status == str(TransferStatus.WAITING_COUNTERPARTY.value):
+        if self.transaction_status == TransferStatus.WAITING_COUNTERPARTY:
             self.transaction_detail_frame.transaction_type.hide()
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#959BAE;font-weight: 600',

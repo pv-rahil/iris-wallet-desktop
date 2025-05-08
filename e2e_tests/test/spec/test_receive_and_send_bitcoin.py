@@ -8,14 +8,11 @@ import re
 import allure
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from accessible_constant import SECOND_APPLICATION
-from accessible_constant import SECOND_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
-from e2e_tests.test.utilities.model import TransferType
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.info_message import INFO_BITCOIN_SENT
 
@@ -30,14 +27,14 @@ def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup,
 
     with allure.step('Create and fund first wallet for send and receive bitcoin'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=FIRST_APPLICATION, application_url=FIRST_APPLICATION_URL, fund=False,
+            application=FIRST_APPLICATION, fund=False,
         )
 
     with allure.step('Get bitcoin address'):
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, copied_address = wallets_and_operations.first_page_features.receive_features.receive(
-            application=FIRST_APPLICATION, transfer_type=TransferType.BITCOIN.value,
+            application=FIRST_APPLICATION,
         )
 
     with allure.step('Verify address'):
@@ -46,7 +43,7 @@ def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup,
     with allure.step('Send bitcoin with zero balance'):
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         validation = wallets_and_operations.first_page_features.send_features.send_with_no_fund(
-            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, transfer_type=TransferType.BITCOIN.value,
+            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT,
         )
 
     with allure.step('Verify error message'):
@@ -70,7 +67,7 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup):
 
     with allure.step('Create and fund second wallet for send and receive bitcoin'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=SECOND_APPLICATION, application_url=SECOND_APPLICATION_URL, fund=False,
+            application=SECOND_APPLICATION, fund=False,
         )
 
     with allure.step('Get bitcoin address'):
@@ -80,7 +77,7 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, copied_address = wallets_and_operations.second_page_features.receive_features.receive(
-            application=SECOND_APPLICATION, transfer_type=TransferType.BITCOIN.value,
+            application=SECOND_APPLICATION,
         )
 
     with allure.step('Verify address'):
@@ -93,7 +90,7 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.send(
-            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, transfer_type=TransferType.BITCOIN.value,
+            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT,
         )
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
     with allure.step('Refresh bitcoin page'):
@@ -128,7 +125,7 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, copied_address = wallets_and_operations.second_page_features.receive_features.receive(
-            application=SECOND_APPLICATION, transfer_type=TransferType.BITCOIN.value,
+            application=SECOND_APPLICATION,
         )
 
     with allure.step('Verify address'):
@@ -141,7 +138,7 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         description = wallets_and_operations.first_page_features.send_features.send_with_custom_fee_rate(
-            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE, transfer_type=TransferType.BITCOIN.value,
+            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE,
         )
 
     with allure.step('Refresh bitcoin page'):
@@ -185,7 +182,6 @@ def test_send_bitcoin_with_invalid_invoice(wallets_and_operations: WalletTestSet
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_on_chain_button()
         wallets_and_operations.first_page_objects.send_asset_page_objects.enter_asset_invoice(
             invoice,
         )

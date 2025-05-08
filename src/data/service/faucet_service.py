@@ -15,10 +15,10 @@ from src.model.rgb_faucet_model import RequestAssetResponseModel
 from src.model.rgb_faucet_model import RequestFaucetAssetModel
 from src.model.rgb_model import RgbInvoiceDataResponseModel
 from src.model.rgb_model import RgbInvoiceRequestModel
+from src.utils.constant import ACCOUNT_XPUB
 from src.utils.custom_exception import CommonException
 from src.utils.handle_exception import handle_exceptions
-# from src.data.repository.common_operations_repository import CommonOperationRepository
-# from src.model.common_operation_model import NodeInfoResponseModel
+from src.utils.local_store import local_store
 
 
 class FaucetService:
@@ -51,9 +51,7 @@ class FaucetService:
         """Request asset from faucet"""
         try:
             network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            # node_info: NodeInfoResponseModel = CommonOperationRepository.node_info()
-            # xpub_key: str = node_info.onchain_pubkey
-            xpub_key = 's kvj'
+            xpub_key = local_store.get_value(ACCOUNT_XPUB)
             hashed_value = generate_sha256_hash(xpub_key)
             invoice: RgbInvoiceDataResponseModel = RgbRepository.rgb_invoice(
                 RgbInvoiceRequestModel(),
@@ -71,6 +69,7 @@ class FaucetService:
                     asset_group=asset_group,
                 ),
             )
+            print(response)
             return response
         except Exception as exc:
             return handle_exceptions(exc=exc)

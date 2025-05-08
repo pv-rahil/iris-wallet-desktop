@@ -53,19 +53,30 @@ def rgb_asset_transaction_detail_widget(qtbot):
         ),
     ]
     params.recipient_id = 'recipient_124'
-    params.receive_utxo = 'utxo_1234'
-    params.change_utxo = 'utxo_4567'
-    params.asset_type = 'RGB20'
+    # Patch receive_utxo and change_utxo to be mock objects with a txid attribute
+    mock_receive_utxo = MagicMock()
+    mock_receive_utxo.txid = 'mock_txid_12345'
+    params.receive_utxo = mock_receive_utxo
+    mock_change_utxo = MagicMock()
+    mock_change_utxo.txid = 'mock_change_txid_67890'
+    params.change_utxo = mock_change_utxo
+    params.asset_type = AssetIface.RGB20
 
-    # Initialize the widget
-    widget = RGBAssetTransactionDetail(view_model, params)
+    # Patch set_rgb_asset_value to avoid AttributeError during widget creation
+    with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'), \
+            patch('src.views.ui_rgb_asset_transaction_detail.insert_zero_width_spaces', return_value='formatted_txid'), \
+            patch('src.views.ui_rgb_asset_transaction_detail.load_stylesheet', return_value='mocked_stylesheet'):
+        widget = RGBAssetTransactionDetail(view_model, params)
     qtbot.add_widget(widget)  # Add widget to qtbot for proper cleanup
     return widget
 
 
 def test_retranslate_ui(rgb_asset_transaction_detail_widget: RGBAssetTransactionDetail, qtbot):
     """Test the retranslate_ui method."""
-    rgb_asset_transaction_detail_widget.retranslate_ui()
+    with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'), \
+            patch('src.views.ui_rgb_asset_transaction_detail.insert_zero_width_spaces', return_value='formatted_txid'), \
+            patch('src.views.ui_rgb_asset_transaction_detail.load_stylesheet', return_value='mocked_stylesheet'):
+        rgb_asset_transaction_detail_widget.retranslate_ui()
 
     expected_tx_id_text = QCoreApplication.translate(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_id', None,
@@ -119,7 +130,8 @@ def test_set_rgb_asset_value(rgb_asset_transaction_detail_widget: RGBAssetTransa
         rgb_asset_transaction_detail_widget.set_rgb_asset_value()
 
     # Ensure the style sheet is applied
-    assert rgb_asset_transaction_detail_widget.amount_value.styleSheet() == 'mocked_stylesheet'
+    expected_style = "font: 24px \"Inter\";\ncolor: #798094;\nbackground: transparent;\nborder: none;\nfont-weight: 600;"
+    assert rgb_asset_transaction_detail_widget.amount_value.styleSheet().strip() == expected_style
 
     # Test case when both confirmation_date and confirmation_time are provided
     rgb_asset_transaction_detail_widget.params.transfer_status = TransferStatusEnumModel.INTERNAL
@@ -176,15 +188,19 @@ def test_handle_close(rgb_asset_transaction_detail_widget: RGBAssetTransactionDe
     rgb_asset_transaction_detail_widget._view_model.rgb25_view_model.asset_info = MagicMock()
     rgb_asset_transaction_detail_widget._view_model.page_navigation.rgb25_detail_page = MagicMock()
 
-    # Call the method to test
-    rgb_asset_transaction_detail_widget.handle_close()
+    # Patch get_bitcoin_explorer_url and insert_zero_width_spaces to avoid errors
+    with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'), \
+            patch('src.views.ui_rgb_asset_transaction_detail.insert_zero_width_spaces', return_value='formatted_txid'), \
+            patch('src.views.ui_rgb_asset_transaction_detail.load_stylesheet', return_value='mocked_stylesheet'):
+        # Call the method to test
+        rgb_asset_transaction_detail_widget.handle_close()
 
     # Assert that the signal is emitted with the correct parameters
     rgb_asset_transaction_detail_widget._view_model.rgb25_view_model.asset_info.emit.assert_called_once_with(
-        '123', 'Test Asset', 'path/to/image', 'Test Type',
+        '123', 'Test Asset', 'path/to/image', AssetIface.RGB25,
     )
 
     # Assert that the navigation method is called with the correct argument
     rgb_asset_transaction_detail_widget._view_model.page_navigation.rgb25_detail_page.assert_called_once_with(
-        RgbAssetPageLoadModel(asset_type='Test Type'),
+        RgbAssetPageLoadModel(asset_type=AssetIface.RGB25),
     )

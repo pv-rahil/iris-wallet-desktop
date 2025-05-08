@@ -1,6 +1,6 @@
 # Disable the redefined-outer-name warning as
 # it's normal to pass mocked object in tests function
-# pylint: disable=redefined-outer-name,unused-argument, protected-access
+# pylint: disable=redefined-outer-name,unused-argument, protected-access, too-many-arguments
 """
 This module contains unit tests for the SplashViewModel class from the
 src.viewmodels.splash_view_model module. It tests the behavior of various methods
@@ -13,14 +13,11 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
-from PySide6.QtCore import QProcess
 from PySide6.QtWidgets import QApplication
 
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL
 from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
 from src.utils.error_message import ERROR_PASSWORD_INCORRECT
-from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.viewmodels.splash_view_model import SplashViewModel
 from src.views.components.message_box import MessageBox
@@ -184,88 +181,33 @@ def test_on_error_of_unlock_api(
     mock_error_dialog_instance = MagicMock(exec=MagicMock())
     mock_error_dialog.return_value = mock_error_dialog_instance
 
-    # Test Case: 'already_unlocked'
-    splash_viewmodel.on_error_of_unlock_api(
-        CommonException(message='already_unlocked'),
-    )
-    splash_viewmodel.on_success_of_unlock_api.assert_called_once()
-
-    # Reset mock for next test
-    splash_viewmodel.on_success_of_unlock_api.reset_mock()
-
-    # Test Case: 'not_initialized'
-    splash_viewmodel.render_timer = MagicMock(stop=MagicMock())
-    splash_viewmodel._page_navigation = MagicMock(
-        term_and_condition_page=MagicMock(),
-    )
-
-    splash_viewmodel.on_error_of_unlock_api(
-        CommonException(message='not_initialized'),
-    )
-
-    # Assert that `stop()` was called
-    splash_viewmodel.render_timer.stop.assert_called_once()
-
-    # Assert page navigation was triggered
-    splash_viewmodel._page_navigation.term_and_condition_page.assert_called_once()
-
-    # Reset QApplication mock for next test
-    mock_qapp.return_value.exit.reset_mock()
-
-    # Test Case: ERROR_REQUEST_TIMEOUT (App should exit)
-    splash_viewmodel.on_error_of_unlock_api(
-        CommonException(message=ERROR_REQUEST_TIMEOUT),
-    )
-    mock_qapp.return_value.exit.assert_called_once()
-
-    # Reset QApplication mock for next test
-    mock_qapp.return_value.exit.reset_mock()
-
     # Test Case: ERROR_PASSWORD_INCORRECT (Navigate to enter password)
     splash_viewmodel.on_error_of_unlock_api(
         CommonException(message=ERROR_PASSWORD_INCORRECT),
     )
     mock_instance.enter_wallet_password_page_signal.emit.assert_called_once()
+    mock_toast.assert_called_with(description=ERROR_PASSWORD_INCORRECT)
 
     # Reset mocks for next test
     mock_instance.enter_wallet_password_page_signal.emit.reset_mock()
+    mock_toast.reset_mock()
 
-    mock_instance.set_wallet_password_page_signal.emit.assert_called_once()
-
-    # Reset mocks for next test
-    mock_instance.set_wallet_password_page_signal.emit.reset_mock()
-
-    # Test Case: ERROR_CONNECTION_FAILED_WITH_LN (Node is NOT running)
-    with patch.object(splash_viewmodel, 'restart_ln_node_after_crash') as mock_restart:
-        # Reset error handled state
-        splash_viewmodel.is_error_handled = False
-
-        # Set up node manager mock
-        splash_viewmodel.ln_node_manager = MagicMock()
-        splash_viewmodel.ln_node_manager.process = MagicMock()
-        splash_viewmodel.ln_node_manager.process.state = MagicMock(
-            return_value=QProcess.ProcessState.NotRunning,
-        )
-
-        # Call with exact error message
-        splash_viewmodel.on_error_of_unlock_api(
-            CommonException(message=ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL),
-        )
-        mock_restart.assert_called_once()
-
-    # Test Case: ERROR_CONNECTION_FAILED_WITH_LN (Node is running)
-    # Reset all state and create fresh mock instance
-    splash_viewmodel.is_error_handled = False
-    splash_viewmodel.is_from_retry = False
-    mock_error_dialog_instance = MagicMock(exec=MagicMock())
-    mock_error_dialog.return_value = mock_error_dialog_instance
-    splash_viewmodel.ln_node_manager.process.state.return_value = QProcess.ProcessState.Running
-
+    # Test Case: Generic error (should just show toast)
     splash_viewmodel.on_error_of_unlock_api(
-        CommonException(message=ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL),
+        CommonException(message='Some other error'),
     )
-    mock_error_dialog_instance.exec.assert_called_once()
-    assert splash_viewmodel.is_error_handled is True
+    mock_toast.assert_called_with(description='Some other error')
+
+    # Test Case: Non-CommonException error
+    splash_viewmodel.on_error_of_unlock_api(
+        Exception('Regular exception'),
+    )
+    mock_toast.assert_called_with(description=None)
+
+    # Verify ErrorReportDialog was created for all test cases
+    assert mock_error_dialog.call_count == 3
+    for call in mock_error_dialog.call_args_list:
+        assert call[1]['initiated_from_splash'] is True
 
 
 @patch('src.viewmodels.splash_view_model.CommonOperationRepository')
@@ -278,9 +220,6 @@ def test_on_success_of_unlock_api(mock_set_value, mock_qapp, mock_toast_manager,
     page_navigation = Mock()
     view_model = SplashViewModel(page_navigation)
     view_model.render_timer = Mock()
-    mock_node_info = Mock()
-    mock_node_info.pubkey = 'test_pubkey'
-    mock_common_repo.node_info.return_value = mock_node_info
 
     # Act
     view_model.on_success_of_unlock_api()
@@ -288,8 +227,6 @@ def test_on_success_of_unlock_api(mock_set_value, mock_qapp, mock_toast_manager,
     # Assert
     view_model.render_timer.stop.assert_called_once()
     page_navigation.fungibles_asset_page.assert_called_once()
-    mock_common_repo.node_info.assert_called_once()
-    mock_set_value.assert_called_once_with('node_pub_key', 'test_pubkey')
 
 
 @patch('src.viewmodels.splash_view_model.CommonOperationRepository')
@@ -302,7 +239,6 @@ def test_on_success_of_unlock_api_no_node_info(mock_set_value, mock_qapp, mock_t
     page_navigation = Mock()
     view_model = SplashViewModel(page_navigation)
     view_model.render_timer = Mock()
-    mock_common_repo.node_info.return_value = None
 
     # Act
     view_model.on_success_of_unlock_api()
@@ -310,51 +246,7 @@ def test_on_success_of_unlock_api_no_node_info(mock_set_value, mock_qapp, mock_t
     # Assert
     view_model.render_timer.stop.assert_called_once()
     page_navigation.fungibles_asset_page.assert_called_once()
-    mock_common_repo.node_info.assert_called_once()
     mock_set_value.assert_not_called()
-
-
-@patch('src.viewmodels.splash_view_model.SettingRepository')
-@patch('src.viewmodels.splash_view_model.ToastManager')
-@patch('src.viewmodels.splash_view_model.QApplication')
-def test_handle_application_open_common_exception(mock_qapp, mock_toast_manager, mock_setting_repo):
-    """Tests handle_application_open method when CommonException occurs."""
-    # Arrange
-    page_navigation = Mock()
-    view_model = SplashViewModel(page_navigation)
-    error_message = 'Test error'
-    mock_setting_repo.get_wallet_type.side_effect = CommonException(
-        error_message,
-    )
-
-    # Act
-    view_model.handle_application_open()
-
-    # Assert
-    mock_setting_repo.get_wallet_type.assert_called_once()
-    mock_toast_manager.error.assert_called_once_with(description=error_message)
-
-
-@patch('src.viewmodels.splash_view_model.SettingRepository')
-@patch('src.viewmodels.splash_view_model.ToastManager')
-@patch('src.viewmodels.splash_view_model.QApplication')
-def test_handle_application_open_generic_exception(mock_qapp, mock_toast_manager, mock_setting_repo):
-    """Tests handle_application_open method when generic Exception occurs."""
-    # Arrange
-    page_navigation = Mock()
-    view_model = SplashViewModel(page_navigation)
-    mock_setting_repo.get_wallet_type.side_effect = Exception(
-        'Unexpected error',
-    )
-
-    # Act
-    view_model.handle_application_open()
-
-    # Assert
-    mock_setting_repo.get_wallet_type.assert_called_once()
-    mock_toast_manager.error.assert_called_once_with(
-        description=ERROR_SOMETHING_WENT_WRONG,
-    )
 
 
 @patch('src.viewmodels.splash_view_model.SettingRepository')
@@ -379,27 +271,45 @@ def test_handle_application_open_keyring_enabled(mock_qapp, mock_toast_manager, 
 @patch('src.viewmodels.splash_view_model.ToastManager')
 @patch('src.viewmodels.splash_view_model.QApplication')
 @patch('src.viewmodels.splash_view_model.get_value')
-@patch('src.viewmodels.splash_view_model.get_bitcoin_config')
-@patch('src.viewmodels.splash_view_model.CommonOperationRepository')
-def test_handle_application_open_keyring_disabled(mock_common_repo, mock_bitcoin_config, mock_get_value, mock_qapp, mock_toast_manager, mock_setting_repo):
+@patch('src.viewmodels.splash_view_model.mnemonic_store')
+@patch('src.viewmodels.splash_view_model.get_bitcoin_network_from_enum')
+@patch('src.viewmodels.splash_view_model.local_store')
+@patch('src.viewmodels.splash_view_model.app_paths')
+@patch('src.viewmodels.splash_view_model.QCoreApplication')
+def test_handle_application_open_keyring_disabled(
+    mock_qcore, mock_app_paths, mock_local_store, mock_get_network,
+    mock_mnemonic_store, mock_get_value, mock_qapp, mock_toast_manager, mock_setting_repo,
+):
     """Tests handle_application_open method when keyring is disabled."""
     # Arrange
     page_navigation = Mock()
     view_model = SplashViewModel(page_navigation)
     view_model.splash_screen_message = Mock()
     view_model.sync_chain_info_label = Mock()
+
+    # Setup mocks
     mock_setting_repo.get_keyring_status.return_value = False
+    mock_setting_repo.get_wallet_network.return_value = Mock(value='testnet')
     mock_wallet_password = 'test_password'
     mock_get_value.return_value = mock_wallet_password
-    mock_bitcoin_config.return_value = 'test_config'
+    mock_mnemonic_store.decrypt.return_value = 'test_mnemonic'
+    mock_local_store.get_value.return_value = 'test_xpub'
+    mock_qcore.translate.return_value = 'wait_message'
+    mock_app_paths.mnemonic_file_path = 'test_path'
+    mock_app_paths.app_path = 'test_app_path'
+    mock_get_network.return_value = 'testnet_network'
 
     # Act
-    view_model.handle_application_open()
+    with patch.object(view_model, 'run_in_thread') as _mock_run_in_thread:
+        view_model.handle_application_open()
 
-    # Assert
-    mock_setting_repo.get_keyring_status.assert_called_once()
-    view_model.splash_screen_message.emit.assert_called_once()
-    view_model.sync_chain_info_label.emit.assert_called_once_with(True)
-    mock_get_value.assert_called_once()
-    mock_bitcoin_config.assert_called_once()
-    assert hasattr(view_model, 'worker')
+        # Assert
+        mock_setting_repo.get_keyring_status.assert_called_once()
+        mock_setting_repo.get_wallet_network.assert_called_once()
+        mock_get_value.assert_called_once()
+        mock_mnemonic_store.decrypt.assert_called_once_with(
+            password=mock_wallet_password, path='test_path',
+        )
+        view_model.splash_screen_message.emit.assert_called_once()
+        view_model.sync_chain_info_label.emit.assert_called_once_with(True)
+        mock_local_store.get_value.assert_called_once()

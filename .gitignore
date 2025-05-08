@@ -2,7 +2,6 @@
 **/__pycache__/
 build/
 dist/
-ln_node_binary/*
 resources_rc.py
 venv/
 .venv/

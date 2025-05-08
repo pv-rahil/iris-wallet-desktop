@@ -15,25 +15,23 @@ of test cases and to maintain better organization.
 # pylint: disable=redefined-outer-name,unused-argument,protected-access
 from __future__ import annotations
 
-from unittest.mock import call
+from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import RgbLibError
+from rgb_lib import TransportType
 
 from src.model.setting_model import IsDefaultEndpointSet
 from src.model.setting_model import IsDefaultFeeRateSet
 from src.model.setting_model import IsDefaultMinConfirmationSet
 from src.utils.constant import FEE_RATE
 from src.utils.constant import MIN_CONFIRMATION
-from src.utils.constant import SAVED_INDEXER_URL
-from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_UNABLE_TO_SET_FEE
-from src.utils.error_message import ERROR_UNABLE_TO_SET_INDEXER_URL
 from src.utils.error_message import ERROR_UNABLE_TO_SET_MIN_CONFIRMATION
-from src.utils.error_message import ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
 from src.utils.info_message import INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
 from src.viewmodels.setting_view_model import SettingViewModel
 
@@ -112,85 +110,6 @@ def test_set_default_fee_rate_false(mock_toast_manager, mock_setting_card_reposi
 
 
 @patch('src.viewmodels.setting_view_model.SettingCardRepository')
-def test_on_success_of_indexer_url_set(mock_setting_card_repository, setting_view_model):
-    """Test on_success_of_indexer_url_set method."""
-    setting_view_model.unlock_the_wallet = Mock(return_value=True)
-    setting_view_model.indexer_url_set_event = Mock()
-    mock_setting_card_repository.set_default_endpoints.return_value = IsDefaultEndpointSet(
-        is_enabled=True,
-    )
-
-    indexer_url = 'http://test.url'
-    setting_view_model.on_success_of_indexer_url_set(indexer_url)
-
-    setting_view_model.unlock_the_wallet.assert_called_once_with(
-        SAVED_INDEXER_URL, indexer_url,
-    )
-    mock_setting_card_repository.set_default_endpoints.assert_called_once_with(
-        SAVED_INDEXER_URL, indexer_url,
-    )
-    setting_view_model.indexer_url_set_event.emit.assert_called_once_with(
-        indexer_url,
-    )
-
-
-@patch('src.viewmodels.setting_view_model.ToastManager')
-def test_on_error_of_indexer_url_set(mock_toast_manager, setting_view_model):
-    """Test on_error_of_indexer_url_set method."""
-    setting_view_model._page_navigation = Mock()
-    setting_view_model.unlock_the_wallet = Mock(
-        side_effect=CommonException('Unlock error'),
-    )
-    setting_view_model.on_error_of_indexer_url_set()
-
-    mock_toast_manager.error.assert_has_calls([
-        call(description=ERROR_UNABLE_TO_SET_INDEXER_URL),
-        call(description='Unlock failed: Unlock error'),
-    ])
-    setting_view_model._page_navigation.settings_page.assert_called_once()
-
-
-@patch('src.viewmodels.setting_view_model.SettingCardRepository')
-def test_on_success_of_proxy_endpoint_set(mock_setting_card_repository, setting_view_model):
-    """Test _on_success_of_proxy_endpoint_set method."""
-    setting_view_model.unlock_the_wallet = Mock(return_value=True)
-    setting_view_model.proxy_endpoint_set_event = Mock()
-    mock_setting_card_repository.set_default_endpoints.return_value = IsDefaultEndpointSet(
-        is_enabled=True,
-    )
-
-    proxy_endpoint = 'http://test.proxy'
-    setting_view_model._on_success_of_proxy_endpoint_set(proxy_endpoint)
-
-    setting_view_model.unlock_the_wallet.assert_called_once_with(
-        SAVED_PROXY_ENDPOINT, proxy_endpoint,
-    )
-    mock_setting_card_repository.set_default_endpoints.assert_called_once_with(
-        SAVED_PROXY_ENDPOINT, proxy_endpoint,
-    )
-    setting_view_model.proxy_endpoint_set_event.emit.assert_called_once_with(
-        proxy_endpoint,
-    )
-
-
-@patch('src.viewmodels.setting_view_model.ToastManager')
-def test_on_error_of_proxy_endpoint_set(mock_toast_manager, setting_view_model):
-    """Test _on_error_of_proxy_endpoint_set method."""
-    setting_view_model._page_navigation = Mock()
-    setting_view_model.unlock_the_wallet = Mock(
-        side_effect=CommonException('Unlock error'),
-    )
-
-    setting_view_model._on_error_of_proxy_endpoint_set()
-
-    mock_toast_manager.error.assert_has_calls([
-        call(description=ERROR_UNABLE_TO_SET_PROXY_ENDPOINT),
-        call(description='Unlock failed: Unlock error'),
-    ])
-    setting_view_model._page_navigation.settings_page.assert_called_once()
-
-
-@patch('src.viewmodels.setting_view_model.SettingCardRepository')
 @patch('src.viewmodels.setting_view_model.ToastManager')
 def test_set_min_confirmation_success(mock_toast_manager, mock_setting_card_repository, setting_view_model):
     """Test set_min_confirmation method success case."""
@@ -251,3 +170,76 @@ def test_set_min_confirmation_failure(mock_toast_manager, mock_setting_card_repo
     mock_toast_manager.error.assert_called_once_with(
         description=ERROR_UNABLE_TO_SET_MIN_CONFIRMATION,
     )
+
+
+@patch('src.viewmodels.setting_view_model.ToastManager')
+@patch('src.viewmodels.setting_view_model.SettingCardRepository.set_default_endpoints')
+@patch('src.viewmodels.setting_view_model.colored_wallet.go_online_again')
+def test_check_indexer_url_endpoint_success(mock_go_online, mock_set_endpoints, mock_toast, setting_view_model):
+    """Test successful indexer URL endpoint check."""
+    mock_signal = MagicMock()
+    setting_view_model.is_loading = MagicMock()
+    setting_view_model.indexer_url_set_event = mock_signal
+    mock_set_endpoints.return_value = IsDefaultEndpointSet(is_enabled=True)
+
+    setting_view_model.check_indexer_url_endpoint(' http://localhost:3000 ')
+
+    mock_go_online.assert_called_once_with(indexer_url='http://localhost:3000')
+    mock_set_endpoints.assert_called_once()
+    mock_signal.emit.assert_called_once_with('http://localhost:3000')
+    setting_view_model.is_loading.emit.assert_any_call(True)
+    setting_view_model.is_loading.emit.assert_any_call(False)
+    mock_toast.success.assert_called_once()
+
+
+@patch('src.viewmodels.setting_view_model.ToastManager')
+@patch('src.viewmodels.setting_view_model.colored_wallet.go_online_again', side_effect=RgbLibError.InvalidIndexer('The indexer endpoint is invalid'))
+def test_check_indexer_url_endpoint_failure(mock_go_online, mock_toast, setting_view_model):
+    """Test indexer URL endpoint check failure."""
+    setting_view_model.is_loading = MagicMock()
+
+    setting_view_model.check_indexer_url_endpoint('http://bad-url')
+
+    setting_view_model.is_loading.emit.assert_any_call(True)
+    setting_view_model.is_loading.emit.assert_any_call(False)
+    mock_toast.error.assert_called_once_with(
+        description='The indexer endpoint is invalid',
+    )
+
+
+@patch('src.viewmodels.setting_view_model.ToastManager')
+@patch('src.viewmodels.setting_view_model.SettingCardRepository.set_default_endpoints')
+@patch('src.viewmodels.setting_view_model.TransportEndpoint')
+def test_check_proxy_endpoint_success(mock_transport, mock_set_endpoints, mock_toast, setting_view_model):
+    """Test successful proxy endpoint check."""
+    mock_endpoint_instance = MagicMock()
+    mock_endpoint_instance.transport_type.return_value = TransportType.JSON_RPC
+    mock_transport.return_value = mock_endpoint_instance
+    mock_set_endpoints.return_value = IsDefaultEndpointSet(is_enabled=True)
+
+    setting_view_model.is_loading = MagicMock()
+    setting_view_model.proxy_endpoint_set_event = MagicMock()
+
+    setting_view_model.check_proxy_endpoint(' http://proxy.local ')
+
+    mock_transport.assert_called_once_with('http://proxy.local')
+    mock_set_endpoints.assert_called_once()
+    setting_view_model.proxy_endpoint_set_event.emit.assert_called_once_with(
+        'http://proxy.local',
+    )
+    setting_view_model.is_loading.emit.assert_any_call(True)
+    setting_view_model.is_loading.emit.assert_any_call(False)
+    mock_toast.success.assert_called_once()
+
+
+@patch('src.viewmodels.setting_view_model.ToastManager')
+@patch('src.viewmodels.setting_view_model.TransportEndpoint', side_effect=ValueError('Invalid transport'))
+def test_check_proxy_endpoint_failure(mock_transport, mock_toast, setting_view_model):
+    """Test proxy endpoint check failure."""
+    setting_view_model.is_loading = MagicMock()
+
+    setting_view_model.check_proxy_endpoint('http://bad-proxy')
+
+    setting_view_model.is_loading.emit.assert_any_call(True)
+    setting_view_model.is_loading.emit.assert_any_call(False)
+    mock_toast.error.assert_called_once_with(description='Invalid transport')
