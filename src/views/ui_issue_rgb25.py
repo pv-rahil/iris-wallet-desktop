@@ -30,6 +30,7 @@ from accessible_constant import RGB25_ASSET_DESCRIPTION
 from accessible_constant import RGB25_ASSET_NAME
 from accessible_constant import RGB25_UPLOAD_FILE_BUTTON
 from src.model.success_model import SuccessPageModel
+from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import resize_image
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
@@ -372,6 +373,9 @@ class IssueRGB25Widget(QWidget):
         )
         self.amount_input.textChanged.connect(
             lambda: set_placeholder_value(self.amount_input),
+        )
+        self.amount_input.textChanged.connect(
+            lambda text: enforce_u64_max_input(self.amount_input, text),
         )
 
     def show_file_preview(self, file_upload_message):

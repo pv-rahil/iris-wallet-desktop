@@ -633,7 +633,7 @@ class SettingsWidget(QWidget):
             keyring_dialog.exec()
         if stored_keyring_status is True:
             mnemonic_dialog = RestoreMnemonicWidget(
-                parent=self, view_model=self._view_model, origin_page='setting_page',
+                parent=self, view_model=self._view_model, origin_page='setting_page', mnemonic_visibility=False,
             )
             mnemonic_dialog.finished.connect(
                 self.handle_keyring_toggle_status(),
@@ -662,31 +662,6 @@ class SettingsWidget(QWidget):
                 frame.save_button.start_loading()
             else:
                 frame.save_button.stop_loading()
-
-    def _check_keyring_state(self):
-        """Checks the keyring status and retrieves the wallet password, either
-        from secure storage if the keyring is disabled or via a user prompt
-        through a mnemonic dialog if enabled."""
-        keyring_status = SettingRepository.get_keyring_status()
-        if keyring_status is False:
-            network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            password: str = get_value(WALLET_PASSWORD_KEY, network.value)
-            return password
-        if keyring_status is True:
-            mnemonic_dialog = RestoreMnemonicWidget(
-                parent=self, view_model=self._view_model, origin_page='setting_card', mnemonic_visibility=False,
-            )
-            mnemonic_dialog.mnemonic_detail_text_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'lock_unlock_password_required', None,
-                ),
-            )
-            mnemonic_dialog.mnemonic_detail_text_label.setFixedHeight(40)
-            result = mnemonic_dialog.exec()
-            if result == QDialog.Accepted:
-                password = mnemonic_dialog.password_input.text()
-                return password
-        return None
 
     def _set_endpoint_based_on_network(self):
         """Sets various endpoints and configuration parameters

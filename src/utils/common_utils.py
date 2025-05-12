@@ -44,6 +44,7 @@ from src.utils.constant import BITCOIN_EXPLORER_URL
 from src.utils.constant import DEFAULT_LOCALE
 from src.utils.constant import FAST_TRANSACTION_FEE_BLOCKS
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MAX_ISSUE_AMOUNT
 from src.utils.constant import MEDIUM_TRANSACTION_FEE_BLOCKS
 from src.utils.constant import SLOW_TRANSACTION_FEE_BLOCKS
 from src.utils.custom_exception import CommonException
@@ -539,3 +540,31 @@ def cleanup_debug_logs(zip_file_path: str, logs_dir=None):
     # Delete the logs directory if it exists
     if logs_dir and os.path.exists(logs_dir) and os.path.isdir(logs_dir):
         shutil.rmtree(logs_dir)
+
+
+def enforce_u64_max_input(line_edit: QLineEdit, input_text: str) -> None:
+    """
+    Restricts the input in a QLineEdit to not exceed the maximum value for an unsigned 64-bit integer (u64).
+    This function removes non-numeric characters and prevents entering a number greater than 2^64 - 1.
+
+    Args:
+        line_edit (QLineEdit): The input field being monitored.
+        input_text (str): The new text input emitted by the QLineEdit's textChanged signal.
+    """
+    # Remove non-digit characters
+    numeric_text = ''.join(filter(str.isdigit, input_text))
+
+    if numeric_text == '':
+        return  # Allow empty input
+
+    try:
+        value = int(numeric_text)
+        if value > MAX_ISSUE_AMOUNT:
+            # Value too large; remove last digit
+            trimmed_text = numeric_text[:-1]
+            line_edit.setText(trimmed_text)
+        elif numeric_text != input_text:
+            # Update if cleaned version is different from input
+            line_edit.setText(numeric_text)
+    except ValueError:
+        line_edit.setText('')

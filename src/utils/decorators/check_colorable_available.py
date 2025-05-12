@@ -17,7 +17,6 @@ from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.cache import Cache
 from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
-from src.utils.error_message import ERROR_INSUFFICIENT_FUNDS
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
@@ -59,7 +58,7 @@ def create_utxos() -> None:
             type(exc).__name__, str(exc),
         )
         raise CommonException(
-            'Decorator(check_colorable_available): Error while calling create utxos API',
+            'Decorator(check_colorable_available): Error while calling create utxos',
         ) from exc
 
 
@@ -82,6 +81,8 @@ def check_colorable_available() -> Callable[..., Any]:
                     create_utxos()  # Fallback call to create UTXOs
                     # Retry the original function
                     return method(*args, **kwargs)
+                except RgbLibError.InsufficientAllocationSlots as exc:
+                    raise CommonException('NoAvailableUtxos') from exc
                 except CommonException:
                     raise
                 except Exception as fallback_exc:
@@ -93,10 +94,8 @@ def check_colorable_available() -> Callable[..., Any]:
                     ) from fallback_exc
                 # If it's another type of error, re-raise it
                 raise
-            except RgbLibError.InsufficientBitcoins as exc:
-                raise CommonException(
-                    ERROR_INSUFFICIENT_FUNDS,
-                ) from exc
+            except CommonException:
+                raise
             except Exception as exc:
                 # Catch any other generic exceptions and wrap them in CommonException
                 error = str(exc)

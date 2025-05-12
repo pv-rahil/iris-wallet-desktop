@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 import pytest
 from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import QDialog
 
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.constant import INDEXER_URL_MAINNET
@@ -90,6 +89,7 @@ def test_handle_keyring_storage_enabled(setting_widget: SettingsWidget, mocker):
         parent=setting_widget,
         view_model=setting_widget._view_model,
         origin_page='setting_page',
+        mnemonic_visibility=False,
     )
     mock_exec.assert_called_once()
 
@@ -501,97 +501,6 @@ def test_handle_other_frames(setting_widget):
         frame = getattr(setting_widget, frame_name)
         frame.input_value.setText.assert_called_with(str(value))
         frame.input_value.setPlaceholderText.assert_called_with(str(value))
-
-
-def test_check_keyring_state_disabled(setting_widget, mocker):
-    """Test checking keyring state when keyring is disabled."""
-    # Mock dependencies
-    mocker.patch(
-        'src.views.ui_settings.SettingRepository.get_keyring_status', return_value=False,
-    )
-    mocker.patch(
-        'src.views.ui_settings.SettingRepository.get_wallet_network',
-        return_value=NetworkEnumModel.MAINNET,
-    )
-    mock_get_value = mocker.patch(
-        'src.views.ui_settings.get_value', return_value='test_password',
-    )
-
-    # Call method
-    result = setting_widget._check_keyring_state()
-
-    # Verify password was retrieved from storage
-    mock_get_value.assert_called_once_with('wallet_password', 'mainnet')
-    assert result == 'test_password'
-
-
-def test_check_keyring_state_enabled_accepted(setting_widget, mocker):
-    """Test checking keyring state when keyring is enabled and dialog is accepted."""
-    # Mock dependencies
-    mocker.patch(
-        'src.views.ui_settings.SettingRepository.get_keyring_status', return_value=True,
-    )
-    mock_dialog = MagicMock()
-    mock_dialog.exec.return_value = QDialog.Accepted
-    mock_dialog.password_input.text.return_value = 'dialog_password'
-    mock_dialog_class = mocker.patch(
-        'src.views.ui_settings.RestoreMnemonicWidget',
-        return_value=mock_dialog,
-    )
-
-    # Call method
-    result = setting_widget._check_keyring_state()
-
-    # Verify dialog was created with correct parameters
-    mock_dialog_class.assert_called_once_with(
-        parent=setting_widget,
-        view_model=setting_widget._view_model,
-        origin_page='setting_card',
-        mnemonic_visibility=False,
-    )
-
-    # Verify dialog was configured correctly
-    mock_dialog.mnemonic_detail_text_label.setText.assert_called_once()
-    mock_dialog.mnemonic_detail_text_label.setFixedHeight.assert_called_once_with(
-        40,
-    )
-
-    # Verify password was retrieved from dialog
-    assert result == 'dialog_password'
-
-
-def test_check_keyring_state_enabled_rejected(setting_widget, mocker):
-    """Test checking keyring state when keyring is enabled and dialog is rejected."""
-    # Mock dependencies
-    mocker.patch(
-        'src.views.ui_settings.SettingRepository.get_keyring_status', return_value=True,
-    )
-    mock_dialog = MagicMock()
-    mock_dialog.exec.return_value = QDialog.Rejected
-    mocker.patch(
-        'src.views.ui_settings.RestoreMnemonicWidget',
-        return_value=mock_dialog,
-    )
-
-    # Call method
-    result = setting_widget._check_keyring_state()
-
-    # Verify None is returned when dialog is rejected
-    assert result is None
-
-
-def test_check_keyring_state_invalid(setting_widget, mocker):
-    """Test checking keyring state with invalid keyring status."""
-    # Mock dependencies
-    mocker.patch(
-        'src.views.ui_settings.SettingRepository.get_keyring_status', return_value=None,
-    )
-
-    # Call method
-    result = setting_widget._check_keyring_state()
-
-    # Verify None is returned for invalid keyring status
-    assert result is None
 
 
 def test_update_loading_state_loading(setting_widget):

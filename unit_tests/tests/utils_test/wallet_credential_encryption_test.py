@@ -122,3 +122,55 @@ def test_decrypt_invalid_password(mock_aesgcm_class, mock_path_class):
     assert store.decrypted_mnemonic is None
     assert store._path is None
     assert store._password is None
+
+
+def test_decrypt_returns_cached_result(monkeypatch):
+    """Test that decrypt returns cached mnemonic if credentials match."""
+    store = MnemonicStore()
+    store.decrypted_mnemonic = 'cached mnemonic'
+    store._password = 'testpass'
+    store._path = 'testpath'
+
+    # Patch Path to ensure no file access occurs
+    monkeypatch.setattr(
+        'src.utils.wallet_credential_encryption.Path', MagicMock(),
+    )
+
+    # Should return cached value, not attempt to read file
+    result = store.decrypt('testpass', 'testpath')
+    assert result == 'cached mnemonic'
+
+
+def test_encrypt_raises_common_exception_on_invalid_input():
+    """Test that encrypt raises CommonException on invalid input or internal error."""
+    store = MnemonicStore()
+    # Both password and mnemonic empty
+    with pytest.raises(CommonException) as exc:
+        store.encrypt('', '')
+    assert 'Encryption failed' in str(exc.value)
+    # Password empty
+    with pytest.raises(CommonException) as exc:
+        store.encrypt('', 'mnemonic')
+    assert 'Encryption failed' in str(exc.value)
+    # Mnemonic empty
+    with pytest.raises(CommonException) as exc:
+        store.encrypt('password', '')
+    assert 'Encryption failed' in str(exc.value)
+
+
+@patch('src.utils.wallet_credential_encryption.AESGCM')
+def test_encrypt_raises_common_exception_on_internal_error(mock_aesgcm_class):
+    """Test that encrypt raises CommonException on internal error during encryption."""
+    store = MnemonicStore()
+    password = 'password'
+    mnemonic = 'mnemonic'
+    # Simulate AESGCM raising an exception on encrypt
+    mock_aesgcm = MagicMock()
+    mock_aesgcm.encrypt.side_effect = Exception('encryption failed internally')
+    mock_aesgcm_class.return_value = mock_aesgcm
+
+    with patch('os.urandom', side_effect=[b'a'*16, b'b'*12]):
+        with patch.object(store, 'derive_key', return_value=b'k'*32):
+            with pytest.raises(CommonException) as exc:
+                store.encrypt(password, mnemonic)
+    assert 'Encryption failed' in str(exc.value)

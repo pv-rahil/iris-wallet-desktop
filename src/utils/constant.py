@@ -88,3 +88,5 @@ IRIS_WALLET_TRANSLATIONS_CONTEXT = 'iris_wallet_desktop'
 
 # Directory names used in paths
 APP_DIR = 'app'
+
+MAX_ISSUE_AMOUNT = 18446744073709551615

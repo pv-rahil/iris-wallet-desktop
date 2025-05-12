@@ -1786,5 +1786,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>exit</source>
         <translation>Exit</translation>
     </message>
+    <message>
+        <source>enter_wallet_password_info</source>
+        <translation>Enter the wallet password for enabling keyring</translation>
+    </message>
 </context>
 </TS>

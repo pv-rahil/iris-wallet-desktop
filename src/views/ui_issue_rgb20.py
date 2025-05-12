@@ -27,6 +27,7 @@ from accessible_constant import RGB20_ASSET_AMOUNT
 from accessible_constant import RGB20_ASSET_NAME
 from accessible_constant import RGB20_ASSET_TICKER
 from src.model.success_model import SuccessPageModel
+from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -328,6 +329,9 @@ class IssueRGB20Widget(QWidget):
         self.amount_input.textChanged.connect(
             lambda: set_placeholder_value(self.amount_input),
         )
+        self.amount_input.textChanged.connect(
+            lambda text: enforce_u64_max_input(self.amount_input, text),
+        )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -418,7 +422,7 @@ class IssueRGB20Widget(QWidget):
 
     def handle_button_enabled(self):
         """Updates the enabled state of the send button."""
-        if (self.short_identifier_input.text() and self.amount_input.text() and self.asset_name_input.text()):
+        if (self.short_identifier_input.text() and self.amount_input.text() and self.asset_name_input.text() and self.amount_input.text() != '0'):
             self.issue_rgb20_btn.setDisabled(False)
         else:
             self.issue_rgb20_btn.setDisabled(True)

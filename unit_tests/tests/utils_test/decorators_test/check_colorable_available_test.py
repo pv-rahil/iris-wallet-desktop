@@ -14,7 +14,6 @@ from src.model.setting_model import DefaultFeeRate
 from src.utils.decorators.check_colorable_available import check_colorable_available
 from src.utils.decorators.check_colorable_available import create_utxos
 from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
-from src.utils.error_message import ERROR_INSUFFICIENT_FUNDS
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
 
@@ -92,11 +91,9 @@ def test_create_utxos_general_exception(mock_get_fee_rate):
     with pytest.raises(CommonException) as exc_info:
         create_utxos()
 
-    assert 'Decorator(check_colorable_available): Error while calling create utxos API' in str(
+    assert 'Decorator(check_colorable_available): Error while calling create utxos' in str(
         exc_info.value,
     )
-
-# Test check_colorable_available decorator
 
 
 @patch('src.utils.decorators.check_colorable_available.create_utxos')
@@ -133,24 +130,6 @@ def test_check_colorable_available_decorator_insufficient_slots(mock_create_utxo
     # Verify create_utxos was called and the method succeeded on retry
     mock_create_utxos.assert_called_once()
     assert result == 'success'
-
-
-@patch('src.utils.decorators.check_colorable_available.create_utxos')
-def test_check_colorable_available_decorator_insufficient_bitcoins(mock_create_utxos):
-    """Test check_colorable_available decorator with insufficient bitcoins."""
-    mock_method = MagicMock(
-        side_effect=RgbLibError.InsufficientBitcoins(needed=2, available=1),
-    )
-
-    @check_colorable_available()
-    def decorated_method():
-        return mock_method()
-
-    with pytest.raises(CommonException) as exc_info:
-        decorated_method()
-
-    assert str(exc_info.value) == ERROR_INSUFFICIENT_FUNDS
-    mock_create_utxos.assert_not_called()
 
 
 @patch('src.utils.decorators.check_colorable_available.create_utxos')

@@ -1,4 +1,4 @@
-# pylint: disable=too-many-function-args
+# pylint: disable=too-many-function-args,too-many-branches
 """
 Handles exceptions uniformly, providing specific error messages.
 """
@@ -81,6 +81,9 @@ def handle_exceptions(exc):
         raise CommonException(exc.message) from exc
 
     if isinstance(exc, RgbLibError):
+        if isinstance(exc, RgbLibError.Internal):
+            if 'absurdly high fee rate' in getattr(exc, 'details', '').lower():
+                raise CommonException('MaxFeeExceeded') from exc
         raise CommonException(type(exc).__name__) from exc
 
     # If no specific type matches, use a default error message

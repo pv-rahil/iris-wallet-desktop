@@ -30,7 +30,6 @@ def repository_custom_context():
         if isinstance(
             exc, (
                 RgbLibError.InsufficientAllocationSlots,
-                RgbLibError.InsufficientBitcoins,
             ),
         ):
             raise
