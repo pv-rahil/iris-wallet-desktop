@@ -93,6 +93,7 @@ ERROR_MAPPING = {
     'UnsupportedBackupVersion': 'unsupported_backup_version',
     'MissingSwapPaymentPreimage': 'missing_swap_payment_preimage',
     'NoValidTransportEndpoint': 'no_valid_transpoint_endpoint',
+    'InsufficientBitcoins': 'insufficient_funds',
     # from caching
     'UnableToCacheInitialise': 'unable_to_cache_initialise',
     'CacheFetchFailed': 'cache_fetch_failed',

@@ -12,11 +12,10 @@ from requests.exceptions import HTTPError
 from rgb_lib import RgbLibError
 
 from src.data.repository.setting_card_repository import SettingCardRepository
-from src.data.repository.wallet_holder import WalletHolder
+from src.data.repository.wallet_holder import colored_wallet
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.cache import Cache
-from src.utils.endpoints import CREATE_UTXO_ENDPOINT
 from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
@@ -24,18 +23,18 @@ from src.utils.logging import logger
 
 
 def create_utxos() -> None:
-    """Unlock the node by sending a request to the unlock endpoint."""
+    """Create UTXOs for RGB operations by calling the wallet's create_utxos method."""
     try:
-        wallet = WalletHolder.get_wallet()
-        online_wallet = WalletHolder.get_online()
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         create_utxos_model = CreateUtxosRequestModel(
-            online=online_wallet,
+            online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
             num=2,
         )
-        wallet.create_utxos(
-            online=create_utxos_model.online, up_to=create_utxos_model.up_to, num=create_utxos_model.num, size=create_utxos_model.size, fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
+        colored_wallet.wallet.create_utxos(
+            online=create_utxos_model.online, up_to=create_utxos_model.up_to,
+            num=create_utxos_model.num, size=create_utxos_model.size,
+            fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
         )
         cache = Cache.get_cache_session()
         if cache is not None:
@@ -52,14 +51,14 @@ def create_utxos() -> None:
             'Exception occurred at Decorator(unlock_required): %s, Message: %s',
             type(exc).__name__, str(exc),
         )
-        raise CommonException('Unable to connect to node') from exc
+        raise CommonException('Unable to connect to wallet') from exc
     except Exception as exc:
         logger.error(
             'Exception occurred at Decorator(unlock_required): %s, Message: %s',
             type(exc).__name__, str(exc),
         )
         raise CommonException(
-            'Decorator(check_colorable_available): Error while calling create utxos API',
+            'Decorator(check_colorable_available): Error while calling create utxos',
         ) from exc
 
 
@@ -76,12 +75,14 @@ def check_colorable_available() -> Callable[..., Any]:
             try:
                 # Attempt to execute the main function
                 return method(*args, **kwargs)
-            except RgbLibError.InsufficientAllocationSlots as exc:
+            except RgbLibError.InsufficientAllocationSlots:
                 # If the error is due to insufficient uncolored UTXOs, call the fallback
                 try:
                     create_utxos()  # Fallback call to create UTXOs
                     # Retry the original function
                     return method(*args, **kwargs)
+                except RgbLibError.InsufficientAllocationSlots as exc:
+                    raise CommonException('NoAvailableUtxos') from exc
                 except CommonException:
                     raise
                 except Exception as fallback_exc:
@@ -92,6 +93,8 @@ def check_colorable_available() -> Callable[..., Any]:
                         }",
                     ) from fallback_exc
                 # If it's another type of error, re-raise it
+                raise
+            except CommonException:
                 raise
             except Exception as exc:
                 # Catch any other generic exceptions and wrap them in CommonException

@@ -12,7 +12,6 @@ import pytest
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.backup_service import BackupService
 from src.model.enums.enums_model import NetworkEnumModel
-from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.handle_exception import CommonException
 from src.utils.info_message import INFO_BACKUP_COMPLETED
@@ -115,35 +114,131 @@ def test_run_backup_service_thread(backup_view_model, mocker):
 
 
 def test_backup(backup_view_model, mocker):
-    """Test the backup method"""
+    """
+    Test the backup method to ensure it fetches the correct network and password,
+    retrieves the cached mnemonic from mnemonic_store, and triggers the backup thread.
+    """
     # Mock dependencies
     mock_get_wallet_network = mocker.patch.object(
         SettingRepository, 'get_wallet_network',
     )
     mock_get_value = mocker.patch('src.viewmodels.backup_view_model.get_value')
+    mock_decrypted_mnemonic = mocker.patch(
+        'src.viewmodels.backup_view_model.mnemonic_store',
+    )
     mock_run_backup_service_thread = mocker.patch.object(
         backup_view_model, 'run_backup_service_thread',
     )
 
-    # Set mock return values
+    # Set return values
     mock_get_wallet_network.return_value = NetworkEnumModel.MAINNET
-    mock_get_value.side_effect = lambda key=None, network=None: {
-        (MNEMONIC_KEY, NetworkEnumModel.MAINNET.value): 'mock_mnemonic',
-        (WALLET_PASSWORD_KEY, NetworkEnumModel.MAINNET.value): 'mock_password',
-    }[(key, network)]
+    mock_get_value.return_value = 'mock_password'
+    mock_decrypted_mnemonic.decrypted_mnemonic = 'mock_mnemonic'
 
-    # Call the method under test
+    # Execute
     backup_view_model.backup()
 
-    # Assertions
+    # Assert the expected interactions
     mock_get_wallet_network.assert_called_once()
-    mock_get_value.assert_any_call(
-        MNEMONIC_KEY, NetworkEnumModel.MAINNET.value,
-    )
-    mock_get_value.assert_any_call(
+    mock_get_value.assert_called_once_with(
         key=WALLET_PASSWORD_KEY, network=NetworkEnumModel.MAINNET.value,
     )
     mock_run_backup_service_thread.assert_called_once_with(
         mnemonic='mock_mnemonic',
         password='mock_password',
     )
+
+
+def test_backup_raises_when_mnemonic_missing(backup_view_model, mocker):
+    """
+    Test that the backup method raises a ValueError when the mnemonic is None.
+    """
+    mocker.patch.object(
+        SettingRepository, 'get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    mocker.patch(
+        'src.viewmodels.backup_view_model.get_value',
+        return_value='mock_password',
+    )
+    mock_mnemonic_store = mocker.patch(
+        'src.viewmodels.backup_view_model.mnemonic_store',
+    )
+    mock_mnemonic_store.decrypted_mnemonic = None
+
+    with pytest.raises(ValueError, match='Mnemonic is not available for backup.'):
+        backup_view_model.backup()
+
+
+def test_handle_error(mocker, backup_view_model):
+    """Test that _handle_error logs error, stops loading, and shows toast."""
+    # Create mocks
+    mock_emit = Mock()
+    backup_view_model.is_loading.connect(
+        mock_emit,
+    )  # connect instead of patching
+
+    mock_logger_error = mocker.patch(
+        'src.viewmodels.backup_view_model.logger.error',
+    )
+    mock_toast_error = mocker.patch(
+        'src.viewmodels.backup_view_model.ToastManager.error',
+    )
+
+    # Inputs
+    error_message = 'Something failed'
+    exception_instance = Exception('Failure reason')
+
+    # Call the method
+    backup_view_model._handle_error(error_message, exception_instance)
+
+    # Assertions
+    mock_emit.assert_called_once_with(False)
+    mock_logger_error.assert_called_once_with(
+        f"{error_message}: %s", exception_instance,
+    )
+    mock_toast_error.assert_called_once_with(
+        description='Something went wrong',
+    )
+
+
+def test_run_backup_service_thread_success(backup_view_model, mocker):
+    """Test run_backup_service_thread executes thread and emits loading."""
+    mock_run_in_thread = mocker.patch.object(
+        backup_view_model, 'run_in_thread',
+    )
+    mock_emit = Mock()
+    backup_view_model.is_loading.connect(mock_emit)
+    backup_view_model.run_backup_service_thread(
+        'test_mnemonic', 'test_password',
+    )
+
+    mock_emit.assert_called_once_with(True)
+    mock_run_in_thread.assert_called_once()
+    assert mock_run_in_thread.call_args[0][0] is BackupService.backup
+
+
+@pytest.mark.parametrize(
+    'raised_exception,expected_msg', [
+        (ConnectionError('conn error'), 'Backup service error'),
+        (FileNotFoundError('file missing'), 'Backup service error'),
+        (CommonException('common issue', {}), 'Backup service error'),
+        (Exception('unexpected'), 'Unexpected error'),
+    ],
+)
+def test_run_backup_service_thread_exceptions(backup_view_model, mocker, raised_exception, expected_msg):
+    """Test that run_backup_service_thread handles exceptions via _handle_error."""
+    mock_emit = Mock()
+    backup_view_model.is_loading.connect(mock_emit)
+    mock_run_in_thread = mocker.patch.object(
+        backup_view_model, 'run_in_thread', side_effect=raised_exception,
+    )
+    mock_handle_error = mocker.patch.object(backup_view_model, '_handle_error')
+
+    backup_view_model.run_backup_service_thread(
+        'test_mnemonic', 'test_password',
+    )
+
+    mock_emit.assert_called_once_with(True)
+    mock_run_in_thread.assert_called_once()
+    mock_handle_error.assert_called_once_with(expected_msg, raised_exception)

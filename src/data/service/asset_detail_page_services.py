@@ -9,13 +9,8 @@ from datetime import datetime
 from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
 
-from src.data.repository.payments_repository import PaymentRepository
 from src.data.repository.rgb_repository import RgbRepository
-from src.model.enums.enums_model import AssetTransferStatusEnumModel
-from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.payments_model import ListPaymentResponseModel
-from src.model.rgb_model import AssetBalanceResponseModel
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import Balance
 from src.model.rgb_model import ListTransferAssetResponseModel
@@ -48,9 +43,10 @@ class AssetDetailPageService:
         ServiceOperationException: If an unknown transaction type is encountered.
         """
         try:
-            transactions: ListTransferAssetResponseModel = RgbRepository.list_transfers(
+            transactions: list[ListTransferAssetResponseModel] = RgbRepository.list_transfers(
                 list_transfers_request_model,
             )
+
             balance: Balance = RgbRepository.get_asset_balance(
                 AssetIdModel(asset_id=list_transfers_request_model.asset_id),
             )
@@ -66,7 +62,7 @@ class AssetDetailPageService:
                         TransferStatus.WAITING_COUNTERPARTY,
                     ]
 
-                    if transaction.status in [status for status in status_to_check]:
+                    if transaction.status in status_to_check:
                         # Convert the timestamp to a datetime object and format it
                         update_at = datetime.fromtimestamp(
                             transaction.updated_at,
@@ -86,7 +82,6 @@ class AssetDetailPageService:
                         '%H:%M:%S',
                     )
                     AssetDetailPageService.assign_transfer_status(transaction)
-
             transactions = sorted(
                 transactions or [],
                 # Using an else clause just for safety in type checking
@@ -96,8 +91,6 @@ class AssetDetailPageService:
             transactions = [
                 TransferAsset(**vars(transaction)) for transaction in transactions
             ]
-            balance = Balance(**vars(balance))
-
             return ListTransferAssetWithBalanceResponseModel(
                 transfers=transactions,
                 asset_balance=balance,
@@ -160,14 +153,14 @@ class AssetDetailPageService:
                 str(transaction.amount)
             }'
         elif transaction.kind in (
-            AssetTransferStatusEnumModel.RECEIVE_BLIND.value,
-            AssetTransferStatusEnumModel.RECEIVE_WITNESS.value,
+            TransferKind.RECEIVE_BLIND,
+            TransferKind.RECEIVE_WITNESS,
         ):
-            transaction.transfer_Status = TransferStatusEnumModel.RECEIVED
+            transaction.transfer_Status = TransferStatusEnumModel.RECEIVED.value
             transaction.amount_status = f'+{
                 str(transaction.amount)
             }'
-        elif transaction.kind == AssetTransferStatusEnumModel.SEND.value:
+        elif transaction.kind == TransferKind.SEND:
             transaction.amount_status = f'-{
                 str(transaction.amount)
             }'

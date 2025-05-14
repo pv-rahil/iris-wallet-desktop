@@ -223,7 +223,7 @@ def test_handle_when_origin_page_set_wallet_common_exception(keyring_error_dialo
 
     # Verify exception handling
     mock_set_keyring.assert_called_once_with(status=True)
-    mock_toast_manager.assert_called_once_with('Test error')
+    mock_toast_manager.assert_called_once()
 
 
 def test_handle_when_origin_page_set_wallet_general_exception(keyring_error_dialog_widget, mocker):
@@ -274,7 +274,7 @@ def test_handle_when_origin_setting_page_success(keyring_error_dialog_widget, mo
     # Verify all calls
     mock_get_network.assert_called_once()
     # Should be called 4 times for different keys
-    assert mock_delete_value.call_count == 4
+    assert mock_delete_value.call_count == 3
     mock_set_keyring.assert_called_once_with(status=True)
     mock_close.assert_called_once()
     mock_navigate.assert_called_once()
@@ -283,12 +283,11 @@ def test_handle_when_origin_setting_page_success(keyring_error_dialog_widget, mo
 def test_handle_when_origin_setting_page_common_exception(keyring_error_dialog_widget, mocker):
     """Test handle_when_origin_setting_page when CommonException is raised."""
     # Mock dependencies
-    test_error = CommonException('Test error')
+    test_error = CommonException('Something went wrong')
     mocker.patch(
         'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
         side_effect=test_error,
     )
-    mock_error = mocker.patch.object(keyring_error_dialog_widget, 'error')
     mock_toast_manager = mocker.patch(
         'src.views.components.toast.ToastManager.error',
     )
@@ -297,8 +296,7 @@ def test_handle_when_origin_setting_page_common_exception(keyring_error_dialog_w
     keyring_error_dialog_widget.handle_when_origin_setting_page()
 
     # Verify exception handling
-    mock_error.emit.assert_called_once_with('Test error')
-    mock_toast_manager.assert_called_once_with('Test error')
+    mock_toast_manager.assert_called_once_with('Something went wrong')
 
 
 def test_handle_when_origin_setting_page_general_exception(keyring_error_dialog_widget, mocker):

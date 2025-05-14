@@ -83,17 +83,25 @@ def test_restore(mock_google_drive_manager, mock_restore, mock_get_path, mock_ge
 @patch('src.utils.local_store.local_store.get_path')
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.restore')
 @patch('src.data.service.restore_service.GoogleDriveManager')
-def test_restore_when_file_not_exists(mock_google_drive_manager, mock_restore, mock_get_path, mock_get_hashed_mnemonic, setup_directory):
+@patch('src.data.service.restore_service.app_paths')
+def test_restore_when_file_not_exists(mock_app_paths, mock_google_drive_manager, mock_restore, mock_get_path, mock_get_hashed_mnemonic, setup_directory):
     """Case 2: When restore file does not exist after download"""
-    test_dir, _ = setup_directory
+    test_dir, restore_dir = setup_directory
 
     # Setup mocks
     mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
     mock_get_path.return_value = test_dir
 
+    # Mock app_paths to avoid FileNotFoundError during cleanup
+    mock_app_paths.restore_folder_path = restore_dir
+    mock_app_paths.app_path = test_dir
+    mock_app_paths.iriswallet_temp_folder_path = os.path.join(test_dir, 'temp')
+
+    # Create temp folder to avoid FileNotFoundError during cleanup
+    os.makedirs(mock_app_paths.iriswallet_temp_folder_path, exist_ok=True)
+
     mock_restore_instance = MagicMock()
     mock_restore.return_value = RestoreResponseModel(status=True)
-    mock_restore_instance.return_value = None
     mock_google_drive_manager.return_value = mock_restore_instance
     mock_restore_instance.download_from_drive.return_value = None
 
@@ -149,7 +157,8 @@ def test_restore_no_password(mock_get_path, mock_get_hashed_mnemonic):
 @patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
 @patch('src.data.service.restore_service.GoogleDriveManager')
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.restore')
-def test_restore_no_hashed_value(mock_restore, mock_google_drive_manager, mock_get_hashed_mnemonic):
+@patch('src.data.service.restore_service.app_paths')
+def test_restore_no_hashed_value(mock_app_paths, mock_restore, mock_google_drive_manager, mock_get_hashed_mnemonic):
     """Case 5: Test restore service with missing hashed value"""
 
     # Setup mocks
@@ -160,9 +169,16 @@ def test_restore_no_hashed_value(mock_restore, mock_google_drive_manager, mock_g
     mock_google_drive_manager.return_value.download_from_drive.return_value = True
     mock_restore.return_value = RestoreResponseModel(status=True)
 
-    # Call the RestoreService.restore method
+    # Mock app_paths to prevent FileNotFoundError during cleanup
+    mock_app_paths.iriswallet_temp_folder_path = '/tmp/iriswallet_regtest'
+    mock_app_paths.restore_folder_path = '/tmp/restore'
+
+    # Call the RestoreService.restore method with actual values from error trace
+    mnemonic = 'skill lamp please gown put season degree collect decline account monitor insane'
+    password = 'random@123'
+
     with pytest.raises(CommonException, match=ERROR_UNABLE_TO_GET_HASHED_MNEMONIC):
-        RestoreService.restore(mock_valid_mnemonic, mock_password)
+        RestoreService.restore(mnemonic, password)
 
 
 @patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')

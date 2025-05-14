@@ -13,13 +13,6 @@ class NetworkEnumModel(str, Enum):
     TESTNET = 'testnet'
 
 
-class FilterAssetEnumModel(int, Enum):
-    """Enum model for list asset"""
-    NIA = 0
-    UDA = 1
-    CFA = 2
-
-
 class TransactionStatusEnumModel(str, Enum):
     """Enum model for transaction status"""
     WAITING_CONFIRMATIONS = 'WaitingConfirmations'
@@ -56,19 +49,6 @@ class NativeAuthType(str, Enum):
     MAJOR_OPERATION = 'MAJOR_OPERATION'
 
 
-class PaymentStatus(str, Enum):
-    'Enum for payment status of ln transaction'
-    PENDING = 'Pending'
-    FAILED = 'Failed'
-    SUCCESS = 'Succeeded'
-
-
-class WalletType(str, Enum):
-    """Enum for wallet type"""
-    EMBEDDED_TYPE_WALLET = 'embedded'
-    REMOTE_TYPE_WALLET = 'remote'
-
-
 class AssetType(str, Enum):
     """Enum for asset type"""
     RGB20 = 'RGB20'
@@ -93,19 +73,6 @@ class TokenSymbol(str, Enum):
     SAT = 'SAT'
 
 
-class UnitType(str, Enum):
-    """Enum for expiry time unit"""
-    MINUTES = 'minutes'
-    HOURS = 'hours'
-    DAYS = 'days'
-
-
-class TransferOptionModel(str, Enum):
-    """Enum for distinguish transfer type"""
-    ON_CHAIN = 'on_chain'
-    LIGHTNING = 'lightning'
-
-
 class LoaderDisplayModel(str, Enum):
     """Enum for loader display modes."""
     FULL_SCREEN = 'full_screen'
@@ -118,10 +85,3 @@ class ToastPreset(Enum):
     WARNING = 2
     ERROR = 3
     INFORMATION = 4
-
-
-class ChannelFetchingModel(str, Enum):
-    """Enum for channel fetching"""
-    FETCHING = 'fetching'
-    FETCHED = 'fetched'
-    FAILED = 'failed'

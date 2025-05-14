@@ -25,7 +25,6 @@ from src.viewmodels.setting_view_model import SettingViewModel
 from src.viewmodels.splash_view_model import SplashViewModel
 from src.viewmodels.term_view_model import TermsViewModel
 from src.viewmodels.view_unspent_view_model import UnspentListViewModel
-from src.viewmodels.wallet_and_transfer_selection_viewmodel import WalletTransferSelectionViewModel
 from src.viewmodels.welcome_view_model import WelcomeViewModel
 
 
@@ -84,9 +83,6 @@ class MainViewModel(QObject):
         )
 
         self.restore_view_model = RestoreViewModel(
-            self.page_navigation,
-        )
-        self.wallet_transfer_selection_view_model = WalletTransferSelectionViewModel(
             self.page_navigation,
             self.splash_view_model,
         )

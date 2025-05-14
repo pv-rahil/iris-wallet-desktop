@@ -32,11 +32,9 @@ from accessible_constant import BITCOIN_TRANSACTION_DETAIL_FRAME
 from accessible_constant import RECEIVE_BITCOIN_BUTTON
 from accessible_constant import SEND_BITCOIN_BUTTON
 from src.model.btc_model import TransactionListResponse
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
-from src.model.selection_page_model import SelectionPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.common_utils import network_info
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -452,11 +450,14 @@ class BtcWidget(QWidget):
         for transaction_detail in sorted_transactions:
             tx_id = str(transaction_detail.txid)
             amount = str(transaction_detail.amount)
+            transaction_date, transaction_time = self.get_transaction_timestamp(
+                transaction_detail.confirmation_time,
+            )
             self.transaction_detail_frame = TransactionDetailFrame(
                 self.btc_scroll_area_widget_contents,
                 TransactionDetailPageModel(
-                    tx_id=tx_id, amount=amount, confirmation_date=transaction_detail.confirmation_time,
-                    confirmation_time=transaction_detail.confirmation_time, transaction_status=transaction_detail.transaction_status,
+                    tx_id=tx_id, amount=amount, confirmation_date=transaction_date,
+                    confirmation_time=transaction_time, transaction_status=transaction_detail.transaction_status,
                     transfer_status=transaction_detail.transfer_status,
                 ),
             )
@@ -467,15 +468,6 @@ class BtcWidget(QWidget):
                 QCursor(Qt.CursorShape.PointingHandCursor),
             )
             self.transaction_detail_frame.close_button.hide()
-            if transaction_detail.confirmation_time:
-                timestamp = transaction_detail.confirmation_time.timestamp  # This is an int
-                transaction_date = str(datetime.fromtimestamp(
-                    timestamp).date().isoformat())
-                transaction_time = str(datetime.fromtimestamp(
-                    timestamp).time().isoformat())
-            else:
-                transaction_date = None
-                transaction_time = None
 
             transfer_status = str(transaction_detail.transfer_status.value)
             transfer_amount = amount
@@ -502,7 +494,7 @@ class BtcWidget(QWidget):
             self.transaction_detail_frame.transaction_date.setText(
                 transaction_date,
             )
-            if transaction_date == None:
+            if transaction_date is None:
                 self.transaction_detail_frame.transaction_time.setStyleSheet(
                     'color:#959BAE;font-weight: 400; font-size:14px',
                 )
@@ -564,3 +556,11 @@ class BtcWidget(QWidget):
         self.refresh_button.setDisabled(False)
         self.send_asset_btn.setDisabled(False)
         self.receive_asset_btn.setDisabled(False)
+
+    def get_transaction_timestamp(self, confirmation_timestamp):
+        """Return formatted date and time for a given timestamp."""
+        if not confirmation_timestamp:
+            return None, None
+
+        dt_object = datetime.fromtimestamp(confirmation_timestamp.timestamp)
+        return dt_object.strftime('%Y-%m-%d'), dt_object.strftime('%H:%M:%S')

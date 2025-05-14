@@ -24,7 +24,6 @@ from accessible_constant import ASSET_TRANSACTION_DETAIL_CLOSE_BUTTON
 from accessible_constant import ASSET_TX_ID
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import PaymentStatus
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
@@ -382,61 +381,57 @@ class RGBAssetTransactionDetail(QWidget):
                 40, 250, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred,
             )
             self.grid_layout.addItem(self.vertical_spacer, 3, 1, 1, 1)
-        if self.params.is_off_chain:
-            self.handle_lightning_detail()
-
+        unblinded_and_change_utxo_value = None
+        self.url = get_bitcoin_explorer_url(self.params.tx_id)
+        if self.params.receive_utxo is not None:
+            self.url = get_bitcoin_explorer_url(self.params.receive_utxo)
+            unblinded_and_change_utxo_value = insert_zero_width_spaces(
+                self.params.receive_utxo.txid,
+            )
+        if self.params.change_utxo is not None:
+            self.url = get_bitcoin_explorer_url(self.params.change_utxo)
+            unblinded_and_change_utxo_value = insert_zero_width_spaces(
+                self.params.change_utxo.txid,
+            )
+        if SettingRepository.get_wallet_network() != NetworkEnumModel.REGTEST:
+            self.unblinded_and_change_utxo_value.setText(
+                f"<a style='color: #03CA9B;' href='{self.url}'>"
+                f"{unblinded_and_change_utxo_value}</a>",
+            )
+            self.tx_id_value.setText(
+                f"<a style='color: #03CA9B;' href='{self.url}'>"
+                f"{self.tx_id}</a>",
+            )
         else:
-            unblinded_and_change_utxo_value = None
-            self.url = get_bitcoin_explorer_url(self.params.tx_id)
-            if self.params.receive_utxo is not None:
-                self.url = get_bitcoin_explorer_url(self.params.receive_utxo)
-                unblinded_and_change_utxo_value = insert_zero_width_spaces(
-                    self.params.receive_utxo,
-                )
-            if self.params.change_utxo is not None:
-                self.url = get_bitcoin_explorer_url(self.params.change_utxo)
-                unblinded_and_change_utxo_value = insert_zero_width_spaces(
-                    self.params.change_utxo,
-                )
-            if SettingRepository.get_wallet_network() != NetworkEnumModel.REGTEST:
-                self.unblinded_and_change_utxo_value.setText(
-                    f"<a style='color: #03CA9B;' href='{self.url}'>"
-                    f"{unblinded_and_change_utxo_value}</a>",
-                )
-                self.tx_id_value.setText(
-                    f"<a style='color: #03CA9B;' href='{self.url}'>"
-                    f"{self.tx_id}</a>",
-                )
-            else:
-                self.unblinded_and_change_utxo_value.setText(
-                    unblinded_and_change_utxo_value,
-                )
-                self.tx_id_value.setText(self.tx_id)
-            self.blinded_utxo_value.setText(self.params.recipient_id)
-            if self.params.consignment_endpoints:
-                consignment_endpoint = self.params.consignment_endpoints[0].endpoint or 'N/A'
-            else:
-                consignment_endpoint = 'N/A'
-            self.consignment_endpoints_value.setText(consignment_endpoint)
-            if self.params.confirmation_date and self.params.confirmation_time:
-                date_time_concat = f'{self.params.confirmation_date} | {
-                    self.params.confirmation_time
-                }'
-                self.date_value.setText(date_time_concat)
-            else:
-                self.amount_value.setStyleSheet(
-                    "font: 24px \"Inter\";\n"
-                    'color: #798094;\n'
-                    'background: transparent;\n'
-                    'border: none;\n'
-                    'font-weight: 600;\n',
-                )
-                self.date_label.setText(
-                    QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'status', None,
-                    ),
-                )
-                self.date_value.setText(self.params.transaction_status)
+            self.unblinded_and_change_utxo_value.setText(
+                unblinded_and_change_utxo_value,
+            )
+            self.tx_id_value.setText(self.tx_id)
+        self.blinded_utxo_value.setText(self.params.recipient_id)
+        if self.params.consignment_endpoints:
+            consignment_endpoint = self.params.consignment_endpoints[0].endpoint or 'N/A'
+        else:
+            consignment_endpoint = 'N/A'
+        self.consignment_endpoints_value.setText(consignment_endpoint)
+        if self.params.confirmation_date and self.params.confirmation_time:
+            date_time_concat = f'{self.params.confirmation_date} | {
+                self.params.confirmation_time
+            }'
+            self.date_value.setText(date_time_concat)
+        else:
+            self.amount_value.setStyleSheet(
+                "font: 24px \"Inter\";\n"
+                'color: #798094;\n'
+                'background: transparent;\n'
+                'border: none;\n'
+                'font-weight: 600;\n',
+            )
+            self.date_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'status', None,
+                ),
+            )
+            self.date_value.setText(self.params.transaction_status)
 
     def handle_close(self):
         """
@@ -456,88 +451,3 @@ class RGBAssetTransactionDetail(QWidget):
         self._view_model.page_navigation.rgb25_detail_page(
             RgbAssetPageLoadModel(asset_type=self.params.asset_type),
         )
-
-    def handle_lightning_detail(self):
-        """
-        Updates UI for Lightning Network transactions:
-        - Sets amount color based on status (success, pending).
-        - Displays payment hash as transaction ID.
-        - Hides irrelevant fields and adjusts widget sizes.
-        """
-        self.vertical_layout_tx_detail_frame.setSpacing(4)
-        self.tx_id_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'payee_pubkey', None,
-            ),
-        )
-        if self.params.transaction_status == PaymentStatus.SUCCESS.value:
-            if self.params.inbound:
-                # Green color for successful received transactions
-                self.amount_value.setStyleSheet(
-                    'color:#01A781;font-weight: 600',
-                )
-            else:
-                # Red color for successful sent transactions
-                self.amount_value.setStyleSheet(
-                    'color:#EB5A5A;font-weight: 600',
-                )
-        elif self.params.transaction_status == PaymentStatus.PENDING.value:
-            # Grey color for pending transactions (both sent and received)
-            self.amount_value.setStyleSheet(
-                'color:#959BAE;font-weight: 600',
-            )
-        self.tx_id_value.setText(self.tx_id)
-        self.tx_id_value.setStyleSheet(
-            'color:#01A781;',
-        )
-        self.date_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'confirmation_date', None,
-            ),
-        )
-        date_time_concat = f'{self.params.confirmation_date} | {
-            self.params.confirmation_time
-        }'
-        self.date_value.setText(date_time_concat)
-
-        self.blinded_utxo_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'update_date', None,
-            ),
-        )
-        date_time_concat = f'{self.params.updated_date} | {
-            self.params.updated_time
-        }'
-        self.blinded_utxo_label.setMinimumSize(QSize(295, 20))
-        self.blinded_utxo_label.setMaximumSize(QSize(295, 20))
-        self.blinded_utxo_value.setMinimumSize(QSize(295, 25))
-        self.blinded_utxo_value.setMaximumSize(QSize(295, 25))
-        self.blinded_utxo_value.setText(date_time_concat)
-
-        self.unblinded_and_change_utxo_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'status', None,
-            ),
-        )
-        self.unblinded_and_change_utxo_label.setMinimumSize(QSize(295, 20))
-        self.unblinded_and_change_utxo_label.setMaximumSize(QSize(295, 20))
-        self.unblinded_and_change_utxo_value.setMinimumSize(QSize(295, 25))
-        self.unblinded_and_change_utxo_value.setMaximumSize(QSize(295, 25))
-        self.unblinded_and_change_utxo_value.setText(
-            self.params.transaction_status,
-        )
-        self.consignment_endpoints_label.hide()
-        self.consignment_endpoints_value.hide()
-        self.rgb_asset_single_transaction_detail_widget.setMinimumHeight(
-            650,
-        )
-        self.rgb_asset_single_transaction_detail_widget.setMaximumHeight(
-            650,
-        )
-        self.transaction_detail_frame.setMinimumHeight(400)
-        self.transaction_detail_frame.setMaximumHeight(400)
-        self.grid_layout.addWidget(self.wallet_logo, 0, 0, 1, 1)
-        self.vertical_spacer = QSpacerItem(
-            40, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred,
-        )
-        self.grid_layout.addItem(self.vertical_spacer, 3, 1, 1, 1)

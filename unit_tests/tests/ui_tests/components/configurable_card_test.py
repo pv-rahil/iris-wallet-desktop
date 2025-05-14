@@ -39,7 +39,6 @@ def test_initial_state(configurable_card_frame):
     assert card_frame.title_desc.text() == 'Test Description'
     assert card_frame.suggestion_desc is None
     assert card_frame.input_value is None
-    assert card_frame.time_unit_combobox is None
     assert not card_frame.is_expanded
 
 
@@ -55,7 +54,6 @@ def test_toggle_expand(configurable_card_frame, qtbot):
     assert card_frame.is_expanded
     assert card_frame.suggestion_desc is not None
     assert card_frame.input_value is not None
-    assert card_frame.time_unit_combobox is not None
     assert not card_frame.save_button.isHidden()
 
     # Simulate clicking again to collapse the frame
@@ -63,7 +61,6 @@ def test_toggle_expand(configurable_card_frame, qtbot):
     assert not card_frame.is_expanded
     assert card_frame.suggestion_desc.isHidden()
     assert card_frame.input_value.isHidden()
-    assert card_frame.time_unit_combobox.isHidden()
     assert card_frame.save_button.isHidden()
 
 

@@ -7,11 +7,12 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
 from src.data.repository.btc_repository import BtcRepository
-from src.data.repository.wallet_holder import WalletHolder
 from src.model.btc_model import EstimateFeeRequestModel
 from src.model.btc_model import EstimateFeeResponse
 from src.utils.common_utils import TRANSACTION_SPEEDS
+from src.utils.error_message import ERROR_NETWORK
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.error_message import ERROR_UNEXPECTED
 from src.utils.info_message import INFO_CUSTOM_FEE_RATE
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
@@ -35,7 +36,6 @@ class EstimateFeeViewModel(QObject, ThreadManager):
             tx_speed (str): The transaction speed selected by the user.
         """
         self.blocks = TRANSACTION_SPEEDS.get(tx_speed, 0)
-        online_wallet = WalletHolder.get_online()
         if self.blocks == 0:
             ToastManager.info(
                 description='Invalid transaction speed selected.',
@@ -48,21 +48,21 @@ class EstimateFeeViewModel(QObject, ThreadManager):
             self.run_in_thread(
                 BtcRepository.estimate_fee,
                 {
-                    'args': [EstimateFeeRequestModel(online=online_wallet, blocks=self.blocks)],
+                    'args': [EstimateFeeRequestModel(blocks=self.blocks)],
                     'callback': self.on_success_fee_estimation,
                     'error_callback': self.on_estimate_fee_error,
                 },
             )
         except ConnectionError:
             self.loading_status.emit(False, True)
-            ToastManager.info(
-                description='Network error. Please check your connection.',
+            ToastManager.error(
+                description=ERROR_NETWORK,
             )
 
         except Exception as e:
             self.loading_status.emit(False, True)
-            ToastManager.info(
-                description=f"An unexpected error occurred: {str(e)}",
+            ToastManager.error(
+                description=ERROR_UNEXPECTED.format(str(e)),
             )
 
     def on_success_fee_estimation(self, response: EstimateFeeResponse) -> None:

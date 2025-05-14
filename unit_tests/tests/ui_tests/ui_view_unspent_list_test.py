@@ -268,7 +268,7 @@ def test_create_unspent_clickable_frame(view_unspent_list_widget: ViewUnspentLis
 
     # Create mock unspent list item
     mock_list_item = MagicMock()
-    mock_list_item.utxo.outpoint = 'test_outpoint'
+    mock_list_item.utxo.outpoint.txid = 'test_outpoint'
     mock_list_item.utxo.btc_amount = 1000
     mock_list_item.utxo.colorable = True
 

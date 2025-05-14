@@ -11,7 +11,6 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QFileDialog
 
 from src.data.repository.setting_repository import SettingRepository
-from src.data.repository.wallet_holder import WalletHolder
 from src.data.service.issue_asset_service import IssueAssetService
 from src.model.enums.enums_model import NativeAuthType
 from src.model.rgb_model import IssueAssetCfaRequestModel
@@ -63,11 +62,7 @@ class IssueRGB25ViewModel(QObject, ThreadManager):
                 )
                 self.is_loading.emit(False)
                 return
-            print(3)
-            online_wallet = WalletHolder.get_online()
-
             request_model = IssueAssetCfaRequestModel(
-                online=online_wallet,
                 amounts=formatted_amount,
                 ticker=self.asset_ticker,
                 name=self.asset_name,

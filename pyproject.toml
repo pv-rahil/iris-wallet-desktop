@@ -69,8 +69,7 @@ reset-app = "src.utils.reset_app:main"
 build-iris-wallet = "build_script:main"
 single-test = "e2e_tests.e2e_runner:single_test"
 e2e-test = "e2e_tests.e2e_runner:e2e_test"
-result-embedded = "e2e_tests.e2e_runner:result_embedded"
-result-remote = "e2e_tests.e2e_runner:result_remote"
+allure-result = "e2e_tests.e2e_runner:serve_allure_result"
 regtest-start = "e2e_tests.e2e_runner:run_regtest"
 
 # Build system

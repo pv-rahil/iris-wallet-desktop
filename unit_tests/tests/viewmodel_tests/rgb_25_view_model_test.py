@@ -10,10 +10,11 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import AssetIface
+from rgb_lib import TransferStatus
 
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.rgb_model import AssetBalanceResponseModel
+from src.model.rgb_model import Balance
 from src.model.rgb_model import FailTransferResponseModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import SendAssetResponseModel
@@ -56,25 +57,23 @@ def mock_asset_details_response():
                 created_at_time='17:35:42',
                 update_at_date='2024-06-13',
                 updated_at_time='17:35:42',
-                status='Settled',
+                status=TransferStatus.SETTLED,
                 amount=69,
                 amount_status='+69',
                 kind='Issuance',
                 transfer_Status=TransferStatusEnumModel.INTERNAL,
-                txid=None,
-                recipient_id=None,
                 receive_utxo=None,
-                change_utxo=None,
+                txid=None,
                 expiration=None,
+                recipient_id=None,
+                change_utxo=None,
                 transport_endpoints=[],
             ),
         ],
-        asset_balance=AssetBalanceResponseModel(
+        asset_balance=Balance(
             settled=69,
             future=69,
             spendable=69,
-            offchain_outbound=0,
-            offchain_inbound=0,
         ),
     )
 
@@ -476,7 +475,7 @@ def test_on_success_rgb25(rgb25_view_model, mocker):
     mock_tx_id = SendAssetResponseModel(txid='test_txid_123')
 
     # Test RGB25 asset type
-    rgb25_view_model.asset_type = AssetType.RGB25.value
+    rgb25_view_model.asset_type = AssetIface.RGB25
     rgb25_view_model.on_success_rgb25(mock_tx_id)
 
     # Verify behavior for RGB25
@@ -496,7 +495,7 @@ def test_on_success_rgb25(rgb25_view_model, mocker):
     mock_toast_success.reset_mock()
 
     # Test RGB20 asset type
-    rgb25_view_model.asset_type = AssetType.RGB20.value
+    rgb25_view_model.asset_type = AssetIface.RGB20
     rgb25_view_model.on_success_rgb25(mock_tx_id)
 
     # Verify behavior for RGB20

@@ -6,16 +6,13 @@ from unittest import mock
 
 import pytest
 from pytest_mock import mocker
+from rgb_lib import AssetSchema
 
-from src.data.repository.rgb_repository import RgbRepository
 from src.data.service.main_asset_page_service import MainAssetPageDataService
 from src.model.common_operation_model import MainPageDataResponseModel
-from src.model.enums.enums_model import FilterAssetEnumModel
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import RefreshTransferResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
-from src.utils.custom_exception import CommonException
 from unit_tests.repository_fixture.btc_repository_mock import mock_get_btc_balance
 from unit_tests.repository_fixture.rgb_repository_mock import mock_get_asset
 from unit_tests.repository_fixture.rgb_repository_mock import mock_refresh_transfer
@@ -40,7 +37,6 @@ def test_get_assets(
     mock_get_offline_asset_ticker,
     mock_get_asset_name,
     mock_refresh_transfer,
-    mock_get_wallet_type,
     mock_is_exhausted_asset_enabled,
 ):
     """Test case  for main asset page service when wallet type embedded"""
@@ -57,7 +53,6 @@ def test_get_assets(
     is_exhausted_asset_enabled = mock_is_exhausted_asset_enabled(
         IsHideExhaustedAssetEnabled(is_enabled=False),
     )
-    wallet_type = mock_get_wallet_type(WalletType.EMBEDDED_TYPE_WALLET)
     # Execute the function under test
     result = MainAssetPageDataService.get_assets()
 
@@ -81,9 +76,9 @@ def test_get_assets(
     get_asset.assert_called_once_with(
         FilterAssetRequestModel(
             filter_asset_schemas=[
-                FilterAssetEnumModel.NIA,
-                FilterAssetEnumModel.CFA,
-                FilterAssetEnumModel.UDA,
+                AssetSchema.NIA,
+                AssetSchema.CFA,
+                AssetSchema.UDA,
             ],
         ),
     )
@@ -91,52 +86,6 @@ def test_get_assets(
     asset_name.assert_called_once()
     asset_ticker.assert_called_once()
     get_btc_balance.assert_called_once()
-    wallet_type.assert_called_once()
-    is_exhausted_asset_enabled.assert_called_once()
-
-
-def test_get_asset_when_wallet_type_connect(
-    mock_get_btc_balance,
-    mock_get_asset,
-    mock_get_offline_asset_ticker,
-    mock_get_asset_name,
-    mock_refresh_transfer,
-    mock_get_wallet_type,
-    mock_convert_digest_to_hex,
-    mock_is_exhausted_asset_enabled,
-):
-    """Test case  for main asset page service when wallet type connect"""
-    wallet_type = mock_get_wallet_type(WalletType.REMOTE_TYPE_WALLET)
-    get_btc_balance = mock_get_btc_balance(mock_balance_response_data)
-    refresh_asset = mock_refresh_transfer(
-        RefreshTransferResponseModel(status=True),
-    )
-    asset_name = mock_get_asset_name('rBitcoin')
-    asset_ticker = mock_get_offline_asset_ticker('rBTC')
-    get_asset = mock_get_asset(mock_get_asset_response_model)
-    convert_digest_to_hex = mock_convert_digest_to_hex(
-        mock_cfa_asset_when_wallet_type_connect,
-    )
-    is_exhausted_asset_enabled = mock_is_exhausted_asset_enabled(
-        IsHideExhaustedAssetEnabled(is_enabled=False),
-    )
-    result = MainAssetPageDataService.get_assets()
-    assert result.cfa[0].media.hex == mock_cfa_asset_when_wallet_type_connect.media.hex
-    get_asset.assert_called_once_with(
-        FilterAssetRequestModel(
-            filter_asset_schemas=[
-                FilterAssetEnumModel.NIA,
-                FilterAssetEnumModel.CFA,
-                FilterAssetEnumModel.UDA,
-            ],
-        ),
-    )
-    refresh_asset.assert_called_once()
-    asset_name.assert_called_once()
-    asset_ticker.assert_called_once()
-    get_btc_balance.assert_called_once()
-    wallet_type.assert_called_once()
-    convert_digest_to_hex.assert_called_once()
     is_exhausted_asset_enabled.assert_called_once()
 
 
@@ -146,11 +95,9 @@ def test_when_asset_exhausted(
     mock_get_offline_asset_ticker,
     mock_get_asset_name,
     mock_refresh_transfer,
-    mock_get_wallet_type,
     mock_is_exhausted_asset_enabled,
 ):
     """Test case  for main asset page service when asset_exhausted"""
-    wallet_type = mock_get_wallet_type(WalletType.EMBEDDED_TYPE_WALLET)
     get_btc_balance = mock_get_btc_balance(mock_balance_response_data)
     refresh_asset = mock_refresh_transfer(
         RefreshTransferResponseModel(status=True),
@@ -170,9 +117,9 @@ def test_when_asset_exhausted(
     get_asset.assert_called_once_with(
         FilterAssetRequestModel(
             filter_asset_schemas=[
-                FilterAssetEnumModel.NIA,
-                FilterAssetEnumModel.CFA,
-                FilterAssetEnumModel.UDA,
+                AssetSchema.NIA,
+                AssetSchema.CFA,
+                AssetSchema.UDA,
             ],
         ),
     )
@@ -180,5 +127,4 @@ def test_when_asset_exhausted(
     asset_name.assert_called_once()
     asset_ticker.assert_called_once()
     get_btc_balance.assert_called_once()
-    wallet_type.assert_called_once()
     is_exhausted_asset_enabled.assert_called_once()

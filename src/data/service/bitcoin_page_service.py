@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """
 This module provides the service for bitcoin page.
 """
@@ -6,12 +7,9 @@ from __future__ import annotations
 from datetime import datetime
 
 from src.data.repository.btc_repository import BtcRepository
-from src.data.repository.wallet_holder import WalletHolder
 from src.data.service.helpers.bitcoin_page_helper import calculate_transaction_amount
 from src.data.service.helpers.bitcoin_page_helper import get_transaction_status
 from src.model.btc_model import BalanceResponseModel
-from src.model.btc_model import GetBtcBalanceRequestModel
-from src.model.btc_model import ListTransactionRequestModel
 from src.model.btc_model import Transaction
 from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import TransactionListWithBalanceResponse
@@ -29,14 +27,11 @@ class BitcoinPageService:
     def get_btc_transaction() -> TransactionListWithBalanceResponse:
         """Gives transaction list for on-chain transactions"""
         try:
-            online_wallet = WalletHolder.get_online()
             # For transaction status
             transfer_status: TransferStatusEnumModel | None = None
             transaction_status: TransactionStatusEnumModel | None = None
-            bitcoin_balance: BalanceResponseModel = BtcRepository.get_btc_balance(
-                GetBtcBalanceRequestModel(online=online_wallet))
-            transaction_list: TransactionListResponse = BtcRepository.list_transactions(
-                ListTransactionRequestModel(online=online_wallet))
+            bitcoin_balance: BalanceResponseModel = BtcRepository.get_btc_balance()
+            transaction_list: TransactionListResponse = BtcRepository.list_transactions()
             if not transaction_list or not transaction_list.transactions:
                 return TransactionListWithBalanceResponse(transactions=[], balance=bitcoin_balance)
 
@@ -114,7 +109,6 @@ class BitcoinPageService:
             sorted_transactions: TransactionListResponse = TransactionListResponse(
                 transactions=unconfirm_transaction_list + confirm_transactions_list,
             )
-            print(sorted_transactions, 'FFFFFFFFFFFFF')
             return TransactionListWithBalanceResponse(transactions=sorted_transactions.transactions, balance=bitcoin_balance)
         except Exception as exc:
             return handle_exceptions(exc)

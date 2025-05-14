@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 
 from src.model.rgb_model import RgbAssetPageLoadModel
-from src.model.selection_page_model import SelectionPageModel
 from src.model.success_model import SuccessPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.page_navigation import PageNavigation
@@ -46,45 +45,11 @@ def page_navigation(mock_ui, mock_event_manager):
     return navigation
 
 
-def test_ln_endpoint_page(page_navigation):
-    """Test ln_endpoint_page navigation."""
-    originating_page = 'test_page'
-    page_navigation.ln_endpoint_page(originating_page)
-
-    assert page_navigation.current_stack['name'] == 'LnEndpoint'
-    assert isinstance(page_navigation.current_stack['widget'], MagicMock)
-
-
 def test_splash_screen_page(page_navigation):
     """Test splash_screen_page navigation."""
     page_navigation.splash_screen_page()
 
     assert page_navigation.current_stack['name'] == 'SplashScreenWidget'
-
-
-def test_wallet_method_page(page_navigation):
-    """Test wallet_method_page navigation."""
-    params = MagicMock(spec=SelectionPageModel)
-    page_navigation.wallet_method_page(params)
-
-    assert page_navigation.current_stack['name'] == 'WalletOrTransferSelectionWidget'
-
-
-def test_network_selection_page(page_navigation):
-    """Test network_selection_page navigation."""
-    originating_page = 'test_page'
-    network = 'testnet'
-    page_navigation.network_selection_page(originating_page, network)
-
-    assert page_navigation.current_stack['name'] == 'NetworkSelectionWidget'
-
-
-def test_wallet_connection_page(page_navigation):
-    """Test wallet_connection_page navigation."""
-    params = MagicMock(spec=SelectionPageModel)
-    page_navigation.wallet_connection_page(params)
-
-    assert page_navigation.current_stack['name'] == 'WalletConnectionTypePage'
 
 
 def test_welcome_page(page_navigation):
@@ -117,8 +82,7 @@ def test_collectibles_asset_page(page_navigation):
 
 def test_set_wallet_password_page(page_navigation):
     """Test set_wallet_password_page navigation."""
-    params = MagicMock()
-    page_navigation.set_wallet_password_page(params)
+    page_navigation.set_wallet_password_page()
 
     assert page_navigation.current_stack['name'] == 'SetWalletPassword'
 
@@ -188,20 +152,6 @@ def test_receive_bitcoin_page(page_navigation):
     assert page_navigation.current_stack['name'] == 'ReceiveBitcoin'
 
 
-def test_channel_management_page(page_navigation):
-    """Test channel_management_page navigation."""
-    page_navigation.channel_management_page()
-
-    assert page_navigation.current_stack['name'] == 'ChannelManagement'
-
-
-def test_create_channel_page(page_navigation):
-    """Test create_channel_page navigation."""
-    page_navigation.create_channel_page()
-
-    assert page_navigation.current_stack['name'] == 'CreateChannel'
-
-
 def test_view_unspent_list_page(page_navigation):
     """Test view_unspent_list_page navigation."""
     page_navigation.view_unspent_list_page()
@@ -244,24 +194,6 @@ def test_settings_page(page_navigation):
     page_navigation.settings_page()
 
     assert page_navigation.current_stack['name'] == 'Settings'
-
-
-def test_create_ln_invoice_page(page_navigation):
-    """Test create_ln_invoice_page navigation."""
-    params = MagicMock()
-    asset_name = 'test_asset'
-    asset_type = 'test_type'
-    page_navigation.create_ln_invoice_page(params, asset_name, asset_type)
-
-    assert page_navigation.current_stack['name'] == 'CreateLnInvoiceWidget'
-
-
-def test_send_ln_invoice_page(page_navigation):
-    """Test send_ln_invoice_page navigation."""
-    asset_type = 'test_type'
-    page_navigation.send_ln_invoice_page(asset_type)
-
-    assert page_navigation.current_stack['name'] == 'SendLnInvoiceWidget'
 
 
 def test_show_success_page(page_navigation):

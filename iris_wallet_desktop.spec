@@ -24,20 +24,12 @@ rgb_lib_binaries = collect_dynamic_libs('rgb_lib')
 
 base_project_path = os.path.abspath(__name__)
 print(base_project_path)
-ln_node_binary = os.path.abspath(os.path.join(base_project_path, "../ln_node_binary", 'rgb-lightning-node'))
-print(ln_node_binary)
-
-if sys.platform.startswith('win'):
-    ln_node_binary = os.path.abspath(os.path.join(base_project_path, "../ln_node_binary/rgb-lightning-node.exe"))
-else:
-    ln_node_binary = os.path.abspath(os.path.join(base_project_path, "../ln_node_binary/rgb-lightning-node"))
 
 # Define data files
 datas = [
     ('./src/assets/icons/*', './assets/icons/'),
     ('./src/views/qss/*.qss', './views/qss/'),
     ('./build_info.json', './build_info.json'),
-    (ln_node_binary, './ln_node_binary/'),
 ] + pyqttoast_datas + rgb_lib_datas
 
 # Common Analysis

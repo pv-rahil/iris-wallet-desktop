@@ -7,7 +7,9 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetIface
 from rgb_lib import Invoice
+from rgb_lib import InvoiceData
 from rgb_lib import RgbLibError
 
 import src.resources_rc
@@ -15,7 +17,6 @@ from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
-from src.model.rgb_model import DecodeRgbInvoiceResponseModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -118,13 +119,13 @@ class SendRGBAssetWidget(QWidget):
 
     def set_originating_page(self, asset_type):
         """This method sets the originating page for when closing send asset"""
-        if asset_type == 'RGB20':
-            self.asset_type = 'RGB20'
+        if asset_type == AssetIface.RGB20:
+            self.asset_type = AssetIface.RGB20
 
     def rgb_asset_page_navigation(self):
         """Navigate to the collectibles asset page."""
         self.sidebar = self._view_model.page_navigation.sidebar()
-        if self.asset_type == 'RGB20':
+        if self.asset_type == AssetIface.RGB20:
             self.sidebar.my_fungibles.setChecked(True)
             self._view_model.page_navigation.fungibles_asset_page()
         else:
@@ -142,7 +143,7 @@ class SendRGBAssetWidget(QWidget):
             default_min_confirmation = SettingCardRepository.get_default_min_confirmation()
 
             # Attempt to decode the RGB invoice
-            decoded_rgb_invoice: DecodeRgbInvoiceResponseModel = RgbRepository.decode_invoice(
+            decoded_rgb_invoice: InvoiceData = RgbRepository.decode_invoice(
                 DecodeRgbInvoiceRequestModel(invoice=provided_invoice),
             )
             try:

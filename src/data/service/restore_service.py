@@ -29,7 +29,7 @@ class RestoreService:
     @staticmethod
     def restore(mnemonic: str, password: str) -> RestoreResponseModel:
         """
-        Creates a temporary backup of the node's data, uploads it to Google Drive, and deletes the temporary copy afterward.
+        Creates a temporary backup of the wallet's data, uploads it to Google Drive, and deletes the temporary copy afterward.
 
         Returns:
             bool: True if the backup and upload were successful, False otherwise.
@@ -80,7 +80,7 @@ class RestoreService:
             logger.info('Calling restore api')
             response: RestoreResponseModel = CommonOperationRepository.restore(
                 RestoreRequestModel(
-                    backup_path=restore_file_path, password=password,
+                    backup_path=restore_file_path, password=password, data_dir=app_paths.app_path,
                 ),
             )
             return response

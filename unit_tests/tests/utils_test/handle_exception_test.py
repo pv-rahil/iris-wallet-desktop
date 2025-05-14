@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from src.utils.custom_exception import CommonException
 from src.utils.custom_exception import ServiceOperationException
-from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_LN
+from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL
 from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_TYPE_VALIDATION
@@ -76,7 +76,7 @@ def test_connection_error():
     with pytest.raises(CommonException) as exc_info:
         handle_exceptions(exc)
 
-    assert str(exc_info.value) == ERROR_CONNECTION_FAILED_WITH_LN
+    assert str(exc_info.value) == ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL
 
 
 def test_timeout_error():

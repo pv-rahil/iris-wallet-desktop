@@ -41,7 +41,7 @@ def test_initialization(terms_view_model_fixture):
 def test_on_accept_click(terms_view_model_fixture, page_navigation_mock):
     """Test if the on_accept_click method works as expected."""
     terms_view_model_fixture.on_accept_click()
-    page_navigation_mock.wallet_connection_page.assert_called_once()
+    page_navigation_mock.welcome_page.assert_called_once()
 
 
 def test_on_decline_click(app, terms_view_model_fixture):

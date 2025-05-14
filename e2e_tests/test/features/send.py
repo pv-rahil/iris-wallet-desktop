@@ -19,43 +19,33 @@ class SendOperation(MainPageObjects, BaseOperations):
         """
         super().__init__(application)
 
-    def send(self, application, receiver_invoice, amount=None, transfer_type=None, is_native_auth_enabled: bool = False):
+    def send(self, application, receiver_invoice, amount=None, is_native_auth_enabled: bool = False):
         """
-        Send assets using bitcoin or lightning transfer.
+        Send assets
 
         :param receiver_invoice: The recipient's invoice.
         :param amount: The amount to send.
-        :param transfer_type: The type of transfer ('bitcoin' or 'lightning').
         """
         self.do_focus_on_application(application)
-        if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
-            self.wallet_transfer_page_objects.click_on_chain_button()
 
-        if transfer_type == 'lightning' and self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
-            self.wallet_transfer_page_objects.click_lightning_button()
+        if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+            self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
 
-        send_objects = self.send_asset_page_objects if transfer_type != 'lightning' else self.send_ln_invoice_page_objects
+        if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
+            self.send_asset_page_objects.enter_asset_amount(amount)
 
-        if self.do_is_displayed(send_objects.invoice_input()):
-            send_objects.enter_asset_invoice(receiver_invoice)
-
-        if amount and hasattr(send_objects, 'asset_amount_input') and self.do_is_displayed(send_objects.asset_amount_input()):
-            send_objects.enter_asset_amount(amount)
-
-        if self.do_is_displayed(send_objects.send_button()):
-            send_objects.click_send_button()
+        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+            self.send_asset_page_objects.click_send_button()
 
         if is_native_auth_enabled is True:
             self.enter_native_password()
 
-    def send_with_no_fund(self, application, receiver_invoice, amount, transfer_type=None):
+    def send_with_no_fund(self, application, receiver_invoice, amount):
         """
         Send assets without sufficient funds.
         """
         validation = None
         self.do_focus_on_application(application)
-        if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
-            self.wallet_transfer_page_objects.click_on_chain_button()
 
         if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
             self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
@@ -71,15 +61,12 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         return validation
 
-    def send_with_wrong_invoice(self, application, receiver_invoice, amount, transfer_type=None):
+    def send_with_wrong_invoice(self, application, receiver_invoice, amount):
         """
         Send assets with a wrong invoice.
         """
         description = None
         self.do_focus_on_application(application)
-        if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
-            self.wallet_transfer_page_objects.click_on_chain_button()
-
         if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
             self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
 
@@ -100,7 +87,7 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         return description
 
-    def send_with_custom_fee_rate(self, application, receiver_invoice, amount, fee_rate, transfer_type=None):
+    def send_with_custom_fee_rate(self, application, receiver_invoice, amount, fee_rate):
         """
         Sends assets using bitcoin or lightning transfer with a custom fee rate.
         """
@@ -108,9 +95,6 @@ class SendOperation(MainPageObjects, BaseOperations):
         description = None
 
         self.do_focus_on_application(application)
-        if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
-            self.wallet_transfer_page_objects.click_on_chain_button()
-
         if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
             self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
 

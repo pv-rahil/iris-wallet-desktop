@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import re
-from typing import List
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QRect
@@ -24,32 +23,26 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetIface
+from rgb_lib import TransferKind
+from rgb_lib import TransferStatus
 
 from accessible_constant import ASSET_CLOSE_BUTTON
 from accessible_constant import ASSET_ID_COPY_BUTTON
-from accessible_constant import ASSET_LIGHTNING_SPENDABLE_BALANCE
-from accessible_constant import ASSET_LIGHTNING_TOTAL_BALANCE
-from accessible_constant import ASSET_ON_CHAIN_SPENDABLE_BALANCE
-from accessible_constant import ASSET_ON_CHAIN_TOTAL_BALANCE
 from accessible_constant import ASSET_RECEIVE_BUTTON
 from accessible_constant import ASSET_REFRESH_BUTTON
 from accessible_constant import ASSET_SEND_BUTTON
-from accessible_constant import RGB_TRANSACTION_DETAIL_LIGHTNING_FRAME
-from accessible_constant import RGB_TRANSACTION_DETAIL_ON_CHAIN_FRAME
+from accessible_constant import ASSET_SPENDABLE_BALANCE
+from accessible_constant import ASSET_TOTAL_BALANCE
+from accessible_constant import RGB_TRANSACTION_DETAIL_FRAME
 from accessible_constant import TRANSACTION_DETAIL_CLOSE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import PaymentStatus
 from src.model.enums.enums_model import TransactionStatusEnumModel
-from src.model.enums.enums_model import TransferOptionModel
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.enums.enums_model import TransferType
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
-from src.model.rgb_model import TransferAsset
 from src.model.selection_page_model import AssetDataModel
-from src.model.selection_page_model import SelectionPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import copy_text
@@ -269,7 +262,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_total_balance = QLabel(self.asset_balance_frame)
         self.asset_total_balance.setObjectName('asset_total_balance')
         self.asset_total_balance.setAccessibleDescription(
-            ASSET_ON_CHAIN_TOTAL_BALANCE,
+            ASSET_TOTAL_BALANCE,
         )
         self.asset_total_balance.setMinimumSize(QSize(60, 18))
         self.asset_balance_frame_layout.addWidget(
@@ -285,13 +278,14 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_spendable_amount = QLabel(self.asset_balance_frame)
         self.asset_spendable_amount.setObjectName('asset_spendable_amount')
         self.asset_spendable_amount.setAccessibleDescription(
-            ASSET_ON_CHAIN_SPENDABLE_BALANCE,
+            ASSET_SPENDABLE_BALANCE,
         )
         self.asset_balance_frame_layout.addWidget(
             self.asset_spendable_amount, 2, 1, 1, 1, Qt.AlignLeft,
         )
         self.vertical_layout.addWidget(
-            self.asset_balance_frame, alignment=Qt.AlignmentFlag.AlignHCenter)
+            self.asset_balance_frame, alignment=Qt.AlignmentFlag.AlignHCenter,
+        )
         self.rgb_asset_detail_widget_layout.addLayout(
             self.vertical_layout, 3, 0, 1, 1,
         )
@@ -399,7 +393,7 @@ class RGBAssetDetailWidget(QWidget):
         """This method handled after channel created"""
         self._view_model.page_navigation.receive_rgb25_page(
             params=AssetDataModel(
-                asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(),
+                asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(), close_page_navigation=self.asset_type,
             ),
         )
 
@@ -479,19 +473,13 @@ class RGBAssetDetailWidget(QWidget):
                 no_transaction_widget, 0, 0, 1, 1,
             )
             return
-        if asset_type == AssetType.RGB20.value:
+        if asset_type == AssetIface.RGB20:
             self.rgb_asset_detail_widget.setMinimumSize(QSize(499, 730))
             self.rgb_asset_detail_widget.setMaximumSize(QSize(499, 730))
             self.scroll_area.setMaximumSize(QSize(335, 225))
             self.asset_balance_frame.setMaximumSize(QSize(158, 120))
         # Initialize the row index for the grid layout
         row_index = 0
-        # asset_transactions = sorted(
-        #     asset_transactions,
-        #     key=lambda x: x[1][0].updated_at if isinstance(x[1], list) and isinstance(x[1][0], TransferAsset) else 0,
-        #     reverse=True
-        # )
-        print(f"ASSET_TRANSACTION:{asset_transactions}")
         asset_transactions = sorted(
             asset_transactions.transfers, key=lambda x: x.updated_at, reverse=True,
         )
@@ -523,7 +511,7 @@ class RGBAssetDetailWidget(QWidget):
     def handle_show_hide(self, transaction_detail_frame):
         """It handled to hide and show transaction details frame"""
         if self.transfer_status == TransferStatusEnumModel.INTERNAL.value:
-            if self.transaction_type == TransferType.ISSUANCE.value:
+            if self.transaction_type == TransferKind.ISSUANCE:
                 transaction_detail_frame.transaction_type.setText(
                     'ISSUANCE',
                 )
@@ -549,10 +537,19 @@ class RGBAssetDetailWidget(QWidget):
             self.asset_refresh_button.setDisabled(True)
             self.send_asset.setDisabled(True)
             self.receive_rgb_asset.setDisabled(True)
+        else:
+            self.render_timer.stop()
+            self.__loading_translucent_screen.stop()
+            self.__loading_translucent_screen.make_parent_disabled_during_loading(
+                False,
+            )
+            self.asset_refresh_button.setDisabled(False)
+            self.send_asset.setDisabled(False)
+            self.receive_rgb_asset.setDisabled(False)
 
     def handle_page_navigation(self):
         """Handle the page navigation according the RGB20 or RGB25 page"""
-        if self.asset_type == AssetType.RGB20.value:
+        if self.asset_type == AssetIface.RGB20:
             self._view_model.page_navigation.fungibles_asset_page()
         else:
             self._view_model.page_navigation.collectibles_asset_page()
@@ -669,7 +666,7 @@ class RGBAssetDetailWidget(QWidget):
             ),
         )
         self.transaction_detail_frame.setAccessibleName(
-            RGB_TRANSACTION_DETAIL_ON_CHAIN_FRAME,
+            RGB_TRANSACTION_DETAIL_FRAME,
         )
         self.transaction_detail_frame.close_button.setAccessibleName(
             TRANSACTION_DETAIL_CLOSE_BUTTON,
@@ -677,13 +674,12 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_date = str(transaction.updated_at_date)
         self.transaction_time = str(transaction.created_at_time)
         self.transfer_status = str(
-            transaction.transfer_Status.value,
+            transaction.transfer_Status,
         )
         self.transfer_amount = amount
-        self.transaction_type = str(transaction.kind)
-        self.transaction_status = str(
-            transaction.status,
-        )
+        self.transaction_type = transaction.kind
+        self.transaction_status = transaction.status
+
         if self.transfer_status == TransferStatusEnumModel.SENT.value:
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#EB5A5A;font-weight: 600',
@@ -702,12 +698,12 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_detail_frame.transaction_date.setText(
             self.transaction_date,
         )
-        if self.transaction_status != TransactionStatusEnumModel.SETTLED:
+        if self.transaction_status != TransferStatus.SETTLED:
             self.transaction_detail_frame.transaction_time.setStyleSheet(
                 'color:#959BAE;font-weight: 400; font-size:14px',
             )
             self.transaction_detail_frame.transaction_time.setText(
-                self.transaction_status,
+                self.map_status(self.transaction_status),
             )
             self.transaction_detail_frame.transaction_date.setText(
                 self.transaction_date,
@@ -732,7 +728,7 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_detail_frame.transaction_amount.setText(
             self.transfer_amount,
         )
-        if self.transaction_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY:
+        if self.transaction_status == TransferStatus.WAITING_COUNTERPARTY:
             self.transaction_detail_frame.transaction_type.hide()
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#959BAE;font-weight: 600',
@@ -757,3 +753,13 @@ class RGBAssetDetailWidget(QWidget):
                 ),
             )
         self.handle_show_hide(self.transaction_detail_frame)
+
+    def map_status(self, transfer_status) -> str:
+        """Map TransferStatus to corresponding TransactionStatusEnumModel."""
+        status = {
+            TransferStatus.WAITING_COUNTERPARTY: TransactionStatusEnumModel.WAITING_COUNTERPARTY.value,
+            TransferStatus.WAITING_CONFIRMATIONS: TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value,
+            # TransferStatus.SETTLED: TransactionStatusEnumModel.CONFIRMED.value,
+            TransferStatus.FAILED: TransactionStatusEnumModel.FAILED.value,
+        }
+        return status.get(transfer_status, TransactionStatusEnumModel.FAILED)

@@ -35,7 +35,6 @@ def test_get_checked_button_translation_key(sidebar_widget: Sidebar, mocker):
         sidebar_widget.help,
         sidebar_widget.view_unspent_list,
         sidebar_widget.faucet,
-        sidebar_widget.channel_management,
         sidebar_widget.my_fungibles,
         sidebar_widget.my_collectibles,
         sidebar_widget.settings,

@@ -8,7 +8,6 @@ from PySide6.QtCore import Signal
 from rgb_lib import Unspent
 
 from src.data.repository.btc_repository import BtcRepository
-from src.data.repository.wallet_holder import WalletHolder
 from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
 from src.utils.cache import Cache
@@ -50,17 +49,15 @@ class UnspentListViewModel(QObject, ThreadManager):
         def error(err: CommonException):
             """This method handles error."""
             self.loading_finished.emit(True)
-            print(err)
             ToastManager.error(
                 description=err.message,
             )
 
         try:
-            online = WalletHolder.get_online()
             self.run_in_thread(
                 BtcRepository.list_unspents,
                 {
-                    'args': [UnspentListRequestModel(online=online, settled_only=False, skip_sync=False)],
+                    'args': [UnspentListRequestModel(settled_only=False, skip_sync=False)],
                     'key': 'unspentlistviewmodel_get_unspent_list',
                     'use_cache': True,
                     'callback': success,

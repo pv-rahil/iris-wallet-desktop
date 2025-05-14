@@ -8,6 +8,7 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 from requests.exceptions import Timeout
+from rgb_lib import RgbLibError
 
 from src.utils.handle_exception import handle_exceptions
 
@@ -24,5 +25,12 @@ def repository_custom_context():
         RequestException,
         ValidationError,
         ValueError,
+        RgbLibError,
     ) as exc:
+        if isinstance(
+            exc, (
+                RgbLibError.InsufficientAllocationSlots,
+            ),
+        ):
+            raise
         handle_exceptions(exc)

@@ -10,12 +10,12 @@ from PySide6.QtCore import Signal
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.data.repository.wallet_holder import WalletHolder
 from src.model.enums.enums_model import NativeAuthType
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
@@ -37,13 +37,11 @@ class IssueRGB20ViewModel(QObject, ThreadManager):
     def on_success_native_auth_rgb20(self, success: bool):
         """Callback function after native authentication successful"""
         try:
-            online_wallet = WalletHolder.get_online()
             if not success:
                 raise CommonException('Authentication failed')
             if self.token_amount is None or self.asset_name is None or self.short_identifier is None:
                 raise CommonException('Few fields missing')
             asset = IssueAssetNiaRequestModel(
-                online = online_wallet,
                 amounts=[int(self.token_amount)],
                 name=self.asset_name,
                 ticker=self.short_identifier,
@@ -96,6 +94,9 @@ class IssueRGB20ViewModel(QObject, ThreadManager):
 
     def on_success(self, response: IssueAssetResponseModel) -> None:
         """This method is used  handle onsuccess for the RGB20 issue page."""
+        ToastManager.success(
+            description=INFO_ASSET_ISSUED.format(response.asset_id),
+        )
         self.issue_button_clicked.emit(False)
         self.is_issued.emit(response.name)
 

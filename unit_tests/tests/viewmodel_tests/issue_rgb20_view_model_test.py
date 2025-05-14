@@ -1,7 +1,7 @@
 """Unit test for issue RGB20 view model"""
 # Disable the redefined-outer-name warning as
 # it's normal to pass mocked object in tests function
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument,protected-access
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -10,11 +10,27 @@ from unittest.mock import patch
 
 import pytest
 
-from src.model.rgb_model import AssetBalanceResponseModel
+from src.model.rgb_model import Balance
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.viewmodels.issue_rgb20_view_model import IssueRGB20ViewModel
+
+expected_issue_asset_nia_response_model = IssueAssetResponseModel(
+    asset_id='asset_id',
+    asset_iface='interface',
+    ticker='ticker',
+    name='name',
+    details='details',
+    precision=2,
+    issued_supply=1000,
+    timestamp=123556789,
+    added_at=123456789,
+    balance=Balance(
+            spendable=10, future=10, settled=12,
+    ),
+    media=None,
+)
 
 
 @pytest.fixture
@@ -48,9 +64,10 @@ def test_on_issue_click_success(
         issued_supply=4000,
         timestamp=123456789,
         added_at=123456789,
-        balance=AssetBalanceResponseModel(
-            spendable=10, future=10, settled=12, offchain_outbound=0, offchain_inbound=0,
+        balance=Balance(
+            spendable=10, future=10, settled=12,
         ),
+        media=None,
     )
 
     # Mock signals
@@ -88,20 +105,7 @@ def test_on_success_native_auth(
     """Test for successful native authentication and asset issuance."""
     # Mock native authentication and asset issuance
     mock_native_authentication.return_value = True
-    mock_issue_asset_nia.return_value = IssueAssetResponseModel(
-        asset_id='asset_id',
-        asset_iface='interface',
-        ticker='ticker',
-        name='name',
-        details='details',
-        precision=2,
-        issued_supply=1000,
-        timestamp=123556789,
-        added_at=123456789,
-        balance=AssetBalanceResponseModel(
-            spendable=10, future=10, settled=12, offchain_outbound=0, offchain_inbound=0,
-        ),
-    )
+    mock_issue_asset_nia.return_value = expected_issue_asset_nia_response_model
 
     # Connect signals to mocks
     mock_issue_button_clicked = MagicMock()
@@ -234,3 +238,43 @@ def test_on_error(mock_toast_manager, issue_rgb20_view_model):
     issue_rgb20_view_model.issue_button_clicked.emit.assert_called_once_with(
         False,
     )
+
+
+def test_on_success(mocker, issue_rgb20_view_model):
+    """Test that on_success shows toast and emits correct signals."""
+    # Arrange
+    response = expected_issue_asset_nia_response_model
+
+    # Create signal-connected mocks
+    mock_issue_button_clicked = Mock()
+    mock_is_issued = Mock()
+    issue_rgb20_view_model.issue_button_clicked.connect(
+        mock_issue_button_clicked,
+    )
+    issue_rgb20_view_model.is_issued.connect(mock_is_issued)
+
+    # Patch ToastManager
+    mock_toast_success = mocker.patch(
+        'src.viewmodels.issue_rgb20_view_model.ToastManager.success',
+    )
+
+    # Act
+    issue_rgb20_view_model.on_success(response)
+
+    # Assert
+    mock_toast_success.assert_called_once_with(
+        description=f'Asset issued with asset id: {response.asset_id}',
+    )
+    mock_issue_button_clicked.assert_called_once_with(False)
+    mock_is_issued.assert_called_once_with('name')
+
+
+def test_on_close_click(mocker, issue_rgb20_view_model):
+    """Test that on_close_click triggers navigation to fungibles_asset_page."""
+    mock_nav = mocker.patch.object(
+        issue_rgb20_view_model._page_navigation, 'fungibles_asset_page',
+    )
+
+    issue_rgb20_view_model.on_close_click()
+
+    mock_nav.assert_called_once()

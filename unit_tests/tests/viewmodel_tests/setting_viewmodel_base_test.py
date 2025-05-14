@@ -27,11 +27,6 @@ from unittest.mock import patch
 
 import pytest
 
-from src.model.setting_model import DefaultAnnounceAddress
-from src.model.setting_model import DefaultAnnounceAlias
-from src.model.setting_model import DefaultBitcoindHost
-from src.model.setting_model import DefaultBitcoindPort
-from src.model.setting_model import DefaultExpiryTime
 from src.model.setting_model import DefaultFeeRate
 from src.model.setting_model import DefaultIndexerUrl
 from src.model.setting_model import DefaultMinConfirmation
@@ -40,7 +35,6 @@ from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.model.setting_model import IsNativeLoginIntoAppEnabled
 from src.model.setting_model import IsShowHiddenAssetEnabled
 from src.model.setting_model import NativeAuthenticationStatus
-from src.model.setting_model import SettingPageLoadModel
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -270,98 +264,73 @@ def test_enable_hide_asset_false(mock_toast_manager, mock_setting_repository, se
 @patch('src.viewmodels.setting_view_model.ToastManager')
 def test_on_page_load(mock_toast_manager, mock_setting_card_repository, mock_setting_repository, setting_view_model):
     """Test the on_page_load method."""
-    setting_view_model.on_page_load_event = Mock()
 
-    mock_setting_repository.get_native_authentication_status.return_value = NativeAuthenticationStatus(
-        is_enabled=True,
-    )
-    mock_setting_repository.native_login_enabled.return_value = IsNativeLoginIntoAppEnabled(
-        is_enabled=True,
-    )
-    mock_setting_repository.is_show_hidden_assets_enabled.return_value = IsShowHiddenAssetEnabled(
-        is_enabled=True,
-    )
-    mock_setting_repository.is_exhausted_asset_enabled.return_value = IsHideExhaustedAssetEnabled(
-        is_enabled=True,
-    )
-    mock_setting_card_repository.get_default_fee_rate.return_value = DefaultFeeRate(
-        fee_rate=5,
-    )
-    mock_setting_card_repository.get_default_expiry_time.return_value = DefaultExpiryTime(
-        time=600,
-        unit='minutes',
-    )
-    mock_setting_card_repository.get_default_indexer_url.return_value = DefaultIndexerUrl(
-        url='http://localhost:8080',
-    )
-    mock_setting_card_repository.get_default_proxy_endpoint.return_value = DefaultProxyEndpoint(
-        endpoint='http://localhost:8080',
-    )
-    mock_setting_card_repository.get_default_bitcoind_host.return_value = DefaultBitcoindHost(
-        host='localhost',
-    )
-    mock_setting_card_repository.get_default_bitcoind_port.return_value = DefaultBitcoindPort(
-        port=8332,
-    )
-    mock_setting_card_repository.get_default_announce_address.return_value = DefaultAnnounceAddress(
-        address='announce_addr',
-    )
-    mock_setting_card_repository.get_default_announce_alias.return_value = DefaultAnnounceAlias(
-        alias='alias',
-    )
-    mock_setting_card_repository.get_default_min_confirmation.return_value = DefaultMinConfirmation(
-        min_confirmation=6,
-    )
+    # Patch the on_page_load_event signal so we can track the emit calls
+    with patch.object(setting_view_model, 'on_page_load_event', new_callable=MagicMock) as mock_on_page_load_event:
 
-    setting_view_model.on_page_load()
-
-    expected_model = SettingPageLoadModel(
-        status_of_native_auth=NativeAuthenticationStatus(is_enabled=True),
-        status_of_native_logging_auth=IsNativeLoginIntoAppEnabled(
+        # Arrange mock responses from the repository
+        mock_setting_repository.get_native_authentication_status.return_value = NativeAuthenticationStatus(
             is_enabled=True,
-        ),
-        status_of_exhausted_asset=IsHideExhaustedAssetEnabled(
+        )
+        mock_setting_repository.native_login_enabled.return_value = IsNativeLoginIntoAppEnabled(
             is_enabled=True,
-        ),
-        status_of_hide_asset=IsShowHiddenAssetEnabled(is_enabled=True),
-        value_of_default_fee=DefaultFeeRate(fee_rate=5),
-        value_of_default_expiry_time=DefaultExpiryTime(
-            time=600, unit='minutes',
-        ),
-        value_of_default_indexer_url=DefaultIndexerUrl(
+        )
+        mock_setting_repository.is_show_hidden_assets_enabled.return_value = IsShowHiddenAssetEnabled(
+            is_enabled=True,
+        )
+        mock_setting_repository.is_exhausted_asset_enabled.return_value = IsHideExhaustedAssetEnabled(
+            is_enabled=True,
+        )
+        mock_setting_card_repository.get_default_fee_rate.return_value = DefaultFeeRate(
+            fee_rate=5,
+        )
+        mock_setting_card_repository.get_default_indexer_url.return_value = DefaultIndexerUrl(
             url='http://localhost:8080',
-        ),
-        value_of_default_proxy_endpoint=DefaultProxyEndpoint(
+        )
+        mock_setting_card_repository.get_default_proxy_endpoint.return_value = DefaultProxyEndpoint(
             endpoint='http://localhost:8080',
-        ),
-        value_of_default_bitcoind_rpc_host=DefaultBitcoindHost(
-            host='localhost',
-        ),
-        value_of_default_bitcoind_rpc_port=DefaultBitcoindPort(port=8332),
-        value_of_default_announce_address=DefaultAnnounceAddress(
-            address='announce_addr',
-        ),
-        value_of_default_announce_alias=DefaultAnnounceAlias(alias='alias'),
-        value_of_default_min_confirmation=DefaultMinConfirmation(
+        )
+        mock_setting_card_repository.get_default_min_confirmation.return_value = DefaultMinConfirmation(
             min_confirmation=6,
-        ),
-    )
-    setting_view_model.on_page_load_event.emit.assert_called_once_with(
-        expected_model,
-    )
+        )
 
-    # Test exception handling
-    mock_setting_repository.get_native_authentication_status.side_effect = CommonException(
-        'Error',
-    )
-    setting_view_model.on_page_load()
-    mock_toast_manager.error.assert_called_with(description='Error')
+        # Act
+        setting_view_model.on_page_load()
 
-    mock_setting_repository.get_native_authentication_status.side_effect = Exception
-    setting_view_model.on_page_load()
-    mock_toast_manager.error.assert_called_with(
-        description=ERROR_SOMETHING_WENT_WRONG,
-    )
+        # Verify that the emit method was called
+        mock_on_page_load_event.emit.assert_called_once()
+
+        # Get the actual model that was emitted
+        actual_model = mock_on_page_load_event.emit.call_args[0][0]
+
+        # Verify the model properties
+        assert actual_model.status_of_native_auth.is_enabled is True
+        assert actual_model.status_of_native_logging_auth.is_enabled is True
+        assert actual_model.status_of_exhausted_asset.is_enabled is True
+        assert actual_model.status_of_hide_asset.is_enabled is True
+        assert actual_model.value_of_default_fee.fee_rate == 5
+        assert actual_model.value_of_default_indexer_url.url == 'http://localhost:8080'
+        assert actual_model.value_of_default_proxy_endpoint.endpoint == 'http://localhost:8080'
+        assert actual_model.value_of_default_min_confirmation.min_confirmation == 6
+
+        # Test exception handling for CommonException
+        mock_setting_repository.get_native_authentication_status.side_effect = CommonException(
+            'Error',
+        )
+        setting_view_model.on_page_load()
+        mock_toast_manager.error.assert_called_with(description='Error')
+        setting_view_model._page_navigation.fungibles_asset_page.assert_called_once()
+
+        # Reset the mock for the next test
+        setting_view_model._page_navigation.fungibles_asset_page.reset_mock()
+
+        # Test exception handling for general Exception
+        mock_setting_repository.get_native_authentication_status.side_effect = Exception()
+        setting_view_model.on_page_load()
+        mock_toast_manager.error.assert_called_with(
+            description=ERROR_SOMETHING_WENT_WRONG,
+        )
+        setting_view_model._page_navigation.fungibles_asset_page.assert_called_once()
 
 
 @patch('src.viewmodels.setting_view_model.ToastManager')
@@ -699,14 +668,13 @@ def test_enable_keyring(mock_common_operation_service, setting_view_model):
     setting_view_model.loading_status = Mock()
     setting_view_model.run_in_thread = Mock()
 
-    mnemonic = 'test mnemonic'
     password = 'test password'
 
-    setting_view_model.enable_keyring(mnemonic, password)
+    setting_view_model.enable_keyring(password)
 
     setting_view_model.loading_status.emit.assert_called_once_with(True)
     setting_view_model.run_in_thread.assert_called_once()
     call_args = setting_view_model.run_in_thread.call_args[0][1]
-    assert call_args['args'] == [mnemonic, password]
+    assert call_args['args'] == [password]
     assert call_args['callback'] == setting_view_model.on_success_of_keyring_validation
     assert call_args['error_callback'] == setting_view_model.on_error_of_keyring_enable_validation

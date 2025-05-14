@@ -6,9 +6,7 @@ from PySide6.QtCore import Signal
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.backup_service import BackupService
-from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
-from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_BACKUP_FAILED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -17,6 +15,7 @@ from src.utils.info_message import INFO_BACKUP_COMPLETED
 from src.utils.info_message import INFO_BACKUP_COMPLETED_KEYRING_LOCKED
 from src.utils.keyring_storage import get_value
 from src.utils.logging import logger
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
@@ -105,9 +104,14 @@ class BackupViewModel(QObject, ThreadManager):
         Initiate the backup process, managing loading state and asynchronous
         execution using the BackupService.
         """
-        network: NetworkEnumModel = SettingRepository.get_wallet_network()
-        mnemonic: str = get_value(MNEMONIC_KEY, network.value)
-        password: str = get_value(
+        network = SettingRepository.get_wallet_network()
+        password = get_value(
             key=WALLET_PASSWORD_KEY, network=network.value,
         )
-        self.run_backup_service_thread(mnemonic=mnemonic, password=password)
+        mnemonic = mnemonic_store.decrypted_mnemonic
+        if mnemonic is None:
+            raise ValueError('Mnemonic is not available for backup.')
+
+        self.run_backup_service_thread(
+            mnemonic=mnemonic, password=password,
+        )

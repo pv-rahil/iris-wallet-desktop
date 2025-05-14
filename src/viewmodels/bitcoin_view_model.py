@@ -53,7 +53,6 @@ class BitcoinViewModel(QObject, ThreadManager):
             self.spendable_bitcoin_balance_with_suffix = bitcoin_balance_with_suffix
             self.transaction = response.transactions
 
-            print(f'UPDATED TRANs', self.transaction)
             self.transaction_loaded.emit()
             if is_data_ready:
                 self.loading_finished.emit(False)

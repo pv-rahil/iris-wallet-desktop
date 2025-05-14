@@ -5,14 +5,10 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock
-from unittest.mock import patch
 
 import pytest
-from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QPixmap
 
-from src.model.common_operation_model import NodeInfoResponseModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.ui_issue_rgb25 import IssueRGB25Widget
@@ -160,86 +156,64 @@ def test_show_asset_issued(issue_rgb25_widget: IssueRGB25Widget, qtbot):
     assert params.callback == widget._view_model.page_navigation.collectibles_asset_page
 
 
-@patch('src.views.ui_issue_rgb25.os.path.getsize')
-@patch('src.views.ui_issue_rgb25.resize_image')
-@patch('src.views.ui_issue_rgb25.QPixmap')
-@patch('src.views.ui_issue_rgb25.NodeInfoModel')
-def test_show_file_preview(mock_node_info_model, mock_qpix_map, mock_resize_image, mock_getsize, issue_rgb25_widget):
+def test_show_file_preview(issue_rgb25_widget: IssueRGB25Widget, mocker):
     """Test the show_file_preview method."""
+    widget = issue_rgb25_widget
 
-    # Mock the NodeInfoModel to return a max file size of 10MB
-    mock_node_info = MagicMock()
-    mock_node_info_model.return_value = mock_node_info
-    mock_node_info.node_info = MagicMock(spec=NodeInfoResponseModel)
-    mock_node_info.node_info.max_media_upload_size_mb = 10  # 10MB max size
+    # Mock os.path.getsize
+    mock_getsize = mocker.patch('os.path.getsize')
 
-    issue_rgb25_widget.file_path = MagicMock()
-    issue_rgb25_widget.issue_rgb25_button = MagicMock()
-    issue_rgb25_widget.issue_rgb_25_card = MagicMock()
-    issue_rgb25_widget.upload_file = MagicMock()
+    # Mock QCoreApplication.translate
+    mock_translate = mocker.patch('PySide6.QtCore.QCoreApplication.translate')
+    mock_translate.return_value = 'Mocked translation {}'
 
-    # Mock the file size returned by os.path.getsize
-    # 15MB (larger than the allowed 10MB)
-    mock_getsize.return_value = 15 * 1024 * 1024
+    # Mock resize_image
+    mock_resize_image = mocker.patch('src.views.ui_issue_rgb25.resize_image')
+    mock_resize_image.return_value = 'resized_image_path'
 
-    # Set up mock behavior for resize_image and QPixmap
-    mock_resize_image.return_value = 'dummy_resized_image_path'
-    mock_qpix_map.return_value = MagicMock(spec=QPixmap)
+    # Mock QPixmap
+    _mock_pixmap = mocker.patch('PySide6.QtGui.QPixmap')
 
-    # Simulate a file upload message
-    file_upload_message = 'path/to/file.jpg'
+    # Mock button and card methods
+    widget.issue_rgb25_button.setDisabled = MagicMock()
+    widget.issue_rgb_25_card.setMaximumSize = MagicMock()
+    widget.file_path.setText = MagicMock()
+    widget.file_path.setPixmap = MagicMock()
+    widget.upload_file.setText = MagicMock()
 
-    # Call the method under test
-    issue_rgb25_widget.show_file_preview(file_upload_message)
+    # Test case 1: File size exceeds maximum
+    mock_getsize.return_value = 6 * 1024 * 1024  # 6MB
+    file_path = '/path/to/large_image.jpg'
 
-    # Assert that the validation message is shown for large files
-    expected_validation_text = QCoreApplication.translate(
+    widget.show_file_preview(file_path)
+
+    # Verify behavior for large file
+    mock_translate.assert_called_with(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'image_validation', None,
-    ).format(mock_node_info.node_info.max_media_upload_size_mb)
-    issue_rgb25_widget.file_path.setText.assert_called_once_with(
-        expected_validation_text,
     )
+    widget.file_path.setText.assert_called_with('Mocked translation 5')
+    widget.issue_rgb25_button.setDisabled.assert_called_with(True)
+    widget.issue_rgb_25_card.setMaximumSize.assert_called_with(QSize(499, 608))
 
-    issue_rgb25_widget.issue_rgb25_button.setDisabled.assert_any_call(
-        True,
-    )  # Assert it was disabled first
+    # Test case 2: File size within limit
+    mock_getsize.return_value = 2 * 1024 * 1024  # 2MB
+    file_path = '/path/to/valid_image.jpg'
 
-    # Assert that the card's maximum size is set to (499, 608)
-    issue_rgb25_widget.issue_rgb_25_card.setMaximumSize.assert_called_once_with(
-        QSize(499, 608),
+    # Reset mocks
+    widget.file_path.setText.reset_mock()
+    widget.issue_rgb25_button.setDisabled.reset_mock()
+    widget.issue_rgb_25_card.setMaximumSize.reset_mock()
+    mock_translate.reset_mock()
+
+    widget.show_file_preview(file_path)
+
+    # Verify behavior for valid file
+    widget.file_path.setText.assert_called_with(file_path)
+    widget.issue_rgb_25_card.setMaximumSize.assert_called_with(QSize(499, 808))
+    mock_resize_image.assert_called_with(file_path, 242, 242)
+    widget.file_path.setPixmap.assert_called_once()
+    mock_translate.assert_called_with(
+        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'change_uploaded_file', 'CHANGE UPLOADED FILE',
     )
-
-    # Now test for a valid file size scenario (smaller than 10MB)
-    mock_getsize.return_value = 5 * 1024 * 1024  # 5MB (valid size)
-
-    # Call the method again with a smaller file size
-    issue_rgb25_widget.show_file_preview(file_upload_message)
-
-    # Assert that the file path is displayed as the uploaded file
-    issue_rgb25_widget.file_path.setText.assert_called_with(
-        file_upload_message,
-    )
-
-    issue_rgb25_widget.issue_rgb25_button.setDisabled.assert_any_call(
-        False,
-    )  # Assert it was enabled later
-
-    # Assert that the card's maximum size is set to (499, 808)
-    issue_rgb25_widget.issue_rgb_25_card.setMaximumSize.assert_called_with(
-        QSize(499, 808),
-    )
-
-    # Assert that the image is resized
-    mock_resize_image.assert_called_once_with(file_upload_message, 242, 242)
-
-    # Assert that the resized image is set to the file path as a pixmap
-    issue_rgb25_widget.file_path.setPixmap.assert_called_once_with(
-        mock_qpix_map.return_value,
-    )
-
-    # Assert that the "change uploaded file" text is set
-    issue_rgb25_widget.upload_file.setText.assert_called_once_with(
-        QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'change_uploaded_file', 'CHANGE UPLOADED FILE',
-        ),
-    )
+    widget.upload_file.setText.assert_called_with('Mocked translation {}')
+    widget.issue_rgb25_button.setDisabled.assert_called_with(False)

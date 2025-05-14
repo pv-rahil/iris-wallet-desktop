@@ -23,11 +23,9 @@ from accessible_constant import ISSUE_RGB25_ASSET
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
-from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
-from src.utils.logging import logger
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame

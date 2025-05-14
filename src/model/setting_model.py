@@ -78,28 +78,6 @@ class DefaultFeeRate(BaseModel):
     fee_rate: int
 
 
-class IsDefaultExpiryTimeSet(Status):
-    """
-    Model representing the status of the default expiry time being set.
-
-    Inherits from:
-        Status
-    """
-    pass
-
-
-class DefaultExpiryTime(BaseModel):
-    """
-    Model representing the default expiry time.
-
-    Attributes:
-        time (int): The default expiry time value.
-        unit (str): The default expiry time unit value.
-    """
-    time: int
-    unit: str
-
-
 class IsDefaultMinConfirmationSet(Status):
     """
     Model representing the status of the default min confirmation being set.
@@ -187,7 +165,6 @@ class SettingPageLoadModel(BaseModel):
     status_of_hide_asset: IsShowHiddenAssetEnabled
     status_of_exhausted_asset: IsHideExhaustedAssetEnabled
     value_of_default_fee: DefaultFeeRate
-    value_of_default_expiry_time: DefaultExpiryTime
     value_of_default_indexer_url: DefaultIndexerUrl
     value_of_default_proxy_endpoint: DefaultProxyEndpoint
     value_of_default_min_confirmation: DefaultMinConfirmation

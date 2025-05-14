@@ -227,7 +227,7 @@ class ViewUnspentList(QWidget):
     def create_unspent_clickable_frame(self, _list, update_layout):
         """Create a clickable frame for each unspent item."""
         unspent_clickable_frame = ClickableFrame(
-            _list.utxo.outpoint, self.unspent_scroll_area_widget_contents,
+            _list.utxo.outpoint.txid, self.unspent_scroll_area_widget_contents,
         )
         unspent_clickable_frame.setObjectName('frame_4')
         unspent_clickable_frame.setAccessibleName(UNSPENT_CLICKABLE_FRAME)

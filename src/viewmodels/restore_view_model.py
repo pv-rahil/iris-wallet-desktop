@@ -6,11 +6,15 @@ from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
+from rgb_lib import Keys
 
+from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.restore_service import RestoreService
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
+from src.utils.build_app_path import app_paths
+from src.utils.constant import ACCOUNT_XPUB
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
@@ -18,8 +22,11 @@ from src.utils.error_message import ERROR_GOOGLE_CONFIGURE_FAILED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_WHILE_RESTORE
 from src.utils.gauth import authenticate
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTORE_COMPLETED
 from src.utils.keyring_storage import set_value
+from src.utils.local_store import local_store
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
 
@@ -29,19 +36,13 @@ class RestoreViewModel(QObject, ThreadManager):
     is_loading = Signal(bool)
     message = Signal(ToastPreset, str)
 
-    def __init__(self, page_navigation):
+    def __init__(self, page_navigation, splash_view_model=None):
         super().__init__()
         self._page_navigation = page_navigation
+        self.splash_view_model = splash_view_model
         self.mnemonic = None
         self.password = None
         self.sidebar = None
-
-    def forward_to_fungibles_page(self):
-        """Navigate to fungibles page"""
-        self.sidebar = self._page_navigation.sidebar()
-        if self.sidebar is not None:
-            self.sidebar.my_fungibles.setChecked(True)
-        self._page_navigation.enter_wallet_password_page()
 
     def on_success(self, response):
         """Callback after successful restore"""
@@ -51,25 +52,38 @@ class RestoreViewModel(QObject, ThreadManager):
         if response:
             SettingRepository.set_wallet_initialized()
             SettingRepository.set_backup_configured(True)
-            is_set_mnemonic: bool = set_value(
-                MNEMONIC_KEY, self.mnemonic, network.value,
+
+            encrypted_mnemonic = mnemonic_store.encrypt(
+                password=self.password, mnemonic=self.mnemonic,
+            )
+            local_store.write_to_file(
+                file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
+            )
+            network = get_bitcoin_network_from_enum(
+                SettingRepository.get_wallet_network(),
+            )
+            restore_keys: Keys = CommonOperationRepository.restore_keys(
+                network, self.mnemonic,
+            )
+            local_store.set_value(
+                ACCOUNT_XPUB, restore_keys.account_xpub,
             )
             is_set_password: bool = set_value(
                 WALLET_PASSWORD_KEY, self.password, network.value,
             )
 
-            if is_set_password and is_set_mnemonic:
+            if is_set_password:
                 self.message.emit(
                     ToastPreset.SUCCESS,
                     INFO_RESTORE_COMPLETED,
                 )
                 SettingRepository.set_keyring_status(status=False)
-                self.forward_to_fungibles_page()
+                self.splash_view_model.handle_application_open()
             else:
                 keyring_warning_dialog = KeyringErrorDialog(
                     mnemonic=self.mnemonic,
                     password=self.password,
-                    navigate_to=self.forward_to_fungibles_page,
+                    navigate_to=self.splash_view_model.handle_application_open,
                 )
                 keyring_warning_dialog.exec()
         else:

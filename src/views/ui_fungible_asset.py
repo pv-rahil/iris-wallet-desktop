@@ -26,19 +26,16 @@ import src.resources_rc
 from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
 from accessible_constant import ISSUE_RGB20_ASSET
 from src.data.repository.setting_repository import SettingRepository
-from src.data.service.common_operation_service import CommonOperationService
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import generate_identicon
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
-from src.utils.info_message import INFO_TITLE
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
 from src.viewmodels.main_view_model import MainViewModel
@@ -62,7 +59,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             self.show_assets,
         )
         self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
-        CommonOperationService.set_node_info()
         self.sidebar = None
         self.__loading_translucent_screen = None
         self.setStyleSheet(
@@ -211,7 +207,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount_header.setWordWrap(True)
         self.amount_header.setMinimumSize(QSize(98, 40))
         self.header_layout.addWidget(self.amount_header, 0, 3, Qt.AlignLeft)
-
 
         self.symbol_header = QLabel(self.header_frame)
         self.symbol_header.setObjectName('symbol_header')
@@ -450,11 +445,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
     def handle_backup_visibility(self):
         """This method handle the backup visibility on embedded or connect wallet type."""
-        wallet_type: WalletType = SettingRepository.get_wallet_type()
         self.sidebar = self._view_model.page_navigation.sidebar()
-        if WalletType.REMOTE_TYPE_WALLET.value == wallet_type.value:
-            self.sidebar.backup.hide()
-        if WalletType.EMBEDDED_TYPE_WALLET.value == wallet_type.value:
+        if self.sidebar:
             self.sidebar.backup.show()
 
     def check_faucet_availability(self):

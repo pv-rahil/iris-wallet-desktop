@@ -6,7 +6,6 @@ Before you begin, ensure you have the following installed:
 - **Wayland must be disabled** (Ensure your session is running on **X11**)
 - **Python 3.12**
 - **Poetry** (Python dependency management tool)
-- **Rust** (latest stable version)
 - **Docker** (required for running the regtest environment)
 - **Meson** (required for `pycairo` package)
   ```bash
@@ -93,31 +92,19 @@ Before you begin, ensure you have the following installed:
    # Run all tests
    poetry run e2e-test all
 
-   # Run tests for a specific wallet mode (optional)
-   poetry run e2e-test all remote     # For remote mode
-   poetry run e2e-test all embedded   # For embedded mode
-
    # Run a specific test
    poetry run single-test <TEST_NAME>
 
-   # Run a specific test for a specific wallet mode (optional)
-   poetry run single-test <TEST_NAME> remote     # For remote mode
-   poetry run single-test <TEST_NAME> embedded   # For embedded mode
-
    # Force the build process during test execution
-   poetry run e2e-test all --force-build
+   poetry run e2e-test all force-build
    poetry run single-test <TEST_NAME> force-build
 
-   # Combine both options
-   poetry run e2e-test all remote force-build
    ```
    **Note:** Both `wallet_mode` and `force-build` flags are optional.
 
 7. **Check test results**
    ```bash
-   # For embedded mode results
-   poetry run result-embedded
+   # For results
+   poetry run allure-result
 
-   # For remote mode results
-   poetry run result-remote
    ```

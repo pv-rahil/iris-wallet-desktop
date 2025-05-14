@@ -6,22 +6,20 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import RgbLibError
+from rgb_lib import TransportEndpoint
+from rgb_lib import TransportType
 
-from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.repository.wallet_holder import colored_wallet
 from src.data.service.common_operation_service import CommonOperationService
-from src.model.common_operation_model import CheckIndexerUrlRequestModel
-from src.model.common_operation_model import CheckProxyEndpointRequestModel
 from src.model.enums.enums_model import NativeAuthType
-from src.model.enums.enums_model import NetworkEnumModel
-from src.model.setting_model import DefaultExpiryTime
 from src.model.setting_model import DefaultFeeRate
 from src.model.setting_model import DefaultIndexerUrl
 from src.model.setting_model import DefaultMinConfirmation
 from src.model.setting_model import DefaultProxyEndpoint
 from src.model.setting_model import IsDefaultEndpointSet
-from src.model.setting_model import IsDefaultExpiryTimeSet
 from src.model.setting_model import IsDefaultFeeRateSet
 from src.model.setting_model import IsDefaultMinConfirmationSet
 from src.model.setting_model import IsHideExhaustedAssetEnabled
@@ -29,27 +27,22 @@ from src.model.setting_model import IsNativeLoginIntoAppEnabled
 from src.model.setting_model import IsShowHiddenAssetEnabled
 from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SettingPageLoadModel
+from src.utils.cache import Cache
 from src.utils.constant import FEE_RATE
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME
-from src.utils.constant import LN_INVOICE_EXPIRY_TIME_UNIT
 from src.utils.constant import MIN_CONFIRMATION
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
-from src.utils.error_message import ERROR_UNABLE_TO_SET_EXPIRY_TIME
 from src.utils.error_message import ERROR_UNABLE_TO_SET_FEE
 from src.utils.error_message import ERROR_UNABLE_TO_SET_INDEXER_URL
 from src.utils.error_message import ERROR_UNABLE_TO_SET_MIN_CONFIRMATION
 from src.utils.error_message import ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
-from src.utils.helpers import get_bitcoin_config
 from src.utils.info_message import INFO_SET_ENDPOINT_SUCCESSFULLY
-from src.utils.info_message import INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 from src.utils.info_message import INFO_SET_FEE_RATE_SUCCESSFULLY
 from src.utils.info_message import INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
-from src.utils.local_store import local_store
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
@@ -61,13 +54,8 @@ class SettingViewModel(QObject, ThreadManager):
     hide_asset_event = Signal(bool)
     exhausted_asset_event = Signal(bool)
     fee_rate_set_event = Signal(str)
-    expiry_time_set_event = Signal(str, str)
     indexer_url_set_event = Signal(str)
     proxy_endpoint_set_event = Signal(str)
-    bitcoind_rpc_host_set_event = Signal(str)
-    bitcoind_rpc_port_set_event = Signal(int)
-    announce_address_set_event = Signal(list[str])
-    announce_alias_set_event = Signal(str)
     min_confirmation_set_event = Signal(int)
     on_page_load_event = Signal(SettingPageLoadModel)
     on_error_validation_keyring_event = Signal()
@@ -173,6 +161,9 @@ class SettingViewModel(QObject, ThreadManager):
                 self.exhausted_asset_event.emit(is_checked)
             else:
                 self.exhausted_asset_event.emit(not is_checked)
+            cache = Cache.get_cache_session()
+            if cache is not None:
+                cache.invalidate_cache()
         except CommonException as error:
             self.exhausted_asset_event.emit(not is_checked)
             ToastManager.error(
@@ -233,44 +224,6 @@ class SettingViewModel(QObject, ThreadManager):
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
 
-    def set_default_expiry_time(self, time: int, unit: str):
-        """
-        Sets the default expiry time and unit for invoices.
-        """
-        try:
-            success: IsDefaultExpiryTimeSet = SettingCardRepository.set_default_expiry_time(
-                time, unit,
-            )
-            if success.is_enabled:
-                ToastManager.success(
-                    description=INFO_SET_EXPIRY_TIME_SUCCESSFULLY,
-                )
-                self.expiry_time_set_event.emit(time, unit)
-                self.on_page_load()
-            else:
-                self.expiry_time_set_event.emit(
-                    str(LN_INVOICE_EXPIRY_TIME), str(
-                        LN_INVOICE_EXPIRY_TIME_UNIT,
-                    ),
-                )
-                ToastManager.error(
-                    description=ERROR_UNABLE_TO_SET_EXPIRY_TIME,
-                )
-        except CommonException as error:
-            self.expiry_time_set_event.emit(
-                str(LN_INVOICE_EXPIRY_TIME), str(LN_INVOICE_EXPIRY_TIME_UNIT),
-            )
-            ToastManager.error(
-                description=error.message,
-            )
-        except Exception:
-            self.expiry_time_set_event.emit(
-                str(LN_INVOICE_EXPIRY_TIME), str(LN_INVOICE_EXPIRY_TIME_UNIT),
-            )
-            ToastManager.error(
-                description=ERROR_SOMETHING_WENT_WRONG,
-            )
-
     def on_page_load(self):
         'This method call on setting page load'
         try:
@@ -287,7 +240,6 @@ class SettingViewModel(QObject, ThreadManager):
                 SettingRepository.is_exhausted_asset_enabled()
             )
             value_of_default_fee_res: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
-            value_of_default_expiry_time_res: DefaultExpiryTime = SettingCardRepository.get_default_expiry_time()
             value_of_default_indexer_url_res: DefaultIndexerUrl = SettingCardRepository.get_default_indexer_url()
             value_of_default_proxy_endpoint_res: DefaultProxyEndpoint = SettingCardRepository.get_default_proxy_endpoint()
             value_of_default_min_confirmation_res: DefaultMinConfirmation = SettingCardRepository.get_default_min_confirmation()
@@ -298,7 +250,6 @@ class SettingViewModel(QObject, ThreadManager):
                     status_of_hide_asset=status_of_hide_asset_res,
                     status_of_exhausted_asset=status_of_exhausted_asset_res,
                     value_of_default_fee=value_of_default_fee_res,
-                    value_of_default_expiry_time=value_of_default_expiry_time_res,
                     value_of_default_indexer_url=value_of_default_indexer_url_res,
                     value_of_default_proxy_endpoint=value_of_default_proxy_endpoint_res,
                     value_of_default_min_confirmation=value_of_default_min_confirmation_res,
@@ -316,12 +267,12 @@ class SettingViewModel(QObject, ThreadManager):
             self._page_navigation.fungibles_asset_page()
 
     def on_success_of_keyring_validation(self):
-        """This is a callback call on successfully unlock of node"""
+        """Callback function called when keyring is successfully unlocked"""
         self.loading_status.emit(False)
         self.on_success_validation_keyring_event.emit()
 
     def on_error_of_keyring_enable_validation(self, error: Exception):
-        """Callback function on error"""
+        """Callback function called when keyring validation encounters an error"""
         self.on_error_validation_keyring_event.emit()
         self.loading_status.emit(False)
         if isinstance(error, CommonException):
@@ -333,22 +284,30 @@ class SettingViewModel(QObject, ThreadManager):
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
 
-    def enable_keyring(self, mnemonic: str, password: str):
+    def enable_keyring(self, password: str):
         """Enable keyring status"""
         self.loading_status.emit(True)
         self.run_in_thread(
             CommonOperationService.keyring_toggle_enable_validation,
             {
-                'args': [mnemonic, password],
+                'args': [password],
                 'callback': self.on_success_of_keyring_validation,
                 'error_callback': self.on_error_of_keyring_enable_validation,
             },
         )
 
-    def on_success_of_indexer_url_set(self, indexer_url):
-        """Callback on successful setting of the indexer URL."""
-        # Attempt to unlock the wallet using the new URL
-        if self.unlock_the_wallet(SAVED_INDEXER_URL, indexer_url):
+    def check_indexer_url_endpoint(self, indexer_url: str):
+        """
+        Validates and sets the indexer URL in a background thread.
+        Args:
+            indexer_url (str): The new indexer URL to validate and set.
+        """
+        try:
+            self.is_loading.emit(True)  # Show loading indicator
+            indexer_url = indexer_url.strip()
+
+            # Call the go_online_again method to try setting the new indexer URL
+            colored_wallet.go_online_again(indexer_url=indexer_url)
             success: IsDefaultEndpointSet = SettingCardRepository.set_default_endpoints(
                 SAVED_INDEXER_URL,
                 indexer_url,
@@ -356,135 +315,22 @@ class SettingViewModel(QObject, ThreadManager):
             if success.is_enabled:
                 self.indexer_url_set_event.emit(indexer_url)
 
-    def on_error_of_indexer_url_set(self):
-        """Callback on error during setting of the indexer URL."""
-
-        # Notify the user of the error
-        ToastManager.error(
-            description=ERROR_UNABLE_TO_SET_INDEXER_URL,
-        )
-        self._page_navigation.settings_page()
-        try:
-            self.unlock_the_wallet()
-        except CommonException as exc:
-            ToastManager.error(
-                description=f"Unlock failed: {str(exc.message)}",
-            )
-
-    def check_indexer_url_endpoint(self, indexer_url: str, password: str):
-        """
-        Validates and sets the indexer URL in a background thread.
-        Args:
-            indexer_url (str): The new indexer URL to validate and set.
-        """
-
-        self.is_loading.emit(True)
-        indexer_url = indexer_url.strip()
-        self.password = password
-        request_model = CheckIndexerUrlRequestModel(indexer_url=indexer_url)
-
-        # Call the repository logic in a thread to avoid blocking the UI
-        self.run_in_thread(
-            SettingCardRepository.check_indexer_url,
-            {
-                'args': [request_model],
-                'callback': lambda: self.on_success_of_indexer_url_set(indexer_url),
-                'error_callback': self.on_error_of_indexer_url_set,
-            },
-        )
-
-    def unlock_the_wallet(self, key=None, value=None):
-        """
-        Attempts to unlock the wallet, prioritizing the provided URL and falling back to the previous URL if necessary.
-        Args:
-            key (str): The key to access the stored URL.
-            value (str): The new value (URL) to attempt unlocking with.
-        """
-        password = self.password
-        stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
-
-        try:
-
-            bitcoin_config = get_bitcoin_config(stored_network, password)
-            if key and value is not None:
-                bitcoin_config = bitcoin_config.copy(update={key: value})
-            self.run_in_thread(
-                CommonOperationRepository.unlock,
-                {
-                    'args': [bitcoin_config],
-                    'callback': lambda: self._on_success_of_unlock(key, value),
-                    'error_callback': self._on_error_of_unlock,
-                },
-            )
-        except CommonException as e:
-            self._on_error_of_unlock(e)
-
-    def _on_success_of_unlock(self, key, value):
-        """Callback for successful unlocking."""
-        if key and value is not None:
-            key_mapping = {
-                SAVED_INDEXER_URL: 'indexer_endpoint',
-                SAVED_PROXY_ENDPOINT: 'proxy_endpoint',
-            }
-            if isinstance(value, list):
-                value = ', '.join(str(item) for item in value)
-
-            local_store.set_value(key, value)
-            key = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, key_mapping.get(key), None,
-            )
-            ToastManager.success(
-                description=INFO_SET_ENDPOINT_SUCCESSFULLY.format(key),
-            )
-        self.is_loading.emit(False)
-        self.on_page_load()
-
-    def _on_error_of_unlock(self, error: CommonException):
-        """Callback for failed unlock."""
-        try:
-            if error.message == QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wrong_password', None):
-
-                ToastManager.error(
-                    description=error.message,
-                )
-                self._page_navigation.enter_wallet_password_page()
-                return
-
-            ToastManager.error(
-                description=f"Unlock failed: {str(error.message)}",
-            )
             self.is_loading.emit(False)
-            self.unlock_the_wallet()
-        except CommonException as exc:
-            ToastManager.error(
-                description=f"Unlock failed: {str(exc.message)}",
-            )
-        self.is_loading.emit(False)
-
-    def _on_success_of_proxy_endpoint_set(self, proxy_endpoint):
-        """Callback on successful setting of the proxy endpoint."""
-        if self.unlock_the_wallet(SAVED_PROXY_ENDPOINT, proxy_endpoint):
-            success: IsDefaultEndpointSet = SettingCardRepository.set_default_endpoints(
-                SAVED_PROXY_ENDPOINT,
-                proxy_endpoint,
-            )
-            if success.is_enabled:
-                self.proxy_endpoint_set_event.emit(proxy_endpoint)
-
-    def _on_error_of_proxy_endpoint_set(self):
-        """Callback on error during setting of the proxy endpoint."""
-        try:
-            ToastManager.error(
-                description=ERROR_UNABLE_TO_SET_PROXY_ENDPOINT,
-            )
-            self._page_navigation.settings_page()
-            self.unlock_the_wallet()
-        except CommonException as error:
-            ToastManager.error(
-                description=f"Unlock failed: {str(error.message)}",
+            ToastManager.success(
+                description=INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'indexer_endpoint',
+                    ),
+                ),
             )
 
-    def check_proxy_endpoint(self, proxy_endpoint: str, password: str):
+        except RgbLibError.InvalidIndexer:
+            self.is_loading.emit(False)
+            ToastManager.error(
+                description=ERROR_UNABLE_TO_SET_INDEXER_URL,
+            )
+
+    def check_proxy_endpoint(self, proxy_endpoint: str):
         """
         Validates and sets the proxy endpoint in a background thread.
         Args:
@@ -493,19 +339,36 @@ class SettingViewModel(QObject, ThreadManager):
 
         self.is_loading.emit(True)
         proxy_endpoint = proxy_endpoint.strip()
-        self.password = password
-        request_model = CheckProxyEndpointRequestModel(
-            proxy_endpoint=proxy_endpoint,
-        )
+        try:
+            consignment_endpoint = TransportEndpoint(proxy_endpoint)
 
-        self.run_in_thread(
-            SettingCardRepository.check_proxy_endpoint,
-            {
-                'args': [request_model],
-                'callback': lambda: self._on_success_of_proxy_endpoint_set(proxy_endpoint),
-                'error_callback': self._on_error_of_proxy_endpoint_set,
-            },
-        )
+            if consignment_endpoint.transport_type() != TransportType.JSON_RPC:
+                raise ValueError('Transport type is not JSON_RPC')
+
+            success: IsDefaultEndpointSet = SettingCardRepository.set_default_endpoints(
+                SAVED_PROXY_ENDPOINT,
+                proxy_endpoint,
+            )
+            if success.is_enabled:
+                self.proxy_endpoint_set_event.emit(proxy_endpoint)
+            ToastManager.success(
+                description=INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'proxy_endpoint',
+                    ),
+                ),
+            )
+            self.is_loading.emit(False)
+        except RgbLibError.InvalidTransportEndpoint:
+            self.is_loading.emit(False)
+            ToastManager.error(
+                description=ERROR_UNABLE_TO_SET_PROXY_ENDPOINT,
+            )
+        except ValueError as e:
+            self.is_loading.emit(False)
+            ToastManager.error(
+                description=str(e),
+            )
 
     def set_min_confirmation(self, min_confirmation: int):
         """Sets the default min confirmation."""
@@ -534,26 +397,3 @@ class SettingViewModel(QObject, ThreadManager):
             ToastManager.error(
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
-
-    def _lock_wallet(self, key, value):
-        """Lock the wallet."""
-        self.key = key
-        self.value = value
-        self.run_in_thread(
-            CommonOperationRepository.lock, {
-                'args': [],
-                'callback': self._on_success_lock,
-                'error_callback': self._on_error_lock,
-            },
-        )
-
-    def _on_success_lock(self):
-        """Handle success callback after lock the wallet."""
-        self.unlock_the_wallet(self.key, self.value)
-
-    def _on_error_lock(self, error: CommonException):
-        """Handle error callback after lock the wallet."""
-        self.is_loading.emit(False)
-        ToastManager.error(
-            description=error.message,
-        )

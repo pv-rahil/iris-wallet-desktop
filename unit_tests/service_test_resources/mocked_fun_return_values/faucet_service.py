@@ -1,7 +1,6 @@
 """Contain mocked function return data"""
 from __future__ import annotations
 
-from src.model.common_operation_model import NodeInfoResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.rgb_faucet_model import BriefAssetInfo
 from src.model.rgb_faucet_model import ConfigWalletResponse
@@ -78,9 +77,6 @@ node_data = {
     'network_nodes': 1,
     'network_channels': 1,
 }
-mocked_data_node_info: NodeInfoResponseModel = NodeInfoResponseModel(
-    **node_data,
-)
 # Invoice response data
 invoice_response_data = {
     'recipient_id': 'utxob:2FZsSuk-iyVQLVuU4-Gc6J4qkE8-mLS17N4jd-MEx6cWz9F-MFkyE1n',

@@ -1,87 +1,120 @@
+"""
+Provides a globally accessible `colored_wallet` object that manages
+the RGB wallet and online state using the `rgb-lib` library.
+
+This module exposes a singleton-like instance of `ColoredWallet`,
+allowing centralized access and control of the wallet lifecycle,
+online connectivity, and initialization data (such as for backup/restore).
+It behaves similarly to the `app_paths` pattern used for file paths.
+"""
 from __future__ import annotations
 
-import json
-import os
-
 import rgb_lib
-from cryptography.fernet import Fernet
+from rgb_lib import RgbLibError
 
-from src.model.common_operation_model import InitResponseModel
-from src.utils.build_app_path import app_paths
+from src.data.repository.setting_repository import SettingRepository
+from src.utils.custom_exception import CommonException
+from src.utils.helpers import get_bitcoin_config
+from src.utils.helpers import get_bitcoin_network_from_enum
+from src.utils.logging import logger
 
 
-class WalletHolder:
-    _wallet: rgb_lib.Wallet = None
-    _online: rgb_lib.Online = None
-    _init_response = None
+class ColoredWallet:
+    """
+    Manages the RGB wallet and online session state, including secure
+    loading/saving of initialization data.
 
-    _init_file_path = os.path.join(app_paths.app_path, 'wallet_init.dat')
-    _encryption_key = b'xrMeekseyt4h5G9y_09SDjNBCuv1y1ljK1fYfN3Us3k='  # 32 bytes
+    Attributes:
+        wallet (rgb_lib.Wallet): The active RGB wallet instance.
+        online (rgb_lib.Online): The current online session.
+    """
 
-    @classmethod
-    def set_wallet(cls, wallet: rgb_lib.Wallet):
-        cls._wallet = wallet
+    def __init__(self):
+        self._wallet: rgb_lib.Wallet | None = None
+        self._online: rgb_lib.Online | None = None
 
-    @classmethod
-    def get_wallet(cls) -> rgb_lib.Wallet:
-        if cls._wallet is None:
-            raise RuntimeError('Wallet not initialized yet')
-        return cls._wallet
+    @property
+    def wallet(self) -> rgb_lib.Wallet:
+        """
+        Returns the initialized wallet instance.
 
-    @classmethod
-    def set_online(cls, online: rgb_lib.Online):
-        cls._online = online
+        Raises:
+            RuntimeError: If the wallet is not yet set.
+        """
+        if self._wallet is None:
+            raise CommonException('Wallet not initialized')
+        return self._wallet
 
-    @classmethod
-    def get_online(cls) -> rgb_lib.Online:
-        if cls._online is None:
-            raise RuntimeError('Online object not initialized yet')
-        return cls._online
+    def set_wallet(self, wallet: rgb_lib.Wallet):
+        """Sets the wallet instance."""
+        self._wallet = wallet
 
-    @classmethod
-    def set_init_response(cls, response: InitResponseModel):
-        cls._init_response = response
-        cls.save_init_response_to_file()  # Save whenever set manually
+    @property
+    def online(self) -> rgb_lib.Online:
+        """
+        Lazily initializes and returns the online session for the current wallet.
 
-    @classmethod
-    def get_init_response(cls) -> InitResponseModel:
-        if cls._init_response is None:
-            cls._load_init_response_from_file()
+        This method ensures the wallet is initialized, fetches the appropriate
+        indexer URL based on the network, and establishes the online session.
+        Subsequent calls return the already-initialized session.
 
-        if cls._init_response is None:
-            raise RuntimeError('Init response not set and no saved file found')
+        Returns:
+            rgb_lib.Online: The active online session.
 
-        return cls._init_response
+        Raises:
+            RuntimeError: If the wallet is not initialized.
+        """
+        if self._online is None:
+            if self._wallet is None:
+                raise CommonException(
+                    'Wallet must be initialized before going online.',
+                )
 
-    @classmethod
-    def save_init_response_to_file(cls):
-        if cls._init_response is None:
-            raise ValueError('Init response not set yet')
+            try:
+                network = get_bitcoin_network_from_enum(
+                    SettingRepository.get_wallet_network(),
+                )
+                indexer_url = get_bitcoin_config(network, '').indexer_url
+                self._online = self._wallet.go_online(False, indexer_url)
+            except Exception as exc:
+                logger.error(
+                    'Failed to go online: %s, Message: %s',
+                    type(exc).__name__,
+                    str(exc),
+                )
+                raise CommonException(
+                    'Failed to initialize online session', {
+                        'name': type(exc).__name__,
+                        'original_exception': str(exc),
+                    },
+                ) from exc
+        return self._online
 
-        data = cls._init_response.model_dump_json().encode('utf-8')
-        fernet = Fernet(cls._encryption_key)
-        encrypted = fernet.encrypt(data)
+    def go_online_again(self, indexer_url: str) -> None:
+        """
+        Calls `go_online` with a new indexer URL, and if successful,
+        updates the online session.
 
-        with open(cls._init_file_path, 'wb') as file:
-            file.write(encrypted)
+        Args:
+            indexer_url (str): The new indexer URL to use.
+        """
+        if self._wallet:
+            try:
+                self._online = self._wallet.go_online(True, indexer_url)
+            except RgbLibError.InvalidIndexer:
+                raise
+            except Exception as exc:
+                logger.error(
+                    'Failed to go online again with new indexer: %s, Message: %s',
+                    type(exc).__name__,
+                    str(exc),
+                )
+                raise CommonException(
+                    'Failed to go online again', {
+                        'name': type(exc).__name__,
+                        'original_exception': str(exc),
+                    },
+                ) from exc
 
-    @classmethod
-    def _load_init_response_from_file(cls):
-        if not os.path.exists(cls._init_file_path):
-            return  # Silent fail, will force re-init
 
-        try:
-            fernet = Fernet(cls._encryption_key)
-
-            with open(cls._init_file_path, 'rb') as file:
-                encrypted_data = file.read()
-
-            decrypted_data = fernet.decrypt(encrypted_data)
-            json_data = json.loads(decrypted_data)
-
-            cls._init_response = InitResponseModel(**json_data)
-            print('Init response loaded from saved file.')
-
-        except Exception as e:
-            print(f"Error loading init file: {e}")
-            cls._init_response = None  # Clean fail
+colored_wallet: ColoredWallet = ColoredWallet()

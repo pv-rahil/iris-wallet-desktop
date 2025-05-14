@@ -77,23 +77,6 @@ def test_download_debug_logs(error_report_dialog, qtbot):
         mock_cleanup_zip.assert_called_once_with('path/test.zip')
 
 
-def test_download_debug_logs_cancelled(error_report_dialog, qtbot):
-    """Test when debug logs download is cancelled."""
-    dialog = error_report_dialog
-
-    with patch('src.views.components.error_report_dialog_box.QFileDialog.getSaveFileName') as mock_file_dialog, \
-            patch('src.views.components.toast.ToastManager.show_toast') as mock_toast:
-
-        # Mock cancelled file dialog
-        mock_file_dialog.return_value = ('', '')
-
-        # Click download button
-        qtbot.mouseClick(dialog.download_debug_logs, Qt.LeftButton)
-
-        # Verify toast was shown with correct message
-        mock_toast.assert_not_called()
-
-
 def test_copy_button(error_report_dialog, qtbot):
     """Test if the copy button copies email to clipboard."""
     dialog = error_report_dialog

@@ -1,5 +1,5 @@
 # pylint: disable=too-many-instance-attributes, too-few-public-methods
-"""This module contains the NodeInfoWidget classes,
+"""This module contains the WalletInfoWidget classes,
 Component for the wallet details.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ from src.utils.common_utils import translate_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 
 
-class NodeInfoWidget(QWidget):
+class WalletInfoWidget(QWidget):
     """
     A widget that displays a public key with a label and a copy button.
 
@@ -35,7 +35,7 @@ class NodeInfoWidget(QWidget):
 
     def __init__(self, value: str, translation_key: str, v_layout: QVBoxLayout, parent=None):
         """
-        Initializes the NodeInfoWidget.
+        Initializes the WalletInfoWidget.
         """
         super().__init__(parent)
         self.value = value
@@ -63,18 +63,18 @@ class NodeInfoWidget(QWidget):
         self.horizontal_layout.addWidget(self.value_label)
 
         # Copy button
-        self.node_pub_key_copy_button = QPushButton()
-        self.node_pub_key_copy_button.setObjectName('node_pub_key_copy_button')
-        self.node_pub_key_copy_button.setMinimumSize(QSize(16, 16))
-        self.node_pub_key_copy_button.setMaximumSize(QSize(16, 16))
-        self.node_pub_key_copy_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.copy_button = QPushButton()
+        self.copy_button.setObjectName('node_pub_key_copy_button')
+        self.copy_button.setMinimumSize(QSize(16, 16))
+        self.copy_button.setMaximumSize(QSize(16, 16))
+        self.copy_button.setCursor(QCursor(Qt.PointingHandCursor))
 
         # Set copy icon
         self.copy_icon = QIcon()
         self.copy_icon.addFile(
             ':assets/copy.png', QSize(), QIcon.Normal, QIcon.Off,
         )
-        self.node_pub_key_copy_button.setIcon(self.copy_icon)
+        self.copy_button.setIcon(self.copy_icon)
 
         # Set tooltip for the copy button
         self.translated_copy_text = QCoreApplication.translate(
@@ -83,8 +83,8 @@ class NodeInfoWidget(QWidget):
         self.tooltip_text = f"{self.translated_copy_text} {
             self.key_label.text().replace(':', '').lower()
         }"
-        self.node_pub_key_copy_button.setToolTip(self.tooltip_text)
-        self.horizontal_layout.addWidget(self.node_pub_key_copy_button)
+        self.copy_button.setToolTip(self.tooltip_text)
+        self.horizontal_layout.addWidget(self.copy_button)
 
         # Spacer item to push content to the left
         self.horizontal_spacer = QSpacerItem(
@@ -93,7 +93,7 @@ class NodeInfoWidget(QWidget):
         self.horizontal_layout.addItem(self.horizontal_spacer)
 
         # Connect copy button signal
-        self.node_pub_key_copy_button.clicked.connect(
+        self.copy_button.clicked.connect(
             lambda: copy_text(self.value_label),
         )
 

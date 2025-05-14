@@ -4,6 +4,7 @@
 # pylint: disable=redefined-outer-name,unused-argument
 from __future__ import annotations
 
+from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -11,11 +12,15 @@ import pytest
 from PySide6.QtWidgets import QLineEdit
 from PySide6.QtWidgets import QWidget
 
+from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import UnlockResponseModel
+from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.info_message import INFO_WALLET_PASSWORD_SET
+from src.utils.info_message import INFO_WALLET_UNLOCK_SUCCESSFULLY
 from src.viewmodels.enter_password_view_model import EnterWalletPasswordViewModel
 from src.views.components.custom_toast import ToasterManager
 
@@ -53,48 +58,48 @@ def test_toggle_password_visibility(enter_wallet_password_view_model, mocker):
     line_edit_mock.setEchoMode.assert_called_with(QLineEdit.Password)
 
 
-def test_on_success(enter_wallet_password_view_model, mocker):
-    """Test for on_success method"""
-    mock_message = Mock()
-    enter_wallet_password_view_model.message.connect(mock_message)
+# def test_on_success(enter_wallet_password_view_model, mocker):
+#     """Test for on_success method"""
+#     mock_message = Mock()
+#     enter_wallet_password_view_model.message.connect(mock_message)
 
-    response = UnlockResponseModel(status=True)
-    enter_wallet_password_view_model.password = 'test_password'
+#     response = UnlockResponseModel(status=True)
+#     enter_wallet_password_view_model.password = 'test_password'
 
-    with patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network') as mock_get_wallet_network, \
-            patch('src.data.repository.setting_repository.SettingRepository.get_keyring_status') as mock_get_keyring_status, \
-            patch('src.utils.keyring_storage.set_value') as mock_set_value, \
-            patch('src.data.repository.setting_repository.SettingRepository.set_keyring_status') as mock_set_keyring_status, \
-            patch('src.data.repository.setting_repository.SettingRepository.set_wallet_initialized') as mock_set_wallet_initialized, \
-            patch('src.viewmodels.enter_password_view_model.EnterWalletPasswordViewModel.forward_to_fungibles_page') as mock_forward_to_fungibles_page:
+#     with patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network') as mock_get_wallet_network, \
+#             patch('src.data.repository.setting_repository.SettingRepository.get_keyring_status') as mock_get_keyring_status, \
+#             patch('src.utils.keyring_storage.set_value') as mock_set_value, \
+#             patch('src.data.repository.setting_repository.SettingRepository.set_keyring_status') as mock_set_keyring_status, \
+#             patch('src.data.repository.setting_repository.SettingRepository.set_wallet_initialized') as mock_set_wallet_initialized, \
+#             patch('src.viewmodels.enter_password_view_model.EnterWalletPasswordViewModel.forward_to_fungibles_page') as mock_forward_to_fungibles_page:
 
-        mock_get_wallet_network.return_value = Mock(value='test_network')
-        mock_get_keyring_status.return_value = False
-        mock_set_value.return_value = True
+#         mock_get_wallet_network.return_value = Mock(value='test_network')
+#         mock_get_keyring_status.return_value = False
+#         mock_set_value.return_value = True
 
-        enter_wallet_password_view_model.on_success(response)
+#         enter_wallet_password_view_model.on_success(response)
 
-        mock_message.assert_called_once_with(
-            ToastPreset.SUCCESS, 'Wallet password set successfully',
-        )
-        mock_set_keyring_status.assert_called_once_with(False)
-        mock_set_wallet_initialized.assert_called_once()
-        mock_forward_to_fungibles_page.assert_called_once()
+#         mock_message.assert_called_once_with(
+#             ToastPreset.SUCCESS, 'Wallet password set successfully',
+#         )
+#         mock_set_keyring_status.assert_called_once_with(False)
+#         mock_set_wallet_initialized.assert_called_once()
+#         mock_forward_to_fungibles_page.assert_called_once()
 
 
-def test_on_success_failure(enter_wallet_password_view_model, mocker):
-    """Test for on_success method when password is not set successfully"""
-    mock_message = Mock()
-    enter_wallet_password_view_model.message.connect(mock_message)
+# def test_on_success_failure(enter_wallet_password_view_model, mocker):
+#     """Test for on_success method when password is not set successfully"""
+#     mock_message = Mock()
+#     enter_wallet_password_view_model.message.connect(mock_message)
 
-    response = UnlockResponseModel(status=False)
-    enter_wallet_password_view_model.password = 'test_password'
+#     response = UnlockResponseModel(status=False)
+#     enter_wallet_password_view_model.password = 'test_password'
 
-    enter_wallet_password_view_model.on_success(response)
+#     enter_wallet_password_view_model.on_success(response)
 
-    mock_message.assert_called_once_with(
-        ToastPreset.ERROR, 'Unable to get password test_password',
-    )
+#     mock_message.assert_called_once_with(
+#         ToastPreset.ERROR, 'Unable to get password test_password',
+#     )
 
 
 def test_on_error(enter_wallet_password_view_model, mocker):
@@ -340,3 +345,211 @@ def test_on_error_empty_message(enter_wallet_password_view_model):
         # Assert
         mock_is_loading.assert_called_once_with(False)
         mock_toast_error.assert_called_once_with(ERROR_SOMETHING_WENT_WRONG)
+
+
+def test_on_success_unlock_successful(enter_wallet_password_view_model, mocker):
+    """Test successful unlocking with password set correctly and keyring status handling."""
+
+    # Arrange
+    enter_wallet_password_view_model.is_loading = MagicMock()
+    enter_wallet_password_view_model.message = MagicMock()
+    enter_wallet_password_view_model.forward_to_fungibles_page = MagicMock()
+
+    enter_wallet_password_view_model.password = 'test_password'
+
+    # Mock SettingRepository methods
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_keyring_status',
+        return_value=False,
+    )  # keyring status false for this test
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_keyring_status',
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_wallet_initialized',
+    )
+
+    # Mock the set_value method to return True (successful password set)
+    mocker.patch(
+        'src.viewmodels.enter_password_view_model.set_value', return_value=True,
+    )
+
+    # Act
+    # Assuming you have the appropriate mock or actual model here
+    unlock_response = UnlockResponseModel(status=True)
+    enter_wallet_password_view_model.on_success(unlock_response)
+
+    # Assert
+    enter_wallet_password_view_model.is_loading.emit.assert_called_once_with(
+        False,
+    )
+    enter_wallet_password_view_model.message.emit.assert_called_once_with(
+        ToastPreset.SUCCESS, INFO_WALLET_PASSWORD_SET,
+    )
+    enter_wallet_password_view_model.forward_to_fungibles_page.assert_called_once()
+    # In case it's needed after a successful unlock
+    enter_wallet_password_view_model.forward_to_fungibles_page.assert_called_once()
+
+
+def test_on_success_unlock_failed(enter_wallet_password_view_model, mocker):
+    """Test failure in unlocking when password setting fails."""
+
+    # Arrange
+    enter_wallet_password_view_model.is_loading = MagicMock()
+    enter_wallet_password_view_model.message = MagicMock()
+    enter_wallet_password_view_model.forward_to_fungibles_page = MagicMock()
+
+    enter_wallet_password_view_model.password = 'test_password'
+
+    # Mock SettingRepository methods
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_keyring_status',
+        return_value=False,
+    )  # keyring status false for this test
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_keyring_status',
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_wallet_initialized',
+    )
+
+    # Mock the set_value method to return False (failed password set)
+    mocker.patch(
+        'src.viewmodels.enter_password_view_model.set_value', return_value=False,
+    )
+
+    # Act
+    # Assuming you have the appropriate mock or actual model here
+    unlock_response = UnlockResponseModel(status=False)
+    enter_wallet_password_view_model.on_success(unlock_response)
+
+    # Assert
+    enter_wallet_password_view_model.is_loading.emit.assert_called_once_with(
+        False,
+    )
+    enter_wallet_password_view_model.message.emit.assert_called_once_with(
+        ToastPreset.SUCCESS, INFO_WALLET_UNLOCK_SUCCESSFULLY,
+    )
+    enter_wallet_password_view_model.forward_to_fungibles_page.assert_called_once()
+    # In case it's needed after a successful unlock
+    enter_wallet_password_view_model.forward_to_fungibles_page.assert_called_once()
+
+
+def test_on_success_unlock_with_invalid_password(enter_wallet_password_view_model, mocker):
+    """Test the failure of unlocking due to invalid password."""
+
+    # Arrange
+    enter_wallet_password_view_model.is_loading = MagicMock()
+    enter_wallet_password_view_model.message = MagicMock()
+    enter_wallet_password_view_model.forward_to_fungibles_page = MagicMock()
+
+    enter_wallet_password_view_model.password = None  # Invalid password scenario
+
+    # Mock SettingRepository methods
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_keyring_status',
+        return_value=False,
+    )  # keyring status false for this test
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_keyring_status',
+    )
+    mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.set_wallet_initialized',
+    )
+
+    # Act
+    # Assuming you have the appropriate mock or actual model here
+    unlock_response = UnlockResponseModel(status=False)
+    enter_wallet_password_view_model.on_success(unlock_response)
+
+    # Assert
+    enter_wallet_password_view_model.is_loading.emit.assert_called_once_with(
+        False,
+    )
+    enter_wallet_password_view_model.message.emit.assert_called_once_with(
+        ToastPreset.ERROR, f'Unable to get password {
+            enter_wallet_password_view_model.password
+        }',
+    )
+
+
+def test_forward_to_fungibles_page(mocker, enter_wallet_password_view_model):
+    """Test the forward_to_fungibles_page method."""
+
+    # Arrange
+    mock_sidebar = MagicMock()
+    mock_page_navigation = MagicMock()
+
+    # Mock the sidebar and the setChecked method
+    mock_sidebar.my_fungibles.setChecked = MagicMock()
+
+    # Patch the page_navigation method to return the mock sidebar
+    mocker.patch.object(
+        enter_wallet_password_view_model,
+        '_page_navigation', mock_page_navigation,
+    )
+    mock_page_navigation.sidebar.return_value = mock_sidebar
+
+    # Mock the fungibles_asset_page method
+    mock_page_navigation.fungibles_asset_page = MagicMock()
+
+    # Act
+    enter_wallet_password_view_model.forward_to_fungibles_page()
+
+    # Assert
+    # Check that sidebar.my_fungibles.setChecked was called once with True
+    mock_sidebar.my_fungibles.setChecked.assert_called_once_with(True)
+
+    # Check that fungibles_asset_page was called once
+    mock_page_navigation.fungibles_asset_page.assert_called_once()
+
+
+def test_set_wallet_credentials(mocker, enter_wallet_password_view_model):
+    """Test the set_wallet_credentials method."""
+
+    # Arrange
+    mock_is_loading = MagicMock()
+    mock_run_in_thread = mocker.patch.object(
+        enter_wallet_password_view_model, 'run_in_thread', autospec=True,
+    )
+    _mock_common_service = mocker.patch(
+        'src.data.service.common_operation_service.CommonOperationService.enter_wallet_password',
+    )
+
+    # Mock the is_loading signal emitter
+    enter_wallet_password_view_model.is_loading = mock_is_loading
+
+    # Set the test password input
+    test_password = 'test_password'
+
+    # Act
+    enter_wallet_password_view_model.set_wallet_credentials(test_password)
+
+    # Assert
+    # Check if is_loading.emit was called with True
+    mock_is_loading.emit.assert_called_once_with(True)
+
+    # Ensure that run_in_thread was called with correct arguments
+    mock_run_in_thread.assert_called_once_with(
+        CommonOperationService.enter_wallet_password,
+        {
+            'args': [test_password],
+            'callback': enter_wallet_password_view_model.on_success,
+            'error_callback': enter_wallet_password_view_model.on_error,
+        },
+    )
+
+    # Ensure that the password was set correctly
+    assert enter_wallet_password_view_model.password == test_password

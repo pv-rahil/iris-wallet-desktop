@@ -4,7 +4,6 @@ Main features module.
 """
 from __future__ import annotations
 
-from e2e_tests.test.features.channel import Channel
 from e2e_tests.test.features.issue_rgb20 import IssueRgb20
 from e2e_tests.test.features.issue_rgb25 import IssueRgb25
 from e2e_tests.test.features.receive import ReceiveOperation
@@ -32,5 +31,3 @@ class MainFeatures():
         self.receive_features = ReceiveOperation(self.application)
 
         self.send_features = SendOperation(self.application)
-
-        self.channel_features = Channel(self.application)

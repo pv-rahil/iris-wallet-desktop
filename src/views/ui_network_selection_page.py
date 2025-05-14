@@ -25,7 +25,6 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.setting_model import IsWalletInitialized
 from src.utils.clickable_frame import ClickableFrame
-from src.utils.common_utils import close_button_navigation
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.custom_exception import CommonException
 from src.utils.helpers import load_stylesheet
@@ -301,9 +300,9 @@ class NetworkSelectionWidget(QWidget):
         self.regtest_frame.clicked.connect(self.handle_frame_click)
         self.testnet_frame.clicked.connect(self.handle_frame_click)
         self.mainnet_frame.clicked.connect(self.handle_frame_click)
-        self.select_network_close_btn.clicked.connect(
-            lambda: close_button_navigation(self),
-        )
+        # self.select_network_close_btn.clicked.connect(
+        #     lambda: close_button_navigation(self),
+        # )
         self.view_model.wallet_transfer_selection_view_model.ln_node_process_status.connect(
             self.show_wallet_loading_screen,
         )
