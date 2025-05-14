@@ -30,8 +30,8 @@ jobs:
           sudo apt-get install ruby-dev build-essential libgirepository1.0-dev python3-dev -y && sudo gem i fpm -f
           sudo apt-get update && sudo apt-get install -y libfuse2 # Required for AppImage creation
 
-      - name: Build the rgb-lightning-node binary
-        uses: ./.github/actions/build-rln-node
+      # - name: Build the rgb-lightning-node binary
+      #   uses: ./.github/actions/build-rln-node
 
       - name: Set environment variables from GitHub Secrets and generate config.py
         env:
@@ -81,8 +81,8 @@ jobs:
         with:
           python-version: "3.12.3"
 
-      - name: Build the rgb-lightning-node binary
-        uses: ./.github/actions/build-rln-node
+      # - name: Build the rgb-lightning-node binary
+      #   uses: ./.github/actions/build-rln-node
 
       - name: Set environment variables from secrets and create config.py
         env:
