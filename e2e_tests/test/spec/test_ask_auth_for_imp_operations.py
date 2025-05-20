@@ -8,11 +8,9 @@ import allure
 import keyring as kr
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from accessible_constant import FIRST_SERVICE
 from accessible_constant import NATIVE_AUTH_ENABLE
 from accessible_constant import SECOND_APPLICATION
-from accessible_constant import SECOND_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -33,10 +31,10 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
     """Test for hiding exhausted asset"""
     with allure.step('Initializing the wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations, FIRST_APPLICATION, FIRST_APPLICATION_URL,
+            FIRST_APPLICATION,
         )
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations, SECOND_APPLICATION, SECOND_APPLICATION_URL,
+            SECOND_APPLICATION,
         )
 
     with allure.step('Turning on ask authorization for import operations'):
@@ -61,7 +59,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, _ = wallets_and_operations.second_page_features.receive_features.receive(
-            SECOND_APPLICATION, transfer_type='bitcoin',
+            SECOND_APPLICATION,
         )
 
     with allure.step('Sending the bitcoin'):
@@ -72,7 +70,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.send(
-            FIRST_APPLICATION, address, ASSET_AMOUNT, transfer_type='bitcoin', is_native_auth_enabled=True,
+            FIRST_APPLICATION, address, ASSET_AMOUNT, is_native_auth_enabled=True,
         )
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -226,7 +224,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, _ = wallets_and_operations.second_page_features.receive_features.receive(
-            SECOND_APPLICATION, transfer_type='bitcoin',
+            SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
@@ -238,7 +236,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.send(
-            FIRST_APPLICATION, address, ASSET_AMOUNT, transfer_type='bitcoin',
+            FIRST_APPLICATION, address, ASSET_AMOUNT,
         )
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_title = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_title()

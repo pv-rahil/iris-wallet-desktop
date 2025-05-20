@@ -28,7 +28,7 @@ class ReceiveRGB25ViewModel(QObject, ThreadManager):
         self._page_navigation = page_navigation
         self.sidebar = None
 
-    def get_rgb_invoice(self, minimum_confirmations: int, asset_id: str | None = None):
+    def get_rgb_invoice(self, minimum_confirmations: int, transport_endpoints: list[str], asset_id: str | None = None):
         """
         Retrieve the RGB invoice.
 
@@ -43,7 +43,7 @@ class ReceiveRGB25ViewModel(QObject, ThreadManager):
         self.run_in_thread(
             RgbRepository.rgb_invoice,
             {
-                'args': [RgbInvoiceRequestModel(asset_id=asset_id, min_confirmations=minimum_confirmations)],
+                'args': [RgbInvoiceRequestModel(asset_id=asset_id, min_confirmations=minimum_confirmations, transport_endpoints=transport_endpoints)],
                 'callback': self.on_success,
                 'error_callback': self.on_error,
             },
@@ -53,6 +53,7 @@ class ReceiveRGB25ViewModel(QObject, ThreadManager):
         """Handles success logic."""
         if response.invoice:
             self.address.emit(response.invoice)
+            print(response.invoice)
         self.hide_loading.emit(False)
 
     def on_error(self, error: CommonException):

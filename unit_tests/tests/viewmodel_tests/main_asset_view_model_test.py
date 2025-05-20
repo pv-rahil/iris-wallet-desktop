@@ -9,13 +9,14 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import AssetCfa
+from rgb_lib import AssetNia
+from rgb_lib import AssetUda
 
+from src.model.btc_model import Balance
 from src.model.btc_model import BalanceResponseModel
-from src.model.btc_model import BalanceStatus
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.common_operation_model import OfflineAsset
-from src.model.rgb_model import AssetBalanceResponseModel
-from src.model.rgb_model import AssetModel
 from src.utils.custom_exception import CommonException
 from src.viewmodels.main_asset_view_model import MainAssetViewModel
 
@@ -24,8 +25,8 @@ from src.viewmodels.main_asset_view_model import MainAssetViewModel
 def mock_btc_balance_response_with_positive():
     """Fixture for creating a mock for btc balance object with positive scenario."""
     return BalanceResponseModel(
-        vanilla=BalanceStatus(settled=1000, future=500, spendable=150000000),
-        colored=BalanceStatus(settled=2000, future=1000, spendable=30000000),
+        vanilla=Balance(settled=1000, future=500, spendable=150000000),
+        colored=Balance(settled=2000, future=1000, spendable=30000000),
     )
 
 
@@ -33,8 +34,8 @@ def mock_btc_balance_response_with_positive():
 def mock_btc_balance_response_with_none():
     """Fixture for creating a mock for btc balance object with none scenario."""
     return BalanceResponseModel(
-        vanilla=BalanceStatus(settled=0, future=0, spendable=0),
-        colored=BalanceStatus(settled=0, future=0, spendable=0),
+        vanilla=Balance(settled=0, future=0, spendable=0),
+        colored=Balance(settled=0, future=0, spendable=0),
     )
 
 
@@ -43,7 +44,7 @@ def mock_main_page_data_response():
     """Fixture for creating a mock for main page data object."""
     return MainPageDataResponseModel(
         nia=[
-            AssetModel(
+            AssetNia(
                 asset_id='1',
                 asset_iface='interface1',
                 name='Asset1',
@@ -52,11 +53,13 @@ def mock_main_page_data_response():
                 issued_supply=1000,
                 timestamp=1620000000,
                 added_at=1620001000,
-                balance=AssetBalanceResponseModel(
-                    settled=100, future=50, spendable=150, offchain_outbound=0, offchain_inbound=0,
+                balance=Balance(
+                    settled=100, future=50, spendable=150,
                 ),
+                media=None,
+                ticker='USD',
             ),
-            AssetModel(
+            AssetNia(
                 asset_id='2',
                 asset_iface='interface2',
                 name='Asset2',
@@ -65,13 +68,15 @@ def mock_main_page_data_response():
                 issued_supply=2000,
                 timestamp=1620002000,
                 added_at=1620003000,
-                balance=AssetBalanceResponseModel(
-                    settled=200, future=100, spendable=300, offchain_outbound=0, offchain_inbound=0,
+                balance=Balance(
+                    settled=200, future=100, spendable=300,
                 ),
+                media=None,
+                ticker='USD',
             ),
         ],
         uda=[
-            AssetModel(
+            AssetUda(
                 asset_id='3',
                 asset_iface='interface3',
                 name='Asset3',
@@ -80,11 +85,14 @@ def mock_main_page_data_response():
                 issued_supply=3000,
                 timestamp=1620004000,
                 added_at=1620005000,
-                balance=AssetBalanceResponseModel(
-                    settled=300, future=150, spendable=450, offchain_outbound=0, offchain_inbound=0,
+                balance=Balance(
+                    settled=300, future=150, spendable=450,
                 ),
+                ticker='USD',
+                token=None,
+
             ),
-            AssetModel(
+            AssetUda(
                 asset_id='4',
                 asset_iface='interface4',
                 name='Asset4',
@@ -93,13 +101,15 @@ def mock_main_page_data_response():
                 issued_supply=4000,
                 timestamp=1620006000,
                 added_at=1620007000,
-                balance=AssetBalanceResponseModel(
-                    settled=400, future=200, spendable=600, offchain_outbound=0, offchain_inbound=0,
+                balance=Balance(
+                    settled=400, future=200, spendable=600,
                 ),
+                ticker='USD',
+                token=None,
             ),
         ],
         cfa=[
-            AssetModel(
+            AssetCfa(
                 asset_id='5',
                 asset_iface='interface5',
                 name='Asset5',
@@ -108,11 +118,12 @@ def mock_main_page_data_response():
                 issued_supply=5000,
                 timestamp=1620008000,
                 added_at=1620009000,
-                balance=AssetBalanceResponseModel(
-                    settled=500, future=250, spendable=750, offchain_outbound=0, offchain_inbound=0,
+                balance=Balance(
+                    settled=500, future=250, spendable=750,
                 ),
+                media='filepath',
             ),
-            AssetModel(
+            AssetCfa(
                 asset_id='6',
                 asset_iface='interface6',
                 name='Asset6',
@@ -121,16 +132,17 @@ def mock_main_page_data_response():
                 issued_supply=6000,
                 timestamp=1620010000,
                 added_at=1620011000,
-                balance=AssetBalanceResponseModel(
-                    settled=600, future=300, spendable=900, offchain_outbound=0, offchain_inbound=0,
+                balance=Balance(
+                    settled=600, future=300, spendable=900,
                 ),
+                media='filepath',
             ),
         ],
         vanilla=OfflineAsset(
             asset_id='vanilla',
             ticker='VNL',
-            balance=BalanceStatus(
-                settled=1000, future=500, spendable=1500, offchain_outbound=0, offchain_inbound=0,
+            balance=Balance(
+                settled=1000, future=500, spendable=1500,
             ),
             name='Vanilla Asset',
         ),

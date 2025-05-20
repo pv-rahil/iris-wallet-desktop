@@ -32,7 +32,6 @@ from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.common_utils import copy_text
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import IS_NATIVE_AUTHENTICATION_ENABLED
-from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import NATIVE_LOGIN_ENABLED
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
@@ -329,7 +328,6 @@ class KeyringErrorDialog(QDialog):
         """Handle when keyring toggle disable by user"""
         try:
             network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            delete_value(MNEMONIC_KEY, network.value)
             delete_value(WALLET_PASSWORD_KEY, network.value)
             delete_value(NATIVE_LOGIN_ENABLED)
             delete_value(IS_NATIVE_AUTHENTICATION_ENABLED)

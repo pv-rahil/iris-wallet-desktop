@@ -23,31 +23,26 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetIface
+from rgb_lib import TransferKind
+from rgb_lib import TransferStatus
 
 from accessible_constant import ASSET_CLOSE_BUTTON
 from accessible_constant import ASSET_ID_COPY_BUTTON
-from accessible_constant import ASSET_LIGHTNING_SPENDABLE_BALANCE
-from accessible_constant import ASSET_LIGHTNING_TOTAL_BALANCE
-from accessible_constant import ASSET_ON_CHAIN_SPENDABLE_BALANCE
-from accessible_constant import ASSET_ON_CHAIN_TOTAL_BALANCE
 from accessible_constant import ASSET_RECEIVE_BUTTON
 from accessible_constant import ASSET_REFRESH_BUTTON
 from accessible_constant import ASSET_SEND_BUTTON
-from accessible_constant import RGB_TRANSACTION_DETAIL_LIGHTNING_FRAME
-from accessible_constant import RGB_TRANSACTION_DETAIL_ON_CHAIN_FRAME
+from accessible_constant import ASSET_SPENDABLE_BALANCE
+from accessible_constant import ASSET_TOTAL_BALANCE
+from accessible_constant import RGB_TRANSACTION_DETAIL_FRAME
 from accessible_constant import TRANSACTION_DETAIL_CLOSE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import PaymentStatus
 from src.model.enums.enums_model import TransactionStatusEnumModel
-from src.model.enums.enums_model import TransferOptionModel
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.enums.enums_model import TransferType
-from src.model.rgb_model import ListOnAndOffChainTransfersWithBalance
+from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import AssetDataModel
-from src.model.selection_page_model import SelectionPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import copy_text
@@ -88,9 +83,7 @@ class RGBAssetDetailWidget(QWidget):
         self.vertical_spacer_3 = None
         self.scroll_area_widget_layout = None
         self.label_asset_name = None
-        self.filtered_lightning_transactions = None
         self.on_chain_icon = None
-        self.lightning_icon = None
         self.transaction_detail_frame = None
         self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
         self.bitcoin_img_path = {
@@ -200,7 +193,6 @@ class RGBAssetDetailWidget(QWidget):
         self.scroll_area_widget_layout.setObjectName('gridLayout_20')
         self.scroll_area_widget_layout.setHorizontalSpacing(6)
         self.scroll_area_widget_layout.setContentsMargins(0, 0, 0, 0)
-        self.horizontal_layout_balance_frames = QHBoxLayout()
         self.asset_balance_frame = QFrame(self.rgb_asset_detail_widget)
         self.scroll_area.setWidget(self.scroll_area_widget_contents)
         self.vertical_layout_8.addWidget(self.scroll_area)
@@ -248,7 +240,8 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_id_frame_layout.addWidget(self.copy_button, 0, 1, 1, 1)
         self.vertical_layout.addWidget(self.asset_id_frame, 0, Qt.AlignHCenter)
         self.asset_balance_frame.setObjectName('frame_4')
-        self.asset_balance_frame.setMinimumSize(QSize(158, 66))
+        self.asset_balance_frame.setMinimumSize(QSize(335, 86))
+        self.asset_balance_frame.setMaximumSize(QSize(335, 86))
         self.asset_balance_frame.setFrameShape(QFrame.StyledPanel)
         self.asset_balance_frame.setFrameShadow(QFrame.Raised)
         self.asset_balance_frame_layout = QGridLayout(self.asset_balance_frame)
@@ -268,7 +261,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_total_balance = QLabel(self.asset_balance_frame)
         self.asset_total_balance.setObjectName('asset_total_balance')
         self.asset_total_balance.setAccessibleDescription(
-            ASSET_ON_CHAIN_TOTAL_BALANCE,
+            ASSET_TOTAL_BALANCE,
         )
         self.asset_total_balance.setMinimumSize(QSize(60, 18))
         self.asset_balance_frame_layout.addWidget(
@@ -279,72 +272,19 @@ class RGBAssetDetailWidget(QWidget):
             'asset_spendable_amount_label',
         )
         self.asset_balance_frame_layout.addWidget(
-            self.asset_spendable_amount_label, 3, 0, 1, 1, Qt.AlignLeft,
+            self.asset_spendable_amount_label, 1, 1, 1, 1, Qt.AlignLeft,
         )
         self.asset_spendable_amount = QLabel(self.asset_balance_frame)
         self.asset_spendable_amount.setObjectName('asset_spendable_amount')
         self.asset_spendable_amount.setAccessibleDescription(
-            ASSET_ON_CHAIN_SPENDABLE_BALANCE,
+            ASSET_SPENDABLE_BALANCE,
         )
         self.asset_balance_frame_layout.addWidget(
-            self.asset_spendable_amount, 4, 0, 1, 1, Qt.AlignLeft,
+            self.asset_spendable_amount, 2, 1, 1, 1, Qt.AlignLeft,
         )
-        self.horizontal_layout_balance_frames.addWidget(
-            self.asset_balance_frame, 0, Qt.AlignRight,
+        self.vertical_layout.addWidget(
+            self.asset_balance_frame, alignment=Qt.AlignmentFlag.AlignHCenter,
         )
-        self.vertical_layout_lightning_frame = QVBoxLayout()
-        self.vertical_layout_lightning_frame.setContentsMargins(15, -1, 15, 9)
-        self.lightning_balance_frame = QFrame(self.rgb_asset_detail_widget)
-        self.lightning_balance_frame.setObjectName('frame_4')
-        self.lightning_balance_frame.setMinimumSize(QSize(158, 66))
-        self.lightning_balance_frame.setLayout(
-            self.vertical_layout_lightning_frame,
-        )
-        self.lightning_balance_label = QLabel(self.lightning_balance_frame)
-        self.lightning_balance_label.setObjectName('lightning_balance_label')
-        self.vertical_layout_lightning_frame.addWidget(
-            self.lightning_balance_label,
-        )
-        self.lightning_total_balance_label = QLabel(
-            self.lightning_balance_frame,
-        )
-        self.lightning_total_balance_label.setObjectName(
-            'lightning_total_balance_label',
-        )
-        self.vertical_layout_lightning_frame.addWidget(
-            self.lightning_total_balance_label,
-        )
-        self.lightning_total_balance = QLabel(self.lightning_balance_frame)
-        self.lightning_total_balance.setObjectName('lightning_total_balance')
-        self.lightning_total_balance.setAccessibleDescription(
-            ASSET_LIGHTNING_TOTAL_BALANCE,
-        )
-        self.vertical_layout_lightning_frame.addWidget(
-            self.lightning_total_balance,
-        )
-        self.lightning_spendable_balance_label = QLabel(
-            self.lightning_balance_frame,
-        )
-        self.lightning_spendable_balance_label.setObjectName(
-            'lightning_spendable_balance_label',
-        )
-        self.vertical_layout_lightning_frame.addWidget(
-            self.lightning_spendable_balance_label,
-        )
-        self.lightning_spendable_balance = QLabel(self.lightning_balance_frame)
-        self.lightning_spendable_balance.setObjectName(
-            'lightning_spendable_balance',
-        )
-        self.lightning_spendable_balance.setAccessibleDescription(
-            ASSET_LIGHTNING_SPENDABLE_BALANCE,
-        )
-        self.vertical_layout_lightning_frame.addWidget(
-            self.lightning_spendable_balance,
-        )
-        self.horizontal_layout_balance_frames.addWidget(
-            self.lightning_balance_frame, 0, Qt.AlignLeft,
-        )
-        self.vertical_layout.addLayout(self.horizontal_layout_balance_frames)
         self.rgb_asset_detail_widget_layout.addLayout(
             self.vertical_layout, 3, 0, 1, 1,
         )
@@ -447,80 +387,23 @@ class RGBAssetDetailWidget(QWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'spendable_bal', None,
             ),
         )
-        self.lightning_spendable_balance_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'spendable_bal', None,
-            ),
-        )
-        self.lightning_total_balance_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total', None,
-            ),
-        )
-        self.lightning_balance_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'lightning_balance',
-            ),
-        )
-
-    def navigate_to_selection_page(self, navigation):
-        """This method is navigate to the selection page"""
-        title = 'Select transfer type'
-        rgb_on_chain_logo_path = ':/assets/on_chain.png'
-        rgb_on_chain_logo_title = TransferType.ON_CHAIN.value
-        rgb_off_chain_logo_path = ':/assets/off_chain.png'
-        rgb_off_chain_logo_title = TransferType.LIGHTNING.value
-        rgb_asset_page_load_model = RgbAssetPageLoadModel(
-            asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(), asset_name=self.asset_name, image_path=self.image_path,
-        )
-        params = SelectionPageModel(
-            title=title,
-            logo_1_path=rgb_on_chain_logo_path,
-            logo_1_title=rgb_on_chain_logo_title,
-            logo_2_path=rgb_off_chain_logo_path,
-            logo_2_title=rgb_off_chain_logo_title,
-            asset_id=self.asset_id_detail.toPlainText(),
-            asset_name=self.asset_name,
-            callback=navigation,
-            back_page_navigation=lambda: self._view_model.page_navigation.rgb25_detail_page(
-                RgbAssetPageLoadModel(asset_type=self.asset_type),
-            ),
-            rgb_asset_page_load_model=rgb_asset_page_load_model,
-        )
-        self._view_model.page_navigation.wallet_method_page(params)
 
     def select_receive_transfer_type(self):
-        """This method handled after channel created"""
-        if self.is_channel_open_for_asset():
-            self.navigate_to_selection_page(
-                TransferStatusEnumModel.RECEIVE.value,
-            )
-        else:
-            self._view_model.page_navigation.receive_rgb25_page(
-                params=AssetDataModel(
-                    asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(),
-                ),
-            )
+        """This method navigates receive asset page according to the condition"""
+        self._view_model.page_navigation.receive_rgb25_page(
+            params=AssetDataModel(
+                asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(), close_page_navigation=self.asset_type,
+            ),
+        )
 
     def select_send_transfer_type(self):
         """This method navigates the send asset page according to the condition"""
-        if self.is_channel_open_for_asset():
-            self.navigate_to_selection_page(
-                TransferStatusEnumModel.SEND.value,
-            )
-        else:
-            self._view_model.page_navigation.send_rgb25_page()
+        self._view_model.page_navigation.send_rgb25_page()
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
         self.show_loading_screen(True)
-        self._view_model.channel_view_model.available_channels()
-        self._view_model.channel_view_model.channel_loaded.connect(
-            self.is_channel_open_for_asset,
-        )
-        self._view_model.channel_view_model.channel_loaded.connect(
-            self.set_lightning_balance,
-        )
+
         self.send_asset.clicked.connect(
             self.select_send_transfer_type,
         )
@@ -557,7 +440,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_type = asset_type
         self.asset_name = asset_name
         self.handle_img_path(image_path=self.image_path)
-        asset_transactions: ListOnAndOffChainTransfersWithBalance = self._view_model.rgb25_view_model.txn_list
+        asset_transactions: ListTransferAssetWithBalanceResponseModel = self._view_model.rgb25_view_model.txn_list
         self.asset_total_balance.setText(
             str(asset_transactions.asset_balance.future),
         )
@@ -576,9 +459,7 @@ class RGBAssetDetailWidget(QWidget):
             ).widget()
             if widget_to_remove is not None:
                 widget_to_remove.setParent(None)
-        if not asset_transactions or (
-            not asset_transactions.onchain_transfers and not asset_transactions.off_chain_transfers
-        ):
+        if not asset_transactions:
             transaction_detail_frame = TransactionDetailFrame(
                 self.scroll_area_widget_contents,
             )
@@ -591,34 +472,20 @@ class RGBAssetDetailWidget(QWidget):
                 no_transaction_widget, 0, 0, 1, 1,
             )
             return
-        if asset_type == AssetType.RGB20.value:
+        if asset_type == AssetIface.RGB20:
             self.rgb_asset_detail_widget.setMinimumSize(QSize(499, 730))
             self.rgb_asset_detail_widget.setMaximumSize(QSize(499, 730))
             self.scroll_area.setMaximumSize(QSize(335, 225))
-            self.lightning_balance_frame.setMaximumSize(QSize(159, 120))
             self.asset_balance_frame.setMaximumSize(QSize(158, 120))
         # Initialize the row index for the grid layout
         row_index = 0
-        self.filtered_lightning_transactions = [
-            payment for payment in asset_transactions.off_chain_transfers
-            if payment.asset_id == asset_id
-        ]
-        # Combine on-chain and off-chain transactions
-        all_transactions = [
-            (TransferOptionModel.LIGHTNING.value, tx) for tx in self.filtered_lightning_transactions
-        ] + [(TransferOptionModel.ON_CHAIN.value, tx) for tx in asset_transactions.onchain_transfers]
-        all_transactions = sorted(
-            all_transactions, key=lambda x: x[1].updated_at, reverse=True,
+        asset_transactions = sorted(
+            asset_transactions.transfers, key=lambda x: x.updated_at, reverse=True,
         )
-        for tx_type, transaction in all_transactions:
-            if tx_type == TransferOptionModel.ON_CHAIN:
-                self.set_on_chain_transaction_frame(
-                    transaction, asset_name, asset_type, asset_id, image_path,
-                )
-            if tx_type == TransferOptionModel.LIGHTNING:
-                self.set_lightning_transaction_frame(
-                    transaction, asset_name, asset_type,
-                )
+        for transaction in asset_transactions:
+            self.set_on_chain_transaction_frame(
+                transaction, asset_name, asset_type, asset_id, image_path,
+            )
             self.transaction_detail_frame.click_frame.connect(
                 self.handle_asset_frame_click,
             )
@@ -643,7 +510,7 @@ class RGBAssetDetailWidget(QWidget):
     def handle_show_hide(self, transaction_detail_frame):
         """It handled to hide and show transaction details frame"""
         if self.transfer_status == TransferStatusEnumModel.INTERNAL.value:
-            if self.transaction_type == TransferType.ISSUANCE.value:
+            if self.transaction_type == TransferKind.ISSUANCE:
                 transaction_detail_frame.transaction_type.setText(
                     'ISSUANCE',
                 )
@@ -670,19 +537,18 @@ class RGBAssetDetailWidget(QWidget):
             self.send_asset.setDisabled(True)
             self.receive_rgb_asset.setDisabled(True)
         else:
-            if self.lightning_total_balance.text():
-                self.render_timer.stop()
-                self.__loading_translucent_screen.stop()
-                self.__loading_translucent_screen.make_parent_disabled_during_loading(
-                    False,
-                )
-                self.asset_refresh_button.setDisabled(False)
-                self.send_asset.setDisabled(False)
-                self.receive_rgb_asset.setDisabled(False)
+            self.render_timer.stop()
+            self.__loading_translucent_screen.stop()
+            self.__loading_translucent_screen.make_parent_disabled_during_loading(
+                False,
+            )
+            self.asset_refresh_button.setDisabled(False)
+            self.send_asset.setDisabled(False)
+            self.receive_rgb_asset.setDisabled(False)
 
     def handle_page_navigation(self):
         """Handle the page navigation according the RGB20 or RGB25 page"""
-        if self.asset_type == AssetType.RGB20.value:
+        if self.asset_type == AssetIface.RGB20:
             self._view_model.page_navigation.fungibles_asset_page()
         else:
             self._view_model.page_navigation.collectibles_asset_page()
@@ -712,33 +578,6 @@ class RGBAssetDetailWidget(QWidget):
         else:
             resized_image = resize_image(image_hex, 335, 335)
             self.label_asset_name.setPixmap(resized_image)
-
-    def is_channel_open_for_asset(self):
-        """Check if there is an open channel for the current asset."""
-        self.asset_id_detail.textChanged.connect(self.set_lightning_balance)
-        for channel in self._view_model.channel_view_model.channels:
-            if channel.is_usable and channel.ready:
-                if channel.asset_id == self.asset_id_detail.toPlainText():
-                    return True
-        return False
-
-    def set_lightning_balance(self):
-        """This functions gets the total and spendable balances of the asset from all the open channels"""
-        lightning_total_balance = 0
-        lightning_spendable_balance = 0
-        asset_id = self.asset_id_detail.toPlainText()
-        if asset_id:
-            for channel in self._view_model.channel_view_model.channels:
-                if channel.asset_id == asset_id:
-                    if channel.is_usable:
-                        lightning_spendable_balance += channel.asset_local_amount
-                    lightning_total_balance += channel.asset_local_amount
-
-            self.lightning_total_balance.setText(str(lightning_total_balance))
-            self.lightning_spendable_balance.setText(
-                str(lightning_spendable_balance),
-            )
-            self.show_loading_screen(False)
 
     def handle_fail_transfer(self, idx, tx_id):
         """
@@ -782,7 +621,6 @@ class RGBAssetDetailWidget(QWidget):
         if image_path:
             self.rgb_asset_detail_widget.setMinimumSize(QSize(466, 848))
             self.rgb_asset_detail_widget.setFixedWidth(499)
-            self.lightning_balance_frame.setMinimumSize(QSize(159, 120))
             self.label_asset_name = QLabel(self.rgb_asset_detail_widget)
             self.label_asset_name.setObjectName('label_asset_name')
             self.label_asset_name.setMaximumSize(QSize(335, 335))
@@ -827,7 +665,7 @@ class RGBAssetDetailWidget(QWidget):
             ),
         )
         self.transaction_detail_frame.setAccessibleName(
-            RGB_TRANSACTION_DETAIL_ON_CHAIN_FRAME,
+            RGB_TRANSACTION_DETAIL_FRAME,
         )
         self.transaction_detail_frame.close_button.setAccessibleName(
             TRANSACTION_DETAIL_CLOSE_BUTTON,
@@ -835,13 +673,12 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_date = str(transaction.updated_at_date)
         self.transaction_time = str(transaction.created_at_time)
         self.transfer_status = str(
-            transaction.transfer_Status.value,
+            transaction.transfer_Status,
         )
         self.transfer_amount = amount
-        self.transaction_type = str(transaction.kind)
-        self.transaction_status = str(
-            transaction.status,
-        )
+        self.transaction_type = transaction.kind
+        self.transaction_status = transaction.status
+
         if self.transfer_status == TransferStatusEnumModel.SENT.value:
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#EB5A5A;font-weight: 600',
@@ -860,12 +697,12 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_detail_frame.transaction_date.setText(
             self.transaction_date,
         )
-        if self.transaction_status != TransactionStatusEnumModel.SETTLED:
+        if self.transaction_status != TransferStatus.SETTLED:
             self.transaction_detail_frame.transaction_time.setStyleSheet(
                 'color:#959BAE;font-weight: 400; font-size:14px',
             )
             self.transaction_detail_frame.transaction_time.setText(
-                self.transaction_status,
+                self.map_status(self.transaction_status),
             )
             self.transaction_detail_frame.transaction_date.setText(
                 self.transaction_date,
@@ -890,7 +727,7 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_detail_frame.transaction_amount.setText(
             self.transfer_amount,
         )
-        if self.transaction_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY:
+        if self.transaction_status == TransferStatus.WAITING_COUNTERPARTY:
             self.transaction_detail_frame.transaction_type.hide()
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#959BAE;font-weight: 600',
@@ -916,85 +753,11 @@ class RGBAssetDetailWidget(QWidget):
             )
         self.handle_show_hide(self.transaction_detail_frame)
 
-    def set_lightning_transaction_frame(self, transaction, asset_name, asset_type):
-        """Handles and updates the UI for off-chain (lightning) transaction details."""
-        amount = str(transaction.asset_amount_status)
-        self.transaction_detail_frame = TransactionDetailFrame(
-            self.scroll_area_widget_contents,
-            TransactionDetailPageModel(
-                tx_id=str(transaction.payee_pubkey),
-                asset_name=asset_name,
-                asset_type=asset_type,
-                amount=amount,
-                asset_id=transaction.asset_id,
-                transaction_status=transaction.status,
-                is_off_chain=True,
-                inbound=transaction.inbound,
-                confirmation_date=transaction.created_at_date,
-                confirmation_time=transaction.created_at_time,
-                updated_date=transaction.updated_at_date,
-                updated_time=transaction.updated_at_time,
-            ),
-        )
-        self.transaction_detail_frame.setAccessibleName(
-            RGB_TRANSACTION_DETAIL_LIGHTNING_FRAME,
-        )
-        self.transfer_amount = amount
-        self.transaction_date = str(transaction.updated_at_date)
-        self.transaction_time = str(transaction.created_at_time)
-        self.transaction_status = str(transaction.status)
-        if self.transaction_status == PaymentStatus.FAILED.value:
-            self.transaction_detail_frame.transaction_amount.setStyleSheet(
-                'color:#EB5A5A;font-weight: 600',
-            )
-        elif self.transaction_status == PaymentStatus.SUCCESS.value:
-            if transaction.inbound:
-                # Green color for successful received transactions
-                self.transaction_detail_frame.transaction_amount.setStyleSheet(
-                    'color:#01A781;font-weight: 600',
-                )
-            else:
-                self.transaction_detail_frame.transaction_amount.setStyleSheet(
-                    'color:#EB5A5A;font-weight: 600',
-                )
-        elif self.transaction_status == PaymentStatus.PENDING.value:
-            # Grey color for pending transactions (both sent and received)
-            self.transaction_detail_frame.transaction_amount.setStyleSheet(
-                'color:#959BAE;font-weight: 600',
-            )
-        self.transaction_detail_frame.transaction_amount.setText(
-            self.transfer_amount,
-        )
-        self.transaction_detail_frame.transaction_time.setText(
-            self.transaction_time,
-        )
-        self.transaction_detail_frame.transaction_date.setText(
-            self.transaction_date,
-        )
-        if self.transaction_status != PaymentStatus.SUCCESS:
-            self.transaction_detail_frame.transaction_time.setStyleSheet(
-                'color:#959BAE;font-weight: 400; font-size:14px',
-            )
-            self.transaction_detail_frame.transaction_time.setText(
-                self.transaction_status,
-            )
-            self.transaction_detail_frame.transaction_date.setText(
-                self.transaction_date,
-            )
-        self.lightning_icon = QIcon()
-        self.lightning_icon.addFile(
-            ':/assets/lightning_transaction.png',
-            QSize(), QIcon.Normal, QIcon.Off,
-        )
-        self.transaction_detail_frame.transaction_type.hide()
-        self.transaction_detail_frame.transfer_type.setIcon(
-            self.lightning_icon,
-        )
-        self.transaction_detail_frame.transfer_type.setIconSize(
-            QSize(18, 18),
-        )
-        self.transaction_detail_frame.transfer_type.setToolTip(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'lightning', None,
-            ),
-        )
+    def map_status(self, transfer_status) -> str:
+        """Map TransferStatus to corresponding TransactionStatusEnumModel."""
+        status = {
+            TransferStatus.WAITING_COUNTERPARTY: TransactionStatusEnumModel.WAITING_COUNTERPARTY.value,
+            TransferStatus.WAITING_CONFIRMATIONS: TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value,
+            TransferStatus.FAILED: TransactionStatusEnumModel.FAILED.value,
+        }
+        return status.get(transfer_status, TransactionStatusEnumModel.FAILED)

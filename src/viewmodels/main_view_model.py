@@ -8,15 +8,12 @@ from PySide6.QtCore import QObject
 
 from src.viewmodels.backup_view_model import BackupViewModel
 from src.viewmodels.bitcoin_view_model import BitcoinViewModel
-from src.viewmodels.channel_management_viewmodel import ChannelManagementViewModel
 from src.viewmodels.enter_password_view_model import EnterWalletPasswordViewModel
 from src.viewmodels.faucets_view_model import FaucetsViewModel
 from src.viewmodels.fee_rate_view_model import EstimateFeeViewModel
 from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
 from src.viewmodels.issue_rgb20_view_model import IssueRGB20ViewModel
 from src.viewmodels.issue_rgb25_view_model import IssueRGB25ViewModel
-from src.viewmodels.ln_endpoint_view_model import LnEndpointViewModel
-from src.viewmodels.ln_offchain_view_model import LnOffChainViewModel
 from src.viewmodels.main_asset_view_model import MainAssetViewModel
 from src.viewmodels.receive_bitcoin_view_model import ReceiveBitcoinViewModel
 from src.viewmodels.receive_rgb25_view_model import ReceiveRGB25ViewModel
@@ -28,7 +25,6 @@ from src.viewmodels.setting_view_model import SettingViewModel
 from src.viewmodels.splash_view_model import SplashViewModel
 from src.viewmodels.term_view_model import TermsViewModel
 from src.viewmodels.view_unspent_view_model import UnspentListViewModel
-from src.viewmodels.wallet_and_transfer_selection_viewmodel import WalletTransferSelectionViewModel
 from src.viewmodels.welcome_view_model import WelcomeViewModel
 
 
@@ -59,16 +55,9 @@ class MainViewModel(QObject):
             self.page_navigation,
         )
 
-        self.channel_view_model = ChannelManagementViewModel(
-            self.page_navigation,
-        )
-
         self.unspent_view_model = UnspentListViewModel(self.page_navigation)
 
         self.issue_rgb25_asset_view_model = IssueRGB25ViewModel(
-            self.page_navigation,
-        )
-        self.ln_endpoint_view_model = LnEndpointViewModel(
             self.page_navigation,
         )
         self.rgb25_view_model = RGB25ViewModel(
@@ -88,18 +77,12 @@ class MainViewModel(QObject):
         self.setting_view_model = SettingViewModel(
             self.page_navigation,
         )
-        self.ln_offchain_view_model = LnOffChainViewModel(
-            self.page_navigation,
-        )
 
         self.splash_view_model = SplashViewModel(
             self.page_navigation,
         )
 
         self.restore_view_model = RestoreViewModel(
-            self.page_navigation,
-        )
-        self.wallet_transfer_selection_view_model = WalletTransferSelectionViewModel(
             self.page_navigation,
             self.splash_view_model,
         )

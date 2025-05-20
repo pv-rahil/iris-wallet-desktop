@@ -4,6 +4,11 @@ This module provides the service for the main asset page.
 """
 from __future__ import annotations
 
+from rgb_lib import AssetCfa
+from rgb_lib import AssetNia
+from rgb_lib import AssetSchema
+from rgb_lib import AssetUda
+
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
@@ -12,9 +17,6 @@ from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import OfflineAsset
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletType
-from src.model.rgb_model import AssetModel
-from src.model.rgb_model import FilterAssetEnumModel
 from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import GetAssetResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
@@ -35,15 +37,15 @@ class MainAssetPageDataService:
             MainPageDataResponseModel: The main page data containing asset details and BTC balance.
         """
         try:
-            wallet_type: WalletType = SettingRepository.get_wallet_type()
             request_model = FilterAssetRequestModel(
                 filter_asset_schemas=[
-                    FilterAssetEnumModel.NIA,
-                    FilterAssetEnumModel.CFA,
-                    FilterAssetEnumModel.UDA,
+                    AssetSchema.NIA,
+                    AssetSchema.CFA,
+                    AssetSchema.UDA,
                 ],
             )
-            filtered_assets: list[AssetModel | None] = []
+
+            filtered_assets: list[AssetNia | AssetCfa | AssetUda | None] = []
             RgbRepository.refresh_transfer()
             asset_detail: GetAssetResponseModel = RgbRepository.get_assets(
                 request_model,
@@ -58,7 +60,7 @@ class MainAssetPageDataService:
             )
             is_exhausted_asset_enabled: IsHideExhaustedAssetEnabled = SettingRepository.is_exhausted_asset_enabled()
 
-            def has_non_zero_balance(asset: AssetModel | None) -> bool:
+            def has_non_zero_balance(asset: AssetNia | AssetCfa | AssetUda | None) -> bool:
                 if asset is None:
                     return False
                 balance = asset.balance
@@ -77,15 +79,6 @@ class MainAssetPageDataService:
                     asset_detail.cfa = [
                         asset for asset in asset_detail.cfa if has_non_zero_balance(asset)
                     ]
-
-            if WalletType.REMOTE_TYPE_WALLET.value == wallet_type.value and asset_detail.cfa is not None:
-                for asset in asset_detail.cfa:
-                    if asset is None:
-                        continue
-                    filtered_asset: AssetModel = main_asset_page_helper.convert_digest_to_hex(
-                        asset,
-                    )
-                    filtered_assets.append(filtered_asset)
 
             if len(filtered_assets) > 0:
                 asset_detail.cfa = filtered_assets

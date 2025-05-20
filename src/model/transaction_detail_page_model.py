@@ -1,14 +1,18 @@
+# pylint: disable=too-few-public-methods
 """
 Module containing models related to the transaction detail page.
 """
 from __future__ import annotations
 
-from pydantic import BaseModel
+from enum import Enum
 
-from src.model.enums.enums_model import PaymentStatus
+from pydantic import BaseModel
+from rgb_lib import BlockTime
+from rgb_lib import Outpoint
+from rgb_lib import TransferTransportEndpoint
+
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.rgb_model import TransportEndpoint
 
 
 class TransactionDetailPageModel(BaseModel):
@@ -23,16 +27,19 @@ class TransactionDetailPageModel(BaseModel):
     asset_id: str | None = None
     image_path: str | None = None
     asset_name: str | None = None
-    confirmation_date: str | None = None
-    confirmation_time: str | None = None
+    confirmation_date: BlockTime | str | None = None
+    confirmation_time: BlockTime | str | None = None
     updated_date: str | None = None
     updated_time: str | None = None
-    transaction_status: TransactionStatusEnumModel | PaymentStatus | str
+    transaction_status: TransactionStatusEnumModel | str
     transfer_status: TransferStatusEnumModel | None = None
-    consignment_endpoints: list[TransportEndpoint | None] | None = []
+    consignment_endpoints: list[TransferTransportEndpoint | None] | None = []
     recipient_id: str | None = None
-    receive_utxo: str | None = None
-    change_utxo: str | None = None
-    asset_type: str | None = None
-    is_off_chain: bool = False
+    receive_utxo: Outpoint | None = None
+    change_utxo: Outpoint | None = None
+    asset_type: Enum | None = None
     inbound: bool | None = None
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True

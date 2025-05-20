@@ -13,11 +13,8 @@ class PageNavigationEventManager(QObject):
     _instance = None
     navigate_to_page_signal = Signal(str, bool)
     toggle_sidebar_signal = Signal(bool)
-    ln_endpoint_page_signal = Signal(str)
     splash_screen_page_signal = Signal()
-    wallet_method_page_signal = Signal(object)
     network_selection_page_signal = Signal(str, str)
-    wallet_connection_page_signal = Signal(object)
     welcome_page_signal = Signal()
     term_and_condition_page_signal = Signal()
     fungibles_asset_page_signal = Signal()
@@ -32,16 +29,12 @@ class PageNavigationEventManager(QObject):
     rgb25_detail_page_signal = Signal(str)
     send_bitcoin_page_signal = Signal()
     receive_bitcoin_page_signal = Signal()
-    channel_management_page_signal = Signal()
-    create_channel_page_signal = Signal()
     view_unspent_list_page_signal = Signal()
     rgb25_transaction_detail_page_signal = Signal(object)
     bitcoin_transaction_detail_page_signal = Signal(object)
     backup_page_signal = Signal()
     swap_page_signal = Signal()
     settings_page_signal = Signal()
-    create_ln_invoice_page_signal = Signal(object)
-    send_ln_invoice_page_signal = Signal()
     show_success_page_signal = Signal(object)
     about_page_signal = Signal()
     faucets_page_signal = Signal()
@@ -54,7 +47,7 @@ class PageNavigationEventManager(QObject):
     @staticmethod
     def get_instance():
         """
-        Returns the singleton instance of LnNodeServerManager.
+        Returns the singleton instance of PageNavigationEventManager.
 
         Returns:
             PageNavigationEventManager: The singleton instance of the manager.

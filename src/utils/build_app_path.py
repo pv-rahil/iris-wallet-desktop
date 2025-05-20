@@ -15,7 +15,7 @@ from src.utils.constant import APP_DIR
 from src.utils.constant import APP_NAME
 from src.utils.constant import CACHE_FOLDER_NAME
 from src.utils.constant import LOG_FOLDER_NAME
-from src.utils.constant import NODE_DIR
+from src.utils.constant import MNEMONIC_KEY
 from src.utils.handle_exception import handle_exceptions
 from src.utils.local_store import local_store
 
@@ -35,7 +35,6 @@ def build_app_paths(base_path: str) -> AppPathsModel:
     try:
 
         app_path = os.path.join(base_path, APP_DIR)
-        node_path = os.path.join(base_path, NODE_DIR)
 
         # These are used only during backup and restore to create a temporary directory
         temp_dir = tempfile.gettempdir()
@@ -46,12 +45,9 @@ def build_app_paths(base_path: str) -> AppPathsModel:
 
         return AppPathsModel(
             app_path=app_path,
-            node_data_path=node_path,
             iriswallet_temp_folder_path=iriswallet_temp_folder_path,
             cache_path=os.path.join(app_path, CACHE_FOLDER_NAME),
             app_logs_path=os.path.join(app_path, LOG_FOLDER_NAME),
-            node_logs_path=os.path.join(node_path, LOG_FOLDER_NAME),
-            ldk_logs_path=os.path.join(node_path, '.ldk', 'logs', 'logs.txt'),
             pickle_file_path=os.path.join(app_path, 'token.pickle'),
             config_file_path=os.path.join(
                 app_path, f"{APP_NAME}-{__network__}.ini",
@@ -62,6 +58,7 @@ def build_app_paths(base_path: str) -> AppPathsModel:
             restore_folder_path=os.path.join(
                 iriswallet_temp_folder_path, 'restore',
             ),
+            mnemonic_file_path=os.path.join(app_path, MNEMONIC_KEY),
 
         )
     except Exception as exc:

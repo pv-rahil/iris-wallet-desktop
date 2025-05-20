@@ -21,16 +21,12 @@ import src.resources_rc  # noqa: F401
 import src.utils.bootstrap
 from src.data.repository.setting_repository import SettingRepository
 from src.flavour import __network__
-from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsWalletInitialized
 from src.utils.cache import Cache
-from src.utils.common_utils import disable_rln_node_termination_handling
 from src.utils.common_utils import load_translator
-from src.utils.common_utils import sigterm_handler
 from src.utils.excluded_page import excluded_page
 from src.utils.helpers import check_google_auth_token_available
-from src.utils.ln_node_manage import LnNodeServerManager
 from src.utils.logging import logger
 from src.utils.page_navigation import PageNavigation
 from src.viewmodels.main_view_model import MainViewModel
@@ -49,8 +45,6 @@ class IrisWalletMainWindow(QMainWindow):
         super().__init__()
         self.__init_ui__()
         self.progress_dialog = None
-        self.ln_node_manager = LnNodeServerManager.get_instance()
-        self.wallet_type: WalletType = SettingRepository.get_wallet_type()
 
     def __init_ui__(self):
         """This method initializes the main window UI of the application."""
@@ -71,7 +65,7 @@ class IrisWalletMainWindow(QMainWindow):
         cache = Cache.get_cache_session()
         if cache is not None:
             cache.invalidate_cache()
-        if self.wallet_type.value == WalletType.REMOTE_TYPE_WALLET.value or page_name in excluded_page:
+        if page_name in excluded_page:
             QApplication.instance().exit()
         else:
             self.show_backup_progress()
@@ -95,7 +89,6 @@ class IrisWalletMainWindow(QMainWindow):
                 backup_configure_dialog_box.exec()
             else:
                 self.progress_dialog.exec(True)
-        disable_rln_node_termination_handling(self.wallet_type)
         self.progress_dialog.exec()
 
 
@@ -113,7 +106,6 @@ def main():
         main_view_model = MainViewModel(PAGE_NAVIGATION)
         # Set view model in your MainWindow instance
         view.ui_.set_ui_and_model(main_view_model)
-        signal.signal(signal.SIGTERM, sigterm_handler)
         wallet: IsWalletInitialized = SettingRepository.is_wallet_initialized()
         if wallet.is_wallet_initialized:
             PAGE_NAVIGATION.splash_screen_page()

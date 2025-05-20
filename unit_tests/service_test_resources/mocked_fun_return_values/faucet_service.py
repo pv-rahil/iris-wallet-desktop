@@ -1,7 +1,6 @@
 """Contain mocked function return data"""
 from __future__ import annotations
 
-from src.model.common_operation_model import NodeInfoResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.rgb_faucet_model import BriefAssetInfo
 from src.model.rgb_faucet_model import ConfigWalletResponse
@@ -56,30 +55,6 @@ mocked_response_of_list_asset_faucet: ListAvailableAsset = ListAvailableAsset(
             asset_id='rgb:BX28km3-TB9BtPCcS-ftySPiDAq-YrH36uvtW-cXxGKNhxA-CcTRpv',
         ),
     ],
-)
-
-# Node info response data
-node_data = {
-    'pubkey': '02270dadcd6e7ba0ef707dac72acccae1a3607453a8dd2aef36ff3be4e0d31f043',
-    'num_channels': 1,
-    'num_usable_channels': 0,
-    'local_balance_sat': 28616000,
-    'eventual_close_fees_sat': 1,
-    'pending_outbound_payments_sat': 1,
-    'num_peers': 1,
-    'onchain_pubkey': 'tpubDDqiQYzNMGsKVVmWYG4FCPPcbd5S4uW9u7a6zUFkgbh16VmFTvsaNyo37mAgkCku6jStBcU8VaLxG2SE7ab2sEwwagjfbS8U9H82BadjKR1',
-    'max_media_upload_size_mb': 5,
-    'rgb_htlc_min_msat': 1,
-    'rgb_channel_capacity_min_sat': 1,
-    'channel_capacity_min_sat': 1,
-    'channel_capacity_max_sat': 1,
-    'channel_asset_min_amount': 1,
-    'channel_asset_max_amount': 1,
-    'network_nodes': 1,
-    'network_channels': 1,
-}
-mocked_data_node_info: NodeInfoResponseModel = NodeInfoResponseModel(
-    **node_data,
 )
 # Invoice response data
 invoice_response_data = {

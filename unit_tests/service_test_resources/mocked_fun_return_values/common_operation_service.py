@@ -3,32 +3,19 @@ Mocked data for the common operation service test
 """
 from __future__ import annotations
 
-from src.model.common_operation_model import InitResponseModel
-from src.model.common_operation_model import NetworkInfoResponseModel
+from rgb_lib import Keys
+
 from src.model.common_operation_model import UnlockResponseModel
 
 
-mnemonic = {
-    'mnemonic': 'skill lamp please gown put season degree collect decline account monitor insane',
-}
-
+MNEMONIC = 'skill lamp please gown put season degree collect decline account monitor insane'
+XPUB = 'xpub1234567890'
+ACCOUNT_XPUB = 'xpub1234567890'
+ACCOUNT_XPUB_FINGERPRINT = 'xpub1234567890'
 # Mocked response of init api
-mocked_data_init_api_response = InitResponseModel(**mnemonic)
+mocked_data_init_api_response = Keys(
+    mnemonic=MNEMONIC, xpub=XPUB, account_xpub=ACCOUNT_XPUB, account_xpub_fingerprint=ACCOUNT_XPUB_FINGERPRINT,
+)
 
-network_info = {
-    'network': 'Regtest',
-    'height': 805434,
-}
-
-another_network_info = {
-    'network': 'Testnet',
-    'height': 805434,
-}
-
-# Mocked response of network info api
-# When build network and node network same
-mocked_network_info_api_res = NetworkInfoResponseModel(**network_info)
-# when build network and ln node network diff
-mocked_network_info_diff = NetworkInfoResponseModel(**another_network_info)
 mocked_unlock_api_res = UnlockResponseModel(status=True)
 mocked_password: str = 'Random@123'

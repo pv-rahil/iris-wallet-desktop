@@ -127,6 +127,32 @@ class LocalStore:
         print('after', folder_path)
         return folder_path
 
+    def write_to_file(self, file_name, file_path=None, value=None):
+        """
+        Create a file in the base path and write the provided value to it if given.
+
+        Args:
+            file_name: The name of the file to create.
+            file_path: Full path where to create the file. If None, uses base_path + file_name.
+            value: The content to write into the file.
+
+        Returns:
+            str: The full path to the created file.
+        """
+        if file_path is None:
+            file_path = QDir(self.base_path).filePath(file_name)
+
+        # Ensure parent directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        if value is not None:
+            if isinstance(value, bytes):
+                value = value.decode('utf-8')
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(value)
+
+        return file_path
+
 
 # Create a singleton instance of LocalStore
 local_store = LocalStore(APP_NAME, ORGANIZATION_DOMAIN)

@@ -5,9 +5,7 @@ from __future__ import annotations
 import allure
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from accessible_constant import SECOND_APPLICATION
-from accessible_constant import SECOND_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -29,12 +27,12 @@ def test_send_rgb25_with_expired_invoice(wallets_and_operations: WalletTestSetup
 
     with allure.step('Create and fund first wallet for send and receive rgb25'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=FIRST_APPLICATION, application_url=FIRST_APPLICATION_URL,
+            application=FIRST_APPLICATION,
         )
 
     with allure.step('Create and fund second wallet for send and receive rgb25'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=SECOND_APPLICATION, application_url=SECOND_APPLICATION_URL,
+            application=SECOND_APPLICATION,
         )
 
     with allure.step('Issue RGB25 asset'):
@@ -103,7 +101,7 @@ def test_send_and_receive_rgb25_asset_operation(wallets_and_operations: WalletTe
         wallets_and_operations.second_page_objects.collectible_page_objects.click_rgb25_frame(
             ASSET_NAME,
         )
-        received_amount = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_on_chain_total_balance()
+        received_amount = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
 

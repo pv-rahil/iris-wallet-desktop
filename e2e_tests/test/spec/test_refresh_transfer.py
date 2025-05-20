@@ -5,9 +5,7 @@ from __future__ import annotations
 import allure
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from accessible_constant import SECOND_APPLICATION
-from accessible_constant import SECOND_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
@@ -26,12 +24,12 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup):
 
     with allure.step('Create and fund first wallet for refresh transfer'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=FIRST_APPLICATION, application_url=FIRST_APPLICATION_URL,
+            application=FIRST_APPLICATION,
         )
 
     with allure.step('Create and fund second wallet for refresh transfer'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=SECOND_APPLICATION, application_url=SECOND_APPLICATION_URL,
+            application=SECOND_APPLICATION,
         )
 
     with allure.step('Issue RGB20 asset for refresh transfer'):

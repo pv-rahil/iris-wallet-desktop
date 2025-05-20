@@ -6,7 +6,6 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -26,7 +25,7 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup):
 
     with allure.step('Creating and funding the wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=FIRST_APPLICATION, application_url=FIRST_APPLICATION_URL,
+            application=FIRST_APPLICATION,
         )
 
     with allure.step('Issuing an RGB asset'):

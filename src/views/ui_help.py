@@ -212,5 +212,10 @@ class HelpWidget(QWidget):
         ) if 'rgb.info' in translated_detail else translated_detail
 
         self.help_card_detail_label.setText(formatted_detail)
+        self.help_card_detail_label.setTextFormat(Qt.RichText)
+        self.help_card_detail_label.setTextInteractionFlags(
+            Qt.TextBrowserInteraction,
+        )
+        self.help_card_detail_label.setOpenExternalLinks(True)
 
         return self.help_card_frame

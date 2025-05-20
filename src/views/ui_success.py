@@ -1,6 +1,6 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, unused-import, disable=too-few-public-methods
-"""This module contains the CreateChannelWidget class,
-which represents the UI for open channel page.
+"""This module contains the SuccessWidget class,
+which represents the UI for success page.
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
 class SuccessWidget(QWidget):
-    """This class represents all the UI elements of the create channel page."""
+    """This class represents all the UI elements of the success page."""
 
     def __init__(self, params: SuccessPageModel):
         super().__init__()

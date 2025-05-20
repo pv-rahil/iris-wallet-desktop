@@ -9,7 +9,6 @@ import sys
 import src.flavour as bitcoin_network
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.model.setting_model import IsNativeLoginIntoAppEnabled
@@ -18,9 +17,8 @@ from src.model.setting_model import IsWalletInitialized
 from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SetWalletInitialized
 from src.utils.constant import IS_NATIVE_AUTHENTICATION_ENABLED
-from src.utils.constant import LIGHTNING_URL_KEY
 from src.utils.constant import NATIVE_LOGIN_ENABLED
-from src.utils.constant import RGB_LN_COMMIT_ID_KEY
+from src.utils.constant import RGB_LIB_VERSION_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING_STATUS
 from src.utils.handle_exception import handle_exceptions
@@ -302,30 +300,6 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def set_wallet_type(wallet_type: WalletType) -> bool:
-        """Set the wallet type"""
-        try:
-            local_store.set_value('walletType', wallet_type.value)
-            # Verify the setting was applied
-            if local_store.get_value('walletType', value_type=bool):
-                return True
-            return False
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
-    def get_wallet_type() -> WalletType:
-        """Set the wallet type"""
-        try:
-            value = local_store.get_value('walletType')
-            wallet_type = WalletType.EMBEDDED_TYPE_WALLET
-            if value == WalletType.REMOTE_TYPE_WALLET.value:
-                wallet_type = WalletType.REMOTE_TYPE_WALLET
-            return wallet_type
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
     def native_authentication(auth_type: NativeAuthType, msg='Please verify your identity to proceed') -> bool:
         """
         Perform native authentication based on the given authentication type and platform.
@@ -490,15 +464,6 @@ class SettingRepository:
         return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../', 'binary', 'native_auth_windows.exe'))
 
     @staticmethod
-    def get_ln_endpoint() -> str:
-        """Get the ln endpoint"""
-        try:
-            value = local_store.get_value(LIGHTNING_URL_KEY)
-            return value
-        except Exception as exe:
-            return handle_exceptions(exe)
-
-    @staticmethod
     def get_config_value(key: str, value, value_type=None):
         """
         Retrieve a configuration value from the local store. If the value does not exist, set it with the provided default value.
@@ -527,18 +492,18 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def get_rln_node_commit_id():
-        """This method gets the commit ID of the RGB Lightning Node"""
+    def get_rgb_lib_version():
+        """This method gets the version of the rgb lib"""
         try:
-            rgb_ln_commit_id = local_store.get_value(RGB_LN_COMMIT_ID_KEY)
-            return rgb_ln_commit_id
+            rgb_lib_version = local_store.get_value(RGB_LIB_VERSION_KEY)
+            return rgb_lib_version
         except Exception as exc:
             return handle_exceptions(exc)
 
     @staticmethod
-    def set_rln_node_commit_id(commit_id: str):
-        """This method sets the commit ID of the RGB Lightning Node in the wallet's .ini file"""
+    def set_rgb_lib_version(version: str):
+        """This method sets the version of the rgb lib in the wallet's .ini file"""
         try:
-            local_store.set_value(RGB_LN_COMMIT_ID_KEY, commit_id)
+            local_store.set_value(RGB_LIB_VERSION_KEY, version)
         except Exception as exc:
             handle_exceptions(exc)

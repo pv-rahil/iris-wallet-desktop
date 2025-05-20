@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 from PySide6.QtWidgets import QFileDialog
 
-from src.model.rgb_model import AssetBalanceResponseModel
+from src.model.rgb_model import Balance
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_AUTHENTICATION
@@ -158,9 +158,10 @@ def test_on_success(mock_toast_manager, issue_rgb25_view_model):
         issued_supply=1000,
         timestamp=123456789,
         added_at=123456789,
-        balance=AssetBalanceResponseModel(
-            spendable=10, future=10, settled=12, offchain_outbound=0, offchain_inbound=0,
+        balance=Balance(
+            spendable=10, future=10, settled=12,
         ),
+        media='testpath',
     )
 
     issue_rgb25_view_model.on_success(response)

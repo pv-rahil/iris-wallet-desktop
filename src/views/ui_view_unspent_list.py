@@ -1,6 +1,6 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, unused-import
-"""This module contains the ChannelManagement class,
-which represents the UI for main assets.
+"""This module contains the ViewUnspentList class,
+which represents the UI for unspent list.
 """
 from __future__ import annotations
 
@@ -33,11 +33,10 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
-from src.views.components.toast import ToastManager
 
 
 class ViewUnspentList(QWidget):
-    """This class represents all the UI elements of the main asset page."""
+    """This class represents all the UI elements of the view unspent list page."""
 
     def __init__(self, view_model):
         self.render_timer = RenderTimer(task_name='ViewUnspentList Rendering')
@@ -69,11 +68,11 @@ class ViewUnspentList(QWidget):
         )
         self.vertical_layout_unspent_list.setContentsMargins(0, 0, 0, 10)
         self.widget_unspent_list = QWidget(self)
-        self.widget_unspent_list.setObjectName('widget_channel')
+        self.widget_unspent_list.setObjectName('widget_unspent')
 
         self.vertical_layout_2_unspent = QVBoxLayout(self.widget_unspent_list)
         self.vertical_layout_2_unspent.setObjectName(
-            'vertical_layout_2_channel',
+            'vertical_layout_2_unspent',
         )
         self.vertical_layout_2_unspent.setContentsMargins(25, 12, 25, 0)
 
@@ -95,7 +94,7 @@ class ViewUnspentList(QWidget):
         self.vertical_layout_2_unspent.addWidget(self.sub_title)
 
         self.unspent_list_widget = QWidget()
-        self.unspent_list_widget.setObjectName('channel_list_widget')
+        self.unspent_list_widget.setObjectName('unspent_list_widget')
         self.unspent_list_widget.setGeometry(QRect(21, 160, 1051, 399))
         self.main_list_v_layout = QVBoxLayout(self.unspent_list_widget)
         self.main_list_v_layout.setObjectName('main_list_v_layout')
@@ -193,7 +192,7 @@ class ViewUnspentList(QWidget):
         )
 
     def handle_asset_frame_click(self, asset_id):
-        """This method handles channel click of the channel management asset page."""
+        """This method handles frame click of the view unspent list page."""
         copy_text(asset_id)
 
     def show_view_unspent_loading(self):
@@ -228,7 +227,7 @@ class ViewUnspentList(QWidget):
     def create_unspent_clickable_frame(self, _list, update_layout):
         """Create a clickable frame for each unspent item."""
         unspent_clickable_frame = ClickableFrame(
-            _list.utxo.outpoint, self.unspent_scroll_area_widget_contents,
+            _list.utxo.outpoint.txid, self.unspent_scroll_area_widget_contents,
         )
         unspent_clickable_frame.setObjectName('frame_4')
         unspent_clickable_frame.setAccessibleName(UNSPENT_CLICKABLE_FRAME)
@@ -259,7 +258,7 @@ class ViewUnspentList(QWidget):
             ),
         )
         asset_name.setAccessibleDescription(UNSPENT_UTXO_OUTPOINT)
-        asset_name.setText(_list.utxo.outpoint)
+        asset_name.setText(str(_list.utxo.outpoint.txid))
 
         asset_detail_vertical_layout = QVBoxLayout()
         asset_detail_vertical_layout.setObjectName(

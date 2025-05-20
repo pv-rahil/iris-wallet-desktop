@@ -13,7 +13,6 @@ from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.cache import Cache
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_NODE_CHANGING_STATE
 from src.utils.worker import ThreadManager
 
 
@@ -58,10 +57,7 @@ class MainAssetViewModel(QObject, ThreadManager):
             """This method is used  handle onerror for the main asset page."""
             self.asset_loaded.emit(False)
             self.loading_finished.emit(True)
-            if error.message == ERROR_NODE_CHANGING_STATE:
-                self.message.emit(ToastPreset.INFORMATION, error.message)
-            else:
-                self.message.emit(ToastPreset.ERROR, error.message)
+            self.message.emit(ToastPreset.ERROR, error.message)
 
         self.run_in_thread(
             MainAssetPageDataService.get_assets,

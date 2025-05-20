@@ -18,6 +18,8 @@ from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.handle_exception import CommonException
+from src.utils.info_message import INFO_WALLET_PASSWORD_SET
+from src.utils.info_message import INFO_WALLET_UNLOCK_SUCCESSFULLY
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
@@ -68,7 +70,7 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
         """Handle success callback after unlocking."""
         try:
             self.is_loading.emit(False)
-            if self.password and response.status:
+            if self.password and response:
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
                 keyring_status: bool = SettingRepository.get_keyring_status()
 
@@ -84,7 +86,7 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
                         SettingRepository.set_wallet_initialized()
                         self.message.emit(
                             ToastPreset.SUCCESS,
-                            'Wallet password set successfully',
+                            INFO_WALLET_PASSWORD_SET,
                         )
                         self.forward_to_fungibles_page()
                     else:
@@ -92,7 +94,7 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
                         SettingRepository.set_wallet_initialized()
                         self.message.emit(
                             ToastPreset.SUCCESS,
-                            'Node unlock successfully with given password',
+                            INFO_WALLET_UNLOCK_SUCCESSFULLY,
                         )
                         self.forward_to_fungibles_page()
 
@@ -126,12 +128,12 @@ class EnterWalletPasswordViewModel(QObject, ThreadManager):
 
         ToastManager.error(error.message or ERROR_SOMETHING_WENT_WRONG)
 
-    def set_wallet_password(self, enter_password_input: str):
+    def set_wallet_credentials(self, enter_password_input: str):
         """Set the wallet password to the keychain and handle the unlocking process."""
         self.password = enter_password_input
         self.is_loading.emit(True)
         self.run_in_thread(
-            CommonOperationService.enter_node_password, {
+            CommonOperationService.enter_wallet_password, {
                 'args': [str(self.password)],
                 'callback': self.on_success,
                 'error_callback': self.on_error,

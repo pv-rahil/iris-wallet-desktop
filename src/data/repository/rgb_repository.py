@@ -1,238 +1,175 @@
 """Module containing RgbRepository."""
 from __future__ import annotations
 
-import requests
+from rgb_lib import AssetCfa
+from rgb_lib import AssetNia
+from rgb_lib import Assets
+from rgb_lib import AssetUda
+from rgb_lib import Balance
+from rgb_lib import Invoice
+from rgb_lib import ReceiveData
+from rgb_lib import Recipient
+from rgb_lib import SendResult
+from rgb_lib import Transfer
 
-from src.model.rgb_model import AssetBalanceResponseModel
+from src.data.repository.colored_wallet import colored_wallet
 from src.model.rgb_model import AssetIdModel
-from src.model.rgb_model import CreateUtxosRequestModel
-from src.model.rgb_model import CreateUtxosResponseModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
-from src.model.rgb_model import DecodeRgbInvoiceResponseModel
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
 from src.model.rgb_model import FilterAssetRequestModel
-from src.model.rgb_model import GetAssetMediaModelRequestModel
-from src.model.rgb_model import GetAssetMediaModelResponseModel
-from src.model.rgb_model import GetAssetResponseModel
-from src.model.rgb_model import IssueAssetCfaRequestModelWithDigest
+from src.model.rgb_model import IssueAssetCfaRequestModel
 from src.model.rgb_model import IssueAssetNiaRequestModel
-from src.model.rgb_model import IssueAssetResponseModel
 from src.model.rgb_model import IssueAssetUdaRequestModel
-from src.model.rgb_model import ListTransferAssetResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
-from src.model.rgb_model import PostAssetMediaModelResponseModel
-from src.model.rgb_model import RefreshRequestModel
 from src.model.rgb_model import RefreshTransferResponseModel
-from src.model.rgb_model import RgbInvoiceDataResponseModel
 from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
-from src.model.rgb_model import SendAssetResponseModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.check_colorable_available import check_colorable_available
-from src.utils.decorators.unlock_required import unlock_required
-from src.utils.endpoints import ASSET_BALANCE_ENDPOINT
-from src.utils.endpoints import CREATE_UTXO_ENDPOINT
-from src.utils.endpoints import DECODE_RGB_INVOICE_ENDPOINT
-from src.utils.endpoints import FAIL_TRANSFER_ENDPOINT
-from src.utils.endpoints import GET_ASSET_MEDIA
-from src.utils.endpoints import ISSUE_ASSET_ENDPOINT_CFA
-from src.utils.endpoints import ISSUE_ASSET_ENDPOINT_NIA
-from src.utils.endpoints import ISSUE_ASSET_ENDPOINT_UDA
-from src.utils.endpoints import LIST_ASSETS_ENDPOINT
-from src.utils.endpoints import LIST_TRANSFERS_ENDPOINT
-from src.utils.endpoints import POST_ASSET_MEDIA
-from src.utils.endpoints import REFRESH_TRANSFERS_ENDPOINT
-from src.utils.endpoints import RGB_INVOICE_ENDPOINT
-from src.utils.endpoints import SEND_ASSET_ENDPOINT
-from src.utils.request import Request
 
 
 class RgbRepository:
     """Repository for handling RGB-related operations."""
 
     @staticmethod
-    @unlock_required
-    def create_utxo(create_utxos: CreateUtxosRequestModel):
-        """Create UTXOs."""
-        payload = create_utxos.dict()
-        with repository_custom_context():
-            response = Request.post(CREATE_UTXO_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            cache = Cache.get_cache_session()
-            if cache is not None:
-                cache.invalidate_cache()
-            return CreateUtxosResponseModel(status=True)
-
-    @staticmethod
-    @unlock_required
     def get_asset_balance(
         asset_balance: AssetIdModel,
-    ) -> AssetBalanceResponseModel:
+    ) -> Balance:
         """Get asset balance."""
-        payload = asset_balance.dict()
         with repository_custom_context():
-            response = Request.post(ASSET_BALANCE_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return AssetBalanceResponseModel(**data)
+            data: Balance = colored_wallet.wallet.get_asset_balance(
+                asset_id=asset_balance.asset_id,
+            )
+
+            return data
 
     @staticmethod
-    @unlock_required
     def decode_invoice(invoice: DecodeRgbInvoiceRequestModel):
         """Decode RGB invoice."""
-        payload = invoice.dict()
         with repository_custom_context():
-            response = Request.post(DECODE_RGB_INVOICE_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return DecodeRgbInvoiceResponseModel(**data)
+            invoice = Invoice(invoice.invoice)
+            data = invoice.invoice_data()
+            return data
 
     @staticmethod
-    @unlock_required
-    def list_transfers(asset_id: ListTransfersRequestModel):
+    def list_transfers(asset_id: ListTransfersRequestModel) -> list[Transfer]:
         """List transfers."""
-        payload = asset_id.dict()
         with repository_custom_context():
-            response = Request.post(LIST_TRANSFERS_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return ListTransferAssetResponseModel(**data)
+            data: list[Transfer] = colored_wallet.wallet.list_transfers(
+                asset_id=asset_id.asset_id,
+            )
+            return data
 
     @staticmethod
-    @unlock_required
     def refresh_transfer():
         """Refresh transfers."""
         with repository_custom_context():
-            payload = RefreshRequestModel().dict()
-            response = Request.post(REFRESH_TRANSFERS_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
+            colored_wallet.wallet.refresh(
+                online=colored_wallet.online, asset_id=None,
+                filter=[], skip_sync=False,
+            )
             return RefreshTransferResponseModel(status=True)
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
-    def rgb_invoice(invoice: RgbInvoiceRequestModel):
+    def rgb_invoice(invoice: RgbInvoiceRequestModel) -> ReceiveData:
         """Get RGB invoice."""
-        payload = invoice.dict()
         with repository_custom_context():
-            response = Request.post(RGB_INVOICE_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
+            data: ReceiveData = colored_wallet.wallet.blind_receive(
+                asset_id=invoice.asset_id, amount=None, duration_seconds=invoice.duration_seconds,
+                transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return RgbInvoiceDataResponseModel(**data)
+            return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
-    def send_asset(asset_detail: SendAssetRequestModel):
+    def send_asset(asset_detail: SendAssetRequestModel) -> SendResult:
         """Send asset."""
-        payload = asset_detail.dict()
         with repository_custom_context():
-            response = Request.post(SEND_ASSET_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
+            recipient = Recipient(
+                recipient_id=asset_detail.recipient_id,
+                witness_data=None,
+                amount=asset_detail.amount,
+                transport_endpoints=asset_detail.transport_endpoints,
+            )
+
+            recipient_map = {asset_detail.asset_id: [recipient]}
+
+            data: SendResult = colored_wallet.wallet.send(
+                online=colored_wallet.online, recipient_map=recipient_map, donation=asset_detail.donation,
+                fee_rate=asset_detail.fee_rate, min_confirmations=asset_detail.min_confirmations, skip_sync=asset_detail.skip_sync,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return SendAssetResponseModel(**data)
+            return data
 
     @staticmethod
-    @unlock_required
-    def get_assets(filter_asset_request_model: FilterAssetRequestModel) -> GetAssetResponseModel:
+    def get_assets(filter_asset_request_model: FilterAssetRequestModel) -> Assets:
         """Get assets."""
-        payload = filter_asset_request_model.dict()
         with repository_custom_context():
-            response = Request.post(LIST_ASSETS_ENDPOINT, body=payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
+            data: Assets = colored_wallet.wallet.list_assets(
+                filter_asset_schemas=filter_asset_request_model.filter_asset_schemas,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return GetAssetResponseModel(**data)
+            return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
-    def issue_asset_nia(asset: IssueAssetNiaRequestModel) -> IssueAssetResponseModel:
+    def issue_asset_nia(asset: IssueAssetNiaRequestModel) -> AssetNia:
         """Issue asset."""
-        payload = asset.dict()
         with repository_custom_context():
-            response = Request.post(ISSUE_ASSET_ENDPOINT_NIA, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            asset_data = data['asset']
+            data: AssetNia = colored_wallet.wallet.issue_asset_nia(
+                online=colored_wallet.online, ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return IssueAssetResponseModel(**asset_data)
+            return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
-    def issue_asset_cfa(asset: IssueAssetCfaRequestModelWithDigest) -> IssueAssetResponseModel:
+    def issue_asset_cfa(asset: IssueAssetCfaRequestModel) -> AssetCfa:
         """Issue asset."""
-        payload = asset.dict()
         with repository_custom_context():
-            response = Request.post(ISSUE_ASSET_ENDPOINT_CFA, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            asset_data = data['asset']
+            data: AssetCfa = colored_wallet.wallet.issue_asset_cfa(
+                online=colored_wallet.online, details=asset.ticker, name=asset.name,
+                precision=asset.precision, amounts=asset.amounts, file_path=asset.file_path,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return IssueAssetResponseModel(**asset_data)
+            return data
 
     @staticmethod
-    @unlock_required
     @check_colorable_available()
-    def issue_asset_uda(asset: IssueAssetUdaRequestModel) -> IssueAssetResponseModel:
+    def issue_asset_uda(asset: IssueAssetUdaRequestModel) -> AssetUda:
         """Issue asset."""
-        payload = asset.dict()
         with repository_custom_context():
-            response = Request.post(ISSUE_ASSET_ENDPOINT_UDA, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            asset_data = data['asset']
+            data: AssetUda = colored_wallet.wallet.issue_asset_uda(
+                online=colored_wallet.online, details=asset.ticker, name=asset.name, ticker=asset.ticker,
+                precision=asset.precision, media_file_path=asset.file_path, attachments_file_paths=asset.attachments_file_paths,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return IssueAssetResponseModel(**asset_data)
+            return data
 
     @staticmethod
-    @unlock_required
-    def get_asset_media_hex(digest: GetAssetMediaModelRequestModel) -> GetAssetMediaModelResponseModel:
-        """Get asset media hex from digest"""
-        payload = digest.dict()
-        with repository_custom_context():
-            response = Request.post(GET_ASSET_MEDIA, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return GetAssetMediaModelResponseModel(**data)
-
-    @staticmethod
-    @unlock_required
-    def post_asset_media(files) -> PostAssetMediaModelResponseModel:
-        """return digest for given image"""
-        with repository_custom_context():
-            response = Request.post(POST_ASSET_MEDIA, files=files)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
-            return PostAssetMediaModelResponseModel(**data)
-
-    @staticmethod
-    @unlock_required
     def fail_transfer(transfer: FailTransferRequestModel) -> FailTransferResponseModel:
         """Mark the specified transfer as failed."""
-        payload = transfer.dict()
         with repository_custom_context():
-            response = Request.post(FAIL_TRANSFER_ENDPOINT, payload)
-            response.raise_for_status()  # Raises an exception for HTTP errors
-            data = response.json()
+            data = colored_wallet.wallet.fail_transfers(
+                online=colored_wallet.online, batch_transfer_idx=transfer.batch_transfer_idx, no_asset_only=transfer.no_asset_only, skip_sync=transfer.skip_sync,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return FailTransferResponseModel(**data)
+            return FailTransferResponseModel(transfers_changed=data)

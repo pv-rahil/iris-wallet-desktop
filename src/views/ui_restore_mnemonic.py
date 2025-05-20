@@ -172,10 +172,9 @@ class RestoreMnemonicWidget(QDialog):
 
     def handle_on_keyring_toggle_enable(self):
         """Handle when user enable toggle from setting page"""
-        mnemonic = str(self.mnemonic_input.text())
         password = str(self.password_input.text())
         self._view_model.setting_view_model.enable_keyring(
-            mnemonic=mnemonic, password=password,
+            password=password,
         )
         self.close()
 
@@ -217,7 +216,13 @@ class RestoreMnemonicWidget(QDialog):
         """handle mnemonic visibility for Qdialog"""
         if not self.mnemonic_visibility:
             self.mnemonic_input.hide()
-            self.setMaximumSize(QSize(370, 220))
+            self.mnemonic_detail_text_label.setMaximumSize(QSize(295, 50))
+            self.mnemonic_detail_text_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_wallet_password_info', None,
+                ),
+            )
+            self.mnemonic_frame.setFixedHeight(200)
         else:
             self.setMaximumSize(QSize(370, 292))
             self.mnemonic_input.show()

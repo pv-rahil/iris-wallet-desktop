@@ -3,13 +3,11 @@ This module provides helper functions to bitcoin page.
 """
 from __future__ import annotations
 
-from typing import Optional
-from typing import Tuple
+from rgb_lib import TransactionType
 
 from src.model.btc_model import Transaction
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.enums.enums_model import TransferType
 from src.utils.constant import NO_OF_UTXO
 from src.utils.constant import UTXO_SIZE_SAT
 from src.utils.custom_exception import ServiceOperationException
@@ -18,14 +16,20 @@ from src.utils.custom_exception import ServiceOperationException
 def calculate_transaction_amount(transaction: Transaction) -> str | None:
     """Calculate and return the 'amount' as a formatted string based on transaction type."""
     try:
-        if transaction.transaction_type in ('User', 'RgbSend'):
+        if isinstance(transaction.transaction_type, str):
+            transaction.transaction_type = TransactionType(
+                int(transaction.transaction_type),
+            )
+
+        # Handle different transaction types
+        if transaction.transaction_type in [TransactionType.USER, TransactionType.RGB_SEND]:
             if transaction.sent > 0:
                 # Transaction amount as negative because money was sent
                 amount = transaction.sent - transaction.received
                 return f'-{amount}'
             # Transaction amount as positive because money was received
             return f'+{transaction.received}'
-        if transaction.transaction_type == TransferType.CREATEUTXOS.value:
+        if transaction.transaction_type == TransactionType.CREATE_UTXOS:
             return f'-{(UTXO_SIZE_SAT * NO_OF_UTXO) + transaction.fee}'
         # Default case if none above, formatted as string for consistency
         return None
@@ -40,7 +44,7 @@ def get_transaction_status(
     """This helper identifies the status of a transaction and returns
     a tuple of (transfer_status, transaction_status)."""
     try:
-        if transaction.transaction_type in ('User', 'RgbSend'):
+        if transaction.transaction_type in [TransactionType.USER, TransactionType.RGB_SEND]:
             if transaction.confirmation_time:
                 # If there is a confirmation time, the transaction is confirmed
                 if transaction.sent > 0:
@@ -58,7 +62,7 @@ def get_transaction_status(
                 TransactionStatusEnumModel.WAITING_CONFIRMATIONS,
             )
 
-        if transaction.transaction_type == TransferType.CREATEUTXOS.value:
+        if transaction.transaction_type == TransactionType.CREATE_UTXOS:
             if transaction.confirmation_time:
                 return (
                     TransferStatusEnumModel.INTERNAL,

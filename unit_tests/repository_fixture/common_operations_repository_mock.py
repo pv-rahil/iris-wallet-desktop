@@ -7,18 +7,6 @@ import pytest
 
 
 @pytest.fixture
-def mock_node_info(mocker):
-    """Mocked node info function"""
-    def _mock_node_info(value):
-        return mocker.patch(
-            'src.data.repository.common_operations_repository.CommonOperationRepository.node_info',
-            return_value=value,
-        )
-
-    return _mock_node_info
-
-
-@pytest.fixture
 def mock_init(mocker):
     """Mock the init method of CommonOperationRepository."""
     def _mock_init(value):
@@ -38,17 +26,6 @@ def mock_unlock(mocker):
             return_value=value,
         )
     return _mock_unlock
-
-
-@pytest.fixture
-def mock_network_info(mocker):
-    """Mock the network_info method of CommonOperationRepository."""
-    def _mock_network_info(value):
-        return mocker.patch(
-            'src.data.repository.common_operations_repository.CommonOperationRepository.network_info',
-            return_value=value,
-        )
-    return _mock_network_info
 
 
 @pytest.fixture

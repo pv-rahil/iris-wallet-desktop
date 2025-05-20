@@ -26,19 +26,16 @@ import src.resources_rc
 from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
 from accessible_constant import ISSUE_RGB20_ASSET
 from src.data.repository.setting_repository import SettingRepository
-from src.data.service.common_operation_service import CommonOperationService
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import generate_identicon
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
-from src.utils.info_message import INFO_TITLE
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
 from src.viewmodels.main_view_model import MainViewModel
@@ -62,7 +59,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             self.show_assets,
         )
         self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
-        CommonOperationService.set_node_info()
         self.sidebar = None
         self.__loading_translucent_screen = None
         self.setStyleSheet(
@@ -103,7 +99,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.name_header = None
         self.address_header = None
         self.amount_header = None
-        self.outbound_amount_header = None
         self.symbol_header = None
         self.outbound_balance = None
 
@@ -213,14 +208,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount_header.setMinimumSize(QSize(98, 40))
         self.header_layout.addWidget(self.amount_header, 0, 3, Qt.AlignLeft)
 
-        self.outbound_amount_header = QLabel(self.header_frame)
-        self.outbound_amount_header.setWordWrap(True)
-        self.outbound_amount_header.setObjectName('outbound_amount_header')
-        self.outbound_amount_header.setMinimumSize(QSize(70, 40))
-        self.header_layout.addWidget(
-            self.outbound_amount_header, 0, 4, Qt.AlignLeft,
-        )
-
         self.symbol_header = QLabel(self.header_frame)
         self.symbol_header.setObjectName('symbol_header')
         self.header_layout.addWidget(self.symbol_header, 0, 5, Qt.AlignLeft)
@@ -260,11 +247,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount_header.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'on_chain_balance', None,
-            ),
-        )
-        self.outbound_amount_header.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'lightning_balance', None,
             ),
         )
         self.symbol_header.setText(
@@ -354,22 +336,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount.setText(str(asset.balance.future))
         self.grid_layout_fungible_frame.addWidget(
             self.amount, 0, 3, Qt.AlignLeft,
-        )
-
-        # Off-Chain Outbound Balance
-        self.outbound_balance = QLabel(self.fungible_frame)
-        self.outbound_balance.setObjectName('outbound_balance')
-        self.outbound_balance.setMinimumSize(QSize(80, 40))
-
-        if asset.asset_iface == AssetType.RGB20:
-            self.outbound_balance.setText(
-                str(asset.balance.offchain_outbound) if asset.balance.offchain_outbound else 'N/A',
-            )
-        else:
-            # Fallback for other asset types
-            self.outbound_balance.setText('N/A')
-        self.grid_layout_fungible_frame.addWidget(
-            self.outbound_balance, 0, 4, Qt.AlignLeft,
         )
 
         self.token_symbol = QLabel(self.fungible_frame)
@@ -479,11 +445,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
     def handle_backup_visibility(self):
         """This method handle the backup visibility on embedded or connect wallet type."""
-        wallet_type: WalletType = SettingRepository.get_wallet_type()
         self.sidebar = self._view_model.page_navigation.sidebar()
-        if WalletType.REMOTE_TYPE_WALLET.value == wallet_type.value:
-            self.sidebar.backup.hide()
-        if WalletType.EMBEDDED_TYPE_WALLET.value == wallet_type.value:
+        if self.sidebar:
             self.sidebar.backup.show()
 
     def check_faucet_availability(self):

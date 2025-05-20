@@ -114,7 +114,7 @@ def test_get_fee_rate_connection_error(fee_rate_view_model, mocker):
     """Test get_fee_rate handling of ConnectionError."""
     # Arrange
     mock_toast_manager = mocker.patch(
-        'src.views.components.toast.ToastManager.info',
+        'src.views.components.toast.ToastManager.error',
     )
     mock_loading_status = Mock()
     fee_rate_view_model.loading_status.connect(mock_loading_status)
@@ -138,7 +138,7 @@ def test_get_fee_rate_generic_exception(fee_rate_view_model, mocker):
     """Test get_fee_rate handling of generic Exception."""
     # Arrange
     mock_toast_manager = mocker.patch(
-        'src.views.components.toast.ToastManager.info',
+        'src.views.components.toast.ToastManager.error',
     )
     mock_loading_status = Mock()
     fee_rate_view_model.loading_status.connect(mock_loading_status)

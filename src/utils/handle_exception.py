@@ -1,3 +1,4 @@
+# pylint: disable=too-many-function-args,too-many-branches
 """
 Handles exceptions uniformly, providing specific error messages.
 """
@@ -8,10 +9,11 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
 from requests.exceptions import RequestException
 from requests.exceptions import Timeout
+from rgb_lib import RgbLibError
 
 from src.utils.custom_exception import CommonException
 from src.utils.custom_exception import ServiceOperationException
-from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_LN
+from src.utils.error_message import ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL
 from src.utils.error_message import ERROR_REQUEST_TIMEOUT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_TYPE_VALIDATION
@@ -47,7 +49,9 @@ def handle_exceptions(exc):
 
     # Check if the exception is a RequestsConnectionError
     if isinstance(exc, RequestsConnectionError):
-        raise CommonException(ERROR_CONNECTION_FAILED_WITH_LN) from exc
+        raise CommonException(
+            ERROR_CONNECTION_FAILED_WITH_PROVIDED_URL,
+        ) from exc
 
     # Check if the exception is a Timeout
     if isinstance(exc, Timeout):
@@ -76,6 +80,14 @@ def handle_exceptions(exc):
     if isinstance(exc, ServiceOperationException):
         raise CommonException(exc.message) from exc
 
+    if isinstance(exc, RgbLibError):
+        if isinstance(exc, RgbLibError.Internal):
+            if 'absurdly high fee rate' in getattr(exc, 'details', '').lower():
+                raise CommonException('MaxFeeExceeded') from exc
+        raise CommonException(type(exc).__name__) from exc
+
     # If no specific type matches, use a default error message
-    error_message = exc.message or str(exc) or ERROR_SOMETHING_WENT_WRONG
+    error_message = getattr(exc, 'message', None) or str(
+        exc,
+    ) or ERROR_SOMETHING_WENT_WRONG
     raise CommonException(error_message) from exc

@@ -27,19 +27,15 @@ def test_main_view_model_initialization():
     assert view_model.bitcoin_view_model is not None
     assert view_model.receive_bitcoin_view_model is not None
     assert view_model.send_bitcoin_view_model is not None
-    assert view_model.channel_view_model is not None
     assert view_model.unspent_view_model is not None
     assert view_model.issue_rgb25_asset_view_model is not None
-    assert view_model.ln_endpoint_view_model is not None
     assert view_model.rgb25_view_model is not None
     assert view_model.enter_wallet_password_view_model is not None
     assert view_model.receive_rgb25_view_model is not None
     assert view_model.backup_view_model is not None
     assert view_model.setting_view_model is not None
-    assert view_model.ln_offchain_view_model is not None
     assert view_model.splash_view_model is not None
     assert view_model.restore_view_model is not None
-    assert view_model.wallet_transfer_selection_view_model is not None
     assert view_model.faucets_view_model is not None
     assert view_model.estimate_fee_view_model is not None
 
@@ -47,7 +43,6 @@ def test_main_view_model_initialization():
     assert view_model.page_navigation == mock_page_navigation
 
     # Verify splash_view_model is passed to wallet_transfer_selection_view_model
-    assert view_model.wallet_transfer_selection_view_model.splash_view_model == view_model.splash_view_model
 
     # Verify all view models are initialized with page_navigation
     assert view_model.welcome_view_model._page_navigation == mock_page_navigation
@@ -58,17 +53,13 @@ def test_main_view_model_initialization():
     assert view_model.bitcoin_view_model._page_navigation == mock_page_navigation
     assert view_model.receive_bitcoin_view_model._page_navigation == mock_page_navigation
     assert view_model.send_bitcoin_view_model._page_navigation == mock_page_navigation
-    assert view_model.channel_view_model._page_navigation == mock_page_navigation
     assert view_model.unspent_view_model._page_navigation == mock_page_navigation
     assert view_model.issue_rgb25_asset_view_model._page_navigation == mock_page_navigation
-    assert view_model.ln_endpoint_view_model._page_navigation == mock_page_navigation
     assert view_model.rgb25_view_model._page_navigation == mock_page_navigation
     assert view_model.enter_wallet_password_view_model._page_navigation == mock_page_navigation
     assert view_model.receive_rgb25_view_model._page_navigation == mock_page_navigation
     assert view_model.backup_view_model._page_navigation == mock_page_navigation
     assert view_model.setting_view_model._page_navigation == mock_page_navigation
-    assert view_model.ln_offchain_view_model._page_navigation == mock_page_navigation
     assert view_model.splash_view_model._page_navigation == mock_page_navigation
     assert view_model.restore_view_model._page_navigation == mock_page_navigation
-    assert view_model.wallet_transfer_selection_view_model._page_navigation == mock_page_navigation
     assert view_model.faucets_view_model._page_navigation == mock_page_navigation

@@ -79,12 +79,11 @@ def test_handle_on_keyring_toggle_enable(restore_mnemonic_widget, qtbot):
     """Test that enable_keyring is called with correct arguments and dialog closes."""
     restore_mnemonic_widget._view_model.setting_view_model.enable_keyring = MagicMock()
 
-    restore_mnemonic_widget.mnemonic_input.setText('mnemonic')
     restore_mnemonic_widget.password_input.setText('password')
     restore_mnemonic_widget.handle_on_keyring_toggle_enable()
 
     restore_mnemonic_widget._view_model.setting_view_model.enable_keyring.assert_called_once_with(
-        mnemonic='mnemonic', password='password',
+        password='password',
     )
     assert not restore_mnemonic_widget.isVisible()
 
@@ -180,27 +179,46 @@ def test_on_click_cancel(restore_mnemonic_widget, qtbot):
 
 
 def test_handle_mnemonic_input_visibility(restore_mnemonic_widget):
-    """Test the handle_mnemonic_input_visibility method."""
-    # Mock the mnemonic_input
+    """Test the handle_mnemonic_input_visibility method according to new logic."""
+    # Mock relevant widgets and methods
     restore_mnemonic_widget.mnemonic_input = MagicMock()
+    restore_mnemonic_widget.mnemonic_detail_text_label = MagicMock()
+    restore_mnemonic_widget.mnemonic_frame = MagicMock()
+    restore_mnemonic_widget.setMaximumSize = MagicMock()
+    restore_mnemonic_widget.maximumSize = MagicMock(
+        return_value=QSize(370, 292),
+    )
 
     # Test when mnemonic_visibility is False
     restore_mnemonic_widget.mnemonic_visibility = False
     restore_mnemonic_widget.handle_mnemonic_input_visibility()
 
-    # Verify mnemonic input is hidden and size is reduced
     restore_mnemonic_widget.mnemonic_input.hide.assert_called_once()
-    assert restore_mnemonic_widget.maximumSize() == QSize(370, 220)
+    restore_mnemonic_widget.mnemonic_detail_text_label.setMaximumSize.assert_called_once_with(
+        QSize(295, 50),
+    )
+    restore_mnemonic_widget.mnemonic_detail_text_label.setText.assert_called_once()
+    restore_mnemonic_widget.mnemonic_frame.setFixedHeight.assert_called_once_with(
+        200,
+    )
+    # Should not be called in False branch
+    restore_mnemonic_widget.setMaximumSize.assert_not_called()
 
-    # Reset mock
+    # Reset mocks
     restore_mnemonic_widget.mnemonic_input.reset_mock()
+    restore_mnemonic_widget.mnemonic_detail_text_label.setMaximumSize.reset_mock()
+    restore_mnemonic_widget.mnemonic_detail_text_label.setText.reset_mock()
+    restore_mnemonic_widget.mnemonic_frame.setFixedHeight.reset_mock()
+    restore_mnemonic_widget.setMaximumSize.reset_mock()
 
     # Test when mnemonic_visibility is True
     restore_mnemonic_widget.mnemonic_visibility = True
     restore_mnemonic_widget.handle_mnemonic_input_visibility()
 
-    # Verify size is expanded first
-    assert restore_mnemonic_widget.maximumSize() == QSize(370, 292)
-
-    # Then verify mnemonic input is shown
+    restore_mnemonic_widget.setMaximumSize.assert_called_once_with(
+        QSize(370, 292),
+    )
     restore_mnemonic_widget.mnemonic_input.show.assert_called_once()
+    restore_mnemonic_widget.mnemonic_detail_text_label.setMaximumSize.assert_not_called()
+    restore_mnemonic_widget.mnemonic_detail_text_label.setText.assert_not_called()
+    restore_mnemonic_widget.mnemonic_frame.setFixedHeight.assert_not_called()

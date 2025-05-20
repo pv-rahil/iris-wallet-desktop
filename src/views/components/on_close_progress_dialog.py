@@ -4,7 +4,7 @@ Module for handling the OnCloseDialogBox, which manages the closing process of a
 # pylint: disable=E1121,too-many-instance-attributes
 from __future__ import annotations
 
-from PySide6.QtCore import QProcess
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QMovie
@@ -17,15 +17,12 @@ from PySide6.QtWidgets import QVBoxLayout
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.backup_service import BackupService
 from src.model.enums.enums_model import NetworkEnumModel
-from src.utils.constant import MAX_ATTEMPTS_FOR_CLOSE
-from src.utils.constant import MNEMONIC_KEY
-from src.utils.constant import NODE_CLOSE_INTERVAL
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
-from src.utils.error_message import ERROR_UNABLE_TO_STOP_NODE
 from src.utils.keyring_storage import get_value
-from src.utils.ln_node_manage import LnNodeServerManager
 from src.utils.logging import logger
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
 from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
@@ -34,32 +31,35 @@ from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
 class OnCloseDialogBox(QDialog, ThreadManager):
     """
     A dialog box that appears when the application is being closed. It manages the backup process
-    and the closing of the Lightning Node server, displaying appropriate status messages and
+    , displaying appropriate status messages and
     handling errors that may occur during these operations.
     """
 
     def __init__(self, parent=None):
         """
         Initialize the OnCloseDialogBox with the parent widget, setting up the layout, status labels,
-        and connecting signals for the Lightning Node server manager.
 
         Args:
             parent (QWidget): The parent widget for this dialog.
         """
         super().__init__(parent)
-        self.dialog_title = 'Please wait for backup or close node'
-        self.qmessage_question = 'Are you sure you want to close while the backup is in progress?'
-        self.qmessage_info = 'The backup process has been completed successfully!'
-        self.is_node_closing_onprogress = False
+        self.dialog_title = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'backup_dialog_title',
+            None,
+        )
+        self.qmessage_question = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'backup_question',
+            None,
+        )
+        self.qmessage_info = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'backup_success_info',
+            None,
+        )
         self.is_backup_onprogress = False
         self.setWindowFlags(Qt.FramelessWindowHint)
-        self.ln_node_manage: LnNodeServerManager = LnNodeServerManager.get_instance()
-        self.ln_node_manage.process_finished_on_request_app_close.connect(
-            self._on_success_close_node,
-        )
-        self.ln_node_manage.process_finished_on_request_app_close_error.connect(
-            self._on_error_of_closing_node,
-        )
         self.header_frame_view_model = HeaderFrameViewModel()
 
         # Set minimum size for flexibility but still prevent excessive resizing
@@ -113,10 +113,10 @@ class OnCloseDialogBox(QDialog, ThreadManager):
 
     def _start_process(self, is_backup_require: bool):
         """
-        Start the backup or node shutdown process based on the given condition.
+        Start the backup shutdown process based on the given condition.
 
         Args:
-            is_backup_require (bool): Whether a backup process is required before shutting down the node.
+            is_backup_require (bool): Whether a backup process is required before shutting down the app.
         """
         self._update_status('Process started...')
         if is_backup_require:
@@ -126,25 +126,26 @@ class OnCloseDialogBox(QDialog, ThreadManager):
                 mnemonic_dialog = RestoreMnemonicWidget(origin_page='on_close')
                 mnemonic_dialog.on_continue.connect(self._start_backup)
                 mnemonic_dialog.cancel_button.clicked.connect(
-                    self._close_node_app,
+                    self._close_app,
                 )
                 mnemonic_dialog.exec()
             else:
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
-                mnemonic: str = get_value(MNEMONIC_KEY, network.value)
-                password: str = get_value(
-                    key=WALLET_PASSWORD_KEY,
-                    network=network.value,
-                )
-                self._start_backup(mnemonic, password)
+                if mnemonic_store.decrypted_mnemonic:
+                    mnemonic: str = mnemonic_store.decrypted_mnemonic
+                    password: str = get_value(
+                        key=WALLET_PASSWORD_KEY,
+                        network=network.value,
+                    )
+                    self._start_backup(mnemonic, password)
         else:
-            self._close_node_app()
+            self._close_app()
 
     def exec(self, is_backup_require: bool = False):
         """
         Override the exec method to run a method when the dialog is executed.
         Args:
-            is_backup_require (bool): Whether a backup process is required before shutting down the node.
+            is_backup_require (bool): Whether a backup process is required before shutting down the app.
         """
         self._start_process(is_backup_require)
         return super().exec()
@@ -165,11 +166,11 @@ class OnCloseDialogBox(QDialog, ThreadManager):
 
     def _on_success_of_backup(self):
         """
-        Handle the successful completion of the backup process, updating the status and proceeding to close the node.
+        Handle the successful completion of the backup process, updating the status and proceeding to close the app.
         """
         self.is_backup_onprogress = False
         self._update_status('Backup process finished')
-        self._close_node_app()
+        self._close_app()
 
     def _on_error_of_backup(self):
         """
@@ -182,50 +183,20 @@ class OnCloseDialogBox(QDialog, ThreadManager):
         self._update_status('Something went wrong during the backup')
         self.qmessage_info = ERROR_SOMETHING_WENT_WRONG
         QMessageBox.critical(self, 'Failed', self.qmessage_info)
-        self._close_node_app()
+        self._close_app()
 
-    def _on_error_of_closing_node(self):
+    def _close_app(self):
         """
-        Handle errors that occur during the node closing process, updating the status and quitting the application.
-        """
-        self.is_node_closing_onprogress = False
-        self._update_status(ERROR_UNABLE_TO_STOP_NODE)
-        self.qmessage_info = ERROR_UNABLE_TO_STOP_NODE
-        QMessageBox.critical(self, 'Failed', self.qmessage_info)
-        QApplication.instance().exit()
-
-    def _on_success_close_node(self):
-        """
-        Handle the successful closure of the node, updating the status and quitting the application.
-        """
-        self.is_node_closing_onprogress = False
-        self._update_status('The node closed successfully!')
-        self.header_frame_view_model.stop_network_checker()
-        QApplication.instance().exit()
-
-    def _close_node_app(self):
-        """
-        Initiate the process of closing the Lightning Node application. If the node is still running,
-        start the closing process and update the status. If the node is not running, quit the application.
+        start the closing process and update the status, and quit the application.
         """
         self.is_backup_onprogress = False
-        if self.ln_node_manage.process.state() == QProcess.Running:
-            self.is_node_closing_onprogress = True
-            self._update_status(
-                f'Node closing process started. It may take up to {
-                    MAX_ATTEMPTS_FOR_CLOSE * NODE_CLOSE_INTERVAL
-                } seconds',
-            )
-            self.dialog_title = 'Node closing in progress'
-            self.ln_node_manage.stop_server_from_close_button()
-        else:
-            self.header_frame_view_model.stop_network_checker()
-            QApplication.instance().exit()
+        self.header_frame_view_model.stop_network_checker()
+        QApplication.instance().exit()
 
     # pylint disable(invalid-name) because of closeEvent is internal function of QWidget
     def closeEvent(self, event):  # pylint:disable=invalid-name
         """
-        Handle the close event for the dialog. If a backup or node closing is in progress, show a confirmation
+        Handle the close event for the dialog. If a backup is in progress, show a confirmation
         message and manage the close process accordingly.
 
         Args:
@@ -238,16 +209,9 @@ class OnCloseDialogBox(QDialog, ThreadManager):
             )
             if reply == QMessageBox.Yes:
                 event.accept()  # Close the dialog
-                self._close_node_app()
+                self._close_app()
             else:
                 event.ignore()  # Ignore the close event
-        elif self.is_node_closing_onprogress:
-            event.ignore()
-            self._update_status(
-                f'Please wait until the node closes. It may take up to {
-                    MAX_ATTEMPTS_FOR_CLOSE * NODE_CLOSE_INTERVAL
-                } seconds',
-            )
         else:
             event.accept()
             QApplication.instance().exit()

@@ -28,7 +28,6 @@ BACKUP_FILE="./src/utils/constant_backup.py"
 TEST_FILE=""
 RUN_ALL=false
 FORCE_BUILD=false
-WALLET_MODES=()
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -41,26 +40,12 @@ while [[ $# -gt 0 ]]; do
             RUN_ALL=true
             shift
             ;;
-        --wallet-mode)
-            if [[ -n "$2" ]]; then
-                WALLET_MODES+=("$2")
-                shift 2
-            else
-                echo "Error: --wallet-mode requires a value (embedded or remote)."
-                exit 1
-            fi
-            ;;
         *)
             TEST_FILE=$1
             shift
             ;;
     esac
 done
-
-# Default to both wallet modes if none are specified
-if [[ ${#WALLET_MODES[@]} -eq 0 ]]; then
-    WALLET_MODES=("embedded" "remote")
-fi
 
 # Ensure constants are restored if the script exits unexpectedly
 trap restore_constants EXIT
@@ -71,8 +56,6 @@ modify_constants() {
     [[ ! -f "$BACKUP_FILE" ]] && cp "$CONSTANT_FILE" "$BACKUP_FILE"
 
     sed -i -E "
-        s|BITCOIND_RPC_HOST_REGTEST = 'regtest-bitcoind.rgbtools.org'|BITCOIND_RPC_HOST_REGTEST = 'localhost'|;
-        s|BITCOIND_RPC_PORT_REGTEST = 80|BITCOIND_RPC_PORT_REGTEST = 18443|;
         s|INDEXER_URL_REGTEST = 'electrum.rgbtools.org:50041'|INDEXER_URL_REGTEST = '127.0.0.1:50001'|;
         s|PROXY_ENDPOINT_REGTEST = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'|PROXY_ENDPOINT_REGTEST = 'rpc://127.0.0.1:3000/json-rpc'|;
     " "$CONSTANT_FILE"
@@ -144,20 +127,19 @@ ensure_applications_exist() {
 }
 
 run_e2e_tests() {
-    local wallet_mode=$1
-    local results_dir="allure-results-${wallet_mode}"
+    local results_dir="allure-results"
 
-    echo "Running E2E tests with wallet mode: $wallet_mode"
+    echo "Running E2E tests"
 
     rm -rf "$results_dir"
     mkdir -p "$results_dir"
 
     if [[ "$RUN_ALL" == true ]]; then
         echo "Running full test suite..."
-        pytest -s "$TESTS_DIR/" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
+        pytest -s "$TESTS_DIR/" --alluredir="$results_dir"
     elif [[ -n "$TEST_FILE" ]]; then
         echo "Running single test file: $TEST_FILE"
-        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
+        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir"
     else
         echo "No test file provided. Use --all to run all tests."
         exit 1
@@ -171,8 +153,6 @@ run_e2e_tests() {
 
 ensure_applications_exist
 
-for mode in "${WALLET_MODES[@]}"; do
-    run_e2e_tests "$mode"
-done
+run_e2e_tests
 
 echo "Setup and tests completed successfully!"

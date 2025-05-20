@@ -52,6 +52,7 @@ class BitcoinViewModel(QObject, ThreadManager):
             self.total_bitcoin_balance_with_suffix = total_balance + ' SATS'
             self.spendable_bitcoin_balance_with_suffix = bitcoin_balance_with_suffix
             self.transaction = response.transactions
+
             self.transaction_loaded.emit()
             if is_data_ready:
                 self.loading_finished.emit(False)

@@ -12,7 +12,6 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
-from src.model.enums.enums_model import WalletType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.views.components.header_frame import HeaderFrame
 
@@ -144,9 +143,7 @@ def test_handle_network_frame_visibility(header_frame):
 
                 # Mock os.path.exists to simulate the condition for backup warning
                 with patch('os.path.exists', return_value=False), \
-                        patch('src.data.repository.setting_repository.SettingRepository.is_backup_configured', return_value=MagicMock(is_backup_configured=False)), \
-                        patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type', return_value=MagicMock(value='EMBEDDED_TYPE_WALLET')):
-
+                        patch('src.data.repository.setting_repository.SettingRepository.is_backup_configured', return_value=MagicMock(is_backup_configured=False)):
                     # Call the method that should set the flag
                     header_frame.handle_network_frame_visibility(
                         network_status=True,
@@ -171,15 +168,11 @@ def test_set_wallet_backup_frame_show_backup_warning(header_frame):
     # Mock the return values for conditions that show the backup warning frame
     with patch('src.data.repository.setting_repository.SettingRepository.is_backup_configured') as mock_is_backup_configured, \
             patch('os.path.exists', return_value=False), \
-            patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type') as mock_get_wallet_type, \
             patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network') as mock_get_wallet_network:
 
         # Mock that the wallet type is EMBEDDED_TYPE_WALLET and backup is not configured
         mock_is_backup_configured.return_value = MagicMock(
             is_backup_configured=False,
-        )
-        mock_get_wallet_type.return_value = MagicMock(
-            value=WalletType.EMBEDDED_TYPE_WALLET.value,
         )
 
         # Mock the network to return MAINNET (ensures the frame shows even if it is not in REGTEST mode)
@@ -209,15 +202,10 @@ def test_set_wallet_backup_frame_hide_backup_warning(header_frame):
 
     # Mock the return values for conditions that do not show the backup warning frame
     with patch('src.data.repository.setting_repository.SettingRepository.is_backup_configured') as mock_is_backup_configured, \
-            patch('os.path.exists', return_value=True), \
-            patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type') as mock_get_wallet_type:
-
+            patch('os.path.exists', return_value=True):
         # Mock that the token path exists (so the backup warning shouldn't be shown)
         mock_is_backup_configured.return_value = MagicMock(
             is_backup_configured=True,
-        )
-        mock_get_wallet_type.return_value = MagicMock(
-            value=WalletType.EMBEDDED_TYPE_WALLET.value,
         )
 
         # Call the method that should hide the backup warning frame
@@ -234,7 +222,7 @@ def test_set_button_visibility(header_frame):
 
     # Mock lists for button visibility conditions
     refresh_and_action_button_list = [
-        'collectibles', 'fungibles', 'channel_management',
+        'collectibles', 'fungibles',
     ]
     refresh_button_list = ['view_unspent_list']
 

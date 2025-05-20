@@ -5,9 +5,7 @@ from __future__ import annotations
 import allure
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from accessible_constant import SECOND_APPLICATION
-from accessible_constant import SECOND_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -24,11 +22,11 @@ def test_hide_exhausted_asset_on(wallets_and_operations: WalletTestSetup):
     """Test for hiding exhausted asset"""
     with allure.step('Initializing the wallets and funding them'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations, FIRST_APPLICATION, FIRST_APPLICATION_URL,
+            FIRST_APPLICATION,
         )
 
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations, SECOND_APPLICATION, SECOND_APPLICATION_URL,
+            SECOND_APPLICATION,
         )
 
     with allure.step('Navigating to settings page'):

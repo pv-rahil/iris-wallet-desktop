@@ -28,16 +28,14 @@ from accessible_constant import CONFIGURE_BACKUP_BUTTON
 from accessible_constant import MNEMONIC_FRAME
 from accessible_constant import SHOW_MNEMONIC_BUTTON
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import MNEMONIC_KEY
 from src.utils.error_message import ERROR_G_DRIVE_CONFIG_FAILED
 from src.utils.gauth import authenticate
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_G_DRIVE_CONFIG_SUCCESS
-from src.utils.keyring_storage import get_value
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.toast import ToastManager
@@ -470,8 +468,6 @@ class Backup(QWidget):
             'fungibles': self._view_model.page_navigation.fungibles_asset_page,
             'RGB20': self._view_model.page_navigation.fungibles_asset_page,
             'RGB25': self._view_model.page_navigation.collectibles_asset_page,
-            'create_invoice': self._view_model.page_navigation.fungibles_asset_page,
-            'channel_management': self._view_model.page_navigation.channel_management_page,
             'collectibles': self._view_model.page_navigation.collectibles_asset_page,
             'faucets': self._view_model.page_navigation.faucets_page,
             'view_unspent_list': self._view_model.page_navigation.view_unspent_list_page,
@@ -500,8 +496,7 @@ class Backup(QWidget):
             IRIS_WALLET_TRANSLATIONS_CONTEXT, 'show_mnemonic', 'Show Mnemonic',
         )
         if self.show_mnemonic_button.text() == show_mnemonic_text_val:
-            network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            mnemonic_string: str = get_value(MNEMONIC_KEY, network.value)
+            mnemonic_string: str = mnemonic_store.decrypted_mnemonic
             mnemonic_array: list[str] = mnemonic_string.split()
             for i, mnemonic in enumerate(mnemonic_array, start=1):
                 label_name = f'mnemonic_text_label_{i}'
@@ -618,7 +613,6 @@ class Backup(QWidget):
             sidebar.help,
             sidebar.view_unspent_list,
             sidebar.faucet,
-            sidebar.channel_management,
             sidebar.my_fungibles,
             sidebar.my_collectibles,
             sidebar.settings,

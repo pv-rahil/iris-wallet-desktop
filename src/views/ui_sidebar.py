@@ -19,7 +19,6 @@ from PySide6.QtWidgets import QWidget
 import src.resources_rc
 from accessible_constant import ABOUT_BUTTON
 from accessible_constant import BACKUP_BUTTON
-from accessible_constant import CHANNEL_MANAGEMENT_BUTTON
 from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
 from accessible_constant import FUNGIBLE_BUTTON
@@ -114,14 +113,6 @@ class Sidebar(QWidget):
         self.faucet.setAccessibleName(FAUCET_BUTTON)
         self.grid_layout_sidebar.addWidget(self.faucet, 5, 0, 1, 1)
 
-        self.channel_management = SidebarButton(
-            'Channel management',
-            ':/assets/channel_management.png',
-            translation_key='channel_management',
-        )
-        self.channel_management.setAccessibleName(CHANNEL_MANAGEMENT_BUTTON)
-        self.grid_layout_sidebar.addWidget(self.channel_management, 2, 0, 1, 1)
-
         self.my_fungibles = SidebarButton(
             'My Fungibles', ':/assets/my_asset.png', translation_key='fungibles',
         )
@@ -174,9 +165,6 @@ class Sidebar(QWidget):
 
     def setup_ui_connections(self):
         """Set up connections for UI elements."""
-        self.channel_management.clicked.connect(
-            self._view_model.page_navigation.channel_management_page,
-        )
         self.my_fungibles.clicked.connect(
             self._view_model.page_navigation.fungibles_asset_page,
         )
@@ -239,7 +227,6 @@ class Sidebar(QWidget):
             self.help,
             self.view_unspent_list,
             self.faucet,
-            self.channel_management,
             self.my_fungibles,
             self.my_collectibles,
             self.settings,

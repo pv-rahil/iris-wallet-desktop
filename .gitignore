@@ -2,7 +2,6 @@
 **/__pycache__/
 build/
 dist/
-ln_node_binary/*
 resources_rc.py
 venv/
 .venv/
@@ -38,5 +37,3 @@ dataldk1
 dataldk2
 allure-results
 .pytest_cache
-allure-results-embedded
-allure-results-remote

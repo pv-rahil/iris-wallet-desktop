@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import pytest
 from PySide6.QtCore import QCoreApplication
+from rgb_lib import AssetIface
 from rgb_lib import RgbLibError
 
 from src.model.enums.enums_model import ToastPreset
@@ -197,10 +198,10 @@ def test_set_originating_page(send_rgb_asset_widget: SendRGBAssetWidget):
     """Test the set_originating_page method of the widget."""
 
     # Test when asset_type is 'RGB20'
-    send_rgb_asset_widget.set_originating_page('RGB20')
+    send_rgb_asset_widget.set_originating_page(AssetIface.RGB20)
 
     # Verify the asset_type is set to 'RGB20'
-    assert send_rgb_asset_widget.asset_type == 'RGB20'
+    assert send_rgb_asset_widget.asset_type == AssetIface.RGB20
 
 
 def test_rgb_asset_page_navigation(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
@@ -215,7 +216,7 @@ def test_rgb_asset_page_navigation(send_rgb_asset_widget: SendRGBAssetWidget, mo
     mock_page_navigation.sidebar.return_value = mock_sidebar
 
     # Test when asset_type is 'RGB20'
-    send_rgb_asset_widget.asset_type = 'RGB20'
+    send_rgb_asset_widget.asset_type = AssetIface.RGB20
 
     # Call the rgb_asset_page_navigation method
     send_rgb_asset_widget.rgb_asset_page_navigation()

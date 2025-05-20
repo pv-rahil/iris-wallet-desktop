@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """This module contains the welcomeViewModel class, which represents the view model
 for the term and conditions page activities.
 """
@@ -5,8 +6,6 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
-
-from src.model.enums.enums_model import WalletType
 
 
 class WelcomeViewModel(QObject):
@@ -21,6 +20,4 @@ class WelcomeViewModel(QObject):
 
     def on_create_click(self):
         """This method handles the wallet creation process."""
-        self._page_navigation.set_wallet_password_page(
-            WalletType.EMBEDDED_TYPE_WALLET.value,
-        )
+        self._page_navigation.set_wallet_password_page()

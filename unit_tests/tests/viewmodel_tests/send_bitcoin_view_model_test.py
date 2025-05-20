@@ -49,7 +49,7 @@ def test_on_success_authentication_btc_send_exception(mock_logger, mock_auth, se
 
 def test_on_success(send_bitcoin_view_model):
     """Test successful BTC send completion."""
-    mock_response = SendBtcResponseModel(txid='test_txid')
+    mock_response = SendBtcResponseModel(tx_id='test_txid')
 
     # Create a mock slot for the signal
     mock_slot = MagicMock()

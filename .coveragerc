@@ -1,7 +1,6 @@
 [run]
 omit =
     src/model/*
-    src/data/repository/*
     src/utils/generate_config.py
     src/utils/generate_iss.py
     src/utils/reset_app.py

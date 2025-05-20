@@ -38,7 +38,6 @@ class EnterWalletPassword(QWidget):
     def __init__(self, view_model):
         super().__init__()
         self._view_model: MainViewModel = view_model
-
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
 
@@ -306,7 +305,7 @@ class EnterWalletPassword(QWidget):
 
     def set_wallet_password(self, enter_password_input: QLineEdit):
         """Take password input from ui and pass view model method set_wallet_password"""
-        self._view_model.enter_wallet_password_view_model.set_wallet_password(
+        self._view_model.enter_wallet_password_view_model.set_wallet_credentials(
             enter_password_input.text(),
         )
 

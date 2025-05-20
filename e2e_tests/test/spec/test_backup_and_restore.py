@@ -25,7 +25,6 @@ PASSWORD = None
 pytestmark = pytest.mark.order(1)
 
 
-@pytest.mark.skip_for_remote
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Mnemonic and backup configuration')
 @allure.story('Mnemonic and backup configuration functionality')
@@ -43,7 +42,7 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
     global MNEMONIC
     global PASSWORD
     with allure.step('Create a embedded wallet'):
-        wallets_and_operations.first_page_features.wallet_features.create_embedded_wallet(
+        wallets_and_operations.first_page_features.wallet_features.create_wallet(
             FIRST_APPLICATION,
         )
     with allure.step('Check the backup configuration'):
@@ -70,7 +69,6 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
 
 @allure.feature('Backup page')
 @allure.story('Backup page functionality')
-@pytest.mark.skip_for_remote
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
     """
@@ -113,9 +111,8 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
 
 @allure.feature('Restore page')
 @allure.story('Restore page functionality')
-@pytest.mark.skip_for_remote
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
-def test_restore(wallets_and_operations: WalletTestSetup):
+def test_restore(test_environment, wallets_and_operations: WalletTestSetup):
     """
     This test case is used to restore the wallet from the backup.
     """
@@ -123,8 +120,6 @@ def test_restore(wallets_and_operations: WalletTestSetup):
     with allure.step('Restore the wallet'):
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.scroll_to_end()
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.click_accept_button()
-        wallets_and_operations.first_page_objects.wallet_selection_page_objects.click_embedded_button()
-        wallets_and_operations.first_page_objects.wallet_selection_page_objects.click_continue_button()
         wallets_and_operations.first_page_objects.welcome_page_objects.click_restore_button()
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
             mnemonic=MNEMONIC,
@@ -154,3 +149,57 @@ def test_restore(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
         assert description == INFO_RESTORE_COMPLETED
+        with allure.step('Off keyring for restore wallet with keyring off'):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
+            test_environment.restart()
+
+
+@allure.feature('Restore page')
+@allure.story('Restore page with keyring off')
+@pytest.mark.parametrize('test_environment', [False], indirect=True)
+def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup):
+    """
+    This test case is used to restore the wallet from the backup.
+    """
+    description = None
+    with allure.step('Restore the wallet with keyring off'):
+        wallets_and_operations.first_page_objects.term_and_condition_page_objects.scroll_to_end()
+        wallets_and_operations.first_page_objects.term_and_condition_page_objects.click_accept_button()
+        wallets_and_operations.first_page_objects.welcome_page_objects.click_restore_button()
+        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
+            mnemonic=MNEMONIC,
+        )
+        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+            password=PASSWORD,
+        )
+        wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
+    with allure.step('Enter Credentials'):
+        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_window()
+        wallets_and_operations.first_page_objects.backup_page_objects.enter_email(
+            BACKUP_EMAIL_ID,
+        )
+        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
+        wallets_and_operations.first_page_objects.backup_page_objects.enter_password(
+            BACKUP_EMAIL_PASSWORD,
+        )
+        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
+        wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
+        wallets_and_operations.first_page_objects.backup_page_objects.click_google_authenticator_button()
+        code = wallets_and_operations.first_page_objects.backup_page_objects.get_security_otp()
+        wallets_and_operations.first_page_objects.backup_page_objects.enter_security_code(
+            code,
+        )
+        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
+        wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
+        wallets_and_operations.first_page_operations.wait_for_toaster_message()
+        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        assert description == INFO_RESTORE_COMPLETED
+    with allure.step('Enter password for validation'):
+        wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
+            PASSWORD,
+        )
+        wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()

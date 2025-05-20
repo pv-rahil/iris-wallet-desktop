@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,too-few-public-methods
 """This module contains the ClickableFrame class, which represents a clickable frame widget.
 
 This class inherits from QFrame and emits a clicked signal when a mouse press event occurs.
@@ -34,7 +34,7 @@ class ClickableFrame(QFrame):
     """This class represents a clickable frame."""
 
     # Signal emits ID, name, and image path
-    clicked = Signal(str, str, str, str)
+    clicked = Signal(str, str, str, object)
 
     def __init__(self, _id=None, _name=None, image_path=None, asset_type=None, parent=None, **kwargs):
         super().__init__(parent, **kwargs)

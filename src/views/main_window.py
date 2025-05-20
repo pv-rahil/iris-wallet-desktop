@@ -18,7 +18,6 @@ from src.flavour import __app_name_suffix__
 from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.helpers import load_stylesheet
-from src.utils.ln_node_manage import LnNodeServerManager
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.ui_sidebar import Sidebar
@@ -38,7 +37,6 @@ class MainWindow:
         self.stacked_widget: QStackedWidget
         self._loading_translucent_screen = None
         self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
-        self.ln_node_server_manager = LnNodeServerManager().get_instance()
 
     def set_ui_and_model(self, view_model: MainViewModel):
         """Set the UI and view model."""
@@ -47,16 +45,6 @@ class MainWindow:
         self.horizontal_layout.addWidget(self.sidebar)
         self.horizontal_layout.addWidget(self.stacked_widget)
         self.grid_layout_main.addLayout(self.horizontal_layout, 0, 0, 1, 1)
-        self.view_model.splash_view_model.show_main_window_loader.connect(
-            self.show_main_window_loading_screen,
-        )
-        self.ln_node_server_manager.main_window_loader.connect(
-            self.show_main_window_loading_screen,
-        )
-        self.view_model.splash_view_model.load_wallet_transfer_selection_view_model(
-            # This ensures that the splash view consistently uses the same instance throughout the application, preventing abnormal behavior.
-            self.view_model.wallet_transfer_selection_view_model,
-        )
 
     def setup_ui(self, main_window: QMainWindow):
         """Set up the UI elements."""
@@ -82,7 +70,7 @@ class MainWindow:
         self.retranslate_ui()
         QMetaObject.connectSlotsByName(self.main_window)
 
-    def show_main_window_loading_screen(self, loading_status: bool, loader_description: str):
+    def show_main_window_loading_screen(self, loading_status: bool):
         """Handles showing or hiding the loading screen on the main window."""
         current_widget = self.stacked_widget.currentWidget().objectName()
         if current_widget == 'splash_page':
@@ -91,7 +79,6 @@ class MainWindow:
         if loading_status:
             self._loading_translucent_screen = LoadingTranslucentScreen(
                 parent=self.main_window,
-                description_text=loader_description,
                 loader_type=LoaderDisplayModel.FULL_SCREEN,
             )
             self._loading_translucent_screen.start()

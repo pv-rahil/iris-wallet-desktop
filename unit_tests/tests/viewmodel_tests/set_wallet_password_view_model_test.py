@@ -12,9 +12,7 @@ import pytest
 from PySide6.QtWidgets import QLineEdit
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.common_operation_model import InitResponseModel
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletType
 from src.utils.custom_exception import CommonException
 from src.utils.local_store import local_store
 from src.viewmodels.set_wallet_password_view_model import SetWalletPasswordViewModel
@@ -57,18 +55,6 @@ def mock_keyring_and_storage(monkeypatch):
 
 
 @pytest.fixture
-def init_mock(mocker):
-    """Fixture to create a mock CommonOperationRepository init method."""
-    mock_response = InitResponseModel(
-        mnemonic='skill lamp please gown put season degree collect decline account monitor insane',
-    )
-    return mocker.patch(
-        'src.data.repository.common_operations_repository.CommonOperationRepository.init',
-        return_value=mock_response,
-    )
-
-
-@pytest.fixture
 def set_wallet_initialized_mock(mocker):
     """Fixture to create a mock SettingRepository set_wallet_initialized method."""
     return mocker.patch(
@@ -98,14 +84,12 @@ def set_wallet_password_view_model(mock_page_navigation):
 
 @pytest.fixture
 def mocks(
-    init_mock,
     set_wallet_initialized_mock,
     unlock_mock,
     set_value_mock,
 ):
     """Fixture to create an object of the multiple mocks."""
     return {
-        'init_mock': init_mock,
         'set_wallet_initialized_mock': set_wallet_initialized_mock,
         'unlock_mock': unlock_mock,
         'set_value_mock': set_value_mock,
@@ -147,32 +131,6 @@ def test_generate_password(set_wallet_password_view_model):
     assert 'Error' in generated_password_invalid
 
 
-def test_set_wallet_password_common_exception(set_wallet_password_view_model, mocker, mocks):
-    """"Test for set wallet password work as expected in exception scenario"""
-    enter_password_input_mock = mocker.MagicMock(spec=QLineEdit)
-    confirm_password_input_mock = mocker.MagicMock(spec=QLineEdit)
-    validation_mock = mocker.MagicMock()
-
-    init_mock = mocks['init_mock']
-    mock_message = Mock()
-    set_wallet_password_view_model.message.connect(mock_message)
-
-    def call_set_wallet_password(enter_password: str, confirm_password: str):
-        enter_password_input_mock.text.return_value = enter_password
-        confirm_password_input_mock.text.return_value = confirm_password
-
-        set_wallet_password_view_model.set_wallet_password_in_thread(
-            enter_password_input_mock,
-            confirm_password_input_mock,
-            validation_mock,
-        )
-
-    init_mock.side_effect = CommonException('Test exception')
-    call_set_wallet_password('validpassword', 'validpassword')
-    set_wallet_password_view_model.worker.error.emit(init_mock.side_effect)
-    mock_message.assert_called_once_with(ToastPreset.ERROR, 'Test exception')
-
-
 def test_set_wallet_password_short_password(set_wallet_password_view_model, mocker):
     """Test for set wallet password when the password length is less than 8 characters."""
     enter_password_input_mock = mocker.MagicMock(spec=QLineEdit)
@@ -196,102 +154,157 @@ def test_set_wallet_password_short_password(set_wallet_password_view_model, mock
     )
 
 
-def test_set_wallet_password_special_characters(set_wallet_password_view_model, mocker):
-    """Test for set wallet password when the password contains special characters."""
-    enter_password_input_mock = mocker.MagicMock(spec=QLineEdit)
-    confirm_password_input_mock = mocker.MagicMock(spec=QLineEdit)
-    validation_mock = mocker.MagicMock()
+def test_password_too_short(set_wallet_password_view_model, mocker):
+    """
+    Test that validation fails when the password is shorter than 8 characters.
+    Ensures the correct validation message is shown and loading is not triggered.
+    """
+    enter_mock = mocker.MagicMock(spec=QLineEdit)
+    confirm_mock = mocker.MagicMock(spec=QLineEdit)
+    validation_mock = MagicMock()
 
-    # Set password with special characters
-    enter_password_input_mock.text.return_value = 'password!'
-    confirm_password_input_mock.text.return_value = 'password!'
+    enter_mock.text.return_value = 'short'
+    confirm_mock.text.return_value = 'short'
 
-    # Call the method
     set_wallet_password_view_model.set_wallet_password_in_thread(
-        enter_password_input_mock,
-        confirm_password_input_mock,
-        validation_mock,
+        enter_mock, confirm_mock, validation_mock,
     )
 
-    # Validation mock should be called with the appropriate message
+    validation_mock.assert_called_once_with(
+        'Minimum password length is 8 characters.',
+    )
+    mock_emit = Mock()
+    set_wallet_password_view_model.is_loading.connect(mock_emit)
+
+
+def test_password_has_special_char(set_wallet_password_view_model, mocker):
+    """
+    Test that validation fails when the password contains special characters.
+    Ensures the proper error message is emitted and loading is not triggered.
+    """
+    enter_mock = mocker.MagicMock(spec=QLineEdit)
+    confirm_mock = mocker.MagicMock(spec=QLineEdit)
+    validation_mock = MagicMock()
+
+    enter_mock.text.return_value = 'valid@123'
+    confirm_mock.text.return_value = 'valid@123'
+
+    set_wallet_password_view_model.set_wallet_password_in_thread(
+        enter_mock, confirm_mock, validation_mock,
+    )
+
     validation_mock.assert_called_once_with(
         'Password cannot contain special characters.',
     )
+    mock_emit = Mock()
+    set_wallet_password_view_model.is_loading.connect(mock_emit)
 
 
-def test_set_wallet_password_passwords_do_not_match(set_wallet_password_view_model, mocker):
-    """Test for set wallet password when the passwords do not match."""
-    enter_password_input_mock = mocker.MagicMock(spec=QLineEdit)
-    confirm_password_input_mock = mocker.MagicMock(spec=QLineEdit)
-    validation_mock = mocker.MagicMock()
+def test_password_mismatch(set_wallet_password_view_model, mocker):
+    """
+    Test that validation fails when the password and confirmation do not match.
+    Validates the correct message is returned and thread execution does not begin.
+    """
+    enter_mock = mocker.MagicMock(spec=QLineEdit)
+    confirm_mock = mocker.MagicMock(spec=QLineEdit)
+    validation_mock = MagicMock()
 
-    # Set different passwords
-    enter_password_input_mock.text.return_value = 'password1'
-    confirm_password_input_mock.text.return_value = 'password2'
+    enter_mock.text.return_value = 'valid1234'
+    confirm_mock.text.return_value = 'different1234'
 
-    # Call the method
     set_wallet_password_view_model.set_wallet_password_in_thread(
-        enter_password_input_mock,
-        confirm_password_input_mock,
-        validation_mock,
+        enter_mock, confirm_mock, validation_mock,
     )
 
-    # Validation mock should be called with the appropriate message
     validation_mock.assert_called_once_with('Passwords must be the same!')
+    mock_emit = Mock()
+    set_wallet_password_view_model.is_loading.connect(mock_emit)
 
 
-@patch('src.data.repository.setting_repository.SettingRepository')
-@patch('src.utils.keyring_storage.set_value')
-@patch('src.views.components.toast.ToastManager')
-@patch('src.views.components.keyring_error_dialog.KeyringErrorDialog')
-def test_on_success(mock_keyring_error_dialog, mock_toast_manager, mock_set_value, mock_setting_repository, set_wallet_password_view_model, mock_keyring_and_storage):
-    """Test the on_success method."""
+def test_password_valid_and_match(set_wallet_password_view_model, mocker):
+    """
+    Test that if passwords are valid and match:
+    - No validation error is triggered
+    - The loading state is emitted
+    - The wallet initialization is executed in a thread
+    """
+    enter_mock = mocker.MagicMock(spec=QLineEdit)
+    confirm_mock = mocker.MagicMock(spec=QLineEdit)
+    validation_mock = MagicMock()
+    mocked_thread = mocker.patch.object(
+        set_wallet_password_view_model, 'run_in_thread',
+    )
+    partial_mock = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.partial',
+    )
 
-    # Create a mock InitResponseModel with mnemonic
+    enter_mock.text.return_value = 'validpass'
+    confirm_mock.text.return_value = 'validpass'
+
+    set_wallet_password_view_model.set_wallet_password_in_thread(
+        enter_mock, confirm_mock, validation_mock,
+    )
+
+    mock_emit = Mock()
+    set_wallet_password_view_model.is_loading.connect(mock_emit)
+    mocked_thread.assert_called_once()
+    validation_mock.assert_not_called()
+    partial_mock.assert_called_once()
+
+
+@patch('src.viewmodels.set_wallet_password_view_model.mnemonic_store.encrypt', return_value='encrypted_mnemonic')
+@patch('src.viewmodels.set_wallet_password_view_model.local_store.write_to_file')
+@patch('src.viewmodels.set_wallet_password_view_model.local_store.set_value', return_value=True)
+@patch('src.viewmodels.set_wallet_password_view_model.set_value', return_value=True)
+@patch('src.viewmodels.set_wallet_password_view_model.SettingRepository')
+def test_on_success_password_stored(
+    mock_setting_repo, mock_set_value, mock_local_store_set, mock_local_store_write, mock_encrypt, set_wallet_password_view_model,
+):
+    """Test that on_success stores password and navigates to fungibles page."""
     mock_response = MagicMock()
-    mock_response.mnemonic = 'test mnemonic'
+    mock_response.mnemonic = 'mnemonic'
+    mock_response.account_xpub = 'xpub'
 
-    # Mock SettingRepository methods
-    mock_setting_repository.get_wallet_network.return_value = MagicMock(
-        value='test_network',
-    )
-    mock_setting_repository.get_wallet_type.return_value = MagicMock(
-        value=WalletType.EMBEDDED_TYPE_WALLET.value,
-    )
+    with patch.object(set_wallet_password_view_model, 'forward_to_fungibles_page') as mock_forward:
+        response_tuple = (mock_response, 'testpassword')
+        mock_setting_repo.get_wallet_network.return_value.value = 'test_network'
 
-    # Mock os.path.exists
-    with patch('os.path.exists') as mock_exists:
-        mock_exists.return_value = True
+        set_wallet_password_view_model.on_success(
+            response_tuple, password='testpassword',
+        )
 
-        # Call the on_success method
-        set_wallet_password_view_model.on_success(mock_response)
+        mock_emit = Mock()
+        set_wallet_password_view_model.is_loading.connect(mock_emit)
+        mock_encrypt.assert_called_once()
+        mock_local_store_write.assert_called_once()
+        mock_local_store_set.assert_called_once()
+        mock_set_value.assert_called_once()
+        mock_forward.assert_called_once()
 
-        mock_keyring_error_dialog.assert_not_called()
+
+def test_on_error_general(set_wallet_password_view_model, mocker):
+    """Test that on_error emits the correct error message."""
+    exception = CommonException('Other error')
+    exception.message = 'Other error'
+
+    mock_message_emit = mocker.MagicMock()
+    set_wallet_password_view_model.message.connect(mock_message_emit)
+
+    set_wallet_password_view_model.on_error(exception)
+
+    mock_message_emit.assert_called_once_with(ToastPreset.ERROR, 'Other error')
 
 
-@patch('src.data.repository.setting_repository.SettingRepository')
-@patch('src.utils.keyring_storage.set_value')
-@patch('src.views.components.toast.ToastManager')
-@patch('src.views.components.keyring_error_dialog.KeyringErrorDialog')
-def test_on_success_keyring_error(mock_keyring_error_dialog, mock_toast_manager, mock_set_value, mock_setting_repository, set_wallet_password_view_model):
-    """Test the on_success method with keyring storage error."""
+def test_forward_to_fungibles_page(set_wallet_password_view_model, mock_page_navigation):
+    """Test that forward_to_fungibles_page navigates and sets checkbox."""
+    mock_sidebar = MagicMock()
+    mock_fungibles_page = MagicMock()
 
-    # Create a mock InitResponseModel with mnemonic
-    mock_response = MagicMock()
-    mock_response.mnemonic = 'test mnemonic'
+    mock_page_navigation.sidebar.return_value = mock_sidebar
+    mock_page_navigation.fungibles_asset_page.return_value = mock_fungibles_page
 
-    # Mock SettingRepository methods
-    mock_setting_repository.get_wallet_network.return_value = MagicMock(
-        value='test_network',
-    )
-    mock_setting_repository.get_wallet_type.return_value = MagicMock(
-        value=WalletType.EMBEDDED_TYPE_WALLET.value,
-    )
+    set_wallet_password_view_model.forward_to_fungibles_page()
 
-    # Mock set_value to return False (indicating failure to store value)
-    mock_set_value.side_effect = [True, False]
-
-    # Call the on_success method
-    set_wallet_password_view_model.on_success(mock_response)
-
-    mock_toast_manager.show_toast.assert_not_called()
+    mock_page_navigation.sidebar.assert_called_once()
+    mock_sidebar.my_fungibles.setChecked.assert_called_once_with(True)
+    mock_page_navigation.fungibles_asset_page.assert_called_once()

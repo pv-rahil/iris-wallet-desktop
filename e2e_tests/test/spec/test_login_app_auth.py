@@ -8,7 +8,6 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_URL
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
@@ -33,7 +32,7 @@ def test_login_app_toggle_button_on(test_environment, wallets_and_operations: Wa
     """
     with allure.step('Create and fund first wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            wallets_and_operations=wallets_and_operations, application=FIRST_APPLICATION, application_url=FIRST_APPLICATION_URL, fund=False,
+            application=FIRST_APPLICATION, fund=False,
         )
 
     with allure.step('Toggle the login app auth button to on and restart the application'):

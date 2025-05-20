@@ -9,6 +9,9 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import RgbAllocation
+from rgb_lib import Unspent
+from rgb_lib import Utxo
 
 from src.model.btc_model import UnspentsListResponseModel
 from src.viewmodels.view_unspent_view_model import UnspentListViewModel
@@ -29,26 +32,25 @@ def unspent_list_view_model(mock_page_navigation):
 @pytest.fixture
 def mock_list_unspents_response():
     """Fixture for creating a mock list_unspents api."""
-    mocked_unspent_list_response = {
-        'unspents': [
-            {
-                'utxo': {
-                    'outpoint': 'efed66f5309396ff43c8a09941c8103d9d5bbffd473ad9f13013ac89fb6b4671:0',
-                    'btc_amount': 1000,
-                    'colorable': True,
-                },
-                'rgb_allocations': [
-                    {
-                        'asset_id': 'rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-                        'amount': 42,
-                        'settled': False,
-                    },
-                ],
-            },
-        ],
-    }
+    mocked_unspent_list_response = [
+        Unspent(
+            utxo=Utxo(
+                outpoint='efed66f5309396ff43c8a09941c8103d9d5bbffd473ad9f13013ac89fb6b4671:0',
+                btc_amount=1000,
+                colorable=True,
+                exists=False,  # Add default or actual value for exists if necessary
+            ),
+            rgb_allocations=[
+                RgbAllocation(
+                    asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
+                    amount=42,
+                    settled=False,
+                ),
+            ],
+        ),
+    ]
     mock_response_model = UnspentsListResponseModel(
-        **mocked_unspent_list_response,
+        unspents=mocked_unspent_list_response,
     )
     return mock_response_model
 

@@ -148,17 +148,6 @@ def mock_issue_asset_uda(mocker):
 
 
 @pytest.fixture
-def mock_post_asset_media(mocker):
-    """Mocked issue_asset_uda function."""
-    def _mock_post_asset_media(value):
-        return mocker.patch(
-            'src.data.repository.rgb_repository.RgbRepository.post_asset_media',
-            return_value=value,
-        )
-    return _mock_post_asset_media
-
-
-@pytest.fixture
 def mock_fail_transfer(mocker):
     """Mocked fail transfer function"""
     def _mock_fail_transfer(value):

@@ -15,6 +15,7 @@ from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
@@ -93,6 +94,9 @@ class IssueRGB20ViewModel(QObject, ThreadManager):
 
     def on_success(self, response: IssueAssetResponseModel) -> None:
         """This method is used  handle onsuccess for the RGB20 issue page."""
+        ToastManager.success(
+            description=INFO_ASSET_ISSUED.format(response.asset_id),
+        )
         self.issue_button_clicked.emit(False)
         self.is_issued.emit(response.name)
 

@@ -15,12 +15,19 @@ class CommonException(Exception):
     def __init__(self, message: str, exc=None):
         super().__init__(message)
         self.message = message
-        if exc is not None:
-            self.name = exc.get('name')
-            self.error_message = ERROR_MAPPING.get(self.name)
+        self.error_message = self._get_error_message(exc)
+
+        if self.error_message:
             self.message = QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, self.error_message, None,
             )
+
+    def _get_error_message(self, exc):
+        """Helper method to get error message based on the exception."""
+        if exc is not None:
+            name = exc.get('name')
+            return ERROR_MAPPING.get(name)
+        return ERROR_MAPPING.get(self.message)
 
 
 class ServiceOperationException(Exception):

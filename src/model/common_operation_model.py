@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 from pydantic import BaseModel
+from rgb_lib import BitcoinNetwork
 
 from src.model.btc_model import OfflineAsset
 from src.model.rgb_model import GetAssetResponseModel
+from src.utils.constant import MAX_ALLOCATIONS_PER_UTXO
 
 
 # -------------------- Helper models -----------------------
@@ -16,51 +18,18 @@ class StatusModel(BaseModel):
 
     status: bool
 
-
-class SkipSyncModel(BaseModel):
-    """Skip sync model"""
-    skip_sync: bool = False
-
 # -------------------- Request models -----------------------
-
-
-class SignMessageRequestModel(BaseModel):
-    """Sign message request model."""
-
-    message: str
-
-
-class SendOnionMessageRequestModel(BaseModel):
-    """Send onion message request model."""
-
-    node_ids: list[str]
-    tlv_type: int
-    data: str
-
-
-class CheckIndexerUrlRequestModel(BaseModel):
-    """Check Indexer Url request model."""
-
-    indexer_url: str
-
-
-class CheckProxyEndpointRequestModel(BaseModel):
-    """Check Proxy Endpoint request model."""
-
-    proxy_endpoint: str
 
 
 class InitRequestModel(BaseModel):
     """Init request model."""
 
     password: str
+    network: BitcoinNetwork
 
-
-class ChangePasswordRequestModel(BaseModel):
-    """Change password request model."""
-
-    old_password: str
-    new_password: str
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 
 class BackupRequestModel(BaseModel):
@@ -70,87 +39,39 @@ class BackupRequestModel(BaseModel):
     password: str
 
 
-class UnlockRequestModel(InitRequestModel):
+class ConfigModel(InitRequestModel):
     """Unlock request model."""
-    bitcoind_rpc_username: str
-    bitcoind_rpc_password: str
-    bitcoind_rpc_host: str
-    bitcoind_rpc_port: int
     indexer_url: str
     proxy_endpoint: str
-    announce_addresses: list[str]
-    announce_alias: str
+
+
+class WalletRequestModel(BaseModel):
+    """Wallet Request Model"""
+    data_dir: str
+    bitcoin_network: BitcoinNetwork
+    max_allocations_per_utxo: int = MAX_ALLOCATIONS_PER_UTXO
+    account_xpub: str
+    mnemonic: str
+    vanilla_keychain: int | None = None
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 
 class RestoreRequestModel(BackupRequestModel):
     """Restore request model."""
+    data_dir: str
 
 
 # -------------------- Response models -----------------------
-
-class InitResponseModel(BaseModel):
-    """Init response model."""
-
-    mnemonic: str
-
 
 class BackupResponseModel(StatusModel):
     """Backup response model."""
 
 
-class ChangePassWordResponseModel(StatusModel):
-    """Change password response model."""
-
-
-class LockResponseModel(StatusModel):
-    """Lock response model."""
-
-
-class NetworkInfoResponseModel(BaseModel):
-    """Network information response model."""
-
-    network: str
-    height: int
-
-
-class NodeInfoResponseModel(BaseModel):
-    """Node information response model."""
-
-    pubkey: str
-    num_channels: int
-    num_usable_channels: int
-    local_balance_sat: int
-    eventual_close_fees_sat: int
-    pending_outbound_payments_sat: int
-    num_peers: int
-    onchain_pubkey: str
-    max_media_upload_size_mb: int
-    rgb_htlc_min_msat: int
-    rgb_channel_capacity_min_sat: int
-    channel_capacity_min_sat: int
-    channel_capacity_max_sat: int
-    channel_asset_min_amount: int
-    channel_asset_max_amount: int
-    network_nodes: int
-    network_channels: int
-
-
 class RestoreResponseModel(StatusModel):
     """Restore response model."""
-
-
-class SendOnionMessageResponseModel(StatusModel):
-    """Send onion message response model."""
-
-
-class ShutDownResponseModel(StatusModel):
-    """Shut down response model."""
-
-
-class SignMessageResponseModel(BaseModel):
-    """Sign message response model."""
-
-    signed_message: str
 
 
 class UnlockResponseModel(StatusModel):
@@ -162,9 +83,6 @@ class MainPageDataResponseModel(GetAssetResponseModel):
     vanilla: OfflineAsset
 
 
-class CheckIndexerUrlResponseModel(BaseModel):
-    """Check Indexer Url response model."""
-    indexer_protocol: str
 # -------------------- Component models -----------------------
 
 
@@ -178,15 +96,13 @@ class ConfigurableCardModel(BaseModel):
 
 
 class AppPathsModel(BaseModel):
-    """Model representing filesystem paths used by the application and node."""
+    """Model representing filesystem paths used by the application"""
     app_path: str
-    node_data_path: str
     iriswallet_temp_folder_path: str
     cache_path: str
     app_logs_path: str
-    node_logs_path: str
-    ldk_logs_path: str
     pickle_file_path: str
     config_file_path: str
     backup_folder_path: str
     restore_folder_path: str
+    mnemonic_file_path: str

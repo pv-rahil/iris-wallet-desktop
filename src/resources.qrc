@@ -15,7 +15,6 @@
     <file>assets/regtest_bitcoin.png</file>
     <file>assets/testnet_bitcoin.png</file>
     <file>assets/btc.png</file>
-    <file>assets/channel_management.png</file>
     <file>assets/eye_hidden.png</file>
     <file>assets/eye_visible.png</file>
     <file>assets/faucets.png</file>
@@ -39,14 +38,12 @@
     <file>assets/qr_code.png</file>
     <file>assets/copy.png</file>
     <file>assets/embedded.png</file>
-    <file>assets/remote.png</file>
     <file>assets/configure_backup.png</file>
     <file>assets/show_mnemonic.png</file>
     <file>assets/hide_mnemonic.png</file>
     <file>assets/btc_lightning.png</file>
     <file>assets/info_circle.png</file>
     <file>assets/swap.png</file>
-    <file>assets/off_chain.png</file>
     <file>assets/on_chain.png</file>
     <file>assets/logo_large.png</file>
     <file>assets/get_faucets.png</file>
@@ -64,6 +61,5 @@
     <file>assets/images/clockwise_rotating_loader.gif</file>
     <file>assets/loading.gif</file>
     <file>assets/x_circle_red.png</file>
-    <file>assets/lightning_transaction.png</file>
   </qresource>
 </RCC>

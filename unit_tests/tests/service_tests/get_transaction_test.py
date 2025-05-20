@@ -45,10 +45,6 @@ def test_list_transaction_all(mock_list_transactions, mock_get_btc_balance):
         assert actual.received == expected.received
         assert actual.sent == expected.sent
         assert actual.fee == expected.fee
-        assert actual.transfer_status == expected.transfer_status
-        assert actual.transaction_status == expected.transaction_status
-        assert actual.confirmation_normal_time == expected.confirmation_normal_time
-        assert actual.confirmation_date == expected.confirmation_date
         assert actual.confirmation_time == expected.confirmation_time
 
     assert result.balance == mock_data_expected_list_transaction_all.balance
@@ -87,8 +83,6 @@ def test_list_transaction_type_user_unconfirm(mock_list_transactions, mock_get_b
     deducted_amount = result.transactions[0].sent - \
         result.transactions[0].received
     assert result.transactions[0].amount == str(-deducted_amount)
-    assert result.transactions[0].confirmation_date is None
-    assert result.transactions[0].confirmation_normal_time is None
     assert result.transactions[0].confirmation_time is None
     assert (
         result.transactions[0].transaction_status
@@ -135,8 +129,6 @@ def test_list_transaction_type_user_confirm(mock_list_transactions, mock_get_btc
     deducted_amount = result.transactions[0].sent - \
         result.transactions[0].received
     assert result.transactions[0].amount == str(-deducted_amount)
-    assert result.transactions[0].confirmation_date == '2024-05-29'
-    assert result.transactions[0].confirmation_normal_time == '23:49:35'
     assert result.transactions[0].confirmation_time.height == int(105)
     assert result.transactions[0].confirmation_time.timestamp == int(
         1717006775,
@@ -173,8 +165,6 @@ def test_list_transaction_type_internal_unconfirm(mock_list_transactions, mock_g
     result = BitcoinPageService.get_btc_transaction()
     deducted_amount = (UTXO_SIZE_SAT * NO_OF_UTXO) + result.transactions[0].fee
     assert result.transactions[0].amount == str(-deducted_amount)
-    assert result.transactions[0].confirmation_date is None
-    assert result.transactions[0].confirmation_normal_time is None
     assert result.transactions[0].confirmation_time is None
     assert (
         result.transactions[0].transaction_status
@@ -222,8 +212,6 @@ def test_list_transaction_type_internal_confirm(mock_list_transactions, mock_get
     result = BitcoinPageService.get_btc_transaction()
     deducted_amount = (UTXO_SIZE_SAT * NO_OF_UTXO) + result.transactions[0].fee
     assert result.transactions[0].amount == str(-deducted_amount)
-    assert result.transactions[0].confirmation_date == '2024-05-29'
-    assert result.transactions[0].confirmation_normal_time == '23:51:42'
     assert result.transactions[0].confirmation_time.height == int(106)
     assert result.transactions[0].confirmation_time.timestamp == int(
         1717006902,
@@ -262,8 +250,6 @@ def test_list_transaction_type_user_receive_unconfirm(mock_list_transactions, mo
     received_amount = result.transactions[0].received
     formatted_received_amount = f'{received_amount:+}'
     assert result.transactions[0].amount == formatted_received_amount
-    assert result.transactions[0].confirmation_date is None
-    assert result.transactions[0].confirmation_normal_time is None
     assert result.transactions[0].confirmation_time is None
     assert (
         result.transactions[0].transaction_status
@@ -305,8 +291,6 @@ def test_list_transaction_type_user_receive_confirm(mock_list_transactions, mock
     received_amount = result.transactions[0].received
     formatted_received_amount = f'{received_amount:+}'
     assert result.transactions[0].amount == formatted_received_amount
-    assert result.transactions[0].confirmation_date == '2024-05-29'
-    assert result.transactions[0].confirmation_normal_time == '23:44:38'
     assert result.transactions[0].confirmation_time.height == int(104)
     assert result.transactions[0].confirmation_time.timestamp == int(
         1717006478,

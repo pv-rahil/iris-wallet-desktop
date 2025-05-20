@@ -23,11 +23,9 @@ from accessible_constant import ISSUE_RGB25_ASSET
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
-from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
-from src.utils.logging import logger
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame
@@ -204,10 +202,7 @@ class CollectiblesAssetWidget(QWidget):
 
     def create_collectible_frame(self, coll_asset):
         """Create a single collectible frame"""
-        if coll_asset.media.hex is None:
-            image_path = coll_asset.media.file_path
-        else:
-            image_path = coll_asset.media.hex
+        image_path = coll_asset.media.file_path
         collectibles_frame = ClickableFrame(
             coll_asset.asset_id,
             coll_asset.name,
@@ -256,19 +251,9 @@ class CollectiblesAssetWidget(QWidget):
             '}\n',
         )
 
-        if coll_asset.media.hex is None:
+        if coll_asset.media.file_path:
             resized_image = resize_image(coll_asset.media.file_path, 242, 242)
             image_label.setPixmap(resized_image)
-        else:
-            pixmap = convert_hex_to_image(coll_asset.media.hex)
-            resized_image = resize_image(pixmap, 242, 242)
-            if not pixmap.isNull():
-                image_label.setPixmap(resized_image)
-            else:
-                logger.error(
-                    'Failed to load image: %s',
-                    coll_asset.media.file_path,
-                )
 
         form_layout.addRow(image_label)
 
