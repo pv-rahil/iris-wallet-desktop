@@ -10,8 +10,8 @@ from rgb_lib import BitcoinNetwork
 from rgb_lib import Online
 from rgb_lib import Wallet
 
-from src.data.repository.wallet_holder import colored_wallet
-from src.data.repository.wallet_holder import ColoredWallet
+from src.data.repository.colored_wallet import colored_wallet
+from src.data.repository.colored_wallet import ColoredWallet
 from src.utils.custom_exception import CommonException
 
 
@@ -53,9 +53,9 @@ def test_wallet_property_initialized(mock_wallet):
     assert colored_wallet.wallet == mock_wallet
 
 
-@patch('src.data.repository.wallet_holder.SettingRepository')
-@patch('src.data.repository.wallet_holder.get_bitcoin_config')
-@patch('src.data.repository.wallet_holder.get_bitcoin_network_from_enum')
+@patch('src.data.repository.colored_wallet.SettingRepository')
+@patch('src.data.repository.colored_wallet.get_bitcoin_config')
+@patch('src.data.repository.colored_wallet.get_bitcoin_network_from_enum')
 def test_online_property_initialization(
     mock_get_network,
     mock_get_config,

@@ -14,8 +14,8 @@ APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | 
 APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
 
 # Paths for the built applications
-FIRST_WALLET_NAME="iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage"
-SECOND_WALLET_NAME="iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage"
+FIRST_WALLET_NAME="iris wallet vault_${APP1_NAME}-${VERSION}-x86_64.AppImage"
+SECOND_WALLET_NAME="iris wallet vault_${APP2_NAME}-${VERSION}-x86_64.AppImage"
 
 APP1_PATH="$APPLICATIONS_DIR/$FIRST_WALLET_NAME"
 APP2_PATH="$APPLICATIONS_DIR/$SECOND_WALLET_NAME"

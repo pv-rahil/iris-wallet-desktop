@@ -138,7 +138,7 @@ def test_send_btc(mock_wallet, mock_cache):
 
     # Assert
     assert isinstance(result, SendBtcResponseModel)
-    assert result.txid == 'txid123456'
+    assert result.tx_id == 'txid123456'
     mock_wallet.send_btc.assert_called_once_with(
         online=True,
         skip_sync=False,
@@ -168,7 +168,7 @@ def test_send_btc_no_cache(mock_wallet):
 
         # Assert
         assert isinstance(result, SendBtcResponseModel)
-        assert result.txid == 'txid123456'
+        assert result.tx_id == 'txid123456'
         mock_wallet.send_btc.assert_called_once()
         # No assertion for invalidate_cache as it shouldn't be called
 

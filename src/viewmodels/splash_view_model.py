@@ -16,21 +16,26 @@ from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB
+from src.utils.constant import COMPATIBLE_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
 from src.utils.error_message import ERROR_PASSWORD_INCORRECT
+from src.utils.error_message import ERROR_RGB_LIB_INCOMPATIBILITY
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.helpers import get_bitcoin_network_from_enum
+from src.utils.info_message import INFO_WALLET_RESET
 from src.utils.keyring_storage import get_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.render_timer import RenderTimer
+from src.utils.reset_app import delete_app_data
 from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.views.components.error_report_dialog_box import ErrorReportDialog
+from src.views.components.rgb_lib_incompatibility import RgbLibIncompatibilityDialog
 from src.views.components.toast import ToastManager
 
 
@@ -105,45 +110,20 @@ class SplashViewModel(QObject, ThreadManager):
         error_message = error.message if isinstance(
             error, CommonException,
         ) else None
-        # else ERROR_SOMETHING_WENT_WRONG_WHILE_UNLOCKING_LN_ON_SPLASH
 
         ToastManager.error(
             description=error_message,
         )
 
-        # if error_message == QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'already_unlocked', None):
-        #     # Node is already unlocked, treat it as a success
-        #     self.on_success_of_unlock_api()
-        #     return
-
-        # if error_message == QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'not_initialized', None):
-        #     self.render_timer.stop()
-        #     self._page_navigation.term_and_condition_page()
-        #     return
-
-        # if error_message is ERROR_REQUEST_TIMEOUT:
-        #     MessageBox('critical', message_text=ERROR_CONNECTION_FAILED_WITH_LN)
-        #     QApplication.instance().exit()
-
         if error_message == ERROR_PASSWORD_INCORRECT:
             PageNavigationEventManager.get_instance().enter_wallet_password_page_signal.emit()
             return
-
-        # if error_message == ERROR_NODE_WALLET_NOT_INITIALIZED:
-        #     PageNavigationEventManager.get_instance().set_wallet_password_page_signal.emit()
-        #     return
 
         # Log the error and display a toast message
         logger.error(
             'Error while unlocking wallet on splash page: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        # if not self.is_from_retry and not self.is_error_handled:
-        #     self.is_error_handled = True
-        #     self.error_dialog_box.exec()
-        #     return
-
-        # self.is_from_retry = False
 
     def handle_application_open(self):
         """This method handle application start"""
@@ -153,32 +133,36 @@ class SplashViewModel(QObject, ThreadManager):
             wallet_password: str = get_value(
                 WALLET_PASSWORD_KEY, network.value,
             )
-            if keyring_status is True or wallet_password is None:
-                self._page_navigation.enter_wallet_password_page()
+            if self.is_rgb_lib_version_valid():
+                if keyring_status is True or wallet_password is None:
+                    self._page_navigation.enter_wallet_password_page()
+                else:
+                    decrypted_mnemonic = mnemonic_store.decrypt(
+                        password=wallet_password, path=app_paths.mnemonic_file_path,
+                    )
+                    self.splash_screen_message.emit(
+                        QCoreApplication.translate(
+                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_node_to_unlock', None,
+                        ),
+                    )
+                    self.sync_chain_info_label.emit(True)
+                    network = get_bitcoin_network_from_enum(
+                        bitcoin_network.__network__,
+                    )
+                    account_xpub = local_store.get_value(ACCOUNT_XPUB)
+                    wallet = WalletRequestModel(
+                        data_dir=app_paths.app_path, bitcoin_network=network, account_xpub=account_xpub, mnemonic=decrypted_mnemonic,
+                    )
+                    self.run_in_thread(
+                        CommonOperationRepository.unlock, {
+                            'args': [wallet],
+                            'callback': self.on_success_of_unlock_api,
+                            'error_callback': self.on_error_of_unlock_api,
+                        },
+                    )
             else:
-                decrypted_mnemonic = mnemonic_store.decrypt(
-                    password=wallet_password, path=app_paths.mnemonic_file_path,
-                )
-                self.splash_screen_message.emit(
-                    QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_node_to_unlock', None,
-                    ),
-                )
-                self.sync_chain_info_label.emit(True)
-                network = get_bitcoin_network_from_enum(
-                    bitcoin_network.__network__,
-                )
-                account_xpub = local_store.get_value(ACCOUNT_XPUB)
-                wallet = WalletRequestModel(
-                    data_dir=app_paths.app_path, bitcoin_network=network, account_xpub=account_xpub, mnemonic=decrypted_mnemonic,
-                )
-                self.run_in_thread(
-                    CommonOperationRepository.unlock, {
-                        'args': [wallet],
-                        'callback': self.on_success_of_unlock_api,
-                        'error_callback': self.on_error_of_unlock_api,
-                    },
-                )
+                logger.error(ERROR_RGB_LIB_INCOMPATIBILITY)
+                self.handle_node_incompatibility()
         except CommonException as error:
             logger.error(
                 'Exception occurred at handle_application_open: %s, Message: %s',
@@ -195,3 +179,30 @@ class SplashViewModel(QObject, ThreadManager):
             ToastManager.error(
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
+
+    def handle_node_incompatibility(self):
+        """Handles the case when the node commit ID is incompatible."""
+        node_incompatible = RgbLibIncompatibilityDialog()
+        node_incompatible.show_node_incompatibility_dialog()
+        clicked_button = node_incompatible.node_incompatibility_dialog.clickedButton()
+
+        if clicked_button == node_incompatible.close_button:
+            QApplication.instance().exit()
+        elif clicked_button == node_incompatible.delete_app_data_button:
+            node_incompatible.show_confirmation_dialog()
+            if node_incompatible.confirmation_dialog.clickedButton() == node_incompatible.confirm_delete_button:
+                self.on_delete_app_data()
+            elif node_incompatible.confirmation_dialog.clickedButton() == node_incompatible.cancel:
+                self.handle_application_open()
+
+    def on_delete_app_data(self):
+        """This function deletes the wallet data after user confirms when using an invalid RGB Lightning node"""
+        basepath = local_store.get_path()
+        network_type = SettingRepository.get_wallet_network()
+        delete_app_data(basepath, network=network_type.value)
+        logger.info(INFO_WALLET_RESET)
+        self._page_navigation.welcome_page()
+
+    def is_rgb_lib_version_valid(self) -> bool:
+        """Checks if the stored version is in the list of compatible versions."""
+        return SettingRepository.get_rgb_lib_version() in COMPATIBLE_RGB_LIB_VERSION

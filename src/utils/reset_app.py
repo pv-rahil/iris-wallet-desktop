@@ -1,4 +1,4 @@
-"""Module to clean up the iriswallet directory by deleting all its contents. Use with caution as this will permanently remove all wallet data."""
+"""Module to clean up the iris wallet vault directory by deleting all its contents. Use with caution as this will permanently remove all wallet data."""
 from __future__ import annotations
 
 import argparse
@@ -96,9 +96,9 @@ def delete_path(path):
 
 def main():
     """
-    Main function to clean up the iriswallet directory.
+    Main function to clean up the iris wallet vault directory.
 
-    It retrieves the path to the iriswallet directory and then deletes all its contents.
+    It retrieves the path to the iris wallet vault directory and then deletes all its contents.
 
     Note:
         This method is intended for development and testing purposes only. Use with caution as it will
@@ -113,13 +113,13 @@ def main():
         help='Specify the app name if multiple instances were created.',
     )
     args = parser.parse_args()
-    # Path to the iriswallet directory
+    # Path to the iris wallet vault directory
     iriswallet_path = get_app_directory(args.app_name)
     print(f'Directory to clean: {iriswallet_path}')
 
     # Prompt user for confirmation
     confirm = input(
-        'Warning: This will permanently delete all data in the iriswallet directory. Proceed? (y/n): ',
+        'Warning: This will permanently delete all data in the iris wallet vault directory. Proceed? (y/n): ',
     ).strip().lower()
 
     if confirm != 'y':
@@ -127,7 +127,7 @@ def main():
         sys.exit(1)
 
     try:
-        # Delete all files and directories in the iriswallet path
+        # Delete all files and directories in the iris wallet vault path
         delete_app_data(iriswallet_path)
 
         print('Cleanup complete.')

@@ -77,5 +77,5 @@ APPLICATION_STATUS = 'production' if getattr(
 
 # Set up loggers using the refactored function and capturing all logs without applying `APPLICATION_STATUS`
 logger = setup_logger(
-    'iris-wallet', 'iris_wallet_desktop.log',
+    'iris-wallet', 'iris_wallet_vault.log',
 )

@@ -5,7 +5,7 @@ from rgb_lib import BtcBalance
 from rgb_lib import Transaction
 from rgb_lib import Unspent
 
-from src.data.repository.wallet_holder import colored_wallet
+from src.data.repository.colored_wallet import colored_wallet
 from src.model.btc_model import AddressResponseModel
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import EstimateFeeRequestModel
@@ -72,7 +72,7 @@ class BtcRepository:
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
-            return SendBtcResponseModel(txid=data)
+            return SendBtcResponseModel(tx_id=data)
 
     @staticmethod
     def estimate_fee(param: EstimateFeeRequestModel) -> EstimateFeeResponse:

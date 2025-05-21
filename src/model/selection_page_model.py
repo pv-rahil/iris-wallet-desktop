@@ -14,5 +14,3 @@ class AssetDataModel(BaseModel):
     asset_type: str | Enum
     asset_id: str | None = None
     close_page_navigation: str | Enum | None = None
-    expiry_time: int | None = None
-    expiry_unit: str | None = None

@@ -1,4 +1,4 @@
-name: Iris Wallet Desktop CI
+name: Iris Wallet Vault CI
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - '*' # Trigger this workflow on any tag push
 
 jobs:
-  build-iris-wallet-desktop-linux:
+  build-iris-wallet-vault-linux:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository with submodules
@@ -29,9 +29,6 @@ jobs:
           sudo apt install libxcb-cursor0 -y # Required by the application
           sudo apt-get install ruby-dev build-essential libgirepository1.0-dev python3-dev -y && sudo gem i fpm -f
           sudo apt-get update && sudo apt-get install -y libfuse2 # Required for AppImage creation
-
-      # - name: Build the rgb-lightning-node binary
-      #   uses: ./.github/actions/build-rln-node
 
       - name: Set environment variables from GitHub Secrets and generate config.py
         env:
@@ -64,7 +61,7 @@ jobs:
           network: testnet
           artifact-name: linux_appimage_testnet
 
-  build-iris-wallet-desktop-macos:
+  build-iris-wallet-vault-macos:
     runs-on: macos-latest
     steps:
       - name: Checkout code with submodules
@@ -80,9 +77,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-
-      # - name: Build the rgb-lightning-node binary
-      #   uses: ./.github/actions/build-rln-node
 
       - name: Set environment variables from secrets and create config.py
         env:
@@ -118,9 +112,9 @@ jobs:
           path: iriswallet-*
 
   release-artifacts:
-    if: needs.build-iris-wallet-desktop-macos.result == 'success' && needs.build-iris-wallet-desktop-linux.result == 'success'
+    if: needs.build-iris-wallet-vault-macos.result == 'success' && needs.build-iris-wallet-vault-linux.result == 'success'
     runs-on: ubuntu-24.04
-    needs: [build-iris-wallet-desktop-macos, build-iris-wallet-desktop-linux]
+    needs: [build-iris-wallet-vault-macos, build-iris-wallet-vault-linux]
     permissions:
       contents: write
     steps:
@@ -182,7 +176,7 @@ jobs:
   cleanup-artifacts:
     if: always()
     runs-on: ubuntu-22.04
-    needs: [build-iris-wallet-desktop-macos, build-iris-wallet-desktop-linux, release-artifacts]
+    needs: [build-iris-wallet-vault-macos, build-iris-wallet-vault-linux, release-artifacts]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

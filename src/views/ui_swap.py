@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes, too-many-statements, unused-import
+# pylint: disable=too-many-instance-attributes, too-many-statements, unused-import, too-few-public-methods
 """This module contains the SwapWidget class,
 which represents the UI for Swap page.
 """

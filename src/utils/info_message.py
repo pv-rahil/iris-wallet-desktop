@@ -3,7 +3,6 @@ from __future__ import annotations
 
 INFO_COPY_MESSAGE = 'Text copied to clipboard'
 INFO_LOG_SAVE_DESCRIPTION = 'Logs have been saved to {}'
-INFO_CHANNEL_DELETED = 'Channel with pub key: {} has been deleted successfully'
 INFO_FAUCET_ASSET_SENT = 'Asset "{}" has been sent successfully. It may take some time to appear in the wallet.'
 INFO_NO_FILE = 'No file selected'
 INFO_ASSET_ISSUED = 'Asset issued with asset id: {}'
@@ -30,3 +29,4 @@ INFO_ASSET_SENT_SUCCESSFULLY = 'Asset sent successfully'
 INFO_RESTORE_COMPLETED = 'Restore process completed.'
 INFO_WALLET_PASSWORD_SET = 'Wallet password set successfully'
 INFO_WALLET_UNLOCK_SUCCESSFULLY = 'Wallet unlock successfully with given password'
+INFO_WALLET_RESET = 'Wallet has been reset successfully'

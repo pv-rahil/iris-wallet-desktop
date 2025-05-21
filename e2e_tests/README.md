@@ -48,8 +48,8 @@ Before you begin, ensure you have the following installed:
 
 1. **Clone the repository**
       ```bash
-      git clone https://github.com/RGB-Tools/iris-wallet-desktop.git
-      cd iris-wallet-desktop
+      git clone https://github.com/RGB-Tools/iris-wallet-vault.git
+      cd iris-wallet-vault
       ```
 
 2. **Create a `.env` file**
@@ -100,7 +100,7 @@ Before you begin, ensure you have the following installed:
    poetry run single-test <TEST_NAME> force-build
 
    ```
-   **Note:** Both `wallet_mode` and `force-build` flags are optional.
+   **Note:** `force-build` flags are optional.
 
 7. **Check test results**
    ```bash

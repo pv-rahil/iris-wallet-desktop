@@ -206,7 +206,7 @@ def main():
                 )
         elif os_type == 'Windows':
             result = subprocess.run(
-                ['pyinstaller', 'iris_wallet_desktop.spec'], capture_output=True, text=True, check=True,
+                ['pyinstaller', 'iris_wallet_vault.spec'], capture_output=True, text=True, check=True,
             )
         elif os_type == 'Darwin':
             result = subprocess.run(

@@ -468,7 +468,6 @@ class Backup(QWidget):
             'fungibles': self._view_model.page_navigation.fungibles_asset_page,
             'RGB20': self._view_model.page_navigation.fungibles_asset_page,
             'RGB25': self._view_model.page_navigation.collectibles_asset_page,
-            'create_invoice': self._view_model.page_navigation.fungibles_asset_page,
             'collectibles': self._view_model.page_navigation.collectibles_asset_page,
             'faucets': self._view_model.page_navigation.faucets_page,
             'view_unspent_list': self._view_model.page_navigation.view_unspent_list_page,

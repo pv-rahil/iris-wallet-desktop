@@ -2,13 +2,9 @@
 
 This test module focuses on the configurable settings cards in the SettingViewModel, including:
 - Fee rate configuration
-- Lightning invoice expiry time configuration
 - Minimum confirmation configuration
 - Proxy endpoint configuration
 - Indexer URL configuration
-- Bitcoin RPC host/port configuration
-- Lightning node announcement settings
-
 The tests are separated from the main SettingViewModel tests due to the large number
 of test cases and to maintain better organization.
 """

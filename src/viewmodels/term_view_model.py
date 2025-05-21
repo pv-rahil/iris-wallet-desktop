@@ -19,7 +19,7 @@ class TermsViewModel(QObject):
         self._page_navigation = page_navigation
 
     def on_accept_click(self):
-        """This method handled to navigate wallet selection"""
+        """This method handled to navigate welcome page"""
         self._page_navigation.welcome_page()
 
     def on_decline_click(self):

@@ -428,7 +428,7 @@ class IssueRGB20Widget(QWidget):
             self.issue_rgb20_btn.setDisabled(True)
 
     def asset_issued(self, asset_name):
-        """This method handled after channel created"""
+        """This method handled after asset issued"""
         header = 'Issue new ticker'
         title = 'You’re all set!'
         description = f"Asset '{asset_name}' has been issued successfully."

@@ -8,6 +8,7 @@ from rgb_lib import BitcoinNetwork
 
 from src.model.btc_model import OfflineAsset
 from src.model.rgb_model import GetAssetResponseModel
+from src.utils.constant import MAX_ALLOCATIONS_PER_UTXO
 
 
 # -------------------- Helper models -----------------------
@@ -48,7 +49,7 @@ class WalletRequestModel(BaseModel):
     """Wallet Request Model"""
     data_dir: str
     bitcoin_network: BitcoinNetwork
-    max_allocations_per_utxo: int = 1
+    max_allocations_per_utxo: int = MAX_ALLOCATIONS_PER_UTXO
     account_xpub: str
     mnemonic: str
     vanilla_keychain: int | None = None

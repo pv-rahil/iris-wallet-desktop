@@ -7,8 +7,8 @@ from src.model.enums.enums_model import NetworkEnumModel
 DEFAULT_LOCALE = 'en_IN'
 BACKED_URL_LIGHTNING_NETWORK = 'http://127.0.0.1:3001'
 ORGANIZATION_NAME = 'rgb'
-APP_NAME = 'iriswallet'
-ORGANIZATION_DOMAIN = 'com.rgb.iriswallet'
+APP_NAME = 'iris-wallet-vault'
+ORGANIZATION_DOMAIN = 'com.rgb.iriswalletvault'
 LOG_FILE_MAX_SIZE = 1048576  # 1 mb
 LOG_FILE_MAX_BACKUP_COUNT = 5
 MNEMONIC_KEY = 'mnemonic'
@@ -33,9 +33,12 @@ MIN_UTXOS_SIZE = 1000
 MIN_CAPACITY_SATS = 5506
 FEE_RATE_FOR_CREATE_UTXOS = 5
 RGB_INVOICE_DURATION_SECONDS = 86400
+MAX_ALLOCATIONS_PER_UTXO = 1
+MAX_ISSUE_AMOUNT = 18446744073709551615
 INTERVAL = 2
 MAX_RETRY_REFRESH_API = 3
 FEE_RATE = 5
+MAX_ASSET_FILE_SIZE = 5  # In mb
 G_SCOPES = ['https://www.googleapis.com/auth/drive.file']
 NATIVE_LOGIN_ENABLED = 'nativeLoginEnabled'
 IS_NATIVE_AUTHENTICATION_ENABLED = 'isNativeAuthenticationEnabled'
@@ -45,8 +48,8 @@ LOG_FOLDER_NAME = 'logs'
 PING_DNS_ADDRESS_FOR_NETWORK_CHECK = '8.8.8.8'
 PING_DNS_SERVER_CALL_INTERVAL = 5000
 
-INDEXER_URL_REGTEST = '127.0.0.1:50001'
-PROXY_ENDPOINT_REGTEST = 'rpc://127.0.0.1:3000/json-rpc'
+INDEXER_URL_REGTEST = 'electrum.rgbtools.org:50041'
+PROXY_ENDPOINT_REGTEST = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
 
 INDEXER_URL_TESTNET = 'ssl://electrum.iriswallet.com:50013'
 PROXY_ENDPOINT_TESTNET = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
@@ -81,12 +84,17 @@ SYNCING_CHAIN_LABEL_TIMER = 5000
 
 # Email and github issue url for error report
 CONTACT_EMAIL = 'iriswalletdesktop@gmail.com'
-GITHUB_ISSUE_LINK = 'https://github.com/RGB-Tools/iris-wallet-desktop/issues/new/choose'
+GITHUB_ISSUE_LINK = 'https://github.com/RGB-Tools/iris-wallet-vault/issues/new/choose'
 
 # Translation context key
-IRIS_WALLET_TRANSLATIONS_CONTEXT = 'iris_wallet_desktop'
+IRIS_WALLET_TRANSLATIONS_CONTEXT = 'iris_wallet_vault'
+
+# Rgb lib commit ID
+RGB_LIB_VERSION_KEY = 'rgb_lib_version'
+CURRENT_RGB_LIB_VERSION = '0.3.0a12'
+COMPATIBLE_RGB_LIB_VERSION = [
+    '0.3.0a12',
+]
 
 # Directory names used in paths
 APP_DIR = 'app'
-
-MAX_ISSUE_AMOUNT = 18446744073709551615

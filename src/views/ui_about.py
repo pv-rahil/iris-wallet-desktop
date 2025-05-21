@@ -30,6 +30,7 @@ from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import download_file
 from src.utils.common_utils import network_info
 from src.utils.common_utils import zip_logger_folder
+from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import PRIVACY_POLICY_URL
 from src.utils.constant import TERMS_OF_SERVICE_URL
@@ -116,6 +117,9 @@ class AboutWidget(QWidget):
         basepath = local_store.get_path()
         self.data_directory_path = WalletInfoWidget(
             translation_key='data_directory_path_label', value=basepath, v_layout=self.about_vertical_layout,
+        )
+        self.rgb_ln_commit = WalletInfoWidget(
+            translation_key='rgb_lib_version', value=CURRENT_RGB_LIB_VERSION, v_layout=self.about_vertical_layout,
         )
 
         self.privacy_policy_label = QLabel(self.about_widget)

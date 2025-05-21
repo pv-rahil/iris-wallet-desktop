@@ -25,7 +25,7 @@ APP_BUNDLE="${DIST_PATH}/${APP_NAME}.app"
 
 # Build the .app with PyInstaller
 echo "Building .app with PyInstaller..."
-poetry run pyinstaller iris_wallet_desktop.spec
+poetry run pyinstaller iris_wallet_vault.spec
 
 # List the contents of the dist directory to see what was created
 echo "Contents of dist directory:"

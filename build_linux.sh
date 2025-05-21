@@ -10,7 +10,7 @@ else
     echo "File not found: ./$PROJECT_NAME.deb"
 fi
 
-#remove aready exits file and dir
+#remove already exits file and dir
 rm -rf build
 rm -rf dist
 rm -rf package
@@ -18,7 +18,7 @@ rm -rf package
 #check fpm installed
 fpm --version
 
-poetry run pyinstaller iris_wallet_desktop.spec
+poetry run pyinstaller iris_wallet_vault.spec
 
 # Create folders
 [ -e package ] && rm -r package
@@ -31,19 +31,19 @@ cp -r dist/$PROJECT_NAME package/opt/$PROJECT_NAME
 chmod +x package/opt/$PROJECT_NAME/$PROJECT_NAME
 
 # Copy the icon
-cp ./src/assets/icons/$BITCOIN_NETWORK-icon.svg package/usr/share/icons/hicolor/scalable/apps/iriswallet_icon.svg
+cp ./src/assets/icons/$BITCOIN_NETWORK-icon.svg package/usr/share/icons/hicolor/scalable/apps/iriswalletvault_icon.svg
 # Create the desktop entry
 cat <<EOF >package/usr/share/applications/$PROJECT_NAME.desktop
 [Desktop Entry]
 Version=$VERSION
 Type=Application
 Name=$PROJECT_NAME
-Comment=IrisWallet - A cryptocurrency wallet application.
+Comment=IrisWallet Vault - A cryptocurrency wallet application.
 Path=/opt/$PROJECT_NAME
 Exec=/opt/$PROJECT_NAME/$PROJECT_NAME
 Icon=iriswallet_icon.svg
 License=MIT
-Description=IrisWallet - A cryptocurrency wallet application.
+Description=IrisWallet Vault - A cryptocurrency wallet application.
 Categories=Utility;
 EOF
 

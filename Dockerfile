@@ -9,7 +9,7 @@ RUN cd rgb-lightning-node \
 
 FROM python:3.12-slim-bookworm
 
-WORKDIR /iris-wallet-desktop
+WORKDIR /iris-wallet-vault
 
 # install poetry
 RUN python3 -m pip install --no-cache-dir poetry

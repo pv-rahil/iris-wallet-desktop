@@ -17,7 +17,7 @@ from src.views.components.toast import ToastManager
 
 
 class UnspentListViewModel(QObject, ThreadManager):
-    """This class represents the activities of the channel management page."""
+    """This class represents the activities of the view unspent page."""
     list_loaded = Signal(bool)
     unspent_list: list[Unspent]
     loading_started = Signal(bool)

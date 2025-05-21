@@ -1,3 +1,4 @@
+"""Mocks and fixtures for bitcoin_page_helper unit tests."""
 from __future__ import annotations
 
 import pytest

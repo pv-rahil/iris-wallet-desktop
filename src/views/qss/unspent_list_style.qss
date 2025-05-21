@@ -1,4 +1,4 @@
-QWidget#widget_channel {
+QWidget#widget_unspent {
     background-image: url(:/assets/iris-background.png);
     background: transparent;
     font: 8px "Inter";

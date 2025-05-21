@@ -222,7 +222,7 @@ def test_set_button_visibility(header_frame):
 
     # Mock lists for button visibility conditions
     refresh_and_action_button_list = [
-        'collectibles', 'fungibles', 'channel_management',
+        'collectibles', 'fungibles',
     ]
     refresh_button_list = ['view_unspent_list']
 

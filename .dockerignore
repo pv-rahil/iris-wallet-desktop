@@ -7,7 +7,7 @@
 !/build_script.py
 !/config.py
 !/docker-entrypoint.sh
-!/iris_wallet_desktop.spec
+!/iris_wallet_vault.spec
 !/poetry.lock
 !/pyproject.toml
 !/binary/

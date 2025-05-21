@@ -35,6 +35,7 @@ from src.utils.common_utils import resize_image
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MAX_ASSET_FILE_SIZE
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
@@ -380,13 +381,12 @@ class IssueRGB25Widget(QWidget):
 
     def show_file_preview(self, file_upload_message):
         """Preview the uploaded image"""
-        get_max_file_size = 5
-        max_file_size = get_max_file_size * 1024 * 1024
+        max_file_size = MAX_ASSET_FILE_SIZE * 1024 * 1024
         file_size = os.path.getsize(file_upload_message)
         if file_size > max_file_size:
             validation_text = QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'image_validation', None,
-            ).format(get_max_file_size)
+            ).format(MAX_ASSET_FILE_SIZE)
             self.file_path.setText(validation_text)
             self.issue_rgb25_button.setDisabled(True)
             self.issue_rgb_25_card.setMaximumSize(QSize(499, 608))

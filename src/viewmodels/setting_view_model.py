@@ -10,9 +10,9 @@ from rgb_lib import RgbLibError
 from rgb_lib import TransportEndpoint
 from rgb_lib import TransportType
 
+from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.data.repository.wallet_holder import colored_wallet
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.enums.enums_model import NativeAuthType
 from src.model.setting_model import DefaultFeeRate

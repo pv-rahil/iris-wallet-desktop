@@ -1,9 +1,10 @@
 """
 Module for handling the OnCloseDialogBox, which manages the closing process of application
 """
-# pylint: disable=E1121,too-many-instance-attributes,possibly-used-before-assignment
+# pylint: disable=E1121,too-many-instance-attributes
 from __future__ import annotations
 
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QMovie
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import QVBoxLayout
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.backup_service import BackupService
 from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.keyring_storage import get_value
@@ -41,9 +43,21 @@ class OnCloseDialogBox(QDialog, ThreadManager):
             parent (QWidget): The parent widget for this dialog.
         """
         super().__init__(parent)
-        self.dialog_title = 'Please wait for backup'
-        self.qmessage_question = 'Are you sure you want to close while the backup is in progress?'
-        self.qmessage_info = 'The backup process has been completed successfully!'
+        self.dialog_title = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'backup_dialog_title',
+            None,
+        )
+        self.qmessage_question = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'backup_question',
+            None,
+        )
+        self.qmessage_info = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'backup_success_info',
+            None,
+        )
         self.is_backup_onprogress = False
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.header_frame_view_model = HeaderFrameViewModel()
@@ -119,11 +133,11 @@ class OnCloseDialogBox(QDialog, ThreadManager):
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
                 if mnemonic_store.decrypted_mnemonic:
                     mnemonic: str = mnemonic_store.decrypted_mnemonic
-                password: str = get_value(
-                    key=WALLET_PASSWORD_KEY,
-                    network=network.value,
-                )
-                self._start_backup(mnemonic, password)
+                    password: str = get_value(
+                        key=WALLET_PASSWORD_KEY,
+                        network=network.value,
+                    )
+                    self._start_backup(mnemonic, password)
         else:
             self._close_app()
 

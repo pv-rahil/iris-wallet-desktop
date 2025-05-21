@@ -2,7 +2,7 @@
 <!DOCTYPE TS>
 <TS version="2.1">
 <context>
-    <name>iris_wallet_desktop</name>
+    <name>iris_wallet_vault</name>
     <message>
         <source>iris_wallet</source>
         <translation>Iris Portefeuille</translation>

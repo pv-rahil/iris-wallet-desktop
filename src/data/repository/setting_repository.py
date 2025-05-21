@@ -18,6 +18,7 @@ from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SetWalletInitialized
 from src.utils.constant import IS_NATIVE_AUTHENTICATION_ENABLED
 from src.utils.constant import NATIVE_LOGIN_ENABLED
+from src.utils.constant import RGB_LIB_VERSION_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING_STATUS
 from src.utils.handle_exception import handle_exceptions
@@ -489,3 +490,20 @@ class SettingRepository:
             return current_value
         except Exception as exe:
             return handle_exceptions(exe)
+
+    @staticmethod
+    def get_rgb_lib_version():
+        """This method gets the version of the rgb lib"""
+        try:
+            rgb_lib_version = local_store.get_value(RGB_LIB_VERSION_KEY)
+            return rgb_lib_version
+        except Exception as exc:
+            return handle_exceptions(exc)
+
+    @staticmethod
+    def set_rgb_lib_version(version: str):
+        """This method sets the version of the rgb lib in the wallet's .ini file"""
+        try:
+            local_store.set_value(RGB_LIB_VERSION_KEY, version)
+        except Exception as exc:
+            handle_exceptions(exc)

@@ -1,8 +1,6 @@
-# pylint: disable=too-many-instance-attributes, too-many-statements, unused-import,invalid-name, unused-argument, too-many-arguments
+# pylint: disable=too-many-instance-attributes, too-many-statements,invalid-name
 """A custom toggle switch widget for Qt applications using PySide6."""
 from __future__ import annotations
-
-import sys
 
 from PySide6.QtCore import Property
 from PySide6.QtCore import QPoint
@@ -33,19 +31,12 @@ class ToggleSwitch(QCheckBox):
     def __init__(
         self,
         parent=None,
-        bar_color='#01A781',
-        checked_color='#01A781',
-        handle_color=Qt.white,
-        h_scale=1.0,
-        v_scale=1.0,
-        fontSize=10,
     ):
         """
         Initialize the ToggleSwitch widget.
 
         Args:
             parent (QWidget, optional): The parent widget. Defaults to None.
-            bar_color (str, optional): Color of the bar. Defaults to "#01A781".
             checked_color (str, optional): Color of the bar when checked. Defaults to "#01A781".
             handle_color (QColor, optional): Color of the handle. Defaults to Qt.white.
             h_scale (float, optional): Horizontal scale factor. Defaults to 1.0.
@@ -53,7 +44,11 @@ class ToggleSwitch(QCheckBox):
             fontSize (int, optional): Font size for the text. Defaults to 10.
         """
         super().__init__(parent)
-
+        checked_color = '#01A781'
+        handle_color = Qt.white
+        h_scale = 1.0
+        v_scale = 1.0
+        fontSize = 10
         self._bar_brush = QBrush(Qt.gray)
         self._bar_checked_brush = QBrush(QColor(checked_color).lighter())
         self._handle_brush = QBrush(handle_color)
@@ -90,7 +85,7 @@ class ToggleSwitch(QCheckBox):
         """
         return self.contentsRect().contains(pos)
 
-    def paintEvent(self, e: QPaintEvent):
+    def paintEvent(self, _e: QPaintEvent):
         """
         Paint the toggle switch.
 

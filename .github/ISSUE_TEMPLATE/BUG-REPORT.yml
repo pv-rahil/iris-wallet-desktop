@@ -28,16 +28,6 @@ body:
       required: true
 
   - type: dropdown
-    id: mode
-    attributes:
-      label: "RLN node connection type"
-      options:
-        - Embedded
-        - Remote
-    validations:
-      required: true
-
-  - type: dropdown
     id: network
     attributes:
       label: "Bitcoin network"

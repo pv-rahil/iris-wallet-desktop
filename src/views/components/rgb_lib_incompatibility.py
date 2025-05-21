@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QMessageBox
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 
 
-class NodeIncompatibilityDialog:
+class RgbLibIncompatibilityDialog:
     """Shows a dialog when the RGB Lightning Node is incompatible.
 
     Options:
@@ -54,7 +54,7 @@ class NodeIncompatibilityDialog:
         )
         self.node_incompatibility_dialog.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'node_incompatibility_dialog_desc',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'rgb_lib_incompatibility_dialog_desc',
             ),
         )
         self.close_button.setText(

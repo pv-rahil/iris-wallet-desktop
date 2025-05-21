@@ -210,5 +210,5 @@ FUNGIBLES_SCROLL_WIDGETS = 'fungibles_scroll_widget'
 HELP_CARD_TITLE_ACCESSIBLE_DESCRIPTION = 'help_card_title'
 
 # Keyring password
-FIRST_SERVICE = 'iriswallet_test_app_1'
+FIRST_SERVICE = 'iris wallet vault_test_app_1'
 NATIVE_AUTH_ENABLE = 'isNativeAuthenticationEnabled_test_app_1'

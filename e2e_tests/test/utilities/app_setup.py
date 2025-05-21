@@ -45,9 +45,7 @@ class TestEnvironment:
         Initializes the test environment.
 
         Args:
-            wallet_mode (str): Determines whether to use "embedded" or "remote" wallet.
             multi_instance (bool): If True, launches both applications. Otherwise, only launches one.
-            skip_reset (bool): If True, skips resetting the application data.
         """
         self.multi_instance = multi_instance
         # Initialize process attributes
@@ -74,7 +72,7 @@ class TestEnvironment:
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
         self.first_process = subprocess.Popen(
-            [f"e2e_tests/applications/iriswallet_{APP1_NAME}-{
+            [f"e2e_tests/applications/iris wallet vault_{APP1_NAME}-{
                 __version__
             }-x86_64.AppImage"],
         )
@@ -96,7 +94,7 @@ class TestEnvironment:
         self.first_page_operations = BaseOperations(self.first_application)
         if self.multi_instance:
             self.second_process = subprocess.Popen(
-                [f"e2e_tests/applications/iriswallet_{APP2_NAME}-{
+                [f"e2e_tests/applications/iris wallet vault_{APP2_NAME}-{
                     __version__
                 }-x86_64.AppImage"],
             )
@@ -147,7 +145,7 @@ class TestEnvironment:
         os.kill(pid, signal.SIGKILL)
 
     def terminate(self):
-        """Cleans up the test environment by shutting down applications and RGB nodes."""
+        """Cleans up the test environment by shutting down applications"""
         self.terminate_process(self.first_process)
         if self.multi_instance:
             self.terminate_process(self.second_process)

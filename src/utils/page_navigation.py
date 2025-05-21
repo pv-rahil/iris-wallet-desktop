@@ -22,7 +22,6 @@ from src.views.ui_fungible_asset import FungibleAssetWidget
 from src.views.ui_help import HelpWidget
 from src.views.ui_issue_rgb20 import IssueRGB20Widget
 from src.views.ui_issue_rgb25 import IssueRGB25Widget
-from src.views.ui_network_selection_page import NetworkSelectionWidget
 from src.views.ui_receive_bitcoin import ReceiveBitcoinWidget
 from src.views.ui_receive_rgb_asset import ReceiveRGBAssetWidget
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
@@ -72,7 +71,6 @@ class PageNavigation:
             'AboutWidget': AboutWidget,
             'FaucetsWidget': FaucetsWidget,
             'HelpWidget': HelpWidget,
-            'NetworkSelectionWidget': NetworkSelectionWidget,
         }
 
         self.event_based_navigation.navigate_to_page_signal.connect(
@@ -211,11 +209,6 @@ class PageNavigation:
 
     def set_wallet_password_page(self):
         """This method display the set wallet password page."""
-        # self.current_stack = {
-        #     'name': 'SetWalletPassword',
-        #     'widget': self.pages['SetWalletPassword'](self._ui.view_model, params),
-        # }
-        # self.navigate_and_toggle(False)
         self.navigate_to_page('SetWalletPassword')
 
     def enter_wallet_password_page(self):

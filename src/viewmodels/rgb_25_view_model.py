@@ -220,7 +220,6 @@ class RGB25ViewModel(QObject, ThreadManager):
         def on_error(error: CommonException) -> None:
             """Handle error for failing a transfer."""
             self.is_loading.emit(False)
-            print(error)
             ToastManager.error(
                 description=f'{ERROR_SOMETHING_WENT_WRONG}: {error.message}',
             )

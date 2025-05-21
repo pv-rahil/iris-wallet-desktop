@@ -60,9 +60,7 @@ class TransferType(str, Enum):
     """Enum for transfer type"""
     CREATEUTXOS = 'CreateUtxos'
     ISSUANCE = 'Issuance'
-    OFF_CHAIN = 'Off chain'
     ON_CHAIN = 'On chain'
-    LIGHTNING = 'Lightning'
 
 
 class TokenSymbol(str, Enum):
