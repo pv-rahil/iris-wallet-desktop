@@ -166,10 +166,10 @@ jobs:
         with:
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./uploads/${{ env.REGTEST_APPNAME_MAC }}
-            ./uploads/${{ env.TESTNET_APPNAME_MAC }}
-            ./uploads/${{ env.TESTNET_APPIMAGE_NAME }}
-            ./uploads/${{ env.REGTEST_APPIMAGE_NAME }}
+            .iris-wallet/uploads/${{ env.REGTEST_APPNAME_MAC }}
+            .iris-wallet/uploads/${{ env.TESTNET_APPNAME_MAC }}
+            .iris-wallet/uploads/${{ env.TESTNET_APPIMAGE_NAME }}
+            .iris-wallet/uploads/${{ env.REGTEST_APPIMAGE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
