@@ -150,11 +150,11 @@ jobs:
           echo "REGTEST_APPIMAGE_NAME=${REGTEST_APPIMAGE_NAME}" >> $GITHUB_ENV
 
           cd uploads
-          REGTEST_APPNAME_MAC=$(ls iriswallet-${VERSION}-regtest-*.dmg 2>/dev/null || echo "")
-          TESTNET_APPNAME_MAC=$(ls iriswallet-${VERSION}-testnet-*.dmg 2>/dev/null || echo "")
+          REGTEST_APPNAME_MAC=$(ls iris-wallet-vault-${VERSION}-regtest-*.dmg 2>/dev/null || echo "")
+          TESTNET_APPNAME_MAC=$(ls iris-wallet-vault-${VERSION}-testnet-*.dmg 2>/dev/null || echo "")
 
-          TESTNET_APPIMAGE_NAME=$(ls iriswallet-${VERSION}-regtest-*.AppImage 2>/dev/null || echo "")
-          REGTEST_APPIMAGE_NAME=$(ls iriswallet-${VERSION}-testnet-*.AppImage 2>/dev/null || echo "")
+          TESTNET_APPIMAGE_NAME=$(ls iris-wallet-vault-${VERSION}-regtest-*.AppImage 2>/dev/null || echo "")
+          REGTEST_APPIMAGE_NAME=$(ls iris-wallet-vault-${VERSION}-testnet-*.AppImage 2>/dev/null || echo "")
 
           echo "REGTEST_APPNAME_MAC=${REGTEST_APPNAME_MAC}" >> $GITHUB_ENV
           echo "TESTNET_APPNAME_MAC=${TESTNET_APPNAME_MAC}" >> $GITHUB_ENV
