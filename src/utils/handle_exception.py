@@ -90,4 +90,8 @@ def handle_exceptions(exc):
     error_message = getattr(exc, 'message', None) or str(
         exc,
     ) or ERROR_SOMETHING_WENT_WRONG
+
+    if error_message == ERROR_SOMETHING_WENT_WRONG:
+        PageNavigationEventManager.get_instance().error_report_signal.emit()
+
     raise CommonException(error_message) from exc
