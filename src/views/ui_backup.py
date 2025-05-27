@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
 from accessible_constant import BACKUP_CLOSE_BUTTON
-from accessible_constant import BACKUP_NODE_DATA_BUTTON
+from accessible_constant import BACKUP_WALLET_DATA_BUTTON
 from accessible_constant import CONFIGURE_BACKUP_BUTTON
 from accessible_constant import MNEMONIC_FRAME
 from accessible_constant import SHOW_MNEMONIC_BUTTON
@@ -331,17 +331,21 @@ class Backup(QWidget):
             self.configure_backup_button, 0, Qt.AlignHCenter,
         )
 
-        self.back_node_data_button = PrimaryButton()
-        self.back_node_data_button.setObjectName('back_node_data_button')
-        self.back_node_data_button.setAccessibleName(BACKUP_NODE_DATA_BUTTON)
-        self.back_node_data_button.setMinimumSize(QSize(354, 40))
-        self.back_node_data_button.setMaximumSize(QSize(354, 40))
-        self.back_node_data_button.setCursor(
+        self.backup_wallet_data_button = PrimaryButton()
+        self.backup_wallet_data_button.setObjectName(
+            'backup_wallet_data_button',
+        )
+        self.backup_wallet_data_button.setAccessibleName(
+            BACKUP_WALLET_DATA_BUTTON,
+        )
+        self.backup_wallet_data_button.setMinimumSize(QSize(354, 40))
+        self.backup_wallet_data_button.setMaximumSize(QSize(354, 40))
+        self.backup_wallet_data_button.setCursor(
             Qt.CursorShape.PointingHandCursor,
         )  # Set cursor to pointing hand
 
         self.vertical_layout_2.addWidget(
-            self.back_node_data_button, 0, Qt.AlignHCenter,
+            self.backup_wallet_data_button, 0, Qt.AlignHCenter,
         )
 
         self.vertical_layout_backup_wallet_widget.addWidget(
@@ -434,9 +438,9 @@ class Backup(QWidget):
             ),
         )
 
-        self.back_node_data_button.setText(
+        self.backup_wallet_data_button.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'take_backup', 'Backup node data',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'take_backup', 'Backup wallet data',
             ),
         )
 
@@ -450,7 +454,7 @@ class Backup(QWidget):
         )
         self.configure_backup_button.clicked.connect(self.configure_backup)
         self.backup_close_btn.clicked.connect(self.close_button_navigation)
-        self.back_node_data_button.clicked.connect(self.backup_data)
+        self.backup_wallet_data_button.clicked.connect(self.backup_data)
         self._view_model.backup_view_model.is_loading.connect(
             self.update_loading_state,
         )
@@ -554,7 +558,7 @@ class Backup(QWidget):
         else:
             SettingRepository.set_backup_configured(True)
             self.configure_backup_button.hide()
-            self.back_node_data_button.show()
+            self.backup_wallet_data_button.show()
             ToastManager.show_toast(
                 parent=self,
                 preset=ToastPreset.SUCCESS,
@@ -567,14 +571,14 @@ class Backup(QWidget):
         Disables the configure_backup_button and updates its appearance accordingly.
         """
         if os.path.exists(TOKEN_PICKLE_PATH):
-            self.back_node_data_button.show()
+            self.backup_wallet_data_button.show()
             self.configure_backup_button.hide()
         else:
             self.configure_backup_button.show()
-            self.back_node_data_button.hide()
+            self.backup_wallet_data_button.hide()
 
     def backup_data(self):
-        """Call back handler on backup_node_data_button emit"""
+        """Call back handler on backup_wallet_data_button emit"""
         keyring_status = SettingRepository.get_keyring_status()
         if keyring_status:
             # when keyring disable it open dialog to take mnemonic and password from user
@@ -587,12 +591,12 @@ class Backup(QWidget):
 
     def update_loading_state(self, is_loading: bool):
         """
-        Updates the loading state of the backup_node_data object.
+        Updates the loading state of the backup_wallet_data object.
         """
         if is_loading:
-            self.back_node_data_button.start_loading()
+            self.backup_wallet_data_button.start_loading()
         else:
-            self.back_node_data_button.stop_loading()
+            self.backup_wallet_data_button.stop_loading()
 
     def set_mnemonic_visibility(self):
         """

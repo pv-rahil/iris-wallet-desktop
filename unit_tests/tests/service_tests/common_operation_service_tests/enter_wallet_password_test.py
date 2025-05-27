@@ -20,7 +20,6 @@ from unit_tests.repository_fixture.common_operations_repository_mock import mock
 from unit_tests.repository_fixture.common_operations_repository_mock import mock_unlock
 from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_password
 from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_unlock_api_res
-from unit_tests.service_test_resources.service_fixture.common_operation_service_mock import mock_is_node_locked
 
 
 @pytest.fixture(autouse=True)

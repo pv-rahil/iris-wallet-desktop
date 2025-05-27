@@ -12,6 +12,8 @@
 !/pyproject.toml
 !/binary/
 !/src/
+!/README.md
+!/accessible_constant.py
 
 # re-ignore select files/dirs (inside /src)
 __pycache__

@@ -32,7 +32,6 @@ from src.views.ui_set_wallet_password import SetWalletPasswordWidget
 from src.views.ui_settings import SettingsWidget
 from src.views.ui_splash_screen import SplashScreenWidget
 from src.views.ui_success import SuccessWidget
-from src.views.ui_swap import SwapWidget
 from src.views.ui_term_condition import TermConditionWidget
 from src.views.ui_view_unspent_list import ViewUnspentList
 from src.views.ui_welcome import WelcomeWidget
@@ -64,7 +63,6 @@ class PageNavigation:
             'RGB25TransactionDetail': RGBAssetTransactionDetail,
             'BitcoinTransactionDetail': BitcoinTransactionDetail,
             'Backup': Backup,
-            'Swap': SwapWidget,
             'SuccessWidget': SuccessWidget,
             'Settings': SettingsWidget,
             'SplashScreenWidget': SplashScreenWidget,
@@ -136,7 +134,6 @@ class PageNavigation:
         self.event_based_navigation.backup_page_signal.connect(
             self.backup_page,
         )
-        self.event_based_navigation.swap_page_signal.connect(self.swap_page)
         self.event_based_navigation.settings_page_signal.connect(
             self.settings_page,
         )
@@ -282,10 +279,6 @@ class PageNavigation:
     def backup_page(self):
         """This method display the backup page."""
         self.navigate_to_page('Backup', show_sidebar=False)
-
-    def swap_page(self):
-        """This method display the swap page."""
-        self.navigate_to_page('Swap', show_sidebar=False)
 
     def settings_page(self):
         """This method display the settings page"""

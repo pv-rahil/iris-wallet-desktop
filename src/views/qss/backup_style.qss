@@ -25,8 +25,8 @@ QLabel#backup_title_label {
     padding-top: 15px;
 }
 
-/* Styles for QPushButton (show_mnemonic_button, configure_backup_button, back_node_data_button) */
-QPushButton#show_mnemonic_button,#configure_backup_button,#back_node_data_button {
+/* Styles for QPushButton (show_mnemonic_button, configure_backup_button, backup_wallet_data_button) */
+QPushButton#show_mnemonic_button,#configure_backup_button,#backup_wallet_data_button {
     font: 12px "Inter";
     color: #F5F7FE;
     border-radius: 4px;

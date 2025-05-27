@@ -41,9 +41,7 @@
     <file>assets/configure_backup.png</file>
     <file>assets/show_mnemonic.png</file>
     <file>assets/hide_mnemonic.png</file>
-    <file>assets/btc_lightning.png</file>
     <file>assets/info_circle.png</file>
-    <file>assets/swap.png</file>
     <file>assets/on_chain.png</file>
     <file>assets/logo_large.png</file>
     <file>assets/get_faucets.png</file>
@@ -54,8 +52,6 @@
     <file>assets/down_arrow.png</file>
     <file>assets/images/button_loading.gif</file>
     <file>assets/images/nft.png</file>
-    <file>assets/images/suggested_node_1.png</file>
-    <file>assets/images/suggested_node_2.png</file>
     <file>assets/images/rgb_logo_round.png</file>
     <file>assets/images/big_tick_circle.png</file>
     <file>assets/images/clockwise_rotating_loader.gif</file>

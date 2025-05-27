@@ -12,7 +12,6 @@ FIRST_APPLICATION = f"Iris Wallet Regtest {APP1_NAME}"
 SECOND_APPLICATION = f"Iris Wallet Regtest {APP2_NAME}"
 FIRST_APPLICATION_PATH = f"{APP_NAME}_{APP1_NAME}"
 SECOND_APPLICATION_PATH = f"{APP_NAME}_{APP2_NAME}"
-LN_PORT = '9736'
 
 # Term and condition page
 ACCEPT_BUTTON = 'accept_button'
@@ -161,7 +160,7 @@ BACKUP_CLOSE_BUTTON = 'backup_close_button'
 SHOW_MNEMONIC_BUTTON = 'show_mnemonic_button'
 CONFIGURE_BACKUP_BUTTON = 'configure_backup_button'
 BACKUP_WINDOW = 'backup_window'
-BACKUP_NODE_DATA_BUTTON = 'backup_node_data_button'
+BACKUP_WALLET_DATA_BUTTON = 'backup_wallet_data_button'
 MNEMONIC_FRAME = 'mnemonic_frame'
 
 # Keyring dialog box

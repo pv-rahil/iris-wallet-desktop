@@ -118,7 +118,7 @@ class AboutWidget(QWidget):
         self.data_directory_path = WalletInfoWidget(
             translation_key='data_directory_path_label', value=basepath, v_layout=self.about_vertical_layout,
         )
-        self.rgb_ln_commit = WalletInfoWidget(
+        self.rgb_lib_version = WalletInfoWidget(
             translation_key='rgb_lib_version', value=CURRENT_RGB_LIB_VERSION, v_layout=self.about_vertical_layout,
         )
 

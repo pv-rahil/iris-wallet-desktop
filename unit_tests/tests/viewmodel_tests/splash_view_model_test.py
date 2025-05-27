@@ -235,8 +235,8 @@ def test_on_success_of_unlock_api(mock_set_value, mock_qapp, mock_toast_manager,
 @patch('src.viewmodels.splash_view_model.ToastManager')
 @patch('src.viewmodels.splash_view_model.QApplication')
 @patch('src.utils.local_store.LocalStore.set_value')
-def test_on_success_of_unlock_api_no_node_info(mock_set_value, mock_qapp, mock_toast_manager, mock_common_repo):
-    """Tests the on_success_of_unlock_api method when node_info returns None."""
+def test_on_success_of_unlock_api_no_wallet_info(mock_set_value, mock_qapp, mock_toast_manager, mock_common_repo):
+    """Tests the on_success_of_unlock_api method when wallet_info returns None."""
     # Arrange
     page_navigation = Mock()
     view_model = SplashViewModel(page_navigation)
@@ -299,7 +299,7 @@ def test_handle_application_open_main_flow(
     view_model = SplashViewModel(page_navigation)
     view_model.splash_screen_message = Mock()
     view_model.sync_chain_info_label = Mock()
-    view_model.handle_node_incompatibility = Mock()
+    view_model.handle_rgb_lib_incompatibility = Mock()
     view_model.run_in_thread = Mock()
 
     # --- Case 1: Valid RGB commit, keyring enabled ---
@@ -323,7 +323,7 @@ def test_handle_application_open_main_flow(
     mock_app_paths.mnemonic_file_path = mock_mnemonic_file_path
     mock_app_paths.app_path = mock_app_path
     mock_mnemonic_store.decrypt.return_value = 'decrypted_mnemonic'
-    mock_qcore.translate.return_value = 'wait_for_node_to_unlock'
+    mock_qcore.translate.return_value = 'wait_for_wallet_to_unlock'
     mock_get_network.return_value = 'bitcoin_network'
     mock_local_store.get_value.return_value = 'account_xpub'
     mock_wallet_instance = Mock()
@@ -339,7 +339,7 @@ def test_handle_application_open_main_flow(
         password='test_password', path=mock_mnemonic_file_path,
     )
     view_model.splash_screen_message.emit.assert_called_with(
-        'wait_for_node_to_unlock',
+        'wait_for_wallet_to_unlock',
     )
     view_model.sync_chain_info_label.emit.assert_called_with(True)
     mock_get_network.assert_called()
@@ -366,7 +366,7 @@ def test_handle_application_open_main_flow(
     view_model.is_rgb_lib_version_valid = Mock(return_value=False)
     view_model.handle_application_open()
     mock_logger.error.assert_any_call(ERROR_RGB_LIB_INCOMPATIBILITY)
-    view_model.handle_node_incompatibility.assert_called_once()
+    view_model.handle_rgb_lib_incompatibility.assert_called_once()
 
 
 @patch('src.viewmodels.splash_view_model.SettingRepository')
@@ -384,7 +384,7 @@ def test_handle_application_open_error_handling(
     view_model = SplashViewModel(page_navigation)
     view_model.splash_screen_message = Mock()
     view_model.sync_chain_info_label = Mock()
-    view_model.handle_node_incompatibility = Mock()
+    view_model.handle_rgb_lib_incompatibility = Mock()
     view_model.run_in_thread = Mock()
 
     # --- Case 5: CommonException is raised ---
@@ -392,7 +392,7 @@ def test_handle_application_open_error_handling(
         'common error',
     )
     view_model.is_rgb_lib_version_valid = Mock(return_value=True)
-    view_model.handle_node_incompatibility.reset_mock()
+    view_model.handle_rgb_lib_incompatibility.reset_mock()
     view_model.run_in_thread.reset_mock()
     page_navigation.enter_wallet_password_page.reset_mock()
     mock_logger.reset_mock()
@@ -434,9 +434,9 @@ def test_handle_application_open_error_handling(
 @patch('src.viewmodels.splash_view_model.SettingRepository')
 @patch('src.viewmodels.splash_view_model.local_store')
 def test_delete_app_data(
-    mock_local_store, mock_setting_repo, mock_delete_app_data, mock_node_incompatibility, splash_viewmodel,
+    mock_local_store, mock_setting_repo, mock_delete_app_data, mock_wallet_incompatibility, splash_viewmodel,
 ):
-    """Test delete_app_data method to ensure the correct flow when a node is incompatible."""
+    """Test delete_app_data method to ensure the correct flow when a wallet is incompatible."""
 
     # Mock local_store.get_path()
     mock_local_store.get_path.return_value = 'test/path'
@@ -446,13 +446,13 @@ def test_delete_app_data(
 
     # Create a mock instance of the dialog
     mock_dialog_instance = MagicMock()
-    mock_node_incompatibility.return_value = mock_dialog_instance
+    mock_wallet_incompatibility.return_value = mock_dialog_instance
 
     # Prevent the dialog from being shown
     mock_dialog_instance.exec_ = MagicMock()
 
     # Simulate button clicks
-    mock_dialog_instance.node_incompatibility_dialog.clickedButton.return_value = (
+    mock_dialog_instance.rgb_lib_incompatibility_dialog.clickedButton.return_value = (
         mock_dialog_instance.on_delete_app_data_button
     )
     mock_dialog_instance.confirmation_dialog.clickedButton.return_value = (
@@ -473,14 +473,14 @@ def test_delete_app_data(
 
 @patch('src.viewmodels.splash_view_model.RgbLibIncompatibilityDialog')
 @patch('src.viewmodels.splash_view_model.QApplication')
-def test_handle_node_incompatibility(mock_qapp, mock_rgb_lib_incompatibility, splash_viewmodel):
-    """Test handle_node_incompatibility method ensuring correct flow without GUI pop-ups."""
+def test_handle_rgb_lib_incompatibility(mock_qapp, mock_rgb_lib_incompatibility, splash_viewmodel):
+    """Test handle_rgb_lib_incompatibility method ensuring correct flow without GUI pop-ups."""
 
     # Create a mock instance of RgbLibIncompatibilityDialog
     mock_rgb_lib_instance = mock_rgb_lib_incompatibility.return_value
 
     # Mock delete app data button click
-    mock_rgb_lib_instance.node_incompatibility_dialog.clickedButton.return_value = (
+    mock_rgb_lib_instance.rgb_lib_incompatibility_dialog.clickedButton.return_value = (
         mock_rgb_lib_instance.delete_app_data_button
     )
     mock_rgb_lib_instance.confirmation_dialog.clickedButton.return_value = (
@@ -491,8 +491,8 @@ def test_handle_node_incompatibility(mock_qapp, mock_rgb_lib_incompatibility, sp
     splash_viewmodel.on_delete_app_data = MagicMock()
     splash_viewmodel.handle_application_open = MagicMock()
 
-    # Act - Simulate handling node incompatibility
-    splash_viewmodel.handle_node_incompatibility()
+    # Act - Simulate handling rgb_lib incompatibility
+    splash_viewmodel.handle_rgb_lib_incompatibility()
 
     # Assert - Ensure correct methods are called
     mock_rgb_lib_instance.show_confirmation_dialog.assert_called_once()
@@ -505,7 +505,7 @@ def test_handle_node_incompatibility(mock_qapp, mock_rgb_lib_incompatibility, sp
         mock_rgb_lib_instance.cancel
     )
 
-    splash_viewmodel.handle_node_incompatibility()
+    splash_viewmodel.handle_rgb_lib_incompatibility()
 
     # Assert cancel behavior
     splash_viewmodel.handle_application_open.assert_called_once()

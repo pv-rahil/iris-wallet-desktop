@@ -182,13 +182,6 @@ def test_backup_page(page_navigation):
     assert page_navigation.current_stack['name'] == 'Backup'
 
 
-def test_swap_page(page_navigation):
-    """Test swap_page navigation."""
-    page_navigation.swap_page()
-
-    assert page_navigation.current_stack['name'] == 'Swap'
-
-
 def test_settings_page(page_navigation):
     """Test settings_page navigation."""
     page_navigation.settings_page()

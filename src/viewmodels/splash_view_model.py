@@ -142,7 +142,7 @@ class SplashViewModel(QObject, ThreadManager):
                     )
                     self.splash_screen_message.emit(
                         QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_node_to_unlock', None,
+                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_wallet_to_unlock', None,
                         ),
                     )
                     self.sync_chain_info_label.emit(True)
@@ -162,7 +162,7 @@ class SplashViewModel(QObject, ThreadManager):
                     )
             else:
                 logger.error(ERROR_RGB_LIB_INCOMPATIBILITY)
-                self.handle_node_incompatibility()
+                self.handle_rgb_lib_incompatibility()
         except CommonException as error:
             logger.error(
                 'Exception occurred at handle_application_open: %s, Message: %s',
@@ -180,23 +180,23 @@ class SplashViewModel(QObject, ThreadManager):
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
 
-    def handle_node_incompatibility(self):
-        """Handles the case when the node commit ID is incompatible."""
-        node_incompatible = RgbLibIncompatibilityDialog()
-        node_incompatible.show_node_incompatibility_dialog()
-        clicked_button = node_incompatible.node_incompatibility_dialog.clickedButton()
+    def handle_rgb_lib_incompatibility(self):
+        """Handles the case when the rgb lib version is incompatible."""
+        rgb_lib_incompatible = RgbLibIncompatibilityDialog()
+        rgb_lib_incompatible.show_rgb_lib_incompatibility_dialog()
+        clicked_button = rgb_lib_incompatible.rgb_lib_incompatibility_dialog.clickedButton()
 
-        if clicked_button == node_incompatible.close_button:
+        if clicked_button == rgb_lib_incompatible.close_button:
             QApplication.instance().exit()
-        elif clicked_button == node_incompatible.delete_app_data_button:
-            node_incompatible.show_confirmation_dialog()
-            if node_incompatible.confirmation_dialog.clickedButton() == node_incompatible.confirm_delete_button:
+        elif clicked_button == rgb_lib_incompatible.delete_app_data_button:
+            rgb_lib_incompatible.show_confirmation_dialog()
+            if rgb_lib_incompatible.confirmation_dialog.clickedButton() == rgb_lib_incompatible.confirm_delete_button:
                 self.on_delete_app_data()
-            elif node_incompatible.confirmation_dialog.clickedButton() == node_incompatible.cancel:
+            elif rgb_lib_incompatible.confirmation_dialog.clickedButton() == rgb_lib_incompatible.cancel:
                 self.handle_application_open()
 
     def on_delete_app_data(self):
-        """This function deletes the wallet data after user confirms when using an invalid RGB Lightning node"""
+        """This function deletes the wallet data after user confirms when using an invalid rgb lib"""
         basepath = local_store.get_path()
         network_type = SettingRepository.get_wallet_network()
         delete_app_data(basepath, network=network_type.value)

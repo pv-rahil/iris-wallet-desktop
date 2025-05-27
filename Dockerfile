@@ -1,24 +1,11 @@
-FROM rust:1.82.0-bookworm AS rln-builder
-
-RUN git clone https://github.com/RGB-Tools/rgb-lightning-node \
-    --depth=1 --recurse-submodules --shallow-submodules
-
-RUN cd rgb-lightning-node \
-    && cargo install --locked --debug --path .
-
-
 FROM python:3.12-slim-bookworm
 
 WORKDIR /iris-wallet-vault
 
-# install poetry
+# Install poetry
 RUN python3 -m pip install --no-cache-dir poetry
 
-# install project dependencies
-COPY poetry.lock pyproject.toml ./
-RUN poetry install
-
-# install dependencies
+# Install system dependencies
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
         binutils file sudo wget \
@@ -56,16 +43,24 @@ RUN apt-get update -y \
         libxkbfile1 \
         libxrandr2 \
         libxrender1 \
-        libxtst6
+        libxtst6 \
+        meson \
+        build-essential \
+        gcc \
+        libcairo2-dev \
+        pkg-config \
+        python3-dev \
+        libgirepository1.0-dev \
+        curl \
+        git \
+        ca-certificates
 
-# copy RLN from dedicated builder stage
-RUN mkdir ln_node_binary
-COPY --from=rln-builder /rgb-lightning-node/target/debug/rgb-lightning-node \
-    ./ln_node_binary/
-
-# copy project code
+# Copy project code
 COPY . .
 
-# setup the entrypoint
+# Install project dependencies via Poetry
+RUN poetry install
+
+# Setup the entrypoint
 RUN chmod +x docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]

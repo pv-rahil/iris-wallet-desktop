@@ -5,7 +5,6 @@ from __future__ import annotations
 from src.model.enums.enums_model import NetworkEnumModel
 
 DEFAULT_LOCALE = 'en_IN'
-BACKED_URL_LIGHTNING_NETWORK = 'http://127.0.0.1:3001'
 ORGANIZATION_NAME = 'rgb'
 APP_NAME = 'iris-wallet-vault'
 ORGANIZATION_DOMAIN = 'com.rgb.iriswalletvault'
@@ -16,7 +15,6 @@ ACCOUNT_XPUB = 'account_xpub'
 WALLET_PASSWORD_KEY = 'wallet_password'
 SAVED_INDEXER_URL = 'indexer_url'
 SAVED_PROXY_ENDPOINT = 'proxy_endpoint'
-NETWORK_KET = 'network'
 CACHE_FILE_NAME = {
     NetworkEnumModel.MAINNET: 'iris-wallet-cache-mainnet',
     NetworkEnumModel.TESTNET: 'iris-wallet-cache-testnet',
@@ -29,14 +27,10 @@ REQUEST_TIMEOUT = 120  # In seconds
 NO_OF_UTXO = 1
 MIN_CONFIRMATION = 1
 UTXO_SIZE_SAT = 1000
-MIN_UTXOS_SIZE = 1000
-MIN_CAPACITY_SATS = 5506
 FEE_RATE_FOR_CREATE_UTXOS = 5
 RGB_INVOICE_DURATION_SECONDS = 86400
 MAX_ALLOCATIONS_PER_UTXO = 1
 MAX_ISSUE_AMOUNT = 18446744073709551615
-INTERVAL = 2
-MAX_RETRY_REFRESH_API = 3
 FEE_RATE = 5
 MAX_ASSET_FILE_SIZE = 5  # In mb
 G_SCOPES = ['https://www.googleapis.com/auth/drive.file']

@@ -1,5 +1,5 @@
 # pylint: disable=too-few-public-methods
-"""Displays a warning dialog for node incompatibility issues."""
+"""Displays a warning dialog for rgb lib incompatibility issues."""
 from __future__ import annotations
 
 from PySide6.QtCore import QCoreApplication
@@ -9,7 +9,7 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 
 
 class RgbLibIncompatibilityDialog:
-    """Shows a dialog when the RGB Lightning Node is incompatible.
+    """Shows a dialog when the rgb lib is incompatible.
 
     Options:
     - **Delete App Data:** Resets the wallet.
@@ -20,15 +20,15 @@ class RgbLibIncompatibilityDialog:
         """Initializes and configures the dialogs."""
         super().__init__()
 
-        self.node_incompatibility_dialog = QMessageBox()
-        self.node_incompatibility_dialog.setIcon(QMessageBox.Icon.Warning)
-        self.delete_app_data_button = self.node_incompatibility_dialog.addButton(
+        self.rgb_lib_incompatibility_dialog = QMessageBox()
+        self.rgb_lib_incompatibility_dialog.setIcon(QMessageBox.Icon.Warning)
+        self.delete_app_data_button = self.rgb_lib_incompatibility_dialog.addButton(
             'delete', QMessageBox.AcceptRole,
         )
-        self.close_button = self.node_incompatibility_dialog.addButton(
+        self.close_button = self.rgb_lib_incompatibility_dialog.addButton(
             'close', QMessageBox.RejectRole,
         )
-        self.node_incompatibility_dialog.setDefaultButton(self.close_button)
+        self.rgb_lib_incompatibility_dialog.setDefaultButton(self.close_button)
 
         self.confirmation_dialog = QMessageBox()
         self.confirmation_dialog.setIcon(QMessageBox.Icon.Critical)
@@ -41,9 +41,9 @@ class RgbLibIncompatibilityDialog:
 
         self.retranslate_ui()
 
-    def show_node_incompatibility_dialog(self):
+    def show_rgb_lib_incompatibility_dialog(self):
         """Displays the warning dialog."""
-        self.node_incompatibility_dialog.exec()
+        self.rgb_lib_incompatibility_dialog.exec()
 
     def retranslate_ui(self):
         """Sets localized text for the dialogs."""
@@ -52,7 +52,7 @@ class RgbLibIncompatibilityDialog:
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'delete_app_data',
             ),
         )
-        self.node_incompatibility_dialog.setText(
+        self.rgb_lib_incompatibility_dialog.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'rgb_lib_incompatibility_dialog_desc',
             ),

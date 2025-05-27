@@ -33,7 +33,6 @@ class PageNavigationEventManager(QObject):
     rgb25_transaction_detail_page_signal = Signal(object)
     bitcoin_transaction_detail_page_signal = Signal(object)
     backup_page_signal = Signal()
-    swap_page_signal = Signal()
     settings_page_signal = Signal()
     show_success_page_signal = Signal(object)
     about_page_signal = Signal()

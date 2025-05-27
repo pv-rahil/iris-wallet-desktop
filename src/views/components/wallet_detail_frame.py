@@ -64,7 +64,7 @@ class WalletInfoWidget(QWidget):
 
         # Copy button
         self.copy_button = QPushButton()
-        self.copy_button.setObjectName('node_pub_key_copy_button')
+        self.copy_button.setObjectName('copy_button')
         self.copy_button.setMinimumSize(QSize(16, 16))
         self.copy_button.setMaximumSize(QSize(16, 16))
         self.copy_button.setCursor(QCursor(Qt.PointingHandCursor))

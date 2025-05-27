@@ -13,7 +13,7 @@ from dogtail.tree import root
 from dotenv import load_dotenv
 
 from accessible_constant import BACKUP_CLOSE_BUTTON
-from accessible_constant import BACKUP_NODE_DATA_BUTTON
+from accessible_constant import BACKUP_WALLET_DATA_BUTTON
 from accessible_constant import BACKUP_WINDOW
 from accessible_constant import CONFIGURE_BACKUP_BUTTON
 from accessible_constant import MNEMONIC_FRAME
@@ -72,8 +72,8 @@ class BackupPageObjects(BaseOperations):
         self.continue_button = lambda: self.backup_window().child(
             roleName='push button', name='Continue',
         )
-        self.backup_node_data_button = lambda: self.perform_action_on_element(
-            role_name='push button', name=BACKUP_NODE_DATA_BUTTON,
+        self.backup_wallet_data_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=BACKUP_WALLET_DATA_BUTTON,
         )
         self.mnemonic_frame = lambda: self.perform_action_on_element(
             role_name='panel', name=MNEMONIC_FRAME,
@@ -210,11 +210,11 @@ class BackupPageObjects(BaseOperations):
         self.continue_button().grabFocus()
         return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
 
-    def click_backup_node_data_button(self):
+    def click_backup_wallet_data_button(self):
         """
-        Clicks the backup node data button.
+        Clicks the backup wallet data button.
         """
-        return self.do_click(self.backup_node_data_button()) if self.do_is_displayed(self.backup_node_data_button()) else None
+        return self.do_click(self.backup_wallet_data_button()) if self.do_is_displayed(self.backup_wallet_data_button()) else None
 
     def get_mnemonic(self):
         """

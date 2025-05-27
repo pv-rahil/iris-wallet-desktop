@@ -389,7 +389,7 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>take_backup</source>
-        <translation>Backup node data</translation>
+        <translation>Backup wallet data</translation>
     </message>
     <message>
         <source>configure_backup</source>
@@ -468,10 +468,6 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>or</translation>
     </message>
     <message>
-      <source>suggested_nodes</source>
-      <translation>select from suggested nodes</translation>
-    </message>
-    <message>
       <source>slow</source>
       <translation>Slow</translation>
     </message>
@@ -502,10 +498,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
       <source>next</source>
       <translation>Next</translation>
-    </message>
-    <message>
-      <source>valid_node_prompt</source>
-      <translation>Invalid node URI</translation>
     </message>
     <message>
       <source>expiry</source>
@@ -592,14 +584,6 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Amount</translation>
     </message>
     <message>
-      <source>enter_ln_invoice_title_label</source>
-      <translation>Enter LN invoice</translation>
-    </message>
-    <message>
-      <source>ln_invoice_label</source>
-      <translation>LN invoice</translation>
-    </message>
-    <message>
       <source>invoice_detail_label</source>
       <translation>Invoice detail</translation>
     </message>
@@ -608,28 +592,12 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Amount(msat)</translation>
     </message>
     <message>
-      <source>expiry_label_sec</source>
-      <translation>Expiry(sec)</translation>
-    </message>
-    <message>
       <source>timestamp_label</source>
       <translation>Timestamp</translation>
     </message>
     <message>
       <source>asset_amount_label</source>
       <translation>Asset amount</translation>
-    </message>
-    <message>
-      <source>p_hash_label</source>
-      <translation>Payment hash</translation>
-    </message>
-    <message>
-      <source>p_secret_label</source>
-      <translation>Payment secret</translation>
-    </message>
-    <message>
-      <source>p_pubkey_label</source>
-      <translation>Payee pubkey</translation>
     </message>
     <message>
       <source>network_label</source>
@@ -702,10 +670,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>image_validation</source>
         <translation>File size exceeds {0}MB. Please upload a smaller file.</translation>
-    </message>
-    <message>
-        <source>ln_message</source>
-        <translation>Starting LN node</translation>
     </message>
     <message>
         <source>select_network_type</source>
@@ -841,14 +805,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>A termination signal has been detected, possibly due to an attempt to quit the app from a terminal or process manager. The app will close if you confirm by pressing OK.</translation>
     </message>
     <message>
-        <source>node_pubkey</source>
-        <translation>Node pubkey:</translation>
-    </message>
-    <message>
-        <source>ln_ldk_port</source>
-        <translation>LN peer listening port:</translation>
-    </message>
-    <message>
         <source>copy</source>
         <translation>Copy</translation>
     </message>
@@ -927,34 +883,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
       <source>msat_amount_label</source>
       <translation>Amount (sat)</translation>
-    </message>
-    <message>
-        <source>set_default_expiry_time</source>
-        <translation>Set a Default Expiry Time</translation>
-    </message>
-    <message>
-        <source>set_default_expiry_time_desc</source>
-        <translation>Set a expiry time to be used as default in LN invoice</translation>
-    </message>
-    <message>
-        <source>input_expiry_time_desc</source>
-        <translation>Enter an expiry time in minutes, hours, or days.</translation>
-    </message>
-    <message>
-        <source>minutes</source>
-        <translation>Minutes</translation>
-    </message>
-    <message>
-        <source>hours</source>
-        <translation>Hours</translation>
-    </message>
-    <message>
-        <source>days</source>
-        <translation>Days</translation>
-    </message>
-    <message>
-        <source>peer_pubkey</source>
-        <translation>Peer Pubkey</translation>
     </message>
     <message>
         <source>bitcoin_local_balance</source>
@@ -1045,16 +973,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The entered name is invalid</translation>
     </message>
     <message>
-        <source>invalid_node_ids</source>
-        <translation>The node ID is invalid</translation>
-    </message>
-    <message>
         <source>invalid_onion_data</source>
         <translation>The onion data is invalid</translation>
-    </message>
-    <message>
-        <source>invalid_payment_secret</source>
-        <translation>The payment secret is invalid</translation>
     </message>
     <message>
         <source>invalid_password</source>
@@ -1073,16 +993,140 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The peer pubkey is invalid</translation>
     </message>
     <message>
-        <source>invalid_receipient_id</source>
+        <source>invalid_recipient_id</source>
         <translation>The recipient ID is invalid</translation>
     </message>
     <message>
-        <source>invalid_swap_string</source>
-        <translation>The swap string is invalid</translation>
+        <source>invalid_details</source>
+        <translation>The details are invalid</translation>
+    </message>
+    <message>
+        <source>invalid_file_path</source>
+        <translation>Please provide a valid file path</translation>
+    </message>
+    <message>
+        <source>invalid_psbt</source>
+        <translation>The PSBT is invalid</translation>
+    </message>
+    <message>
+        <source>invalid_recipient_data</source>
+        <translation>Invalid recipient data</translation>
+    </message>
+    <message>
+        <source>invalid_recipient_network</source>
+        <translation>Invalid recipient network</translation>
+    </message>
+    <message>
+        <source>invalid_transport_endpoint</source>
+        <translation>Invalid recipient endpoint</translation>
+    </message>
+    <message>
+        <source>invalid_transport_endpoints</source>
+        <translation>Invalid recipient endpoints</translation>
+    </message>
+    <message>
+        <source>invalid_txid</source>
+        <translation>Invalid transaction id</translation>
     </message>
     <message>
         <source>invalid_ticker</source>
         <translation>The ticker is invalid</translation>
+    </message>
+    <message>
+        <source>invalid_vanilla_keychain</source>
+        <translation>Invalid vanilla keychain</translation>
+    </message>
+    <message>
+        <source>no_consignment</source>
+        <translation>No consignment found</translation>
+    </message>
+    <message>
+        <source>no_issuance_amounts</source>
+        <translation>No issuance amounts provided</translation>
+    </message>
+    <message>
+        <source>online_needed</source>
+        <translation>The wallet must be online to perform this action</translation>
+    </message>
+    <message>
+        <source>recipient_id_duplicated</source>
+        <translation>The recipient ID is duplicated</translation>
+    </message>
+    <message>
+        <source>too_high_issuance_amounts</source>
+        <translation>The issuance amount exceeds the allowed limit</translation>
+    </message>
+    <message>
+        <source>unknown_rgb_interface</source>
+        <translation>The RGB interface is unknown</translation>
+    </message>
+    <message>
+        <source>unknown_rgb_schema</source>
+        <translation>The RGB schema is unknown</translation>
+    </message>
+    <message>
+        <source>wallet_dir_already_exists</source>
+        <translation>A wallet directory with this name already exists</translation>
+    </message>
+    <message>
+        <source>watch_only</source>
+        <translation>This is a watch-only wallet and cannot perform that action</translation>
+    </message>
+    <message>
+        <source>asset_iface_mismatch</source>
+        <translation>Asset interface mismatch</translation>
+    </message>
+    <message>
+        <source>bitcoin_network_mismatch</source>
+        <translation>The Bitcoin network does not match the wallet configuration</translation>
+    </message>
+    <message>
+        <source>cannot_change_online</source>
+        <translation>This change cannot be made while the wallet is online</translation>
+    </message>
+    <message>
+        <source>cannot_delete_batch_transfer</source>
+        <translation>Batch transfer cannot be deleted</translation>
+    </message>
+    <message>
+        <source>file_already_exists</source>
+        <translation>The file already exists</translation>
+    </message>
+    <message>
+        <source>inconsistency_error</source>
+        <translation>An internal inconsistency was detected</translation>
+    </message>
+    <message>
+        <source>inexistent_data_dir</source>
+        <translation>The specified data directory does not exist</translation>
+    </message>
+    <message>
+        <source>insufficient_allocation_slots</source>
+        <translation>Insufficient allocation slots available</translation>
+    </message>
+    <message>
+        <source>insufficient_spendable_assets</source>
+        <translation>Not enough spendable assets available</translation>
+    </message>
+    <message>
+        <source>insufficient_total_assets</source>
+        <translation>Not enough total assets available</translation>
+    </message>
+    <message>
+        <source>invalid_bitcoin_keys</source>
+        <translation>The Bitcoin keys are invalid</translation>
+    </message>
+    <message>
+        <source>invalid_bitcoin_network</source>
+        <translation>The selected Bitcoin network is invalid</translation>
+    </message>
+    <message>
+        <source>invalid_coloring_info</source>
+        <translation>Invalid coloring information provided</translation>
+    </message>
+    <message>
+        <source>invalid_consignment</source>
+        <translation>The consignment is invalid</translation>
     </message>
     <message>
         <source>invalid_tlv_type</source>
@@ -1137,10 +1181,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The proxy protocol is invalid</translation>
     </message>
     <message>
-        <source>locked_node</source>
-        <translation>Node is currently locked, please wait until it is unlocked</translation>
-    </message>
-    <message>
         <source>max_fee_exceeded</source>
         <translation>The fee rate is too high</translation>
     </message>
@@ -1177,10 +1217,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Please sync the wallet</translation>
     </message>
     <message>
-        <source>unlocked_node</source>
-        <translation>Node is unlocked</translation>
-    </message>
-    <message>
         <source>unsupported_layer_1</source>
         <translation>Unsupported layer 1</translation>
     </message>
@@ -1213,28 +1249,20 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Save</translation>
     </message>
     <message>
-        <source>node_uri</source>
-        <translation>Node URI</translation>
-    </message>
-    <message>
         <source>finish</source>
         <translation>Finish</translation>
     </message>
     <message>
         <source>syncing_chain_info</source>
-        <translation>Syncing the chain, this may take a long time if node has been off for a while</translation>
+        <translation>Syncing the chain, this may take a long time if wallet has been off for a while</translation>
     </message>
     <message>
-    <source>wait_for_node_to_unlock</source>
-        <translation>Wait for node to unlock</translation>
-    </message>
-    <message>
-        <source>wait_node_to_start</source>
-        <translation>Please wait for node to start...</translation>
+    <source>wait_for_wallet_to_unlock</source>
+        <translation>Wait for wallet to unlock</translation>
     </message>
     <message>
         <source>already_unlocked</source>
-        <translation>Node already unlocked</translation>
+        <translation>Wallet already unlocked</translation>
     </message>
     <message>
         <source>opening</source>
@@ -1273,14 +1301,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Batch transfer cannot be set to failed status</translation>
     </message>
     <message>
-        <source>changing_state</source>
-        <translation>Node changing state, please wait until it is finished</translation>
-    </message>
-    <message>
-        <source>expired_swap_offer</source>
-        <translation>The swap offer has expired</translation>
-    </message>
-    <message>
         <source>failed_bdk_sync</source>
         <translation>Failed to sync BDK</translation>
     </message>
@@ -1313,10 +1333,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The announce alias is invalid</translation>
     </message>
     <message>
-        <source>invalid_swap</source>
-        <translation>the swap is invalid</translation>
-    </message>
-    <message>
         <source>io_error</source>
         <translation>IO error</translation>
     </message>
@@ -1327,10 +1343,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>unsupported_backup_version</source>
         <translation>The provided backup has an unsupported version</translation>
-    </message>
-    <message>
-        <source>missing_swap_payment_preimage</source>
-        <translation>Unable to find payment preimage</translation>
     </message>
     <message>
         <source>unexpected</source>
@@ -1433,8 +1445,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Cache data update failed due to an error.</translation>
     </message>
     <message>
-        <source>node_is_already_initialized</source>
-        <translation>The node is already initialized</translation>
+        <source>wallet_is_already_initialized</source>
+        <translation>The wallet is already initialized</translation>
     </message>
     <message>
         <source>set_minimum_confirmation</source>
@@ -1475,10 +1487,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>copy_rgb_invoice</source>
         <translation>Copy RGB invoice</translation>
-    </message>
-    <message>
-        <source>copy_ln_invoice</source>
-        <translation>Copy LN invoice</translation>
     </message>
     <message>
         <source>rgb_invoice_label</source>
@@ -1566,7 +1574,7 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>confirm_app_data_deletion</source>
-        <translation>Warning! Deleting app data will COMPLETELY wipe all data, including your bitcoin, RGB assets, and any lightning channels. Are you sure you want to proceed with the deletion?</translation>
+        <translation>Warning! Deleting app data will COMPLETELY wipe all data, including your bitcoin, RGB assets. Are you sure you want to proceed with the deletion?</translation>
     </message>
     <message>
         <source>rgb_lib_version</source>

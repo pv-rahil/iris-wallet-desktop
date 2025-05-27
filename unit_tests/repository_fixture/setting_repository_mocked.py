@@ -233,18 +233,6 @@ def mock_native_authentication(mocker):
 
 
 @pytest.fixture
-def mock_get_ln_endpoint(mocker):
-    """Mocked get LN endpoint"""
-    def _mock_get_ln_endpoint(value):
-        return mocker.patch(
-            'src.data.repository.setting_repository.SettingRepository.get_ln_endpoint',
-            return_value=value,
-        )
-
-    return _mock_get_ln_endpoint
-
-
-@pytest.fixture
 def mock_get_config_value(mocker):
     """Mocked get config value"""
     def _mock_get_config_value(value):

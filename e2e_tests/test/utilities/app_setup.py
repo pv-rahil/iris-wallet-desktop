@@ -72,7 +72,7 @@ class TestEnvironment:
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
         self.first_process = subprocess.Popen(
-            [f"e2e_tests/applications/iris wallet vault_{APP1_NAME}-{
+            [f"e2e_tests/applications/iris-wallet-vault_{APP1_NAME}-{
                 __version__
             }-x86_64.AppImage"],
         )
@@ -94,7 +94,7 @@ class TestEnvironment:
         self.first_page_operations = BaseOperations(self.first_application)
         if self.multi_instance:
             self.second_process = subprocess.Popen(
-                [f"e2e_tests/applications/iris wallet vault_{APP2_NAME}-{
+                [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{
                     __version__
                 }-x86_64.AppImage"],
             )

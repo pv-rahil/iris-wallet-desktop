@@ -35,11 +35,11 @@ class Wallet(MainPageObjects, BaseOperations):
             self.welcome_page_objects.click_create_button()
 
         if self.do_is_displayed(self.set_password_page_objects.password_input()):
-            self.set_password_page_objects.enter_password('nodepassword')
+            self.set_password_page_objects.enter_password('walletpassword')
 
         if self.do_is_displayed(self.set_password_page_objects.confirm_password_input()):
             self.set_password_page_objects.enter_confirm_password(
-                'nodepassword',
+                'walletpassword',
             )
 
         if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
