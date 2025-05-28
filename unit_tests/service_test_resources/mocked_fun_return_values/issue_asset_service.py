@@ -45,8 +45,6 @@ example_data_of_issue_asset_api = {
         'settled': 777000,
         'future': 777000,
         'spendable': 777000,
-        'offchain_outbound': 444,
-        'offchain_inbound': 0,
     },
     'media': {
         'file_path': '/path/to/media',

@@ -12,21 +12,6 @@ QFrame#header_frame {
     background-color: rgb(3, 11, 37);
 }
 
-QLabel#header_logo_channel {
-    padding-left: 10px;
-}
-
-QLineEdit#channel_tittle {
-    font: 18px "Inter";
-    border: none;
-    background-color: rgb(3, 11, 37);
-    color: rgb(255, 255, 255);
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-}
-
 QPushButton#refresh_unspent_list {
     border-radius: 8px;
     background: transparent;

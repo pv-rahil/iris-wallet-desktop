@@ -11,15 +11,9 @@ import pytest
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
-from src.model.common_operation_model import UnlockResponseModel
 from src.model.common_operation_model import WalletRequestModel
-from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.constant import ACCOUNT_XPUB
-from src.utils.custom_exception import CommonException
-from unit_tests.repository_fixture.common_operations_repository_mock import mock_lock
-from unit_tests.repository_fixture.common_operations_repository_mock import mock_unlock
 from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_password
-from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_unlock_api_res
 
 
 @pytest.fixture(autouse=True)
