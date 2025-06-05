@@ -11,7 +11,8 @@ ORGANIZATION_DOMAIN = 'com.rgb.iriswalletvault'
 LOG_FILE_MAX_SIZE = 1048576  # 1 mb
 LOG_FILE_MAX_BACKUP_COUNT = 5
 MNEMONIC_KEY = 'mnemonic'
-ACCOUNT_XPUB = 'account_xpub'
+ACCOUNT_XPUB_VANILLA = 'account_xpub_vanilla'
+ACCOUNT_XPUB_COLORED = 'account_xpub_colored'
 WALLET_PASSWORD_KEY = 'wallet_password'
 SAVED_INDEXER_URL = 'indexer_url'
 SAVED_PROXY_ENDPOINT = 'proxy_endpoint'
@@ -85,9 +86,9 @@ IRIS_WALLET_TRANSLATIONS_CONTEXT = 'iris_wallet_vault'
 
 # Rgb lib commit ID
 RGB_LIB_VERSION_KEY = 'rgb_lib_version'
-CURRENT_RGB_LIB_VERSION = '0.3.0a12'
+CURRENT_RGB_LIB_VERSION = '0.3.0a13'
 COMPATIBLE_RGB_LIB_VERSION = [
-    '0.3.0a12',
+    '0.3.0a13',
 ]
 
 # Directory names used in paths

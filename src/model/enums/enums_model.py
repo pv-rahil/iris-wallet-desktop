@@ -45,14 +45,14 @@ class AssetTransferStatusEnumModel(str, Enum):
 class NativeAuthType(str, Enum):
     """Enum for authentication type for native"""
     LOGGING_TO_APP = 'LOGGING_TO_APP'
-    # operation like issue rgb20 or rgb25  and transactions
+    # operation like issue NIA or CFA  and transactions
     MAJOR_OPERATION = 'MAJOR_OPERATION'
 
 
 class AssetType(str, Enum):
     """Enum for asset type"""
-    RGB20 = 'RGB20'
-    RGB25 = 'RGB25'
+    NIA = 'NIA'
+    CFA = 'CFA'
     BITCOIN = 'BITCOIN'
 
 

@@ -54,7 +54,6 @@ ERROR_MAPPING = {
     'InvalidInvoice': 'invalid_invoice_error',
     'OutputBelowDustLimit': 'output_below_dust_limit',
     'AllocationsAlreadyAvailable': 'allocations_already_available',
-    'AssetIfaceMismatch': 'asset_iface_mismatch',
     'AssetNotFound': 'asset_not_found',
     'BatchTransferNotFound': 'batch_transfer_not_found',
     'BitcoinNetworkMismatch': 'bitcoin_network_mismatch',

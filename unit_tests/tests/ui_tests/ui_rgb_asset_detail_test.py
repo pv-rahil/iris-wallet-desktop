@@ -15,7 +15,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QWidget
-from rgb_lib import AssetIface
+from rgb_lib import AssetSchema
 from rgb_lib import Outpoint
 from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
@@ -46,7 +46,7 @@ def rgb_asset_detail_widget(qtbot):
 
     # Mock the params as an instance of RgbAssetPageLoadModel
     mock_params = MagicMock()
-    mock_params.asset_type = 'RGB20'  # Set the asset_type as needed
+    mock_params.asset_type = 'NIA'  # Set the asset_type as needed
 
     widget = RGBAssetDetailWidget(view_model, mock_params)
     qtbot.addWidget(widget)
@@ -121,16 +121,16 @@ def test_is_path(rgb_asset_detail_widget: RGBAssetDetailWidget):
     ) is False  # Windows path format
 
 
-def test_handle_page_navigation_rgb_20(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test page navigation handling when asset type is RGB20."""
-    rgb_asset_detail_widget.asset_type = AssetIface.RGB20
+def test_handle_page_navigation_nia(rgb_asset_detail_widget: RGBAssetDetailWidget):
+    """Test page navigation handling when asset type is NIA."""
+    rgb_asset_detail_widget.asset_type = AssetSchema.NIA
     rgb_asset_detail_widget.handle_page_navigation()
     rgb_asset_detail_widget._view_model.page_navigation.fungibles_asset_page.assert_called_once()
 
 
-def test_handle_page_navigation_rgb_25(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test page navigation handling when asset type is RGB25."""
-    rgb_asset_detail_widget.asset_type = AssetType.RGB25.value
+def test_handle_page_navigation_cfa(rgb_asset_detail_widget: RGBAssetDetailWidget):
+    """Test page navigation handling when asset type is CFA."""
+    rgb_asset_detail_widget.asset_type = AssetSchema.CFA
     rgb_asset_detail_widget.handle_page_navigation()
     rgb_asset_detail_widget._view_model.page_navigation.collectibles_asset_page.assert_called_once()
 
@@ -213,21 +213,21 @@ def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWid
     """Test the select_receive_transfer_type method."""
     # Set up mock data for the test
     asset_id = 'test_asset_id'
-    asset_type = AssetType.RGB20.value
+    asset_type = AssetType.NIA.value
     rgb_asset_detail_widget.asset_id_detail.setPlainText(asset_id)
     rgb_asset_detail_widget.asset_type = asset_type
 
     # Mock the navigation method
-    mock_receive_rgb25 = mocker.patch.object(
+    mock_receive_cfa = mocker.patch.object(
         rgb_asset_detail_widget._view_model.page_navigation,
-        'receive_rgb25_page',
+        'receive_cfa_page',
     )
 
     # Call the method
     rgb_asset_detail_widget.select_receive_transfer_type()
 
     # Verify the navigation method was called with correct parameters
-    mock_receive_rgb25.assert_called_once_with(
+    mock_receive_cfa.assert_called_once_with(
         params=AssetDataModel(
             asset_type=asset_type,
             asset_id=asset_id,
@@ -239,16 +239,16 @@ def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWid
 def test_select_send_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWidget, mocker):
     """Test the select_send_transfer_type method."""
     # Mock the navigation method
-    mock_send_rgb25 = mocker.patch.object(
+    mock_send_cfa = mocker.patch.object(
         rgb_asset_detail_widget._view_model.page_navigation,
-        'send_rgb25_page',
+        'send_cfa_page',
     )
 
     # Call the method
     rgb_asset_detail_widget.select_send_transfer_type()
 
     # Verify the navigation method was called
-    mock_send_rgb25.assert_called_once()
+    mock_send_cfa.assert_called_once()
 
 
 def test_refresh_transaction(rgb_asset_detail_widget: RGBAssetDetailWidget):
@@ -256,7 +256,7 @@ def test_refresh_transaction(rgb_asset_detail_widget: RGBAssetDetailWidget):
 
     # Mock the render timer and the refresh function
     rgb_asset_detail_widget.render_timer = MagicMock()
-    rgb_asset_detail_widget._view_model.rgb25_view_model.on_refresh_click = MagicMock()
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_refresh_click = MagicMock()
 
     # Call the method
     rgb_asset_detail_widget.refresh_transaction()
@@ -265,7 +265,7 @@ def test_refresh_transaction(rgb_asset_detail_widget: RGBAssetDetailWidget):
     # Verify render_timer.start was called once
     rgb_asset_detail_widget.render_timer.start.assert_called_once()
     # Verify on_refresh_click was called once
-    rgb_asset_detail_widget._view_model.rgb25_view_model.on_refresh_click.assert_called_once()
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_refresh_click.assert_called_once()
 
 
 def test_handle_asset_frame_click(rgb_asset_detail_widget: RGBAssetDetailWidget):
@@ -280,13 +280,13 @@ def test_handle_asset_frame_click(rgb_asset_detail_widget: RGBAssetDetailWidget)
     )
 
     # Mock the navigation method
-    rgb_asset_detail_widget._view_model.page_navigation.rgb25_transaction_detail_page = MagicMock()
+    rgb_asset_detail_widget._view_model.page_navigation.cfa_transaction_detail_page = MagicMock()
 
     # Call the method
     rgb_asset_detail_widget.handle_asset_frame_click(params)
 
     # Assertions to check if the navigation method was called with the correct parameters
-    rgb_asset_detail_widget._view_model.page_navigation.rgb25_transaction_detail_page.assert_called_once_with(
+    rgb_asset_detail_widget._view_model.page_navigation.cfa_transaction_detail_page.assert_called_once_with(
         params,
     )
 
@@ -356,7 +356,7 @@ def test_confirm_fail_transfer(rgb_asset_detail_widget: RGBAssetDetailWidget):
     rgb_asset_detail_widget._confirm_fail_transfer(idx)
 
     # Verify the view model method was called with correct index
-    rgb_asset_detail_widget._view_model.rgb25_view_model.on_fail_transfer.assert_called_once_with(
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_fail_transfer.assert_called_once_with(
         idx,
     )
 
@@ -414,9 +414,9 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
     asset_id = 'test_asset_id'
     asset_name = 'Test Asset'
     image_path = asset_image_path
-    asset_type = AssetIface.RGB20
+    asset_type = AssetSchema.NIA
 
-    # Mock the view model's rgb25_view_model.txn_list
+    # Mock the view model's cfa_view_model.txn_list
     mock_asset_balance = MagicMock()
     mock_asset_balance.future = '100'
     mock_asset_balance.spendable = '50'
@@ -425,7 +425,7 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
     mock_txn_list.asset_balance = mock_asset_balance
     mock_txn_list.transfers = [create_mock_transfer]
 
-    rgb_asset_detail_widget._view_model.rgb25_view_model.txn_list = mock_txn_list
+    rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_txn_list
 
     # Mock TransactionDetailFrame
     # Use QWidget spec to fix the TypeError
@@ -530,7 +530,7 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
     mock_add_widget.reset_mock()
     mock_set_on_chain.reset_mock()
 
-    rgb_asset_detail_widget._view_model.rgb25_view_model.txn_list = mock_txn_list
+    rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_txn_list
 
     # Call the method with tuple asset_transactions
     rgb_asset_detail_widget.set_transaction_detail_frame(
@@ -546,30 +546,6 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
     mock_add_widget.assert_called_once_with(
         mock_transaction_frame, 0, 0, 1, 1,
     )
-
-
-def test_handle_page_navigation_rgb20(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test the handle_page_navigation method for RGB20."""
-    # Set asset type to RGB20
-    rgb_asset_detail_widget.asset_type = AssetIface.RGB20
-
-    # Call the method
-    rgb_asset_detail_widget.handle_page_navigation()
-
-    # Verify navigation method was called
-    rgb_asset_detail_widget._view_model.page_navigation.fungibles_asset_page.assert_called_once()
-
-
-def test_handle_page_navigation_rgb25(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test the handle_page_navigation method for RGB25."""
-    # Set asset type to something other than RGB20
-    rgb_asset_detail_widget.asset_type = AssetIface.RGB25
-
-    # Call the method
-    rgb_asset_detail_widget.handle_page_navigation()
-
-    # Verify navigation method was called
-    rgb_asset_detail_widget._view_model.page_navigation.collectibles_asset_page.assert_called_once()
 
 
 def test_set_on_chain_transaction_frame(rgb_asset_detail_widget: RGBAssetDetailWidget, mocker):
@@ -594,7 +570,7 @@ def test_set_on_chain_transaction_frame(rgb_asset_detail_widget: RGBAssetDetailW
     mock_transaction.idx = 0
 
     asset_name = 'Test Asset'
-    asset_type = AssetIface.RGB20
+    asset_type = AssetSchema.NIA
     asset_id = 'test_asset_id'
     image_path = asset_image_path
 

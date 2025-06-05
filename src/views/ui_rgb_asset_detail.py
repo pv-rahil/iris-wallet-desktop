@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
-from rgb_lib import AssetIface
+from rgb_lib import AssetSchema
 from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
 
@@ -390,7 +390,7 @@ class RGBAssetDetailWidget(QWidget):
 
     def select_receive_transfer_type(self):
         """This method navigates receive asset page according to the condition"""
-        self._view_model.page_navigation.receive_rgb25_page(
+        self._view_model.page_navigation.receive_cfa_page(
             params=AssetDataModel(
                 asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(), close_page_navigation=self.asset_type,
             ),
@@ -398,7 +398,7 @@ class RGBAssetDetailWidget(QWidget):
 
     def select_send_transfer_type(self):
         """This method navigates the send asset page according to the condition"""
-        self._view_model.page_navigation.send_rgb25_page()
+        self._view_model.page_navigation.send_cfa_page()
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
@@ -413,23 +413,23 @@ class RGBAssetDetailWidget(QWidget):
         self.copy_button.clicked.connect(
             lambda: copy_text(self.asset_id_detail),
         )
-        self._view_model.rgb25_view_model.txn_list_loaded.connect(
+        self._view_model.cfa_view_model.txn_list_loaded.connect(
             self.set_transaction_detail_frame,
         )
         self.close_btn.clicked.connect(
             self.handle_page_navigation,
         )
-        self._view_model.rgb25_view_model.is_loading.connect(
+        self._view_model.cfa_view_model.is_loading.connect(
             self.show_loading_screen,
         )
         self.asset_refresh_button.clicked.connect(
-            self._view_model.rgb25_view_model.on_refresh_click,
+            self._view_model.cfa_view_model.on_refresh_click,
         )
 
     def refresh_transaction(self):
         """Refresh the transaction of the assets"""
         self.render_timer.start()
-        self._view_model.rgb25_view_model.on_refresh_click()
+        self._view_model.cfa_view_model.on_refresh_click()
 
     def set_transaction_detail_frame(self, asset_id, asset_name, image_path, asset_type):
         """This method sets up the transaction detail frame in the UI.
@@ -440,7 +440,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_type = asset_type
         self.asset_name = asset_name
         self.handle_img_path(image_path=self.image_path)
-        asset_transactions: ListTransferAssetWithBalanceResponseModel = self._view_model.rgb25_view_model.txn_list
+        asset_transactions: ListTransferAssetWithBalanceResponseModel = self._view_model.cfa_view_model.txn_list
         self.asset_total_balance.setText(
             str(asset_transactions.asset_balance.future),
         )
@@ -472,7 +472,7 @@ class RGBAssetDetailWidget(QWidget):
                 no_transaction_widget, 0, 0, 1, 1,
             )
             return
-        if asset_type == AssetIface.RGB20:
+        if asset_type == AssetSchema.NIA:
             self.rgb_asset_detail_widget.setMinimumSize(QSize(499, 730))
             self.rgb_asset_detail_widget.setMaximumSize(QSize(499, 730))
             self.scroll_area.setMaximumSize(QSize(335, 225))
@@ -505,7 +505,7 @@ class RGBAssetDetailWidget(QWidget):
 
     def handle_asset_frame_click(self, params: TransactionDetailPageModel):
         """Pass emit value to navigation page"""
-        self._view_model.page_navigation.rgb25_transaction_detail_page(params)
+        self._view_model.page_navigation.cfa_transaction_detail_page(params)
 
     def handle_show_hide(self, transaction_detail_frame):
         """It handled to hide and show transaction details frame"""
@@ -547,8 +547,8 @@ class RGBAssetDetailWidget(QWidget):
             self.receive_rgb_asset.setDisabled(False)
 
     def handle_page_navigation(self):
-        """Handle the page navigation according the RGB20 or RGB25 page"""
-        if self.asset_type == AssetIface.RGB20:
+        """Handle the page navigation according the NIA or CFA page"""
+        if self.asset_type == AssetSchema.NIA:
             self._view_model.page_navigation.fungibles_asset_page()
         else:
             self._view_model.page_navigation.collectibles_asset_page()
@@ -611,7 +611,7 @@ class RGBAssetDetailWidget(QWidget):
 
     def _confirm_fail_transfer(self, idx):
         """Confirms the fail transfer action and closes the confirmation dialog."""
-        self._view_model.rgb25_view_model.on_fail_transfer(idx)
+        self._view_model.cfa_view_model.on_fail_transfer(idx)
 
     def handle_img_path(self, image_path):
         """

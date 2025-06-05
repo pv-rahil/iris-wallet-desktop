@@ -75,7 +75,6 @@ class Token(BaseModel):
 class AssetModel(BaseModel):
     """Model for asset """
     asset_id: str
-    asset_iface: str
     ticker: str | None = None
     name: str
     details: str | None

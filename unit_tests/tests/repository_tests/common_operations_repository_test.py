@@ -60,7 +60,8 @@ def test_unlock(mock_rgb_lib, mock_colored_wallet):
     unlock_request = WalletRequestModel(
         data_dir='/test/path',
         bitcoin_network=1,
-        account_xpub='test_pubkey',
+        account_xpub_colored='test_pubkey_colored',
+        account_xpub_vanilla='test_pubkey_vanilla',
         mnemonic='test mnemonic',
         max_allocations_per_utxo=5,
         vanilla_keychain=1,
@@ -79,7 +80,8 @@ def test_unlock(mock_rgb_lib, mock_colored_wallet):
     assert mock_rgb_lib.WalletData.call_args.kwargs['bitcoin_network'] == BitcoinNetwork.TESTNET
     assert mock_rgb_lib.WalletData.call_args.kwargs['database_type'] == DatabaseType.SQLITE
     assert mock_rgb_lib.WalletData.call_args.kwargs['max_allocations_per_utxo'] == 5
-    assert mock_rgb_lib.WalletData.call_args.kwargs['pubkey'] == 'test_pubkey'
+    assert mock_rgb_lib.WalletData.call_args.kwargs['account_xpub_vanilla'] == 'test_pubkey_vanilla'
+    assert mock_rgb_lib.WalletData.call_args.kwargs['account_xpub_colored'] == 'test_pubkey_colored'
     assert mock_rgb_lib.WalletData.call_args.kwargs['mnemonic'] == 'test mnemonic'
     assert mock_rgb_lib.WalletData.call_args.kwargs['vanilla_keychain'] == 1
 

@@ -12,7 +12,8 @@ import pytest
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import WalletRequestModel
-from src.utils.constant import ACCOUNT_XPUB
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from unit_tests.service_test_resources.mocked_fun_return_values.common_operation_service import mocked_password
 
 
@@ -39,7 +40,9 @@ def test_enter_wallet_password_success(
     mock_app_paths.mnemonic_file_path = '/test/mnemonic/path'
     mock_get_network.return_value = 1  # Testnet
 
-    mock_local_store.get_value.return_value = 'test_xpub'
+    mock_local_store.get_value.side_effect = [
+        'test_xpub_vanilla', 'test_xpub_colored',
+    ]
     mock_mnemonic_store.decrypt.return_value = 'test mnemonic'
 
     mock_wallet = MagicMock()
@@ -53,7 +56,8 @@ def test_enter_wallet_password_success(
     # Assert
     assert result == mock_wallet
     mock_get_network.assert_called()
-    mock_local_store.get_value.assert_called_once_with(ACCOUNT_XPUB)
+    mock_local_store.get_value.assert_any_call(ACCOUNT_XPUB_VANILLA)
+    mock_local_store.get_value.assert_any_call(ACCOUNT_XPUB_COLORED)
     mock_mnemonic_store.decrypt.assert_called_once_with(
         password='Random@123', path='/test/mnemonic/path',
     )
@@ -61,7 +65,8 @@ def test_enter_wallet_password_success(
         WalletRequestModel(
             data_dir='/test/path',
             bitcoin_network=1,
-            account_xpub='test_xpub',
+            account_xpub_vanilla='test_xpub_vanilla',
+            account_xpub_colored='test_xpub_colored',
             mnemonic='test mnemonic',
         ),
     )

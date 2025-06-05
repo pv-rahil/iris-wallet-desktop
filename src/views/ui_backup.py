@@ -470,8 +470,8 @@ class Backup(QWidget):
 
         navigation_map = {
             'fungibles': self._view_model.page_navigation.fungibles_asset_page,
-            'RGB20': self._view_model.page_navigation.fungibles_asset_page,
-            'RGB25': self._view_model.page_navigation.collectibles_asset_page,
+            'NIA': self._view_model.page_navigation.fungibles_asset_page,
+            'CFA': self._view_model.page_navigation.collectibles_asset_page,
             'collectibles': self._view_model.page_navigation.collectibles_asset_page,
             'faucets': self._view_model.page_navigation.faucets_page,
             'view_unspent_list': self._view_model.page_navigation.view_unspent_list_page,

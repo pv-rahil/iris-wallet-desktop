@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 from PySide6.QtCore import QCoreApplication
-from rgb_lib import AssetIface
+from rgb_lib import AssetSchema
 
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.rgb_model import RgbAssetPageLoadModel
@@ -60,7 +60,7 @@ def rgb_asset_transaction_detail_widget(qtbot):
     mock_change_utxo = MagicMock()
     mock_change_utxo.txid = 'mock_change_txid_67890'
     params.change_utxo = mock_change_utxo
-    params.asset_type = AssetIface.RGB20
+    params.asset_type = AssetSchema.NIA
 
     # Patch set_rgb_asset_value to avoid AttributeError during widget creation
     with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'), \
@@ -182,11 +182,11 @@ def test_handle_close(rgb_asset_transaction_detail_widget: RGBAssetTransactionDe
     rgb_asset_transaction_detail_widget.params.asset_id = '123'
     rgb_asset_transaction_detail_widget.params.asset_name = 'Test Asset'
     rgb_asset_transaction_detail_widget.params.image_path = 'path/to/image'
-    rgb_asset_transaction_detail_widget.params.asset_type = AssetIface.RGB25
+    rgb_asset_transaction_detail_widget.params.asset_type = AssetSchema.CFA
 
     # Mock the view model methods (signal and navigation)
-    rgb_asset_transaction_detail_widget._view_model.rgb25_view_model.asset_info = MagicMock()
-    rgb_asset_transaction_detail_widget._view_model.page_navigation.rgb25_detail_page = MagicMock()
+    rgb_asset_transaction_detail_widget._view_model.cfa_view_model.asset_info = MagicMock()
+    rgb_asset_transaction_detail_widget._view_model.page_navigation.cfa_detail_page = MagicMock()
 
     # Patch get_bitcoin_explorer_url and insert_zero_width_spaces to avoid errors
     with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'), \
@@ -196,11 +196,11 @@ def test_handle_close(rgb_asset_transaction_detail_widget: RGBAssetTransactionDe
         rgb_asset_transaction_detail_widget.handle_close()
 
     # Assert that the signal is emitted with the correct parameters
-    rgb_asset_transaction_detail_widget._view_model.rgb25_view_model.asset_info.emit.assert_called_once_with(
-        '123', 'Test Asset', 'path/to/image', AssetIface.RGB25,
+    rgb_asset_transaction_detail_widget._view_model.cfa_view_model.asset_info.emit.assert_called_once_with(
+        '123', 'Test Asset', 'path/to/image', AssetSchema.CFA,
     )
 
     # Assert that the navigation method is called with the correct argument
-    rgb_asset_transaction_detail_widget._view_model.page_navigation.rgb25_detail_page.assert_called_once_with(
-        RgbAssetPageLoadModel(asset_type=AssetIface.RGB25),
+    rgb_asset_transaction_detail_widget._view_model.page_navigation.cfa_detail_page.assert_called_once_with(
+        RgbAssetPageLoadModel(asset_type=AssetSchema.CFA),
     )

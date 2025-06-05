@@ -1,13 +1,13 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, unused-import
 """This module contains the ReceiveRGBAssetWidget class,
- which represents the UI for receive rgb25.
+ which represents the UI for receive CFA.
  """
 from __future__ import annotations
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
-from rgb_lib import AssetIface
+from rgb_lib import AssetSchema
 
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
@@ -37,8 +37,8 @@ class ReceiveRGBAssetWidget(QWidget):
         self.default_min_confirmation = SettingCardRepository.get_default_min_confirmation()
         self.receive_rgb_asset_page = ReceiveAssetWidget(
             self._view_model,
-            'RGB25 page',
-            'rgb25_address_info',
+            'CFA page',
+            'cfa_address_info',
         )
         self.__loading_translucent_screen = LoadingTranslucentScreen(
             parent=self, description_text='Loading', dot_animation=True,
@@ -53,9 +53,9 @@ class ReceiveRGBAssetWidget(QWidget):
     def generate_invoice(self):
         """Call get rgb invoice to get invoice"""
         if self.originating_page in [
-            AssetIface.RGB20,
+            AssetSchema.NIA,
             'fungibles',
-            AssetIface.RGB25,
+            AssetSchema.CFA,
             'collectibles',
             'view_unspent_list',
             'faucets',
@@ -65,7 +65,7 @@ class ReceiveRGBAssetWidget(QWidget):
             'backup',
         ]:
             proxy_endpoint: DefaultProxyEndpoint = SettingCardRepository.get_default_proxy_endpoint()
-            self._view_model.receive_rgb25_view_model.get_rgb_invoice(
+            self._view_model.receive_cfa_view_model.get_rgb_invoice(
                 minimum_confirmations=self.default_min_confirmation.min_confirmation, asset_id=self.asset_id, transport_endpoints=[
                     proxy_endpoint.endpoint,
                 ],
@@ -93,13 +93,13 @@ class ReceiveRGBAssetWidget(QWidget):
         self.receive_rgb_asset_page.receive_asset_close_button.clicked.connect(
             self.close_button_navigation,
         )
-        self._view_model.receive_rgb25_view_model.address.connect(
+        self._view_model.receive_cfa_view_model.address.connect(
             self.update_address,
         )
-        self._view_model.receive_rgb25_view_model.message.connect(
+        self._view_model.receive_cfa_view_model.message.connect(
             self.handle_message,
         )
-        self._view_model.receive_rgb25_view_model.hide_loading.connect(
+        self._view_model.receive_cfa_view_model.hide_loading.connect(
             self.hide_loading_screen,
         )
 
@@ -107,15 +107,15 @@ class ReceiveRGBAssetWidget(QWidget):
         """
         Navigate to the specified page when the close button is clicked.
         """
-        if self.close_page_navigation == AssetIface.RGB25:
+        if self.close_page_navigation == AssetSchema.CFA:
             self._view_model.page_navigation.collectibles_asset_page()
-        elif self.close_page_navigation == AssetIface.RGB20:
+        elif self.close_page_navigation == AssetSchema.NIA:
             self._view_model.page_navigation.fungibles_asset_page()
         else:
             navigation_map = {
-                'RGB20': self._view_model.page_navigation.fungibles_asset_page,
+                'NIA': self._view_model.page_navigation.fungibles_asset_page,
                 'fungibles': self._view_model.page_navigation.fungibles_asset_page,
-                'RGB25': self._view_model.page_navigation.collectibles_asset_page,
+                'CFA': self._view_model.page_navigation.collectibles_asset_page,
                 'collectibles': self._view_model.page_navigation.collectibles_asset_page,
                 'view_unspent_list': self._view_model.page_navigation.view_unspent_list_page,
                 'faucets': self._view_model.page_navigation.faucets_page,

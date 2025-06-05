@@ -36,7 +36,6 @@ def mock_fungible_asset_view_model():
     mock_view_model.main_asset_view_model.assets.vanilla = MagicMock(
         asset_id='1',
         name='Bitcoin',
-        asset_iface=AssetType.BITCOIN.value,
         ticker=TokenSymbol.BITCOIN.value,
         balance=MagicMock(future=0.5),
     )
@@ -120,7 +119,6 @@ def test_ui_update_after_asset_loading(create_fungible_asset_widget: FungibleAss
     bitcoin_mock.name = 'bitcoin'  # Set as string
     bitcoin_mock.balance = MagicMock()
     bitcoin_mock.balance.future = '0.5'
-    bitcoin_mock.asset_iface = 'BTC'
 
     # Mock assets in the view model
     widget._view_model.main_asset_view_model.assets.vanilla = bitcoin_mock
@@ -147,7 +145,6 @@ def test_show_assets_with_various_assets(create_fungible_asset_widget, qtbot):
     bitcoin_mock.asset_id = 'btc_asset_id'
     bitcoin_mock.name = 'Bitcoin'
     bitcoin_mock.balance.future = '0.5'
-    bitcoin_mock.asset_iface = 'BTC'
     bitcoin_mock.ticker = 'BTC'
 
     # Mock NIA asset
@@ -155,7 +152,6 @@ def test_show_assets_with_various_assets(create_fungible_asset_widget, qtbot):
     nia_mock.asset_id = 'nia_asset_id'
     nia_mock.name = 'NIA'
     nia_mock.balance.future = '1.0'
-    nia_mock.asset_iface = 'NIA'
     nia_mock.ticker = 'NIA'
 
     # Mock assets in the view model
@@ -393,10 +389,10 @@ def test_handle_asset_frame_click(create_fungible_asset_widget):
 
     # Mock the view model and navigation methods
     widget._view_model.page_navigation = MagicMock()
-    widget._view_model.rgb25_view_model = MagicMock()
+    widget._view_model.cfa_view_model = MagicMock()
 
     # Test for Bitcoin asset type
-    bitcoin_asset_id = 'btc_asset_id'
+    bitcoin_asset_id = ''
     bitcoin_asset_name = 'Bitcoin'
     bitcoin_image_path = ':/assets/bitcoin.png'
     bitcoin_asset_type = AssetType.BITCOIN.value
@@ -410,8 +406,8 @@ def test_handle_asset_frame_click(create_fungible_asset_widget):
 
     # Verify navigation to Bitcoin page
     widget._view_model.page_navigation.bitcoin_page.assert_called_once()
-    widget._view_model.rgb25_view_model.asset_info.emit.assert_not_called()
-    widget._view_model.page_navigation.rgb25_detail_page.assert_not_called()
+    widget._view_model.cfa_view_model.asset_info.emit.assert_not_called()
+    widget._view_model.page_navigation.cfa_detail_page.assert_not_called()
 
     # Reset mocks for the next scenario
     widget._view_model.page_navigation.bitcoin_page.reset_mock()
@@ -420,7 +416,7 @@ def test_handle_asset_frame_click(create_fungible_asset_widget):
     rgb_asset_id = 'rgb_asset_id'
     rgb_asset_name = 'RGB Asset'
     rgb_image_path = ':/assets/rgb.png'
-    rgb_asset_type = AssetType.RGB25.value
+    rgb_asset_type = AssetType.CFA.value
 
     widget.handle_asset_frame_click(
         asset_id=rgb_asset_id,
@@ -430,12 +426,12 @@ def test_handle_asset_frame_click(create_fungible_asset_widget):
     )
 
     # Verify asset_info signal is emitted with correct parameters
-    widget._view_model.rgb25_view_model.asset_info.emit.assert_called_once_with(
+    widget._view_model.cfa_view_model.asset_info.emit.assert_called_once_with(
         rgb_asset_id, rgb_asset_name, rgb_image_path, rgb_asset_type,
     )
 
     # Verify navigation to RGB detail page
-    widget._view_model.page_navigation.rgb25_detail_page.assert_called_once_with(
+    widget._view_model.page_navigation.cfa_detail_page.assert_called_once_with(
         RgbAssetPageLoadModel(asset_type=rgb_asset_type),
     )
 
@@ -456,7 +452,6 @@ def test_create_fungible_card(create_fungible_asset_widget, qtbot):
     asset = MagicMock()
     asset.asset_id = 'sample_asset_id'
     asset.name = 'Sample Asset'
-    asset.asset_iface = AssetType.RGB20
     asset.balance.future = 1000
     asset.ticker = 'SAMPLE'
 
@@ -474,7 +469,7 @@ def test_create_fungible_card(create_fungible_asset_widget, qtbot):
     assert widget.asset_name.text() == asset.name
     assert widget.asset_name.minimumSize() == QSize(135, 40)
 
-    # Verify address is set correctly for RGB20
+    # Verify address is set correctly for NIA
     assert widget.address.text() == asset.asset_id
 
     # Verify amount is set
@@ -487,7 +482,6 @@ def test_create_fungible_card(create_fungible_asset_widget, qtbot):
     widget.vertical_layout_3.addWidget.assert_called()
 
     # Test for Bitcoin-specific behavior
-    asset.asset_iface = AssetType.BITCOIN
     asset.name = 'Bitcoin'
 
     # Test for BTC (mainnet Bitcoin)
@@ -543,7 +537,6 @@ def test_show_assets(create_fungible_asset_widget, qtbot):
     asset = MagicMock()
     asset.name = 'Bitcoin'  # Mock the 'name' attribute to return a string
     asset.asset_id = 'asset123'  # Mock the 'asset_id' attribute
-    asset.asset_iface = 'bitcoin_iface'  # Mock the 'asset_iface' attribute
     asset.ticker = 'BTC'
 
     # Mock the assets in the view model (if needed)

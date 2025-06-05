@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 from PySide6.QtCore import QCoreApplication
-from rgb_lib import AssetIface
+from rgb_lib import AssetSchema
 
 from src.model.enums.enums_model import ToastPreset
 from src.model.selection_page_model import AssetDataModel
@@ -24,7 +24,7 @@ def receive_rgb_asset_widget(qtbot):
     """Fixture to create and return an instance of ReceiveRGBAssetWidget."""
     mock_navigation = MagicMock()
     mock_view_model = MagicMock(MainViewModel(mock_navigation))
-    asset_data = AssetDataModel(asset_type='RGB25', asset_id='test_asset_id')
+    asset_data = AssetDataModel(asset_type='CFA', asset_id='test_asset_id')
     widget = ReceiveRGBAssetWidget(mock_view_model, asset_data)
     qtbot.addWidget(widget)
     return widget
@@ -39,14 +39,14 @@ def test_generate_invoice(receive_rgb_asset_widget: ReceiveRGBAssetWidget):
         'src.data.repository.setting_card_repository.SettingCardRepository.get_default_proxy_endpoint',
         return_value=mock_proxy_endpoint,
     ):
-        receive_rgb_asset_widget._view_model.receive_rgb25_view_model.get_rgb_invoice = MagicMock()
-        receive_rgb_asset_widget.originating_page = AssetIface.RGB25
+        receive_rgb_asset_widget._view_model.receive_cfa_view_model.get_rgb_invoice = MagicMock()
+        receive_rgb_asset_widget.originating_page = AssetSchema.CFA
         receive_rgb_asset_widget.default_min_confirmation.min_confirmation = 1
         receive_rgb_asset_widget.asset_id = 'test_asset_id'
 
         receive_rgb_asset_widget.generate_invoice()
 
-        receive_rgb_asset_widget._view_model.receive_rgb25_view_model.get_rgb_invoice.assert_called_once_with(
+        receive_rgb_asset_widget._view_model.receive_cfa_view_model.get_rgb_invoice.assert_called_once_with(
             minimum_confirmations=1,
             asset_id='test_asset_id',
             transport_endpoints=['test_endpoint'],
@@ -66,9 +66,9 @@ def test_setup_ui_connection(receive_rgb_asset_widget: ReceiveRGBAssetWidget):
                 receive_rgb_asset_widget.receive_rgb_asset_page.copy_button.clicked.emit()
 
                 # Verify UI connections are set up
-                receive_rgb_asset_widget._view_model.receive_rgb25_view_model.address.connect.assert_called_once()
-                receive_rgb_asset_widget._view_model.receive_rgb25_view_model.message.connect.assert_called()
-                receive_rgb_asset_widget._view_model.receive_rgb25_view_model.hide_loading.connect.assert_called()
+                receive_rgb_asset_widget._view_model.receive_cfa_view_model.address.connect.assert_called_once()
+                receive_rgb_asset_widget._view_model.receive_cfa_view_model.message.connect.assert_called()
+                receive_rgb_asset_widget._view_model.receive_cfa_view_model.hide_loading.connect.assert_called()
 
                 # Verify address label text is set correctly
                 assert receive_rgb_asset_widget.receive_rgb_asset_page.address_label.text() == QCoreApplication.translate(
@@ -90,26 +90,26 @@ def test_close_button_navigation(receive_rgb_asset_widget):
 
     # Patch ToastManager.error for error case
     with patch.object(ToastManager, 'error') as mock_error:
-        # Test: If close_page_navigation == AssetIface.RGB25
-        receive_rgb_asset_widget.close_page_navigation = AssetIface.RGB25
+        # Test: If close_page_navigation == AssetSchema.CFA
+        receive_rgb_asset_widget.close_page_navigation = AssetSchema.CFA
         receive_rgb_asset_widget.originating_page = 'should_not_be_used'
         receive_rgb_asset_widget.close_button_navigation()
         receive_rgb_asset_widget._view_model.page_navigation.collectibles_asset_page.assert_called_once_with()
         receive_rgb_asset_widget._view_model.page_navigation.collectibles_asset_page.reset_mock()
 
-        # Test: If close_page_navigation == AssetIface.RGB20
-        receive_rgb_asset_widget.close_page_navigation = AssetIface.RGB20
+        # Test: If close_page_navigation == AssetSchema.NIA
+        receive_rgb_asset_widget.close_page_navigation = AssetSchema.NIA
         receive_rgb_asset_widget.originating_page = 'should_not_be_used'
         receive_rgb_asset_widget.close_button_navigation()
         receive_rgb_asset_widget._view_model.page_navigation.fungibles_asset_page.assert_called_once_with()
         receive_rgb_asset_widget._view_model.page_navigation.fungibles_asset_page.reset_mock()
 
-        # Test: navigation_map entries (when close_page_navigation is not RGB25 or RGB20)
+        # Test: navigation_map entries (when close_page_navigation is not CFA or NIA)
         receive_rgb_asset_widget.close_page_navigation = None
         navigation_map = {
-            'RGB20': receive_rgb_asset_widget._view_model.page_navigation.fungibles_asset_page,
+            'NIA': receive_rgb_asset_widget._view_model.page_navigation.fungibles_asset_page,
             'fungibles': receive_rgb_asset_widget._view_model.page_navigation.fungibles_asset_page,
-            'RGB25': receive_rgb_asset_widget._view_model.page_navigation.collectibles_asset_page,
+            'CFA': receive_rgb_asset_widget._view_model.page_navigation.collectibles_asset_page,
             'collectibles': receive_rgb_asset_widget._view_model.page_navigation.collectibles_asset_page,
             'view_unspent_list': receive_rgb_asset_widget._view_model.page_navigation.view_unspent_list_page,
             'faucets': receive_rgb_asset_widget._view_model.page_navigation.faucets_page,

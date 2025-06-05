@@ -21,10 +21,11 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetSchema
 
 import src.resources_rc
 from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
-from accessible_constant import ISSUE_RGB20_ASSET
+from accessible_constant import ISSUE_NIA_ASSET
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
@@ -80,7 +81,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.title_frame = HeaderFrame(
             title_logo_path=':/assets/my_asset.png', title_name='fungibles',
         )
-        self.title_frame.action_button.setAccessibleName(ISSUE_RGB20_ASSET)
+        self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
         self.fungible_frame = None
         self.vertical_layout_fungible_frame = None
         self.grid_layout_fungible_frame = None
@@ -258,7 +259,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
     def create_fungible_card(self, asset, img_path=None):
         """This method creates all the fungible assets elements of the main asset page."""
         self.fungible_frame = ClickableFrame(
-            asset.asset_id, asset.name, self.fungibles_widget, asset_type=asset.asset_iface,
+            asset.asset_id, asset.name, self.fungibles_widget, asset_type=AssetSchema.NIA,
         )
         self.fungible_frame.setStyleSheet(
             load_stylesheet('views/qss/fungible_asset_style.qss'),
@@ -316,7 +317,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             'padding-left:10px;',
         )
 
-        if asset.asset_iface == AssetType.BITCOIN:
+        if asset.asset_id is None:
             network = SettingRepository.get_wallet_network()
             if network == NetworkEnumModel.REGTEST:
                 self.address.setText(TokenSymbol.REGTEST_BITCOIN)
@@ -377,7 +378,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         )
         self.title_frame.action_button.clicked.connect(
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_rgb20_asset_page,
+                self._view_model.page_navigation.issue_nia_asset_page,
             ),
         )
         self._view_model.main_asset_view_model.loading_started.connect(
@@ -408,13 +409,13 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
     def handle_asset_frame_click(self, asset_id, asset_name, image_path, asset_type):
         """This method handles fungibles asset click of the main asset page."""
-        if asset_type == AssetType.BITCOIN.value:
+        if asset_id == '':
             self._view_model.page_navigation.bitcoin_page()
         else:
-            self._view_model.rgb25_view_model.asset_info.emit(
+            self._view_model.cfa_view_model.asset_info.emit(
                 asset_id, asset_name, image_path, asset_type,
             )
-            self._view_model.page_navigation.rgb25_detail_page(
+            self._view_model.page_navigation.cfa_detail_page(
                 RgbAssetPageLoadModel(asset_type=asset_type),
             )
 

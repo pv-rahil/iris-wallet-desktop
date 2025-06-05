@@ -218,7 +218,6 @@ def test_issue_asset_nia(mock_wallet, mock_cache):
     # Assert
     assert result == mock_asset_nia
     mock_wallet.issue_asset_nia.assert_called_once_with(
-        online=True,
         ticker='TEST',
         name='Test Asset',
         precision=8,
@@ -246,7 +245,6 @@ def test_issue_asset_cfa(mock_wallet, mock_cache):
     # Assert
     assert result == mock_asset_cfa
     mock_wallet.issue_asset_cfa.assert_called_once_with(
-        online=True,
         details='TEST',
         name='Test Asset',
         precision=8,
@@ -276,7 +274,6 @@ def test_issue_asset_uda(mock_wallet, mock_cache):
     # Assert
     assert result == mock_asset_uda
     mock_wallet.issue_asset_uda.assert_called_once_with(
-        online=True,
         details='TEST',
         name='Test Asset',
         ticker='TEST',

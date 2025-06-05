@@ -12,7 +12,7 @@ if [ -n "$APP_NAME_SUFFIX" ]; then
     APP_NAME="-$APP_NAME_SUFFIX"
     APP_NAME_SUFFIX_OPT=("--app-name=$APP_NAME_SUFFIX")
 fi
-echo "i run"
+
 # compile resources
 poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 

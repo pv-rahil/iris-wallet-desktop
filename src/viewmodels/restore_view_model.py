@@ -14,7 +14,8 @@ from src.data.service.restore_service import RestoreService
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
@@ -44,6 +45,13 @@ class RestoreViewModel(QObject, ThreadManager):
         self.password = None
         self.sidebar = None
 
+    def forward_to_fungibles_page(self):
+        """Navigate to fungibles page"""
+        self.sidebar = self._page_navigation.sidebar()
+        if self.sidebar is not None:
+            self.sidebar.my_fungibles.setChecked(True)
+        self._page_navigation.enter_wallet_password_page()
+
     def on_success(self, response):
         """Callback after successful restore"""
         self.is_loading.emit(False)
@@ -66,7 +74,10 @@ class RestoreViewModel(QObject, ThreadManager):
                 network, self.mnemonic,
             )
             local_store.set_value(
-                ACCOUNT_XPUB, restore_keys.account_xpub,
+                ACCOUNT_XPUB_VANILLA, restore_keys.account_xpub_vanilla,
+            )
+            local_store.set_value(
+                ACCOUNT_XPUB_COLORED, restore_keys.account_xpub_colored,
             )
             is_set_password: bool = set_value(
                 WALLET_PASSWORD_KEY, self.password, network.value,
@@ -78,12 +89,12 @@ class RestoreViewModel(QObject, ThreadManager):
                     INFO_RESTORE_COMPLETED,
                 )
                 SettingRepository.set_keyring_status(status=False)
-                self.splash_view_model.handle_application_open()
+                self.forward_to_fungibles_page()
             else:
                 keyring_warning_dialog = KeyringErrorDialog(
                     mnemonic=self.mnemonic,
                     password=self.password,
-                    navigate_to=self.splash_view_model.handle_application_open,
+                    navigate_to=self.forward_to_fungibles_page,
                 )
                 keyring_warning_dialog.exec()
         else:

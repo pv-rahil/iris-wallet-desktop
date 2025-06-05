@@ -14,7 +14,6 @@ from src.model.rgb_model import Token
 
 mock_nia_asset = AssetNia(
     asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-    asset_iface='RGB20',
     ticker='USDT',
     name='Tether',
     details='asset details',
@@ -30,7 +29,6 @@ mock_nia_asset = AssetNia(
 
 mock_uda_asset = AssetUda(
     asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-    asset_iface='RGB20',
     ticker='UNI',
     name='Unique',
     details='asset details',
@@ -73,7 +71,6 @@ mock_uda_asset = AssetUda(
 
 mock_cfa_asset = AssetCfa(
     asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-    asset_iface='RGB20',
     name='Collectible',
     details='asset details',
     precision=0,
@@ -107,7 +104,6 @@ mock_balance_response_data = BalanceResponseModel(
 
 mock_nia_asset_exhausted_asset = AssetNia(
     asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k333',
-    asset_iface='RGB20',
     ticker='TTK',
     name='super man',
     details='asset details',
@@ -123,7 +119,6 @@ mock_nia_asset_exhausted_asset = AssetNia(
 
 mock_uda_asset_exhausted_asset = AssetUda(
     asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-    asset_iface='RGB20',
     ticker='UNI',
     name='Unique',
     details='asset details',
@@ -166,7 +161,6 @@ mock_uda_asset_exhausted_asset = AssetUda(
 
 mock_cfa_asset_exhausted_asset = AssetCfa(
     asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-    asset_iface='RGB20',
     name='Collectible',
     details='asset details',
     precision=0,

@@ -18,7 +18,7 @@ class IssueAssetService:
     """
     @staticmethod
     def issue_asset_cfa(new_asset_detail: IssueAssetCfaRequestModel) -> IssueAssetResponseModel | None:
-        """This function issue cfa asset"""
+        """This function issue CFA asset"""
         try:
             if not os.path.exists(new_asset_detail.file_path):
                 raise CommonException(ERROR_IMAGE_PATH_NOT_EXITS)

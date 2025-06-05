@@ -20,10 +20,10 @@ from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
 from src.utils.error_message import ERROR_PASSWORD_INCORRECT
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
-from src.viewmodels.splash_view_model import ACCOUNT_XPUB
+from src.viewmodels.splash_view_model import ACCOUNT_XPUB_COLORED
+from src.viewmodels.splash_view_model import ACCOUNT_XPUB_VANILLA
 from src.viewmodels.splash_view_model import ERROR_RGB_LIB_INCOMPATIBILITY
 from src.viewmodels.splash_view_model import SplashViewModel
-from src.viewmodels.splash_view_model import WALLET_PASSWORD_KEY
 from src.views.components.message_box import MessageBox
 from src.views.components.toast import ToastManager
 
@@ -272,6 +272,7 @@ def test_handle_application_open_keyring_enabled(mock_qapp, mock_toast_manager, 
     page_navigation.enter_wallet_password_page.assert_called_once()
 
 
+@patch('src.viewmodels.splash_view_model.ToastManager')
 @patch('src.viewmodels.splash_view_model.WalletRequestModel')
 @patch('src.viewmodels.splash_view_model.get_bitcoin_network_from_enum')
 @patch('src.viewmodels.splash_view_model.local_store')
@@ -291,10 +292,10 @@ def test_handle_application_open_main_flow(
     mock_local_store,
     mock_get_network,
     mock_wallet_request_model,
+    mock_toast_manager,
 ):
     """Test handle_application_open for main flows (valid/invalid RGB, keyring, password present/missing)."""
 
-    # Arrange
     page_navigation = Mock()
     view_model = SplashViewModel(page_navigation)
     view_model.splash_screen_message = Mock()
@@ -303,61 +304,56 @@ def test_handle_application_open_main_flow(
     view_model.run_in_thread = Mock()
 
     # --- Case 1: Valid RGB commit, keyring enabled ---
+    view_model.is_rgb_lib_version_valid = Mock(return_value=True)
     mock_setting_repo.get_keyring_status.return_value = True
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
     mock_get_value.return_value = None
-    view_model.is_rgb_lib_version_valid = Mock(return_value=True)
 
     view_model.handle_application_open()
+
     mock_setting_repo.get_keyring_status.assert_called()
     page_navigation.enter_wallet_password_page.assert_called_once()
-    # Reset for next case
     page_navigation.enter_wallet_password_page.reset_mock()
 
-    # --- Case 2: Valid RGB commit, keyring disabled, wallet_password present ---
+    # --- Case 2: Valid RGB, keyring disabled, wallet_password present ---
     mock_setting_repo.get_keyring_status.return_value = False
-    mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
     mock_get_value.return_value = 'test_password'
-    mock_mnemonic_file_path = 'test_path'
-    mock_app_path = 'test_app_path'
-    mock_app_paths.mnemonic_file_path = mock_mnemonic_file_path
-    mock_app_paths.app_path = mock_app_path
+    mock_app_paths.mnemonic_file_path = 'test_path'
+    mock_app_paths.app_path = 'test_app_path'
     mock_mnemonic_store.decrypt.return_value = 'decrypted_mnemonic'
     mock_qcore.translate.return_value = 'wait_for_wallet_to_unlock'
     mock_get_network.return_value = 'bitcoin_network'
-    mock_local_store.get_value.return_value = 'account_xpub'
+
+    mock_local_store.get_value.side_effect = [
+        'account_xpub_vanilla', 'account_xpub_colored',
+    ]
     mock_wallet_instance = Mock()
     mock_wallet_request_model.return_value = mock_wallet_instance
 
     view_model.handle_application_open()
-    mock_setting_repo.get_keyring_status.assert_called()
-    mock_setting_repo.get_wallet_network.assert_called()
-    mock_get_value.assert_called_with(
-        WALLET_PASSWORD_KEY, NetworkEnumModel.TESTNET.value,
-    )
+
     mock_mnemonic_store.decrypt.assert_called_with(
-        password='test_password', path=mock_mnemonic_file_path,
+        password='test_password',
+        path='test_path',
     )
     view_model.splash_screen_message.emit.assert_called_with(
         'wait_for_wallet_to_unlock',
     )
     view_model.sync_chain_info_label.emit.assert_called_with(True)
-    mock_get_network.assert_called()
-    mock_local_store.get_value.assert_called_with(ACCOUNT_XPUB)
+    mock_local_store.get_value.assert_any_call(ACCOUNT_XPUB_VANILLA)
+    mock_local_store.get_value.assert_any_call(ACCOUNT_XPUB_COLORED)
     mock_wallet_request_model.assert_called_with(
-        data_dir=mock_app_path,
+        data_dir='test_app_path',
         bitcoin_network='bitcoin_network',
-        account_xpub='account_xpub',
+        account_xpub_vanilla='account_xpub_vanilla',
+        account_xpub_colored='account_xpub_colored',
         mnemonic='decrypted_mnemonic',
     )
     view_model.run_in_thread.assert_called()
-    # Reset for next case
+    mock_local_store.get_value.reset_mock()
     view_model.splash_screen_message.emit.reset_mock()
-    view_model.sync_chain_info_label.emit.reset_mock()
-    view_model.run_in_thread.reset_mock()
 
-    # --- Case 3: Valid RGB commit, keyring disabled, wallet_password is None ---
-    mock_setting_repo.get_keyring_status.return_value = False
+    # --- Case 3: Valid RGB, keyring disabled, wallet_password is None ---
     mock_get_value.return_value = None
     view_model.handle_application_open()
     page_navigation.enter_wallet_password_page.assert_called()
@@ -367,6 +363,22 @@ def test_handle_application_open_main_flow(
     view_model.handle_application_open()
     mock_logger.error.assert_any_call(ERROR_RGB_LIB_INCOMPATIBILITY)
     view_model.handle_rgb_lib_incompatibility.assert_called_once()
+
+    # --- Case 5: CommonException handling ---
+    view_model.is_rgb_lib_version_valid = Mock(
+        side_effect=CommonException('Common error'),
+    )
+    view_model.handle_application_open()
+    mock_toast_manager.error.assert_called_with(description='Common error')
+
+    # --- Case 6: Unknown Exception handling ---
+    view_model.is_rgb_lib_version_valid = Mock(
+        side_effect=Exception('Some unknown error'),
+    )
+    view_model.handle_application_open()
+    mock_toast_manager.error.assert_called_with(
+        description=ERROR_SOMETHING_WENT_WRONG,
+    )
 
 
 @patch('src.viewmodels.splash_view_model.SettingRepository')

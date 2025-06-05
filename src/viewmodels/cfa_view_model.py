@@ -1,6 +1,6 @@
 # pylint: disable=too-many-instance-attributes
 # mypy: ignore-errors
-"""This module contains the RGB25DetailViewModel class, which represents the view model
+"""This module contains the CFADetailViewModel class, which represents the view model
 for the Bitcoin page activities.
 """
 from __future__ import annotations
@@ -10,7 +10,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
-from rgb_lib import AssetIface
+from rgb_lib import AssetSchema
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
@@ -35,12 +35,12 @@ from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
 
-class RGB25ViewModel(QObject, ThreadManager):
+class CFAViewModel(QObject, ThreadManager):
     """This class represents the activities of the bitcoin page."""
 
     asset_info = Signal(str, str, str, Enum)
     txn_list_loaded = Signal(str, str, str, Enum)
-    send_rgb25_button_clicked = Signal(bool)
+    send_cfa_button_clicked = Signal(bool)
     message = Signal(ToastPreset, str)
     is_loading = Signal(bool)
     refresh = Signal(bool)
@@ -49,7 +49,7 @@ class RGB25ViewModel(QObject, ThreadManager):
     def __init__(self, page_navigation: Any) -> None:
         super().__init__()
         self._page_navigation = page_navigation
-        self.asset_info.connect(self.get_rgb25_asset_detail)
+        self.asset_info.connect(self.get_cfa_asset_detail)
 
         # Initializing default values for attributes
         self.asset_id = None
@@ -63,11 +63,11 @@ class RGB25ViewModel(QObject, ThreadManager):
         self.min_confirmation = None
         self.txn_list = []
 
-    def get_rgb25_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: Enum) -> None:
-        """Retrieve RGB25 asset list."""
+    def get_cfa_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: Enum) -> None:
+        """Retrieve CFA asset list."""
 
         def on_success(response: ListTransferAssetWithBalanceResponseModel) -> None:
-            """Handle success for the RGB25 asset detail list."""
+            """Handle success for the CFA asset detail list."""
             self.txn_list = response
             self.txn_list_loaded.emit(
                 asset_id, asset_name, image_path, asset_type,
@@ -95,27 +95,27 @@ class RGB25ViewModel(QObject, ThreadManager):
         except Exception as e:
             on_error(CommonException(message=str(e)))
 
-    def on_success_rgb25(self, tx_id: SendAssetResponseModel) -> None:
-        """Handle success for sending RGB25 asset."""
+    def on_success_cfa(self, tx_id: SendAssetResponseModel) -> None:
+        """Handle success for sending CFA asset."""
         self.is_loading.emit(False)
-        self.send_rgb25_button_clicked.emit(False)
+        self.send_cfa_button_clicked.emit(False)
         ToastManager.success(description=INFO_ASSET_SENT.format(tx_id.txid))
 
-        if self.asset_type == AssetIface.RGB25:
+        if self.asset_type == AssetSchema.CFA:
             self._page_navigation.collectibles_asset_page()
-        elif self.asset_type == AssetIface.RGB20:
+        elif self.asset_type == AssetSchema.NIA:
             self._page_navigation.fungibles_asset_page()
 
     def on_error(self, error: CommonException) -> None:
-        """Handle error for sending RGB25 asset."""
+        """Handle error for sending CFA asset."""
         self.is_loading.emit(False)
-        self.send_rgb25_button_clicked.emit(False)
+        self.send_cfa_button_clicked.emit(False)
         ToastManager.error(description=error.message)
 
     def on_success_send_rgb_asset(self, success: bool) -> None:
         """Callback function after native authentication is successful."""
         if success:
-            self.send_rgb25_button_clicked.emit(True)
+            self.send_cfa_button_clicked.emit(True)
             self.is_loading.emit(True)
             try:
                 self.run_in_thread(
@@ -131,7 +131,7 @@ class RGB25ViewModel(QObject, ThreadManager):
                                 min_confirmations=self.min_confirmation,
                             ),
                         ],
-                        'callback': self.on_success_rgb25,
+                        'callback': self.on_success_cfa,
                         'error_callback': self.on_error,
                     },
                 )
@@ -148,7 +148,7 @@ class RGB25ViewModel(QObject, ThreadManager):
         ToastManager.error(description=description)
 
     def on_send_click(self, amount: int, blinded_utxo: str, transport_endpoints: list, fee_rate: int, min_confirmation: int) -> None:
-        """Starts a thread to execute the send_rgb25 function with the provided arguments."""
+        """Starts a thread to execute the send_cfa function with the provided arguments."""
         self.amount = amount
         self.blinded_utxo = blinded_utxo
         self.transport_endpoints = transport_endpoints
@@ -168,7 +168,7 @@ class RGB25ViewModel(QObject, ThreadManager):
         cache = Cache.get_cache_session()
         if cache is not None:
             cache.invalidate_cache()
-        self.send_rgb25_button_clicked.emit(True)
+        self.send_cfa_button_clicked.emit(True)
         self.is_loading.emit(True)
 
         def on_success_refresh() -> None:
@@ -176,7 +176,7 @@ class RGB25ViewModel(QObject, ThreadManager):
             self.is_loading.emit(False)
             self.refresh.emit(True)
             ToastManager.success(description=INFO_REFRESH_SUCCESSFULLY)
-            self.get_rgb25_asset_detail(
+            self.get_cfa_asset_detail(
                 self.asset_id, self.asset_name, None, self.asset_type,
             )
 
@@ -207,7 +207,7 @@ class RGB25ViewModel(QObject, ThreadManager):
         def on_success_fail_transfer(response: FailTransferResponseModel) -> None:
             """Handle success for failing a transfer."""
             if response.transfers_changed:
-                self.get_rgb25_asset_detail(
+                self.get_cfa_asset_detail(
                     self.asset_id, self.asset_name, None, self.asset_type,
                 )
                 ToastManager.success(
