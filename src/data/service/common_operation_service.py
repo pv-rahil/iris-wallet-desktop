@@ -5,9 +5,9 @@ from rgb_lib import Keys
 from rgb_lib import RgbLibError
 from rgb_lib import Wallet
 
+from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.data.repository.wallet_holder import colored_wallet
 from src.model.common_operation_model import InitRequestModel
 from src.model.common_operation_model import UnlockResponseModel
 from src.model.common_operation_model import WalletRequestModel

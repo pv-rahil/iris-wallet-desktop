@@ -5,18 +5,19 @@ model
 Description:
 ------------
 The `model` package contains various models that provide model for
-bitcoin, channels management, invoice, payments, peer, rgb and common operations.
+bitcoin, invoice, payments, peer, rgb and common operations.
 
 Submodules:
 -----------
 - btc_model: Classes for bitcoin related.
-- channels_model: Classes for channels related.
 - common_operation_model: Classes for common operations.
-- invoices_model: Classes for invoice.
-- payments_model: Classes for payments.
-- peers_model: Classes for peer.
+- help_card_content_model: Content for help card
+- rgb_faucet_model: Classes for rgb_faucet
 - rgb_model: Classes for rgb.
+- selection_page_model: Classes for selection page
 - setting_model: Classes for system setting.
+- success_model: Classes for success page
+- transaction_detail_page_model: Classes for transaction detail page
 
 Usage:
 ------

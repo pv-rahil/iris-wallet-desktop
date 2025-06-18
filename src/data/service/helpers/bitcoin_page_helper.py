@@ -4,6 +4,7 @@ This module provides helper functions to bitcoin page.
 from __future__ import annotations
 
 from rgb_lib import TransactionType
+
 from src.model.btc_model import Transaction
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
@@ -16,10 +17,12 @@ def calculate_transaction_amount(transaction: Transaction) -> str | None:
     """Calculate and return the 'amount' as a formatted string based on transaction type."""
     try:
         if isinstance(transaction.transaction_type, str):
-            transaction.transaction_type = TransactionType(int(transaction.transaction_type))
+            transaction.transaction_type = TransactionType(
+                int(transaction.transaction_type),
+            )
 
         # Handle different transaction types
-        if transaction.transaction_type == TransactionType.USER or transaction.transaction_type == TransactionType.RGB_SEND:
+        if transaction.transaction_type in [TransactionType.USER, TransactionType.RGB_SEND]:
             if transaction.sent > 0:
                 # Transaction amount as negative because money was sent
                 amount = transaction.sent - transaction.received
@@ -41,7 +44,7 @@ def get_transaction_status(
     """This helper identifies the status of a transaction and returns
     a tuple of (transfer_status, transaction_status)."""
     try:
-        if transaction.transaction_type == TransactionType.USER or transaction.transaction_type == TransactionType.RGB_SEND:
+        if transaction.transaction_type in [TransactionType.USER, TransactionType.RGB_SEND]:
             if transaction.confirmation_time:
                 # If there is a confirmation time, the transaction is confirmed
                 if transaction.sent > 0:

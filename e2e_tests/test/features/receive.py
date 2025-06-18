@@ -24,7 +24,6 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         """
         address, copied_address = None, None
         self.do_focus_on_application(application)
-        # Common steps for both Bitcoin,RGB and Lightning
         if self.do_is_displayed(self.receive_asset_page_objects.receiver_invoice()):
             address = self.receive_asset_page_objects.get_receiver_invoice()
 

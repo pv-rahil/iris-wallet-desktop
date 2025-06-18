@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """
 This module defines Pydantic models related to faucet.
 """

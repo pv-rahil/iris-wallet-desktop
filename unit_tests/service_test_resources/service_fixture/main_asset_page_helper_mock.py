@@ -26,15 +26,3 @@ def mock_get_asset_name(mocker):
         )
 
     return _mock_get_asset_name
-
-
-@pytest.fixture
-def mock_convert_digest_to_hex(mocker):
-    """Mocked get asset name function"""
-    def _mock_convert_digest_to_hex(value):
-        return mocker.patch(
-            'src.data.service.helpers.main_asset_page_helper.convert_digest_to_hex',
-            return_value=value,
-        )
-
-    return _mock_convert_digest_to_hex

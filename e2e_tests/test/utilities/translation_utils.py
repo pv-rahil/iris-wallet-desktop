@@ -1,5 +1,5 @@
 """
-Translation manager for iris wallet desktop application.
+Translation manager for iris wallet vault application.
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication
 
 class TranslationManager:
     """
-    Translation manager for iris wallet desktop application.
+    Translation manager for iris wallet vault application.
     """
     _translator = None
     _app = None  # Ensure QApplication exists
@@ -46,4 +46,4 @@ class TranslationManager:
         Returns:
             str: Translated key
         """
-        return QCoreApplication.translate('iris_wallet_desktop', key)
+        return QCoreApplication.translate('iris_wallet_vault', key)

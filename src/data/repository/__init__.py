@@ -5,18 +5,16 @@ data
 Description:
 ------------
 The `data` package contains various repositories that provide apis for
-bitcoin, channels management, invoice, payments, peer, rgb and common operations.
+bitcoin,faucet, rgb, common operations, setting card, setting and colored wallet.
 
 Submodules:
 -----------
 - btc_repository: Functions for bitcoin related.
-- channels_repository: Functions for channels related.
 - common_operations_repository: Functions for common operations.
-- invoices_repository: Functions for invoice.
-- payments_repository: Functions for payments.
-- peer_repository: Functions for peer.
 - rgb_repository: Functions for rgb.
 - setting_repository: Functions for system setting.
+- setting_card_repository: Function for setting card.
+- colored_wallet: Function for colored wallet.
 
 Usage:
 ------

@@ -199,10 +199,10 @@ class HelpWidget(QWidget):
         self.vertical_layout_3.addLayout(self.url_vertical_layout)
 
         self.help_card_title_label.setText(
-            QCoreApplication.translate('iris_wallet_desktop', title),
+            QCoreApplication.translate('iris_wallet_vault', title),
         )
         translated_detail = QCoreApplication.translate(
-            'iris_wallet_desktop', detail, None,
+            'iris_wallet_vault', detail, None,
         )
 
         rgb_info_link = '<a href="https://rgb.info" style="color: #03CA9B; text-decoration: none;">rgb.info</a>'

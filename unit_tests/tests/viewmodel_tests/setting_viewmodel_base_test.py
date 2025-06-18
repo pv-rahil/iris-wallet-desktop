@@ -9,8 +9,6 @@ The SettingViewModel handles user preferences and application settings including
   - Fee rates
   - Expiry times
   - Indexer URLs
-  - Bitcoin node connection details
-  - Lightning node announcement settings
   - Minimum confirmations
 - Error handling and user notifications via toast messages
 - Navigation between setting pages and sections

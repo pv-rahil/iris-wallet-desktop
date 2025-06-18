@@ -35,7 +35,7 @@ class TestSetupLogging(unittest.TestCase):
         mock_rotating_file_handler.return_value = mock_rotating_file_handler_instance
 
         # Call setup_logger with correct arguments
-        setup_logger('iris-wallet', 'iris_wallet_desktop.log', 'production')
+        setup_logger('iris-wallet', 'iris_wallet_vault.log', 'production')
 
         # Assertions
         mock_local_store.create_folder.assert_called_once_with(
@@ -43,7 +43,7 @@ class TestSetupLogging(unittest.TestCase):
         )
         mock_get_logger.assert_called_once_with('iris-wallet')
         mock_rotating_file_handler.assert_called_once_with(
-            os.path.join('mock_log_path', 'iris_wallet_desktop.log'),
+            os.path.join('mock_log_path', 'iris_wallet_vault.log'),
             maxBytes=LOG_FILE_MAX_SIZE,
             backupCount=LOG_FILE_MAX_BACKUP_COUNT,
         )
@@ -73,7 +73,7 @@ class TestSetupLogging(unittest.TestCase):
         mock_stream_handler.return_value = mock_console_handler_instance
 
         # Call setup_logger with correct arguments
-        setup_logger('iris-wallet', 'iris_wallet_desktop.log', 'development')
+        setup_logger('iris-wallet', 'iris_wallet_vault.log', 'development')
 
         # Assertions
         mock_local_store.create_folder.assert_called_once_with(
@@ -81,7 +81,7 @@ class TestSetupLogging(unittest.TestCase):
         )
         mock_get_logger.assert_called_once_with('iris-wallet')
         mock_rotating_file_handler.assert_called_once_with(
-            os.path.join('mock_log_path', 'iris_wallet_desktop.log'),
+            os.path.join('mock_log_path', 'iris_wallet_vault.log'),
             maxBytes=LOG_FILE_MAX_SIZE,
             backupCount=LOG_FILE_MAX_BACKUP_COUNT,
         )

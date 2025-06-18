@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "iris-wallet-desktop"
-version = "0.2.0"
+name = "iris-wallet-vault"
+version = "0.0.1"
 description = ""
 readme = "README.md"
 license = ""

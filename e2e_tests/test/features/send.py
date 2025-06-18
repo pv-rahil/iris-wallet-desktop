@@ -1,6 +1,6 @@
 # pylint : disable = possibly-used-before-assignment
 """
-SendOperation class provides methods for sending assets using bitcoin or lightning transfer.
+SendOperation class provides methods for sending assets using bitcoin transfer.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ class SendOperation(MainPageObjects, BaseOperations):
 
     def __init__(self, application):
         """
-        Sends assets using bitcoin or lightning transfer.
+        Sends assets using bitcoin transfer.
         """
         super().__init__(application)
 
@@ -89,7 +89,7 @@ class SendOperation(MainPageObjects, BaseOperations):
 
     def send_with_custom_fee_rate(self, application, receiver_invoice, amount, fee_rate):
         """
-        Sends assets using bitcoin or lightning transfer with a custom fee rate.
+        Sends assets using bitcoin with a custom fee rate.
         """
 
         description = None

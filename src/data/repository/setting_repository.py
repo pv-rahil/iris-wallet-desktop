@@ -7,8 +7,12 @@ import subprocess
 import sys
 
 import src.flavour as bitcoin_network
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.model.setting_model import IsNativeLoginIntoAppEnabled
@@ -18,6 +22,7 @@ from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SetWalletInitialized
 from src.utils.constant import IS_NATIVE_AUTHENTICATION_ENABLED
 from src.utils.constant import NATIVE_LOGIN_ENABLED
+from src.utils.constant import RGB_LIB_VERSION_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING_STATUS
 from src.utils.handle_exception import handle_exceptions
@@ -299,6 +304,110 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
+    def set_wallet_type(wallet_type: WalletType):
+        """Set the wallet type."""
+        try:
+            local_store.set_value(
+                'wallet_type', wallet_type.value if wallet_type else None,
+            )
+            # Verify the setting was applied
+            if local_store.get_value('wallet_type') == (wallet_type.value if wallet_type else None):
+                return True
+            return False
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_wallet_type() -> WalletType:
+        """Get the wallet type."""
+        try:
+            value = local_store.get_value('wallet_type')
+            return WalletType(value) if value else None
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def set_wallet_security_type(security_type: WalletSecurityType):
+        """Set the wallet security type."""
+        try:
+            local_store.set_value(
+                'wallet_security_type',
+                security_type.value if security_type else None,
+            )
+            # Verify the setting was applied
+            if local_store.get_value('wallet_security_type') == (security_type.value if security_type else None):
+                return True
+            return False
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_wallet_security_type() -> WalletSecurityType:
+        """Get the wallet security type."""
+        try:
+            value = local_store.get_value('wallet_security_type')
+            return WalletSecurityType(value) if value else None
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def set_wallet_entry_type(entry_type: WalletEntryType):
+        """Set the wallet entry type."""
+        try:
+            local_store.set_value(
+                'wallet_entry_type',
+                entry_type.value if entry_type else None,
+            )
+            # Verify the setting was applied
+            if local_store.get_value('wallet_entry_type') == (entry_type.value if entry_type else None):
+                return True
+            return False
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_wallet_entry_type() -> WalletEntryType:
+        """Get the wallet entry type."""
+        try:
+            value = local_store.get_value('wallet_entry_type')
+            return WalletEntryType(value) if value else None
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def set_key_storage_type(storage_type: KeyStorageType):
+        """Set the key storage type."""
+        try:
+            local_store.set_value(
+                'key_storage_type',
+                storage_type.value if storage_type else None,
+            )
+            # Verify the setting was applied
+            if local_store.get_value('key_storage_type') == (storage_type.value if storage_type else None):
+                return True
+            return False
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_key_storage_type() -> KeyStorageType:
+        """Get the key storage type."""
+        try:
+            value = local_store.get_value('key_storage_type')
+            return KeyStorageType(value) if value else None
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def remove_setting(key):
+        """Clear all wallet-related settings."""
+        try:
+            local_store.remove_key(key)
+            return True
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
     def native_authentication(auth_type: NativeAuthType, msg='Please verify your identity to proceed') -> bool:
         """
         Perform native authentication based on the given authentication type and platform.
@@ -489,3 +598,20 @@ class SettingRepository:
             return current_value
         except Exception as exe:
             return handle_exceptions(exe)
+
+    @staticmethod
+    def get_rgb_lib_version():
+        """This method gets the version of the rgb lib"""
+        try:
+            rgb_lib_version = local_store.get_value(RGB_LIB_VERSION_KEY)
+            return rgb_lib_version
+        except Exception as exc:
+            return handle_exceptions(exc)
+
+    @staticmethod
+    def set_rgb_lib_version(version: str):
+        """This method sets the version of the rgb lib in the wallet's .ini file"""
+        try:
+            local_store.set_value(RGB_LIB_VERSION_KEY, version)
+        except Exception as exc:
+            handle_exceptions(exc)

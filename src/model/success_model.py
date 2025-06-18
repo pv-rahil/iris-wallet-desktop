@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """
 Module containing models related to the success widget.
 """

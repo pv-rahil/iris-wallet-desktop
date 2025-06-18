@@ -123,7 +123,7 @@ def test_backup_data_with_keyring_disabled(backup_widget, qtbot):
 
 def test_update_loading_state_loading(backup_widget, qtbot):
     """Test the update_loading_state method when is_loading is True."""
-    with patch.object(backup_widget.back_node_data_button, 'start_loading') as mock_start_loading:
+    with patch.object(backup_widget.backup_wallet_data_button, 'start_loading') as mock_start_loading:
         backup_widget.update_loading_state(True)
 
         # Verify that the loading starts
@@ -132,7 +132,7 @@ def test_update_loading_state_loading(backup_widget, qtbot):
 
 def test_update_loading_state_not_loading(backup_widget, qtbot):
     """Test the update_loading_state method when is_loading is False."""
-    with patch.object(backup_widget.back_node_data_button, 'stop_loading') as mock_stop_loading:
+    with patch.object(backup_widget.backup_wallet_data_button, 'stop_loading') as mock_stop_loading:
         backup_widget.update_loading_state(False)
 
         # Verify that the loading stops
@@ -171,19 +171,19 @@ def test_configure_backup_success(backup_widget, qtbot):
         backup_widget.update()
 
         assert backup_widget.configure_backup_button.isHidden()
-        assert not backup_widget.back_node_data_button.isHidden()
+        assert not backup_widget.backup_wallet_data_button.isHidden()
 
 
 def test_configure_backup_failure(backup_widget):
     """Test the configure backup method when authentication fails."""
     with patch('src.views.ui_backup.authenticate', return_value=False), \
             patch.object(backup_widget.configure_backup_button, 'isHidden', return_value=False), \
-            patch.object(backup_widget.back_node_data_button, 'isHidden', return_value=True):
+            patch.object(backup_widget.backup_wallet_data_button, 'isHidden', return_value=True):
         # Simulate failed backup configuration
         backup_widget.configure_backup()
 
         assert not backup_widget.configure_backup_button.isHidden()
-        assert backup_widget.back_node_data_button.isHidden()
+        assert backup_widget.backup_wallet_data_button.isHidden()
 
 
 def test_is_already_configured_existing_token(backup_widget):
@@ -192,7 +192,7 @@ def test_is_already_configured_existing_token(backup_widget):
         # Simulate the configuration already being done (token exists)
         backup_widget.is_already_configured()
 
-        assert not backup_widget.back_node_data_button.isHidden()
+        assert not backup_widget.backup_wallet_data_button.isHidden()
         assert backup_widget.configure_backup_button.isHidden()
 
 
@@ -202,7 +202,7 @@ def test_is_already_configured_no_token(backup_widget):
         # Simulate that the configuration has not been done (no token)
         backup_widget.is_already_configured()
 
-        assert backup_widget.back_node_data_button.isHidden()
+        assert backup_widget.backup_wallet_data_button.isHidden()
         assert not backup_widget.configure_backup_button.isHidden()
 
 

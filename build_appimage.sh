@@ -42,7 +42,7 @@ else
 fi
 
 # Run PyInstaller
-poetry run pyinstaller iris_wallet_desktop.spec
+poetry run pyinstaller iris_wallet_vault.spec
 
 # Verify the build was successful
 if [ ! -d "dist/$PROJECT_NAME" ]; then

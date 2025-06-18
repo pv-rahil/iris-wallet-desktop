@@ -77,7 +77,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         """This method is used  handle onsuccess for the send bitcoin page."""
         self.send_button_clicked.emit(False)
         ToastManager.success(
-            description=INFO_BITCOIN_SENT.format(str(response.txid)),
+            description=INFO_BITCOIN_SENT.format(str(response.tx_id)),
         )
         self._page_navigation.bitcoin_page()
 

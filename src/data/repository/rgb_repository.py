@@ -12,7 +12,7 @@ from rgb_lib import Recipient
 from rgb_lib import SendResult
 from rgb_lib import Transfer
 
-from src.data.repository.wallet_holder import colored_wallet
+from src.data.repository.colored_wallet import colored_wallet
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
@@ -88,7 +88,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
-    def send_asset(asset_detail: SendAssetRequestModel):
+    def send_asset(asset_detail: SendAssetRequestModel) -> SendResult:
         """Send asset."""
         with repository_custom_context():
             recipient = Recipient(

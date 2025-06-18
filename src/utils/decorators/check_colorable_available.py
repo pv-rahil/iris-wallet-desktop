@@ -11,8 +11,8 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import HTTPError
 from rgb_lib import RgbLibError
 
+from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_card_repository import SettingCardRepository
-from src.data.repository.wallet_holder import colored_wallet
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.cache import Cache

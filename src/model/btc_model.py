@@ -78,7 +78,7 @@ class UnspentsListResponseModel(BaseModel):
 
 class SendBtcResponseModel(BaseModel):
     """Model representing response of sendbtc api"""
-    txid: str
+    tx_id: str
 
 
 class BalanceResponseModel(BaseModel):

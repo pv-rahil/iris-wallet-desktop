@@ -114,7 +114,7 @@ QFrame#frame_4 {
 }
 
 /* Styles for the collectible amount label */
-QLabel#asset_balance_label, #lightning_balance_label {
+QLabel#asset_balance_label {
     font: 14px "Inter";
     color: white;
     background: transparent;
@@ -123,7 +123,7 @@ QLabel#asset_balance_label, #lightning_balance_label {
 }
 
 /* Styles for the collectible amount */
-QLabel#asset_total_balance, #asset_spendable_amount, #lightning_total_balance, #lightning_spendable_balance {
+QLabel#asset_total_balance, #asset_spendable_amount {
     font: 14px "Inter";
     color: #959BAE;
     background: transparent;
@@ -154,7 +154,7 @@ QWidget#scroll_area_widget_contents{
     background: transparent;
 }
 
-QLabel#asset_total_amount_label, #asset_spendable_amount_label, #lightning_total_balance_label, #lightning_spendable_balance_label {
+QLabel#asset_total_amount_label, #asset_spendable_amount_label {
     font: 14px "Inter";
     color: #D0D3DD;
     background: transparent;

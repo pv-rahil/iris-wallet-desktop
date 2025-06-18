@@ -84,7 +84,6 @@ class RGBAssetDetailWidget(QWidget):
         self.scroll_area_widget_layout = None
         self.label_asset_name = None
         self.on_chain_icon = None
-        self.lightning_icon = None
         self.transaction_detail_frame = None
         self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
         self.bitcoin_img_path = {
@@ -390,7 +389,7 @@ class RGBAssetDetailWidget(QWidget):
         )
 
     def select_receive_transfer_type(self):
-        """This method handled after channel created"""
+        """This method navigates receive asset page according to the condition"""
         self._view_model.page_navigation.receive_rgb25_page(
             params=AssetDataModel(
                 asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(), close_page_navigation=self.asset_type,
@@ -759,7 +758,6 @@ class RGBAssetDetailWidget(QWidget):
         status = {
             TransferStatus.WAITING_COUNTERPARTY: TransactionStatusEnumModel.WAITING_COUNTERPARTY.value,
             TransferStatus.WAITING_CONFIRMATIONS: TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value,
-            # TransferStatus.SETTLED: TransactionStatusEnumModel.CONFIRMED.value,
             TransferStatus.FAILED: TransactionStatusEnumModel.FAILED.value,
         }
         return status.get(transfer_status, TransactionStatusEnumModel.FAILED)

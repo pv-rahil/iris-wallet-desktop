@@ -28,16 +28,16 @@ def network_configure():
     # Define the --network argument with a help message
     parser.add_argument(
         '--network',
-        choices=['mainnet', 'testnet', 'regtest'],
+        choices=['regtest', 'testnet', 'mainnet'],
         required=True,
-        help="Specify the network to build for: 'mainnet', 'testnet', or 'regtest'.",
+        help="Specify the network to build for: 'regtest', 'testnet', or 'mainnet'.",
     )
 
     # Add the --app-name argument
     parser.add_argument(
         '--app-name',
-        required=False,
         help='Specify the app name to run multiple instances (Optional).',
+        required=False,
     )
 
     # Parse the arguments
@@ -81,19 +81,17 @@ def modify_constant_file(app_name: str | None):
 
     # Modify the constants file by appending the app name suffix
     new_lines = []
-    for line in original_lines:
-        if line.strip().startswith((
-            'ORGANIZATION_NAME', 'APP_NAME', 'ORGANIZATION_DOMAIN',
-            'MNEMONIC_KEY', 'WALLET_PASSWORD_KEY',
+    for original_line in original_lines:
+        if original_line.strip().startswith((
+            'APP_NAME', 'ORGANIZATION_DOMAIN',
             'NATIVE_LOGIN_ENABLED', 'IS_NATIVE_AUTHENTICATION_ENABLED',
+            'MNEMONIC_KEY', 'WALLET_PASSWORD_KEY', 'ORGANIZATION_NAME',
         )):
-            # Append suffix to relevant constants
-            key, value = line.split(' = ')
+            key, value = original_line.split(' = ')
             new_lines.append(f"{key} = {value.strip()[:-1]}{suffix}'\n")
         else:
-            new_lines.append(line)
+            new_lines.append(original_line)
 
-    # Write the modified content back to the constants file
     with open(CONSTANT_PATH, 'w', encoding='utf-8') as file:
         file.writelines(new_lines)
 

@@ -101,7 +101,7 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
     with allure.step('Take a backup of wallet'):
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_node_data_button()
+        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()

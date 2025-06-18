@@ -57,7 +57,6 @@ class ReceiveRGBAssetWidget(QWidget):
             'fungibles',
             AssetIface.RGB25,
             'collectibles',
-            'channel_management',
             'view_unspent_list',
             'faucets',
             'settings',

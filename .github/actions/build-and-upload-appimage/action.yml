@@ -17,8 +17,8 @@ runs:
         ARCH=$(uname -m)
         VERSION=$(grep '__version__' src/version.py | cut -d "'" -f 2)
         poetry run build-iris-wallet --network=${{ inputs.network }} --distribution=appimage
-        APPIMAGE_NAME="iriswallet-${VERSION}-${ARCH}.AppImage"
-        RENAME_APPIMAGE_NAME="iriswallet-${VERSION}-${{ inputs.network }}-${ARCH}.AppImage"
+        APPIMAGE_NAME="iris-wallet-vault-${VERSION}-${ARCH}.AppImage"
+        RENAME_APPIMAGE_NAME="iris-wallet-vault-${VERSION}-${{ inputs.network }}-${ARCH}.AppImage"
         mv ${APPIMAGE_NAME} ${RENAME_APPIMAGE_NAME}
         echo "RENAME_APPIMAGE_NAME=${RENAME_APPIMAGE_NAME}" >> $GITHUB_ENV
         chmod +x $RENAME_APPIMAGE_NAME

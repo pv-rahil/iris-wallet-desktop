@@ -8,11 +8,13 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QMessageBox
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.backup_service import BackupService
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.views.components.on_close_progress_dialog import OnCloseDialogBox
@@ -146,7 +148,11 @@ def test_close_event_backup_in_progress(on_close_progress_dialog_widget):
 
 def test_ui(on_close_progress_dialog_widget: OnCloseDialogBox):
     """Test the UI elements in OnCloseDialogBox."""
-    assert on_close_progress_dialog_widget.windowTitle() == 'Please wait for backup'
+    assert on_close_progress_dialog_widget.windowTitle() == QCoreApplication.translate(
+        IRIS_WALLET_TRANSLATIONS_CONTEXT,
+        'backup_dialog_title',
+        None,
+    )
     assert on_close_progress_dialog_widget.status_label.text() == 'Starting backup...'
     assert on_close_progress_dialog_widget.loading_movie.isValid()
 

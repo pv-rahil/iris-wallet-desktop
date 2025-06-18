@@ -5,11 +5,14 @@ logic for the application's pages.
 from __future__ import annotations
 
 from src.model.rgb_model import RgbAssetPageLoadModel
+from src.model.selection_page_model import SelectionPageModel
 from src.model.success_model import SuccessPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.views.components.error_report_dialog_box import ErrorReportDialog
+from src.views.components.selection_breadcrumb_widget import SelectionBreadcrumbWidget
+from src.views.components.wallet_mode_summary_dialog import WalletModeSummaryDialog
 from src.views.main_window import MainWindow
 from src.views.ui_about import AboutWidget
 from src.views.ui_backup import Backup
@@ -22,7 +25,6 @@ from src.views.ui_fungible_asset import FungibleAssetWidget
 from src.views.ui_help import HelpWidget
 from src.views.ui_issue_rgb20 import IssueRGB20Widget
 from src.views.ui_issue_rgb25 import IssueRGB25Widget
-from src.views.ui_network_selection_page import NetworkSelectionWidget
 from src.views.ui_receive_bitcoin import ReceiveBitcoinWidget
 from src.views.ui_receive_rgb_asset import ReceiveRGBAssetWidget
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
@@ -33,7 +35,6 @@ from src.views.ui_set_wallet_password import SetWalletPasswordWidget
 from src.views.ui_settings import SettingsWidget
 from src.views.ui_splash_screen import SplashScreenWidget
 from src.views.ui_success import SuccessWidget
-from src.views.ui_swap import SwapWidget
 from src.views.ui_term_condition import TermConditionWidget
 from src.views.ui_view_unspent_list import ViewUnspentList
 from src.views.ui_welcome import WelcomeWidget
@@ -48,6 +49,9 @@ class PageNavigation:
         self.event_based_navigation = PageNavigationEventManager.get_instance()
         self.pages = {
             'Welcome': WelcomeWidget,
+            # 'SelectionPage': SelectionPageWidget,
+            'SelectionPage': SelectionBreadcrumbWidget,
+            'WalletModeSummaryPage': WalletModeSummaryDialog,
             'TermCondition': TermConditionWidget,
             'FungibleAssetWidget': FungibleAssetWidget,
             'CollectiblesAssetWidget': CollectiblesAssetWidget,
@@ -65,14 +69,12 @@ class PageNavigation:
             'RGB25TransactionDetail': RGBAssetTransactionDetail,
             'BitcoinTransactionDetail': BitcoinTransactionDetail,
             'Backup': Backup,
-            'Swap': SwapWidget,
             'SuccessWidget': SuccessWidget,
             'Settings': SettingsWidget,
             'SplashScreenWidget': SplashScreenWidget,
             'AboutWidget': AboutWidget,
             'FaucetsWidget': FaucetsWidget,
             'HelpWidget': HelpWidget,
-            'NetworkSelectionWidget': NetworkSelectionWidget,
         }
 
         self.event_based_navigation.navigate_to_page_signal.connect(
@@ -83,6 +85,12 @@ class PageNavigation:
         )
         self.event_based_navigation.splash_screen_page_signal.connect(
             self.splash_screen_page,
+        )
+        self.event_based_navigation.selection_page_signal.connect(
+            self.selection_page,
+        )
+        self.event_based_navigation.wallet_mode_summary_page_signal.connect(
+            self.wallet_mode_summary_page,
         )
         self.event_based_navigation.welcome_page_signal.connect(
             self.welcome_page,
@@ -138,7 +146,6 @@ class PageNavigation:
         self.event_based_navigation.backup_page_signal.connect(
             self.backup_page,
         )
-        self.event_based_navigation.swap_page_signal.connect(self.swap_page)
         self.event_based_navigation.settings_page_signal.connect(
             self.settings_page,
         )
@@ -193,6 +200,26 @@ class PageNavigation:
         """This method display splash screen page."""
         self.navigate_to_page('SplashScreenWidget')
 
+    def wallet_connection_page(self, params: SelectionPageModel):
+        """This method display the wallet connection page."""
+        self.current_stack = {
+            'name': 'WalletConnectionTypePage',
+            'widget': self.pages['WalletConnectionTypePage'](self._ui.view_model, params),
+        }
+        self.navigate_and_toggle(False)
+
+    def selection_page(self):
+        """This method display the wallet connection page."""
+        self.current_stack = {
+            'name': 'SelectionPage',
+            'widget': self.pages['SelectionPage'](self._ui.view_model),
+        }
+        self.navigate_and_toggle(False)
+
+    def wallet_mode_summary_page(self):
+        """This method display wallet mode summary page"""
+        self.navigate_to_page('WalletModeSummaryPage')
+
     def welcome_page(self):
         """This method display the welcome page."""
         self.navigate_to_page('Welcome')
@@ -211,11 +238,6 @@ class PageNavigation:
 
     def set_wallet_password_page(self):
         """This method display the set wallet password page."""
-        # self.current_stack = {
-        #     'name': 'SetWalletPassword',
-        #     'widget': self.pages['SetWalletPassword'](self._ui.view_model, params),
-        # }
-        # self.navigate_and_toggle(False)
         self.navigate_to_page('SetWalletPassword')
 
     def enter_wallet_password_page(self):
@@ -289,10 +311,6 @@ class PageNavigation:
     def backup_page(self):
         """This method display the backup page."""
         self.navigate_to_page('Backup', show_sidebar=False)
-
-    def swap_page(self):
-        """This method display the swap page."""
-        self.navigate_to_page('Swap', show_sidebar=False)
 
     def settings_page(self):
         """This method display the settings page"""

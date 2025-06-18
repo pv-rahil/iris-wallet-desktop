@@ -1,0 +1,32 @@
+#wallet_mode_summary {
+    background-color: #1B233B;
+    border-radius: 8px;
+    border: none;
+    color: rgb(255, 255, 255);
+}
+
+#mode_name {
+    color: #ffffff;
+    font: 24px "Inter";
+    font-weight: 400;
+    border: none;
+}
+
+#section_title {
+    font: 16px "Inter";
+    border: none;
+    color: #E6E1E5;
+    font-weight: 600;
+    padding-left: 10px;
+}
+
+#capabilities_frame, #limitations_frame, #recommended_frame {
+    background-color: #030B25;
+    border-radius: 8px;
+}
+
+#capabilities_list, #limitations_list, #recommended_list {
+    color: #ffffff;
+    font: 16px "Inter";
+    padding-left: 10px;
+}

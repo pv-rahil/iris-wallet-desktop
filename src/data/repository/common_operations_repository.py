@@ -6,7 +6,7 @@ from rgb_lib import DatabaseType
 from rgb_lib import Keys
 from rgb_lib import rgb_lib
 
-from src.data.repository.wallet_holder import colored_wallet
+from src.data.repository.colored_wallet import colored_wallet
 from src.model.common_operation_model import BackupRequestModel
 from src.model.common_operation_model import BackupResponseModel
 from src.model.common_operation_model import InitRequestModel

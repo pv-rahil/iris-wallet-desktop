@@ -458,7 +458,6 @@ def test_create_fungible_card(create_fungible_asset_widget, qtbot):
     asset.name = 'Sample Asset'
     asset.asset_iface = AssetType.RGB20
     asset.balance.future = 1000
-    asset.balance.offchain_outbound = 200
     asset.ticker = 'SAMPLE'
 
     # Call the method with and without an image path

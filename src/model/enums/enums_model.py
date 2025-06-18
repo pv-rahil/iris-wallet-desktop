@@ -49,6 +49,30 @@ class NativeAuthType(str, Enum):
     MAJOR_OPERATION = 'MAJOR_OPERATION'
 
 
+class WalletType(str, Enum):
+    """Enum for wallet type"""
+    ONLINE_TYPE_WALLET = 'Online'
+    OFFLINE_TYPE_WALLET = 'Offline'
+
+
+class WalletSecurityType(str, Enum):
+    """Enum for security level of wallet"""
+    WITH_PRIVATE_KEY = 'With Private Key'
+    WATCH_ONLY = 'Watch Only'
+
+
+class KeyStorageType(str, Enum):
+    """Enum for private key storage method"""
+    ON_DEVICE = 'On Device'
+    HARDWARE_WALLET = 'Hardware Wallet'
+
+
+class WalletEntryType(str, Enum):
+    """Enum for wallet creation method"""
+    CREATE = 'Create'
+    LOAD = 'Load'
+
+
 class AssetType(str, Enum):
     """Enum for asset type"""
     RGB20 = 'RGB20'
@@ -60,9 +84,7 @@ class TransferType(str, Enum):
     """Enum for transfer type"""
     CREATEUTXOS = 'CreateUtxos'
     ISSUANCE = 'Issuance'
-    OFF_CHAIN = 'Off chain'
     ON_CHAIN = 'On chain'
-    LIGHTNING = 'Lightning'
 
 
 class TokenSymbol(str, Enum):

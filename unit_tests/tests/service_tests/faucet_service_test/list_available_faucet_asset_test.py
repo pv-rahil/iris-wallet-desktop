@@ -1,7 +1,7 @@
 """Unit tests for list available faucet service"""
 # Disable the redefined-outer-name warning as
 # it's normal to pass mocked object in tests  function
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-import
 from __future__ import annotations
 
 import pytest

@@ -203,7 +203,7 @@ class HeaderFrame(QFrame, QObject):
         First, it checks for an internet connection. If connected, it checks for the wallet backup configuration.
         """
         refresh_and_action_button_list = [
-            'collectibles', 'fungibles', 'channel_management',
+            'collectibles', 'fungibles',
         ]
         refresh_button_list = ['view_unspent_list']
 

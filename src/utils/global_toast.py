@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """This module help to emit toast message from outside ui based on condition"""
 from __future__ import annotations
 

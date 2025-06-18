@@ -2,7 +2,7 @@
 <!DOCTYPE TS>
 <TS version="2.1">
 <context>
-    <name>iris_wallet_desktop</name>
+    <name>iris_wallet_vault</name>
     <message>
         <source>iris_wallet</source>
         <translation>Iris Wallet</translation>
@@ -244,10 +244,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>View unspent list</translation>
     </message>
     <message>
-        <source>channel_management</source>
-        <translation>Channel management</translation>
-    </message>
-    <message>
         <source>my_asset</source>
         <translation>My asset</translation>
     </message>
@@ -356,36 +352,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Issue Collectibles</translation>
     </message>
     <message>
-        <source>lightning_node_connection</source>
-        <translation>Lightning Node Connection</translation>
-    </message>
-    <message>
-        <source>rgb_lightning_node_url</source>
-        <translation>RGB Lightning Node URL</translation>
-    </message>
-    <message>
-        <source>enter_lightning_node_url</source>
-        <translation>Enter lightning node URL</translation>
-    </message>
-    <message>
-        <source>change_lightning_node_url</source>
-        <translation>Change lightning node URL</translation>
-    </message>
-    <message>
-        <source>invalid_url</source>
-        <translation>Invalid URL. Please enter a valid URL.</translation>
-    </message>
-    <message>
-        <source>connection_type</source>
-        <translation>RLN node connection type</translation>
-    </message>
-    <message>
         <source>embedded</source>
         <translation>Embedded</translation>
-    </message>
-    <message>
-        <source>connect</source>
-        <translation>Connect</translation>
     </message>
     <message>
         <source>enter_wallet_password</source>
@@ -421,7 +389,7 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>take_backup</source>
-        <translation>Backup node data</translation>
+        <translation>Backup wallet data</translation>
     </message>
     <message>
         <source>configure_backup</source>
@@ -476,14 +444,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Hide Mnemonic</translation>
     </message>
      <message>
-        <source>create_channel</source>
-        <translation>Create channel</translation>
-    </message>
-     <message>
-        <source>close_channel_prompt</source>
-        <translation>Do you want to close the channel with this pubkey: </translation>
-    </message>
-     <message>
         <source>cancel</source>
         <translation>Cancel</translation>
     </message>
@@ -500,24 +460,12 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Collectibles</translation>
     </message>
     <message>
-      <source>open_channel</source>
-      <translation>Open Channel</translation>
-    </message>
-    <message>
-      <source>open_channel_desc</source>
-      <translation>Open channels to other nodes on the network to start using the Lightning Network.</translation>
-    </message>
-    <message>
       <source>public_key</source>
       <translation>Public key</translation>
     </message>
     <message>
       <source>or</source>
       <translation>or</translation>
-    </message>
-    <message>
-      <source>suggested_nodes</source>
-      <translation>select from suggested nodes</translation>
     </message>
     <message>
       <source>slow</source>
@@ -552,20 +500,12 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Next</translation>
     </message>
     <message>
-      <source>valid_node_prompt</source>
-      <translation>Invalid node URI</translation>
-    </message>
-    <message>
       <source>expiry</source>
       <translation>Expiry</translation>
     </message>
     <message>
       <source>expiry_in_second</source>
       <translation>Expiry in second</translation>
-    </message>
-    <message>
-      <source>create_ln_invoice</source>
-      <translation>Create Lightning invoice</translation>
     </message>
     <message>
       <source>request</source>
@@ -616,22 +556,6 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Input phrase</translation>
     </message>
     <message>
-      <source>open_channel_title</source>
-      <translation>Open Channel</translation>
-    </message>
-    <message>
-      <source>open_close_button_whatsthis</source>
-      <translation>abc</translation>
-    </message>
-    <message>
-      <source>node_info</source>
-      <translation>Open channels to other nodes on the network to start using the Lightning Network.</translation>
-    </message>
-    <message>
-      <source>pub_key_label</source>
-      <translation>Public key</translation>
-    </message>
-    <message>
       <source>public_key_input_placeholder</source>
       <translation>Address</translation>
     </message>
@@ -660,22 +584,6 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Amount</translation>
     </message>
     <message>
-      <source>channel_prev_button</source>
-      <translation>Go back</translation>
-    </message>
-    <message>
-      <source>channel_next_button</source>
-      <translation>Next</translation>
-    </message>
-    <message>
-      <source>enter_ln_invoice_title_label</source>
-      <translation>Enter LN invoice</translation>
-    </message>
-    <message>
-      <source>ln_invoice_label</source>
-      <translation>LN invoice</translation>
-    </message>
-    <message>
       <source>invoice_detail_label</source>
       <translation>Invoice detail</translation>
     </message>
@@ -684,28 +592,12 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Amount(msat)</translation>
     </message>
     <message>
-      <source>expiry_label_sec</source>
-      <translation>Expiry(sec)</translation>
-    </message>
-    <message>
       <source>timestamp_label</source>
       <translation>Timestamp</translation>
     </message>
     <message>
       <source>asset_amount_label</source>
       <translation>Asset amount</translation>
-    </message>
-    <message>
-      <source>p_hash_label</source>
-      <translation>Payment hash</translation>
-    </message>
-    <message>
-      <source>p_secret_label</source>
-      <translation>Payment secret</translation>
-    </message>
-    <message>
-      <source>p_pubkey_label</source>
-      <translation>Payee pubkey</translation>
     </message>
     <message>
       <source>network_label</source>
@@ -778,10 +670,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>image_validation</source>
         <translation>File size exceeds {0}MB. Please upload a smaller file.</translation>
-    </message>
-    <message>
-        <source>ln_message</source>
-        <translation>Starting LN node</translation>
     </message>
     <message>
         <source>select_network_type</source>
@@ -864,22 +752,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Amount in sat</translation>
     </message>
     <message>
-        <source>capacity_of_channel</source>
-        <translation>Capacity of channel (sat)</translation>
-    </message>
-    <message>
-        <source>channel_capacity_validation</source>
-        <translation>The capacity of the channel must be between {0} sat and {1} sat.</translation>
-    </message>
-    <message>
-        <source>channel_amount_validation</source>
-        <translation>The maximum asset amount must be between {0} and {1}</translation>
-    </message>
-    <message>
-        <source>channel_with_zero_amount_validation</source>
-        <translation>You cannot open the channel with an asset amount of 0.</translation>
-    </message>
-    <message>
         <source>spendable_balance_validation</source>
         <translation>You don't have spendable balance at the moment</translation>
     </message>
@@ -931,14 +803,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>sigterm_warning_message</source>
         <translation>A termination signal has been detected, possibly due to an attempt to quit the app from a terminal or process manager. The app will close if you confirm by pressing OK.</translation>
-    </message>
-    <message>
-        <source>node_pubkey</source>
-        <translation>Node pubkey:</translation>
-    </message>
-    <message>
-        <source>ln_ldk_port</source>
-        <translation>LN peer listening port:</translation>
     </message>
     <message>
         <source>copy</source>
@@ -1021,56 +885,12 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Amount (sat)</translation>
     </message>
     <message>
-        <source>set_default_expiry_time</source>
-        <translation>Set a Default Expiry Time</translation>
-    </message>
-    <message>
-        <source>set_default_expiry_time_desc</source>
-        <translation>Set a expiry time to be used as default in LN invoice</translation>
-    </message>
-    <message>
-        <source>input_expiry_time_desc</source>
-        <translation>Enter an expiry time in minutes, hours, or days.</translation>
-    </message>
-    <message>
-        <source>minutes</source>
-        <translation>Minutes</translation>
-    </message>
-    <message>
-        <source>hours</source>
-        <translation>Hours</translation>
-    </message>
-    <message>
-        <source>days</source>
-        <translation>Days</translation>
-    </message>
-    <message>
-        <source>peer_pubkey</source>
-        <translation>Peer Pubkey</translation>
-    </message>
-    <message>
         <source>bitcoin_local_balance</source>
         <translation>Bitcoin Local Balance(sat)</translation>
     </message>
     <message>
-        <source>bitcoin_remote_balance</source>
-        <translation>Bitcoin Remote Balance(sat)</translation>
-    </message>
-    <message>
-        <source>channel_details</source>
-        <translation>Channel Details</translation>
-    </message>
-    <message>
-        <source>close_channel</source>
-        <translation>Close Channel</translation>
-    </message>
-    <message>
         <source>amount_validation_error_label</source>
         <translation>Invoice amount exceeds available local balance for asset.</translation>
-    </message>
-    <message>
-        <source>lightning_balance</source>
-        <translation>Lightning Balance</translation>
     </message>
     <message>
         <source>on_chain_balance</source>
@@ -1105,10 +925,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>On Chain</translation>
     </message>
     <message>
-        <source>lightning</source>
-        <translation>Lightning</translation>
-    </message>
-    <message>
         <source>payee_pubkey</source>
         <translation>Payee Pubkey</translation>
     </message>
@@ -1137,10 +953,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The backup path is invalid</translation>
     </message>
     <message>
-        <source>invalid_channel_id</source>
-        <translation>The channel ID is invalid</translation>
-    </message>
-    <message>
         <source>invalid_media_digest</source>
         <translation>The media digest for the asset is invalid</translation>
     </message>
@@ -1161,16 +973,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The entered name is invalid</translation>
     </message>
     <message>
-        <source>invalid_node_ids</source>
-        <translation>The node ID is invalid</translation>
-    </message>
-    <message>
         <source>invalid_onion_data</source>
         <translation>The onion data is invalid</translation>
-    </message>
-    <message>
-        <source>invalid_payment_secret</source>
-        <translation>The payment secret is invalid</translation>
     </message>
     <message>
         <source>invalid_password</source>
@@ -1189,16 +993,140 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The peer pubkey is invalid</translation>
     </message>
     <message>
-        <source>invalid_receipient_id</source>
+        <source>invalid_recipient_id</source>
         <translation>The recipient ID is invalid</translation>
     </message>
     <message>
-        <source>invalid_swap_string</source>
-        <translation>The swap string is invalid</translation>
+        <source>invalid_details</source>
+        <translation>The details are invalid</translation>
+    </message>
+    <message>
+        <source>invalid_file_path</source>
+        <translation>Please provide a valid file path</translation>
+    </message>
+    <message>
+        <source>invalid_psbt</source>
+        <translation>The PSBT is invalid</translation>
+    </message>
+    <message>
+        <source>invalid_recipient_data</source>
+        <translation>Invalid recipient data</translation>
+    </message>
+    <message>
+        <source>invalid_recipient_network</source>
+        <translation>Invalid recipient network</translation>
+    </message>
+    <message>
+        <source>invalid_transport_endpoint</source>
+        <translation>Invalid recipient endpoint</translation>
+    </message>
+    <message>
+        <source>invalid_transport_endpoints</source>
+        <translation>Invalid recipient endpoints</translation>
+    </message>
+    <message>
+        <source>invalid_txid</source>
+        <translation>Invalid transaction id</translation>
     </message>
     <message>
         <source>invalid_ticker</source>
         <translation>The ticker is invalid</translation>
+    </message>
+    <message>
+        <source>invalid_vanilla_keychain</source>
+        <translation>Invalid vanilla keychain</translation>
+    </message>
+    <message>
+        <source>no_consignment</source>
+        <translation>No consignment found</translation>
+    </message>
+    <message>
+        <source>no_issuance_amounts</source>
+        <translation>No issuance amounts provided</translation>
+    </message>
+    <message>
+        <source>online_needed</source>
+        <translation>The wallet must be online to perform this action</translation>
+    </message>
+    <message>
+        <source>recipient_id_duplicated</source>
+        <translation>The recipient ID is duplicated</translation>
+    </message>
+    <message>
+        <source>too_high_issuance_amounts</source>
+        <translation>The issuance amount exceeds the allowed limit</translation>
+    </message>
+    <message>
+        <source>unknown_rgb_interface</source>
+        <translation>The RGB interface is unknown</translation>
+    </message>
+    <message>
+        <source>unknown_rgb_schema</source>
+        <translation>The RGB schema is unknown</translation>
+    </message>
+    <message>
+        <source>wallet_dir_already_exists</source>
+        <translation>A wallet directory with this name already exists</translation>
+    </message>
+    <message>
+        <source>watch_only</source>
+        <translation>This is a watch-only wallet and cannot perform that action</translation>
+    </message>
+    <message>
+        <source>asset_iface_mismatch</source>
+        <translation>Asset interface mismatch</translation>
+    </message>
+    <message>
+        <source>bitcoin_network_mismatch</source>
+        <translation>The Bitcoin network does not match the wallet configuration</translation>
+    </message>
+    <message>
+        <source>cannot_change_online</source>
+        <translation>This change cannot be made while the wallet is online</translation>
+    </message>
+    <message>
+        <source>cannot_delete_batch_transfer</source>
+        <translation>Batch transfer cannot be deleted</translation>
+    </message>
+    <message>
+        <source>file_already_exists</source>
+        <translation>The file already exists</translation>
+    </message>
+    <message>
+        <source>inconsistency_error</source>
+        <translation>An internal inconsistency was detected</translation>
+    </message>
+    <message>
+        <source>inexistent_data_dir</source>
+        <translation>The specified data directory does not exist</translation>
+    </message>
+    <message>
+        <source>insufficient_allocation_slots</source>
+        <translation>Insufficient allocation slots available</translation>
+    </message>
+    <message>
+        <source>insufficient_spendable_assets</source>
+        <translation>Not enough spendable assets available</translation>
+    </message>
+    <message>
+        <source>insufficient_total_assets</source>
+        <translation>Not enough total assets available</translation>
+    </message>
+    <message>
+        <source>invalid_bitcoin_keys</source>
+        <translation>The Bitcoin keys are invalid</translation>
+    </message>
+    <message>
+        <source>invalid_bitcoin_network</source>
+        <translation>The selected Bitcoin network is invalid</translation>
+    </message>
+    <message>
+        <source>invalid_coloring_info</source>
+        <translation>Invalid coloring information provided</translation>
+    </message>
+    <message>
+        <source>invalid_consignment</source>
+        <translation>The consignment is invalid</translation>
     </message>
     <message>
         <source>invalid_tlv_type</source>
@@ -1223,10 +1151,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>failed_broadcast</source>
         <translation>The broadcast failed</translation>
-    </message>
-    <message>
-        <source>failed_peer_connection</source>
-        <translation>The peer connection failed</translation>
     </message>
     <message>
         <source>indexer_error</source>
@@ -1257,10 +1181,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The proxy protocol is invalid</translation>
     </message>
     <message>
-        <source>locked_node</source>
-        <translation>Node is currently locked, please wait until it is unlocked</translation>
-    </message>
-    <message>
         <source>max_fee_exceeded</source>
         <translation>The fee rate is too high</translation>
     </message>
@@ -1285,10 +1205,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The wallet has not been initialized</translation>
     </message>
     <message>
-        <source>open_channel_in_progress</source>
-        <translation>A channel is already in opening status</translation>
-    </message>
-    <message>
         <source>proxy_error</source>
         <translation>Proxy error</translation>
     </message>
@@ -1299,26 +1215,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>sync_needed</source>
         <translation>Please sync the wallet</translation>
-    </message>
-    <message>
-        <source>temporary_channel_id_already_used</source>
-        <translation>The temporary channel ID is already used</translation>
-    </message>
-    <message>
-        <source>unknown_contract_id</source>
-        <translation>The contract ID is unknown</translation>
-    </message>
-    <message>
-        <source>unknown_ln_invoice</source>
-        <translation>The LN invoice is unknown</translation>
-    </message>
-    <message>
-        <source>unknown_temporary_channel_id</source>
-        <translation>The temporary channel ID is unknown</translation>
-    </message>
-    <message>
-        <source>unlocked_node</source>
-        <translation>Node is unlocked</translation>
     </message>
     <message>
         <source>unsupported_layer_1</source>
@@ -1353,40 +1249,20 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Save</translation>
     </message>
     <message>
-        <source>asset_amount_validation_invoice</source>
-        <translation>Asset amount more than maximum available remote balance</translation>
-    </message>
-    <message>
-        <source>node_uri</source>
-        <translation>Node URI</translation>
-    </message>
-    <message>
-        <source>channel_open_request_title</source>
-        <translation>Channel opening request succeeded</translation>
-    </message>
-    <message>
-        <source>channel_open_request_desc</source>
-        <translation>The channel will be visible in the channel management page in a few moments, if no errors are encountered.</translation>
-    </message>
-    <message>
         <source>finish</source>
         <translation>Finish</translation>
     </message>
     <message>
         <source>syncing_chain_info</source>
-        <translation>Syncing the chain, this may take a long time if node has been off for a while</translation>
+        <translation>Syncing the chain, this may take a long time if wallet has been off for a while</translation>
     </message>
     <message>
-    <source>wait_for_node_to_unlock</source>
-        <translation>Wait for node to unlock</translation>
-    </message>
-    <message>
-        <source>wait_node_to_start</source>
-        <translation>Please wait for node to start...</translation>
+    <source>wait_for_wallet_to_unlock</source>
+        <translation>Wait for wallet to unlock</translation>
     </message>
     <message>
         <source>already_unlocked</source>
-        <translation>Node already unlocked</translation>
+        <translation>Wallet already unlocked</translation>
     </message>
     <message>
         <source>opening</source>
@@ -1413,10 +1289,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Allocations already available</translation>
     </message>
     <message>
-        <source>anchors_required</source>
-        <translation>Anchor outputs are required for RGB channels</translation>
-    </message>
-    <message>
         <source>batch_transfer_not_found</source>
         <translation>Batch transfer not found</translation>
     </message>
@@ -1429,20 +1301,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Batch transfer cannot be set to failed status</translation>
     </message>
     <message>
-        <source>changing_state</source>
-        <translation>Node changing state, please wait until it is finished</translation>
-    </message>
-    <message>
-        <source>expired_swap_offer</source>
-        <translation>The swap offer has expired</translation>
-    </message>
-    <message>
         <source>failed_bdk_sync</source>
         <translation>Failed to sync BDK</translation>
-    </message>
-    <message>
-        <source>failed_closing_channel</source>
-        <translation>Failed to closing channel</translation>
     </message>
     <message>
         <source>failed_invoice_creation</source>
@@ -1461,22 +1321,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Failed to sign message</translation>
     </message>
     <message>
-        <source>failed_open_channel</source>
-        <translation>Failed to open channel</translation>
-    </message>
-    <message>
-        <source>failed_payment</source>
-        <translation>Failed payment</translation>
-    </message>
-    <message>
-        <source>failed_peer_disconnection</source>
-        <translation>Failed to disconnect from peer</translation>
-    </message>
-    <message>
-        <source>failed_sending_onion_message</source>
-        <translation>Failed to send onion message</translation>
-    </message>
-    <message>
         <source>incomplete_rgb_info</source>
         <translation>For an RGB operation both asset ID and asset amount must be set</translation>
     </message>
@@ -1489,10 +1333,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The announce alias is invalid</translation>
     </message>
     <message>
-        <source>invalid_swap</source>
-        <translation>the swap is invalid</translation>
-    </message>
-    <message>
         <source>io_error</source>
         <translation>IO error</translation>
     </message>
@@ -1503,10 +1343,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>unsupported_backup_version</source>
         <translation>The provided backup has an unsupported version</translation>
-    </message>
-    <message>
-        <source>missing_swap_payment_preimage</source>
-        <translation>Unable to find payment preimage</translation>
     </message>
     <message>
         <source>unexpected</source>
@@ -1609,8 +1445,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Cache data update failed due to an error.</translation>
     </message>
     <message>
-        <source>node_is_already_initialized</source>
-        <translation>The node is already initialized</translation>
+        <source>wallet_is_already_initialized</source>
+        <translation>The wallet is already initialized</translation>
     </message>
     <message>
         <source>set_minimum_confirmation</source>
@@ -1653,14 +1489,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Copy RGB invoice</translation>
     </message>
     <message>
-        <source>copy_ln_invoice</source>
-        <translation>Copy LN invoice</translation>
-    </message>
-    <message>
-        <source>ln_invoice_info</source>
-        <translation>This Lightning invoice will expire {0} {1} after creation and is valid only for this asset.</translation>
-    </message>
-    <message>
         <source>rgb_invoice_label</source>
         <translation>RGB invoice</translation>
     </message>
@@ -1673,10 +1501,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Local Balance</translation>
     </message>
     <message>
-        <source>remote_balance</source>
-        <translation>Remote Balance</translation>
-    </message>
-    <message>
         <source>asset</source>
         <translation>Asset</translation>
     </message>
@@ -1685,34 +1509,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Data directory path:</translation>
     </message>
     <message>
-        <source>remote</source>
-        <translation>Remote</translation>
-    </message>
-    <message>
-        <source>embedded_connection_info</source>
-        <translation>With embedded connection, an RGB Lightning Node is automatically run in the background.</translation>
-    </message>
-    <message>
-        <source>remote_connection_info</source>
-        <translation>With remote connection, an RGB Lightning Node needs to be hosted separately and its URL will need to be provided.</translation>
-    </message>
-    <message>
-        <source>rln_node_connection_description</source>
-        <translation>An RLN (RGB Lightning Node) instance is necessary to support the app's functionalities. Clicking an option reveals details about it.</translation>
-    </message>
-    <message>
-        <source>rgb_ln_node_connection_failed</source>
-        <translation>The RGB Lightning Node unexpectedly crashed or was terminated, causing the connection to the provided Lightning Node to fail. The application requires the RGB Lightning Node to function properly, and it must be running for a successful connection. You can report this issue on {} for assistance.
-
-        {}You can try to restart the RGB Lightning Node or close the application.</translation>
-    </message>
-    <message>
         <source>crash_dialog_close_app</source>
         <translation>Close the application</translation>
-    </message>
-    <message>
-        <source>crash_dialog_restart_node</source>
-        <translation>Restart RGB Lightning Node</translation>
     </message>
     <message>
         <source>click_to_copy</source>
@@ -1766,9 +1564,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>learn_about_rgb</source>
         <translation>Visit rgb.info for resources and documentation.</translation>
     </message>
-    <message>
-        <source>node_incompatibility_dialog_desc</source>
-        <translation>This RGB Lightning Node is not compatible with the current version of the app. Please reinitialize the wallet by deleting the data, or switch to an older version of the app.</translation>
+     <message>
+        <source>rgb_lib_incompatibility_dialog_desc</source>
+        <translation>The version of rgb-lib is not compatible with the current version of the app. Please reinitialize the wallet by deleting the data, or switch to an older version of the app.</translation>
     </message>
     <message>
         <source>delete_app_data</source>
@@ -1776,11 +1574,11 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>confirm_app_data_deletion</source>
-        <translation>Warning! Deleting app data will COMPLETELY wipe all data, including your bitcoin, RGB assets, and any lightning channels. Are you sure you want to proceed with the deletion?</translation>
+        <translation>Warning! Deleting app data will COMPLETELY wipe all data, including your bitcoin, RGB assets. Are you sure you want to proceed with the deletion?</translation>
     </message>
     <message>
-        <source>rln_node_commit_id</source>
-        <translation>RGB Lightning Node Commit ID</translation>
+        <source>rgb_lib_version</source>
+        <translation>rgb-lib version:</translation>
     </message>
     <message>
         <source>exit</source>
@@ -1789,6 +1587,34 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>enter_wallet_password_info</source>
         <translation>Enter the wallet password for enabling keyring</translation>
+    </message>
+    <message>
+        <source>backup_dialog_title</source>
+        <translation>Please wait for backup</translation>
+    </message>
+    <message>
+        <source>backup_question</source>
+        <translation>Are you sure you want to close while the backup is in progress?</translation>
+    </message>
+    <message>
+        <source>backup_success_info</source>
+        <translation>The backup process has been completed successfully!</translation>
+    </message>
+    <message>
+        <source>online_info</source>
+        <translation>In online mode, the application connects to the rgb lib over the network for full functionality.</translation>
+    </message>
+    <message>
+        <source>offline_info</source>
+        <translation>In offline mode, no network connections are made. You must export/import data manually</translation>
+    </message>
+    <message>
+        <source>wallet_connection_description</source>
+        <translation>Choose between online and offline modes. Clicking an option reveals details about it.</translation>
+    </message>
+    <message>
+        <source>connection_type</source>
+        <translation>Wallet connection type</translation>
     </message>
 </context>
 </TS>

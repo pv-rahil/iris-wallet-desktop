@@ -7,7 +7,6 @@ from rgb_lib import AssetUda
 from rgb_lib import Balance
 
 from src.model.btc_model import BalanceResponseModel
-from src.model.rgb_model import AssetModel
 from src.model.rgb_model import GetAssetResponseModel
 from src.model.rgb_model import Media
 from src.model.rgb_model import Token
@@ -89,26 +88,6 @@ mock_cfa_asset = AssetCfa(
         digest='5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
         hex=None,
     ),
-)
-
-mock_cfa_asset_when_wallet_type_connect = AssetModel(
-    asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-    asset_iface='RGB20',
-    name='Collectible',
-    details='asset details',
-    precision=0,
-    issued_supply=777,
-    timestamp=1691160565,
-    added_at=1691161979,
-    balance=Balance(
-        settled=777000, future=777000, spendable=777000,
-    ),
-    media=Media(
-        file_path='/path/to/media', mime='text/plain',
-        digest='5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
-        hex='bc8100fa8743c11bd243eb3259f4b012758651612fd9bf93bf8b734d17f02561',
-    ),
-    token=None,
 )
 
 mock_get_asset_response_model = GetAssetResponseModel(

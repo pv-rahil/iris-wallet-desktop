@@ -38,7 +38,6 @@ class TransactionDetailPageModel(BaseModel):
     receive_utxo: Outpoint | None = None
     change_utxo: Outpoint | None = None
     asset_type: Enum | None = None
-    is_off_chain: bool = False
     inbound: bool | None = None
 
     class Config:
