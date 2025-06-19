@@ -30,8 +30,8 @@ class WalletModeSummaryDialog(QDialog):
         super().__init__(parent)
         self._view_model = view_model
         self.setObjectName('wallet_mode_summary')
-        self.setMinimumSize(QSize(500, 550))
-        self.setMaximumSize(QSize(500, 700))
+        self.setMinimumSize(QSize(600, 550))
+        self.setMaximumSize(QSize(600, 700))
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
 
         self.setStyleSheet(
@@ -58,8 +58,8 @@ class WalletModeSummaryDialog(QDialog):
         self.capabilities_frame.setObjectName('capabilities_frame')
         self.capabilities_frame.setFrameShape(QFrame.StyledPanel)
         self.capabilities_frame.setFrameShadow(QFrame.Raised)
-        self.capabilities_frame.setMinimumSize(QSize(470, 150))
-        self.capabilities_frame.setMaximumSize(QSize(470, 300))
+        self.capabilities_frame.setMinimumSize(QSize(550, 150))
+        self.capabilities_frame.setMaximumSize(QSize(550, 300))
         self.capabilities_layout = QVBoxLayout(self.capabilities_frame)
         self.capabilities_layout.setSpacing(2)
         self.capabilities_layout.setContentsMargins(10, 10, 10, 10)
@@ -75,8 +75,8 @@ class WalletModeSummaryDialog(QDialog):
         self.limitations_frame.setObjectName('limitations_frame')
         self.limitations_frame.setFrameShape(QFrame.StyledPanel)
         self.limitations_frame.setFrameShadow(QFrame.Raised)
-        self.limitations_frame.setMinimumSize(QSize(470, 100))
-        self.limitations_frame.setMaximumSize(QSize(470, 300))
+        self.limitations_frame.setMinimumSize(QSize(550, 100))
+        self.limitations_frame.setMaximumSize(QSize(550, 300))
         self.limitations_layout = QVBoxLayout(self.limitations_frame)
         self.limitations_layout.setSpacing(2)
         self.limitations_layout.setContentsMargins(10, 10, 10, 10)
@@ -92,8 +92,8 @@ class WalletModeSummaryDialog(QDialog):
         self.recommended_frame.setObjectName('recommended_frame')
         self.recommended_frame.setFrameShape(QFrame.StyledPanel)
         self.recommended_frame.setFrameShadow(QFrame.Raised)
-        self.recommended_frame.setMinimumSize(QSize(470, 100))
-        self.recommended_frame.setMaximumSize(QSize(470, 300))
+        self.recommended_frame.setMinimumSize(QSize(550, 100))
+        self.recommended_frame.setMaximumSize(QSize(550, 300))
         self.recommended_layout = QVBoxLayout(self.recommended_frame)
         self.recommended_layout.setSpacing(2)
         self.recommended_layout.setContentsMargins(10, 10, 10, 10)
@@ -202,8 +202,7 @@ class WalletModeSummaryDialog(QDialog):
             self.limitations_content_layout, config.limitations,
         )
         self.limitations_frame.setVisible(bool(config.limitations))
-        if self.limitations_frame.setVisible(bool(config.limitations)) is None:
-            self.setFixedSize(QSize(500, 430))
+
         # Update recommended uses
         self.set_two_column_list(
             self.recommended_content_layout, config.recommended_for,

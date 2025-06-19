@@ -369,20 +369,7 @@ class SelectionBreadcrumbWidget(QWidget):
                 self._view_model.page_navigation.term_and_condition_page,
             )
             # Find the active breadcrumb index that matches the current_index
-            active_index = len(crumbs) - 1  # Default to last
-            if self.selected_titles and self.selected_titles[0] == WalletType.OFFLINE_TYPE_WALLET.value:
-                # Offline mode: map current_index to breadcrumb index
-                if self.current_index == 0:
-                    active_index = 0
-                elif self.current_index == 2:
-                    active_index = 1
-                elif self.current_index == 3:
-                    active_index = 2
-            else:
-                for i, crumb in enumerate(crumbs):
-                    if crumb['step_index'] == self.current_index:
-                        active_index = i
-                        break
+            active_index = next((i for i, crumb in enumerate(crumbs) if crumb['step_index'] == self.current_index), len(crumbs) - 1)
             breadcrumb_bar_for_current_page.set_breadcrumbs(
                 crumbs, active_index=active_index,
             )

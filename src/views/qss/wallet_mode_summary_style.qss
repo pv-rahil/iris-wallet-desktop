@@ -17,7 +17,6 @@
     border: none;
     color: #E6E1E5;
     font-weight: 600;
-    padding-left: 10px;
 }
 
 #capabilities_frame, #limitations_frame, #recommended_frame {
