@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QStackedWidget
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+import functools
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
@@ -98,6 +99,8 @@ class BreadcrumbBar(QWidget):
             frame.setObjectName('breadcrumb_frame')
             frame.setFixedHeight(48)
             frame.setCursor(Qt.PointingHandCursor)
+            # Mark pending state on the frame
+            frame.is_pending = crumb.get('pending', False)
 
             h = QHBoxLayout(frame)
             h.setContentsMargins(3, 8, 0, 8)
@@ -147,9 +150,11 @@ class BreadcrumbBar(QWidget):
             """)
             h.addWidget(title)
 
-            frame.mousePressEvent = lambda e, idx=crumb['step_index']: self.crumb_clicked.emit(
-                idx,
-            )
+            # Only allow click if not pending
+            if not frame.is_pending:
+                frame.mousePressEvent = functools.partial(lambda self, e, idx: self.crumb_clicked.emit(idx), self, idx=i)
+            else:
+                frame.mousePressEvent = lambda e: None
 
             self.layout.addWidget(frame)
             self.crumbs.append(frame)
@@ -252,6 +257,7 @@ class SelectionBreadcrumbWidget(QWidget):
         ]
         self.selected_logos = []
         self.selected_titles = []
+        self.selected_step_indices = []  # Track the actual step index for each breadcrumb
         self.current_index = 0
         # Add a new variable to track previous selections
         self.previous_selections = []
@@ -333,19 +339,46 @@ class SelectionBreadcrumbWidget(QWidget):
 
         self.update_breadcrumbs()
 
+    def get_flow_step_indices(self):
+        """
+        Returns the list of step indices for the current flow (offline or online).
+        """
+        if self.selected_titles and self.selected_titles[0] == WalletType.OFFLINE_TYPE_WALLET.value:
+            return [0, 2, 3]
+        return [0, 1, 2, 3]
+
     def update_breadcrumbs(self):
         """
         Update the breadcrumbs for the current step.
         """
+        flow_indices = self.get_flow_step_indices()
         crumbs = []
         for i in range(len(self.selected_logos)):
+            print(f'Breadcrumb {i}: title={self.selected_titles[i]}, step_index={flow_indices[i]}')
             crumbs.append(
                 {
                     'logo': self.selected_logos[i],
-                    'title': self.selected_titles[i], 'step_index': i,
+                    'title': self.selected_titles[i],
+                    'step_index': flow_indices[i],
+                    'pending': False,
                 },
             )
-
+        # If on a new step, add the default selection as a pending breadcrumb
+        if (
+            len(self.selected_logos) < len(flow_indices)
+            and self.current_index == flow_indices[len(self.selected_logos)]
+        ):
+            step = self.steps[self.current_index]
+            default_logo = step['widget']._params.logo_1_path
+            default_title = step['widget']._params.logo_1_title
+            print(f'Pending Breadcrumb {len(crumbs)}: title={default_title}, step_index={self.current_index}')
+            crumbs.append({
+                'logo': default_logo,
+                'title': default_title,
+                'step_index': self.current_index,
+                'pending': True,
+            })
+        self._crumbs = crumbs  # Store for click handler
         # Remove any previous breadcrumb bar from all pages
         for step_data in self.steps:
             if hasattr(step_data['widget'], 'breadcrumb_widget') and step_data['widget'].breadcrumb_widget:
@@ -355,7 +388,6 @@ class SelectionBreadcrumbWidget(QWidget):
                     )
                     step_data['widget'].breadcrumb_widget.deleteLater()
                 step_data['widget'].breadcrumb_widget = None
-
         # Add the new breadcrumb bar to the current step
         if crumbs:
             breadcrumb_bar_for_current_page = BreadcrumbBar(
@@ -387,17 +419,12 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         Handle the breadcrumb click event.
         """
-        # When clicking a breadcrumb, just navigate to that page
-        if self.selected_titles and self.selected_titles[0] == WalletType.OFFLINE_TYPE_WALLET.value:
-            # Offline mode: map breadcrumb index to step index
-            if idx == 0:
-                self.current_index = 0
-            elif idx == 1:
-                self.current_index = 2
-            elif idx == 2:
-                self.current_index = 3
-        else:
-            self.current_index = idx
+        # Only allow navigation to committed breadcrumbs (not pending)
+        if idx >= len(self._crumbs) or self._crumbs[idx].get('pending', False):
+            print(f'Ignored click on pending breadcrumb idx: {idx}')
+            return
+        self.current_index = self._crumbs[idx]['step_index']
+        print(f'Navigating to step index: {self.current_index} (idx: {idx})')
         self.update_breadcrumbs()
 
     def get_breadcrumb_idx(self, step_idx):
@@ -439,12 +466,17 @@ class SelectionBreadcrumbWidget(QWidget):
         if should_reset:
             self.selected_logos = self.selected_logos[:breadcrumb_idx]
             self.selected_titles = self.selected_titles[:breadcrumb_idx]
+            # Always keep committed step indices in sync
+            flow_indices = self.get_flow_step_indices()
+            self.selected_step_indices = flow_indices[:breadcrumb_idx]
             if len(self.selected_logos) > breadcrumb_idx:
                 self.selected_logos[breadcrumb_idx] = logo
                 self.selected_titles[breadcrumb_idx] = title
+                self.selected_step_indices[breadcrumb_idx] = idx
             else:
                 self.selected_logos.append(logo)
                 self.selected_titles.append(title)
+                self.selected_step_indices.append(idx)
 
             # Reset all subsequent pages to their initial state
             for i in range(idx + 1, len(self.steps)):
@@ -502,6 +534,7 @@ class SelectionBreadcrumbWidget(QWidget):
                     # Clear all selections before going to welcome page
                     self.selected_logos = []
                     self.selected_titles = []
+                    self.selected_step_indices = []
                     # Clear all settings from local storage
                     SettingRepository.remove_setting('wallet_type')
                     SettingRepository.remove_setting('wallet_security_type')
@@ -543,6 +576,7 @@ class SelectionBreadcrumbWidget(QWidget):
                     # Clear all selections before going to welcome page
                     self.selected_logos = []
                     self.selected_titles = []
+                    self.selected_step_indices = []
                     # Clear all settings from local storage
                     SettingRepository.remove_setting('wallet_type')
                     SettingRepository.remove_setting('wallet_security_type')
