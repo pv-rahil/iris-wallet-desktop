@@ -3,6 +3,8 @@ from __future__ import annotations
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtCore import Signal
+from PySide6.QtCore import QEvent
+from PySide6.QtCore import QObject
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
@@ -38,13 +40,33 @@ class BreadcrumbBar(QWidget):
     """
     crumb_clicked = Signal(int)
 
+    class CrumbHoverHelper(QObject):
+        def __init__(self, frame, title_label, logo_label, logo_path, logo_white_path):
+            super().__init__(frame)
+            self.frame = frame
+            self.title_label = title_label
+            self.logo_label = logo_label
+            self.logo_path = logo_path
+            self.logo_white_path = logo_white_path
+
+        def eventFilter(self, obj, event):
+            if event.type() == QEvent.Enter:
+                self.title_label.setStyleSheet("color: white; font-weight: 700; font-size: 17px;background: transparent;border: none")
+                if self.logo_white_path:
+                    self.logo_label.setPixmap(QPixmap(self.logo_white_path).scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            elif event.type() == QEvent.Leave:
+                self.title_label.setStyleSheet("color: rgb(102, 108, 129); font-weight: 600; font-size: 17px;background: transparent;border: none")
+                if self.logo_path:
+                    self.logo_label.setPixmap(QPixmap(self.logo_path).scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            return False
+
     def __init__(self, parent=None):
         """
         Initialize the BreadcrumbBar widget.
         """
         super().__init__(parent)
         self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(35, 15, 15, 15)
+        self.layout.setContentsMargins(38, 15, 15, 15)
         self.layout.setSpacing(4)
         self.crumbs = []
         self.active_index = 0  # Track which breadcrumb is active
@@ -68,18 +90,13 @@ class BreadcrumbBar(QWidget):
 
         self.setStyleSheet("""
             QFrame#breadcrumb_frame {
-                background: transparent
-            }
-            QFrame#breadcrumb_frame:hover {
-                color:rgb(208, 211, 221);
+                background: transparent;
+                border: none;
             }
             QLabel {
                 color: #2c3e50;
                 font-size: 14px;
             }
-            QPushButton#close_button{
-                margin-right: 22px;
-        }
         """)
 
     def set_breadcrumbs(self, crumbs, active_index=0):
@@ -103,52 +120,71 @@ class BreadcrumbBar(QWidget):
             frame.is_pending = crumb.get('pending', False)
 
             h = QHBoxLayout(frame)
-            h.setContentsMargins(3, 8, 0, 8)
+            h.setContentsMargins(5, 8, 0, 8)
             h.setSpacing(0)
 
+            # Inner frame for hover effect
+            crumb_content_frame = QFrame()
+            crumb_content_frame.setObjectName('crumb_content_frame')
+            crumb_content_frame.setStyleSheet("""
+                QFrame {
+                    background: transparent;
+                    border: none
+                }
+            """)
+            crumb_content_layout = QHBoxLayout(crumb_content_frame)
+            crumb_content_layout.setContentsMargins(4, 0, 4, 0)
+            crumb_content_layout.setSpacing(2)
+
             logo_container = QFrame()
-            logo_container.setFixedSize(20, 20)
+            logo_container.setFixedSize(26, 26)
             logo_container.setStyleSheet("""
                 QFrame {
-                    background: transparent
+                    background: transparent;
+                    border: none           
                 }
             """)
             logo_layout = QHBoxLayout(logo_container)
             logo_layout.setContentsMargins(0, 0, 0, 0)
 
             logo = QLabel()
+            logo.setObjectName('breadcrumb_logo')
+            logo_path = crumb.get('logo', '')
+            # Auto-map to white logo if not provided
+            logo_white_path = crumb.get('logo_white', '')
+            if not logo_white_path and logo_path:
+                import re
+                m = re.match(r'^(.*/)?([^/]+)\.png$', logo_path)
+                if m:
+                    base = m.group(1) or ''
+                    name = m.group(2)
+                    logo_white_path = f"{base}white_{name}.png"
+
             logo.setPixmap(
-                QPixmap(crumb['logo']).scaled(
-                    20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation,
+                QPixmap(logo_path).scaled(
+                    24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation,
                 ),
             )
             logo_layout.addWidget(logo)
-            h.addWidget(logo_container)
+            crumb_content_layout.addWidget(logo_container)
 
             title = QLabel(crumb['title'])
             # Highlight if active
             if i == self.active_index:
-                title.setStyleSheet("""
-                    QLabel {
-                        margin-top: 4px;
-                        font-weight: 700;
-                        color: white;
-                        font-size: 16px;
-                    }
-                """)
+                title.setStyleSheet("color: white; font-weight: 700; font-size: 17px;background: transparent;border: none")
+                if logo_white_path:
+                    logo.setPixmap(QPixmap(logo_white_path).scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             else:
-                title.setStyleSheet("""
-                    QLabel {
-                        margin-top: 4px;
-                        font-weight: 600;
-                        color: rgb(102, 108, 129);
-                        font-size: 16px;
-                    }
-                    QLabel:hover {
-                            color: white
-                    }
-            """)
-            h.addWidget(title)
+                title.setStyleSheet("color: rgb(102, 108, 129); font-weight: 600; font-size: 17px;background: transparent;border: none")
+            crumb_content_layout.addWidget(title)
+
+            h.addWidget(crumb_content_frame)
+
+            # Install event filter for hover effect (only if not active)
+            if i != self.active_index:
+                hover_helper = self.CrumbHoverHelper(crumb_content_frame, title, logo, logo_path, logo_white_path)
+                crumb_content_frame.installEventFilter(hover_helper)
+                crumb_content_frame._hover_helper = hover_helper
 
             # Only allow click if not pending
             if not frame.is_pending:
@@ -207,13 +243,13 @@ class SelectionBreadcrumbWidget(QWidget):
                 ),
             },
             {
-                'logo': ':/assets/key.png',
+                'logo': ':/assets/private_key.png',
                 'title': 'With Private Key',
                 'widget': SelectionPage(
                     view_model=self._view_model,
                     params=SelectionPageModel(
                         title='Select Security Type',
-                        logo_1_path=':/assets/key.png',
+                        logo_1_path=':/assets/private_key.png',
                         logo_1_title=WalletSecurityType.WITH_PRIVATE_KEY.value,
                         logo_1_info='This wallet has a private key that allows you to sign transactions.',
                         logo_2_path=':/assets/eye_icon.png',
@@ -223,16 +259,16 @@ class SelectionBreadcrumbWidget(QWidget):
                 ),
             },
             {
-                'logo': ':/assets/create_wallet.png',
+                'logo': ':/assets/create_new.png',
                 'title': 'Create New',
                 'widget': SelectionPage(
                     view_model=self._view_model,
                     params=SelectionPageModel(
                         title='Select Entry Type',
-                        logo_1_path=':/assets/create_wallet.png',
+                        logo_1_path=':/assets/create_new.png',
                         logo_1_title=WalletEntryType.CREATE.value,
                         logo_1_info='Create a new wallet with a new seed phrase.',
-                        logo_2_path=':/assets/loading.png',
+                        logo_2_path=':/assets/load_wallet.png',
                         logo_2_title=WalletEntryType.LOAD.value,
                         logo_2_info='Load an existing wallet using a seed phrase or private key.',
                     ),
@@ -354,7 +390,6 @@ class SelectionBreadcrumbWidget(QWidget):
         flow_indices = self.get_flow_step_indices()
         crumbs = []
         for i in range(len(self.selected_logos)):
-            print(f'Breadcrumb {i}: title={self.selected_titles[i]}, step_index={flow_indices[i]}')
             crumbs.append(
                 {
                     'logo': self.selected_logos[i],
@@ -371,7 +406,6 @@ class SelectionBreadcrumbWidget(QWidget):
             step = self.steps[self.current_index]
             default_logo = step['widget']._params.logo_1_path
             default_title = step['widget']._params.logo_1_title
-            print(f'Pending Breadcrumb {len(crumbs)}: title={default_title}, step_index={self.current_index}')
             crumbs.append({
                 'logo': default_logo,
                 'title': default_title,
@@ -421,10 +455,8 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         # Only allow navigation to committed breadcrumbs (not pending)
         if idx >= len(self._crumbs) or self._crumbs[idx].get('pending', False):
-            print(f'Ignored click on pending breadcrumb idx: {idx}')
             return
         self.current_index = self._crumbs[idx]['step_index']
-        print(f'Navigating to step index: {self.current_index} (idx: {idx})')
         self.update_breadcrumbs()
 
     def get_breadcrumb_idx(self, step_idx):

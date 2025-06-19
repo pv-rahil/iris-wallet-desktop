@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
+from PySide6.QtWidgets import QGridLayout
 
 from src.config.wallet_mode_config import WalletModeConfiguration
 from src.data.repository.setting_repository import SettingRepository
@@ -30,7 +31,7 @@ class WalletModeSummaryDialog(QDialog):
         super().__init__(parent)
         self._view_model = view_model
         self.setObjectName('wallet_mode_summary')
-        self.setMinimumSize(QSize(600, 550))
+        self.setMinimumWidth(500)  # Consistent minimum width
         self.setMaximumSize(QSize(600, 700))
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
 
@@ -41,15 +42,16 @@ class WalletModeSummaryDialog(QDialog):
         )
         # Main vertical layout
         self.dialog_box_vertical_layout = QVBoxLayout(self)
-        self.dialog_box_vertical_layout.setSpacing(10)
+        self.dialog_box_vertical_layout.setSpacing(16)  # Even space between frames
         self.dialog_box_vertical_layout.setObjectName(
             'dialog_box_vertical_layout',
         )
-        self.dialog_box_vertical_layout.setContentsMargins(18, 10, 18, 16)
+        self.dialog_box_vertical_layout.setContentsMargins(18, 16, 18, 16)
 
         # Mode name
         self.mode_name = QLabel(self)
         self.mode_name.setObjectName('mode_name')
+        self.mode_name.setContentsMargins(-8,0,0,0)
         self.mode_name.setWordWrap(True)
         self.dialog_box_vertical_layout.addWidget(self.mode_name)
 
@@ -58,13 +60,14 @@ class WalletModeSummaryDialog(QDialog):
         self.capabilities_frame.setObjectName('capabilities_frame')
         self.capabilities_frame.setFrameShape(QFrame.StyledPanel)
         self.capabilities_frame.setFrameShadow(QFrame.Raised)
-        self.capabilities_frame.setMinimumSize(QSize(550, 150))
-        self.capabilities_frame.setMaximumSize(QSize(550, 300))
+        self.capabilities_frame.setMinimumWidth(550)
+        self.capabilities_frame.setMinimumHeight(120)  # Set minimum height
         self.capabilities_layout = QVBoxLayout(self.capabilities_frame)
         self.capabilities_layout.setSpacing(2)
-        self.capabilities_layout.setContentsMargins(10, 10, 10, 10)
+        self.capabilities_layout.setContentsMargins(16, 12, 16, 16)
         self.capabilities_title = QLabel('Capabilities')
         self.capabilities_title.setObjectName('section_title')
+        self.capabilities_title.setContentsMargins(0, 0, 0, 12)  # Add bottom margin
         self.capabilities_layout.addWidget(self.capabilities_title)
         self.capabilities_content_layout = QVBoxLayout()
         self.capabilities_layout.addLayout(self.capabilities_content_layout)
@@ -75,13 +78,14 @@ class WalletModeSummaryDialog(QDialog):
         self.limitations_frame.setObjectName('limitations_frame')
         self.limitations_frame.setFrameShape(QFrame.StyledPanel)
         self.limitations_frame.setFrameShadow(QFrame.Raised)
-        self.limitations_frame.setMinimumSize(QSize(550, 100))
-        self.limitations_frame.setMaximumSize(QSize(550, 300))
+        self.limitations_frame.setMinimumWidth(550)
+        self.limitations_frame.setMinimumHeight(120)  # Set minimum height
         self.limitations_layout = QVBoxLayout(self.limitations_frame)
         self.limitations_layout.setSpacing(2)
-        self.limitations_layout.setContentsMargins(10, 10, 10, 10)
+        self.limitations_layout.setContentsMargins(16, 12, 16, 16)
         self.limitations_title = QLabel('Limitations')
         self.limitations_title.setObjectName('section_title')
+        self.limitations_title.setContentsMargins(0, 0, 0, 12)  # Add bottom margin
         self.limitations_layout.addWidget(self.limitations_title)
         self.limitations_content_layout = QVBoxLayout()
         self.limitations_layout.addLayout(self.limitations_content_layout)
@@ -92,13 +96,14 @@ class WalletModeSummaryDialog(QDialog):
         self.recommended_frame.setObjectName('recommended_frame')
         self.recommended_frame.setFrameShape(QFrame.StyledPanel)
         self.recommended_frame.setFrameShadow(QFrame.Raised)
-        self.recommended_frame.setMinimumSize(QSize(550, 100))
-        self.recommended_frame.setMaximumSize(QSize(550, 300))
+        self.recommended_frame.setMinimumWidth(550)
+        self.recommended_frame.setMinimumHeight(120)
         self.recommended_layout = QVBoxLayout(self.recommended_frame)
         self.recommended_layout.setSpacing(2)
-        self.recommended_layout.setContentsMargins(10, 10, 10, 10)
+        self.recommended_layout.setContentsMargins(16, 12, 16, 16)
         self.recommended_title = QLabel('Recommended For')
         self.recommended_title.setObjectName('section_title')
+        self.recommended_title.setContentsMargins(0, 0, 0, 12)
         self.recommended_layout.addWidget(self.recommended_title)
         self.recommended_content_layout = QVBoxLayout()
         self.recommended_layout.addLayout(self.recommended_content_layout)
@@ -128,13 +133,8 @@ class WalletModeSummaryDialog(QDialog):
 
     def set_two_column_list(self, layout, items):
         """
-        Sets a two-column list layout with the given items.
-
-        This method clears the previous items in the layout and then adds the given items in pairs to a two-column layout.
-
-        Args:
-            layout (QVBoxLayout): The layout to which the items will be added.
-            items (list): A list of items to be added to the layout.
+        Sets a two-column grid layout with the given items.
+        Now expects a list of dicts with 'emoji' and 'text' keys.
         """
         # Clear previous items
         while layout.count():
@@ -143,17 +143,25 @@ class WalletModeSummaryDialog(QDialog):
                 child.widget().deleteLater()
             elif child.layout():
                 self.clear_layout(child.layout())
-        # Add items in pairs
-        for i in range(0, len(items), 2):
-            row = QHBoxLayout()
-            label1 = QLabel(items[i])
-            row.addWidget(label1)
-            if i + 1 < len(items):
-                label2 = QLabel(items[i+1])
-                row.addWidget(label2)
-            else:
-                row.addWidget(QLabel(''))  # Empty for alignment
-            layout.addLayout(row)
+        # Use a grid layout for better alignment
+        grid = QGridLayout()
+        grid.setVerticalSpacing(8)    # Space between rows
+        columns = 2  # two (emoji, text) pairs per row
+        for i, item in enumerate(items):
+            row = i // columns
+            col = (i % columns) * 2
+            emoji_label = QLabel(item['emoji'])
+            emoji_label.setObjectName('emoji_label')
+            emoji_label.setFixedWidth(26)
+            emoji_label.setAlignment(Qt.AlignTop | Qt.AlignmentFlag.AlignRight)
+            text_label = QLabel(item['text'])
+            text_label.setObjectName('text_label')
+            text_label.setWordWrap(True)
+            text_label.setFixedWidth(200)
+            text_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            grid.addWidget(emoji_label, row, col)
+            grid.addWidget(text_label, row, col + 1)
+        layout.addLayout(grid)
 
     def clear_layout(self, layout):
         """
@@ -198,13 +206,25 @@ class WalletModeSummaryDialog(QDialog):
         self.capabilities_frame.setVisible(bool(config.capabilities))
 
         # Update limitations
-        self.set_two_column_list(
-            self.limitations_content_layout, config.limitations,
-        )
-        self.limitations_frame.setVisible(bool(config.limitations))
+        if not config.limitations:
+            # Remove limitations_frame from layout if present
+            idx = self.dialog_box_vertical_layout.indexOf(self.limitations_frame)
+            if idx != -1:
+                self.dialog_box_vertical_layout.removeWidget(self.limitations_frame)
+                self.limitations_frame.setParent(None)
+        else:
+            # Add limitations_frame back if not present
+            if self.dialog_box_vertical_layout.indexOf(self.limitations_frame) == -1:
+                idx = self.dialog_box_vertical_layout.indexOf(self.capabilities_frame)
+                self.dialog_box_vertical_layout.insertWidget(idx + 1, self.limitations_frame)
+            # Always update the content when showing
+            self.set_two_column_list(self.limitations_content_layout, config.limitations)
+            self.limitations_frame.setVisible(True)
 
         # Update recommended uses
         self.set_two_column_list(
             self.recommended_content_layout, config.recommended_for,
         )
         self.recommended_frame.setVisible(bool(config.recommended_for))
+
+        self.adjustSize()

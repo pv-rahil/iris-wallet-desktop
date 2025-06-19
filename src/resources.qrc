@@ -62,9 +62,17 @@
     <file>assets/desktop.png</file>
     <file>assets/eye_icon.png</file>
     <file>assets/hw.png</file>
-    <file>assets/loading.png</file>
+    <file>assets/load_wallet.png</file>
+    <file>assets/private_key.png</file>
+    <file>assets/create_new.png</file>
+    <file>assets/white_online.png</file>
+    <file>assets/white_offline.png</file>
+    <file>assets/white_desktop.png</file>
+    <file>assets/white_private_key.png</file>
+    <file>assets/white_hw.png</file>
+    <file>assets/white_load_wallet.png</file>
     <file>assets/view.png</file>
-    <file>assets/create_wallet.png</file>
+    <file>assets/white_create_new.png</file>
 
   </qresource>
 </RCC>

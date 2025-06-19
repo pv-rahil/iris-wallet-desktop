@@ -40,7 +40,6 @@ from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 # from accessible_constant import OPTION_1_FRAME
 # from accessible_constant import OPTION_2_FRAME
-# from accessible_constant import WALLET_OR_TRANSFER_SELECTION_CLOSE_BUTTON
 # from accessible_constant import WALLET_OR_TRANSFER_SELECTION_CONTINUE_BUTTON
 
 
@@ -71,8 +70,8 @@ class SelectionPage(QWidget):
 
         self.widget_page = QWidget(self)
         self.widget_page.setObjectName('widget_page')
-        self.widget_page.setMinimumSize(QSize(736, 400))
-        self.widget_page.setMaximumSize(QSize(736, 600))
+        self.widget_page.setMinimumSize(QSize(780, 400))
+        self.widget_page.setMaximumSize(QSize(780, 600))
 
         self.vertical_layout = QVBoxLayout(self.widget_page)
         self.vertical_layout.setSpacing(4)
@@ -87,7 +86,7 @@ class SelectionPage(QWidget):
         self.vertical_layout.addWidget(self.header_line)
         self.header_horizontal_layout = QHBoxLayout()
         self.header_horizontal_layout.setObjectName('header_horizontal_layout')
-        self.header_horizontal_layout.setContentsMargins(0, 0, 25, 0)
+        self.header_horizontal_layout.setContentsMargins(7, 0, 0, 0)
 
         self.title_text = QLabel(self.widget_page)
         self.title_text.setObjectName('title_text')
@@ -97,27 +96,6 @@ class SelectionPage(QWidget):
         self.title_text.installEventFilter(self)
 
         self.header_horizontal_layout.addWidget(self.title_text)
-
-        self.close_button = QPushButton(self.widget_page)
-        self.close_button.setObjectName('close_button')
-        # self.close_button.setAccessibleName(
-        #     WALLET_OR_TRANSFER_SELECTION_CLOSE_BUTTON,
-        # )
-        self.close_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.close_button.setMinimumSize(QSize(24, 24))
-        self.close_button.setMaximumSize(QSize(50, 65))
-        self.close_button.setAutoFillBackground(False)
-
-        close_icon = QIcon()
-        close_icon.addFile(
-            ':/assets/x_circle.png',
-            QSize(), QIcon.Normal, QIcon.Off,
-        )
-        self.close_button.setIcon(close_icon)
-        self.close_button.setIconSize(QSize(24, 24))
-        self.close_button.setCheckable(False)
-        self.close_button.setChecked(False)
-        self.header_horizontal_layout.addWidget(self.close_button)
 
         self.vertical_layout.addLayout(self.header_horizontal_layout)
 
@@ -129,15 +107,15 @@ class SelectionPage(QWidget):
 
         self.select_option_layout = QHBoxLayout()
         self.select_option_layout.setObjectName('select_option_layout')
-        self.select_option_layout.setContentsMargins(42, 0, 0, 0)
-        self.select_option_layout.setSpacing(40)
+        self.select_option_layout.setContentsMargins(50, 0, 0, 0)
+        self.select_option_layout.setSpacing(50)
         self.option_1_frame = ClickableFrame(
             self._params.logo_1_title,
         )
         self.option_1_frame.setObjectName('option_1_frame')
         # self.option_1_frame.setAccessibleName(OPTION_1_FRAME)
-        self.option_1_frame.setMinimumSize(QSize(300, 200))
-        self.option_1_frame.setMaximumSize(QSize(300, 200))
+        self.option_1_frame.setMinimumSize(QSize(315, 200))
+        self.option_1_frame.setMaximumSize(QSize(315, 200))
 
         self.option_1_frame.setFrameShape(QFrame.StyledPanel)
         self.option_1_frame.setFrameShadow(QFrame.Raised)
@@ -181,8 +159,8 @@ class SelectionPage(QWidget):
         )
         self.option_2_frame.setObjectName('option_2_frame')
         # self.option_2_frame.setAccessibleName(OPTION_2_FRAME)
-        self.option_2_frame.setMinimumSize(QSize(300, 200))
-        self.option_2_frame.setMaximumSize(QSize(300, 200))
+        self.option_2_frame.setMinimumSize(QSize(315, 200))
+        self.option_2_frame.setMaximumSize(QSize(315, 200))
 
         self.option_2_frame.setFrameShape(QFrame.StyledPanel)
         self.option_2_frame.setFrameShadow(QFrame.Raised)
@@ -234,8 +212,8 @@ class SelectionPage(QWidget):
 
         self.info_frame = QFrame(self.widget_page)
         self.info_frame.setObjectName('info_frame')
-        self.info_frame.setMinimumSize(QSize(645, 80))
-        self.info_frame.setMaximumSize(QSize(645, 80))
+        self.info_frame.setMinimumSize(QSize(680, 80))
+        self.info_frame.setMaximumSize(QSize(680, 80))
         self.info_frame.hide()
 
         self.info_frame_layout = QHBoxLayout(self.info_frame)
@@ -254,7 +232,7 @@ class SelectionPage(QWidget):
         # )
         self.info_frame_layout.addWidget(self.continue_button)
         self.info_frame_wrapper = QHBoxLayout()
-        self.info_frame_wrapper.setContentsMargins(42, 0, 0, 0)
+        self.info_frame_wrapper.setContentsMargins(50, 0, 0, 0)
         self.info_frame_wrapper.addStretch()
         self.info_frame_wrapper.addWidget(self.info_frame)
         self.horizontal_spacer_4 = QSpacerItem(
@@ -323,9 +301,6 @@ class SelectionPage(QWidget):
         """Set up connections for UI elements."""
         self.option_1_frame.clicked.connect(self.handle_frame_click)
         self.option_2_frame.clicked.connect(self.handle_frame_click)
-        self.close_button.clicked.connect(
-            self._view_model.page_navigation.term_and_condition_page,
-        )
         self.continue_button.clicked.connect(self.on_click_continue)
 
     def handle_frame_click(self, _id):
@@ -363,11 +338,6 @@ class SelectionPage(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, self._params.logo_2_info, None,
                 ),
             )
-
-    def close_button_navigation(self):
-        """
-        Handles navigation to the previous page.
-        """
 
     def on_click_frame(self, _id, is_selected: bool):
         """Handles frame click styling."""

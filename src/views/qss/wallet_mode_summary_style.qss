@@ -2,21 +2,22 @@
     background-color: #1B233B;
     border-radius: 8px;
     border: none;
-    color: rgb(255, 255, 255);
+    color: rgb(102, 108, 129);
 }
 
 #mode_name {
-    color: #ffffff;
+    color: rgb(102, 108, 129);
     font: 24px "Inter";
-    font-weight: 400;
+    font-weight: 600;
     border: none;
+    margin-top:10px;
 }
 
 #section_title {
-    font: 16px "Inter";
+    font: 18px "Inter";
     border: none;
-    color: #E6E1E5;
-    font-weight: 600;
+    color: #FFFFFF;
+    font-weight: 450;
 }
 
 #capabilities_frame, #limitations_frame, #recommended_frame {
@@ -25,7 +26,11 @@
 }
 
 #capabilities_list, #limitations_list, #recommended_list {
-    color: #ffffff;
-    font: 16px "Inter";
+    color: rgb(102, 108, 129);
+    font: 18px "Inter";
     padding-left: 10px;
+}
+
+#text_label{
+    color: rgb(102, 108, 129);
 }

@@ -27,9 +27,9 @@ class WalletModeConfig:
     mode_name: str
     description: str
     privileges: WalletModePrivilege
-    capabilities: list[str]
-    limitations: list[str]
-    recommended_for: list[str]
+    capabilities: list[dict]
+    limitations: list[dict]
+    recommended_for: list[dict]
 
 
 class WalletModeConfiguration:
@@ -49,7 +49,7 @@ class WalletModeConfiguration:
         ):
             return WalletModeConfig(
                 mode_name='Online Watch-Only Wallet',
-                description='A wallet that can view transactions and balances but cannot send transactions',
+                description='A secure wallet for monitoring transactions and balances without private key access',
                 privileges=WalletModePrivilege(
                     can_send_transactions=False,
                     can_receive_transactions=True,
@@ -61,31 +61,67 @@ class WalletModeConfiguration:
                     can_restore_wallet=True,
                 ),
                 capabilities=[
-                    '👁️ View balances & history',
-                    '📥 Import signed PSBTs',
-                    '📤 Broadcast signed PSBTs',
-                    '🔄 Restore wallet',
+                    {'emoji': '👁️', 'text': 'View balances & transaction history'},
+                    {'emoji': '📥', 'text': 'Import signed PSBTs'},
+                    {'emoji': '📤', 'text': 'Broadcast signed PSBTs'},
                 ],
                 limitations=[
-                    '🚫 Cannot create or sign transactions',
-                    '🔒 No private key access',
-                    '🚫 No hardware wallet support',
+                    {'emoji': '🚫', 'text': 'Cannot create or sign transactions'},
+                    {'emoji': '🔒', 'text': 'No private key access'},
+                    {'emoji': '⛔', 'text': 'Cannot create or manage assets'},
                 ],
                 recommended_for=[
-                    '👀 Monitoring wallet balances',
-                    '📊 Viewing transaction history',
-                    '💸 Receiving funds',
+                    {'emoji': '👀', 'text': 'Transaction tracking'},
+                    {'emoji': '🔍', 'text': 'Balance monitoring'},
                 ],
             )
 
-        # Online With Private Key
+        # Online Create New with Private Key (On Device)
         elif (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletSecurityType.WITH_PRIVATE_KEY
+            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            storage_type == KeyStorageType.ON_DEVICE and
+            entry_type == WalletEntryType.CREATE
         ):
             return WalletModeConfig(
-                mode_name='Online Full Wallet',
-                description='A fully functional wallet with complete control over funds and assets',
+                mode_name='Online Wallet - Create New (On Device)',
+                description='Create a new wallet with private key stored on your device',
+                privileges=WalletModePrivilege(
+                    can_send_transactions=True,
+                    can_receive_transactions=True,
+                    can_view_balance=True,
+                    can_create_assets=True,
+                    can_manage_assets=True,
+                    can_use_hardware_wallet=False,
+                    can_backup_wallet=True,
+                    can_restore_wallet=True,
+                ),
+                capabilities=[
+                    {'emoji': '🆕', 'text': 'Generate new wallet & keys'},
+                    {'emoji': '🔐', 'text': 'Secure key storage on device'},
+                    {'emoji': '💸', 'text': 'Send and receive transactions'},
+                    {'emoji': '🧠', 'text': 'Full asset management'},
+                ],
+                limitations=[
+                    {'emoji': '🔑', 'text': 'Keep your recovery phrase safe'},
+                    {'emoji': '🧩', 'text': 'Must choose a strong and safe password'},
+                ],
+                recommended_for=[
+                    {'emoji': '🆕', 'text': 'Everyday spending and receiving'},
+                    {'emoji': '📱', 'text': 'Personal wallets on trusted devices'},
+                ],
+            )
+
+        # Online Create New with Hardware Wallet
+        elif (
+            wallet_type == WalletType.ONLINE_TYPE_WALLET and
+            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            storage_type == KeyStorageType.HARDWARE_WALLET and
+            entry_type == WalletEntryType.CREATE
+        ):
+            return WalletModeConfig(
+                mode_name='Online Wallet - Create New (Hardware)',
+                description='Set up a new wallet with a hardware security device',
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
@@ -97,29 +133,142 @@ class WalletModeConfiguration:
                     can_restore_wallet=True,
                 ),
                 capabilities=[
-                    '💸 Send transactions',
-                    '📥 Receive transactions',
-                    '👁️ View balances & history',
-                    '🧠 Create & manage assets',
-                    '🔐 Use hardware wallet',
-                    '🗄️ Backup wallet',
-                    '🔄 Restore wallet',
+                    {'emoji': '🆕', 'text': 'Initialize new wallet with hardware device'},
+                    {'emoji': '🛡️', 'text': 'Maximum security setup'},
+                    {'emoji': '💸', 'text': 'Hardware-signed transactions'},
+                    {'emoji': '🧠', 'text': 'Asset management'},
                 ],
                 limitations=[
-
+                    {'emoji': '🔌', 'text': 'Hardware device required'},
+                    {'emoji': '⚡', 'text': 'Connection needed for signing'},
                 ],
                 recommended_for=[
-                    '⚡ Full wallet functionality',
-                    '🛠️ Create & manage assets',
-                    '🔄 Send & receive',
+                    {'emoji': '🔒', 'text': 'High-value or long-term holdings'},
+                    {'emoji': '🛡️', 'text': 'Security-focused users'},
                 ],
             )
 
-        # Offline Wallet
-        elif wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+        # Online Load Existing with Private Key (On Device)
+        elif (
+            wallet_type == WalletType.ONLINE_TYPE_WALLET and
+            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            storage_type == KeyStorageType.ON_DEVICE and
+            entry_type == WalletEntryType.LOAD
+
+        ):
             return WalletModeConfig(
-                mode_name='Offline Wallet',
-                description='A wallet that operates without network connection for enhanced security',
+                mode_name='Online Wallet - Load Existing (On Device)',
+                description='Import an existing wallet to store on your device',
+                privileges=WalletModePrivilege(
+                    can_send_transactions=True,
+                    can_receive_transactions=True,
+                    can_view_balance=True,
+                    can_create_assets=True,
+                    can_manage_assets=True,
+                    can_use_hardware_wallet=False,
+                    can_backup_wallet=True,
+                    can_restore_wallet=True,
+                ),
+                capabilities=[
+                    {'emoji': '📥', 'text': 'Import existing wallet'},
+                    {'emoji': '💸', 'text': 'Send and receive transactions'},
+                    {'emoji': '🔄', 'text': 'View transaction history'},
+                    {'emoji': '🧠', 'text': 'Manage assets'},
+                    {'emoji': '🔐', 'text': 'Secure key storage on device'},
+                ],
+                limitations=[
+                    {'emoji': '📝', 'text': 'Requires recovery phrase/key'},
+                    {'emoji': '🧩', 'text': 'Must choose a strong and safe password'},
+                ],
+                recommended_for=[
+                    {'emoji': '🔄', 'text': 'Migrating wallets to a new device'},
+                    {'emoji': '💼', 'text': 'Active traders and regular users'},
+                ],
+            )
+
+        # Online Load Existing with Hardware Wallet
+        elif (
+            wallet_type == WalletType.ONLINE_TYPE_WALLET and
+            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            storage_type == KeyStorageType.HARDWARE_WALLET and
+            entry_type == WalletEntryType.LOAD
+
+        ):
+            return WalletModeConfig(
+                mode_name='Online Wallet - Load Existing (Hardware)',
+                description='Connect your existing hardware wallet for secure access',
+                privileges=WalletModePrivilege(
+                    can_send_transactions=True,
+                    can_receive_transactions=True,
+                    can_view_balance=True,
+                    can_create_assets=True,
+                    can_manage_assets=True,
+                    can_use_hardware_wallet=True,
+                    can_backup_wallet=True,
+                    can_restore_wallet=True,
+                ),
+                capabilities=[
+                    {'emoji': '🔌', 'text': 'Connect hardware wallet'},
+                    {'emoji': '🛡️', 'text': 'Hardware security'},
+                    {'emoji': '💸', 'text': 'Secure transactions'},
+                    {'emoji': '🧠', 'text': 'Asset management'},
+                ],
+                limitations=[
+                    {'emoji': '🔌', 'text': 'Hardware device required'},
+                    {'emoji': '⚡', 'text': 'Connection needed for signing'},
+                    {'emoji': '📝', 'text': 'Requires xpub key'},
+                ],
+                recommended_for=[
+                    {'emoji': '🔌', 'text': 'Accessing funds with hardware wallet'},
+                    {'emoji': '🏦', 'text': 'Institutional or business accounts'},
+                ],
+            )
+
+        # Offline Create New (On Device)
+        elif (
+            wallet_type == WalletType.OFFLINE_TYPE_WALLET and
+            storage_type == KeyStorageType.ON_DEVICE and
+            entry_type == WalletEntryType.CREATE
+        ):
+            return WalletModeConfig(
+                mode_name='Offline Wallet - Create New (On Device)',
+                description='Create a new air-gapped cold storage wallet',
+                privileges=WalletModePrivilege(
+                    can_send_transactions=False,
+                    can_receive_transactions=True,
+                    can_view_balance=True,
+                    can_create_assets=True,
+                    can_manage_assets=True,
+                    can_use_hardware_wallet=False,
+                    can_backup_wallet=True,
+                    can_restore_wallet=True,
+                ),
+                capabilities=[
+                    {'emoji': '🆕', 'text': 'Generate offline wallet'},
+                    {'emoji': '✍️', 'text': 'PSBT signing'},
+                    {'emoji': '💾', 'text': 'Secure key generation'},
+                    {'emoji': '📤', 'text': 'Export signed PSBTs'},
+                ],
+                limitations=[
+                    {'emoji': '🌐', 'text': 'No online functionality'},
+                    {'emoji': '🚫', 'text': 'Cannot broadcast the transaction'},
+                    {'emoji': '🧩', 'text': 'Must choose a strong and safe password'},
+                ],
+                recommended_for=[
+                    {'emoji': '❄️', 'text': 'Cold storage for long-term savings'},
+                    {'emoji': '📝', 'text': 'Manual signing and air-gapped security'},
+                ],
+            )
+
+        # Offline Create New (Hardware Wallet)
+        elif (
+            wallet_type == WalletType.OFFLINE_TYPE_WALLET and
+            storage_type == KeyStorageType.HARDWARE_WALLET and
+            entry_type == WalletEntryType.CREATE
+        ):
+            return WalletModeConfig(
+                mode_name='Offline Wallet - Create New (Hardware)',
+                description='Create a new offline wallet with hardware security',
                 privileges=WalletModePrivilege(
                     can_send_transactions=False,
                     can_receive_transactions=True,
@@ -131,23 +280,95 @@ class WalletModeConfiguration:
                     can_restore_wallet=True,
                 ),
                 capabilities=[
-                    '🛡️ Cold storage security',
-                    '✍️ Sign PSBTs offline',
-                    '👁️ View balances & history',
-                    '🧠 Create & manage assets offline',
-                    '🗄️ Backup wallet',
-                    '🔄 Restore wallet',
+                    {'emoji': '🆕', 'text': 'New wallet setup using hardware device'},
+                    {'emoji': '🛡️', 'text': 'Dual security (offline + hardware)'},
+                    {'emoji': '✍️', 'text': 'Hardware PSBT signing'},
+                    {'emoji': '📤', 'text': 'Export signed PSBTs'},
                 ],
                 limitations=[
-                    '🚫 Cannot send transactions directly',
-                    '🚫 Cannot broadcast (offline mode)',
-                    '📝 Manual transaction signing required',
-                    '🔌 Limited to offline operations',
+                    {'emoji': '🌐', 'text': 'No online features'},
+                    {'emoji': '🔌', 'text': 'Hardware device required'},
+                    {'emoji': '🚫', 'text': 'Cannot broadcast the transaction'},
                 ],
                 recommended_for=[
-                    '❄️ Cold storage',
-                    '🔒 Enhanced security',
-                    '🛠️ Managing assets offline',
+                    {'emoji': '🏦', 'text': 'Institutional vaults and treasuries'},
+                    {'emoji': '💎', 'text': 'Ultra-secure, high-value storage'},
+                ],
+            )
+
+        # Offline Load Existing (On Device) 
+        elif (
+            wallet_type == WalletType.OFFLINE_TYPE_WALLET and
+            storage_type == KeyStorageType.ON_DEVICE and
+            entry_type == WalletEntryType.LOAD
+
+        ):
+            return WalletModeConfig(
+                mode_name='Offline Wallet - Load Existing (On Device)',
+                description='Import an existing wallet for offline cold storage',
+                privileges=WalletModePrivilege(
+                    can_send_transactions=False,
+                    can_receive_transactions=True,
+                    can_view_balance=True,
+                    can_create_assets=True,
+                    can_manage_assets=True,
+                    can_use_hardware_wallet=False,
+                    can_backup_wallet=True,
+                    can_restore_wallet=True,
+                ),
+                capabilities=[
+                    {'emoji': '📥', 'text': 'Import existing wallet offline'},
+                    {'emoji': '🛡️', 'text': 'Dual security (offline + hardware)'},
+                    {'emoji': '✍️', 'text': 'Local PSBT signing'},
+                    {'emoji': '📤', 'text': 'Export signed PSBTs'},
+                ],
+                limitations=[
+                    {'emoji': '🌐', 'text': 'No online features'},
+                    {'emoji': '📝', 'text': 'Manual key import required'},
+                    {'emoji': '🚫', 'text': 'Cannot broadcast the transaction'},
+                    {'emoji': '🧩', 'text': 'Must choose a strong and safe password'},
+                ],
+                recommended_for=[
+                    {'emoji': '🔒', 'text': 'Migrating cold storage wallets'},
+                    {'emoji': '🛡️', 'text': 'Offline recovery and signing'},
+                ],
+            )
+
+        # Offline Load Existing (Hardware Wallet)
+        elif (
+            wallet_type == WalletType.OFFLINE_TYPE_WALLET and
+            storage_type == KeyStorageType.HARDWARE_WALLET and
+            entry_type == WalletEntryType.LOAD
+
+        ):
+            return WalletModeConfig(
+                mode_name='Offline Wallet - Load Existing (Hardware)',
+                description='Connect existing hardware wallet in offline mode',
+                privileges=WalletModePrivilege(
+                    can_send_transactions=False,
+                    can_receive_transactions=True,
+                    can_view_balance=True,
+                    can_create_assets=True,
+                    can_manage_assets=True,
+                    can_use_hardware_wallet=True,
+                    can_backup_wallet=True,
+                    can_restore_wallet=True,
+                ),
+                capabilities=[
+                    {'emoji': '🔌', 'text': 'Offline hardware connection'},
+                    {'emoji': '🛡️', 'text': 'Maximum security mode'},
+                    {'emoji': '✍️', 'text': 'Hardware PSBT signing'},
+                    {'emoji': '🔐', 'text': 'Secure key access'},
+                    {'emoji': '📤', 'text': 'Export signed PSBTs'},
+                ],
+                limitations=[
+                    {'emoji': '🌐', 'text': 'No online features'},
+                    {'emoji': '🔌', 'text': 'Hardware device required'},
+                    {'emoji': '🚫', 'text': 'Cannot broadcast the transaction'},
+                ],
+                recommended_for=[
+                    {'emoji': '🔌', 'text': 'Offline access with hardware wallet'},
+                    {'emoji': '🏦', 'text': 'Institutional cold storage'},
                 ],
             )
 
@@ -165,7 +386,10 @@ class WalletModeConfiguration:
                 can_backup_wallet=False,
                 can_restore_wallet=False,
             ),
-            capabilities=['❓ Invalid configuration'],
-            limitations=['❓ Invalid configuration'],
-            recommended_for=[],
+            capabilities=[{'emoji': '❓', 'text': 'Invalid configuration'}],
+            limitations=[{'emoji': '⚠️', 'text': 'Invalid wallet mode combination'}],
+            recommended_for=[
+                {'emoji': '❓', 'text': 'Invalid configuration'},
+                {'emoji': '⚠️', 'text': 'Check wallet settings'},
+            ],
         )
