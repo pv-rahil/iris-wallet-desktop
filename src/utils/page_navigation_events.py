@@ -17,6 +17,7 @@ class PageNavigationEventManager(QObject):
     network_selection_page_signal = Signal(str, str)
     selection_page_signal = Signal(object)
     wallet_mode_summary_page_signal = Signal(object)
+    hardware_wallet_connect_page_signal = Signal(object)
     welcome_page_signal = Signal()
     term_and_condition_page_signal = Signal()
     fungibles_asset_page_signal = Signal()

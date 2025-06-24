@@ -1,0 +1,176 @@
+/* Main card frame */
+QFrame#hardware_wallet_connect_card {
+    background: transparent;
+    background-color: rgb(18, 28, 48);
+    border: 1.5px solid rgb(102, 108, 129);
+    border-radius: 16px;
+}
+
+/* Title label */
+QLabel#hardware_wallet_connect_title {
+    font: 20px "Inter";
+    font-weight: 700;
+    color: rgb(220, 223, 235);
+    padding-top: 24px;
+    padding-bottom: 8px;
+    background: transparent;
+    border: none;
+}
+QPushButton#close_button{
+    background:transparent;
+    border:none;
+    padding-top: 24px;
+    padding-bottom: 8px;
+    padding-right:12px;
+}
+/* Subtitle label */
+QLabel#hardware_wallet_connect_subtitle {
+    font: 16px "Inter";
+    color: rgb(140, 145, 160);
+    margin-bottom: 18px;
+    background: transparent;
+    border: none;
+    padding-left: 6px;
+}
+
+/* Info label */
+QLabel#hardware_wallet_connect_info {
+    font: 13px "Inter";
+    color: rgb(120, 130, 150);
+    margin-top: 32px;
+    background: transparent;
+    border: none;
+}
+
+/* Wallet option buttons */
+QFrame#hardware_wallet_option {
+    background-color: rgb(36, 44, 70);
+    border-radius: 0;
+    border: 2px solid transparent;
+}
+QFrame#hardware_wallet_option:hover {
+    border: 2px solid rgb(102, 108, 129);
+}
+QFrame#hardware_wallet_option[selected="true"] {
+    background-color: rgb(27, 35, 59);
+    border: 2px solid rgb(102, 108, 129);
+}
+
+QLabel#hardware_wallet_option_name {
+    font: 16px "Inter";
+    color: rgb(140, 145, 160);
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    padding-bottom:15px;
+    padding-left: 15px;
+}
+QLabel#hardware_wallet_icon {
+    border: none;
+    padding-top:15px;
+    padding-left:20px;
+}
+
+/* Continue button */
+QPushButton#primary_button {
+    min-width: 180px;
+    min-height: 44px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+QDialog#hardware_wallet_device_dialog {
+    background: rgb(18, 28, 48);
+    border-radius: 16px;
+}
+
+/* Device selection frame */
+QFrame#hardware_wallet_device_frame {
+    background: transparent;
+    border: none;
+    padding: 8px;
+}
+
+/* Radio button styles for device selection */
+QRadioButton {
+    font: 16px "Inter";
+    color: rgb(140, 145, 160);
+    padding: 12px 16px;
+    margin: 4px 0;
+}
+
+QRadioButton:hover {
+    color:#fff
+}
+
+QRadioButton:checked {
+    color: white;
+}
+
+QRadioButton::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    border: 2px solid rgb(102, 108, 129);
+    background: transparent;
+    margin-right: 12px;
+}
+
+QRadioButton::indicator:hover {
+    border: 2px solid rgb(140, 145, 160);
+}
+
+QRadioButton::indicator:checked {
+    border: 2px solid rgb(102, 108, 129);
+    background: rgb(102, 108, 129);
+}
+
+QRadioButton::indicator:checked:hover {
+    border: 2px solid rgb(140, 145, 160);
+    background: rgb(140, 145, 160);
+}
+
+QListWidget#hardware_wallet_device_list {
+    background: rgb(36, 44, 70);
+    color: rgb(140, 145, 160);
+    border-radius: 12px;
+    font: 16px "Inter";
+    border: none;
+    padding: 8px;
+    outline: none;
+}
+QListWidget#hardware_wallet_device_list::item {
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    font-size: 16px;
+    background: transparent;
+}
+QListWidget#hardware_wallet_device_list::item:selected {
+    background: rgb(18, 28, 48);
+    color: white;
+    border-radius: 8px;
+}
+QListWidget#hardware_wallet_device_list::item:hover {
+    color: #fff;
+}
+QListWidget#hardware_wallet_device_list QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+    margin: 4px 0 4px 0;
+    border-radius: 4px;
+}
+QListWidget#hardware_wallet_device_list QScrollBar::handle:vertical {
+    background: rgb(60, 70, 100);
+    min-height: 24px;
+    border-radius: 4px;
+}
+QListWidget#hardware_wallet_device_list QScrollBar::add-line:vertical,
+QListWidget#hardware_wallet_device_list QScrollBar::sub-line:vertical {
+    height: 0;
+}
+QListWidget#hardware_wallet_device_list QScrollBar::add-page:vertical,
+QListWidget#hardware_wallet_device_list QScrollBar::sub-page:vertical {
+    background: none;
+}

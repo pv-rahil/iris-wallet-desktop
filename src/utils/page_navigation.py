@@ -22,6 +22,7 @@ from src.views.ui_collectible_asset import CollectiblesAssetWidget
 from src.views.ui_enter_wallet_password import EnterWalletPassword
 from src.views.ui_faucets import FaucetsWidget
 from src.views.ui_fungible_asset import FungibleAssetWidget
+from src.views.ui_hardware_wallet_connect import HardwareWalletConnectWidget
 from src.views.ui_help import HelpWidget
 from src.views.ui_issue_rgb20 import IssueRGB20Widget
 from src.views.ui_issue_rgb25 import IssueRGB25Widget
@@ -52,6 +53,7 @@ class PageNavigation:
             # 'SelectionPage': SelectionPageWidget,
             'SelectionPage': SelectionBreadcrumbWidget,
             'WalletModeSummaryPage': WalletModeSummaryDialog,
+            'HardwareWalletConnectPage': HardwareWalletConnectWidget,
             'TermCondition': TermConditionWidget,
             'FungibleAssetWidget': FungibleAssetWidget,
             'CollectiblesAssetWidget': CollectiblesAssetWidget,
@@ -91,6 +93,9 @@ class PageNavigation:
         )
         self.event_based_navigation.wallet_mode_summary_page_signal.connect(
             self.wallet_mode_summary_page,
+        )
+        self.event_based_navigation.hardware_wallet_connect_page_signal.connect(
+            self.hardware_wallet_connect_page,
         )
         self.event_based_navigation.welcome_page_signal.connect(
             self.welcome_page,
@@ -219,6 +224,10 @@ class PageNavigation:
     def wallet_mode_summary_page(self):
         """This method display wallet mode summary page"""
         self.navigate_to_page('WalletModeSummaryPage')
+
+    def hardware_wallet_connect_page(self):
+        """This method display wallet mode summary page"""
+        self.navigate_to_page('HardwareWalletConnectPage')
 
     def welcome_page(self):
         """This method display the welcome page."""

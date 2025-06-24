@@ -136,12 +136,6 @@ class WelcomeWidget(QWidget):
         )
         self.welcome_horizontal_layout.setContentsMargins(8, -1, 8, -1)
 
-        self.restore_btn = SecondaryButton()
-        self.restore_btn.setAccessibleName(RESTORE_BUTTON)
-        self.restore_btn.setMinimumSize(QSize(318, 40))
-        self.restore_btn.setMaximumSize(QSize(318, 40))
-        self.welcome_horizontal_layout.addWidget(self.restore_btn)
-
         self.create_btn = PrimaryButton()
         self.create_btn.setAccessibleName(CREATE_BUTTON)
         self.create_btn.setMinimumSize(QSize(318, 40))
@@ -180,9 +174,9 @@ class WelcomeWidget(QWidget):
         self.create_btn.clicked.connect(
             self._view_model.welcome_view_model.on_create_click,
         )
-        self.restore_btn.clicked.connect(
-            self.restore_wallet,
-        )
+        # self.restore_btn.clicked.connect(
+        #     self.restore_wallet,
+        # )
         self._view_model.welcome_view_model.create_button_clicked.connect(
             self.update_create_status,
         )
@@ -216,13 +210,13 @@ class WelcomeWidget(QWidget):
                 None,
             ),
         )
-        self.restore_btn.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'restore_button',
-                None,
-            ),
-        )
+        # self.restore_btn.setText(
+        #     QCoreApplication.translate(
+        #         IRIS_WALLET_TRANSLATIONS_CONTEXT,
+        #         'restore_button',
+        #         None,
+        #     ),
+        # )
         self.create_btn.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,

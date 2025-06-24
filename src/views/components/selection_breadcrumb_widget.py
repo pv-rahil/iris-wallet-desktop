@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import functools
+
+from PySide6.QtCore import QEvent
+from PySide6.QtCore import QObject
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtCore import Signal
-from PySide6.QtCore import QEvent
-from PySide6.QtCore import QObject
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
@@ -20,7 +22,6 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QStackedWidget
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
-import functools
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
@@ -31,6 +32,7 @@ from src.model.selection_page_model import SelectionPageModel
 from src.views.components.selection_page import SelectionPage
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.views.components.wallet_mode_summary_dialog import WalletModeSummaryDialog
+from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
 
 
 class BreadcrumbBar(QWidget):
@@ -51,13 +53,25 @@ class BreadcrumbBar(QWidget):
 
         def eventFilter(self, obj, event):
             if event.type() == QEvent.Enter:
-                self.title_label.setStyleSheet("color: white; font-weight: 700; font-size: 17px;background: transparent;border: none")
+                self.title_label.setStyleSheet(
+                    'color: white; font-weight: 700; font-size: 17px;background: transparent;border: none',
+                )
                 if self.logo_white_path:
-                    self.logo_label.setPixmap(QPixmap(self.logo_white_path).scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                    self.logo_label.setPixmap(
+                        QPixmap(self.logo_white_path).scaled(
+                            24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation,
+                        ),
+                    )
             elif event.type() == QEvent.Leave:
-                self.title_label.setStyleSheet("color: rgb(102, 108, 129); font-weight: 600; font-size: 17px;background: transparent;border: none")
+                self.title_label.setStyleSheet(
+                    'color: rgb(102, 108, 129); font-weight: 600; font-size: 17px;background: transparent;border: none',
+                )
                 if self.logo_path:
-                    self.logo_label.setPixmap(QPixmap(self.logo_path).scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                    self.logo_label.setPixmap(
+                        QPixmap(self.logo_path).scaled(
+                            24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation,
+                        ),
+                    )
             return False
 
     def __init__(self, parent=None):
@@ -141,7 +155,7 @@ class BreadcrumbBar(QWidget):
             logo_container.setStyleSheet("""
                 QFrame {
                     background: transparent;
-                    border: none           
+                    border: none
                 }
             """)
             logo_layout = QHBoxLayout(logo_container)
@@ -171,24 +185,36 @@ class BreadcrumbBar(QWidget):
             title = QLabel(crumb['title'])
             # Highlight if active
             if i == self.active_index:
-                title.setStyleSheet("color: white; font-weight: 700; font-size: 17px;background: transparent;border: none")
+                title.setStyleSheet(
+                    'color: white; font-weight: 700; font-size: 17px;background: transparent;border: none',
+                )
                 if logo_white_path:
-                    logo.setPixmap(QPixmap(logo_white_path).scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                    logo.setPixmap(
+                        QPixmap(logo_white_path).scaled(
+                            24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation,
+                        ),
+                    )
             else:
-                title.setStyleSheet("color: rgb(102, 108, 129); font-weight: 600; font-size: 17px;background: transparent;border: none")
+                title.setStyleSheet(
+                    'color: rgb(102, 108, 129); font-weight: 600; font-size: 17px;background: transparent;border: none',
+                )
             crumb_content_layout.addWidget(title)
 
             h.addWidget(crumb_content_frame)
 
             # Install event filter for hover effect (only if not active)
             if i != self.active_index:
-                hover_helper = self.CrumbHoverHelper(crumb_content_frame, title, logo, logo_path, logo_white_path)
+                hover_helper = self.CrumbHoverHelper(
+                    crumb_content_frame, title, logo, logo_path, logo_white_path,
+                )
                 crumb_content_frame.installEventFilter(hover_helper)
                 crumb_content_frame._hover_helper = hover_helper
 
             # Only allow click if not pending
             if not frame.is_pending:
-                frame.mousePressEvent = functools.partial(lambda self, e, idx: self.crumb_clicked.emit(idx), self, idx=i)
+                frame.mousePressEvent = functools.partial(
+                    lambda self, e, idx: self.crumb_clicked.emit(idx), self, idx=i,
+                )
             else:
                 frame.mousePressEvent = lambda e: None
 
@@ -225,6 +251,13 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         super().__init__()
         self._view_model = view_model
+        # Restore state from view model if present
+        self.selected_logos = getattr(self._view_model, 'selected_logos', [])
+        self.selected_titles = getattr(self._view_model, 'selected_titles', [])
+        self.selected_step_indices = getattr(
+            self._view_model, 'selected_step_indices', [],
+        )
+        self.current_index = getattr(self._view_model, 'current_index', 0)
         self.steps = [
             {
                 'logo': ':/assets/online.png',
@@ -291,11 +324,6 @@ class SelectionBreadcrumbWidget(QWidget):
                 ),
             },
         ]
-        self.selected_logos = []
-        self.selected_titles = []
-        self.selected_step_indices = []  # Track the actual step index for each breadcrumb
-        self.current_index = 0
-        # Add a new variable to track previous selections
         self.previous_selections = []
 
         # Create main grid layout
@@ -435,7 +463,13 @@ class SelectionBreadcrumbWidget(QWidget):
                 self._view_model.page_navigation.term_and_condition_page,
             )
             # Find the active breadcrumb index that matches the current_index
-            active_index = next((i for i, crumb in enumerate(crumbs) if crumb['step_index'] == self.current_index), len(crumbs) - 1)
+            active_index = next(
+                (
+                    i for i, crumb in enumerate(
+                        crumbs,
+                    ) if crumb['step_index'] == self.current_index
+                ), len(crumbs) - 1,
+            )
             breadcrumb_bar_for_current_page.set_breadcrumbs(
                 crumbs, active_index=active_index,
             )
@@ -563,15 +597,6 @@ class SelectionBreadcrumbWidget(QWidget):
                 if dialog.exec() == QDialog.Accepted:
                     # Remove blur effect
                     self.setGraphicsEffect(None)
-                    # Clear all selections before going to welcome page
-                    self.selected_logos = []
-                    self.selected_titles = []
-                    self.selected_step_indices = []
-                    # Clear all settings from local storage
-                    SettingRepository.remove_setting('wallet_type')
-                    SettingRepository.remove_setting('wallet_security_type')
-                    SettingRepository.remove_setting('wallet_entry_type')
-                    SettingRepository.remove_setting('key_storage_type')
                     self._view_model.page_navigation.welcome_page()
                 else:
                     # Remove blur effect if dialog is rejected
@@ -605,16 +630,20 @@ class SelectionBreadcrumbWidget(QWidget):
                 if dialog.exec() == QDialog.Accepted:
                     # Remove blur effect
                     self.setGraphicsEffect(None)
-                    # Clear all selections before going to welcome page
-                    self.selected_logos = []
-                    self.selected_titles = []
-                    self.selected_step_indices = []
-                    # Clear all settings from local storage
-                    SettingRepository.remove_setting('wallet_type')
-                    SettingRepository.remove_setting('wallet_security_type')
-                    SettingRepository.remove_setting('wallet_entry_type')
-                    SettingRepository.remove_setting('key_storage_type')
-                    self._view_model.page_navigation.welcome_page()
+                    # Redirect to hardware wallet page if key storage is hardware
+                    key_storage = SettingRepository.get_key_storage_type()
+                    if key_storage == KeyStorageType.HARDWARE_WALLET:
+                        self._view_model.page_navigation.hardware_wallet_connect_page()
+                    elif SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD:
+                        blur_effect = QGraphicsBlurEffect()
+                        blur_effect.setBlurRadius(10)
+                        restore_dialog = RestoreMnemonicWidget(
+                            view_model=self._view_model, parent=self,
+                        )
+                        if restore_dialog.exec() == QDialog.Accepted:
+                            self._view_model.page_navigation.welcome_page()
+                    else:
+                        self._view_model.page_navigation.welcome_page()
                 else:
                     # Remove blur effect if dialog is rejected
                     self.setGraphicsEffect(None)
@@ -622,3 +651,9 @@ class SelectionBreadcrumbWidget(QWidget):
         # Update breadcrumbs once at the end for all non-dialog cases
         if not (idx == 1 and title == WalletSecurityType.WATCH_ONLY.value) and not (idx == len(self.steps) - 1):
             self.update_breadcrumbs()
+
+        # At the end of handle_continue, before navigating away (e.g., to hardware wallet connect page):
+        self._view_model.selected_logos = self.selected_logos
+        self._view_model.selected_titles = self.selected_titles
+        self._view_model.selected_step_indices = self.selected_step_indices
+        self._view_model.current_index = self.current_index

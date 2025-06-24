@@ -34,11 +34,11 @@ datas = [
 
 # Common Analysis
 a = Analysis(
-    ['demo.py'],
+    ['src/main.py'],
     pathex=[],
-    datas=[ ('./src/assets/icons/*', './assets/icons/'),
-    ('./src/assets/*', './assets/')],
-    hiddenimports=['PySide6'],
+    binaries=rgb_lib_binaries,
+    datas=datas,
+    hiddenimports=['pyqttoast', 'PySide6', 'bip32utils', 'mnemonic', 'importlib_metadata', 'hashlib', 'rgb_lib'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[
