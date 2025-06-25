@@ -139,6 +139,12 @@ class Sidebar(QWidget):
         self.about.setAccessibleName(ABOUT_BUTTON)
         self.grid_layout_sidebar.addWidget(self.about, 9, 0, 1, 1)
 
+        self.broadcast_transaction = SidebarButton(
+            'Broadcast transaction', ':/assets/about.png', translation_key='broadcast_transaction',
+        )
+        self.broadcast_transaction.setCheckable(False)
+        self.grid_layout_sidebar.addWidget(self.broadcast_transaction, 10, 0, 1, 1)
+
         self.vertical_layout.addLayout(self.grid_layout_sidebar)
 
         self.vertical_spacer = QSpacerItem(
@@ -194,6 +200,9 @@ class Sidebar(QWidget):
                 ),
             ),
         )
+        self.broadcast_transaction.clicked.connect(
+            self._view_model.page_navigation.broadcast_transaction_page,
+        )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -231,6 +240,7 @@ class Sidebar(QWidget):
             self.my_collectibles,
             self.settings,
             self.about,
+            self.broadcast_transaction,
         ]
         for button in buttons:
             if button.isChecked():

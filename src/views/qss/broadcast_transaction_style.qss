@@ -1,0 +1,118 @@
+/* Styles for broadcast_transaction_widget */
+QWidget#broadcast_transaction_widget {
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+}
+
+/* Styles for broadcast_transaction_title_label */
+QLabel#broadcast_transaction_title_label {
+    font: 24px "Inter";
+    color: rgb(208, 211, 221);
+    background: transparent;
+    border: none;
+    padding-bottom: 15px;
+    padding-top: 15px;
+}
+
+/* Styles for close_btn */
+QPushButton#close_btn {
+    background: transparent;
+    border: none;
+}
+
+/* Styles for line_1 */
+QFrame#line_1 {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+/* Styles for broadcast_transaction_label */
+QLabel#broadcast_transaction_label {
+    font: 16px "Inter";
+    color: rgb(121, 128, 148);
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    padding-left: 17px;
+}
+
+/* Styles for broadcast_transaction_input */
+QPlainTextEdit#broadcast_transaction_input {
+    font: 15px "Inter";
+    color: rgb(102, 108, 129);
+    background-color: rgb(36, 44, 70);
+    border: transparent;
+    border-radius: 4px;
+    padding-left: 17px;
+}
+
+/* Styles for invoice_detail_label */
+QLabel#invoice_detail_label {
+    font: 14px "Inter";
+    color: rgb(121, 128, 148);
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    padding-left: 25px;
+}
+
+/* Styles for invoice_detail_frame */
+QFrame#invoice_detail_frame {
+    background: transparent;
+    background-color: rgb(36, 44, 70);
+    border: none;
+    border-radius: 8px;
+    font: 15px "Inter";
+    color: #B3B6C3;
+    font-weight: 400;
+}
+
+QLabel#amount_validation_error_label{
+    color: red;
+    border: none;
+}
+/* Styles for time_unit_combobox QComboBox */
+QComboBox {
+    font: 15px "Inter";
+    font-weight: 400;
+    border: none;
+    border-radius: 4px;
+    background-color: rgb(36, 44, 70);
+    color: rgb(102, 108, 129);
+    padding: 10px 5px 10px 5px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: rgb(3, 11, 37);
+    selection-background-color: #292b3e;
+    color: #8e8ea0;
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+    border-radius:5px;
+    padding:2.5px;
+}
+
+QComboBox::drop-down {
+    border:none;
+    padding-right:15px;
+}
+
+QComboBox::down-arrow {
+    image: url(:/assets/down_arrow.png);
+    width: 16px;
+    height: 16px;
+    border-radius:4px;
+}
+QWidget#scrollAreaWidgetContents_2 {
+    border-radius: 8px;
+    background: transparent;
+}
+QLabel#broadcast_method_label{
+    font: 14px "Inter";
+    color: rgb(121, 128, 148);
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    padding-left: 17px;
+}

@@ -1596,5 +1596,21 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>backup_success_info</source>
         <translation>The backup process has been completed successfully!</translation>
     </message>
+    <message>
+        <source>broadcast_transaction_title_label</source>
+        <translation>Broadcast Transaction</translation>
+    </message>
+    <message>
+        <source>broadcast_transaction_label</source>
+        <translation>Enter your signed psbt for broadcasting</translation>
+    </message>
+    <message>
+        <source>broadcast_transaction</source>
+        <translation>Broadcast transaction</translation>
+    </message>
+    <message>
+        <source>select_broadcast_type</source>
+        <translation>Select Broadcast Type</translation>
+    </message>
 </context>
 </TS>

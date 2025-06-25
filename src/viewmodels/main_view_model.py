@@ -8,6 +8,7 @@ from PySide6.QtCore import QObject
 
 from src.viewmodels.backup_view_model import BackupViewModel
 from src.viewmodels.bitcoin_view_model import BitcoinViewModel
+from src.viewmodels.broadcast_transaction_view_model import BroadcastTransactionViewModel
 from src.viewmodels.cfa_view_model import CFAViewModel
 from src.viewmodels.enter_password_view_model import EnterWalletPasswordViewModel
 from src.viewmodels.faucets_view_model import FaucetsViewModel
@@ -94,3 +95,5 @@ class MainViewModel(QObject):
         self.estimate_fee_view_model = EstimateFeeViewModel()
 
         self.header_frame_view_model = HeaderFrameViewModel()
+
+        self.broadcast_transaction_view_model = BroadcastTransactionViewModel(self.page_navigation)

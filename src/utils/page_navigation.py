@@ -31,6 +31,7 @@ from src.views.ui_receive_rgb_asset import ReceiveRGBAssetWidget
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
 from src.views.ui_rgb_asset_transaction_detail import RGBAssetTransactionDetail
 from src.views.ui_send_bitcoin import SendBitcoinWidget
+from src.views.ui_broadcast_transaction import BroadcastTransactionWidget
 from src.views.ui_send_rgb_asset import SendRGBAssetWidget
 from src.views.ui_set_wallet_password import SetWalletPasswordWidget
 from src.views.ui_settings import SettingsWidget
@@ -77,6 +78,7 @@ class PageNavigation:
             'AboutWidget': AboutWidget,
             'FaucetsWidget': FaucetsWidget,
             'HelpWidget': HelpWidget,
+            'BroadcastTransactionWidget':BroadcastTransactionWidget,
         }
 
         self.event_based_navigation.navigate_to_page_signal.connect(
@@ -142,8 +144,8 @@ class PageNavigation:
         self.event_based_navigation.view_unspent_list_page_signal.connect(
             self.view_unspent_list_page,
         )
-        self.event_based_navigation.rgb25_transaction_detail_page_signal.connect(
-            self.rgb25_transaction_detail_page,
+        self.event_based_navigation.cfa_transaction_detail_page_signal.connect(
+            self.cfa_transaction_detail_page,
         )
         self.event_based_navigation.bitcoin_transaction_detail_page_signal.connect(
             self.bitcoin_transaction_detail_page,
@@ -164,6 +166,9 @@ class PageNavigation:
         self.event_based_navigation.help_page_signal.connect(self.help_page)
         self.event_based_navigation.error_report_signal.connect(
             self.error_report_dialog_box,
+        )
+        self.event_based_navigation.broadcast_transaction_page_signal.connect(
+            self.broadcast_transaction_page,
         )
 
     def toggle_sidebar(self, show):
@@ -353,3 +358,7 @@ class PageNavigation:
         """This method display the error report dialog box"""
         error_report_dialog = ErrorReportDialog()
         error_report_dialog.exec()
+
+    def broadcast_transaction_page(self):
+        """This method display the help page."""
+        self.navigate_to_page('BroadcastTransactionWidget')

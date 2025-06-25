@@ -53,6 +53,7 @@ class WalletRequestModel(BaseModel):
     account_xpub_vanilla: str
     account_xpub_colored: str
     mnemonic: str
+    master_fingerprint : str
     vanilla_keychain: int | None = None
 
     class Config:
@@ -107,3 +108,8 @@ class AppPathsModel(BaseModel):
     backup_folder_path: str
     restore_folder_path: str
     mnemonic_file_path: str
+
+class BroadcastPsbtRequestModel(BaseModel):
+    """Request model for broadcast"""
+    signed_psbt : str
+    skip_sync: bool = False

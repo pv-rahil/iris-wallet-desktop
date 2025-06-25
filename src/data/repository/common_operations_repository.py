@@ -33,7 +33,7 @@ class CommonOperationRepository:
             wallet_data = rgb_lib.WalletData(
                 data_dir=unlock.data_dir, bitcoin_network=unlock.bitcoin_network, database_type=DatabaseType.SQLITE,
                 max_allocations_per_utxo=unlock.max_allocations_per_utxo, account_xpub_vanilla=unlock.account_xpub_vanilla,
-                account_xpub_colored=unlock.account_xpub_colored, mnemonic=unlock.mnemonic, vanilla_keychain=unlock.vanilla_keychain,
+                account_xpub_colored=unlock.account_xpub_colored, mnemonic=unlock.mnemonic,master_fingerprint=unlock.master_fingerprint, vanilla_keychain=unlock.vanilla_keychain,
             )
             # Initialize the wallet
             recv_wallet = rgb_lib.Wallet(wallet_data)
@@ -65,3 +65,10 @@ class CommonOperationRepository:
         with repository_custom_context():
             restore_keys = rgb_lib.restore_keys(bitcoin_network, mnemonic)
             return restore_keys
+
+    @staticmethod
+    def finalized_psbt(signed_psbt:str):
+        """Finalize psbt"""
+        with repository_custom_context():
+            finalized_psbt = colored_wallet.wallet.finalize_psbt(signed_psbt=signed_psbt)
+            return finalized_psbt

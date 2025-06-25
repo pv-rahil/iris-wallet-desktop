@@ -42,6 +42,7 @@ class PageNavigationEventManager(QObject):
     faucets_page_signal = Signal()
     help_page_signal = Signal()
     error_report_signal = Signal()
+    broadcast_transaction_page_signal = Signal()
 
     def __init__(self):
         super().__init__()

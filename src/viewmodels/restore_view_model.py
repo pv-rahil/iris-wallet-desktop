@@ -14,7 +14,7 @@ from src.data.service.restore_service import RestoreService
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_COLORED, MASTER_FINGERPRINT
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
@@ -78,6 +78,9 @@ class RestoreViewModel(QObject, ThreadManager):
             )
             local_store.set_value(
                 ACCOUNT_XPUB_COLORED, restore_keys.account_xpub_colored,
+            )
+            local_store.set_value(
+                MASTER_FINGERPRINT, restore_keys.master_fingerprint,
             )
             is_set_password: bool = set_value(
                 WALLET_PASSWORD_KEY, self.password, network.value,

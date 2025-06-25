@@ -196,7 +196,7 @@ class ListTransfersRequestModel(AssetIdModel):
 
 
 class FilterAssetRequestModel(BaseModel):
-    """Remove"""
+    """Filter asset request model"""
     filter_asset_schemas: list[AssetSchema]
 
     class Config:
@@ -205,11 +205,21 @@ class FilterAssetRequestModel(BaseModel):
 
 
 class FailTransferRequestModel(BaseModel):
-    """Response model for fail transfer"""
+    """Request model for fail transfer"""
     batch_transfer_idx: int
     no_asset_only: bool = False
     skip_sync: bool = False
 
+
+class SendBeginRequestModel(BaseModel):
+    """Request model for send begin"""
+    asset_id: str
+    amount: int
+    recipient_id: str
+    donation: bool | None = False
+    fee_rate: int
+    min_confirmations: int
+    transport_endpoints: list[str]
 # -------------------- Response models -----------------------
 
 
@@ -273,3 +283,8 @@ class RgbAssetPageLoadModel(BaseModel):
 class FailTransferResponseModel(BaseModel):
     """Response model for fail transfer"""
     transfers_changed: bool
+
+
+class SendBeginResult(BaseModel):
+    """Response model for send begin"""
+    psbt : str

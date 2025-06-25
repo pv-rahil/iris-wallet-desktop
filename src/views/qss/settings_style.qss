@@ -110,39 +110,3 @@ QLineEdit#set_expiry_time_value_input,#set_fee_rate_value_input{
     background-color: rgb(36, 44, 70);
     padding-left:10px;
 }
-
-/* Styles for time_unit_combobox QComboBox */
-QComboBox {
-    font: 15px "Inter";
-    font-weight: 400;
-    border: none;
-    border-radius: 4px;
-    background-color: rgb(36, 44, 70);
-    color: rgb(102, 108, 129);
-    padding-left: 10px;
-}
-
-QComboBox QAbstractItemView {
-    background-color: rgb(3, 11, 37);
-    selection-background-color: #292b3e;
-    color: #8e8ea0;
-    border: 0.5px solid rgba(255, 255, 255, 0.5);
-    border-radius:5px;
-    padding:2.5px;
-}
-
-QComboBox::drop-down {
-    border:none;
-    padding-right:15px;
-}
-
-QComboBox::down-arrow {
-    image: url(:/assets/down_arrow.png);
-    width: 16px;
-    height: 16px;
-    border-radius:4px;
-}
-QWidget#scrollAreaWidgetContents_2 {
-    border-radius: 8px;
-    background: transparent;
-}

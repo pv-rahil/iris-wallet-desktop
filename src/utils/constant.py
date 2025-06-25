@@ -13,6 +13,7 @@ LOG_FILE_MAX_BACKUP_COUNT = 5
 MNEMONIC_KEY = 'mnemonic'
 ACCOUNT_XPUB_VANILLA = 'account_xpub_vanilla'
 ACCOUNT_XPUB_COLORED = 'account_xpub_colored'
+MASTER_FINGERPRINT = 'master_fingerprint'
 WALLET_PASSWORD_KEY = 'wallet_password'
 SAVED_INDEXER_URL = 'indexer_url'
 SAVED_PROXY_ENDPOINT = 'proxy_endpoint'
@@ -43,8 +44,8 @@ LOG_FOLDER_NAME = 'logs'
 PING_DNS_ADDRESS_FOR_NETWORK_CHECK = '8.8.8.8'
 PING_DNS_SERVER_CALL_INTERVAL = 5000
 
-INDEXER_URL_REGTEST = 'electrum.rgbtools.org:50041'
-PROXY_ENDPOINT_REGTEST = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
+INDEXER_URL_REGTEST = '127.0.0.1:50001'
+PROXY_ENDPOINT_REGTEST = 'rpc://127.0.0.1:3000/json-rpc'
 
 INDEXER_URL_TESTNET = 'ssl://electrum.iriswallet.com:50013'
 PROXY_ENDPOINT_TESTNET = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
