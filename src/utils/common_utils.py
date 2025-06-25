@@ -149,7 +149,7 @@ def set_qr_code(data):
 
 
 def generate_identicon(data, size=40):
-    """This method generates the identicon for rgb20 asset"""
+    """This method generates the identicon for NIA asset"""
     generator = pydenticon.Generator(
         5, 5,
         foreground=[

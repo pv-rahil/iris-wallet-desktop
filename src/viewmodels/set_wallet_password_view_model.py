@@ -20,7 +20,8 @@ from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.set_wallet_password_model import SetWalletPasswordModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
@@ -144,7 +145,10 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                     file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
                 )
                 local_store.set_value(
-                    ACCOUNT_XPUB, wallet_response.account_xpub,
+                    ACCOUNT_XPUB_VANILLA, wallet_response.account_xpub_vanilla,
+                )
+                local_store.set_value(
+                    ACCOUNT_XPUB_COLORED, wallet_response.account_xpub_colored,
                 )
                 is_password_stored = set_value(
                     WALLET_PASSWORD_KEY, self.password, network.value,

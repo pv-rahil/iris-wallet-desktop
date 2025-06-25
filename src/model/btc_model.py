@@ -22,7 +22,6 @@ class OfflineAsset(BaseModel):
     ticker: str
     balance: Balance
     name: str
-    asset_iface: str = 'BITCOIN'
 
     class Config:
         """Pydantic configuration class allowing arbitrary types."""

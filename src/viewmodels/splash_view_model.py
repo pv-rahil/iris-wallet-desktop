@@ -15,7 +15,8 @@ from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import COMPATIBLE_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import WALLET_PASSWORD_KEY
@@ -149,9 +150,15 @@ class SplashViewModel(QObject, ThreadManager):
                     network = get_bitcoin_network_from_enum(
                         bitcoin_network.__network__,
                     )
-                    account_xpub = local_store.get_value(ACCOUNT_XPUB)
+                    account_xpub_vanilla = local_store.get_value(
+                        ACCOUNT_XPUB_VANILLA,
+                    )
+                    account_xpub_colored = local_store.get_value(
+                        ACCOUNT_XPUB_COLORED,
+                    )
                     wallet = WalletRequestModel(
-                        data_dir=app_paths.app_path, bitcoin_network=network, account_xpub=account_xpub, mnemonic=decrypted_mnemonic,
+                        data_dir=app_paths.app_path, bitcoin_network=network, account_xpub_vanilla=account_xpub_vanilla,
+                        account_xpub_colored=account_xpub_colored, mnemonic=decrypted_mnemonic,
                     )
                     self.run_in_thread(
                         CommonOperationRepository.unlock, {

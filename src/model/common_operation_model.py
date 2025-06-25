@@ -50,7 +50,8 @@ class WalletRequestModel(BaseModel):
     data_dir: str
     bitcoin_network: BitcoinNetwork
     max_allocations_per_utxo: int = MAX_ALLOCATIONS_PER_UTXO
-    account_xpub: str
+    account_xpub_vanilla: str
+    account_xpub_colored: str
     mnemonic: str
     vanilla_keychain: int | None = None
 

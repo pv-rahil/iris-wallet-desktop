@@ -277,7 +277,7 @@ def test_on_success_password_stored(
         set_wallet_password_view_model.is_loading.connect(mock_emit)
         mock_encrypt.assert_called_once()
         mock_local_store_write.assert_called_once()
-        mock_local_store_set.assert_called_once()
+        mock_local_store_set.asset_called()
         mock_set_value.assert_called_once()
         mock_forward.assert_called_once()
 

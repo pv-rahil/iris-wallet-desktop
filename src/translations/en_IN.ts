@@ -320,11 +320,11 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>CHANGE UPLOADED FILE</translation>
     </message>
     <message>
-        <source>issue_new_rgb25_asset</source>
-        <translation>Issue new RGB25 asset</translation>
+        <source>issue_new_cfa_asset</source>
+        <translation>Issue new CFA asset</translation>
     </message>
     <message>
-        <source>rgb25_address_info</source>
+        <source>cfa_address_info</source>
         <translation>The blinded UTXO in this invoice will expire in 24 hours after its creation and will be valid only for this asset</translation>
     </message>
     <message>
@@ -528,8 +528,8 @@ If you understand the above remarks and wish to proceed, press the button below 
       <translation>Fungibles</translation>
     </message>
     <message>
-      <source>issue_new_rgb20_asset</source>
-      <translation>Issue new RGB20 asset</translation>
+      <source>issue_new_nia_asset</source>
+      <translation>Issue new NIA asset</translation>
     </message>
     <message>
       <source>backup_message</source>
@@ -1073,10 +1073,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>This is a watch-only wallet and cannot perform that action</translation>
     </message>
     <message>
-        <source>asset_iface_mismatch</source>
-        <translation>Asset interface mismatch</translation>
-    </message>
-    <message>
         <source>bitcoin_network_mismatch</source>
         <translation>The Bitcoin network does not match the wallet configuration</translation>
     </message>
@@ -1599,22 +1595,6 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>backup_success_info</source>
         <translation>The backup process has been completed successfully!</translation>
-    </message>
-    <message>
-        <source>online_info</source>
-        <translation>In online mode, the application connects to the rgb lib over the network for full functionality.</translation>
-    </message>
-    <message>
-        <source>offline_info</source>
-        <translation>In offline mode, no network connections are made. You must export/import data manually</translation>
-    </message>
-    <message>
-        <source>wallet_connection_description</source>
-        <translation>Choose between online and offline modes. Clicking an option reveals details about it.</translation>
-    </message>
-    <message>
-        <source>connection_type</source>
-        <translation>Wallet connection type</translation>
     </message>
 </context>
 </TS>

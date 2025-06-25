@@ -14,7 +14,7 @@ from unit_tests.service_test_resources.mocked_fun_return_values.issue_asset_serv
 
 
 def test_issue_asset_cfa(mock_issue_asset_cfa):
-    """Case 1 : Issue asset cfa service method test"""
+    """Case 1 : Issue asset CFA service method test"""
     issue_asset_obj = mock_issue_asset_cfa(mock_data_issue_cfa_asset_res)
     response = IssueAssetService.issue_asset_cfa(mock_data_new_asset_issue)
     issue_asset_obj.assert_called_once()

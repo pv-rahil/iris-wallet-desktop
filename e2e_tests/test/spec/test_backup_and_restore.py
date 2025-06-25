@@ -150,6 +150,10 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup):
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
         assert description == INFO_RESTORE_COMPLETED
         with allure.step('Off keyring for restore wallet with keyring off'):
+            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
+                password=PASSWORD,
+            )
+            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
             wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
             wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
@@ -203,3 +207,8 @@ def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup):
             PASSWORD,
         )
         wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+            password=PASSWORD,
+        )

@@ -37,7 +37,8 @@ def test_initialize_wallet(
     mock_app_paths.app_path = '/test/path'
 
     mock_keys = MagicMock()
-    mock_keys.account_xpub = 'test_xpub'
+    mock_keys.account_xpub_vanilla = 'test_xpub_vanilla'
+    mock_keys.account_xpub_colored = 'test_xpub_colored'
     mock_keys.mnemonic = 'skill lamp please gown put season degree collect decline account monitor insane'
     mock_repo.init.return_value = mock_keys
 
@@ -63,7 +64,8 @@ def test_initialize_wallet(
         WalletRequestModel(
             data_dir='/test/path',
             bitcoin_network=BitcoinNetwork.TESTNET.value,
-            account_xpub='test_xpub',
+            account_xpub_vanilla='test_xpub_vanilla',
+            account_xpub_colored='test_xpub_colored',
             mnemonic='skill lamp please gown put season degree collect decline account monitor insane',
         ),
     )

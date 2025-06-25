@@ -17,9 +17,10 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetSchema
 
 import src.resources_rc
-from accessible_constant import ISSUE_RGB25_ASSET
+from accessible_constant import ISSUE_CFA_ASSET
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
@@ -79,7 +80,7 @@ class CollectiblesAssetWidget(QWidget):
             title_name='collectibles', title_logo_path=':/assets/my_asset.png',
         )
         self.collectible_header_frame.action_button.setAccessibleName(
-            ISSUE_RGB25_ASSET,
+            ISSUE_CFA_ASSET,
         )
         self.vertical_layout_2.addWidget(self.collectible_header_frame)
 
@@ -207,7 +208,7 @@ class CollectiblesAssetWidget(QWidget):
             coll_asset.asset_id,
             coll_asset.name,
             image_path=image_path,
-            asset_type=coll_asset.asset_iface,
+            asset_type=AssetSchema.CFA,
         )
         collectibles_frame.setObjectName('collectibles_frame')
         collectibles_frame.setCursor(
@@ -289,7 +290,7 @@ class CollectiblesAssetWidget(QWidget):
         )
         self.collectible_header_frame.action_button.clicked.connect(
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_rgb25_asset_page,
+                self._view_model.page_navigation.issue_cfa_asset_page,
             ),
         )
         self._view_model.main_asset_view_model.loading_started.connect(
@@ -327,10 +328,10 @@ class CollectiblesAssetWidget(QWidget):
         """This method handles collectibles asset click of the main asset page."""
         if asset_id is None or asset_name is None or image_path is None or asset_type is None:
             return
-        self._view_model.rgb25_view_model.asset_info.emit(
+        self._view_model.cfa_view_model.asset_info.emit(
             asset_id, asset_name, image_path, asset_type,
         )
-        self._view_model.page_navigation.rgb25_detail_page(
+        self._view_model.page_navigation.cfa_detail_page(
             RgbAssetPageLoadModel(asset_type=asset_type),
         )
 

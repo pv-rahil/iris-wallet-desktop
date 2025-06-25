@@ -46,7 +46,6 @@ def mock_main_page_data_response():
         nia=[
             AssetNia(
                 asset_id='1',
-                asset_iface='interface1',
                 name='Asset1',
                 details=None,
                 precision=2,
@@ -61,7 +60,6 @@ def mock_main_page_data_response():
             ),
             AssetNia(
                 asset_id='2',
-                asset_iface='interface2',
                 name='Asset2',
                 details=None,
                 precision=2,
@@ -78,7 +76,6 @@ def mock_main_page_data_response():
         uda=[
             AssetUda(
                 asset_id='3',
-                asset_iface='interface3',
                 name='Asset3',
                 details=None,
                 precision=2,
@@ -94,7 +91,6 @@ def mock_main_page_data_response():
             ),
             AssetUda(
                 asset_id='4',
-                asset_iface='interface4',
                 name='Asset4',
                 details=None,
                 precision=2,
@@ -111,7 +107,6 @@ def mock_main_page_data_response():
         cfa=[
             AssetCfa(
                 asset_id='5',
-                asset_iface='interface5',
                 name='Asset5',
                 details=None,
                 precision=2,
@@ -125,7 +120,6 @@ def mock_main_page_data_response():
             ),
             AssetCfa(
                 asset_id='6',
-                asset_iface='interface6',
                 name='Asset6',
                 details=None,
                 precision=2,
@@ -219,13 +213,13 @@ def test_get_assets_failure(
     list_loaded_mock.assert_called_once_with(False)
 
 
-def test_navigate_issue_rgb20_with_enough_balance(
+def test_navigate_issue_nia_with_enough_balance(
     main_asset_view_model,
     mock_btc_repository,
     mock_btc_balance_response_with_positive,
     mock_page_navigation,
 ):
-    """Test navigation to issue rgb20 page with enough balance."""
+    """Test navigation to issue nia page with enough balance."""
     # Mock signals
     message_mock = Mock()
     main_asset_view_model.message.connect(message_mock)

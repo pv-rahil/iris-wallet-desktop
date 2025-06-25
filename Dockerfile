@@ -2,10 +2,10 @@ FROM python:3.12-slim-bookworm
 
 WORKDIR /iris-wallet-vault
 
-# Install poetry
+# install poetry
 RUN python3 -m pip install --no-cache-dir poetry
 
-# Install system dependencies
+# install system dependencies
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
         binutils file sudo wget \
@@ -55,12 +55,12 @@ RUN apt-get update -y \
         git \
         ca-certificates
 
-# Copy project code
+# copy project code
 COPY . .
 
-# Install project dependencies via Poetry
+# install project dependencies via Poetry
 RUN poetry install
 
-# Setup the entrypoint
+# setup the entrypoint
 RUN chmod +x docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]

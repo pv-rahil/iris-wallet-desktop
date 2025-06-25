@@ -102,7 +102,12 @@ Before you begin, ensure you have the following installed:
    ```
    **Note:** `force-build` flags are optional.
 
-7. **Check test results**
+7. **List test cases**<br>
+   ```bash
+   poetry run list-tests
+   ```
+
+8. **Check test results**
    ```bash
    # For results
    poetry run allure-result

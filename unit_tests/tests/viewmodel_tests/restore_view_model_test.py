@@ -24,11 +24,26 @@ def restore_view_model():
     return RestoreViewModel(page_navigation)
 
 
+def test_forward_to_fungibles_page(restore_view_model):
+    """Test navigation to fungibles page."""
+    # Arrange
+    mock_sidebar = MagicMock()
+    restore_view_model._page_navigation.sidebar.return_value = mock_sidebar
+
+    # Act
+    restore_view_model.forward_to_fungibles_page()
+
+    # Assert
+    mock_sidebar.my_fungibles.setChecked.assert_called_once_with(True)
+    restore_view_model._page_navigation.enter_wallet_password_page.assert_called_once()
+
+
 def test_on_success_restore_successful(restore_view_model, mocker):
     """Test successful restore with keyring storage working and password set correctly."""
     # Arrange
     restore_view_model.is_loading = MagicMock()
     restore_view_model.message = MagicMock()
+    restore_view_model.forward_to_fungibles_page = MagicMock()
     restore_view_model.splash_view_model = MagicMock()
 
     restore_view_model.mnemonic = 'test mnemonic'
@@ -77,7 +92,7 @@ def test_on_success_restore_successful(restore_view_model, mocker):
     restore_view_model.message.emit.assert_called_once_with(
         ToastPreset.SUCCESS, INFO_RESTORE_COMPLETED,
     )
-    restore_view_model.splash_view_model.handle_application_open.assert_called_once()
+    restore_view_model.forward_to_fungibles_page.assert_called_once()
 
 
 def test_on_success_restore_failed(restore_view_model):

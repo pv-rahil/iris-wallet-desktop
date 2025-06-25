@@ -127,7 +127,7 @@ class RgbRepository:
         """Issue asset."""
         with repository_custom_context():
             data: AssetNia = colored_wallet.wallet.issue_asset_nia(
-                online=colored_wallet.online, ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
+                ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -140,7 +140,7 @@ class RgbRepository:
         """Issue asset."""
         with repository_custom_context():
             data: AssetCfa = colored_wallet.wallet.issue_asset_cfa(
-                online=colored_wallet.online, details=asset.ticker, name=asset.name,
+                details=asset.ticker, name=asset.name,
                 precision=asset.precision, amounts=asset.amounts, file_path=asset.file_path,
             )
             cache = Cache.get_cache_session()
@@ -154,7 +154,7 @@ class RgbRepository:
         """Issue asset."""
         with repository_custom_context():
             data: AssetUda = colored_wallet.wallet.issue_asset_uda(
-                online=colored_wallet.online, details=asset.ticker, name=asset.name, ticker=asset.ticker,
+                details=asset.ticker, name=asset.name, ticker=asset.ticker,
                 precision=asset.precision, media_file_path=asset.file_path, attachments_file_paths=asset.attachments_file_paths,
             )
             cache = Cache.get_cache_session()

@@ -3,11 +3,13 @@ End-to-End testing script.
 """
 from __future__ import annotations
 
+import os
 import signal
 import subprocess
 import sys
 
 E2E_SCRIPT = './run_e2e_tests.sh'
+SPEC_DIR = os.path.join(os.path.dirname(__file__), 'test', 'spec')
 
 
 def run_e2e(extra_args=None):
@@ -86,3 +88,15 @@ def run_regtest(extra_args=None):
     if extra_args:
         cmd.extend(extra_args)
     subprocess.run(cmd, check=True)
+
+
+def list_tests():
+    """Lists all test files in the spec directory."""
+    if not os.path.isdir(SPEC_DIR):
+        print(f"Spec directory '{SPEC_DIR}' does not exist.")
+        sys.exit(1)
+
+    print('Available test specs:\n')
+    for filename in sorted(os.listdir(SPEC_DIR)):
+        if filename.endswith('.py'):
+            print(f"- {filename}")
