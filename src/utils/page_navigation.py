@@ -11,13 +11,12 @@ from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.views.components.error_report_dialog_box import ErrorReportDialog
-from src.views.components.selection_breadcrumb_widget import SelectionBreadcrumbWidget
-from src.views.components.wallet_mode_summary_dialog import WalletModeSummaryDialog
 from src.views.main_window import MainWindow
 from src.views.ui_about import AboutWidget
 from src.views.ui_backup import Backup
 from src.views.ui_bitcoin import BtcWidget
 from src.views.ui_bitcoin_transaction import BitcoinTransactionDetail
+from src.views.ui_broadcast_transaction import BroadcastTransactionWidget
 from src.views.ui_collectible_asset import CollectiblesAssetWidget
 from src.views.ui_enter_wallet_password import EnterWalletPassword
 from src.views.ui_faucets import FaucetsWidget
@@ -30,8 +29,8 @@ from src.views.ui_receive_bitcoin import ReceiveBitcoinWidget
 from src.views.ui_receive_rgb_asset import ReceiveRGBAssetWidget
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
 from src.views.ui_rgb_asset_transaction_detail import RGBAssetTransactionDetail
+from src.views.ui_selection_breadcrumb_page import SelectionBreadcrumbWidget
 from src.views.ui_send_bitcoin import SendBitcoinWidget
-from src.views.ui_broadcast_transaction import BroadcastTransactionWidget
 from src.views.ui_send_rgb_asset import SendRGBAssetWidget
 from src.views.ui_set_wallet_password import SetWalletPasswordWidget
 from src.views.ui_settings import SettingsWidget
@@ -53,7 +52,6 @@ class PageNavigation:
             'Welcome': WelcomeWidget,
             # 'SelectionPage': SelectionPageWidget,
             'SelectionPage': SelectionBreadcrumbWidget,
-            'WalletModeSummaryPage': WalletModeSummaryDialog,
             'HardwareWalletConnectPage': HardwareWalletConnectWidget,
             'TermCondition': TermConditionWidget,
             'FungibleAssetWidget': FungibleAssetWidget,
@@ -78,7 +76,7 @@ class PageNavigation:
             'AboutWidget': AboutWidget,
             'FaucetsWidget': FaucetsWidget,
             'HelpWidget': HelpWidget,
-            'BroadcastTransactionWidget':BroadcastTransactionWidget,
+            'BroadcastTransactionWidget': BroadcastTransactionWidget,
         }
 
         self.event_based_navigation.navigate_to_page_signal.connect(
@@ -92,9 +90,6 @@ class PageNavigation:
         )
         self.event_based_navigation.selection_page_signal.connect(
             self.selection_page,
-        )
-        self.event_based_navigation.wallet_mode_summary_page_signal.connect(
-            self.wallet_mode_summary_page,
         )
         self.event_based_navigation.hardware_wallet_connect_page_signal.connect(
             self.hardware_wallet_connect_page,
@@ -225,10 +220,6 @@ class PageNavigation:
             'widget': self.pages['SelectionPage'](self._ui.view_model),
         }
         self.navigate_and_toggle(False)
-
-    def wallet_mode_summary_page(self):
-        """This method display wallet mode summary page"""
-        self.navigate_to_page('WalletModeSummaryPage')
 
     def hardware_wallet_connect_page(self):
         """This method display wallet mode summary page"""

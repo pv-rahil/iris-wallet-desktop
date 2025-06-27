@@ -15,10 +15,11 @@ from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB_COLORED, MASTER_FINGERPRINT
+from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import COMPATIBLE_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
@@ -161,7 +162,7 @@ class SplashViewModel(QObject, ThreadManager):
                     )
                     wallet = WalletRequestModel(
                         data_dir=app_paths.app_path, bitcoin_network=network, account_xpub_vanilla=account_xpub_vanilla,
-                        account_xpub_colored=account_xpub_colored, mnemonic=decrypted_mnemonic,master_fingerprint=master_fingerprint,
+                        account_xpub_colored=account_xpub_colored, mnemonic=decrypted_mnemonic, master_fingerprint=master_fingerprint,
                     )
                     self.run_in_thread(
                         CommonOperationRepository.unlock, {

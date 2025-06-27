@@ -31,11 +31,14 @@ from accessible_constant import BITCOIN_SPENDABLE_BALANCE
 from accessible_constant import BITCOIN_TRANSACTION_DETAIL_FRAME
 from accessible_constant import RECEIVE_BITCOIN_BUTTON
 from accessible_constant import SEND_BITCOIN_BUTTON
+from src.config.wallet_mode_config import WalletModeConfiguration
+from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import TransactionListResponse
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
+from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.common_utils import network_info
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -55,6 +58,8 @@ class BtcWidget(QWidget):
         self.render_timer.start()
         super().__init__()
         self._view_model: MainViewModel = view_model
+        config = get_current_wallet_mode_config()
+        self.priv = config.privileges
         self.network = ''
         self.__loading_translucent_screen = None
         self.setStyleSheet(load_stylesheet('views/qss/bitcoin_style.qss'))
@@ -554,8 +559,10 @@ class BtcWidget(QWidget):
         self.__loading_translucent_screen.stop()
         self.render_timer.stop()
         self.refresh_button.setDisabled(False)
-        self.send_asset_btn.setDisabled(False)
-        self.receive_asset_btn.setDisabled(False)
+        self.send_asset_btn.setDisabled(not self.priv.can_send_transactions)
+        self.receive_asset_btn.setDisabled(
+            not self.priv.can_receive_transactions,
+        )
 
     def get_transaction_timestamp(self, confirmation_timestamp):
         """Return formatted date and time for a given timestamp."""

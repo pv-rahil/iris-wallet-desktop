@@ -56,7 +56,7 @@ class SelectionPage(QWidget):
             ),
         )
         self._view_model: MainViewModel = view_model
-        self._params: SelectionPageModel = params
+        self.params: SelectionPageModel = params
         self.selected_frame = None
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
@@ -110,7 +110,7 @@ class SelectionPage(QWidget):
         self.select_option_layout.setContentsMargins(50, 0, 0, 0)
         self.select_option_layout.setSpacing(50)
         self.option_1_frame = ClickableFrame(
-            self._params.logo_1_title,
+            self.params.logo_1_title,
         )
         self.option_1_frame.setObjectName('option_1_frame')
         # self.option_1_frame.setAccessibleName(OPTION_1_FRAME)
@@ -128,7 +128,7 @@ class SelectionPage(QWidget):
         self.option_2_logo.setMinimumSize(QSize(100, 100))
         self.option_2_logo.setMaximumSize(QSize(100, 100))
         self.option_2_logo.setStyleSheet('border:none')
-        self.option_2_logo.setPixmap(QPixmap(self._params.logo_1_path))
+        self.option_2_logo.setPixmap(QPixmap(self.params.logo_1_path))
         # Allow the pixmap to scale within the label
         self.option_2_logo.setScaledContents(True)
         self.option_2_logo.setMaximumSize(
@@ -155,7 +155,7 @@ class SelectionPage(QWidget):
         self.select_option_layout.addWidget(self.option_1_frame, Qt.AlignLeft)
 
         self.option_2_frame = ClickableFrame(
-            self._params.logo_2_title, self.widget_page,
+            self.params.logo_2_title, self.widget_page,
         )
         self.option_2_frame.setObjectName('option_2_frame')
         # self.option_2_frame.setAccessibleName(OPTION_2_FRAME)
@@ -172,7 +172,7 @@ class SelectionPage(QWidget):
         self.option_1_logo_label.setObjectName('option_1_logo_label')
         self.option_1_logo_label.setMaximumSize(QSize(100, 100))
         self.option_1_logo_label.setStyleSheet('border:none')
-        self.option_1_logo_label.setPixmap(QPixmap(self._params.logo_2_path))
+        self.option_1_logo_label.setPixmap(QPixmap(self.params.logo_2_path))
         # Allow the pixmap to scale within the label
         self.option_1_logo_label.setScaledContents(True)
         self.option_1_logo_label.setMaximumSize(
@@ -269,26 +269,26 @@ class SelectionPage(QWidget):
         self.retranslate_ui()
         self.setup_ui_connection()
         # Select option 1 by default and show info frame
-        self.selected_frame = self._params.logo_1_title
-        self.on_click_frame(self._params.logo_1_title, True)
+        self.selected_frame = self.params.logo_1_title
+        self.on_click_frame(self.params.logo_1_title, True)
         self.info_frame.show()
-        self._set_text_for_frame_info(self._params.logo_1_title)
+        self._set_text_for_frame_info(self.params.logo_1_title)
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
         self.title_text.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, self._params.title, None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, self.params.title, None,
             ),
         )
         self.option_1_text_label.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, self._params.logo_1_title, None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, self.params.logo_1_title, None,
             ),
         )
         self.option_2_text_label.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, self._params.logo_2_title, None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, self.params.logo_2_title, None,
             ),
         )
         self.continue_button.setText(
@@ -314,41 +314,41 @@ class SelectionPage(QWidget):
         self.on_click_frame(_id, True)
         self.selected_frame = _id
         # Emit the signal with the new title and logo
-        if _id == self._params.logo_1_title:
+        if _id == self.params.logo_1_title:
             self.selection_changed.emit(
-                self._params.logo_1_title, self._params.logo_1_path,
+                self.params.logo_1_title, self.params.logo_1_path,
             )
-        elif _id == self._params.logo_2_title:
+        elif _id == self.params.logo_2_title:
             self.selection_changed.emit(
-                self._params.logo_2_title, self._params.logo_2_path,
+                self.params.logo_2_title, self.params.logo_2_path,
             )
 
     def _set_text_for_frame_info(self, _id):
         """This method sets the text for the information label for the selected frame."""
-        if _id == self._params.logo_1_title:
+        if _id == self.params.logo_1_title:
             self.wallet_connection_info_label.setText(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, self._params.logo_1_info, None,
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, self.params.logo_1_info, None,
                 ),
             )
 
-        elif _id == self._params.logo_2_title:
+        elif _id == self.params.logo_2_title:
             self.wallet_connection_info_label.setText(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, self._params.logo_2_info, None,
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, self.params.logo_2_info, None,
                 ),
             )
 
     def on_click_frame(self, _id, is_selected: bool):
         """Handles frame click styling."""
         if is_selected:
-            if _id == self._params.logo_1_title:
+            if _id == self.params.logo_1_title:
                 self.option_1_frame.setStyleSheet(
                     load_stylesheet(
                         'views/qss/style.qss',
                     ),
                 )
-            elif _id == self._params.logo_2_title:
+            elif _id == self.params.logo_2_title:
                 self.option_2_frame.setStyleSheet(
                     load_stylesheet(
                         'views/qss/style.qss',
@@ -356,13 +356,13 @@ class SelectionPage(QWidget):
                 )
 
         else:
-            if _id == self._params.logo_1_title:
+            if _id == self.params.logo_1_title:
                 self.option_1_frame.setStyleSheet(
                     load_stylesheet(
                         'views/qss/wallet_selection_style.qss',
                     ),
                 )
-            elif _id == self._params.logo_2_title:
+            elif _id == self.params.logo_2_title:
                 self.option_2_frame.setStyleSheet(
                     load_stylesheet(
                         'views/qss/wallet_selection_style.qss',
@@ -406,10 +406,10 @@ class SelectionPage(QWidget):
     def reset_selection(self):
         """This method reset the selection"""
         # Reset the selection to initial state (select first option by default)
-        self.selected_frame = self._params.logo_1_title
-        self.on_click_frame(self._params.logo_1_title, True)
+        self.selected_frame = self.params.logo_1_title
+        self.on_click_frame(self.params.logo_1_title, True)
         self.info_frame.show()
-        self._set_text_for_frame_info(self._params.logo_1_title)
+        self._set_text_for_frame_info(self.params.logo_1_title)
 
     def clear_all_types(self):
         """Clear all stored wallet types."""

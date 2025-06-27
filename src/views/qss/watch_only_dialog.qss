@@ -1,0 +1,42 @@
+QDialog#watch_only_xpub_dialog {
+    background: transparent;
+    border: 1px solid rgb(102, 108, 129);
+    background-color: rgb(3, 11, 37);
+    border-radius: 8px;
+}
+QFrame {
+    background: transparent;
+    border: none;
+}
+QLabel#info_label {
+    color: rgb(102, 108, 129);
+    font-size: 15px;
+    padding-left:5px;
+}
+QLabel#header_label {
+    color: #FFFFFF;
+    font-size: 22px;
+    font-weight: 400;
+    padding-left:2px;
+}
+QLineEdit {
+    font: 15px "Inter";
+    color: rgb(102, 108, 129);
+    border-radius: 4px;
+    background-color: rgb(36, 44, 70);
+    padding-left:10px;
+    max-width:400px;
+    max-height:30px;
+}
+QCheckBox {
+    color: #e0e3eb;
+    font-size: 15px;
+    padding-left: 11px;
+    padding-top:5px;
+}
+QLabel#error_label {
+    color: #ff5c5c;
+    font-size: 14px;
+    padding-top: 4px;
+    padding-left:8px;
+}

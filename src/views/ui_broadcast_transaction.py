@@ -1,6 +1,6 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, unused-import
-"""This module contains the SendLnInvoiceWidget class,
-which represents the UI for send ln invoice page.
+"""
+Widget for broadcasting signed transactions (PSBTs) in the application.
 """
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QComboBox
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
@@ -19,28 +20,33 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
-from PySide6.QtWidgets import QComboBox
 
 import src.resources_rc
-from src.model.enums.enums_model import AssetType, ToastPreset
-# from src.model.invoices_model import DecodeInvoiceResponseModel
+from src.model.enums.enums_model import ToastPreset
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
-from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-from src.data.repository.colored_wallet import colored_wallet
+# from src.model.invoices_model import DecodeInvoiceResponseModel
 
 
 class BroadcastTransactionWidget(QWidget):
-    """This class represents all the UI elements of the send ln invoice page."""
+    """
+    Widget for broadcasting signed transactions (PSBTs) in the application.
+    """
 
     def __init__(self, view_model):
+        """
+        Initialize the BroadcastTransactionWidget.
+        """
         super().__init__()
-        self.render_timer = RenderTimer(task_name='Broadcast Transaction Rendering')
+        self.sidebar = None
+        self.render_timer = RenderTimer(
+            task_name='Broadcast Transaction Rendering',
+        )
         self._view_model: MainViewModel = view_model
         self.setStyleSheet(
             load_stylesheet(
@@ -60,9 +66,11 @@ class BroadcastTransactionWidget(QWidget):
         )
 
         self.broadcast_transaction_widget = QWidget(self)
-        self.broadcast_transaction_widget.setObjectName('broadcast_transaction_widget')
-        self.broadcast_transaction_widget.setMinimumSize(QSize(800, 729))
-        self.broadcast_transaction_widget.setMaximumSize(QSize(800, 16777215))
+        self.broadcast_transaction_widget.setObjectName(
+            'broadcast_transaction_widget',
+        )
+        self.broadcast_transaction_widget.setMinimumSize(QSize(630, 450))
+        self.broadcast_transaction_widget.setMaximumSize(QSize(630, 450))
         self.vertical_layout = QVBoxLayout(self.broadcast_transaction_widget)
         self.vertical_layout.setObjectName('verticalLayout')
         self.vertical_layout.addSpacing(10)
@@ -71,7 +79,9 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_title_layout.setObjectName(
             'broadcast_transaction_title_layout',
         )
-        self.broadcast_transaction_title_layout.setContentsMargins(12, -1, 6, -1)
+        self.broadcast_transaction_title_layout.setContentsMargins(
+            22, -1, 6, -1,
+        )
         self.broadcast_transaction_title_label = QLabel(self)
         self.broadcast_transaction_title_label.setObjectName(
             'broadcast_transaction_title_label',
@@ -105,7 +115,9 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_title_layout.addWidget(
             self.close_btn_broadcast_transaction_page,
         )
-        self.broadcast_transaction_title_layout.addStretch(1)  # Keep combobox left-aligned
+        self.broadcast_transaction_title_layout.addStretch(
+            1,
+        )  # Keep combobox left-aligned
         self.vertical_layout.addLayout(self.broadcast_transaction_title_layout)
 
         self.header_line = QFrame(self.broadcast_transaction_widget)
@@ -114,8 +126,12 @@ class BroadcastTransactionWidget(QWidget):
         self.header_line.setFrameShadow(QFrame.Shadow.Sunken)
         self.vertical_layout.addWidget(self.header_line)
 
-        self.broadcast_transaction_label = QLabel(self.broadcast_transaction_widget)
-        self.broadcast_transaction_label.setObjectName('broadcast_transaction_label')
+        self.broadcast_transaction_label = QLabel(
+            self.broadcast_transaction_widget,
+        )
+        self.broadcast_transaction_label.setObjectName(
+            'broadcast_transaction_label',
+        )
         self.broadcast_transaction_label.setMinimumSize(QSize(0, 50))
         self.broadcast_transaction_label.setMaximumSize(QSize(16777215, 50))
         self.broadcast_transaction_label.setBaseSize(QSize(0, 0))
@@ -125,36 +141,50 @@ class BroadcastTransactionWidget(QWidget):
         self.vertical_layout.addWidget(self.broadcast_transaction_label)
         # Add a label for the method selector
         self.method_selector_label = QLabel(self.broadcast_transaction_widget)
-        self.method_selector_label.setObjectName("broadcast_method_label")
+        self.method_selector_label.setObjectName('broadcast_method_label')
 
         # Add the method selector dropdown
         self.horizontal_layout_2 = QHBoxLayout()
-        self.horizontal_layout_2.setContentsMargins(0,15,0,15)
+        self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
         self.method_selector = QComboBox(self.broadcast_transaction_widget)
         self.method_selector.addItems([
-            "Broadcast UTXO",
-            "Broadcast Send BTC",
-            "Broadcast Send Asset"
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_issue_asset',
+            ),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_btc',
+            ),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_asset',
+            ),
         ])
         self.method_selector.setCurrentIndex(0)
         self.method_selector.setFixedWidth(300)
+        self.method_selector.setFixedHeight(40)
         self.horizontal_layout_2.addWidget(self.method_selector_label)
         self.horizontal_layout_2.addWidget(self.method_selector)
         self.horizontal_layout_2.addStretch(1)  # Keep combobox left-aligned
         self.vertical_layout.addLayout(self.horizontal_layout_2)
 
         self.horizontal_layout_1 = QHBoxLayout()
-        self.broadcast_transaction_input = QPlainTextEdit(self.broadcast_transaction_widget)
-        self.broadcast_transaction_input.setObjectName('broadcast_transaction_input')
+        self.broadcast_transaction_input = QPlainTextEdit(
+            self.broadcast_transaction_widget,
+        )
+        self.broadcast_transaction_input.setObjectName(
+            'broadcast_transaction_input',
+        )
         self.broadcast_transaction_input.setMinimumSize(QSize(550, 50))
         self.broadcast_transaction_input.setMaximumSize(QSize(550, 155))
+        self.broadcast_transaction_input.setStyleSheet(
+            load_stylesheet('views/qss/scrollbar.qss'),
+        )
         self.horizontal_spacer_1 = QSpacerItem(
             40, 20, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum,
         )
         self.horizontal_layout_1.addWidget(self.broadcast_transaction_input)
-        self.horizontal_layout_1.addSpacerItem(self.horizontal_spacer_1)
+        # self.horizontal_layout_1.addSpacerItem(self.horizontal_spacer_1)
         self.vertical_layout.addLayout(
-            self.horizontal_layout_1
+            self.horizontal_layout_1,
         )
         self.vertical_spacer = QSpacerItem(
             20, 30, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
@@ -165,14 +195,20 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_button_horizontal_layout.setObjectName(
             'broadcast_button_horizontal_layout',
         )
-        self.broadcast_button_horizontal_layout.setContentsMargins(-1, 15, -1, 15)
+        self.broadcast_button_horizontal_layout.setContentsMargins(
+            -1, 0, -1, 25,
+        )
         self.broadcast_button = PrimaryButton()
         self.broadcast_button.setMinimumSize(QSize(0, 40))
-        self.broadcast_button.setMaximumSize(QSize(402, 16777215))
-        self.broadcast_button_horizontal_layout.addWidget(self.broadcast_button)
+        self.broadcast_button.setMaximumSize(QSize(270, 16777215))
+        self.broadcast_button_horizontal_layout.addWidget(
+            self.broadcast_button,
+        )
         self.vertical_layout.addLayout(self.broadcast_button_horizontal_layout)
 
-        self.grid_layout.addWidget(self.broadcast_transaction_widget, 1, 1, 2, 2)
+        self.grid_layout.addWidget(
+            self.broadcast_transaction_widget, 1, 1, 2, 2,
+        )
         self.enter_ln_invoice_horizontal_spacer_2 = QSpacerItem(
             49, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
@@ -191,11 +227,7 @@ class BroadcastTransactionWidget(QWidget):
         self.grid_layout.addItem(
             self.enter_ln_invoice_vertical_spacer_2, 3, 1, 1, 1,
         )
-        self.broadcast_transaction_widget.setMinimumSize(QSize(650, 400))
         self.broadcast_button.setDisabled(True)
-        self.__loading_translucent_screen = LoadingTranslucentScreen(
-            parent=self, description_text='Loading',
-        )
         self.retranslate_ui()
         self.setup_ui_connection()
         # Always show input and label
@@ -204,60 +236,82 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_button.setVisible(True)
 
     def setup_ui_connection(self):
-        """Set up connections for UI elements."""
-        self.broadcast_transaction_input.textChanged.connect(self.handle_button_enable)
+        """
+        Set up connections for UI elements.
+        """
+        self.broadcast_transaction_input.textChanged.connect(
+            self.handle_button_enable,
+        )
         self.broadcast_button.clicked.connect(self.send_asset)
         self.close_btn_broadcast_transaction_page.clicked.connect(
             self.on_click_close_button,
         )
-        # Connect loading signal from the broadcast transaction view model
-        self._view_model.broadcast_transaction_view_model.is_loading.connect(self.update_loading_state)
+        self._view_model.broadcast_transaction_view_model.is_loading.connect(
+            self.update_loading_state,
+        )
 
     def retranslate_ui(self):
-        """Retranslate the UI elements."""
+        """
+        Retranslate the UI elements.
+        """
         self.broadcast_transaction_title_label.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction_title_label', None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction_title_label',
             ),
         )
         self.broadcast_transaction_label.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction_label', None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction_label',
             ),
         )
         self.broadcast_button.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction', None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
             ),
         )
         self.method_selector_label.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_broadcast_type', None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_broadcast_type',
             ),
         )
 
     def send_asset(self):
-        """This method is used to broadcast the signed PSBT"""
+        """
+        Broadcast the signed PSBT using the selected method.
+        """
         signed_psbt = self.broadcast_transaction_input.toPlainText()
         method = self.method_selector.currentText()
-        if method == "Broadcast UTXO":
-            self._view_model.broadcast_transaction_view_model.create_utxos_end(signed_psbt)
-        elif method == "Broadcast Send BTC":
-            self._view_model.broadcast_transaction_view_model.send_btc_end(signed_psbt)
-        elif method == "Broadcast Send Asset":
-            self._view_model.broadcast_transaction_view_model.send_end(signed_psbt)
+        if method == 'Broadcast UTXO':
+            self._view_model.broadcast_transaction_view_model.create_utxos_end(
+                signed_psbt,
+            )
+        elif method == 'Broadcast Send BTC':
+            self._view_model.broadcast_transaction_view_model.send_btc_end(
+                signed_psbt,
+            )
+        elif method == 'Broadcast Send Asset':
+            self._view_model.broadcast_transaction_view_model.send_end(
+                signed_psbt,
+            )
 
     def on_success_sent_navigation(self):
-        """This method is used to navigate to collectibles or fungibles page when the originating page is create ln invoice"""
+        """
+        Navigate to collectibles or fungibles page when the originating page is create ln invoice.
+        """
         self._view_model.page_navigation.fungibles_asset_page()
 
     def handle_button_enable(self):
+        """
+        Enable or disable the broadcast button based on input and method selection.
+        """
         method_selected = self.method_selector.currentIndex() >= 0
         has_input = bool(self.broadcast_transaction_input.toPlainText())
         self.broadcast_button.setDisabled(not (method_selected and has_input))
 
     def update_loading_state(self, is_loading: bool):
-        """Updates the loading state of the send button."""
+        """
+        Updates the loading state of the send button.
+        """
         if is_loading:
             self.render_timer.start()
             self.broadcast_button.start_loading()
@@ -275,7 +329,6 @@ class BroadcastTransactionWidget(QWidget):
         originating_page = self.get_checked_button_translation_key(
             self.sidebar,
         )
-
         navigation_map = {
             'fungibles': self._view_model.page_navigation.fungibles_asset_page,
             'NIA': self._view_model.page_navigation.fungibles_asset_page,
@@ -287,7 +340,7 @@ class BroadcastTransactionWidget(QWidget):
             'settings': self._view_model.page_navigation.settings_page,
             'backup': self._view_model.page_navigation.backup_page,
             'about': self._view_model.page_navigation.about_page,
-            'broadcast_transaction':self._view_model.page_navigation.broadcast_transaction_page,
+            'broadcast_transaction': self._view_model.page_navigation.broadcast_transaction_page,
         }
         broadcast_navigation = navigation_map.get(originating_page)
         if broadcast_navigation:

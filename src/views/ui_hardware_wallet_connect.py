@@ -1,10 +1,13 @@
+# pylint: disable = too-many-statements,invalid-name,too-many-instance-attributes
+"""
+Widget for connecting to a hardware wallet in the application.
+"""
 from __future__ import annotations
 
-import hwilib.commands
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QEvent
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
-from PySide6.QtCore import Signal
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
@@ -21,23 +24,29 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletEntryType
 from src.utils.clickable_frame import ClickableFrame
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.hw_device_selection_dialog import HWDeviceSelectionDialog
-from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
 
 
 class HardwareWalletConnectWidget(QWidget):
+    """
+    Widget for connecting to a hardware wallet in the application.
+    """
+
     def __init__(self, view_model):
+        """
+        Initialize the HardwareWalletConnectWidget.
+        """
         super().__init__()
         self._view_model: MainViewModel = view_model
-        self.selected_wallet = None
+        self._selected_wallet = None
         self.setObjectName('hardware_wallet_connect_page')
         self.setStyleSheet(
             load_stylesheet(
@@ -50,8 +59,8 @@ class HardwareWalletConnectWidget(QWidget):
         main_grid.setObjectName('hardware_wallet_connect_grid_layout')
 
         # Wallet logo frame at the top
-        self.wallet_logo = WalletLogoFrame(self)
-        main_grid.addWidget(self.wallet_logo, 0, 0, 1, 1)
+        _wallet_logo = WalletLogoFrame(self)
+        main_grid.addWidget(_wallet_logo, 0, 0, 1, 1)
 
         # Top vertical spacer (more space)
         vertical_spacer_1 = QSpacerItem(
@@ -60,41 +69,39 @@ class HardwareWalletConnectWidget(QWidget):
         main_grid.addItem(vertical_spacer_1, 0, 2, 1, 1)
 
         # Centered card (QFrame)
-        card = QFrame(self)
-        card.setObjectName('hardware_wallet_connect_card')
-        card.setMinimumSize(QSize(520, 380))
-        card.setMaximumSize(QSize(600, 700))
-        card_layout = QVBoxLayout(card)
-        card_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        card_layout.setContentsMargins(40, 40, 40, 40)
-        card_layout.setSpacing(28)
+        self.card = QFrame(self)
+        self.card.setObjectName('hardware_wallet_connect_card')
+        self.card.setMinimumSize(QSize(520, 380))
+        self.card.setMaximumSize(QSize(600, 700))
+        self.card_layout = QVBoxLayout(self.card)
+        self.card_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.card_layout.setContentsMargins(40, 40, 40, 40)
+        self.card_layout.setSpacing(28)
 
         # Title and close button in one row
         title_close_layout = QHBoxLayout()
         title_close_layout.setContentsMargins(0, 0, 0, 0)
         title_close_layout.setSpacing(8)
-        title = QLabel('Connect a hardware wallet')
-        title.setObjectName('hardware_wallet_connect_title')
-        title_close_layout.addWidget(title)
+        self.title = QLabel()
+        self.title.setObjectName('hardware_wallet_connect_title')
+        title_close_layout.addWidget(self.title)
         title_close_layout.addStretch()
-        close_btn = QPushButton()
-        close_btn.setObjectName('close_button')
-        close_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        close_btn.setFixedSize(38, 38)
+        self.close_btn = QPushButton()
+        self.close_btn.setObjectName('close_button')
+        self.close_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.close_btn.setFixedSize(38, 38)
         close_icon = QIcon(':/assets/x_circle.png')
-        close_btn.setIcon(close_icon)
-        close_btn.setIconSize(QSize(24, 24))
-        close_btn.clicked.connect(self.handle_close)
-        title_close_layout.addWidget(close_btn)
-        card_layout.addLayout(title_close_layout)
+        self.close_btn.setIcon(close_icon)
+        self.close_btn.setIconSize(QSize(24, 24))
+        self.close_btn.clicked.connect(self.handle_close)
+        title_close_layout.addWidget(self.close_btn)
+        self.card_layout.addLayout(title_close_layout)
 
         # Subtitle
-        subtitle = QLabel(
-            'Select a hardware wallet you would like to use with this app.',
-        )
-        subtitle.setObjectName('hardware_wallet_connect_subtitle')
-        subtitle.setWordWrap(True)
-        card_layout.addWidget(subtitle)
+        self.subtitle = QLabel()
+        self.subtitle.setObjectName('hardware_wallet_connect_subtitle')
+        self.subtitle.setWordWrap(True)
+        self.card_layout.addWidget(self.subtitle)
 
         # Wallet options (centered grid, more spacing)
         grid_frame = QFrame()
@@ -102,92 +109,95 @@ class HardwareWalletConnectWidget(QWidget):
         horizontal_layout.setSpacing(15)
         horizontal_layout.setContentsMargins(12, 0, 0, 0)
         horizontal_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.option_buttons = []
+        self._option_buttons = []
 
         # Ledger option
-        ledger_btn = ClickableFrame()
-        ledger_btn.setObjectName('hardware_wallet_option')
-        ledger_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        ledger_btn.setFixedSize(197, 115)
-        ledger_btn.setProperty('selected', False)
-        ledger_layout = QVBoxLayout(ledger_btn)
+        self.ledger_btn = ClickableFrame()
+        self.ledger_btn.setObjectName('hardware_wallet_option')
+        self.ledger_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.ledger_btn.setFixedSize(197, 115)
+        self.ledger_btn.setProperty('selected', False)
+        ledger_layout = QVBoxLayout(self.ledger_btn)
         ledger_layout.setContentsMargins(0, 0, 0, 0)
         ledger_layout.setSpacing(20)
         ledger_icon = QLabel()
         ledger_icon.setObjectName('hardware_wallet_icon')
         ledger_icon.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        ledger_btn.icon_label = ledger_icon
-        ledger_btn.original_icon_path = ':/assets/ledger.png'
-        ledger_btn.hover_icon_path = ':/assets/white_ledger.png'
-        ledger_pixmap = QPixmap(ledger_btn.original_icon_path)
+        self.ledger_btn.icon_label = ledger_icon
+        self.ledger_btn.original_icon_path = ':/assets/ledger.png'
+        self.ledger_btn.hover_icon_path = ':/assets/white_ledger.png'
+        ledger_pixmap = QPixmap(self.ledger_btn.original_icon_path)
         ledger_icon.setPixmap(
             ledger_pixmap.scaled(
                 125, 125, Qt.KeepAspectRatio, Qt.SmoothTransformation,
             ),
         )
-        ledger_label = QLabel('Ledger')
-        ledger_label.setObjectName('hardware_wallet_option_name')
-        ledger_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        ledger_btn.name_label = ledger_label
+        self.ledger_label = QLabel()
+        self.ledger_label.setObjectName('hardware_wallet_option_name')
+        self.ledger_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.ledger_btn.name_label = self.ledger_label
         ledger_layout.addWidget(ledger_icon)
-        ledger_layout.addWidget(ledger_label)
-        ledger_btn.clicked.connect(
-            self._make_option_click_handler(ledger_btn, 'Ledger'),
+        ledger_layout.addWidget(self.ledger_label)
+        self.ledger_btn.clicked.connect(
+            self._make_option_click_handler(self.ledger_btn, 'Ledger'),
         )
-        ledger_btn.installEventFilter(self)
-        self.option_buttons.append(ledger_btn)
-        horizontal_layout.addWidget(ledger_btn)
+        self.ledger_btn.installEventFilter(self)
+        self._option_buttons.append(self.ledger_btn)
+        horizontal_layout.addWidget(self.ledger_btn)
 
         # Trezor option
-        trezor_btn = ClickableFrame()
-        trezor_btn.setObjectName('hardware_wallet_option')
-        trezor_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        trezor_btn.setFixedSize(197, 115)
-        trezor_btn.setProperty('selected', False)
-        trezor_layout = QVBoxLayout(trezor_btn)
+        self.trezor_btn = ClickableFrame()
+        self.trezor_btn.setObjectName('hardware_wallet_option')
+        self.trezor_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.trezor_btn.setFixedSize(197, 115)
+        self.trezor_btn.setProperty('selected', False)
+        trezor_layout = QVBoxLayout(self.trezor_btn)
         trezor_layout.setContentsMargins(0, 0, 0, 0)
         trezor_layout.setSpacing(25)
         trezor_icon = QLabel()
         trezor_icon.setObjectName('hardware_wallet_icon')
         trezor_icon.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        trezor_btn.icon_label = trezor_icon
-        trezor_btn.original_icon_path = ':/assets/trezor.png'
-        trezor_btn.hover_icon_path = ':/assets/white_trezor.png'
-        trezor_pixmap = QPixmap(trezor_btn.original_icon_path)
+        self.trezor_btn.icon_label = trezor_icon
+        self.trezor_btn.original_icon_path = ':/assets/trezor.png'
+        self.trezor_btn.hover_icon_path = ':/assets/white_trezor.png'
+        trezor_pixmap = QPixmap(self.trezor_btn.original_icon_path)
         trezor_icon.setPixmap(
             trezor_pixmap.scaled(
                 125, 125, Qt.KeepAspectRatio, Qt.SmoothTransformation,
             ),
         )
-        trezor_label = QLabel('Trezor')
-        trezor_label.setObjectName('hardware_wallet_option_name')
-        trezor_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        trezor_btn.name_label = trezor_label
+        self.trezor_label = QLabel()
+        self.trezor_label.setObjectName('hardware_wallet_option_name')
+        self.trezor_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.trezor_btn.name_label = self.trezor_label
         trezor_layout.addWidget(trezor_icon)
-        trezor_layout.addWidget(trezor_label)
-        trezor_btn.clicked.connect(
-            self._make_option_click_handler(trezor_btn, 'Trezor'),
+        trezor_layout.addWidget(self.trezor_label)
+        self.trezor_btn.setDisabled(True)
+        self.trezor_btn.clicked.connect(
+            self._make_option_click_handler(self.trezor_btn, 'Trezor'),
         )
-        trezor_btn.installEventFilter(self)
-        self.option_buttons.append(trezor_btn)
-        horizontal_layout.addWidget(trezor_btn)
+        self.trezor_btn.installEventFilter(self)
+        self._option_buttons.append(self.trezor_btn)
+        horizontal_layout.addWidget(self.trezor_btn)
 
-        card_layout.addWidget(grid_frame, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.card_layout.addWidget(
+            grid_frame, alignment=Qt.AlignmentFlag.AlignLeft,
+        )
 
         # Spacer above Continue button
-        card_layout.addSpacing(18)
+        self.card_layout.addSpacing(18)
 
         # Continue button (centered, more padding)
-        self.continue_button = PrimaryButton('Continue')
-        self.continue_button.setObjectName('primary_button')
-        self.continue_button.setEnabled(False)
-        card_layout.addWidget(
-            self.continue_button,
+        self.continue_btn = PrimaryButton()
+        self.continue_btn.setObjectName('primary_button')
+        self.continue_btn.setEnabled(False)
+        self.card_layout.addWidget(
+            self.continue_btn,
             alignment=Qt.AlignmentFlag.AlignCenter,
         )
 
         # Add card to grid layout
-        main_grid.addWidget(card, 1, 1, 2, 2)
+        main_grid.addWidget(self.card, 1, 1, 2, 2)
 
         # Horizontal spacers (left and right)
         horizontal_spacer_3 = QSpacerItem(
@@ -205,10 +215,13 @@ class HardwareWalletConnectWidget(QWidget):
         )
         main_grid.addItem(vertical_spacer_3, 4, 1, 1, 1)
 
-        self.continue_button.clicked.connect(self.show_device_dialog)
+        self.continue_btn.clicked.connect(self.show_device_dialog)
+        self.retranslate_ui()
 
     def setup_ui_connection(self):
-        """Set up connections for UI elements."""
+        """
+        Set up connections for UI elements.
+        """
         self._view_model.restore_view_model.is_loading.connect(
             self.update_loading_state,
         )
@@ -217,7 +230,13 @@ class HardwareWalletConnectWidget(QWidget):
         )
 
     def eventFilter(self, watched, event):
-        if watched in self.option_buttons:
+        """
+        Handle hover and click events for hardware wallet option buttons.
+        """
+        if watched in self._option_buttons:
+            # Only apply hover effect if the button is enabled
+            if not watched.isEnabled():
+                return super().eventFilter(watched, event)
             icon_label = watched.icon_label
             name_label = watched.name_label
             original_pixmap = QPixmap(watched.original_icon_path).scaled(
@@ -239,8 +258,11 @@ class HardwareWalletConnectWidget(QWidget):
         return super().eventFilter(watched, event)
 
     def _make_option_click_handler(self, btn, wallet_name):
+        """
+        Return a handler function for wallet option button clicks.
+        """
         def handler():
-            for b in self.option_buttons:
+            for b in self._option_buttons:
                 b.setProperty('selected', False)
                 b.icon_label.setPixmap(
                     QPixmap(b.original_icon_path).scaled(
@@ -257,37 +279,17 @@ class HardwareWalletConnectWidget(QWidget):
             )
             btn.name_label.setStyleSheet('color: white;')
 
-            self.selected_wallet = wallet_name
-            self.continue_button.setEnabled(True)
+            self._selected_wallet = wallet_name
+            self.continue_btn.setEnabled(True)
         return handler
 
     def show_device_dialog(self):
-        wallet_type = self.selected_wallet  # 'Ledger' or 'Trezor'
-        # 1. Call HWI enumerate
-        devices = hwilib.commands.enumerate()
-        # 2. Filter by model type
-        filtered_devices = [
-            d for d in devices if d.get(
-                'type', '',
-            ).lower() == wallet_type.lower()
-        ]
-        # 3. Display device names in dialog
-        device_names = [
-            f"{d.get('model')} ({d.get('fingerprint', '')})" for d in filtered_devices
-        ]
-        dialog = HWDeviceSelectionDialog(
-            wallet_type, devices=device_names, parent=self,
-        )
+        """
+        Show the hardware wallet device selection dialog.
+        """
+        wallet_type = self._selected_wallet  # 'Ledger' or 'Trezor'
+        dialog = HWDeviceSelectionDialog(wallet_type, parent=self)
         if dialog.exec() == QDialog.Accepted:
-            selected_name = dialog.get_selected_device()
-            # 4. Find the selected device dict
-            selected_device = next(
-                (
-                    d for d in filtered_devices if f"{d.get('model')} ({
-                        d.get('fingerprint', '')
-                    })" == selected_name
-                ), None,
-            )
             if SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD:
                 blur_effect = QGraphicsBlurEffect()
                 blur_effect.setBlurRadius(10)
@@ -300,26 +302,38 @@ class HardwareWalletConnectWidget(QWidget):
                 self._view_model.page_navigation.welcome_page()
 
     def handle_close(self):
+        """
+        Navigate back to selection page (not welcome page).
+        """
         # Navigate back to selection page (not welcome page)
         self._view_model.page_navigation.selection_page()
 
-    # def update_loading_state(self, is_loading: bool):
-    #     """
-    #     Updates the loading state of the proceed_wallet_password object.
-
-    #     This method prints the loading state and starts or stops the loading animation
-    #     of the proceed_wallet_password object based on the value of is_loading.
-    #     """
-    #     if is_loading:
-    #         self.create_btn.setEnabled(False)
-    #         self.restore_btn.start_loading()
-    #     else:
-    #         self.create_btn.setEnabled(True)
-    #         self.restore_btn.stop_loading()
-
-    # def handle_message(self, msg_type: ToastPreset, message: str):
-    #     """This method handled to show message."""
-    #     if msg_type == ToastPreset.ERROR:
-    #         ToastManager.error(message)
-    #     else:
-    #         ToastManager.success(message)
+    def retranslate_ui(self):
+        """
+        Set all translatable UI text for the widget.
+        """
+        self.title.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'connect_hardware_wallet',
+            ),
+        )
+        self.subtitle.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_hardware_wallet',
+            ),
+        )
+        self.ledger_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ledger',
+            ),
+        )
+        self.trezor_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'trezor',
+            ),
+        )
+        self.continue_btn.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+            ),
+        )

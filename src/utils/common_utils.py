@@ -33,6 +33,7 @@ from PySide6.QtWidgets import QLineEdit
 from PySide6.QtWidgets import QPlainTextEdit
 from PySide6.QtWidgets import QWidget
 
+from src.config.wallet_mode_config import WalletModeConfiguration
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.helpers.main_asset_page_helper import get_offline_asset_ticker
 from src.model.enums.enums_model import AssetType
@@ -568,3 +569,18 @@ def enforce_u64_max_input(line_edit: QLineEdit, input_text: str) -> None:
             line_edit.setText(numeric_text)
     except ValueError:
         line_edit.setText('')
+
+
+def get_current_wallet_mode_config():
+    """
+    Fetch the current wallet mode configuration using values from SettingRepository.
+    Returns:
+        WalletModeConfig: The current wallet mode configuration object.
+    """
+    wallet_type = SettingRepository.get_wallet_type()
+    security_type = SettingRepository.get_wallet_security_type()
+    entry_type = SettingRepository.get_wallet_entry_type()
+    storage_type = SettingRepository.get_key_storage_type()
+    return WalletModeConfiguration.get_mode_config(
+        wallet_type, security_type, entry_type, storage_type,
+    )

@@ -370,7 +370,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
-        self.handle_backup_visibility()
+        # self.handle_backup_visibility()
         self.check_faucet_availability()
         self._view_model.main_asset_view_model.get_assets()
         self.title_frame.refresh_page_button.clicked.connect(

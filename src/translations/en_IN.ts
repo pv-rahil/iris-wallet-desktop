@@ -1610,7 +1610,191 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>select_broadcast_type</source>
-        <translation>Select Broadcast Type</translation>
+        <translation>Select broadcast type</translation>
+    </message>
+    <message>
+        <source>enter_watch_only_wallet_details</source>
+        <translation>Enter watch-only wallet details</translation>
+    </message>
+    <message>
+        <source>watch_only_wallet_setup</source>
+        <translation>Watch-only wallet setup</translation>
+    </message>
+    <message>
+        <source>watch_only_wallet_info</source>
+        <translation>Please enter your xpubs and master fingerprint for watch-only wallet.</translation>
+    </message>
+    <message>
+        <source>account_xpub_vanilla</source>
+        <translation>Account xpub vanilla:</translation>
+    </message>
+    <message>
+        <source>enter_account_xpub_vanilla</source>
+        <translation>Enter account xpub vanilla</translation>
+    </message>
+    <message>
+        <source>account_xpub_colored</source>
+        <translation>Account xpub colored:</translation>
+    </message>
+    <message>
+        <source>enter_account_xpub_colored</source>
+        <translation>Enter account xpub colored</translation>
+    </message>
+    <message>
+        <source>master_fingerprint</source>
+        <translation>Master fingerprint:</translation>
+    </message>
+    <message>
+        <source>enter_master_fingerprint</source>
+        <translation>Enter master fingerprint</translation>
+    </message>
+    <message>
+        <source>verify_watch_only_info</source>
+        <translation>I have verified the above information is correct.</translation>
+    </message>
+    <message>
+        <source>all_fields_required</source>
+        <translation>All fields are required.</translation>
+    </message>
+    <message>
+        <source>xpubs_must_start_with_xpub</source>
+        <translation>Xpubs must start with 'xpub'.</translation>
+    </message>
+    <message>
+        <source>fingerprint_should_be_8_chars</source>
+        <translation>Fingerprint should be 8 characters (hex).</translation>
+    </message>
+    <message>
+        <source>select_device</source>
+        <translation>Select %1 device</translation>
+    </message>
+    <message>
+        <source>available_devices</source>
+        <translation>Available %1 devices</translation>
+    </message>
+    <message>
+        <source>connect</source>
+        <translation>Connect</translation>
+    </message>
+    <message>
+        <source>no_devices_found</source>
+        <translation>No devices found. Please connect your device and try again.</translation>
+    </message>
+    <message>
+        <source>device_locked</source>
+        <translation>Device is locked. Please unlock your device and try again.</translation>
+    </message>
+    <message>
+        <source>failed_to_fetch_xpubs</source>
+        <translation>Failed to fetch xpubs or fingerprint: %1</translation>
+    </message>
+    <message>
+        <source>capabilities</source>
+        <translation>Capabilities</translation>
+    </message>
+    <message>
+        <source>limitations</source>
+        <translation>Limitations</translation>
+    </message>
+    <message>
+        <source>recommended_for</source>
+        <translation>Recommended for</translation>
+    </message>
+    <message>
+        <source>breadcrumb_separator</source>
+        <translation>&gt;</translation>
+    </message>
+    <message>
+        <source>broadcast_issue_asset</source>
+        <translation>Broadcast issue asset</translation>
+    </message>
+    <message>
+        <source>broadcast_send_btc</source>
+        <translation>Broadcast send BTC</translation>
+    </message>
+    <message>
+        <source>broadcast_send_asset</source>
+        <translation>Broadcast send asset</translation>
+    </message>
+    <message>
+        <source>connect_hardware_wallet</source>
+        <translation>Connect a hardware wallet</translation>
+    </message>
+    <message>
+        <source>select_hardware_wallet</source>
+        <translation>Select a hardware wallet you would like to use with this app.</translation>
+    </message>
+    <message>
+        <source>ledger</source>
+        <translation>Ledger</translation>
+    </message>
+    <message>
+        <source>trezor</source>
+        <translation>Trezor</translation>
+    </message>
+    <message>
+        <source>online</source>
+        <translation>Online</translation>
+    </message>
+    <message>
+        <source>select_wallet_mode</source>
+        <translation>Select wallet mode</translation>
+    </message>
+    <message>
+        <source>online_wallet_info</source>
+        <translation>Online wallet allows you to connect to the network and perform transactions.</translation>
+    </message>
+    <message>
+        <source>offline_wallet_info</source>
+        <translation>Offline wallet allows you to manage your assets without connecting to the network.</translation>
+    </message>
+    <message>
+        <source>with_private_key</source>
+        <translation>With private key</translation>
+    </message>
+    <message>
+        <source>select_security_type</source>
+        <translation>Select security type</translation>
+    </message>
+    <message>
+        <source>with_private_key_info</source>
+        <translation>This wallet has a private key that allows you to sign transactions.</translation>
+    </message>
+    <message>
+        <source>watch_only_info</source>
+        <translation>This wallet is watch-only. You can view your assets but cannot sign transactions.</translation>
+    </message>
+    <message>
+        <source>create_new</source>
+        <translation>Create new</translation>
+    </message>
+    <message>
+        <source>select_entry_type</source>
+        <translation>Select entry type</translation>
+    </message>
+    <message>
+        <source>create_new_wallet_info</source>
+        <translation>Create a new wallet with a new seed phrase.</translation>
+    </message>
+    <message>
+        <source>load_existing_wallet_info</source>
+        <translation>Load an existing wallet using a seed phrase or private key.</translation>
+    </message>
+    <message>
+        <source>on_device</source>
+        <translation>On device</translation>
+    </message>
+    <message>
+        <source>select_key_storage</source>
+        <translation>Select key storage</translation>
+    </message>
+    <message>
+        <source>on_device_info</source>
+        <translation>Store your private key on your device securely.</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_info</source>
+        <translation>Use a hardware wallet to store your private key securely.</translation>
     </message>
 </context>
 </TS>

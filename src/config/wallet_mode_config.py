@@ -1,8 +1,10 @@
+# pylint: disable=too-few-public-methods,too-many-return-statements
+"""
+Configuration and privilege definitions for wallet modes and their capabilities.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
-from typing import List
 
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletEntryType
@@ -12,6 +14,9 @@ from src.model.enums.enums_model import WalletType
 
 @dataclass
 class WalletModePrivilege:
+    """
+    Dataclass for defining the privileges of a wallet mode.
+    """
     can_send_transactions: bool
     can_receive_transactions: bool
     can_view_balance: bool
@@ -20,10 +25,14 @@ class WalletModePrivilege:
     can_use_hardware_wallet: bool
     can_backup_wallet: bool
     can_restore_wallet: bool
+    can_export_psbt: bool
 
 
 @dataclass
 class WalletModeConfig:
+    """
+    Dataclass for defining the configuration of a wallet mode.
+    """
     mode_name: str
     description: str
     privileges: WalletModePrivilege
@@ -33,14 +42,20 @@ class WalletModeConfig:
 
 
 class WalletModeConfiguration:
+    """
+    A utility class for retrieving wallet mode configurations based on various parameters.
+    """
     @staticmethod
     def get_mode_config(
-        wallet_type: WalletType,
-        security_type: WalletSecurityType = None,
-        entry_type: WalletEntryType = None,
-        storage_type: KeyStorageType = None,
+        wallet_type: WalletType | None,
+        security_type: WalletSecurityType | None,
+        entry_type: WalletEntryType | None,
+        storage_type: KeyStorageType | None,
     ) -> WalletModeConfig:
-        """Get configuration for the selected wallet mode combination"""
+        """
+        Get configuration for the selected wallet mode combination.
+        Returns a WalletModeConfig object describing the mode.
+        """
 
         # Online Watch Only
         if (
@@ -52,13 +67,14 @@ class WalletModeConfiguration:
                 description='A secure wallet for monitoring transactions and balances without private key access',
                 privileges=WalletModePrivilege(
                     can_send_transactions=False,
-                    can_receive_transactions=True,
+                    can_receive_transactions=False,
                     can_view_balance=True,
                     can_create_assets=False,
                     can_manage_assets=False,
                     can_use_hardware_wallet=False,
-                    can_backup_wallet=True,
-                    can_restore_wallet=True,
+                    can_backup_wallet=False,
+                    can_restore_wallet=False,
+                    can_export_psbt=True,
                 ),
                 capabilities=[
                     {'emoji': '👁️', 'text': 'View balances & transaction history'},
@@ -77,7 +93,7 @@ class WalletModeConfiguration:
             )
 
         # Online Create New with Private Key (On Device)
-        elif (
+        if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
             security_type == WalletSecurityType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.ON_DEVICE and
@@ -95,6 +111,7 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=False,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate new wallet & keys'},
@@ -113,7 +130,7 @@ class WalletModeConfiguration:
             )
 
         # Online Create New with Hardware Wallet
-        elif (
+        if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
             security_type == WalletSecurityType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.HARDWARE_WALLET and
@@ -131,6 +148,7 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=True,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Initialize new wallet with hardware device'},
@@ -149,7 +167,7 @@ class WalletModeConfiguration:
             )
 
         # Online Load Existing with Private Key (On Device)
-        elif (
+        if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
             security_type == WalletSecurityType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.ON_DEVICE and
@@ -168,6 +186,7 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=False,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet'},
@@ -187,7 +206,7 @@ class WalletModeConfiguration:
             )
 
         # Online Load Existing with Hardware Wallet
-        elif (
+        if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
             security_type == WalletSecurityType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.HARDWARE_WALLET and
@@ -206,6 +225,7 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=True,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Connect hardware wallet'},
@@ -225,7 +245,7 @@ class WalletModeConfiguration:
             )
 
         # Offline Create New (On Device)
-        elif (
+        if (
             wallet_type == WalletType.OFFLINE_TYPE_WALLET and
             storage_type == KeyStorageType.ON_DEVICE and
             entry_type == WalletEntryType.CREATE
@@ -242,6 +262,7 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=False,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate offline wallet'},
@@ -261,7 +282,7 @@ class WalletModeConfiguration:
             )
 
         # Offline Create New (Hardware Wallet)
-        elif (
+        if (
             wallet_type == WalletType.OFFLINE_TYPE_WALLET and
             storage_type == KeyStorageType.HARDWARE_WALLET and
             entry_type == WalletEntryType.CREATE
@@ -278,10 +299,14 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=True,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'New wallet setup using hardware device'},
-                    {'emoji': '🛡️', 'text': 'Dual security (offline + hardware)'},
+                    {
+                        'emoji': '🛡️',
+                        'text': 'Dual security (offline + hardware)',
+                    },
                     {'emoji': '✍️', 'text': 'Hardware PSBT signing'},
                     {'emoji': '📤', 'text': 'Export signed PSBTs'},
                 ],
@@ -296,8 +321,8 @@ class WalletModeConfiguration:
                 ],
             )
 
-        # Offline Load Existing (On Device) 
-        elif (
+        # Offline Load Existing (On Device)
+        if (
             wallet_type == WalletType.OFFLINE_TYPE_WALLET and
             storage_type == KeyStorageType.ON_DEVICE and
             entry_type == WalletEntryType.LOAD
@@ -315,10 +340,14 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=False,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet offline'},
-                    {'emoji': '🛡️', 'text': 'Dual security (offline + hardware)'},
+                    {
+                        'emoji': '🛡️',
+                        'text': 'Dual security (offline + hardware)',
+                    },
                     {'emoji': '✍️', 'text': 'Local PSBT signing'},
                     {'emoji': '📤', 'text': 'Export signed PSBTs'},
                 ],
@@ -335,7 +364,7 @@ class WalletModeConfiguration:
             )
 
         # Offline Load Existing (Hardware Wallet)
-        elif (
+        if (
             wallet_type == WalletType.OFFLINE_TYPE_WALLET and
             storage_type == KeyStorageType.HARDWARE_WALLET and
             entry_type == WalletEntryType.LOAD
@@ -353,6 +382,7 @@ class WalletModeConfiguration:
                     can_use_hardware_wallet=True,
                     can_backup_wallet=True,
                     can_restore_wallet=True,
+                    can_export_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Offline hardware connection'},
@@ -385,9 +415,12 @@ class WalletModeConfiguration:
                 can_use_hardware_wallet=False,
                 can_backup_wallet=False,
                 can_restore_wallet=False,
+                can_export_psbt=False,
             ),
             capabilities=[{'emoji': '❓', 'text': 'Invalid configuration'}],
-            limitations=[{'emoji': '⚠️', 'text': 'Invalid wallet mode combination'}],
+            limitations=[
+                {'emoji': '⚠️', 'text': 'Invalid wallet mode combination'},
+            ],
             recommended_for=[
                 {'emoji': '❓', 'text': 'Invalid configuration'},
                 {'emoji': '⚠️', 'text': 'Check wallet settings'},

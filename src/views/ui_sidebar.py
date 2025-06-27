@@ -26,9 +26,11 @@ from accessible_constant import HELP_BUTTON
 from accessible_constant import SETTINGS_BUTTON
 from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
 from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
+from src.config.wallet_mode_config import WalletModeConfiguration
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.selection_page_model import AssetDataModel
+from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -41,6 +43,8 @@ class Sidebar(QWidget):
     def __init__(self, view_model):
         super().__init__()
         self._view_model: MainViewModel = view_model
+        config = get_current_wallet_mode_config()
+        priv = config.privileges
         self.setObjectName('sidebar')
         self.setMinimumSize(QSize(360, 720))
         self.setStyleSheet(
@@ -92,6 +96,7 @@ class Sidebar(QWidget):
         )
         self.backup.setAccessibleName(BACKUP_BUTTON)
         self.backup.setCheckable(False)
+        self.backup.setVisible(priv.can_backup_wallet)
         self.grid_layout_sidebar.addWidget(self.backup, 6, 0, 1, 1)
 
         self.help = SidebarButton(
@@ -142,8 +147,11 @@ class Sidebar(QWidget):
         self.broadcast_transaction = SidebarButton(
             'Broadcast transaction', ':/assets/about.png', translation_key='broadcast_transaction',
         )
+        self.broadcast_transaction.setVisible(priv.can_export_psbt)
         self.broadcast_transaction.setCheckable(False)
-        self.grid_layout_sidebar.addWidget(self.broadcast_transaction, 10, 0, 1, 1)
+        self.grid_layout_sidebar.addWidget(
+            self.broadcast_transaction, 10, 0, 1, 1,
+        )
 
         self.vertical_layout.addLayout(self.grid_layout_sidebar)
 
@@ -163,6 +171,7 @@ class Sidebar(QWidget):
         )
         self.receive_asset_button.setMinimumSize(QSize(335, 40))
         self.receive_asset_button.setMaximumSize(QSize(335, 40))
+        self.receive_asset_button.setVisible(priv.can_backup_wallet)
         self.vertical_layout.addWidget(
             self.receive_asset_button, 0, Qt.AlignCenter,
         )

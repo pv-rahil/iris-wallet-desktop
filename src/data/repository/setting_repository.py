@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 """"This module defines a repository class for managing settings related to wallet initialization.
 """
 from __future__ import annotations
@@ -318,7 +319,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def get_wallet_type() -> WalletType:
+    def get_wallet_type() -> WalletType | None:
         """Get the wallet type."""
         try:
             value = local_store.get_value('wallet_type')
@@ -342,7 +343,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def get_wallet_security_type() -> WalletSecurityType:
+    def get_wallet_security_type() -> WalletSecurityType | None:
         """Get the wallet security type."""
         try:
             value = local_store.get_value('wallet_security_type')
@@ -366,7 +367,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def get_wallet_entry_type() -> WalletEntryType:
+    def get_wallet_entry_type() -> WalletEntryType | None:
         """Get the wallet entry type."""
         try:
             value = local_store.get_value('wallet_entry_type')
@@ -390,7 +391,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def get_key_storage_type() -> KeyStorageType:
+    def get_key_storage_type() -> KeyStorageType | None:
         """Get the key storage type."""
         try:
             value = local_store.get_value('key_storage_type')

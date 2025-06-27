@@ -26,6 +26,7 @@ from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.setting_model import IsBackupConfiguredModel
+from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.helpers import load_stylesheet
@@ -61,6 +62,8 @@ class HeaderFrame(QFrame, QObject):
         self.setMaximumHeight(57)
         self.setFrameShape(QFrame.StyledPanel)
         self.setFrameShadow(QFrame.Raised)
+        config = get_current_wallet_mode_config()
+        self.priv = config.privileges
 
         self.title_frame_main_horizontal_layout = QHBoxLayout(self)
         self.title_frame_main_horizontal_layout.setSpacing(4)
@@ -151,6 +154,7 @@ class HeaderFrame(QFrame, QObject):
         self.action_button.setCursor(
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
+        self.action_button.setVisible(self.priv.can_create_assets)
         self.title_frame_main_horizontal_layout.addWidget(self.action_button)
 
         self.refresh_page_button = QPushButton(self)
@@ -253,7 +257,7 @@ class HeaderFrame(QFrame, QObject):
         A helper method to handle button visibility based on the network status and title.
         """
         if self.title in refresh_and_action_button_list:
-            self.action_button.setVisible(visible)
+            self.action_button.setVisible(self.priv.can_create_assets)
             self.refresh_page_button.setVisible(visible)
 
         if self.title in refresh_button_list:
@@ -266,6 +270,10 @@ class HeaderFrame(QFrame, QObject):
         """
         is_backup_configured: IsBackupConfiguredModel = SettingRepository.is_backup_configured()
         token_path_exists = os.path.exists(TOKEN_PICKLE_PATH)
+        if not self.priv.can_backup_wallet:
+            self.network_error_frame.hide()
+            self.is_backup_warning = False
+            return
 
         if not token_path_exists and not is_backup_configured.is_backup_configured:
             # Show backup warning frame

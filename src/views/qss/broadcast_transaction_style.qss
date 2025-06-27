@@ -35,7 +35,7 @@ QLabel#broadcast_transaction_label {
     background: transparent;
     border: none;
     font-weight: 600;
-    padding-left: 17px;
+    padding-left: 25px;
 }
 
 /* Styles for broadcast_transaction_input */
@@ -45,7 +45,6 @@ QPlainTextEdit#broadcast_transaction_input {
     background-color: rgb(36, 44, 70);
     border: transparent;
     border-radius: 4px;
-    padding-left: 17px;
 }
 
 /* Styles for invoice_detail_label */
@@ -73,7 +72,6 @@ QLabel#amount_validation_error_label{
     color: red;
     border: none;
 }
-/* Styles for time_unit_combobox QComboBox */
 QComboBox {
     font: 15px "Inter";
     font-weight: 400;
@@ -81,7 +79,7 @@ QComboBox {
     border-radius: 4px;
     background-color: rgb(36, 44, 70);
     color: rgb(102, 108, 129);
-    padding: 10px 5px 10px 5px;
+    padding-left: 10px;
 }
 
 QComboBox QAbstractItemView {
