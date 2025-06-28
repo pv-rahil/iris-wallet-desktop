@@ -210,15 +210,15 @@ class WatchOnlyDialog(QDialog):
             self.error_label.setVisible(True)
             self.setMinimumSize(600, 450)
             return
-        if not vanilla.startswith('xpub') or not colored.startswith('xpub'):
-            self.error_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpubs_must_start_with_xpub',
-                ),
-            )
-            self.error_label.setVisible(True)
-            self.setMinimumSize(600, 450)
-            return
+        # if not vanilla.startswith('xpub') or not colored.startswith('xpub'):
+        #     self.error_label.setText(
+        #         QCoreApplication.translate(
+        #             IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpubs_must_start_with_xpub',
+        #         ),
+        #     )
+        #     self.error_label.setVisible(True)
+        #     self.setMinimumSize(600, 450)
+        #     return
         if len(fingerprint) != 8:
             self.error_label.setText(
                 QCoreApplication.translate(

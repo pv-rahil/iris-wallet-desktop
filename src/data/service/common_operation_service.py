@@ -12,9 +12,11 @@ from src.model.common_operation_model import InitRequestModel
 from src.model.common_operation_model import UnlockResponseModel
 from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletSecurityType
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB_COLORED, MASTER_FINGERPRINT
+from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING_STORE_NOT_ACCESSIBLE
@@ -46,17 +48,56 @@ class CommonOperationService:
             network = get_bitcoin_network_from_enum(
                 stored_network,
             )
-            response: Keys = CommonOperationRepository.init(
-                InitRequestModel(password=password, network=network),
-            )
-            wallet: Wallet = CommonOperationRepository.unlock(
-                WalletRequestModel(
-                    data_dir=app_paths.app_path, bitcoin_network=network,
-                    account_xpub_vanilla=response.account_xpub_vanilla, account_xpub_colored=response.account_xpub_colored, mnemonic=response.mnemonic,master_fingerprint=response.master_fingerprint
-                ),
-            )
+
+            # Check if this is a watch-only wallet
+            security_type = SettingRepository.get_wallet_security_type()
+            is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+
+            if is_watch_only:
+                # For watch-only wallets, use the saved xpubs and fingerprint
+                account_xpub_vanilla = local_store.get_value(
+                    ACCOUNT_XPUB_VANILLA,
+                )
+                account_xpub_colored = local_store.get_value(
+                    ACCOUNT_XPUB_COLORED,
+                )
+                master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
+
+                if not account_xpub_vanilla or not account_xpub_colored or not master_fingerprint:
+                    raise CommonException(
+                        'Watch-only wallet xpubs and fingerprint not found. Please set up watch-only wallet first.',
+                    )
+
+                # Create a Keys object for watch-only wallets using stored values
+                response = Keys(
+                    account_xpub_vanilla=account_xpub_vanilla,
+                    account_xpub_colored=account_xpub_colored,
+                    mnemonic=None,  # None mnemonic for watch-only wallets
+                    master_fingerprint=master_fingerprint,
+                    xpub=None
+                )
+
+                wallet: Wallet = CommonOperationRepository.unlock(
+                    WalletRequestModel(
+                        data_dir=app_paths.app_path, bitcoin_network=network,
+                        account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored, mnemonic=None, master_fingerprint=master_fingerprint,
+                    ),
+                )
+            else:
+                # For regular wallets, generate new keys
+                response: Keys = CommonOperationRepository.init(
+                    InitRequestModel(password=password, network=network),
+                )
+
+                wallet: Wallet = CommonOperationRepository.unlock(
+                    WalletRequestModel(
+                        data_dir=app_paths.app_path, bitcoin_network=network,
+                        account_xpub_vanilla=response.account_xpub_vanilla, account_xpub_colored=response.account_xpub_colored,
+                        mnemonic=response.mnemonic, master_fingerprint=response.master_fingerprint,
+                    ),
+                )
+                mnemonic_store.decrypted_mnemonic = response.mnemonic
             colored_wallet.set_wallet(wallet)
-            mnemonic_store.decrypted_mnemonic = response.mnemonic
             return response, password
         except (CommonException, RgbLibError) as exc:
             return handle_exceptions(exc=exc)
@@ -77,13 +118,25 @@ class CommonOperationService:
             account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA)
             account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
             master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
-            decrypted_mnemonic = mnemonic_store.decrypt(
-                password=password, path=app_paths.mnemonic_file_path,
-            )
+
+            # Check if this is a watch-only wallet
+            is_watch_only = SettingRepository.get_wallet_security_type(
+            ) == WalletSecurityType.WATCH_ONLY
+
+            if is_watch_only:
+                # For watch-only wallets, use None mnemonic
+                decrypted_mnemonic = None
+            else:
+                # For regular wallets, decrypt mnemonic from file
+                decrypted_mnemonic = mnemonic_store.decrypt(
+                    password=password, path=app_paths.mnemonic_file_path,
+                )
+
             response: UnlockResponseModel = CommonOperationRepository.unlock(
                 WalletRequestModel(
                     data_dir=app_paths.app_path, bitcoin_network=network,
-                    account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored, mnemonic=decrypted_mnemonic,master_fingerprint=master_fingerprint
+                    account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored, 
+                    mnemonic=decrypted_mnemonic, master_fingerprint=master_fingerprint,
                 ),
             )
             return response

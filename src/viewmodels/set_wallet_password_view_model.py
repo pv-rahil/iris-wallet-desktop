@@ -18,11 +18,13 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletSecurityType
 from src.model.set_wallet_password_model import SetWalletPasswordModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB_COLORED, MASTER_FINGERPRINT
+from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
@@ -131,19 +133,29 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
         """
         try:
             wallet_response, password = response
-            if wallet_response.mnemonic:
+
+            # Check if this is a watch-only wallet
+            security_type = SettingRepository.get_wallet_security_type()
+            is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+
+            # Both watch-only and regular wallets now return a proper response object
+            if wallet_response:
                 self.is_loading.emit(False)
                 SettingRepository.set_wallet_initialized()
                 SettingRepository.set_rgb_lib_version(
                     CURRENT_RGB_LIB_VERSION,
                 )
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
-                encrypted_mnemonic = mnemonic_store.encrypt(
-                    password=password, mnemonic=wallet_response.mnemonic,
-                )
-                local_store.write_to_file(
-                    file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
-                )
+
+                if not is_watch_only:
+                    # Only encrypt and save mnemonic for non-watch-only wallets
+                    encrypted_mnemonic = mnemonic_store.encrypt(
+                        password=password, mnemonic=wallet_response.mnemonic,
+                    )
+                    local_store.write_to_file(
+                        file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
+                    )
+
                 local_store.set_value(
                     ACCOUNT_XPUB_VANILLA, wallet_response.account_xpub_vanilla,
                 )
@@ -160,12 +172,16 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                     SettingRepository.set_keyring_status(status=False)
                     self.forward_to_fungibles_page()
                 else:
-                    keyring_warning_dialog = KeyringErrorDialog(
-                        mnemonic=wallet_response.mnemonic,
-                        password=self.password,
-                        navigate_to=self.forward_to_fungibles_page,
-                    )
-                    keyring_warning_dialog.exec()
+                    # For watch-only wallets, we don't have a mnemonic to show in the dialog
+                    if is_watch_only:
+                        self.forward_to_fungibles_page()
+                    else:
+                        keyring_warning_dialog = KeyringErrorDialog(
+                            mnemonic=wallet_response.mnemonic,
+                            password=self.password,
+                            navigate_to=self.forward_to_fungibles_page,
+                        )
+                        keyring_warning_dialog.exec()
         except CommonException as error:
             self.message.emit(
                 ToastPreset.ERROR,
@@ -191,6 +207,7 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
 
         """
         self.is_loading.emit(False)
+        print(exc)
         if exc.message == ERROR_NETWORK_MISMATCH:
             local_store.clear_settings()
             MessageBox('critical', exc.message)

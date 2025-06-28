@@ -20,13 +20,13 @@ QLabel#header_label {
     padding-left:2px;
 }
 QLineEdit {
-    font: 15px "Inter";
+    font: 14px "Inter";
     color: rgb(102, 108, 129);
     border-radius: 4px;
     background-color: rgb(36, 44, 70);
-    padding-left:10px;
-    max-width:400px;
-    max-height:30px;
+    padding:10px;
+    max-width:420px;
+    max-height:35px;
 }
 QCheckBox {
     color: #e0e3eb;

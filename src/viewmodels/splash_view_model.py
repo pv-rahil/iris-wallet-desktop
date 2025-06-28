@@ -14,6 +14,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletSecurityType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -139,9 +140,19 @@ class SplashViewModel(QObject, ThreadManager):
                 if keyring_status is True or wallet_password is None:
                     self._page_navigation.enter_wallet_password_page()
                 else:
-                    decrypted_mnemonic = mnemonic_store.decrypt(
-                        password=wallet_password, path=app_paths.mnemonic_file_path,
-                    )
+                    # Check if this is a watch-only wallet
+                    security_type = SettingRepository.get_wallet_security_type()
+                    is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+
+                    if is_watch_only:
+                        # For watch-only wallets, use None mnemonic
+                        decrypted_mnemonic = None
+                    else:
+                        # For regular wallets, decrypt mnemonic from file
+                        decrypted_mnemonic = mnemonic_store.decrypt(
+                            password=wallet_password, path=app_paths.mnemonic_file_path,
+                        )
+
                     self.splash_screen_message.emit(
                         QCoreApplication.translate(
                             IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_wallet_to_unlock', None,
