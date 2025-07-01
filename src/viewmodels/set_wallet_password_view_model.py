@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QLineEdit
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
+from src.model.common_operation_model import KeyringDialogModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletSecurityType
@@ -177,9 +178,11 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                         self.forward_to_fungibles_page()
                     else:
                         keyring_warning_dialog = KeyringErrorDialog(
-                            mnemonic=wallet_response.mnemonic,
-                            password=self.password,
-                            navigate_to=self.forward_to_fungibles_page,
+                            KeyringDialogModel(
+                                mnemonic=wallet_response.mnemonic,
+                                password=self.password,
+                                navigate_to=self.forward_to_fungibles_page,
+                            ),
                         )
                         keyring_warning_dialog.exec()
         except CommonException as error:

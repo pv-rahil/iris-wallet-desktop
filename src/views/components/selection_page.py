@@ -410,10 +410,3 @@ class SelectionPage(QWidget):
         self.on_click_frame(self.params.logo_1_title, True)
         self.info_frame.show()
         self._set_text_for_frame_info(self.params.logo_1_title)
-
-    def clear_all_types(self):
-        """Clear all stored wallet types."""
-        SettingRepository.set_wallet_type(None)
-        SettingRepository.set_wallet_security_type(None)
-        SettingRepository.set_wallet_entry_type(None)
-        SettingRepository.set_key_storage_type(None)

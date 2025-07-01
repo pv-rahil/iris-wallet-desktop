@@ -21,7 +21,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
     def create_wallet(self, application):
         """
-        Creates an embedded wallet.
+        Creates a wallet.
         """
         self.do_focus_on_application(application)
 

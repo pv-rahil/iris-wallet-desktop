@@ -21,7 +21,7 @@
     border: none;
 }
 
-#mnemonic_title_label,#wallet_password_title_label {
+#mnemonic_title_label,#wallet_password_title_label,#xpub_vanilla_label,#xpub_colored_label,#fingerprint_title_label {
     font: 14px "Inter";
     border: none;
     color: #E6E1E5;
@@ -30,11 +30,11 @@
 }
 
 
-#mnemonic_frame,#password_frame{
+#mnemonic_frame,#password_frame,#xpub_vanilla_frame,#xpub_colored_frame,#fingerprint_frame{
 background-color:#030B25;
     border-radius: 8px;
 }
-#mnemonic_value_label,#wallet_password_value{
+#mnemonic_value_label,#wallet_password_value,#fingerprint_value_label,#xpub_vanilla_value_label,#xpub_colored_value_label{
 color:#B3B6C3;
     font: 14px "Inter";
     padding-left: 10px;
@@ -47,7 +47,7 @@ color: rgb(255, 255, 255);
 font-weight: 700
 }
 
-#mnemonic_copy_button,#password_copy_button{
+#mnemonic_copy_button,#password_copy_button,#xpub_vanilla_copy_button,#xpub_colored_copy_button,#fingerprint_copy_button{
 border:none;
 background:transparent;
 }

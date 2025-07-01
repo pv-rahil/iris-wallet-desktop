@@ -31,9 +31,11 @@ from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
+from src.model.enums.enums_model import WalletSecurityType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import generate_identicon
+from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
@@ -370,8 +372,9 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
-        # self.handle_backup_visibility()
-        self.check_faucet_availability()
+        self.update_sidebar()
+        if SettingRepository.get_wallet_security_type() != WalletSecurityType.WATCH_ONLY:
+            self.check_faucet_availability()
         self._view_model.main_asset_view_model.get_assets()
         self.title_frame.refresh_page_button.clicked.connect(
             self.refresh_asset,
@@ -444,11 +447,11 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         if fungible_asset_toast_preset == ToastPreset.WARNING:
             ToastManager.warning(description=message)
 
-    def handle_backup_visibility(self):
-        """This method handle the backup visibility on embedded or connect wallet type."""
+    def update_sidebar(self):
+        """Updates the sidebar with current wallet mode configuration and visibility."""
         self.sidebar = self._view_model.page_navigation.sidebar()
         if self.sidebar:
-            self.sidebar.backup.show()
+            self.sidebar.update_privileges(get_current_wallet_mode_config())
 
     def check_faucet_availability(self):
         """Check the availability of faucets and connect the signal to handle updates."""

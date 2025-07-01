@@ -53,13 +53,15 @@ class CommonOperationService:
             security_type = SettingRepository.get_wallet_security_type()
             is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
 
+            response: Keys | None = None
+            wallet: Wallet | None = None
+
             if is_watch_only:
-                # For watch-only wallets, use the saved xpubs and fingerprint
-                account_xpub_vanilla = local_store.get_value(
-                    ACCOUNT_XPUB_VANILLA,
-                )
                 account_xpub_colored = local_store.get_value(
                     ACCOUNT_XPUB_COLORED,
+                )
+                account_xpub_vanilla = local_store.get_value(
+                    ACCOUNT_XPUB_VANILLA,
                 )
                 master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
 
@@ -72,31 +74,34 @@ class CommonOperationService:
                 response = Keys(
                     account_xpub_vanilla=account_xpub_vanilla,
                     account_xpub_colored=account_xpub_colored,
-                    mnemonic=None,  # None mnemonic for watch-only wallets
+                    mnemonic=None,
                     master_fingerprint=master_fingerprint,
-                    xpub=None
+                    xpub=None,
                 )
 
-                wallet: Wallet = CommonOperationRepository.unlock(
+                wallet = CommonOperationRepository.unlock(
                     WalletRequestModel(
                         data_dir=app_paths.app_path, bitcoin_network=network,
-                        account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored, mnemonic=None, master_fingerprint=master_fingerprint,
+                        account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored,
+                        mnemonic=None, master_fingerprint=master_fingerprint,
                     ),
                 )
             else:
                 # For regular wallets, generate new keys
-                response: Keys = CommonOperationRepository.init(
+                response = CommonOperationRepository.init(
                     InitRequestModel(password=password, network=network),
                 )
 
-                wallet: Wallet = CommonOperationRepository.unlock(
+                wallet = CommonOperationRepository.unlock(
                     WalletRequestModel(
                         data_dir=app_paths.app_path, bitcoin_network=network,
-                        account_xpub_vanilla=response.account_xpub_vanilla, account_xpub_colored=response.account_xpub_colored,
+                        account_xpub_vanilla=response.account_xpub_vanilla,
+                        account_xpub_colored=response.account_xpub_colored,
                         mnemonic=response.mnemonic, master_fingerprint=response.master_fingerprint,
                     ),
                 )
                 mnemonic_store.decrypted_mnemonic = response.mnemonic
+
             colored_wallet.set_wallet(wallet)
             return response, password
         except (CommonException, RgbLibError) as exc:
@@ -135,7 +140,7 @@ class CommonOperationService:
             response: UnlockResponseModel = CommonOperationRepository.unlock(
                 WalletRequestModel(
                     data_dir=app_paths.app_path, bitcoin_network=network,
-                    account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored, 
+                    account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored,
                     mnemonic=decrypted_mnemonic, master_fingerprint=master_fingerprint,
                 ),
             )

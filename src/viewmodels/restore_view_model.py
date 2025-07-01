@@ -11,11 +11,13 @@ from rgb_lib import Keys
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.restore_service import RestoreService
+from src.model.common_operation_model import KeyringDialogModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB_COLORED, MASTER_FINGERPRINT
+from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.custom_exception import CommonException
@@ -95,9 +97,11 @@ class RestoreViewModel(QObject, ThreadManager):
                 self.forward_to_fungibles_page()
             else:
                 keyring_warning_dialog = KeyringErrorDialog(
-                    mnemonic=self.mnemonic,
-                    password=self.password,
-                    navigate_to=self.forward_to_fungibles_page,
+                    KeyringDialogModel(
+                        mnemonic=self.mnemonic,
+                        password=self.password,
+                        navigate_to=self.forward_to_fungibles_page,
+                    ),
                 )
                 keyring_warning_dialog.exec()
         else:

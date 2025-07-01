@@ -26,9 +26,9 @@ from accessible_constant import HELP_BUTTON
 from accessible_constant import SETTINGS_BUTTON
 from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
 from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
-from src.config.wallet_mode_config import WalletModeConfiguration
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletSecurityType
 from src.model.selection_page_model import AssetDataModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -115,8 +115,9 @@ class Sidebar(QWidget):
         self.faucet = SidebarButton(
             'Faucet', ':/assets/faucets.png', translation_key='faucets',
         )
-        self.faucet.setAccessibleName(FAUCET_BUTTON)
-        self.grid_layout_sidebar.addWidget(self.faucet, 5, 0, 1, 1)
+        if SettingRepository.get_wallet_security_type() != WalletSecurityType.WATCH_ONLY:
+            self.faucet.setAccessibleName(FAUCET_BUTTON)
+            self.grid_layout_sidebar.addWidget(self.faucet, 5, 0, 1, 1)
 
         self.my_fungibles = SidebarButton(
             'My Fungibles', ':/assets/my_asset.png', translation_key='fungibles',
@@ -144,15 +145,6 @@ class Sidebar(QWidget):
         self.about.setAccessibleName(ABOUT_BUTTON)
         self.grid_layout_sidebar.addWidget(self.about, 9, 0, 1, 1)
 
-        self.broadcast_transaction = SidebarButton(
-            'Broadcast transaction', ':/assets/about.png', translation_key='broadcast_transaction',
-        )
-        self.broadcast_transaction.setVisible(priv.can_export_psbt)
-        self.broadcast_transaction.setCheckable(False)
-        self.grid_layout_sidebar.addWidget(
-            self.broadcast_transaction, 10, 0, 1, 1,
-        )
-
         self.vertical_layout.addLayout(self.grid_layout_sidebar)
 
         self.vertical_spacer = QSpacerItem(
@@ -165,6 +157,13 @@ class Sidebar(QWidget):
         self.vertical_layout.addItem(self.vertical_spacer)
 
         self.vertical_layout_1.addLayout(self.vertical_layout)
+        self.broadcast_transaction = PrimaryButton()
+        self.broadcast_transaction.setVisible(priv.can_export_psbt)
+        self.broadcast_transaction.setMinimumSize(QSize(335, 40))
+        self.broadcast_transaction.setMaximumSize(QSize(335, 40))
+        self.vertical_layout.addWidget(
+            self.broadcast_transaction, 0, Qt.AlignCenter,
+        )
         self.receive_asset_button = PrimaryButton()
         self.receive_asset_button.setAccessibleName(
             SIDEBAR_RECEIVE_ASSET_BUTTON,
@@ -228,6 +227,13 @@ class Sidebar(QWidget):
                     self.network.capitalize()
                 }',
             )
+        self.broadcast_transaction.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'broadcast_transaction',
+                None,
+            ),
+        )
         self.receive_asset_button.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -255,3 +261,19 @@ class Sidebar(QWidget):
             if button.isChecked():
                 return button.get_translation_key()
         return None
+
+    def update_privileges(self, config):
+        """
+        Update the sidebar UI based on the new privileges/config.
+        """
+        priv = config.privileges
+        self.backup.setVisible(priv.can_backup_wallet)
+        self.broadcast_transaction.setVisible(priv.can_export_psbt)
+        self.receive_asset_button.setVisible(priv.can_backup_wallet)
+        # Faucet button is only added for non-watch-only wallets, so handle visibility if it exists
+        if hasattr(self, 'faucet'):
+            if SettingRepository.get_wallet_security_type() != WalletSecurityType.WATCH_ONLY:
+                self.faucet.setVisible(True)
+            else:
+                self.faucet.setVisible(False)
+        self.retranslate_ui()

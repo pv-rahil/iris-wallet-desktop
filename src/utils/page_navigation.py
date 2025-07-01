@@ -50,7 +50,6 @@ class PageNavigation:
         self.event_based_navigation = PageNavigationEventManager.get_instance()
         self.pages = {
             'Welcome': WelcomeWidget,
-            # 'SelectionPage': SelectionPageWidget,
             'SelectionPage': SelectionBreadcrumbWidget,
             'HardwareWalletConnectPage': HardwareWalletConnectWidget,
             'TermCondition': TermConditionWidget,

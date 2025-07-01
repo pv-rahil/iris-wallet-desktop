@@ -256,7 +256,7 @@ class BroadcastTransactionWidget(QWidget):
         """
         self.broadcast_transaction_title_label.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction_title_label',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
             ),
         )
         self.broadcast_transaction_label.setText(
@@ -281,15 +281,21 @@ class BroadcastTransactionWidget(QWidget):
         """
         signed_psbt = self.broadcast_transaction_input.toPlainText()
         method = self.method_selector.currentText()
-        if method == 'Broadcast UTXO':
+        if method == QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_issue_asset',
+        ):
             self._view_model.broadcast_transaction_view_model.create_utxos_end(
                 signed_psbt,
             )
-        elif method == 'Broadcast Send BTC':
+        elif method == QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_btc',
+        ):
             self._view_model.broadcast_transaction_view_model.send_btc_end(
                 signed_psbt,
             )
-        elif method == 'Broadcast Send Asset':
+        elif method == QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_asset',
+        ):
             self._view_model.broadcast_transaction_view_model.send_end(
                 signed_psbt,
             )

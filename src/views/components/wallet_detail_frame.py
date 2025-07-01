@@ -31,14 +31,16 @@ class WalletInfoWidget(QWidget):
         translation_key (str): The translated value of element.
         v_layout (QVBoxLayout): Vertical box layout of the page
         parent (QWidget, optional): The parent widget. Defaults to None.
+        copy_value (str, optional): The value to copy when the copy button is pressed. Defaults to None (uses value).
     """
 
-    def __init__(self, value: str, translation_key: str, v_layout: QVBoxLayout, parent=None):
+    def __init__(self, value: str, translation_key: str, v_layout: QVBoxLayout, parent=None, copy_value: str | None = None):
         """
         Initializes the WalletInfoWidget.
         """
         super().__init__(parent)
         self.value = value
+        self.copy_value = copy_value if copy_value is not None else value
         self.translation_key = translation_key
         self.v_layout = v_layout
         self.setup_ui()
@@ -94,7 +96,7 @@ class WalletInfoWidget(QWidget):
 
         # Connect copy button signal
         self.copy_button.clicked.connect(
-            lambda: copy_text(self.value_label),
+            lambda: copy_text(self.copy_value),
         )
 
         self.v_layout.addWidget(self)

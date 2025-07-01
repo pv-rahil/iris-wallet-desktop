@@ -114,3 +114,15 @@ class BroadcastPsbtRequestModel(BaseModel):
     """Request model for broadcast"""
     signed_psbt: str
     skip_sync: bool = False
+
+
+class KeyringDialogModel(BaseModel):
+    """Model representing keyring dialog"""
+    mnemonic: str | None = None
+    password: str | None = None
+    xpub_vanilla: str | None = None
+    xpub_colored: str | None = None
+    master_fingerprint: str | None = None
+    parent: object = None
+    navigate_to: object = None
+    originating_page: str | None = None

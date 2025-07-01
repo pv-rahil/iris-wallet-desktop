@@ -26,12 +26,16 @@ from accessible_constant import RGB_PROXY_URL_COPY_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletSecurityType
 from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import download_file
 from src.utils.common_utils import network_info
 from src.utils.common_utils import zip_logger_folder
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import PRIVACY_POLICY_URL
 from src.utils.constant import TERMS_OF_SERVICE_URL
 from src.utils.error_message import ERROR_WHILE_DOWNLOADING_LOGS
@@ -121,6 +125,29 @@ class AboutWidget(QWidget):
         self.rgb_lib_version = WalletInfoWidget(
             translation_key='rgb_lib_version', value=CURRENT_RGB_LIB_VERSION, v_layout=self.about_vertical_layout,
         )
+
+        # Add vanilla xpub, colored xpub, and master fingerprint
+        if SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
+            vanilla_xpub = local_store.get_value(ACCOUNT_XPUB_VANILLA)
+            colored_xpub = local_store.get_value(ACCOUNT_XPUB_COLORED)
+            master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
+            self.vanilla_xpub_widget = WalletInfoWidget(
+                translation_key='account_xpub_vanilla',
+                value=truncate_xpub(vanilla_xpub),
+                v_layout=self.about_vertical_layout,
+                copy_value=vanilla_xpub,
+            )
+            self.colored_xpub_widget = WalletInfoWidget(
+                translation_key='account_xpub_colored',
+                value=truncate_xpub(colored_xpub),
+                v_layout=self.about_vertical_layout,
+                copy_value=colored_xpub,
+            )
+            self.master_fingerprint_widget = WalletInfoWidget(
+                translation_key='master_fingerprint',
+                value=master_fingerprint,
+                v_layout=self.about_vertical_layout,
+            )
 
         self.privacy_policy_label = QLabel(self.about_widget)
         self.privacy_policy_label.setObjectName('privacy_policy_label')
@@ -233,3 +260,12 @@ class AboutWidget(QWidget):
             )
         finally:
             cleanup_debug_logs(zip_file_path, output_dir)
+
+
+def truncate_xpub(xpub, head=12, tail=12):
+    """
+    Truncates an xpub string to show the first 'head' characters, followed by an ellipsis, and then the last 'tail' characters.
+    """
+    if not xpub or len(xpub) <= head + tail + 3:
+        return xpub
+    return f"{xpub[:head]}...{xpub[-tail:]}"

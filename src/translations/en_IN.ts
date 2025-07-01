@@ -1597,10 +1597,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>The backup process has been completed successfully!</translation>
     </message>
     <message>
-        <source>broadcast_transaction_title_label</source>
-        <translation>Broadcast Transaction</translation>
-    </message>
-    <message>
         <source>broadcast_transaction_label</source>
         <translation>Enter your signed psbt for broadcasting</translation>
     </message>
@@ -1666,11 +1662,11 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>select_device</source>
-        <translation>Select %1 device</translation>
+        <translation>Select {} device</translation>
     </message>
     <message>
         <source>available_devices</source>
-        <translation>Available %1 devices</translation>
+        <translation>Available {} devices</translation>
     </message>
     <message>
         <source>connect</source>
@@ -1795,6 +1791,34 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>hardware_wallet_info</source>
         <translation>Use a hardware wallet to store your private key securely.</translation>
+    </message>
+    <message>
+        <source>keyring_error_message_watch_only</source>
+        <translation>The wallet xpubs and fingerprint could not be stored in the keyring. Please write down or store the xpubs and fingerprint in a safe place, as they will be needed to recover and access the wallet in future operations.</translation>
+    </message>
+    <message>
+        <source>vanilla_xpub</source>
+        <translation>Vanilla xpub</translation>
+    </message>
+    <message>
+        <source>colored_xpub</source>
+        <translation>Colored xpub</translation>
+    </message>
+    <message>
+        <source>copy_vanilla_xpub</source>
+        <translation>Copy vanilla xpub</translation>
+    </message>
+    <message>
+        <source>copy_colored_xpub</source>
+        <translation>Copy colored xpub</translation>
+    </message>
+    <message>
+        <source>copy_fingerprint</source>
+        <translation>Copy master fingerprint</translation>
+    </message>
+    <message>
+        <source>xpub_must_be_between</source>
+        <translation>Xpubs must be between 110 and 120 characters long.</translation>
     </message>
 </context>
 </TS>

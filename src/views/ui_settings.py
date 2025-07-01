@@ -31,13 +31,18 @@ from accessible_constant import SPECIFY_INDEXER_URL
 from accessible_constant import SPECIFY_RGB_PROXY_URL
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigurableCardModel
+from src.model.common_operation_model import KeyringDialogModel
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletSecurityType
 from src.model.setting_model import SettingPageLoadModel
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import FEE_RATE
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import MIN_CONFIRMATION
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
@@ -46,6 +51,7 @@ from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_VALIDATION_OF_KEYRING_ACCESS
 from src.utils.keyring_storage import get_value
+from src.utils.local_store import local_store
 from src.utils.wallet_credential_encryption import mnemonic_store
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.configurable_card import ConfigurableCardFrame
@@ -375,12 +381,25 @@ class SettingsWidget(QWidget):
             SET_DEFAULT_MIN_EXPIRATION,
         )
 
+        # Check if wallet is watch-only at initialization
+        is_watch_only = SettingRepository.get_wallet_security_type(
+        ) == WalletSecurityType.WATCH_ONLY
+
+        # Hide frames if watch-only wallet
+        self.imp_operation_frame.setVisible(not is_watch_only)
+        self.set_fee_rate_frame.setVisible(not is_watch_only)
+        self.set_minimum_confirmation_frame.setVisible(not is_watch_only)
+
         stack_1_widgets = [
-            self.imp_operation_frame,
             self.ask_auth_login_frame,
             self.hide_exhausted_asset_frame,
             self.keyring_storage_frame,
         ]
+
+        # Only add imp_operation_frame if not watch-only wallet
+        if not is_watch_only:
+            stack_1_widgets.insert(0, self.imp_operation_frame)
+
         for widget in stack_1_widgets:
             self.stack_1_vertical_layout.addWidget(widget, 0, Qt.AlignLeft)
 
@@ -390,12 +409,17 @@ class SettingsWidget(QWidget):
             self.stack_1_vertical_layout,
         )
 
+        # Initialize stack_2_widgets based on wallet type
         stack_2_widgets = [
-            self.set_fee_rate_frame,
-            self.set_minimum_confirmation_frame,
             self.set_indexer_url_frame,
             self.set_proxy_endpoint_frame,
         ]
+
+        # Only add fee rate and minimum confirmation frames if not watch-only wallet
+        if not is_watch_only:
+            stack_2_widgets.insert(0, self.set_fee_rate_frame)
+            stack_2_widgets.insert(1, self.set_minimum_confirmation_frame)
+
         for widget in stack_2_widgets:
             self.stack_2_vertical_layout.addWidget(widget, 0, Qt.AlignLeft)
         self.stack_2_spacer = QSpacerItem(
@@ -575,6 +599,16 @@ class SettingsWidget(QWidget):
 
     def handle_on_page_load(self, response: SettingPageLoadModel):
         """Handle on page load event callback"""
+        # Check if wallet is watch-only
+        is_watch_only = SettingRepository.get_wallet_security_type(
+        ) == WalletSecurityType.WATCH_ONLY
+
+        # Hide/Show frames based on wallet type
+        self.imp_operation_frame.setVisible(not is_watch_only)
+        self.set_fee_rate_frame.setVisible(not is_watch_only)
+        self.set_minimum_confirmation_frame.setVisible(not is_watch_only)
+
+        # Set toggle states
         self.imp_operation_auth_toggle_button.setChecked(
             response.status_of_native_auth.is_enabled,
         )
@@ -616,15 +650,45 @@ class SettingsWidget(QWidget):
         stored_keyring_status = SettingRepository.get_keyring_status()
         if stored_keyring_status is False:
             network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            mnemonic: str = mnemonic_store.decrypted_mnemonic
+            is_watch_only = SettingRepository.get_wallet_security_type(
+            ) == WalletSecurityType.WATCH_ONLY
             password: str = get_value(WALLET_PASSWORD_KEY, network.value)
-            keyring_dialog = KeyringErrorDialog(
-                mnemonic=mnemonic,
-                password=password,
-                parent=self,
-                originating_page='settings_page',
-                navigate_to=self._view_model.page_navigation.settings_page,
-            )
+
+            if is_watch_only:
+                # For watch-only wallets, get xpubs and fingerprint
+                account_xpub_vanilla = local_store.get_value(
+                    ACCOUNT_XPUB_VANILLA,
+                )
+                account_xpub_colored = local_store.get_value(
+                    ACCOUNT_XPUB_COLORED,
+                )
+                master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
+
+                keyring_dialog = KeyringErrorDialog(
+                    KeyringDialogModel(
+                        mnemonic=None,  # No mnemonic for watch-only
+                        password=password,
+                        xpub_vanilla=account_xpub_vanilla,
+                        xpub_colored=account_xpub_colored,
+                        master_fingerprint=master_fingerprint,
+                        parent=self,
+                        originating_page='settings_page',
+                        navigate_to=self._view_model.page_navigation.settings_page,
+                    ),
+                )
+            else:
+                # For regular wallets, get mnemonic
+                mnemonic: str = mnemonic_store.decrypted_mnemonic
+                keyring_dialog = KeyringErrorDialog(
+                    KeyringDialogModel(
+                        mnemonic=mnemonic,
+                        password=password,
+                        parent=self,
+                        originating_page='settings_page',
+                        navigate_to=self._view_model.page_navigation.settings_page,
+                    ),
+                )
+
             keyring_dialog.error.connect(self.handle_on_error)
             keyring_dialog.finished.connect(
                 self.handle_keyring_toggle_status(),
@@ -632,7 +696,10 @@ class SettingsWidget(QWidget):
             keyring_dialog.exec()
         if stored_keyring_status is True:
             mnemonic_dialog = RestoreMnemonicWidget(
-                parent=self, view_model=self._view_model, origin_page='setting_page', mnemonic_visibility=False,
+                parent=self,
+                view_model=self._view_model,
+                origin_page='setting_page',
+                mnemonic_visibility=False,
             )
             mnemonic_dialog.finished.connect(
                 self.handle_keyring_toggle_status(),

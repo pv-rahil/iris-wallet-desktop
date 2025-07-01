@@ -32,7 +32,7 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
     """
     Test the mnemonic and backup configuration functionality.
     This test case covers the following scenarios:
-    - Create a embedded wallet
+    - Create a wallet
     - Copy mnemonic from setting page
     - Assert copied mnemonic with backup page mnemonic
     - Verify the backup configuration functionality
@@ -41,7 +41,7 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
     """
     global MNEMONIC
     global PASSWORD
-    with allure.step('Create a embedded wallet'):
+    with allure.step('Create a wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_wallet(
             FIRST_APPLICATION,
         )
@@ -74,7 +74,7 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
     """
     Test the backup page functionality.
     This test case covers the following scenarios:
-    - Create a embedded wallet
+    - Create a wallet
     - Configure backup
     - Take a backup of wallet
     """

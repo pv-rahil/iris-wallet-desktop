@@ -28,6 +28,7 @@ from accessible_constant import KEYRING_PASSWORD_FRAME
 from accessible_constant import KEYRING_PASSWORD_VALUE_LABEL
 from accessible_constant import SAVE_CREDENTIALS_CHECK_BOX
 from src.data.repository.setting_repository import SettingRepository
+from src.model.common_operation_model import KeyringDialogModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.utils.common_utils import copy_text
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -55,15 +56,26 @@ class KeyringErrorDialog(QDialog):
     # This signal will emit a string message in case of success
     success = Signal(str)
 
-    def __init__(self, mnemonic: str, password: str, parent=None, navigate_to=None, originating_page: str | None = None):
-        super().__init__(parent)
-        self._password = password
-        self._mnemonic = mnemonic
-        self.navigate_to = navigate_to
-        self.originating_page = originating_page
+    def __init__(self, keyring_data: KeyringDialogModel):
+        super().__init__(keyring_data.parent)
+        self.keyring_data = keyring_data
+        self._password = keyring_data.password
+        self._mnemonic = keyring_data.mnemonic
+        self._xpub_vanilla = keyring_data.xpub_vanilla
+        self._xpub_colored = keyring_data.xpub_colored
+        self._master_fingerprint = keyring_data.master_fingerprint
+        self.navigate_to = keyring_data.navigate_to
+        self.originating_page = keyring_data.originating_page
+        # Check if this is a watch-only wallet
+        self.is_watch_only = bool(
+            not self._mnemonic and self._xpub_vanilla and self._xpub_colored and self._master_fingerprint,
+        )
         self.setObjectName('keyring')
         self.setAccessibleName(KEYRING_DIALOG_BOX)
-        self.resize(570, 401)
+        if self.is_watch_only:
+            self.resize(570, 500)
+        else:
+            self.resize(570, 401)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setStyleSheet(
             load_stylesheet(
@@ -116,8 +128,6 @@ class KeyringErrorDialog(QDialog):
 
         self.mnemonic_horizontal_layout.addWidget(self.mnemonic_copy_button)
 
-        self.vertical_layout.addLayout(self.mnemonic_horizontal_layout)
-
         self.mnemonic_value_label = QLabel(self.mnemonic_frame)
         self.mnemonic_value_label.setObjectName('mnemonic_value_label')
         self.mnemonic_value_label.setAccessibleDescription(
@@ -125,7 +135,95 @@ class KeyringErrorDialog(QDialog):
         )
         self.mnemonic_value_label.setWordWrap(True)
 
-        self.vertical_layout.addWidget(self.mnemonic_value_label)
+        self.xpub_vanilla_frame = QFrame(self)
+        self.xpub_vanilla_frame.setObjectName('xpub_vanilla_frame')
+        self.xpub_vanilla_frame.setFrameShape(QFrame.StyledPanel)
+        self.xpub_vanilla_frame.setFrameShadow(QFrame.Raised)
+        self.xpub_vanilla_layout = QVBoxLayout(self.xpub_vanilla_frame)
+        self.xpub_vanilla_layout.setSpacing(2)
+        self.xpub_vanilla_layout.setContentsMargins(6, 13, 12, -1)
+
+        self.xpub_vanilla_header = QHBoxLayout()
+        self.xpub_vanilla_label = QLabel()
+        self.xpub_vanilla_label.setObjectName('xpub_vanilla_label')
+        self.xpub_vanilla_copy = QPushButton()
+        self.xpub_vanilla_copy.setObjectName('xpub_vanilla_copy_button')
+        self.xpub_vanilla_copy.setIcon(icon)
+        self.xpub_vanilla_copy.setMinimumSize(QSize(16, 16))
+        self.xpub_vanilla_copy.setMaximumSize(QSize(16, 16))
+        self.xpub_vanilla_copy.setCursor(QCursor(Qt.PointingHandCursor))
+        self.xpub_vanilla_header.addWidget(self.xpub_vanilla_label)
+        self.xpub_vanilla_header.addWidget(self.xpub_vanilla_copy)
+        self.xpub_vanilla_value = QLabel()
+        self.xpub_vanilla_value.setObjectName('xpub_vanilla_value_label')
+        self.xpub_vanilla_value.setWordWrap(True)
+        self.xpub_vanilla_layout.addLayout(self.xpub_vanilla_header)
+        self.xpub_vanilla_layout.addWidget(self.xpub_vanilla_value)
+
+        self.xpub_colored_frame = QFrame(self)
+        self.xpub_colored_frame.setObjectName('xpub_colored_frame')
+        self.xpub_colored_frame.setFrameShape(QFrame.StyledPanel)
+        self.xpub_colored_frame.setFrameShadow(QFrame.Raised)
+        self.xpub_colored_layout = QVBoxLayout(self.xpub_colored_frame)
+        self.xpub_colored_layout.setSpacing(2)
+        self.xpub_colored_layout.setContentsMargins(6, 13, 12, -1)
+
+        self.xpub_colored_header = QHBoxLayout()
+        self.xpub_colored_label = QLabel()
+        self.xpub_colored_label.setObjectName('xpub_colored_label')
+        self.xpub_colored_copy = QPushButton()
+        self.xpub_colored_copy.setObjectName('xpub_colored_copy_button')
+        self.xpub_colored_copy.setIcon(icon)
+        self.xpub_colored_copy.setMinimumSize(QSize(16, 16))
+        self.xpub_colored_copy.setMaximumSize(QSize(16, 16))
+        self.xpub_colored_copy.setCursor(QCursor(Qt.PointingHandCursor))
+        self.xpub_colored_header.addWidget(self.xpub_colored_label)
+        self.xpub_colored_header.addWidget(self.xpub_colored_copy)
+        self.xpub_colored_value = QLabel()
+        self.xpub_colored_value.setObjectName('xpub_colored_value_label')
+        self.xpub_colored_value.setWordWrap(True)
+        self.xpub_colored_layout.addLayout(self.xpub_colored_header)
+        self.xpub_colored_layout.addWidget(self.xpub_colored_value)
+
+        self.fingerprint_frame = QFrame(self)
+        self.fingerprint_frame.setObjectName('fingerprint_frame')
+        self.fingerprint_frame.setFrameShape(QFrame.StyledPanel)
+        self.fingerprint_frame.setFrameShadow(QFrame.Raised)
+        self.fingerprint_layout = QVBoxLayout(self.fingerprint_frame)
+        self.fingerprint_layout.setSpacing(2)
+        self.fingerprint_layout.setContentsMargins(6, 13, 12, -1)
+
+        self.fingerprint_header = QHBoxLayout()
+        self.fingerprint_label = QLabel()
+        self.fingerprint_label.setObjectName('fingerprint_title_label')
+        self.fingerprint_copy = QPushButton()
+        self.fingerprint_copy.setObjectName('fingerprint_copy_button')
+        self.fingerprint_copy.setIcon(icon)
+        self.fingerprint_copy.setMinimumSize(QSize(16, 16))
+        self.fingerprint_copy.setMaximumSize(QSize(16, 16))
+        self.fingerprint_copy.setCursor(QCursor(Qt.PointingHandCursor))
+        self.fingerprint_header.addWidget(self.fingerprint_label)
+        self.fingerprint_header.addWidget(self.fingerprint_copy)
+        self.fingerprint_value = QLabel()
+        self.fingerprint_value.setObjectName('fingerprint_value_label')
+        self.fingerprint_value.setWordWrap(True)
+        self.fingerprint_layout.addLayout(self.fingerprint_header)
+        self.fingerprint_layout.addWidget(self.fingerprint_value)
+
+        # Add watch-only frames to dialog layout
+        if self.is_watch_only:
+            self.dialog_box_vertical_layout.addWidget(self.xpub_vanilla_frame)
+            self.dialog_box_vertical_layout.addWidget(self.xpub_colored_frame)
+            self.dialog_box_vertical_layout.addWidget(self.fingerprint_frame)
+            # Hide mnemonic frame for watch-only
+            self.mnemonic_frame.hide()
+        else:
+            # Hide watch-only frames for regular wallet
+            self.xpub_vanilla_frame.hide()
+            self.xpub_colored_frame.hide()
+            self.fingerprint_frame.hide()
+            self.vertical_layout.addLayout(self.mnemonic_horizontal_layout)
+            self.vertical_layout.addWidget(self.mnemonic_value_label)
 
         self.dialog_box_vertical_layout.addWidget(self.mnemonic_frame)
 
@@ -228,9 +326,22 @@ class KeyringErrorDialog(QDialog):
         """Set up connections for UI elements."""
         self.check_box.stateChanged.connect(self.handle_continue_button)
         self.continue_button.clicked.connect(self.on_click_continue)
-        self.mnemonic_copy_button.clicked.connect(
-            lambda: self.on_click_copy_button(button_name='mnemonic_text'),
-        )
+
+        if self.is_watch_only:
+            self.xpub_vanilla_copy.clicked.connect(
+                lambda: self.on_click_copy_button(button_name='xpub_vanilla'),
+            )
+            self.xpub_colored_copy.clicked.connect(
+                lambda: self.on_click_copy_button(button_name='xpub_colored'),
+            )
+            self.fingerprint_copy.clicked.connect(
+                lambda: self.on_click_copy_button(button_name='fingerprint'),
+            )
+        else:
+            self.mnemonic_copy_button.clicked.connect(
+                lambda: self.on_click_copy_button(button_name='mnemonic_text'),
+            )
+
         self.password_copy_button.clicked.connect(
             lambda: self.on_click_copy_button(button_name='password_text'),
         )
@@ -238,26 +349,76 @@ class KeyringErrorDialog(QDialog):
 
     def retranslate_ui(self):
         """Retranslate ui"""
-        self.info_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keyring_error_message', None,
-            ),
-        )
-        self.mnemonic_title_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'Mnemonic', None,
-            ),
-        )
-        self.mnemonic_copy_button.setToolTip(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'copy_mnemonic', None,
-            ),
-        )
-        self.mnemonic_value_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, self._mnemonic, None,
-            ),
-        )
+        if self.is_watch_only:
+            self.info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keyring_error_message_watch_only', None,
+                ),
+            )
+            self.xpub_vanilla_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'vanilla_xpub', None,
+                ),
+            )
+            self.xpub_vanilla_copy.setToolTip(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'copy_vanilla_xpub', None,
+                ),
+            )
+            self.xpub_vanilla_value.setText(
+                self._truncate_xpub(self._xpub_vanilla),
+            )
+            self.xpub_colored_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'colored_xpub', None,
+                ),
+            )
+            self.xpub_colored_copy.setToolTip(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'copy_colored_xpub', None,
+                ),
+            )
+            self.xpub_colored_value.setText(
+                self._truncate_xpub(self._xpub_colored),
+            )
+            self.fingerprint_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint', None,
+                ),
+            )
+            self.fingerprint_copy.setToolTip(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'copy_fingerprint', None,
+                ),
+            )
+            self.fingerprint_value.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, self._master_fingerprint, None,
+                ),
+            )
+        else:
+            self.info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keyring_error_message', None,
+                ),
+            )
+            self.mnemonic_title_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'Mnemonic', None,
+                ),
+            )
+            self.mnemonic_copy_button.setToolTip(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'copy_mnemonic', None,
+                ),
+            )
+            self.mnemonic_value_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, self._mnemonic, None,
+                ),
+            )
+
+        # Common elements for both wallet types
         self.wallet_password_title_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wallet_password', None,
@@ -356,27 +517,40 @@ class KeyringErrorDialog(QDialog):
 
     def on_click_copy_button(self, button_name: str):
         """
-        Handles the 'Copy' button click events for copying the mnemonic or password text.
-        Based on the button name, it copies either the mnemonic or the password to the clipboard.
+        Handles the 'Copy' button click events for copying the mnemonic, password, or watch-only wallet data.
+        Based on the button name, it copies the appropriate text to the clipboard.
 
         Args:
-            button_name (str): The identifier for the button clicked ('mnemonic_text' or 'password_text').
+            button_name (str): The identifier for the button clicked.
         """
         if button_name == 'mnemonic_text':
             copy_text(self.mnemonic_value_label)
-        if button_name == 'password_text':
+        elif button_name == 'password_text':
             copy_text(self.wallet_password_value)
+        elif button_name == 'xpub_vanilla':
+            copy_text(self._xpub_vanilla)
+        elif button_name == 'xpub_colored':
+            copy_text(self._xpub_colored)
+        elif button_name == 'fingerprint':
+            copy_text(self.fingerprint_value)
 
     def handle_disable_keyring(self):
         """
         Handles the disable keyring action by displaying a warning message when the user is on the settings page.
         """
         if self.originating_page == 'settings_page':
-            self.info_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keyring_removal_message', None,
-                ),
-            )
+            if self.is_watch_only:
+                self.info_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keyring_error_message_watch_only', None,
+                    ),
+                )
+            else:
+                self.info_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keyring_removal_message', None,
+                    ),
+                )
             self.cancel_button.show()
         else:
             self.cancel_button.hide()
@@ -384,3 +558,11 @@ class KeyringErrorDialog(QDialog):
     def on_click_cancel(self):
         """The `on_click_cancel` method closes the dialog when the cancel button is clicked."""
         self.close()
+
+    def _truncate_xpub(self, xpub: str, head: int = 12, tail: int = 12) -> str:
+        """
+        Truncates an xpub string to a specified length, showing the head and tail parts with an ellipsis in between.
+        """
+        if not xpub or len(xpub) <= head + tail + 3:
+            return xpub
+        return f"{xpub[:head]}...{xpub[-tail:]}"

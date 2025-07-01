@@ -36,11 +36,6 @@ class WatchOnlyDialog(QDialog):
         Initialize the WatchOnlyDialog.
         """
         super().__init__(parent)
-        self.setWindowTitle(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_watch_only_wallet_details',
-            ),
-        )
         self.setObjectName('watch_only_xpub_dialog')
         self.setModal(True)
         self.setWindowFlags(
@@ -48,7 +43,7 @@ class WatchOnlyDialog(QDialog):
             Qt.WindowType.FramelessWindowHint,
         )
         self.setStyleSheet(load_stylesheet('views/qss/watch_only_dialog.qss'))
-        self.setMinimumSize(600, 420)
+        self.setMinimumSize(500, 420)
 
         self.dialog_box_vertical_layout = QVBoxLayout(self)
         self.dialog_box_vertical_layout.setContentsMargins(28, 24, 28, 28)
@@ -59,6 +54,7 @@ class WatchOnlyDialog(QDialog):
         self.dialog_box_vertical_layout.addWidget(self.header_label)
 
         self.info_label = QLabel()
+        self.info_label.setMaximumWidth(460)
         self.info_label.setWordWrap(True)
         self.info_label.setObjectName('info_label')
         self.dialog_box_vertical_layout.addWidget(self.info_label)
@@ -67,24 +63,27 @@ class WatchOnlyDialog(QDialog):
         self.input_frame = QFrame(self)
         self.input_frame.setFrameShape(QFrame.StyledPanel)
         self.input_frame.setFrameShadow(QFrame.Raised)
-        self.input_frame.setFixedHeight(200)
+        self.input_frame.setFixedHeight(250)
         self.input_layout = QVBoxLayout(self.input_frame)
         self.input_layout.setContentsMargins(10, 0, 12, -1)
 
         # Xpub Vanilla
         self.xpub_vanilla_label = QLabel()
+        self.xpub_vanilla_label.setObjectName('xpub_vanilla_label')
         self.xpub_vanilla_input = QLineEdit()
         self.input_layout.addWidget(self.xpub_vanilla_label)
         self.input_layout.addWidget(self.xpub_vanilla_input)
 
         # Xpub Colored
         self.xpub_colored_label = QLabel()
+        self.xpub_colored_label.setObjectName('xpub_colored_label')
         self.xpub_colored_input = QLineEdit()
         self.input_layout.addWidget(self.xpub_colored_label)
         self.input_layout.addWidget(self.xpub_colored_input)
 
         # Master Fingerprint
         self.fingerprint_label = QLabel()
+        self.fingerprint_label.setObjectName('fingerprint_label')
         self.fingerprint_input = QLineEdit()
         self.input_layout.addWidget(self.fingerprint_label)
         self.input_layout.addWidget(self.fingerprint_input)
@@ -208,29 +207,42 @@ class WatchOnlyDialog(QDialog):
                 ),
             )
             self.error_label.setVisible(True)
-            self.setMinimumSize(600, 450)
+            self.setMinimumSize(480, 490)
             return
-        # if not vanilla.startswith('xpub') or not colored.startswith('xpub'):
-        #     self.error_label.setText(
-        #         QCoreApplication.translate(
-        #             IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpubs_must_start_with_xpub',
-        #         ),
-        #     )
-        #     self.error_label.setVisible(True)
-        #     self.setMinimumSize(600, 450)
-        #     return
-        if len(fingerprint) != 8:
+        # Xpub validation: must start with xpub, tpub, ypub, or zpub
+        valid_prefixes = ('xpub', 'tpub', 'ypub', 'zpub')
+        if not vanilla.startswith(valid_prefixes) or not colored.startswith(valid_prefixes):
+            self.error_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpubs_must_start_with_xpub',
+                ),
+            )
+            self.error_label.setVisible(True)
+            self.setMinimumSize(480, 490)
+            return
+        # Xpub length validation: typical xpubs are 111-112 chars, allow a small range
+        if not 110 <= len(vanilla) <= 120 or not 110 <= len(colored) <= 120:
+            self.error_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_must_be_between',
+                ),
+            )
+            self.error_label.setVisible(True)
+            self.setMinimumSize(480, 490)
+            return
+        # Fingerprint validation: must be 8 hex characters
+        if len(fingerprint) != 8 or not all(c in '0123456789abcdefABCDEF' for c in fingerprint):
             self.error_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fingerprint_should_be_8_chars',
                 ),
             )
             self.error_label.setVisible(True)
-            self.setMinimumSize(600, 450)
+            self.setMinimumSize(480, 490)
             return
         # Save to ini
         self.error_label.setVisible(False)
-        self.setMinimumSize(600, 420)
+        self.setMinimumSize(480, 420)
         local_store.set_value(ACCOUNT_XPUB_VANILLA, vanilla)
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
         local_store.set_value(MASTER_FINGERPRINT, fingerprint)

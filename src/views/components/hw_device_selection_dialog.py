@@ -114,17 +114,13 @@ class HWDeviceSelectionDialog(QDialog):
         """
         self.setWindowTitle(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_device', f"Select {
-                    self.wallet_type
-                } Device",
-            ),
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_device',
+            ).format(self.wallet_type),
         )
         self.title.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'available_devices', f"Available {
-                    self.wallet_type
-                } Devices",
-            ),
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'available_devices',
+            ).format(self.wallet_type),
         )
         self.connect_button.setText(
             QCoreApplication.translate(
@@ -270,11 +266,7 @@ class HWDeviceSelectionDialog(QDialog):
                 break
         # Map model names for display, include fingerprint for uniqueness
         device_names = [
-            f"{self.map_model_name(d.get('model'))} ({
-                d.get(
-                    'fingerprint', 'no-fp'
-                )
-            })" for d in devices_info
+            f"{self.map_model_name(d.get('model'))}" for d in devices_info
         ]
         self.populate_devices(device_names, error_message=error_message)
 
