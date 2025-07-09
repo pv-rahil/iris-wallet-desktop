@@ -11,6 +11,7 @@ from rgb_lib import AssetSchema
 
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.selection_page_model import AssetDataModel
 from src.model.setting_model import DefaultProxyEndpoint
@@ -36,9 +37,11 @@ class ReceiveRGBAssetWidget(QWidget):
         self.close_page_navigation = params.close_page_navigation
         self.default_min_confirmation = SettingCardRepository.get_default_min_confirmation()
         self.receive_rgb_asset_page = ReceiveAssetWidget(
-            self._view_model,
-            'CFA page',
-            'cfa_address_info',
+            view_model=self._view_model,
+            params=ReceiveAssetModel(
+                page_name='CFA page',
+                address_info='cfa_address_info',
+            ),
         )
         self.__loading_translucent_screen = LoadingTranslucentScreen(
             parent=self, description_text='Loading', dot_animation=True,

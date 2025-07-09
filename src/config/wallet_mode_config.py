@@ -254,7 +254,7 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Create New (On Device)',
                 description='Create a new air-gapped cold storage wallet',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=False,
+                    can_send_transactions=True,
                     can_receive_transactions=True,
                     can_view_balance=True,
                     can_create_assets=True,

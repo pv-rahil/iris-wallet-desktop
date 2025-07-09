@@ -11,6 +11,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import InitRequestModel
 from src.model.common_operation_model import UnlockResponseModel
 from src.model.common_operation_model import WalletRequestModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletSecurityType
 from src.utils.build_app_path import app_paths
@@ -51,12 +52,14 @@ class CommonOperationService:
 
             # Check if this is a watch-only wallet
             security_type = SettingRepository.get_wallet_security_type()
+            key_storage_type = SettingRepository.get_key_storage_type()
             is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+            is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
 
             response: Keys | None = None
             wallet: Wallet | None = None
 
-            if is_watch_only:
+            if is_watch_only or is_hardware_wallet:
                 account_xpub_colored = local_store.get_value(
                     ACCOUNT_XPUB_COLORED,
                 )
@@ -70,7 +73,7 @@ class CommonOperationService:
                         'Watch-only wallet xpubs and fingerprint not found. Please set up watch-only wallet first.',
                     )
 
-                # Create a Keys object for watch-only wallets using stored values
+                # Create a Keys object for hardware or watch-only wallets using stored values
                 response = Keys(
                     account_xpub_vanilla=account_xpub_vanilla,
                     account_xpub_colored=account_xpub_colored,

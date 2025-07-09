@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "iris-wallet-vault"
-version = "0.0.1"
+version = "0.2.0"
 description = ""
 readme = "README.md"
 license = ""
@@ -24,6 +24,7 @@ qrcode = "^7.4.2"
 pydenticon = "^0.3.0"
 
 # Development dependencies
+base58 = "^2.1.1"
 [tool.poetry.dev-dependencies]
 pyqt-toast-notification = "^1.2.0"
 pre-commit = "^3.7.1"
@@ -64,7 +65,7 @@ pywin32 = { version = "^306", platform = "win32" }
 # Scripts
 [tool.poetry.scripts]
 iris-wallet = "src.main:main"
-unit-test = "pytest tests --cov=src --cov-report=html:coverage-report --html=coverage-report/pytest_report.html"
+#unit-test = "pytest tests --cov=src --cov-report=html:coverage-report --html=coverage-report/pytest_report.html"
 reset-app = "src.utils.reset_app:main"
 build-iris-wallet = "build_script:main"
 single-test = "e2e_tests.e2e_runner:single_test"

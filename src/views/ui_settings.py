@@ -32,6 +32,7 @@ from accessible_constant import SPECIFY_RGB_PROXY_URL
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigurableCardModel
 from src.model.common_operation_model import KeyringDialogModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletSecurityType
 from src.model.setting_model import SettingPageLoadModel
@@ -381,14 +382,17 @@ class SettingsWidget(QWidget):
             SET_DEFAULT_MIN_EXPIRATION,
         )
 
-        # Check if wallet is watch-only at initialization
-        is_watch_only = SettingRepository.get_wallet_security_type(
+        self.is_watch_only = SettingRepository.get_wallet_security_type(
         ) == WalletSecurityType.WATCH_ONLY
+        self.is_hardware_wallet = SettingRepository.get_key_storage_type(
+        ) == KeyStorageType.HARDWARE_WALLET
 
         # Hide frames if watch-only wallet
-        self.imp_operation_frame.setVisible(not is_watch_only)
-        self.set_fee_rate_frame.setVisible(not is_watch_only)
-        self.set_minimum_confirmation_frame.setVisible(not is_watch_only)
+        self.imp_operation_frame.setVisible(
+            not self.is_watch_only and not self.is_hardware_wallet,
+        )
+        self.set_fee_rate_frame.setVisible(not self.is_watch_only)
+        self.set_minimum_confirmation_frame.setVisible(not self.is_watch_only)
 
         stack_1_widgets = [
             self.ask_auth_login_frame,
@@ -396,8 +400,7 @@ class SettingsWidget(QWidget):
             self.keyring_storage_frame,
         ]
 
-        # Only add imp_operation_frame if not watch-only wallet
-        if not is_watch_only:
+        if not self.is_watch_only and not self.is_hardware_wallet:
             stack_1_widgets.insert(0, self.imp_operation_frame)
 
         for widget in stack_1_widgets:
@@ -415,8 +418,7 @@ class SettingsWidget(QWidget):
             self.set_proxy_endpoint_frame,
         ]
 
-        # Only add fee rate and minimum confirmation frames if not watch-only wallet
-        if not is_watch_only:
+        if not self.is_watch_only:
             stack_2_widgets.insert(0, self.set_fee_rate_frame)
             stack_2_widgets.insert(1, self.set_minimum_confirmation_frame)
 
@@ -599,14 +601,12 @@ class SettingsWidget(QWidget):
 
     def handle_on_page_load(self, response: SettingPageLoadModel):
         """Handle on page load event callback"""
-        # Check if wallet is watch-only
-        is_watch_only = SettingRepository.get_wallet_security_type(
-        ) == WalletSecurityType.WATCH_ONLY
-
         # Hide/Show frames based on wallet type
-        self.imp_operation_frame.setVisible(not is_watch_only)
-        self.set_fee_rate_frame.setVisible(not is_watch_only)
-        self.set_minimum_confirmation_frame.setVisible(not is_watch_only)
+        self.imp_operation_frame.setVisible(
+            not self.is_watch_only and not self.is_hardware_wallet,
+        )
+        self.set_fee_rate_frame.setVisible(not self.is_watch_only)
+        self.set_minimum_confirmation_frame.setVisible(not self.is_watch_only)
 
         # Set toggle states
         self.imp_operation_auth_toggle_button.setChecked(
@@ -650,11 +650,9 @@ class SettingsWidget(QWidget):
         stored_keyring_status = SettingRepository.get_keyring_status()
         if stored_keyring_status is False:
             network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            is_watch_only = SettingRepository.get_wallet_security_type(
-            ) == WalletSecurityType.WATCH_ONLY
             password: str = get_value(WALLET_PASSWORD_KEY, network.value)
 
-            if is_watch_only:
+            if self.is_watch_only or self.is_hardware_wallet:
                 # For watch-only wallets, get xpubs and fingerprint
                 account_xpub_vanilla = local_store.get_value(
                     ACCOUNT_XPUB_VANILLA,

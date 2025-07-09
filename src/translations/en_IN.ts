@@ -1653,16 +1653,12 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>All fields are required.</translation>
     </message>
     <message>
-        <source>xpubs_must_start_with_xpub</source>
-        <translation>Xpubs must start with 'xpub'.</translation>
+        <source>invalid_xpub</source>
+        <translation>Provided xpub is invalid.</translation>
     </message>
     <message>
         <source>fingerprint_should_be_8_chars</source>
         <translation>Fingerprint should be 8 characters (hex).</translation>
-    </message>
-    <message>
-        <source>select_device</source>
-        <translation>Select {} device</translation>
     </message>
     <message>
         <source>available_devices</source>
@@ -1682,7 +1678,7 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>failed_to_fetch_xpubs</source>
-        <translation>Failed to fetch xpubs or fingerprint: %1</translation>
+        <translation>Failed to fetch xpubs or fingerprint: {}</translation>
     </message>
     <message>
         <source>capabilities</source>
@@ -1705,8 +1701,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Broadcast issue asset</translation>
     </message>
     <message>
-        <source>broadcast_send_btc</source>
-        <translation>Broadcast send BTC</translation>
+        <source>send_btc</source>
+        <translation>Send BTC</translation>
     </message>
     <message>
         <source>broadcast_send_asset</source>
@@ -1819,6 +1815,42 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>xpub_must_be_between</source>
         <translation>Xpubs must be between 110 and 120 characters long.</translation>
+    </message>
+    <message>
+        <source>ledger_open_failed</source>
+        <translation>Failed to open the Ledger device. Please check the connection and unlock your device.</translation>
+    </message>
+    <message>
+        <source>ledger_not_in_bitcoin_app</source>
+        <translation>Please open the Bitcoin app on your Ledger device.</translation>
+    </message>
+    <message>
+        <source>ledger_not_in_bitcoin_or_testnet_app</source>
+        <translation>Please open the Bitcoin or Bitcoin Testnet app on your Ledger device.</translation>
+    </message>
+    <message>
+        <source>ledger_open_correct_bitcoin_app</source>
+        <translation>Please open the correct Bitcoin app (mainnet or testnet) on your Ledger device.</translation>
+    </message>
+    <message>
+        <source>ledger_unlock_device</source>
+        <translation>Please unlock your ledger device</translation>
+    </message>
+    <message>
+        <source>connecting_to_device</source>
+        <translation>Please confirm on your hardware wallet</translation>
+    </message>
+    <message>
+        <source>ledger_operation_cancelled</source>
+        <translation>The operation was cancelled on your hardware wallet.</translation>
+    </message>
+    <message>
+        <source>psbt_info</source>
+        <translation>This is your PSBT (Partially Signed Bitcoin Transaction), which you can share for signing or broadcasting.</translation>
+    </message>
+    <message>
+        <source>signed_transaction</source>
+        <translation>Signed transaction</translation>
     </message>
 </context>
 </TS>

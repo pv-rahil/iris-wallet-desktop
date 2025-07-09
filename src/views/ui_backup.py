@@ -28,6 +28,7 @@ from accessible_constant import CONFIGURE_BACKUP_BUTTON
 from accessible_constant import MNEMONIC_FRAME
 from accessible_constant import SHOW_MNEMONIC_BUTTON
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.error_message import ERROR_G_DRIVE_CONFIG_FAILED
@@ -600,12 +601,13 @@ class Backup(QWidget):
 
     def set_mnemonic_visibility(self):
         """
-        Sets the visibility of the mnemonic frame based on the keyring status.
+        Sets the visibility of the mnemonic frame based on the keyring status and wallet type.
 
-        If keyring storage is disabled (stored as True), the mnemonic frame is hidden.
+        The mnemonic frame is hidden if keyring storage is enabled (stored as True) or if the wallet is a hardware wallet.
         """
         stored_keyring_status = SettingRepository.get_keyring_status()
-        if stored_keyring_status is True:
+        if stored_keyring_status is True or SettingRepository.get_key_storage_type(
+        ) == KeyStorageType.HARDWARE_WALLET:
             self.show_mnemonic_frame.hide()
 
     def get_checked_button_translation_key(self, sidebar):

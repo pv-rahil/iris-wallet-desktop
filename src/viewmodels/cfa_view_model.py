@@ -12,9 +12,13 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import AssetSchema
 
+from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.asset_detail_page_services import AssetDetailPageService
+from src.model.common_operation_model import BroadcastPsbtRequestModel
+from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import FailTransferRequestModel
@@ -23,14 +27,18 @@ from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendAssetResponseModel
+from src.model.rgb_model import SendBeginRequestModel
 from src.utils.cache import Cache
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FAIL_TRANSFER
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
 from src.utils.info_message import INFO_REFRESH_SUCCESSFULLY
+from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
@@ -45,6 +53,8 @@ class CFAViewModel(QObject, ThreadManager):
     is_loading = Signal(bool)
     refresh = Signal(bool)
     stop_loading = Signal(bool)
+    hw_dialog_update = Signal(str, Enum)
+    finalized_psbt = Signal(str)
 
     def __init__(self, page_navigation: Any) -> None:
         super().__init__()
@@ -99,7 +109,16 @@ class CFAViewModel(QObject, ThreadManager):
         """Handle success for sending CFA asset."""
         self.is_loading.emit(False)
         self.send_cfa_button_clicked.emit(False)
-        ToastManager.success(description=INFO_ASSET_SENT.format(tx_id.txid))
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.hw_dialog_update.emit(
+                INFO_ASSET_SENT.format(
+                    tx_id.txid,
+                ), PsbtStatus.SUCCESS,
+            )
+        else:
+            ToastManager.success(
+                description=INFO_ASSET_SENT.format(tx_id.txid),
+            )
 
         if self.asset_type == AssetSchema.CFA:
             self._page_navigation.collectibles_asset_page()
@@ -110,7 +129,12 @@ class CFAViewModel(QObject, ThreadManager):
         """Handle error for sending CFA asset."""
         self.is_loading.emit(False)
         self.send_cfa_button_clicked.emit(False)
-        ToastManager.error(description=error.message)
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.hw_dialog_update.emit(
+                str(error), PsbtStatus.ERROR,
+            )
+        else:
+            ToastManager.error(description=error.message)
 
     def on_success_send_rgb_asset(self, success: bool) -> None:
         """Callback function after native authentication is successful."""
@@ -235,3 +259,84 @@ class CFAViewModel(QObject, ThreadManager):
             )
         except Exception as e:
             on_error(CommonException(message=str(e)))
+
+    def send_begin(self, amount: int, blinded_utxo: str, transport_endpoints: list, fee_rate: int, min_confirmation: int):
+        """
+        Begin the process of sending an asset by creating a PSBT.
+        Calls RgbRepository.send_begin and expects a PSBT to be signed externally.
+        """
+        self.send_cfa_button_clicked.emit(True)
+        request = SendBeginRequestModel(
+            asset_id=self.asset_id,
+            amount=amount,
+            recipient_id=blinded_utxo,
+            transport_endpoints=transport_endpoints,
+            fee_rate=fee_rate,
+            min_confirmations=min_confirmation,
+        )
+        self.run_in_thread(
+            RgbRepository.send_begin,
+            {
+                'args': [request],
+                'callback': self.on_psbt_created,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_psbt_created(self, unsigned_psbt: str):
+        """
+        Handle the PSBT created by send_begin.
+        Run signing and finalization in a background thread.
+        """
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.hw_dialog_update.emit(
+                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+            )
+        self.send_cfa_button_clicked.emit(True)
+        self.run_in_thread(
+            CommonOperationRepository.sign_and_finalize_psbt,
+            {
+                'args': [unsigned_psbt],
+                'callback': self.on_psbt_signed_and_finalized,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_psbt_signed_and_finalized(self, finalized_psbt: str):
+        """
+        Callback after PSBT is signed and finalized.
+        Now broadcast the transaction.
+        """
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.hw_dialog_update.emit(
+                INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
+            )
+            self.send_btc_end(finalized_psbt)
+        else:
+            self.finalized_psbt.emit(finalized_psbt)
+
+    def send_end(self, signed_psbt: str, skip_sync: bool = False):
+        """
+        Finalize and broadcast the signed PSBT.
+        Calls RgbRepository.send_end to broadcast the transaction.
+        """
+        self.send_cfa_button_clicked.emit(True)
+        request = BroadcastPsbtRequestModel(
+            signed_psbt=signed_psbt, skip_sync=skip_sync,
+        )
+        self.run_in_thread(
+            RgbRepository.send_end,
+            {
+                'args': [request],
+                'callback': self.on_success_cfa,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def cancel_operation(self):
+        """
+        Called when the user clicks Cancel on the hardware wallet dialog.
+        Sets a cancel flag and emits send_cfa_button_clicked(False) to close the dialog.
+        """
+        self.send_cfa_button_clicked.emit(False)
+        hardware_client_store.stop_client()

@@ -14,7 +14,7 @@ from rgb_lib import Transfer
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.rgb_model import AssetIdModel, SendBeginRequestModel, SendBeginResult
+from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
@@ -26,9 +26,12 @@ from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import RefreshTransferResponseModel
 from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
+from src.model.rgb_model import SendBeginRequestModel
+from src.model.rgb_model import SendBeginResult
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.check_colorable_available import check_colorable_available
+from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 
 
 class RgbRepository:
@@ -174,9 +177,11 @@ class RgbRepository:
             if cache is not None:
                 cache.invalidate_cache()
             return FailTransferResponseModel(transfers_changed=data)
-        
+
     @staticmethod
-    def send_begin(detail:SendBeginRequestModel) -> SendBeginResult:
+    @check_colorable_available()
+    @require_hardware_wallet_connected()
+    def send_begin(detail: SendBeginRequestModel) -> SendBeginResult:
         """Create psbt for send rgb asset"""
         with repository_custom_context():
             recipient = Recipient(
@@ -188,16 +193,19 @@ class RgbRepository:
             recipient_map = {detail.asset_id: [recipient]}
             psbt: SendBeginResult = colored_wallet.wallet.send_begin(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, skip_sync=detail.skip_sync,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
             )
 
             return psbt
-        
+
     @staticmethod
-    def send_end(detail:BroadcastPsbtRequestModel) -> SendResult:
+    @check_colorable_available()
+    def send_end(detail: BroadcastPsbtRequestModel) -> SendResult:
         """broadcast signed psbt of send rgb asset"""
         with repository_custom_context():
-            data:SendResult = colored_wallet.wallet.send_end(online=colored_wallet.online,signed_psbt=detail.signed_psbt,skip_sync=detail.skip_sync)
+            data: SendResult = colored_wallet.wallet.send_end(
+                online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()

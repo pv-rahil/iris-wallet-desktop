@@ -149,13 +149,13 @@ class BroadcastTransactionWidget(QWidget):
         self.method_selector = QComboBox(self.broadcast_transaction_widget)
         self.method_selector.addItems([
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_issue_asset',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset',
             ),
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_btc',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_btc',
             ),
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_asset',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_assets',
             ),
         ])
         self.method_selector.setCurrentIndex(0)
@@ -282,19 +282,19 @@ class BroadcastTransactionWidget(QWidget):
         signed_psbt = self.broadcast_transaction_input.toPlainText()
         method = self.method_selector.currentText()
         if method == QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_issue_asset',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset',
         ):
             self._view_model.broadcast_transaction_view_model.create_utxos_end(
                 signed_psbt,
             )
         elif method == QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_btc',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_btc',
         ):
             self._view_model.broadcast_transaction_view_model.send_btc_end(
                 signed_psbt,
             )
         elif method == QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_send_asset',
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_assets',
         ):
             self._view_model.broadcast_transaction_view_model.send_end(
                 signed_psbt,

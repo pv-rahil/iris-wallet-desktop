@@ -4,6 +4,8 @@
  """
 from __future__ import annotations
 
+from enum import Enum
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
@@ -15,7 +17,11 @@ from rgb_lib import RgbLibError
 import src.resources_rc
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.data.repository.setting_repository import SettingRepository
+from src.model.common_operation_model import ReceiveAssetModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.setting_model import DefaultFeeRate
@@ -25,6 +31,7 @@ from src.utils.error_message import ERROR_SEND_ASSET
 from src.utils.error_message import ERROR_UNEXPECTED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
+from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.send_asset import SendAssetWidget
 from src.views.components.toast import ToastManager
@@ -51,6 +58,11 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_asset_page.fee_rate_value.setText(
             str(self.value_of_default_fee_rate.fee_rate),
         )
+        key_storage_type = SettingRepository.get_key_storage_type()
+        self.is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
+        self._hw_operation_dialog = None
 
         layout = QVBoxLayout()
         layout.addWidget(self.send_rgb_asset_page)
@@ -103,6 +115,12 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_asset_page.fee_rate_value.textChanged.connect(
             self.handle_button_enabled,
         )
+        self._view_model.cfa_view_model.hw_dialog_update.connect(
+            self.handle_hw_dialog_update,
+        )
+        self._view_model.cfa_view_model.finalized_psbt.connect(
+            self.handle_finalized_psbt,
+        )
 
     def refresh_asset(self):
         """This method handle the refresh asset on send asset page"""
@@ -147,9 +165,14 @@ class SendRGBAssetWidget(QWidget):
                 DecodeRgbInvoiceRequestModel(invoice=provided_invoice),
             )
             try:
-                self._view_model.cfa_view_model.on_send_click(
-                    amount, decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
-                )
+                if self.is_hardware_wallet or self.is_offline_wallet:
+                    self._view_model.cfa_view_model.send_begin(
+                        amount, decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
+                    )
+                else:
+                    self._view_model.cfa_view_model.on_send_click(
+                        amount, decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
+                    )
                 # Success toast or indicator can be added here if needed
             except CommonException as e:
                 # Handle any errors during the sending process
@@ -330,3 +353,24 @@ class SendRGBAssetWidget(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'invalid_invoice',
                 ),
             )
+
+    def handle_hw_dialog_update(self, message: str, dialog_type: Enum):
+        """Centralized hardware wallet dialog update handler."""
+        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
+        dlg.update_dialog(message, dialog_type)
+        if not dlg.isVisible():
+            dlg.show()
+
+    def handle_finalized_psbt(self, psbt):
+        """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if self.asset_type == AssetSchema.NIA:
+            page_name = 'NIA page'
+        else:
+            page_name = 'CFA page'
+
+        self._view_model.page_navigation.receive_asset_page(
+            ReceiveAssetModel(
+                page_name=page_name,
+                address_info='psbt_info', psbt=psbt,
+            ),
+        )

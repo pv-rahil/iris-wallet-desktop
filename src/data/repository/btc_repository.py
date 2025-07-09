@@ -19,6 +19,7 @@ from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
+from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 
 
 class BtcRepository:
@@ -86,8 +87,9 @@ class BtcRepository:
             return EstimateFeeResponse(fee_rate=data)
 
     @staticmethod
-    def send_btc_begin(param: SendBtcRequestModel) :
-        """Send Bitcoin."""
+    @require_hardware_wallet_connected()
+    def send_btc_begin(param: SendBtcRequestModel):
+        """Creates psbt for bitcoin."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.send_btc_begin(
                 online=colored_wallet.online, skip_sync=param.skip_sync,
@@ -97,10 +99,22 @@ class BtcRepository:
             if cache is not None:
                 cache.invalidate_cache()
             return psbt
-        
+
+    @staticmethod
+    def send_btc_end(detail: BroadcastPsbtRequestModel) -> SendBtcResponseModel:
+        """Broadcast the signed psbt"""
+        with repository_custom_context():
+            data = colored_wallet.wallet.send_btc_end(
+                online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
+            )
+            cache = Cache.get_cache_session()
+            if cache is not None:
+                cache.invalidate_cache()
+            return SendBtcResponseModel(tx_id=data)
+
     @staticmethod
     def create_utxos_begin(param: CreateUtxosRequestModel):
-        """Send Bitcoin."""
+        """Creates colorable utxo psbt."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.create_utxos_begin(
                 online=colored_wallet.online,up_to=param.up_to,num=2,size=param.size,fee_rate=param.fee_rate,
@@ -110,23 +124,12 @@ class BtcRepository:
             if cache is not None:
                 cache.invalidate_cache()
             return psbt
-        
     @staticmethod
-    def send_btc_end(detail: BroadcastPsbtRequestModel)->SendBtcResponseModel :
-        """Send Bitcoin."""
+    def create_utxos_end(detail: BroadcastPsbtRequestModel) -> int:
+        """Broadcast the colorable utxo psbt."""
         with repository_custom_context():
-            data = colored_wallet.wallet.send_btc_end(online=colored_wallet.online,signed_psbt=detail.signed_psbt,skip_sync=detail.skip_sync
-            )
-            cache = Cache.get_cache_session()
-            if cache is not None:
-                cache.invalidate_cache()
-            return SendBtcResponseModel(tx_id=data)
-        
-    @staticmethod
-    def create_utxos_end(detail: BroadcastPsbtRequestModel)->int:
-        """Send Bitcoin."""
-        with repository_custom_context():
-            data:int = colored_wallet.wallet.create_utxos_end(online=colored_wallet.online,signed_psbt=detail.signed_psbt,skip_sync=detail.skip_sync
+            data: int = colored_wallet.wallet.create_utxos_end(
+                online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
             )
             cache = Cache.get_cache_session()
             if cache is not None:

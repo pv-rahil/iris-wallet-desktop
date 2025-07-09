@@ -77,5 +77,6 @@
     <file>assets/trezor.png</file>
     <file>assets/white_ledger.png</file>
     <file>assets/white_trezor.png</file>
+    <file>assets/success.png</file>
   </qresource>
 </RCC>

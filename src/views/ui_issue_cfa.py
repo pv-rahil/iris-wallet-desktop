@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+from enum import Enum
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
@@ -13,6 +14,7 @@ from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QFrame
+from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QLineEdit
@@ -29,6 +31,7 @@ from accessible_constant import CFA_ASSET_NAME
 from accessible_constant import CFA_UPLOAD_FILE_BUTTON
 from accessible_constant import ISSUE_CFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_CFA_BUTTON
+from src.model.enums.enums_model import PsbtStatus
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import resize_image
@@ -40,6 +43,7 @@ from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
+from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -378,6 +382,12 @@ class IssueCFAWidget(QWidget):
         self.amount_input.textChanged.connect(
             lambda text: enforce_u64_max_input(self.amount_input, text),
         )
+        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
+            self.handle_hw_dialog_update,
+        )
+        self._view_model.utxo_creation_view_model.utxo_created.connect(
+            self.handle_utxo_created,
+        )
 
     def show_file_preview(self, file_upload_message):
         """Preview the uploaded image"""
@@ -458,3 +468,16 @@ class IssueCFAWidget(QWidget):
         )
         self.render_timer.stop()
         self._view_model.page_navigation.show_success_page(params)
+
+    def handle_hw_dialog_update(self, message: str, dialog_type: Enum):
+        """Centralized hardware wallet dialog update handler."""
+        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
+        dlg.update_dialog(message, dialog_type)
+        if not dlg.isVisible():
+            dlg.show()
+
+    def handle_utxo_created(self, result):
+        """Close the hardware wallet dialog after UTXO creation."""
+        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
+        if dlg.isVisible():
+            dlg.accept()

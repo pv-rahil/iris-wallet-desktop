@@ -4,12 +4,15 @@
 """
 from __future__ import annotations
 
+from enum import Enum
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFrame
+from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
@@ -20,21 +23,26 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
+from src.data.repository.setting_repository import SettingRepository
+from src.model.common_operation_model import ReceiveAssetModel
 import src.resources_rc
 from accessible_constant import ISSUE_NIA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_NIA_BUTTON
 from accessible_constant import NIA_ASSET_AMOUNT
 from accessible_constant import NIA_ASSET_NAME
 from accessible_constant import NIA_ASSET_TICKER
+from src.model.enums.enums_model import PsbtStatus, WalletType
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
+from src.utils.info_message import INFO_UTXO_REQUIRED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
+from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -332,6 +340,18 @@ class IssueNIAWidget(QWidget):
         self.amount_input.textChanged.connect(
             lambda text: enforce_u64_max_input(self.amount_input, text),
         )
+        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
+            self.handle_nia_hw_dialog,
+        )
+        self._view_model.utxo_creation_view_model.utxo_created.connect(
+            self.handle_utxo_created,
+        )
+        self._view_model.utxo_creation_view_model.utxo_required.connect(
+            self.handle_utxo_required,
+        )
+        self._view_model.utxo_creation_view_model.psbt_finalized.connect(
+            self.show_psbt_page
+        )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -442,3 +462,38 @@ class IssueNIAWidget(QWidget):
         )
         self.render_timer.stop()
         self._view_model.page_navigation.show_success_page(params)
+
+    def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
+        """Centralized hardware wallet dialog update handler."""
+        nia_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
+        nia_dialog.update_dialog(message, dialog_type)
+        if not nia_dialog.isVisible():
+                nia_dialog.show()
+
+    def handle_utxo_created(self):
+        """Close the hardware wallet dialog after UTXO creation."""
+        utxo_created = HardwareWalletOperationDialog.get_instance(parent=self)
+        if utxo_created.isVisible():
+            utxo_created.accept()
+
+    def handle_utxo_required(self):
+        """Shows the dialog for utxo require"""
+        utxo_required = HardwareWalletOperationDialog.get_instance(parent=self)
+        utxo_required.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
+        utxo_required.done_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,'continue'
+            )
+        )
+        utxo_required.done_button.clicked.connect(self._view_model.utxo_creation_view_model.create_utxos_begin)
+        utxo_required.cancel_button.clicked.connect(utxo_required.reject)
+        utxo_required.exec()
+
+    def show_psbt_page(self, psbt):
+        """Navigate to the receive asset page and display the PSBT as a QR code."""
+        self._view_model.page_navigation.receive_asset_page(
+            ReceiveAssetModel(
+                page_name='NIA page',
+                address_info='psbt_info', psbt=psbt,
+            ),
+        )

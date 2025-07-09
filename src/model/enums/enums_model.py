@@ -107,3 +107,11 @@ class ToastPreset(Enum):
     WARNING = 2
     ERROR = 3
     INFORMATION = 4
+
+
+class PsbtStatus(str, Enum):
+    """Enum for hardware wallet dialog types"""
+    SIGNING = 'signing'
+    BROADCASTING = 'broadcasting'
+    SUCCESS = 'success'
+    ERROR = 'error'

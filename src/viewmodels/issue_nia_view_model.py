@@ -33,6 +33,7 @@ class IssueNIAViewModel(QObject, ThreadManager):
     def __init__(self, page_navigation: Any) -> None:
         super().__init__()
         self._page_navigation = page_navigation
+        self.suppress_error_toast = False
 
     def on_success_native_auth_nia(self, success: bool):
         """Callback function after native authentication successful"""
@@ -103,9 +104,10 @@ class IssueNIAViewModel(QObject, ThreadManager):
     def on_error(self, error) -> None:
         """This method is used  handle onerror for the NIA issue page."""
         self.issue_button_clicked.emit(False)
-        ToastManager.error(
-            description=error.message,
-        )
+        if not self.suppress_error_toast:
+            ToastManager.error(
+                description=error.message,
+            )
 
     def on_close_click(self) -> None:
         """This method is used for close the NIA issue page."""

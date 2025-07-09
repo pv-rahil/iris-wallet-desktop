@@ -4,6 +4,9 @@ Dialog for entering xpubs and fingerprint for Watch-Only wallet mode.
 """
 from __future__ import annotations
 
+import binascii
+
+from base58 import b58decode_check
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
@@ -209,18 +212,16 @@ class WatchOnlyDialog(QDialog):
             self.error_label.setVisible(True)
             self.setMinimumSize(480, 490)
             return
-        # Xpub validation: must start with xpub, tpub, ypub, or zpub
-        valid_prefixes = ('xpub', 'tpub', 'ypub', 'zpub')
-        if not vanilla.startswith(valid_prefixes) or not colored.startswith(valid_prefixes):
+        if self.is_invalid_xpub(vanilla) or self.is_invalid_xpub(colored):
             self.error_label.setText(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpubs_must_start_with_xpub',
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'invalid_xpub',
                 ),
             )
             self.error_label.setVisible(True)
             self.setMinimumSize(480, 490)
             return
-        # Xpub length validation: typical xpubs are 111-112 chars, allow a small range
+        # # Xpub length validation: typical xpubs are 111-112 chars, allow a small range
         if not 110 <= len(vanilla) <= 120 or not 110 <= len(colored) <= 120:
             self.error_label.setText(
                 QCoreApplication.translate(
@@ -247,3 +248,15 @@ class WatchOnlyDialog(QDialog):
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
         local_store.set_value(MASTER_FINGERPRINT, fingerprint)
         self.accept()
+
+    def is_invalid_xpub(self, xpub: str) -> bool:
+        """Validate an extended public key (xpub) using Base58Check and expected length.
+
+        Returns True if the xpub is invalid (e.g., incorrect length or decode error), otherwise False.
+        """
+        try:
+            decoded = b58decode_check(xpub)
+            # Check that it's roughly the right length (78 bytes for xpub)
+            return len(decoded) != 78
+        except (ValueError, binascii.Error):
+            return True  # Invalid Base58Check format

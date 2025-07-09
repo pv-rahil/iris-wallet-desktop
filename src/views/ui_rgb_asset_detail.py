@@ -46,6 +46,7 @@ from src.model.selection_page_model import AssetDataModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import copy_text
+from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -95,6 +96,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_type = params.asset_type
         self.image_path = params.image_path
         self._view_model: MainViewModel = view_model
+        self.config = get_current_wallet_mode_config()
         self.grid_layout_2 = QGridLayout(self)
         self.grid_layout_2.setObjectName('gridLayout_2')
         self.horizontal_spacer_3 = QSpacerItem(
@@ -543,8 +545,12 @@ class RGBAssetDetailWidget(QWidget):
                 False,
             )
             self.asset_refresh_button.setDisabled(False)
-            self.send_asset.setDisabled(False)
-            self.receive_rgb_asset.setDisabled(False)
+            self.send_asset.setDisabled(
+                not self.config.privileges.can_send_transactions,
+            )
+            self.receive_rgb_asset.setDisabled(
+                not self.config.privileges.can_receive_transactions,
+            )
 
     def handle_page_navigation(self):
         """Handle the page navigation according the NIA or CFA page"""

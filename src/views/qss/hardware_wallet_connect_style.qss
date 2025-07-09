@@ -7,7 +7,7 @@ QFrame#hardware_wallet_connect_card {
 }
 
 /* Title label */
-QLabel#hardware_wallet_connect_title {
+QLabel#hardware_wallet_selection_title {
     font: 20px "Inter";
     font-weight: 700;
     color: rgb(220, 223, 235);
@@ -16,6 +16,17 @@ QLabel#hardware_wallet_connect_title {
     background: transparent;
     border: none;
 }
+
+QLabel#hardware_wallet_connect_title {
+    font: 20px "Inter";
+    font-weight: 700;
+    color: rgb(220, 223, 235);
+    padding-left: 21px;
+    padding-bottom: 10px;
+    background: transparent;
+    border: none;
+}
+
 QPushButton#close_button{
     background:transparent;
     border:none;
@@ -35,9 +46,16 @@ QLabel#hardware_wallet_connect_subtitle {
 
 /* Info label */
 QLabel#hardware_wallet_connect_info {
-    font: 13px "Inter";
+    font: 16px "Inter";
     color: rgb(120, 130, 150);
     margin-top: 32px;
+    background: transparent;
+    border: none;
+}
+
+QLabel#message_label {
+    font: 16px "Inter";
+    color: rgb(120, 130, 150);
     background: transparent;
     border: none;
 }
@@ -81,23 +99,37 @@ QPushButton#primary_button {
 }
 
 QDialog#hardware_wallet_device_dialog {
-    background: rgb(18, 28, 48);
-    border-radius: 16px;
+    background: transparent;
+    border: 1px solid rgb(102, 108, 129);
+    background-color: rgb(3, 11, 37);
+    border-radius: 8px;
 }
 
 /* Device selection frame */
 QFrame#hardware_wallet_device_frame {
     background: transparent;
     border: none;
-    padding: 8px;
+    padding: 0 0 0 0;
 }
 
+QLabel#no_device_label {
+    font: 16px "Inter";
+    color: rgb(140, 145, 160);
+    padding-left: 27px;
+    padding-bottom: 5px;
+}
+
+QLabel#error_label {
+    font: 14px "Inter";
+    color: red;
+    padding-left: 24px;
+}
 /* Radio button styles for device selection */
 QRadioButton {
     font: 16px "Inter";
     color: rgb(140, 145, 160);
-    padding: 12px 16px;
-    margin: 4px 0;
+    padding-left: 27px;
+    padding-bottom: 5px;
 }
 
 QRadioButton:hover {
@@ -114,7 +146,7 @@ QRadioButton::indicator {
     border-radius: 9px;
     border: 2px solid rgb(102, 108, 129);
     background: transparent;
-    margin-right: 12px;
+    /* margin-right: 12px; */
 }
 
 QRadioButton::indicator:hover {
@@ -129,48 +161,4 @@ QRadioButton::indicator:checked {
 QRadioButton::indicator:checked:hover {
     border: 2px solid rgb(140, 145, 160);
     background: rgb(140, 145, 160);
-}
-
-QListWidget#hardware_wallet_device_list {
-    background: rgb(36, 44, 70);
-    color: rgb(140, 145, 160);
-    border-radius: 12px;
-    font: 16px "Inter";
-    border: none;
-    padding: 8px;
-    outline: none;
-}
-QListWidget#hardware_wallet_device_list::item {
-    padding: 14px 18px;
-    margin-bottom: 8px;
-    border-radius: 8px;
-    font-size: 16px;
-    background: transparent;
-}
-QListWidget#hardware_wallet_device_list::item:selected {
-    background: rgb(18, 28, 48);
-    color: white;
-    border-radius: 8px;
-}
-QListWidget#hardware_wallet_device_list::item:hover {
-    color: #fff;
-}
-QListWidget#hardware_wallet_device_list QScrollBar:vertical {
-    background: transparent;
-    width: 8px;
-    margin: 4px 0 4px 0;
-    border-radius: 4px;
-}
-QListWidget#hardware_wallet_device_list QScrollBar::handle:vertical {
-    background: rgb(60, 70, 100);
-    min-height: 24px;
-    border-radius: 4px;
-}
-QListWidget#hardware_wallet_device_list QScrollBar::add-line:vertical,
-QListWidget#hardware_wallet_device_list QScrollBar::sub-line:vertical {
-    height: 0;
-}
-QListWidget#hardware_wallet_device_list QScrollBar::add-page:vertical,
-QListWidget#hardware_wallet_device_list QScrollBar::sub-page:vertical {
-    background: none;
 }

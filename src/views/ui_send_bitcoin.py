@@ -4,6 +4,8 @@
  """
 from __future__ import annotations
 
+from enum import Enum
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
@@ -14,12 +16,17 @@ from rgb_lib import RgbLibError
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.model.common_operation_model import ReceiveAssetModel
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletType
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import FEE_RATE
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
+from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
+from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.send_asset import SendAssetWidget
 
 
@@ -40,6 +47,10 @@ class SendBitcoinWidget(QWidget):
         self.send_bitcoin_page.fee_rate_value.setAccessibleDescription(
             self.send_bitcoin_page.fee_rate_value.text(),
         )
+        key_storage_type = SettingRepository.get_key_storage_type()
+        self.is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
         layout = QVBoxLayout()
         layout.addWidget(self.send_bitcoin_page)
         self.setLayout(layout)
@@ -89,6 +100,12 @@ class SendBitcoinWidget(QWidget):
         self.send_bitcoin_page.fee_rate_value.textChanged.connect(
             self.handle_button_enabled,
         )
+        self._view_model.send_bitcoin_view_model.hw_dialog_update.connect(
+            self.handle_hw_dialog_update,
+        )
+        self._view_model.send_bitcoin_view_model.finalized_psbt.connect(
+            self.handle_finalized_psbt,
+        )
 
     def set_bitcoin_balance(self):
         """Set the bitcoin balance in the UI."""
@@ -109,9 +126,14 @@ class SendBitcoinWidget(QWidget):
         address = self.send_bitcoin_page.asset_address_value.text()
         amount = self.send_bitcoin_page.asset_amount_value.text()
         fee = self.send_bitcoin_page.fee_rate_value.text() or FEE_RATE
-        self._view_model.send_bitcoin_view_model.on_send_click(
-            address, amount, fee,
-        )
+        if self.is_hardware_wallet or self.is_offline_wallet:
+            self._view_model.send_bitcoin_view_model.send_btc_begin(
+                address, amount, fee,
+            )
+        else:
+            self._view_model.send_bitcoin_view_model.on_send_click(
+                address, amount, fee,
+            )
 
     def update_loading_state(self, is_loading: bool, is_fee_rate_loading: bool = False):
         """Updates the loading state of the send button."""
@@ -230,3 +252,22 @@ class SendBitcoinWidget(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'invalid_address',
                 ),
             )
+
+    def handle_hw_dialog_update(self, message: str, dialog_type: Enum):
+        """Centralized hardware wallet dialog update handler."""
+        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
+        dlg.cancel_button.clicked.connect(
+            self._view_model.send_bitcoin_view_model.cancel_operation,
+        )
+        dlg.update_dialog(message, dialog_type)
+        if not dlg.isVisible():
+            dlg.show()
+
+    def handle_finalized_psbt(self, psbt):
+        """Navigate to the receive asset page and display the PSBT as a QR code."""
+        self._view_model.page_navigation.receive_asset_page(
+            ReceiveAssetModel(
+                page_name='bitcoin_page',
+                address_info='psbt_info', psbt=psbt,
+            ),
+        )

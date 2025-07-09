@@ -560,9 +560,7 @@ class BtcWidget(QWidget):
         self.render_timer.stop()
         self.refresh_button.setDisabled(False)
         self.send_asset_btn.setDisabled(not self.priv.can_send_transactions)
-        self.receive_asset_btn.setDisabled(
-            not self.priv.can_receive_transactions,
-        )
+        self.receive_asset_btn.setDisabled(False)
 
     def get_transaction_timestamp(self, confirmation_timestamp):
         """Return formatted date and time for a given timestamp."""

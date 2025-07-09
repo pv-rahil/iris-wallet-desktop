@@ -25,6 +25,7 @@ from src.viewmodels.set_wallet_password_view_model import SetWalletPasswordViewM
 from src.viewmodels.setting_view_model import SettingViewModel
 from src.viewmodels.splash_view_model import SplashViewModel
 from src.viewmodels.term_view_model import TermsViewModel
+from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 from src.viewmodels.view_unspent_view_model import UnspentListViewModel
 from src.viewmodels.welcome_view_model import WelcomeViewModel
 
@@ -96,4 +97,8 @@ class MainViewModel(QObject):
 
         self.header_frame_view_model = HeaderFrameViewModel()
 
-        self.broadcast_transaction_view_model = BroadcastTransactionViewModel(self.page_navigation)
+        self.broadcast_transaction_view_model = BroadcastTransactionViewModel(
+            self.page_navigation,
+        )
+
+        self.utxo_creation_view_model = UtxoCreationViewModel.get_instance()

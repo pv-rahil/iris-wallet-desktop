@@ -12,6 +12,7 @@ import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import WalletRequestModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletSecurityType
@@ -140,12 +141,14 @@ class SplashViewModel(QObject, ThreadManager):
                 if keyring_status is True or wallet_password is None:
                     self._page_navigation.enter_wallet_password_page()
                 else:
-                    # Check if this is a watch-only wallet
+                    # Check if this is a watch-only or hardware wallet
                     security_type = SettingRepository.get_wallet_security_type()
+                    key_storage_type = SettingRepository.get_key_storage_type()
                     is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+                    is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
 
-                    if is_watch_only:
-                        # For watch-only wallets, use None mnemonic
+                    if is_watch_only or is_hardware_wallet:
+                        # For watch-only or hardware wallets, use None mnemonic
                         decrypted_mnemonic = None
                     else:
                         # For regular wallets, decrypt mnemonic from file

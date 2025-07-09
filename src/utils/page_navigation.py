@@ -4,6 +4,7 @@ logic for the application's pages.
 """
 from __future__ import annotations
 
+from src.model.common_operation_model import ReceiveAssetModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import SelectionPageModel
 from src.model.success_model import SuccessPageModel
@@ -11,6 +12,7 @@ from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.views.components.error_report_dialog_box import ErrorReportDialog
+from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.main_window import MainWindow
 from src.views.ui_about import AboutWidget
 from src.views.ui_backup import Backup
@@ -76,6 +78,7 @@ class PageNavigation:
             'FaucetsWidget': FaucetsWidget,
             'HelpWidget': HelpWidget,
             'BroadcastTransactionWidget': BroadcastTransactionWidget,
+            'ReceiveAssetWidget': ReceiveAssetWidget,
         }
 
         self.event_based_navigation.navigate_to_page_signal.connect(
@@ -163,6 +166,9 @@ class PageNavigation:
         )
         self.event_based_navigation.broadcast_transaction_page_signal.connect(
             self.broadcast_transaction_page,
+        )
+        self.event_based_navigation.receive_asset_page_signal.connect(
+            self.receive_asset_page,
         )
 
     def toggle_sidebar(self, show):
@@ -352,3 +358,11 @@ class PageNavigation:
     def broadcast_transaction_page(self):
         """This method display the help page."""
         self.navigate_to_page('BroadcastTransactionWidget')
+
+    def receive_asset_page(self, params: ReceiveAssetModel):
+        """This method display the receive asset page with PSBT."""
+        self.current_stack = {
+            'name': 'ReceiveAssetWidget',
+            'widget': self.pages['ReceiveAssetWidget'](self._ui.view_model, params),
+        }
+        self.navigate_and_toggle(False)

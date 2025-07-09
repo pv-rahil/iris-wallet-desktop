@@ -24,6 +24,8 @@ import src.resources_rc
 from accessible_constant import INVOICE_COPY_BUTTON
 from accessible_constant import RECEIVE_ASSET_CLOSE_BUTTON
 from accessible_constant import RECEIVER_ADDRESS
+from src.model.common_operation_model import ReceiveAssetModel
+from src.utils.common_utils import copy_text
 from src.utils.common_utils import set_qr_code
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -36,8 +38,7 @@ class ReceiveAssetWidget(QWidget):
 
     def __init__(
         self, view_model: MainViewModel,
-        page_name: str,
-        address_info: str,
+        params: ReceiveAssetModel,
     ):
         super().__init__()
         self.setStyleSheet(
@@ -46,8 +47,9 @@ class ReceiveAssetWidget(QWidget):
             ),
         )
         self._view_model: MainViewModel = view_model
-        self.address_info = address_info
-        self.page_name = page_name
+        self.address_info = params.address_info
+        self.page_name = params.page_name
+        self.psbt = params.psbt
         self.get_receive_address = None
         self.receive_asset_grid_layout = QGridLayout(self)
         self.receive_asset_grid_layout.setObjectName(
@@ -220,14 +222,42 @@ class ReceiveAssetWidget(QWidget):
         )
 
         self.retranslate_ui()
+        if self.psbt:
+            self.update_qr_and_address(self.psbt)
+            self.setup_close_button()
+            self.copy_button.clicked.connect(
+                lambda: copy_text(self.receiver_address),
+            )
+
+    def setup_close_button(self):
+        """Connect the close button to navigate back to bitcoin page."""
+        if self.page_name == 'send_bitcoin':
+            self.receive_asset_close_button.clicked.connect(
+                self._view_model.page_navigation.bitcoin_page,
+            )
+        elif self.page_name == 'NIA page':
+            self.receive_asset_close_button.clicked.connect(
+                self._view_model.page_navigation.fungibles_asset_page,
+            )
+        else:
+            self.receive_asset_close_button.clicked.connect(
+                self._view_model.page_navigation.collectibles_asset_page,
+            )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
-        self.asset_title.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'receive', None,
-            ),
-        )
+        if self.psbt:
+            self.asset_title.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signed_transaction', None,
+                ),
+            )
+        else:
+            self.asset_title.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'receive', None,
+                ),
+            )
         self.receive_asset_close_button.setText('')
         self.label.setText('')
         self.address_label.setText(

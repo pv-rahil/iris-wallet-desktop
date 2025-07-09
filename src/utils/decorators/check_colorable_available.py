@@ -13,6 +13,8 @@ from rgb_lib import RgbLibError
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType, WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.cache import Cache
@@ -20,22 +22,29 @@ from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
+from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 
 
 def create_utxos() -> None:
     """Create UTXOs for RGB operations by calling the wallet's create_utxos method."""
     try:
+        utxo_creation_view_model = UtxoCreationViewModel.get_instance()
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
+        key_storage_type = SettingRepository.get_key_storage_type()
+        wallet_type = SettingRepository.get_wallet_type()
         create_utxos_model = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
             num=2,
         )
-        colored_wallet.wallet.create_utxos(
-            online=create_utxos_model.online, up_to=create_utxos_model.up_to,
-            num=create_utxos_model.num, size=create_utxos_model.size,
-            fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
-        )
+        if key_storage_type == KeyStorageType.HARDWARE_WALLET or wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+            utxo_creation_view_model.create_utxos_with_hardware_wallet(create_utxos_model)
+        else:
+            colored_wallet.wallet.create_utxos(
+                online=create_utxos_model.online, up_to=create_utxos_model.up_to,
+                num=create_utxos_model.num, size=create_utxos_model.size,
+                fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
+            )
         cache = Cache.get_cache_session()
         if cache is not None:
             cache.invalidate_cache()
@@ -54,7 +63,7 @@ def create_utxos() -> None:
         raise CommonException('Unable to connect to wallet') from exc
     except Exception as exc:
         logger.error(
-            'Exception occurred at Decorator(unlock_required): %s, Message: %s',
+            'Exception occurred at Decorator: %s, Message: %s',
             type(exc).__name__, str(exc),
         )
         raise CommonException(

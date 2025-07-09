@@ -32,3 +32,6 @@ INFO_WALLET_UNLOCK_SUCCESSFULLY = 'Wallet unlock successfully with given passwor
 INFO_WALLET_RESET = 'Wallet has been reset successfully'
 INFO_UTXO_CREATED = '{} utxos created successfully'
 INFO_BTC_SENT = 'Btc sent successfully with Transaction Id: {}'
+INFO_SIGN_FROM_HARDWARE_WALLET = 'Please sign the transaction from the hardware wallet'
+INFO_TX_BROADCAST = 'Your transaction is being broadcast to the network...'
+INFO_UTXO_REQUIRED = 'Please sign and broadcast the utxo for the issue or receive asset'

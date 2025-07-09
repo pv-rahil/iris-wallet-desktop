@@ -126,3 +126,12 @@ class KeyringDialogModel(BaseModel):
     parent: object = None
     navigate_to: object = None
     originating_page: str | None = None
+
+
+class ReceiveAssetModel(BaseModel):
+    """
+    Model representing the data needed to display and share a PSBT (Partially Signed Bitcoin Transaction).
+    """
+    page_name: str
+    address_info: str
+    psbt: str | None = None

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import QLineEdit
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import KeyringDialogModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletSecurityType
@@ -135,9 +136,11 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
         try:
             wallet_response, password = response
 
-            # Check if this is a watch-only wallet
+            # Check if this is a watch-only or hardware wallet
             security_type = SettingRepository.get_wallet_security_type()
+            key_storage_type = SettingRepository.get_key_storage_type()
             is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+            is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
 
             # Both watch-only and regular wallets now return a proper response object
             if wallet_response:
@@ -148,8 +151,8 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                 )
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
 
-                if not is_watch_only:
-                    # Only encrypt and save mnemonic for non-watch-only wallets
+                if not (is_watch_only or is_hardware_wallet):
+                    # Only encrypt and save mnemonic for non-watch-only and non-hardware wallets
                     encrypted_mnemonic = mnemonic_store.encrypt(
                         password=password, mnemonic=wallet_response.mnemonic,
                     )
@@ -173,8 +176,8 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                     SettingRepository.set_keyring_status(status=False)
                     self.forward_to_fungibles_page()
                 else:
-                    # For watch-only wallets, we don't have a mnemonic to show in the dialog
-                    if is_watch_only:
+                    # For watch-only or hardware wallets, we don't have a mnemonic to show in the dialog
+                    if is_watch_only or is_hardware_wallet:
                         self.forward_to_fungibles_page()
                     else:
                         keyring_warning_dialog = KeyringErrorDialog(

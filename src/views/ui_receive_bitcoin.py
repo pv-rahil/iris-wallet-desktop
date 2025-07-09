@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
+from src.model.common_operation_model import ReceiveAssetModel
 from src.utils.common_utils import copy_text
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
@@ -28,7 +29,10 @@ class ReceiveBitcoinWidget(QWidget):
         self._loading_translucent_screen = None
 
         self.receive_bitcoin_page = ReceiveAssetWidget(
-            self._view_model, 'bitcoin_page', 'address_info',
+            view_model=self._view_model,
+            params=ReceiveAssetModel(
+                page_name='bitcoin_page', address_info='address_info',
+            ),
         )
         # Adding the receive asset widget to the layout of this widget
         layout = QVBoxLayout()

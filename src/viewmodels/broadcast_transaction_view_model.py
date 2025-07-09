@@ -65,7 +65,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def finalized_psbt(self, signed_psbt):
         """finalize psbt"""
         self.run_in_thread(
-            CommonOperationRepository.finalized_psbt,
+            CommonOperationRepository.sign_and_finalize_psbt,
             {
                 'args': [signed_psbt],
                 'error_callback': self.on_error,

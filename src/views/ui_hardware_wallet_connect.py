@@ -83,7 +83,7 @@ class HardwareWalletConnectWidget(QWidget):
         title_close_layout.setContentsMargins(0, 0, 0, 0)
         title_close_layout.setSpacing(8)
         self.title = QLabel()
-        self.title.setObjectName('hardware_wallet_connect_title')
+        self.title.setObjectName('hardware_wallet_selection_title')
         title_close_layout.addWidget(self.title)
         title_close_layout.addStretch()
         self.close_btn = QPushButton()
@@ -289,7 +289,8 @@ class HardwareWalletConnectWidget(QWidget):
         """
         wallet_type = self._selected_wallet  # 'Ledger' or 'Trezor'
         dialog = HWDeviceSelectionDialog(wallet_type, parent=self)
-        if dialog.exec() == QDialog.Accepted:
+        result = dialog.exec()
+        if result == QDialog.Accepted:
             if SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD:
                 blur_effect = QGraphicsBlurEffect()
                 blur_effect.setBlurRadius(10)
