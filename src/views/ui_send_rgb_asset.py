@@ -29,6 +29,7 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SEND_ASSET
 from src.utils.error_message import ERROR_UNEXPECTED
+from src.utils.info_message import INFO_UTXO_REQUIRED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
@@ -115,11 +116,11 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_asset_page.fee_rate_value.textChanged.connect(
             self.handle_button_enabled,
         )
-        self._view_model.cfa_view_model.hw_dialog_update.connect(
-            self.handle_hw_dialog_update,
+        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
+            self.handle_send_rgb_hw_dialog_update,
         )
-        self._view_model.cfa_view_model.finalized_psbt.connect(
-            self.handle_finalized_psbt,
+        self._view_model.utxo_creation_view_model.psbt_finalized.connect(
+            self.show_send_rgb_psbt_page,
         )
 
     def refresh_asset(self):
@@ -354,14 +355,16 @@ class SendRGBAssetWidget(QWidget):
                 ),
             )
 
-    def handle_hw_dialog_update(self, message: str, dialog_type: Enum):
+    def handle_send_rgb_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
-        dlg.update_dialog(message, dialog_type)
-        if not dlg.isVisible():
-            dlg.show()
+        send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        send_rgb_hw_dialog.update_dialog(message, dialog_type)
+        if not send_rgb_hw_dialog.isVisible():
+            send_rgb_hw_dialog.show()
 
-    def handle_finalized_psbt(self, psbt):
+    def show_send_rgb_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         if self.asset_type == AssetSchema.NIA:
             page_name = 'NIA page'

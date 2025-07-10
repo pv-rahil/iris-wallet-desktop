@@ -14,7 +14,8 @@ from rgb_lib import RgbLibError
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import KeyStorageType, WalletType
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.cache import Cache
@@ -29,6 +30,9 @@ def create_utxos() -> None:
     """Create UTXOs for RGB operations by calling the wallet's create_utxos method."""
     try:
         utxo_creation_view_model = UtxoCreationViewModel.get_instance()
+        # Emit signal to notify that UTXO creation is starting
+        utxo_creation_view_model.utxo_creation_started.emit()
+
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         key_storage_type = SettingRepository.get_key_storage_type()
         wallet_type = SettingRepository.get_wallet_type()
@@ -38,7 +42,9 @@ def create_utxos() -> None:
             num=2,
         )
         if key_storage_type == KeyStorageType.HARDWARE_WALLET or wallet_type == WalletType.OFFLINE_TYPE_WALLET:
-            utxo_creation_view_model.create_utxos_with_hardware_wallet(create_utxos_model)
+            utxo_creation_view_model.create_utxos_with_hardware_wallet(
+                create_utxos_model,
+            )
         else:
             colored_wallet.wallet.create_utxos(
                 online=create_utxos_model.online, up_to=create_utxos_model.up_to,

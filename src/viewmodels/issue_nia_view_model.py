@@ -35,6 +35,10 @@ class IssueNIAViewModel(QObject, ThreadManager):
         self._page_navigation = page_navigation
         self.suppress_error_toast = False
 
+    def on_utxo_creation_started(self):
+        """Callback when UTXO creation starts - suppress error toasts during this process"""
+        self.suppress_error_toast = True
+
     def on_success_native_auth_nia(self, success: bool):
         """Callback function after native authentication successful"""
         try:
@@ -42,6 +46,7 @@ class IssueNIAViewModel(QObject, ThreadManager):
                 raise CommonException('Authentication failed')
             if self.token_amount is None or self.asset_name is None or self.short_identifier is None:
                 raise CommonException('Few fields missing')
+
             asset = IssueAssetNiaRequestModel(
                 amounts=[int(self.token_amount)],
                 name=self.asset_name,
@@ -57,10 +62,14 @@ class IssueNIAViewModel(QObject, ThreadManager):
                 },
             )
         except CommonException as error:
+            # Reset suppress_error_toast to False since we're handling the error here
+            self.suppress_error_toast = False
             ToastManager.error(
                 description=error.message,
             )
         except Exception:
+            # Reset suppress_error_toast to False since we're handling the error here
+            self.suppress_error_toast = False
             self.issue_button_clicked.emit(False)
             ToastManager.error(
                 description=ERROR_SOMETHING_WENT_WRONG,
@@ -68,6 +77,8 @@ class IssueNIAViewModel(QObject, ThreadManager):
 
     def on_error_native_auth_nia(self, error: Exception):
         """Callback function on error"""
+        # Reset suppress_error_toast to False since authentication failed
+        self.suppress_error_toast = False
         self.issue_button_clicked.emit(False)
         description = error.message if isinstance(
             error, CommonException,
@@ -95,6 +106,8 @@ class IssueNIAViewModel(QObject, ThreadManager):
 
     def on_success(self, response: IssueAssetResponseModel) -> None:
         """This method is used  handle onsuccess for the NIA issue page."""
+        # Reset suppress_error_toast to False after successful asset issuance
+        self.suppress_error_toast = False
         ToastManager.success(
             description=INFO_ASSET_ISSUED.format(response.asset_id),
         )
@@ -108,6 +121,8 @@ class IssueNIAViewModel(QObject, ThreadManager):
             ToastManager.error(
                 description=error.message,
             )
+        # Reset suppress_error_toast to False after handling the error
+        self.suppress_error_toast = False
 
     def on_close_click(self) -> None:
         """This method is used for close the NIA issue page."""

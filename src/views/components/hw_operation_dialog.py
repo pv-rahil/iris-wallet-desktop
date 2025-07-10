@@ -33,7 +33,7 @@ class HardwareWalletOperationDialog(QDialog):
 
     _instance = None
 
-    def __init__(self, message: str = '', dialog_type: Enum |None = None, parent=None):
+    def __init__(self, message: str = '', dialog_type: Enum | None = None, parent=None):
         """
         Initialize the hardware wallet operation dialog.
 
@@ -123,9 +123,10 @@ class HardwareWalletOperationDialog(QDialog):
         """
         if self._loader_movie is None:
             self._loader_movie = QMovie(':/assets/images/button_loading.gif')
+        if self._loader_movie is not None:
             self._loader_movie.setScaledSize(QSize(75, 75))
-        self.icon_label.setMovie(self._loader_movie)
-        self._loader_movie.start()
+            self.icon_label.setMovie(self._loader_movie)
+            self._loader_movie.start()
         self.message_label.setText(message)
         self.cancel_button.setVisible(True)
         self.done_button.setVisible(False)
@@ -138,7 +139,7 @@ class HardwareWalletOperationDialog(QDialog):
         Args:
             message: The message to display.
         """
-        if self._loader_movie:
+        if self._loader_movie is not None:
             self._loader_movie.stop()
         self.icon_label.setPixmap(
             self._success_pixmap.scaled(
@@ -157,7 +158,7 @@ class HardwareWalletOperationDialog(QDialog):
         Args:
             message: The error message to display.
         """
-        if self._loader_movie:
+        if self._loader_movie is not None:
             self._loader_movie.stop()
         # Map specific hardware wallet error to user-friendly message
         hw_device = HWDeviceSelectionDialog(None)
@@ -224,7 +225,7 @@ class HardwareWalletOperationDialog(QDialog):
         Args:
             message: The warning message to display.
         """
-        if self._loader_movie:
+        if self._loader_movie is not None:
             self._loader_movie.stop()
         warning_pixmap = QPixmap(':/assets/warning_yellow.png')
         self.icon_label.setPixmap(

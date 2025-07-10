@@ -46,6 +46,11 @@ class IssueCFAViewModel(QObject, ThreadManager):
         self.asset_ticker = None
         self.amount = None
         self.asset_name = None
+        self.suppress_error_toast = False
+
+    def on_utxo_creation_started(self):
+        """Callback when UTXO creation starts - suppress error toasts during this process"""
+        self.suppress_error_toast = True
 
     def on_success_native_auth_cfa(self, success: bool):
         """Callback function after native authentication successful"""
@@ -62,6 +67,7 @@ class IssueCFAViewModel(QObject, ThreadManager):
                 )
                 self.is_loading.emit(False)
                 return
+
             request_model = IssueAssetCfaRequestModel(
                 amounts=formatted_amount,
                 ticker=self.asset_ticker,
@@ -77,11 +83,15 @@ class IssueCFAViewModel(QObject, ThreadManager):
                 },
             )
         except CommonException as exc:
+            # Reset suppress_error_toast to False since we're handling the error here
+            self.suppress_error_toast = False
             self.is_loading.emit(False)
             ToastManager.error(
                 description=exc.message,
             )
         except Exception:
+            # Reset suppress_error_toast to False since we're handling the error here
+            self.suppress_error_toast = False
             self.is_loading.emit(False)
             ToastManager.error(
                 description=ERROR_SOMETHING_WENT_WRONG,
@@ -89,6 +99,8 @@ class IssueCFAViewModel(QObject, ThreadManager):
 
     def on_error_native_auth_cfa(self, error: Exception):
         """Callback function on error"""
+        # Reset suppress_error_toast to False since authentication failed
+        self.suppress_error_toast = False
         self.is_loading.emit(False)
         err_message = error.message if isinstance(
             error, CommonException,
@@ -116,6 +128,8 @@ class IssueCFAViewModel(QObject, ThreadManager):
 
     def on_success(self, response: IssueAssetResponseModel):
         """on success callback of issue CFA """
+        # Reset suppress_error_toast to False after successful asset issuance
+        self.suppress_error_toast = False
         ToastManager.success(
             description=INFO_ASSET_ISSUED.format(response.asset_id),
         )
@@ -124,10 +138,13 @@ class IssueCFAViewModel(QObject, ThreadManager):
 
     def on_error(self, error: CommonException):
         """on error callback of issue CFA """
-        ToastManager.error(
-            description=error.message,
-        )
         self.is_loading.emit(False)
+        if not self.suppress_error_toast:
+            ToastManager.error(
+                description=error.message,
+            )
+        # Reset suppress_error_toast to False after handling the error
+        self.suppress_error_toast = False
 
     def issue_cfa_asset(
             self, asset_ticker,

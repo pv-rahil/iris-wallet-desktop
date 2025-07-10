@@ -101,10 +101,10 @@ class SendBitcoinWidget(QWidget):
             self.handle_button_enabled,
         )
         self._view_model.send_bitcoin_view_model.hw_dialog_update.connect(
-            self.handle_hw_dialog_update,
+            self.handle_send_bitcoin_hw_dialog_update,
         )
         self._view_model.send_bitcoin_view_model.finalized_psbt.connect(
-            self.handle_finalized_psbt,
+            self.show_send_bitcoin_psbt_page,
         )
 
     def set_bitcoin_balance(self):
@@ -253,17 +253,19 @@ class SendBitcoinWidget(QWidget):
                 ),
             )
 
-    def handle_hw_dialog_update(self, message: str, dialog_type: Enum):
+    def handle_send_bitcoin_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
-        dlg.cancel_button.clicked.connect(
+        send_bitcoin_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        send_bitcoin_hw_dialog.cancel_button.clicked.connect(
             self._view_model.send_bitcoin_view_model.cancel_operation,
         )
-        dlg.update_dialog(message, dialog_type)
-        if not dlg.isVisible():
-            dlg.show()
+        send_bitcoin_hw_dialog.update_dialog(message, dialog_type)
+        if not send_bitcoin_hw_dialog.isVisible():
+            send_bitcoin_hw_dialog.show()
 
-    def handle_finalized_psbt(self, psbt):
+    def show_send_bitcoin_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         self._view_model.page_navigation.receive_asset_page(
             ReceiveAssetModel(

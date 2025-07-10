@@ -12,13 +12,16 @@ from rgb_lib import AssetSchema
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.model.common_operation_model import ReceiveAssetModel
+from src.model.enums.enums_model import Enum
 from src.model.enums.enums_model import ToastPreset
 from src.model.selection_page_model import AssetDataModel
 from src.model.setting_model import DefaultProxyEndpoint
 from src.utils.common_utils import copy_text
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.info_message import INFO_UTXO_REQUIRED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
+from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.toast import ToastManager
@@ -105,6 +108,23 @@ class ReceiveRGBAssetWidget(QWidget):
         self._view_model.receive_cfa_view_model.hide_loading.connect(
             self.hide_loading_screen,
         )
+        # Connect to UTXO creation started signal to suppress error toasts during UTXO creation
+        self._view_model.utxo_creation_view_model.utxo_creation_started.connect(
+            self._view_model.receive_cfa_view_model.on_utxo_creation_started,
+        )
+        # Connect to hardware wallet dialog signals
+        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
+            self.handle_receive_cfa_hw_dialog_update,
+        )
+        self._view_model.utxo_creation_view_model.utxo_created.connect(
+            self.handle_receive_cfa_utxo_created,
+        )
+        self._view_model.utxo_creation_view_model.utxo_required.connect(
+            self.handle_receive_cfa_utxo_required,
+        )
+        self._view_model.utxo_creation_view_model.psbt_finalized.connect(
+            self.show_receive_cfa_psbt_page,
+        )
 
     def close_button_navigation(self):
         """
@@ -167,3 +187,51 @@ class ReceiveRGBAssetWidget(QWidget):
         self.receive_rgb_asset_page.receiver_address.show()
         self.__loading_translucent_screen.stop()
         self.receive_rgb_asset_page.copy_button.show()
+
+    def handle_receive_cfa_hw_dialog_update(self, message: str, dialog_type: Enum):
+        """Centralized hardware wallet dialog update handler for receive CFA."""
+        receive_cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        receive_cfa_hw_dialog.update_dialog(message, dialog_type)
+        if not receive_cfa_hw_dialog.isVisible():
+            receive_cfa_hw_dialog.show()
+
+    def handle_receive_cfa_utxo_created(self):
+        """Close the hardware wallet dialog after UTXO creation for receive CFA."""
+        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
+        if dlg.isVisible():
+            dlg.accept()
+
+    def handle_receive_cfa_utxo_required(self):
+        """Shows the dialog for utxo require for receive CFA"""
+        receive_cfa_utxo_required_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        receive_cfa_utxo_required_dialog.set_utxo_required_dialog(
+            INFO_UTXO_REQUIRED,
+        )
+        receive_cfa_utxo_required_dialog.done_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+            ),
+        )
+        receive_cfa_utxo_required_dialog.done_button.clicked.connect(
+            self._view_model.utxo_creation_view_model.create_utxos_begin,
+        )
+        receive_cfa_utxo_required_dialog.cancel_button.clicked.connect(
+            receive_cfa_utxo_required_dialog.reject,
+        )
+        receive_cfa_utxo_required_dialog.exec()
+
+    def show_receive_cfa_psbt_page(self, psbt):
+        """Navigate to the receive asset page and display the PSBT as a QR code for receive CFA."""
+        self._view_model.page_navigation.receive_asset_page(
+            ReceiveAssetModel(
+                page_name='Receive CFA page',
+                address_info='psbt_info', psbt=psbt,
+            ),
+        )
+        self.receive_rgb_asset_page.receive_asset_close_button.clicked.connect(
+            self.close_button_navigation,
+        )
