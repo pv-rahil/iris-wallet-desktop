@@ -30,6 +30,7 @@ from accessible_constant import SHOW_MNEMONIC_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletSecurityType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.error_message import ERROR_G_DRIVE_CONFIG_FAILED
 from src.utils.gauth import authenticate
@@ -53,6 +54,10 @@ class Backup(QWidget):
         self.setStyleSheet(load_stylesheet('views/qss/backup_style.qss'))
         self.grid_layout_backup_page = QGridLayout(self)
         self.sidebar = None
+        self.is_hardware_wallet = SettingRepository.get_key_storage_type(
+        ) == KeyStorageType.HARDWARE_WALLET
+        self.is_watch_only_wallet = SettingRepository.get_wallet_security_type(
+        ) == WalletSecurityType.WATCH_ONLY
         self.grid_layout_backup_page.setObjectName('grid_layout_backup_page')
         self.vertical_spacer_19 = QSpacerItem(
             20, 190, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
@@ -606,9 +611,16 @@ class Backup(QWidget):
         The mnemonic frame is hidden if keyring storage is enabled (stored as True) or if the wallet is a hardware wallet.
         """
         stored_keyring_status = SettingRepository.get_keyring_status()
-        if stored_keyring_status is True or SettingRepository.get_key_storage_type(
-        ) == KeyStorageType.HARDWARE_WALLET:
+        if stored_keyring_status is True or self.is_hardware_wallet or self.is_watch_only_wallet:
             self.show_mnemonic_frame.hide()
+        if self.is_hardware_wallet or self.is_watch_only_wallet:
+            self.backup_info_text.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'no_mnemonic_backup_info',
+                    None,
+                ),
+            )
 
     def get_checked_button_translation_key(self, sidebar):
         """

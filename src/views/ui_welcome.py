@@ -23,6 +23,7 @@ from accessible_constant import RESTORE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSecurityType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.viewmodels.main_view_model import MainViewModel
@@ -43,6 +44,8 @@ class WelcomeWidget(QWidget):
         )
         self._view_model: MainViewModel = view_model
         self.is_load_wallet = SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD
+        self.is_watch_only_wallet = SettingRepository.get_wallet_security_type(
+        ) == WalletSecurityType.WATCH_ONLY
         self.setObjectName('welcome_Page')
         self.grid_layout_welcome = QGridLayout(self)
         self.grid_layout_welcome.setObjectName('gridLayout')
@@ -143,14 +146,18 @@ class WelcomeWidget(QWidget):
         self.restore_btn.setAccessibleName(RESTORE_BUTTON)
         self.restore_btn.setMinimumSize(QSize(318, 40))
         self.restore_btn.setMaximumSize(QSize(318, 40))
-        self.restore_btn.setVisible(self.is_load_wallet)
+        self.restore_btn.setVisible(
+            self.is_load_wallet or self.is_watch_only_wallet,
+        )
         self.welcome_horizontal_layout.addWidget(self.restore_btn)
 
         self.create_btn = PrimaryButton()
         self.create_btn.setAccessibleName(CREATE_BUTTON)
         self.create_btn.setMinimumSize(QSize(318, 40))
         self.create_btn.setMaximumSize(QSize(318, 40))
-        self.create_btn.setVisible(not self.is_load_wallet)
+        self.create_btn.setVisible(
+            not self.is_load_wallet or self.is_watch_only_wallet,
+        )
 
         self.welcome_horizontal_layout.addWidget(self.create_btn)
 

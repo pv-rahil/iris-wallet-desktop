@@ -72,7 +72,7 @@ class WalletModeConfiguration:
                     can_create_assets=False,
                     can_manage_assets=False,
                     can_use_hardware_wallet=False,
-                    can_backup_wallet=False,
+                    can_backup_wallet=True,
                     can_export_psbt=True,
                     can_receive_asset=False,
                 ),

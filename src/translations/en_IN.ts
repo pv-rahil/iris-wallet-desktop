@@ -1928,5 +1928,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>enter_hardware_wallet_info</source>
         <translation>Enter your wallet details from the hardware wallet. Ensure each value is accurate and entered securely.</translation>
     </message>
+    <message>
+        <source>no_mnemonic_backup_info</source>
+        <translation>In order to recover your assets, you need a backup copy of RGB offline data, as well as your xpubs and master fingerprint.</translation>
+    </message>
 </context>
 </TS>
