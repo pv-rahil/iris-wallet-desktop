@@ -130,7 +130,6 @@ class RgbRepository:
     def issue_asset_nia(asset: IssueAssetNiaRequestModel) -> AssetNia:
         """Issue asset."""
         with repository_custom_context():
-            print(000000000)
             data: AssetNia = colored_wallet.wallet.issue_asset_nia(
                 ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
             )

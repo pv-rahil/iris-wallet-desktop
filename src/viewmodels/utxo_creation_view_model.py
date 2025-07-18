@@ -54,8 +54,6 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         Sets up hardware wallet detection and Qt object for signal/slot functionality.
         """
         super().__init__(parent)
-        self.is_hardware_wallet = SettingRepository.get_key_storage_type(
-        ) == KeyStorageType.HARDWARE_WALLET
         self.param: CreateUtxosRequestModel = None
 
     @require_hardware_wallet_connected()
@@ -66,7 +64,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         """
         try:
             self.param = param
-            if self.is_hardware_wallet:
+            if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
                 self.create_utxos_begin()
             else:
                 self.utxo_required.emit()
@@ -112,11 +110,10 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
     def on_utxo_signed_done(self, finalized_psbt):
         """Callback when PSBT is signed. Updates dialog and starts broadcasting or emits PSBT for offline wallets."""
-        if self.is_hardware_wallet:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
             )
-            print('i am calling')
             self.create_utxos_end(
                 finalized_psbt=finalized_psbt,
             )
@@ -153,7 +150,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             'Exception occurred while utxo operation: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        if not self.is_hardware_wallet:
+        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET:
             description = error.message if isinstance(
                 error, CommonException,
             ) else ERROR_SOMETHING_WENT_WRONG

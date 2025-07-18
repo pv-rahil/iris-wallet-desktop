@@ -22,6 +22,7 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
+from src.data.repository.setting_repository import SettingRepository
 import src.resources_rc
 from accessible_constant import ISSUE_NIA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_NIA_BUTTON
@@ -480,6 +481,11 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_utxo_required(self):
         """Shows the dialog for utxo require"""
+        print(SettingRepository.get_key_storage_type())
+        print(SettingRepository.get_wallet_entry_type())
+        print(SettingRepository.get_wallet_security_type())
+        print(SettingRepository.get_wallet_type())
+
         nia_utxo_required_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )

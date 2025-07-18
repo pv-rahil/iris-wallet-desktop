@@ -14,7 +14,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import SendBtcRequestModel
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import KeyStorageType, WalletType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.utils.custom_exception import CommonException
@@ -40,10 +40,6 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.address = None
         self.amount = None
         self.fee_rate = None
-        self.is_hardware_wallet = SettingRepository.get_key_storage_type(
-        ) == KeyStorageType.HARDWARE_WALLET
-        self.is_on_device = SettingRepository.get_key_storage_type(
-        ) == KeyStorageType.ON_DEVICE
 
     def on_send_click(self, address: str, amount: int, fee_rate: int):
         """"
@@ -91,7 +87,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
     def on_success(self, response: SendBtcResponseModel) -> None:
         """This method is used  handle onsuccess for the send bitcoin page."""
         self.send_button_clicked.emit(False)
-        if self.is_hardware_wallet:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
             self.hw_dialog_update.emit(
                 INFO_BITCOIN_SENT.format(
                     str(response.tx_id),
@@ -110,7 +106,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
             'Exception occurred while sending btc: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        if self.is_hardware_wallet:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
             self.hw_dialog_update.emit(
                 str(error), PsbtStatus.ERROR,
             )
@@ -129,7 +125,9 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.amount = amount
         self.fee_rate = fee_rate
         self.send_button_clicked.emit(True)
-        if not self.is_on_device:
+        is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+        is_offline = SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+        if is_hw or is_offline:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
@@ -165,7 +163,8 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         Callback after PSBT is signed and finalized.
         Now broadcast the transaction.
         """
-        if self.is_hardware_wallet:
+        is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+        if is_hw:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
             )
