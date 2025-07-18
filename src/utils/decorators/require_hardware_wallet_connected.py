@@ -72,8 +72,15 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                             NetworkEnumModel.MAINNET: Chain.MAIN,
                             NetworkEnumModel.TESTNET: Chain.TEST,
                             NetworkEnumModel.REGTEST: Chain.REGTEST,
-                        }.get(network, Chain.RGB)
-
+                        }.get(network)
+                        # Close previous client if it exists
+                        if client:
+                            try:
+                                client.close()
+                            except Exception as e:
+                                logger.warning(
+                                    'Failed to close previous LedgerClient: %s', e,
+                                )
                         client = LedgerClient(device_path, None, True, chain)
                         hardware_client_store.set_client(client)
                         last_device_path = device_path

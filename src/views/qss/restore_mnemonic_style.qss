@@ -23,19 +23,7 @@ QLabel#mnemonic_detail_text_label {
 }
 
 /* Styles for the mnemonic input field */
-QLineEdit#mnemonic_input {
-    background-color: #030B25;
-    font: 14px "Inter";
-    border: none;
-    color: #E6E1E5;
-    font-weight: 400;
-    padding-left: 10px;
-    min-width: 295px;
-    min-height: 56px;
-}
-
-/* Styles for the password input field */
-QLineEdit#password_input {
+QLineEdit#mnemonic_input,#xpub_vanilla_input,#password_input,#xpub_colored_input,#fingerprint_input {
     background-color: #030B25;
     font: 14px "Inter";
     border: none;

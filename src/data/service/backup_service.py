@@ -15,6 +15,7 @@ from src.utils.error_message import ERROR_BACKUP_FILE_NOT_EXITS
 from src.utils.error_message import ERROR_UNABLE_TO_GET_PASSWORD
 from src.utils.gdrive_operation import GoogleDriveManager
 from src.utils.handle_exception import handle_exceptions
+from src.utils.helpers import write_rgb_lib_version_file
 from src.utils.logging import logger
 
 
@@ -79,8 +80,8 @@ class BackupService:
                 BackupRequestModel(
                     backup_path=backup_file_path, password=password,
                 ),
-            )
 
+            )
             # Verify the backup file exists
             if not BackupService.backup_file_exists(backup_file_path):
                 error_message = ERROR_BACKUP_FILE_NOT_EXITS+' '+backup_file_path
@@ -93,7 +94,15 @@ class BackupService:
             success: bool = backup.upload_to_drive(
                 file_path=backup_file_path, file_name=backup_file_name,
             )
-            return success
+            # Write the rgb_lib version file
+            version_file_path, version_file_name = write_rgb_lib_version_file(
+                hashed_mnemonic,
+            )
+            version_success: bool = backup.upload_to_drive(
+                file_path=version_file_path, file_name=version_file_name,
+            )
+
+            return success and version_success
         except Exception as exc:
             return handle_exceptions(exc)
         finally:

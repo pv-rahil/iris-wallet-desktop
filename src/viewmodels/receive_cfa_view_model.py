@@ -68,9 +68,9 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
         if not self.suppress_error_toast:
             ToastManager.error(description=error.message)
         # Reset suppress_error_toast to False after handling the error
-        self.suppress_error_toast = False
-        self.hide_loading.emit(False)
-        self._page_navigation.fungibles_asset_page()
-        self.sidebar = self._page_navigation.sidebar()
-        if self.sidebar is not None:
-            self.sidebar.my_fungibles.setChecked(True)
+            self.suppress_error_toast = False
+            self.hide_loading.emit(False)
+            self._page_navigation.fungibles_asset_page()
+            self.sidebar = self._page_navigation.sidebar()
+            if self.sidebar is not None:
+                self.sidebar.my_fungibles.setChecked(True)

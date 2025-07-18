@@ -8,16 +8,19 @@ import os
 import shutil
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
+from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import RestoreRequestModel
 from src.model.common_operation_model import RestoreResponseModel
 from src.utils.build_app_path import app_paths
+from src.utils.constant import COMPATIBLE_RGB_LIB_VERSION
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NOT_BACKUP_FILE
 from src.utils.error_message import ERROR_UNABLE_TO_GET_PASSWORD
 from src.utils.error_message import ERROR_WHILE_RESTORE_DOWNLOAD_FROM_DRIVE
 from src.utils.gdrive_operation import GoogleDriveManager
 from src.utils.handle_exception import handle_exceptions
+from src.utils.helpers import read_rgb_lib_version_file
 from src.utils.logging import logger
 
 
@@ -66,6 +69,20 @@ class RestoreService:
             # Download restore zip from Google Drive
             logger.info('Downloading restore zip from drive')
             restore = GoogleDriveManager()
+
+            # Download the version file from Google Drive
+            version_file_name = f"{hashed_mnemonic}.version"
+            restore.download_from_drive(
+                file_name=version_file_name, destination_dir=restore_folder_path,
+            )
+
+            rgb_lib_version = read_rgb_lib_version_file(version_file_name)
+            if rgb_lib_version not in COMPATIBLE_RGB_LIB_VERSION:
+                raise CommonException('RGB_LIB_INCOMPATIBLE')
+            SettingRepository.set_rgb_lib_version(
+                rgb_lib_version,
+            )
+
             success: bool | None = restore.download_from_drive(
                 file_name=restore_file_name, destination_dir=restore_folder_path,
             )

@@ -50,6 +50,7 @@ class ReceiveAssetWidget(QWidget):
         self.address_info = params.address_info
         self.page_name = params.page_name
         self.psbt = params.psbt
+        self.close_button_navigation = params.close_button_navigation
         self.get_receive_address = None
         self.receive_asset_grid_layout = QGridLayout(self)
         self.receive_asset_grid_layout.setObjectName(
@@ -238,6 +239,10 @@ class ReceiveAssetWidget(QWidget):
         elif self.page_name == 'NIA page':
             self.receive_asset_close_button.clicked.connect(
                 self._view_model.page_navigation.fungibles_asset_page,
+            )
+        elif self.page_name == 'Receive CFA page':
+            self.receive_asset_close_button.clicked.connect(
+                self.close_button_navigation,
             )
         else:
             self.receive_asset_close_button.clicked.connect(

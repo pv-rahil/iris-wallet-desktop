@@ -130,8 +130,10 @@ class CommonOperationService:
             # Check if this is a watch-only wallet
             is_watch_only = SettingRepository.get_wallet_security_type(
             ) == WalletSecurityType.WATCH_ONLY
+            is_hardware_only = SettingRepository.get_key_storage_type(
+            ) == KeyStorageType.HARDWARE_WALLET
 
-            if is_watch_only:
+            if is_watch_only or is_hardware_only:
                 # For watch-only wallets, use None mnemonic
                 decrypted_mnemonic = None
             else:

@@ -45,12 +45,12 @@ def create_utxos() -> None:
             utxo_creation_view_model.create_utxos_with_hardware_wallet(
                 create_utxos_model,
             )
-        else:
-            colored_wallet.wallet.create_utxos(
-                online=create_utxos_model.online, up_to=create_utxos_model.up_to,
-                num=create_utxos_model.num, size=create_utxos_model.size,
-                fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
-            )
+            return
+        colored_wallet.wallet.create_utxos(
+            online=create_utxos_model.online, up_to=create_utxos_model.up_to,
+            num=create_utxos_model.num, size=create_utxos_model.size,
+            fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
+        )
         cache = Cache.get_cache_session()
         if cache is not None:
             cache.invalidate_cache()

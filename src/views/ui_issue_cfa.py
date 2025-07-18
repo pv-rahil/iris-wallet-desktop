@@ -494,6 +494,7 @@ class IssueCFAWidget(QWidget):
         )
         if cfa_utxo_created_dialog.isVisible():
             cfa_utxo_created_dialog.accept()
+        self.on_issue_cfa()
 
     def handle_cfa_utxo_required(self):
         """Shows the dialog for utxo require"""

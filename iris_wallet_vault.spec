@@ -21,6 +21,8 @@ print(__network__)
 pyqttoast_datas = collect_data_files('pyqttoast')
 rgb_lib_datas = collect_data_files('rgb_lib')
 rgb_lib_binaries = collect_dynamic_libs('rgb_lib')
+hwilib_datas = collect_data_files('hwilib')
+hwilib_binaries = collect_dynamic_libs('hwilib')
 
 base_project_path = os.path.abspath(__name__)
 print(base_project_path)
@@ -30,15 +32,15 @@ datas = [
     ('./src/assets/icons/*', './assets/icons/'),
     ('./src/views/qss/*.qss', './views/qss/'),
     ('./build_info.json', './build_info.json'),
-] + pyqttoast_datas + rgb_lib_datas
+] + pyqttoast_datas + rgb_lib_datas + hwilib_datas
 
 # Common Analysis
 a = Analysis(
     ['src/main.py'],
     pathex=[],
-    binaries=rgb_lib_binaries,
+    binaries=rgb_lib_binaries+hwilib_binaries,
     datas=datas,
-    hiddenimports=['pyqttoast', 'PySide6', 'bip32utils', 'mnemonic', 'importlib_metadata', 'hashlib', 'rgb_lib'],
+    hiddenimports=['pyqttoast', 'PySide6', 'bip32utils', 'mnemonic', 'importlib_metadata', 'hashlib', 'rgb_lib', 'hwilib'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[

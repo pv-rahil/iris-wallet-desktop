@@ -12,7 +12,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFrame
-from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
@@ -29,10 +28,7 @@ from accessible_constant import ISSUE_NIA_BUTTON
 from accessible_constant import NIA_ASSET_AMOUNT
 from accessible_constant import NIA_ASSET_NAME
 from accessible_constant import NIA_ASSET_TICKER
-from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ReceiveAssetModel
-from src.model.enums.enums_model import PsbtStatus
-from src.model.enums.enums_model import WalletType
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import set_number_validator
@@ -59,7 +55,6 @@ class IssueNIAWidget(QWidget):
         self.issue_nia_grid_layout = QGridLayout(self)
         self.issue_nia_grid_layout.setObjectName('issue_nia_grid_layout')
         self.issue_nia_wallet_logo = WalletLogoFrame(self)
-
         self.issue_nia_grid_layout.addWidget(
             self.issue_nia_wallet_logo, 0, 0, 1, 2,
         )
@@ -314,7 +309,6 @@ class IssueNIAWidget(QWidget):
             2,
             2,
         )
-
         self.setup_ui_connection()
         self.retranslate_ui()
 
@@ -475,12 +469,14 @@ class IssueNIAWidget(QWidget):
             nia_hw_dialog.show()
 
     def handle_nia_utxo_created(self):
-        """Close the hardware wallet dialog after UTXO creation."""
+        """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
         nia_utxo_created_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
         if nia_utxo_created_dialog.isVisible():
             nia_utxo_created_dialog.accept()
+
+        self.on_issue_nia_click()
 
     def handle_nia_utxo_required(self):
         """Shows the dialog for utxo require"""

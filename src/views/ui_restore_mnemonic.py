@@ -23,6 +23,8 @@ from accessible_constant import RESTORE_CONTINUE_BUTTON
 from accessible_constant import RESTORE_DIALOG_BOX
 from accessible_constant import RESTORE_MNEMONIC_INPUT
 from accessible_constant import RESTORE_PASSWORD_INPUT
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.viewmodels.main_view_model import MainViewModel
@@ -42,6 +44,7 @@ class RestoreMnemonicWidget(QDialog):
         self.mnemonic_visibility = mnemonic_visibility
         # Hide the title bar and close button
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
+        self.setModal(True)
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.resize(370, 340)
@@ -71,6 +74,20 @@ class RestoreMnemonicWidget(QDialog):
         self.mnemonic_detail_text_label.setWordWrap(True)
 
         self.vertical_layout_frame.addWidget(self.mnemonic_detail_text_label)
+
+        # Add hardware wallet fields
+        self.xpub_vanilla_input = QLineEdit(self.mnemonic_frame)
+        self.xpub_vanilla_input.setObjectName('xpub_vanilla_input')
+        self.xpub_vanilla_input.setMinimumSize(QSize(295, 56))
+        self.vertical_layout_frame.addWidget(self.xpub_vanilla_input)
+        self.xpub_colored_input = QLineEdit(self.mnemonic_frame)
+        self.xpub_colored_input.setObjectName('xpub_colored_input')
+        self.xpub_colored_input.setMinimumSize(QSize(295, 56))
+        self.vertical_layout_frame.addWidget(self.xpub_colored_input)
+        self.fingerprint_input = QLineEdit(self.mnemonic_frame)
+        self.fingerprint_input.setObjectName('fingerprint_input')
+        self.fingerprint_input.setMinimumSize(QSize(295, 56))
+        self.vertical_layout_frame.addWidget(self.fingerprint_input)
 
         self.mnemonic_input = QLineEdit(self.mnemonic_frame)
         self.mnemonic_input.setObjectName('mnemonic_input')
@@ -130,10 +147,18 @@ class RestoreMnemonicWidget(QDialog):
         self.continue_button.clicked.connect(self.on_continue_button_click)
         self.password_input.textChanged.connect(self.handle_button_enable)
         self.mnemonic_input.textChanged.connect(self.handle_button_enable)
+        self.xpub_vanilla_input.textChanged.connect(self.handle_button_enable)
+        self.xpub_colored_input.textChanged.connect(self.handle_button_enable)
+        self.fingerprint_input.textChanged.connect(self.handle_button_enable)
 
     def handle_button_enable(self):
         """Handles the enable/disable state of the continue button."""
-        if self.mnemonic_visibility:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            is_ready = bool(self.password_input.text()) and bool(
+                self.xpub_vanilla_input.text(
+                ),
+            ) and bool(self.xpub_colored_input.text()) and bool(self.fingerprint_input.text())
+        elif self.mnemonic_visibility:
             is_ready = bool(self.password_input.text()) and bool(
                 self.mnemonic_input.text(),
             )
@@ -144,11 +169,19 @@ class RestoreMnemonicWidget(QDialog):
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
-        self.mnemonic_detail_text_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_mnemonic_phrase_info', None,
-            ),
-        )
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.mnemonic_detail_text_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_hardware_wallet_info', None,
+                ),
+            )
+        else:
+            self.mnemonic_detail_text_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_mnemonic_phrase_info', None,
+                ),
+            )
+
         self.mnemonic_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'input_phrase', None,
@@ -167,6 +200,21 @@ class RestoreMnemonicWidget(QDialog):
         self.password_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_wallet_password', None,
+            ),
+        )
+        self.xpub_vanilla_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_account_xpub_vanilla',
+            ),
+        )
+        self.xpub_colored_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_account_xpub_colored',
+            ),
+        )
+        self.fingerprint_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_master_fingerprint',
             ),
         )
 
@@ -202,11 +250,20 @@ class RestoreMnemonicWidget(QDialog):
     def restore_wallet(self):
         """This method restore the wallet"""
         self.accept()
-        mnemonic = self.mnemonic_input.text()
-        password = self.password_input.text()
-        self._view_model.restore_view_model.restore(
-            mnemonic=mnemonic, password=password,
-        )
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            xpub_vanilla = self.xpub_vanilla_input.text()
+            xpub_colored = self.xpub_colored_input.text()
+            fingerprint = self.fingerprint_input.text()
+            password = self.password_input.text()
+            self._view_model.restore_view_model.restore(
+                mnemonic=None, password=password, xpub_vanilla=xpub_vanilla, xpub_colored=xpub_colored, fingerprint=fingerprint,
+            )
+        else:
+            mnemonic = self.mnemonic_input.text()
+            password = self.password_input.text()
+            self._view_model.restore_view_model.restore(
+                mnemonic=mnemonic, password=password,
+            )
 
     def on_click_cancel(self):
         """The `on_click_cancel` method closes the dialog when the cancel button is clicked."""
@@ -214,15 +271,26 @@ class RestoreMnemonicWidget(QDialog):
 
     def handle_mnemonic_input_visibility(self):
         """handle mnemonic visibility for Qdialog"""
-        if not self.mnemonic_visibility:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
             self.mnemonic_input.hide()
-            self.mnemonic_detail_text_label.setMaximumSize(QSize(295, 50))
-            self.mnemonic_detail_text_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_wallet_password_info', None,
-                ),
-            )
-            self.mnemonic_frame.setFixedHeight(200)
+            self.xpub_vanilla_input.show()
+            self.xpub_colored_input.show()
+            self.fingerprint_input.show()
+            self.mnemonic_detail_text_label.setMaximumSize(QSize(295, 60))
+            self.resize(400, 500)
         else:
-            self.setMaximumSize(QSize(370, 292))
-            self.mnemonic_input.show()
+            self.xpub_vanilla_input.hide()
+            self.xpub_colored_input.hide()
+            self.fingerprint_input.hide()
+            if not self.mnemonic_visibility:
+                self.mnemonic_input.hide()
+                self.mnemonic_detail_text_label.setMaximumSize(QSize(295, 50))
+                self.mnemonic_detail_text_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_wallet_password_info', None,
+                    ),
+                )
+                self.mnemonic_frame.setFixedHeight(200)
+            else:
+                self.setMaximumSize(QSize(370, 292))
+                self.mnemonic_input.show()

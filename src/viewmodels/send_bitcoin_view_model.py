@@ -14,9 +14,9 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import SendBtcRequestModel
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
+from src.model.enums.enums_model import PsbtStatus
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
@@ -42,6 +42,8 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.fee_rate = None
         self.is_hardware_wallet = SettingRepository.get_key_storage_type(
         ) == KeyStorageType.HARDWARE_WALLET
+        self.is_on_device = SettingRepository.get_key_storage_type(
+        ) == KeyStorageType.ON_DEVICE
 
     def on_send_click(self, address: str, amount: int, fee_rate: int):
         """"
@@ -127,7 +129,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.amount = amount
         self.fee_rate = fee_rate
         self.send_button_clicked.emit(True)
-        if self.is_hardware_wallet:
+        if not self.is_on_device:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )

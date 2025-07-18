@@ -24,8 +24,8 @@ class WalletModePrivilege:
     can_manage_assets: bool
     can_use_hardware_wallet: bool
     can_backup_wallet: bool
-    can_restore_wallet: bool
     can_export_psbt: bool
+    can_receive_asset: bool
 
 
 @dataclass
@@ -73,8 +73,8 @@ class WalletModeConfiguration:
                     can_manage_assets=False,
                     can_use_hardware_wallet=False,
                     can_backup_wallet=False,
-                    can_restore_wallet=False,
                     can_export_psbt=True,
+                    can_receive_asset=False,
                 ),
                 capabilities=[
                     {'emoji': '👁️', 'text': 'View balances & transaction history'},
@@ -110,8 +110,8 @@ class WalletModeConfiguration:
                     can_manage_assets=True,
                     can_use_hardware_wallet=False,
                     can_backup_wallet=True,
-                    can_restore_wallet=True,
                     can_export_psbt=False,
+                    can_receive_asset=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate new wallet & keys'},
@@ -147,8 +147,8 @@ class WalletModeConfiguration:
                     can_manage_assets=True,
                     can_use_hardware_wallet=True,
                     can_backup_wallet=True,
-                    can_restore_wallet=True,
                     can_export_psbt=False,
+                    can_receive_asset=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Initialize new wallet with hardware device'},
@@ -185,8 +185,8 @@ class WalletModeConfiguration:
                     can_manage_assets=True,
                     can_use_hardware_wallet=False,
                     can_backup_wallet=True,
-                    can_restore_wallet=True,
                     can_export_psbt=False,
+                    can_receive_asset=True,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet'},
@@ -224,8 +224,8 @@ class WalletModeConfiguration:
                     can_manage_assets=True,
                     can_use_hardware_wallet=True,
                     can_backup_wallet=True,
-                    can_restore_wallet=True,
                     can_export_psbt=False,
+                    can_receive_asset=True,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Connect hardware wallet'},
@@ -260,9 +260,9 @@ class WalletModeConfiguration:
                     can_create_assets=True,
                     can_manage_assets=True,
                     can_use_hardware_wallet=False,
-                    can_backup_wallet=True,
-                    can_restore_wallet=True,
+                    can_backup_wallet=False,
                     can_export_psbt=False,
+                    can_receive_asset=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate offline wallet'},
@@ -291,15 +291,15 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Create New (Hardware)',
                 description='Create a new offline wallet with hardware security',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=False,
+                    can_send_transactions=True,
                     can_receive_transactions=True,
                     can_view_balance=True,
                     can_create_assets=True,
                     can_manage_assets=True,
                     can_use_hardware_wallet=True,
-                    can_backup_wallet=True,
-                    can_restore_wallet=True,
+                    can_backup_wallet=False,
                     can_export_psbt=False,
+                    can_receive_asset=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'New wallet setup using hardware device'},
@@ -332,15 +332,15 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Load Existing (On Device)',
                 description='Import an existing wallet for offline cold storage',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=False,
+                    can_send_transactions=True,
                     can_receive_transactions=True,
                     can_view_balance=True,
                     can_create_assets=True,
                     can_manage_assets=True,
                     can_use_hardware_wallet=False,
-                    can_backup_wallet=True,
-                    can_restore_wallet=True,
+                    can_backup_wallet=False,
                     can_export_psbt=False,
+                    can_receive_asset=True,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet offline'},
@@ -374,15 +374,15 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Load Existing (Hardware)',
                 description='Connect existing hardware wallet in offline mode',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=False,
+                    can_send_transactions=True,
                     can_receive_transactions=True,
                     can_view_balance=True,
                     can_create_assets=True,
                     can_manage_assets=True,
                     can_use_hardware_wallet=True,
-                    can_backup_wallet=True,
-                    can_restore_wallet=True,
+                    can_backup_wallet=False,
                     can_export_psbt=False,
+                    can_receive_asset=False,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Offline hardware connection'},
@@ -414,8 +414,8 @@ class WalletModeConfiguration:
                 can_manage_assets=False,
                 can_use_hardware_wallet=False,
                 can_backup_wallet=False,
-                can_restore_wallet=False,
                 can_export_psbt=False,
+                can_receive_asset=False,
             ),
             capabilities=[{'emoji': '❓', 'text': 'Invalid configuration'}],
             limitations=[

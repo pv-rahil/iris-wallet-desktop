@@ -5,6 +5,7 @@ from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 
 
 ERROR_MAPPING = {
+    # rgblib error
     'InvalidAddress': 'invalid_address',
     'InvalidAmountZero': 'invalid_amount',
     'InvalidAssetId': 'invalid_asset_id',
@@ -79,6 +80,25 @@ ERROR_MAPPING = {
     'InvalidColoringInfo': 'invalid_coloring_info',
     'InvalidConsignment': 'invalid_consignment',
     'InsufficientBitcoins': 'insufficient_funds',
+    'CannotFinalizePsbt': 'cannot_finalize_psbt',
+    'FingerprintMismatch': 'fingerprint_mismatch',
+    'InvalidFingerprint': 'invalid_fingerprint',
+    # hwilib error
+    'HWWError': 'hardware_wallet_error',
+    'NoPasswordError': 'hardware_wallet_no_password',
+    'UnavailableActionError': 'hardware_wallet_unavailable_action',
+    'DeviceAlreadyInitError': 'hardware_wallet_already_initialized',
+    'DeviceNotReadyError': 'hardware_wallet_not_ready',
+    'DeviceAlreadyUnlockedError': 'hardware_wallet_already_unlocked',
+    'UnknownDeviceError': 'hardware_wallet_unknown_device',
+    'NotImplementedError': 'hardware_wallet_not_implemented',
+    'PSBTSerializationError': 'hardware_wallet_psbt_serialization_error',
+    'BadArgumentError': 'hardware_wallet_bad_argument',
+    'DeviceFailureError': 'hardware_wallet_failure',
+    'ActionCanceledError': 'hardware_wallet_action_canceled',
+    'DeviceConnectionError': 'hardware_wallet_connection_error',
+    'DeviceBusyError': 'hardware_wallet_busy',
+    'NeedsRootError': 'hardware_wallet_needs_root',
     # from caching
     'UnableToCacheInitialise': 'unable_to_cache_initialise',
     'CacheFetchFailed': 'cache_fetch_failed',

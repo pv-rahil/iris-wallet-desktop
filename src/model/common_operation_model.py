@@ -135,3 +135,4 @@ class ReceiveAssetModel(BaseModel):
     page_name: str
     address_info: str
     psbt: str | None = None
+    close_button_navigation: object | None = None

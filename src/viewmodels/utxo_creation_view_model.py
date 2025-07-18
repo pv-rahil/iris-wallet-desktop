@@ -116,6 +116,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
             )
+            print('i am calling')
             self.create_utxos_end(
                 finalized_psbt=finalized_psbt,
             )
@@ -152,12 +153,12 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             'Exception occurred while utxo operation: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        if self.is_hardware_wallet:
-            self.hw_dialog_update.emit(
-                str(error), PsbtStatus.ERROR,
-            )
-        else:
+        if not self.is_hardware_wallet:
             description = error.message if isinstance(
                 error, CommonException,
             ) else ERROR_SOMETHING_WENT_WRONG
             ToastManager.error(description=description)
+        else:
+            self.hw_dialog_update.emit(
+                str(error), PsbtStatus.ERROR,
+            )

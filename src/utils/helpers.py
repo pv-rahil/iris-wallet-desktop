@@ -8,11 +8,13 @@ and retrieving configuration arguments for wallet setup.
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import json
 import os
 import sys
 
+from base58 import b58decode_check
 from mnemonic import Mnemonic
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -22,7 +24,9 @@ from rgb_lib import BitcoinNetwork
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.build_app_path import app_paths
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
@@ -145,7 +149,10 @@ def hash_mnemonic(mnemonic_phrase: str) -> str:
     Returns:
     str: The hashed and encoded mnemonic.
     """
-    validate_mnemonic(mnemonic_phrase=mnemonic_phrase)
+    if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+        validate_xpub(mnemonic_phrase)
+    else:
+        validate_mnemonic(mnemonic_phrase=mnemonic_phrase)
 
     sha256_hash = hashlib.sha256(mnemonic_phrase.encode()).digest()
     base32_encoded = base64.b32encode(sha256_hash).decode().rstrip('=')
@@ -166,6 +173,17 @@ def validate_mnemonic(mnemonic_phrase: str):
     mnemonic = Mnemonic('english')
     if not mnemonic.check(mnemonic_phrase):
         raise ValueError('Invalid mnemonic phrase')
+
+
+def validate_xpub(xpub: str) -> bool:
+    """
+    Returns True if the xpub is valid, False otherwise.
+    """
+    try:
+        decoded = b58decode_check(xpub)
+        return len(decoded) == 78
+    except (ValueError, binascii.Error):
+        return False
 
 
 def get_build_info() -> dict | None:
@@ -268,3 +286,49 @@ def get_bitcoin_network_from_enum(network: NetworkEnumModel | BitcoinNetwork) ->
         return mapping[network]
     except KeyError as e:
         raise CommonException('Invalid network') from e
+
+
+def write_rgb_lib_version_file(file_name: str) -> tuple[str, str]:
+    """
+    Write the rgb_lib version to a .version file in the same directory as the backup file.
+
+    Args:
+        file_name (str): The name to use for the version file (e.g., 'wallet.version').
+
+    Returns:
+        str: The full path to the created version file.
+    """
+    version = SettingRepository.get_rgb_lib_version()
+    version_file_name = f'{file_name}.version'
+    version_file_path = os.path.join(
+        app_paths.backup_folder_path, version_file_name,
+    )
+
+    try:
+        with open(version_file_path, 'w', encoding='utf-8') as f:
+            f.write(version)
+        return version_file_path, version_file_name
+    except OSError as e:
+        raise RuntimeError(f"Failed to write version file: {e}") from e
+
+
+def read_rgb_lib_version_file(file_name: str) -> str:
+    """
+    Read the rgb_lib version from a .version file in the same directory as the backup file.
+
+    Args:
+        file_name (str): The name of the version file (e.g., 'wallet.version').
+        backup_path (str): The full path to the backup file (used to derive the directory).
+
+    Returns:
+        str: The RGB library version if available, otherwise "unknown".
+    """
+    version_file_path = os.path.join(app_paths.restore_folder_path, file_name)
+
+    try:
+        with open(version_file_path, encoding='utf-8') as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return 'unknown'
+    except OSError as e:
+        raise RuntimeError(f"Failed to read version file: {e}") from e

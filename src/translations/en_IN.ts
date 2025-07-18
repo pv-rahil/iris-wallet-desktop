@@ -1852,5 +1852,81 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>signed_transaction</source>
         <translation>Signed transaction</translation>
     </message>
+    <message>
+        <source>cannot_finalize_psbt</source>
+        <translation>Cannot finalize PSBT</translation>
+    </message>
+    <message>
+        <source>fingerprint_mismatch</source>
+        <translation>Fingerprint does not match the expected value</translation>
+    </message>
+    <message>
+        <source>invalid_fingerprint</source>
+        <translation>The fingerprint is invalid</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_error</source>
+        <translation>Hardware wallet error occurred</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_no_password</source>
+        <translation>No password provided for hardware wallet</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_unavailable_action</source>
+        <translation>This action is not available for your hardware wallet</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_already_initialized</source>
+        <translation>The hardware wallet is already initialized</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_not_ready</source>
+        <translation>The hardware wallet is not ready</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_already_unlocked</source>
+        <translation>The hardware wallet is already unlocked</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_unknown_device</source>
+        <translation>Unknown hardware wallet device</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_not_implemented</source>
+        <translation>This function is not implemented for your hardware wallet</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_psbt_serialization_error</source>
+        <translation>PSBT serialization error</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_bad_argument</source>
+        <translation>Bad argument provided to hardware wallet</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_failure</source>
+        <translation>Hardware wallet failure</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_action_canceled</source>
+        <translation>Action was canceled by the user</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_connection_error</source>
+        <translation>Error connecting to the hardware wallet</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_busy</source>
+        <translation>The hardware wallet is busy</translation>
+    </message>
+    <message>
+        <source>hardware_wallet_needs_root</source>
+        <translation>Root access is required for this hardware wallet action</translation>
+    </message>
+    <message>
+        <source>enter_hardware_wallet_info</source>
+        <translation>Enter your wallet details from the hardware wallet. Ensure each value is accurate and entered securely.</translation>
+    </message>
 </context>
 </TS>

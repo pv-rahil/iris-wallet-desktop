@@ -229,7 +229,7 @@ class ReceiveRGBAssetWidget(QWidget):
         self._view_model.page_navigation.receive_asset_page(
             ReceiveAssetModel(
                 page_name='Receive CFA page',
-                address_info='psbt_info', psbt=psbt,
+                address_info='psbt_info', psbt=psbt, close_button_navigation=self.close_button_navigation,
             ),
         )
         self.receive_rgb_asset_page.receive_asset_close_button.clicked.connect(

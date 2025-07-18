@@ -12,6 +12,7 @@ from src.data.repository.common_operations_repository import CommonOperationRepo
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.restore_service import RestoreService
 from src.model.common_operation_model import KeyringDialogModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.build_app_path import app_paths
@@ -27,11 +28,15 @@ from src.utils.error_message import ERROR_WHILE_RESTORE
 from src.utils.gauth import authenticate
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTORE_COMPLETED
+from src.utils.info_message import INFO_WALLET_RESET
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
+from src.utils.logging import logger
+from src.utils.reset_app import delete_app_data
 from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
+from src.views.components.rgb_lib_incompatibility import RgbLibIncompatibilityDialog
 
 
 class RestoreViewModel(QObject, ThreadManager):
@@ -46,6 +51,9 @@ class RestoreViewModel(QObject, ThreadManager):
         self.mnemonic = None
         self.password = None
         self.sidebar = None
+        self.xpub_vanilla = None
+        self.xpub_colored = None
+        self.fingerprint = None
 
     def forward_to_fungibles_page(self):
         """Navigate to fungibles page"""
@@ -63,27 +71,13 @@ class RestoreViewModel(QObject, ThreadManager):
             SettingRepository.set_wallet_initialized()
             SettingRepository.set_backup_configured(True)
 
-            encrypted_mnemonic = mnemonic_store.encrypt(
-                password=self.password, mnemonic=self.mnemonic,
-            )
-            local_store.write_to_file(
-                file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
-            )
             network = get_bitcoin_network_from_enum(
                 SettingRepository.get_wallet_network(),
             )
-            restore_keys: Keys = CommonOperationRepository.restore_keys(
-                network, self.mnemonic,
-            )
-            local_store.set_value(
-                ACCOUNT_XPUB_VANILLA, restore_keys.account_xpub_vanilla,
-            )
-            local_store.set_value(
-                ACCOUNT_XPUB_COLORED, restore_keys.account_xpub_colored,
-            )
-            local_store.set_value(
-                MASTER_FINGERPRINT, restore_keys.master_fingerprint,
-            )
+            if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+                self._store_hardware_wallet_data()
+            else:
+                self._store_software_wallet_data()
             is_set_password: bool = set_value(
                 WALLET_PASSWORD_KEY, self.password, network.value,
             )
@@ -118,7 +112,9 @@ class RestoreViewModel(QObject, ThreadManager):
             exc (Exception): The exception that was raised.
         """
         self.is_loading.emit(False)
-        if isinstance(exc, CommonException):
+        if isinstance(exc, CommonException) and getattr(exc, 'message', '') == 'RGB_LIB_INCOMPATIBLE':
+            self.handle_rgb_lib_incompatibility()
+        elif isinstance(exc, CommonException):
             self.message.emit(
                 ToastPreset.ERROR,
                 exc.message,
@@ -129,11 +125,14 @@ class RestoreViewModel(QObject, ThreadManager):
                 ERROR_SOMETHING_WENT_WRONG,
             )
 
-    def restore(self, mnemonic: str, password: str):
+    def restore(self, password: str, mnemonic: str | None = None, xpub_vanilla: str | None = None, xpub_colored: str | None = None, fingerprint: str | None = None):
         """Method called by restore page to restore"""
         self.is_loading.emit(True)
         self.mnemonic = mnemonic
         self.password = password
+        self.xpub_vanilla = xpub_vanilla
+        self.xpub_colored = xpub_colored
+        self.fingerprint = fingerprint
 
         try:
             response = authenticate(QApplication.instance())
@@ -144,11 +143,12 @@ class RestoreViewModel(QObject, ThreadManager):
                     ERROR_GOOGLE_CONFIGURE_FAILED,
                 )
                 return
+            restore_input = mnemonic if mnemonic else xpub_vanilla
 
             self.run_in_thread(
                 RestoreService.restore,
                 {
-                    'args': [mnemonic, password],
+                    'args': [restore_input, password],
                     'callback': self.on_success,
                     'error_callback': self.on_error,
                 },
@@ -156,3 +156,65 @@ class RestoreViewModel(QObject, ThreadManager):
         except Exception as exc:
             self.is_loading.emit(False)
             self.on_error(exc)
+
+    def _store_software_wallet_data(self):
+        """Store encrypted mnemonic and derived keys for software wallets."""
+        encrypted_mnemonic = mnemonic_store.encrypt(
+            password=self.password, mnemonic=self.mnemonic,
+        )
+        local_store.write_to_file(
+            file_name=MNEMONIC_KEY,
+            file_path=app_paths.mnemonic_file_path,
+            value=encrypted_mnemonic,
+        )
+
+        network = get_bitcoin_network_from_enum(
+            SettingRepository.get_wallet_network(),
+        )
+        restore_keys: Keys = CommonOperationRepository.restore_keys(
+            network, self.mnemonic,
+        )
+
+        local_store.set_value(
+            ACCOUNT_XPUB_VANILLA,
+            restore_keys.account_xpub_vanilla,
+        )
+        local_store.set_value(
+            ACCOUNT_XPUB_COLORED,
+            restore_keys.account_xpub_colored,
+        )
+        local_store.set_value(
+            MASTER_FINGERPRINT,
+            restore_keys.master_fingerprint,
+        )
+
+    def _store_hardware_wallet_data(self):
+        """Store xpubs and fingerprint for hardware wallets."""
+        local_store.set_value(ACCOUNT_XPUB_VANILLA, self.xpub_vanilla)
+        local_store.set_value(ACCOUNT_XPUB_COLORED, self.xpub_colored)
+        local_store.set_value(MASTER_FINGERPRINT, self.fingerprint)
+
+    def handle_rgb_lib_incompatibility(self):
+        """Handles the case when the RGB lib version is incompatible."""
+        rgb_lib_incompatible = RgbLibIncompatibilityDialog()
+        rgb_lib_incompatible.show_rgb_lib_incompatibility_dialog()
+        clicked_button = rgb_lib_incompatible.rgb_lib_incompatibility_dialog.clickedButton()
+
+        if clicked_button == rgb_lib_incompatible.close_button:
+            QApplication.instance().exit()
+
+        elif clicked_button == rgb_lib_incompatible.delete_app_data_button:
+            rgb_lib_incompatible.show_confirmation_dialog()
+            confirm_button = rgb_lib_incompatible.confirmation_dialog.clickedButton()
+
+            if confirm_button == rgb_lib_incompatible.confirm_delete_button:
+                self.on_delete_app_data()
+            elif confirm_button == rgb_lib_incompatible.cancel:
+                self.handle_rgb_lib_incompatibility()
+
+    def on_delete_app_data(self):
+        """This function deletes the wallet data after user confirms when using an invalid rgb lib"""
+        basepath = local_store.get_path()
+        network_type = SettingRepository.get_wallet_network()
+        delete_app_data(basepath, network=network_type.value)
+        logger.info(INFO_WALLET_RESET)

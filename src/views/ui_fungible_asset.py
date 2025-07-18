@@ -32,6 +32,7 @@ from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
 from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import generate_identicon
@@ -84,6 +85,10 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             title_logo_path=':/assets/my_asset.png', title_name='fungibles',
         )
         self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
+        self.is_watch_only = SettingRepository.get_wallet_security_type(
+        ) == WalletSecurityType.WATCH_ONLY
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
         self.fungible_frame = None
         self.vertical_layout_fungible_frame = None
         self.grid_layout_fungible_frame = None
@@ -373,7 +378,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
         self.update_sidebar()
-        if SettingRepository.get_wallet_security_type() != WalletSecurityType.WATCH_ONLY:
+        if not (self.is_watch_only or self.is_offline_wallet):
             self.check_faucet_availability()
         self._view_model.main_asset_view_model.get_assets()
         self.title_frame.refresh_page_button.clicked.connect(

@@ -26,7 +26,6 @@ from src.views.components.selection_page import SelectionPage
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.views.components.wallet_mode_summary_dialog import WalletModeSummaryDialog
 from src.views.components.watch_only_dialog import WatchOnlyDialog
-from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
 
 
 class SelectionBreadcrumbWidget(QWidget):
@@ -345,30 +344,34 @@ class SelectionBreadcrumbWidget(QWidget):
     def _show_final_summary_flow(self):
         """
         Show the final wallet mode summary dialog and handle navigation after summary.
-        Handles blur effect and navigation to hardware wallet or mnemonic restore if needed.
+        Applies blur effect and navigates to the appropriate page based on user input and wallet configuration.
         """
         self.update_breadcrumbs()
+
+        # Apply initial blur for the summary dialog
         blur = QGraphicsBlurEffect()
         blur.setBlurRadius(10)
         self.setGraphicsEffect(blur)
-        dialog = WalletModeSummaryDialog(self)
-        if dialog.exec() == QDialog.Accepted:
-            self.setGraphicsEffect(None)
-            key_storage = SettingRepository.get_key_storage_type()
+
+        summary_dialog = WalletModeSummaryDialog(self)
+        result = summary_dialog.exec()
+
+        # Always remove blur after the summary dialog
+        self.setGraphicsEffect(None)
+
+        if result != QDialog.Accepted:
+            return
+
+        key_storage = SettingRepository.get_key_storage_type()
+        entry_type = SettingRepository.get_wallet_entry_type()
+
+        if entry_type == WalletEntryType.CREATE:
             if key_storage == KeyStorageType.HARDWARE_WALLET:
                 self._view_model.page_navigation.hardware_wallet_connect_page()
-            elif SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD:
-                blur_effect = QGraphicsBlurEffect()
-                blur_effect.setBlurRadius(10)
-                restore_dialog = RestoreMnemonicWidget(
-                    view_model=self._view_model, parent=self,
-                )
-                if restore_dialog.exec() == QDialog.Accepted:
-                    self._view_model.page_navigation.welcome_page()
             else:
                 self._view_model.page_navigation.welcome_page()
         else:
-            self.setGraphicsEffect(None)
+            self._view_model.page_navigation.welcome_page()
 
     def _show_watch_only_flow(self):
         """

@@ -4,9 +4,6 @@ Dialog for entering xpubs and fingerprint for Watch-Only wallet mode.
 """
 from __future__ import annotations
 
-import binascii
-
-from base58 import b58decode_check
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
@@ -24,6 +21,7 @@ from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import validate_xpub
 from src.utils.local_store import local_store
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
@@ -212,7 +210,7 @@ class WatchOnlyDialog(QDialog):
             self.error_label.setVisible(True)
             self.setMinimumSize(480, 490)
             return
-        if self.is_invalid_xpub(vanilla) or self.is_invalid_xpub(colored):
+        if not validate_xpub(vanilla) or not validate_xpub(colored):
             self.error_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'invalid_xpub',
@@ -248,15 +246,3 @@ class WatchOnlyDialog(QDialog):
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
         local_store.set_value(MASTER_FINGERPRINT, fingerprint)
         self.accept()
-
-    def is_invalid_xpub(self, xpub: str) -> bool:
-        """Validate an extended public key (xpub) using Base58Check and expected length.
-
-        Returns True if the xpub is invalid (e.g., incorrect length or decode error), otherwise False.
-        """
-        try:
-            decoded = b58decode_check(xpub)
-            # Check that it's roughly the right length (78 bytes for xpub)
-            return len(decoded) != 78
-        except (ValueError, binascii.Error):
-            return True  # Invalid Base58Check format
