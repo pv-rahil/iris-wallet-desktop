@@ -55,6 +55,9 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
         """
         super().__init__(parent)
         self.wallet_type = wallet_type
+        self._loader_label = None
+        self._loader_movie = None
+        self._loader_text = None
         self.setObjectName('hardware_wallet_device_dialog')
         self.setMinimumWidth(450)
         self.setMaximumHeight(400)
@@ -244,7 +247,7 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
                 self.poll_timer.start(5000)
             return
         selected_fingerprint = selected_button.property('fingerprint')
-        devices = hwi_enumerate()
+        devices = hwi_enumerate(allow_emulators=True)
         matched_device = None
         for d in devices:
             if d.get('fingerprint', 'no-fp') == selected_fingerprint:
@@ -393,7 +396,7 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
         if selected_button:
             selected_fingerprint = selected_button.property('fingerprint')
 
-        devices_info = hwi_enumerate()
+        devices_info = hwi_enumerate(allow_emulators=True)
         error_message = None
         for d in devices_info:
             if d.get('error'):

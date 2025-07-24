@@ -50,7 +50,6 @@ class CommonOperationService:
                 stored_network,
             )
 
-            # Check if this is a watch-only wallet
             security_type = SettingRepository.get_wallet_security_type()
             key_storage_type = SettingRepository.get_key_storage_type()
             is_watch_only = security_type == WalletSecurityType.WATCH_ONLY

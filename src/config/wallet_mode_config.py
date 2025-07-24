@@ -26,6 +26,7 @@ class WalletModePrivilege:
     can_backup_wallet: bool
     can_export_psbt: bool
     can_receive_asset: bool
+    can_use_faucet: bool
 
 
 @dataclass
@@ -75,6 +76,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_export_psbt=True,
                     can_receive_asset=False,
+                    can_use_faucet=False,
                 ),
                 capabilities=[
                     {'emoji': '👁️', 'text': 'View balances & transaction history'},
@@ -112,6 +114,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
+                    can_use_faucet=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate new wallet & keys'},
@@ -149,6 +152,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
+                    can_use_faucet=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Initialize new wallet with hardware device'},
@@ -187,6 +191,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
+                    can_use_faucet=True,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet'},
@@ -226,6 +231,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
+                    can_use_faucet=True,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Connect hardware wallet'},
@@ -263,6 +269,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=True,
+                    can_use_faucet=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate offline wallet'},
@@ -300,6 +307,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=True,
+                    can_use_faucet=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'New wallet setup using hardware device'},
@@ -341,6 +349,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=True,
+                    can_use_faucet=False,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet offline'},
@@ -383,6 +392,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=False,
+                    can_use_faucet=False,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Offline hardware connection'},
@@ -416,6 +426,7 @@ class WalletModeConfiguration:
                 can_backup_wallet=False,
                 can_export_psbt=False,
                 can_receive_asset=False,
+                can_use_faucet=False,
             ),
             capabilities=[{'emoji': '❓', 'text': 'Invalid configuration'}],
             limitations=[

@@ -28,8 +28,6 @@ from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
 from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletSecurityType
-from src.model.enums.enums_model import WalletType
 from src.model.selection_page_model import AssetDataModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -46,10 +44,6 @@ class Sidebar(QWidget):
         self._view_model: MainViewModel = view_model
         config = get_current_wallet_mode_config()
         priv = config.privileges
-        self.is_watch_only = SettingRepository.get_wallet_security_type(
-        ) == WalletSecurityType.WATCH_ONLY
-        self.is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
         self.setObjectName('sidebar')
         self.setMinimumSize(QSize(360, 720))
         self.setStyleSheet(
@@ -120,9 +114,8 @@ class Sidebar(QWidget):
         self.faucet = SidebarButton(
             'Faucet', ':/assets/faucets.png', translation_key='faucets',
         )
-        if not (self.is_watch_only or self.is_offline_wallet):
-            self.faucet.setAccessibleName(FAUCET_BUTTON)
-            self.grid_layout_sidebar.addWidget(self.faucet, 5, 0, 1, 1)
+        self.faucet.setAccessibleName(FAUCET_BUTTON)
+        self.grid_layout_sidebar.addWidget(self.faucet, 5, 0, 1, 1)
 
         self.my_fungibles = SidebarButton(
             'My Fungibles', ':/assets/my_asset.png', translation_key='fungibles',
@@ -275,8 +268,5 @@ class Sidebar(QWidget):
         self.backup.setVisible(priv.can_backup_wallet)
         self.broadcast_transaction.setVisible(priv.can_export_psbt)
         self.receive_asset_button.setVisible(priv.can_receive_asset)
-        if not (self.is_watch_only or self.is_offline_wallet):
-            self.faucet.setVisible(True)
-        else:
-            self.faucet.setVisible(False)
+        self.faucet.setVisible(priv.can_use_faucet)
         self.retranslate_ui()

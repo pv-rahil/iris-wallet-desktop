@@ -45,7 +45,7 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                 # Check if client is None or closed
                 # Refresh device status every 5 seconds or if no client
                 if (not client) or (now - last_enumerate_time > 5.0):
-                    devices = hwi_enumerate()
+                    devices = hwi_enumerate(allow_emulators=True)
                     last_enumerate_time = now
 
                     if not devices:

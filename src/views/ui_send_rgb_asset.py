@@ -52,6 +52,7 @@ class SendRGBAssetWidget(QWidget):
         self.asset_name = None
         self.loading_performer = None
         self.rgb_asset_fee_rate_loading_screen = None
+        self.send_rgb_hw_dialog = None
         self.value_of_default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         self.send_rgb_asset_page = SendAssetWidget(
             self._view_model, 'blind_utxo',
@@ -357,15 +358,17 @@ class SendRGBAssetWidget(QWidget):
 
     def handle_send_rgb_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
+        self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
-        send_rgb_hw_dialog.update_dialog(message, dialog_type)
-        if not send_rgb_hw_dialog.isVisible():
-            send_rgb_hw_dialog.show()
+        self.send_rgb_hw_dialog.update_dialog(message, dialog_type)
+        if not self.send_rgb_hw_dialog.isVisible():
+            self.send_rgb_hw_dialog.show()
 
     def show_send_rgb_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if self.send_rgb_hw_dialog.isVisible():
+            self.send_rgb_hw_dialog.accept()
         if self.asset_type == AssetSchema.NIA:
             page_name = 'NIA page'
         else:

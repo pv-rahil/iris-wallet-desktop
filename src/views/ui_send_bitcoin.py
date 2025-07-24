@@ -38,6 +38,7 @@ class SendBitcoinWidget(QWidget):
         self.render_timer = RenderTimer(task_name='BitcoinSendAsset Rendering')
         self._view_model: MainViewModel = view_model
         self.loading_performer = None
+        self.send_bitcoin_hw_dialog = None
         self.send_bitcoin_fee_rate_loading_screen = None
         self.send_bitcoin_page = SendAssetWidget(self._view_model, 'address')
         self.value_of_default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
@@ -255,21 +256,23 @@ class SendBitcoinWidget(QWidget):
 
     def handle_send_bitcoin_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        send_bitcoin_hw_dialog = HardwareWalletOperationDialog.get_instance(
+        self.send_bitcoin_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
-        send_bitcoin_hw_dialog.cancel_button.clicked.connect(
+        self.send_bitcoin_hw_dialog.cancel_button.clicked.connect(
             self._view_model.send_bitcoin_view_model.cancel_operation,
         )
-        send_bitcoin_hw_dialog.update_dialog(message, dialog_type)
-        if not send_bitcoin_hw_dialog.isVisible():
-            send_bitcoin_hw_dialog.show()
+        self.send_bitcoin_hw_dialog.update_dialog(message, dialog_type)
+        if not self.send_bitcoin_hw_dialog.isVisible():
+            self.send_bitcoin_hw_dialog.show()
 
     def show_send_bitcoin_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if self.send_bitcoin_hw_dialog.isVisible():
+            self.send_bitcoin_hw_dialog.accept()
         self._view_model.page_navigation.receive_asset_page(
             ReceiveAssetModel(
-                page_name='bitcoin_page',
+                page_name='send_bitcoin',
                 address_info='psbt_info', psbt=psbt,
             ),
         )

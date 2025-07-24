@@ -195,7 +195,7 @@ class RgbRepository:
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
                 fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
             )
-
+            print(f"psbt: {psbt}")
             return psbt
 
     @staticmethod
