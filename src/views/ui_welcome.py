@@ -7,7 +7,7 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame
+from PySide6.QtWidgets import QDialog, QFrame
 from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
@@ -31,6 +31,7 @@ from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.views.components.watch_only_dialog import WatchOnlyDialog
 from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
 
 
@@ -190,7 +191,7 @@ class WelcomeWidget(QWidget):
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
         self.create_btn.clicked.connect(
-            self._view_model.welcome_view_model.on_create_click,
+            self.on_create_click,
         )
         self.restore_btn.clicked.connect(
             self.restore_wallet,
@@ -289,3 +290,16 @@ class WelcomeWidget(QWidget):
             ToastManager.error(message)
         else:
             ToastManager.success(message)
+
+    def on_create_click(self):
+        """This method handle on create button click"""
+        if self.is_watch_only_wallet:
+            blur = QGraphicsBlurEffect()
+            blur.setBlurRadius(10)
+            self.setGraphicsEffect(blur)
+            watch_only_dialog = WatchOnlyDialog(parent=self)
+            result = watch_only_dialog.exec()
+            self.setGraphicsEffect(None)  # Always remove blur after dialog closes
+            if result != QDialog.Accepted:
+                return  # Stop if dialog was not accepted
+        self._view_model.welcome_view_model.on_create_click()

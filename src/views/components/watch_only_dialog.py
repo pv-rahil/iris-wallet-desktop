@@ -120,6 +120,11 @@ class WatchOnlyDialog(QDialog):
 
         self.check_box.stateChanged.connect(self.handle_continue_button)
 
+        # Connect textChanged signals for error checking and button state
+        self.xpub_vanilla_input.textChanged.connect(self.on_input_changed)
+        self.xpub_colored_input.textChanged.connect(self.on_input_changed)
+        self.fingerprint_input.textChanged.connect(self.on_input_changed)
+
         self.retranslate_ui()
 
     def retranslate_ui(self):
@@ -189,9 +194,9 @@ class WatchOnlyDialog(QDialog):
 
     def handle_continue_button(self):
         """
-        Enable or disable the continue button based on the checkbox state.
+        Enable or disable the continue button based on the checkbox state and error label.
         """
-        self.continue_btn.setEnabled(self.check_box.isChecked())
+        self.continue_btn.setEnabled(self.check_box.isChecked() and not self.error_label.isVisible())
 
     def handle_submit(self):
         """
@@ -246,3 +251,29 @@ class WatchOnlyDialog(QDialog):
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
         local_store.set_value(MASTER_FINGERPRINT, fingerprint)
         self.accept()
+
+    def on_input_changed(self):
+        """
+        Hide error label and update continue button state on any input change.
+        Also, perform basic validation and show error if needed.
+        """
+        self.error_label.setVisible(False)
+        self.setMinimumSize(480, 420)
+        # Optionally, you can do live validation here:
+        vanilla = self.xpub_vanilla_input.text().strip()
+        colored = self.xpub_colored_input.text().strip()
+        fingerprint = self.fingerprint_input.text().strip()
+        error = None
+        if not vanilla or not colored or not fingerprint:
+            error = self.tr('All fields are required.')
+        elif not validate_xpub(vanilla) or not validate_xpub(colored):
+            error = self.tr('Invalid xpub.')
+        elif not 110 <= len(vanilla) <= 120 or not 110 <= len(colored) <= 120:
+            error = self.tr('Xpub must be between 110 and 120 characters.')
+        elif len(fingerprint) != 8 or not all(c in '0123456789abcdefABCDEF' for c in fingerprint):
+            error = self.tr('Fingerprint should be 8 hex characters.')
+        if error:
+            self.error_label.setText(error)
+            self.error_label.setVisible(True)
+            self.setMinimumSize(480, 490)
+        self.handle_continue_button()

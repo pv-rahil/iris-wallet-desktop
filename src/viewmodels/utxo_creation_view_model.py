@@ -64,10 +64,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         """
         try:
             self.param = param
-            if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
-                self.create_utxos_begin()
-            else:
-                self.utxo_required.emit()
+            self.utxo_required.emit()
         except Exception as e:
             self.hw_dialog_update.emit(str(e), PsbtStatus.ERROR)
             self.error.emit(str(e))
@@ -143,6 +140,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     def on_utxo_end_done(self):
         """Callback when UTXO creation is completed. Emits utxo_created signal."""
         self.utxo_created.emit()
+        return
 
     def on_error(self, error: Exception) -> None:
         """Handles errors during UTXO creation. Updates dialog for hardware wallets or shows toast for others."""

@@ -465,9 +465,6 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        self.nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
-            parent=self,
-        )
         self.nia_hw_dialog.update_dialog(message, dialog_type)
         if not self.nia_hw_dialog.isVisible():
             self.nia_hw_dialog.show()
@@ -481,6 +478,9 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_utxo_required(self):
         """Shows the dialog for utxo require"""
+        self.nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
         self.nia_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
         self.nia_hw_dialog.done_button.setText(
             QCoreApplication.translate(

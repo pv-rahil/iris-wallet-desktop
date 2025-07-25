@@ -384,10 +384,7 @@ class SelectionBreadcrumbWidget(QWidget):
         self.setGraphicsEffect(blur)
         dialog = WalletModeSummaryDialog(self)
         if dialog.exec() == QDialog.Accepted:
-            watch_only_dialog = WatchOnlyDialog(parent=self)
-            if watch_only_dialog.exec() == QDialog.Accepted:
-                self.setGraphicsEffect(None)
-                self._view_model.page_navigation.welcome_page()
+            self._view_model.page_navigation.welcome_page()
         else:
             self.setGraphicsEffect(None)
 

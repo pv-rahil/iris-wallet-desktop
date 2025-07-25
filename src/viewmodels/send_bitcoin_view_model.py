@@ -164,7 +164,8 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         Now broadcast the transaction.
         """
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
-        if is_hw:
+        is_offline = SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+        if is_hw and not is_offline:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
             )

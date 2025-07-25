@@ -498,6 +498,9 @@ class IssueCFAWidget(QWidget):
 
     def handle_cfa_utxo_required(self):
         """Shows the dialog for utxo require"""
+        self.cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
         self.cfa_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
         self.cfa_hw_dialog.done_button.setText(
             QCoreApplication.translate(
