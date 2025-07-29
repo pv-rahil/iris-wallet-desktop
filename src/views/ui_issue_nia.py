@@ -465,14 +465,20 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        self.nia_hw_dialog.update_dialog(message, dialog_type)
-        if not self.nia_hw_dialog.isVisible():
-            self.nia_hw_dialog.show()
+        nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        nia_hw_dialog.update_dialog(message, dialog_type)
+        if not nia_hw_dialog.isVisible():
+            nia_hw_dialog.show()
 
     def handle_nia_utxo_created(self):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
-        if self.nia_hw_dialog.isVisible():
-            self.nia_hw_dialog.accept()
+        nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        if nia_hw_dialog.isVisible():
+            nia_hw_dialog.accept()
 
         self.on_issue_nia_click()
 
@@ -493,7 +499,8 @@ class IssueNIAWidget(QWidget):
         self.nia_hw_dialog.cancel_button.clicked.connect(
             self.nia_hw_dialog.reject,
         )
-        self.nia_hw_dialog.exec()
+        if not self.nia_hw_dialog.isVisible():
+            self.nia_hw_dialog.exec()
 
     def show_nia_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""

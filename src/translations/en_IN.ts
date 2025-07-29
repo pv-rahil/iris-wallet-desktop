@@ -1932,5 +1932,13 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>no_mnemonic_backup_info</source>
         <translation>In order to recover your assets, you need a backup copy of RGB offline data, as well as your xpubs and master fingerprint.</translation>
     </message>
+    <message>
+        <source>usb_detected_sync_prompt</source>
+        <translation>USB detected. Sync now?</translation>
+    </message>
+    <message>
+        <source>confirm_usb_sync</source>
+        <translation>A USB is connected. Would you like to sync wallet data now?</translation>
+    </message>
 </context>
 </TS>

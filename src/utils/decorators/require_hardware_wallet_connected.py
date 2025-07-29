@@ -3,7 +3,6 @@ Decorator to ensure a hardware wallet device is connected and a client is initia
 """
 from __future__ import annotations
 
-import time
 from functools import wraps
 from typing import Any
 from typing import Callable
@@ -22,78 +21,51 @@ from src.utils.logging import logger
 def require_hardware_wallet_connected() -> Callable[..., Any]:
     """
     Decorator to ensure a hardware wallet is connected and the Ledger client is initialized.
-    Refreshes the device connection every 5 seconds or if client is missing.
+    Always creates a fresh client before the decorated function and closes it after.
     """
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        last_enumerate_time = 0.0
-        last_device_path = None
-
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            nonlocal last_enumerate_time, last_device_path
-
-            # Only proceed if hardware wallet is required
             key_storage_type = SettingRepository.get_key_storage_type()
             if key_storage_type != KeyStorageType.HARDWARE_WALLET:
                 return func(*args, **kwargs)
 
-            nonlocal last_enumerate_time, last_device_path
+            client = None
+
             try:
-                now = time.time()
-                client = hardware_client_store.client
-                device_path = last_device_path
-                # Check if client is None or closed
-                # Refresh device status every 5 seconds or if no client
-                if (not client) or (now - last_enumerate_time > 5.0):
-                    devices = hwi_enumerate(allow_emulators=True)
-                    last_enumerate_time = now
+                devices = hwi_enumerate(allow_emulators=True)
 
-                    if not devices:
-                        hardware_client_store.set_client(None)
-                        last_device_path = None
-                        raise RuntimeError(
-                            'No hardware wallet device found. Please connect your device.',
-                        )
+                if not devices:
+                    raise RuntimeError('No hardware wallet device found. Please connect your device.')
 
-                    device_info = devices[0]
-                    device_path = device_info.get('path')
-                    if not device_path:
-                        raise RuntimeError(
-                            'No device path found in HWI enumerate result.',
-                        )
+                device_info = devices[0]
+                device_path = device_info.get('path')
+                if not device_path:
+                    raise RuntimeError('No device path found in HWI enumerate result.')
 
-                    # If device path changed or client is missing, recreate client
-                    if (not client) or (device_path != last_device_path):
-                        network = SettingRepository.get_wallet_network()
-                        if network is None:
-                            raise ValueError('Network must be specified.')
+                network = SettingRepository.get_wallet_network()
+                if network is None:
+                    raise ValueError('Network must be specified.')
 
-                        chain = {
-                            NetworkEnumModel.MAINNET: Chain.MAIN,
-                            NetworkEnumModel.TESTNET: Chain.TEST,
-                            NetworkEnumModel.REGTEST: Chain.REGTEST,
-                        }.get(network)
-                        # Close previous client if it exists
-                        if client:
-                            try:
-                                client.close()
-                            except Exception as e:
-                                logger.warning(
-                                    'Failed to close previous LedgerClient: %s', e,
-                                )
-                        client = LedgerClient(device_path, None, True, chain)
-                        hardware_client_store.set_client(client)
-                        last_device_path = device_path
+                chain = {
+                    NetworkEnumModel.MAINNET: Chain.MAIN,
+                    NetworkEnumModel.TESTNET: Chain.TEST,
+                    NetworkEnumModel.REGTEST: Chain.REGTEST,
+                }.get(network)
+
+                client = LedgerClient(device_path, None, True, chain)
+                hardware_client_store.set_client(client)
 
                 return func(*args, **kwargs)
 
             except Exception as e:
                 logger.error('[HW Wallet Decorator] Exception: %s', e)
                 hardware_client_store.set_client(None)
-                last_device_path = None
-                raise RuntimeError(
-                    f"Hardware wallet connection failed: {e}",
-                ) from e
+                raise RuntimeError(f"Hardware wallet connection failed: {e}") from e
+
+            finally:
+                client.close()
+                hardware_client_store.set_client(None)
 
         return wrapper
 

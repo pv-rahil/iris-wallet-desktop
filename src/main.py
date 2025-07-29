@@ -35,6 +35,7 @@ from src.views.components.message_box import MessageBox
 from src.views.components.on_close_progress_dialog import OnCloseDialogBox
 from src.views.main_window import MainWindow
 from src.views.ui_backup_configure_dialog import BackupConfigureDialog
+from src.utils.usb_sync_manager import create_usb_sync_manager
 PAGE_NAVIGATION: PageNavigation  # To make navigation global
 
 
@@ -104,6 +105,10 @@ def main():
         PAGE_NAVIGATION = PageNavigation(view.ui_)
         # Initialize MainViewModel with PageNavigation
         main_view_model = MainViewModel(PAGE_NAVIGATION)
+        
+        # Initialize USB sync manager
+        usb_sync_manager = create_usb_sync_manager(main_view_model, view)
+        
         # Set view model in your MainWindow instance
         view.ui_.set_ui_and_model(main_view_model)
         wallet: IsWalletInitialized = SettingRepository.is_wallet_initialized()
