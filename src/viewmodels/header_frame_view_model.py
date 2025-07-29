@@ -35,6 +35,7 @@ class NetworkCheckerThread(QThread):
 class HeaderFrameViewModel(QObject):
     """Handles network connectivity in the UI."""
     network_status_signal = Signal(bool)
+    usb_status_signal = Signal()
 
     def __init__(self):
         super().__init__()
@@ -46,8 +47,14 @@ class HeaderFrameViewModel(QObject):
         self.timer.setInterval(PING_DNS_SERVER_CALL_INTERVAL)
         self.timer.timeout.connect(self.start_network_check)
 
+        # USB check timer
+        self.usb_timer = QTimer(self)
+        self.usb_timer.setInterval(5000)  # Check every 5 seconds
+        self.usb_timer.timeout.connect(self.handle_usb_status)
+
         # Start checking
         self.timer.start()
+        self.usb_timer.start()
 
     def start_network_check(self):
         """Start a new network check using a separate thread."""
@@ -64,3 +71,8 @@ class HeaderFrameViewModel(QObject):
     def stop_network_checker(self):
         """Stop network checking when it's no longer needed."""
         self.timer.stop()
+        self.usb_timer.stop()
+
+    def handle_usb_status(self):
+        """Emit usb status signal"""
+        self.usb_status_signal.emit()

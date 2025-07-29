@@ -61,7 +61,6 @@ class IssueCFAWidget(QWidget):
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('gridLayout')
         self.wallet_logo_frame = WalletLogoFrame()
-        self.cfa_hw_dialog = None
 
         self.grid_layout.addWidget(self.wallet_logo_frame, 0, 0, 1, 1)
 
@@ -483,37 +482,40 @@ class IssueCFAWidget(QWidget):
 
     def handle_cfa_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        self.cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
+        cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
-        self.cfa_hw_dialog.update_dialog(message, dialog_type)
-        if not self.cfa_hw_dialog.isVisible():
-            self.cfa_hw_dialog.show()
+        cfa_hw_dialog.update_dialog(message, dialog_type)
+        if not cfa_hw_dialog.isVisible():
+            cfa_hw_dialog.show()
 
     def handle_cfa_utxo_created(self):
         """Close the hardware wallet dialog after UTXO creation."""
-        if self.cfa_hw_dialog.isVisible():
-            self.cfa_hw_dialog.accept()
+        cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        if cfa_hw_dialog.isVisible():
+            cfa_hw_dialog.accept()
         self.on_issue_cfa()
 
     def handle_cfa_utxo_required(self):
         """Shows the dialog for utxo require"""
-        self.cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
+        cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
-        self.cfa_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
-        self.cfa_hw_dialog.done_button.setText(
+        cfa_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
+        cfa_hw_dialog.done_button.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
             ),
         )
-        self.cfa_hw_dialog.done_button.clicked.connect(
+        cfa_hw_dialog.done_button.clicked.connect(
             self._view_model.utxo_creation_view_model.create_utxos_begin,
         )
-        self.cfa_hw_dialog.cancel_button.clicked.connect(
-            self.cfa_hw_dialog.reject,
+        cfa_hw_dialog.cancel_button.clicked.connect(
+            cfa_hw_dialog.reject,
         )
-        self.cfa_hw_dialog.exec()
+        cfa_hw_dialog.exec()
 
     def show_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""

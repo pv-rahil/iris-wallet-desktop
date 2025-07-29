@@ -1,0 +1,84 @@
+/* Style for the USB sync dialog */
+QDialog#usb_sync_dialog {
+    background-color: rgb(27, 35, 59);
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+    font-family: "Inter";
+}
+
+/* Style for the title label */
+QLabel#title_label {
+    font: 16px "Inter";
+    font-weight: 600;
+    color: rgb(208, 211, 221);
+    padding: 10px 20px 10px 3px;
+    border: none;
+}
+
+/* Style for the message label */
+QLabel#message_label {
+    font: 14px "Inter";
+    font-weight: 400;
+    color: rgb(121, 128, 148);;
+    padding: 0px 20px 0px 3px;
+    border: none;
+}
+
+/* Style for the drive combo label */
+QLabel#usb_name_label {
+    font: 14px "Inter";
+    color: rgb(121, 128, 148);
+    text-align: left;
+    border: none;
+}
+
+/* Style for the single drive label */
+QLabel#single_drive_value_label {
+    font: 14px "Inter";
+    color: rgb(121, 128, 148);
+    text-align: left;
+    border: none;
+}
+
+QComboBox {
+    font: 14px "Inter";
+    font-weight: 400;
+    border: none;
+    border-radius: 4px;
+    background-color: rgb(36, 44, 70);
+    color: rgb(102, 108, 129);
+    padding-left: 10px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: rgb(3, 11, 37);
+    selection-background-color: #292b3e;
+    color: #8e8ea0;
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+    border-radius:5px;
+    padding:2.5px;
+}
+
+QComboBox::drop-down {
+    border:none;
+    padding-right:15px;
+}
+
+QComboBox::down-arrow {
+    image: url(:/assets/down_arrow.png);
+    width: 16px;
+    height: 16px;
+    border-radius:4px;
+}
+QWidget#scrollAreaWidgetContents_2 {
+    border-radius: 8px;
+    background: transparent;
+}
+QLabel#broadcast_method_label{
+    font: 14px "Inter";
+    color: rgb(121, 128, 148);
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    padding-left: 17px;
+}

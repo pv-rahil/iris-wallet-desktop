@@ -1940,5 +1940,21 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>confirm_usb_sync</source>
         <translation>A USB is connected. Would you like to sync wallet data now?</translation>
     </message>
+    <message>
+        <source>select_usb_drive</source>
+        <translation>Select USB Drive:</translation>
+    </message>
+    <message>
+        <source>sync</source>
+        <translation>Sync</translation>
+    </message>
+    <message>
+        <source>click_to_sync_usb</source>
+        <translation>Click to sync wallet data with USB drive</translation>
+    </message>
+    <message>
+        <source>selected_device</source>
+        <translation>Selected device:</translation>
+    </message>
 </context>
 </TS>

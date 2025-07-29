@@ -29,13 +29,13 @@ from src.utils.excluded_page import excluded_page
 from src.utils.helpers import check_google_auth_token_available
 from src.utils.logging import logger
 from src.utils.page_navigation import PageNavigation
+from src.utils.usb_sync_manager import create_usb_sync_manager
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.custom_toast import ToasterManager
 from src.views.components.message_box import MessageBox
 from src.views.components.on_close_progress_dialog import OnCloseDialogBox
 from src.views.main_window import MainWindow
 from src.views.ui_backup_configure_dialog import BackupConfigureDialog
-from src.utils.usb_sync_manager import create_usb_sync_manager
 PAGE_NAVIGATION: PageNavigation  # To make navigation global
 
 
@@ -105,10 +105,14 @@ def main():
         PAGE_NAVIGATION = PageNavigation(view.ui_)
         # Initialize MainViewModel with PageNavigation
         main_view_model = MainViewModel(PAGE_NAVIGATION)
-        
-        # Initialize USB sync manager
-        usb_sync_manager = create_usb_sync_manager(main_view_model, view)
-        
+
+        # Initialize USB sync manager and connect to header frame
+        usb_sync_manager = create_usb_sync_manager(view)
+        # Connect USB sync manager to header frame for automatic triggering
+        main_view_model.header_frame_view_model.usb_status_signal.connect(
+            usb_sync_manager.check_usb_and_prompt(),
+        )
+
         # Set view model in your MainWindow instance
         view.ui_.set_ui_and_model(main_view_model)
         wallet: IsWalletInitialized = SettingRepository.is_wallet_initialized()

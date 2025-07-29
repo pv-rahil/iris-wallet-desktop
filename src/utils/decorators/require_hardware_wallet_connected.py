@@ -36,12 +36,16 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                 devices = hwi_enumerate(allow_emulators=True)
 
                 if not devices:
-                    raise RuntimeError('No hardware wallet device found. Please connect your device.')
+                    raise RuntimeError(
+                        'No hardware wallet device found. Please connect your device.',
+                    )
 
                 device_info = devices[0]
                 device_path = device_info.get('path')
                 if not device_path:
-                    raise RuntimeError('No device path found in HWI enumerate result.')
+                    raise RuntimeError(
+                        'No device path found in HWI enumerate result.',
+                    )
 
                 network = SettingRepository.get_wallet_network()
                 if network is None:
@@ -61,10 +65,13 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
             except Exception as e:
                 logger.error('[HW Wallet Decorator] Exception: %s', e)
                 hardware_client_store.set_client(None)
-                raise RuntimeError(f"Hardware wallet connection failed: {e}") from e
+                raise RuntimeError(
+                    f"Hardware wallet connection failed: {e}",
+                ) from e
 
             finally:
-                client.close()
+                if client:
+                    client.close()
                 hardware_client_store.set_client(None)
 
         return wrapper
