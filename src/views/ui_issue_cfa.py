@@ -396,8 +396,8 @@ class IssueCFAWidget(QWidget):
         self._view_model.utxo_creation_view_model.psbt_finalized.connect(
             self.show_cfa_psbt_page,
         )
-        self._view_model.utxo_creation_view_model.utxo_creation_started.connect(
-            self._view_model.issue_cfa_asset_view_model.on_utxo_creation_started,
+        self._view_model.issue_cfa_asset_view_model.utxo_creation_started.connect(
+            self._view_model.utxo_creation_view_model.create_utxos_with_hardware_wallet,
         )
 
     def show_file_preview(self, file_upload_message):
@@ -482,46 +482,54 @@ class IssueCFAWidget(QWidget):
 
     def handle_cfa_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
-            parent=self,
-        )
-        cfa_hw_dialog.update_dialog(message, dialog_type)
-        if not cfa_hw_dialog.isVisible():
-            cfa_hw_dialog.show()
+        if message and dialog_type:
+            self._view_model.utxo_creation_view_model.hw_dialog_update.disconnect()
+            cfa_hw_dialog = HardwareWalletOperationDialog(
+                parent=self,
+            )
+            cfa_hw_dialog.update_dialog(message, dialog_type)
+            if not cfa_hw_dialog.isVisible():
+                cfa_hw_dialog.show()
 
-    def handle_cfa_utxo_created(self):
+    def handle_cfa_utxo_created(self,status:bool):
         """Close the hardware wallet dialog after UTXO creation."""
-        cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
-            parent=self,
-        )
-        if cfa_hw_dialog.isVisible():
-            cfa_hw_dialog.accept()
-        self.on_issue_cfa()
+        if status:
+            self._view_model.utxo_creation_view_model.utxo_created.disconnect()
+            cfa_hw_dialog = HardwareWalletOperationDialog(
+                parent=self,
+            )
+            if cfa_hw_dialog.isVisible():
+                cfa_hw_dialog.accept()
+            self.on_issue_cfa()
 
-    def handle_cfa_utxo_required(self):
+    def handle_cfa_utxo_required(self, status:bool):
         """Shows the dialog for utxo require"""
-        cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
-            parent=self,
-        )
-        cfa_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
-        cfa_hw_dialog.done_button.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
-            ),
-        )
-        cfa_hw_dialog.done_button.clicked.connect(
-            self._view_model.utxo_creation_view_model.create_utxos_begin,
-        )
-        cfa_hw_dialog.cancel_button.clicked.connect(
-            cfa_hw_dialog.reject,
-        )
-        cfa_hw_dialog.exec()
+        if status:
+            self._view_model.utxo_creation_view_model.utxo_required.disconnect()
+            cfa_hw_dialog = HardwareWalletOperationDialog(
+                parent=self,
+            )
+            cfa_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
+            cfa_hw_dialog.done_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                ),
+            )
+            cfa_hw_dialog.done_button.clicked.connect(
+                self._view_model.utxo_creation_view_model.create_utxos_begin,
+            )
+            cfa_hw_dialog.cancel_button.clicked.connect(
+                cfa_hw_dialog.reject,
+            )
+            cfa_hw_dialog.exec()
 
     def show_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
-        self._view_model.page_navigation.receive_asset_page(
-            ReceiveAssetModel(
-                page_name='CFA page',
-                address_info='psbt_info', psbt=psbt,
-            ),
-        )
+        if psbt:
+            self._view_model.utxo_creation_view_model.psbt_finalized.disconnect()
+            self._view_model.page_navigation.receive_asset_page(
+                ReceiveAssetModel(
+                    page_name='CFA page',
+                    address_info='psbt_info', psbt=psbt,
+                ),
+            )

@@ -27,6 +27,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     ViewModel for broadcasting signed PSBT transactions.
     """
     is_loading = Signal(bool)
+    tx_broadcasted = Signal(bool)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
@@ -47,11 +48,11 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_success_send_end(self, tx_id: SendAssetResponseModel):
+    def on_success_send_end(self, response: SendAssetResponseModel):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
-        ToastManager.success(description=INFO_ASSET_SENT.format(tx_id.txid))
-        # Optionally, navigate or update UI here
+        self.tx_broadcasted.emit(True)
+        ToastManager.success(description=INFO_ASSET_SENT.format(response.txid))
 
     def on_error(self, error: CommonException) -> None:
         """Handle error for broadcasting psbt."""
@@ -90,7 +91,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def on_success_create_utxos_end(self, num):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
-        ToastManager.success(description=INFO_UTXO_CREATED.format(num))
+        self.tx_broadcasted.emit(True)
+        ToastManager.success(description=INFO_UTXO_CREATED)
 
     def send_btc_end(self, signed_psbt: str):
         """
@@ -107,7 +109,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_success_send_btc_end(self, tx_id: SendBtcResponseModel):
+    def on_success_send_btc_end(self, response: SendBtcResponseModel):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
-        ToastManager.success(description=INFO_BTC_SENT.format(tx_id.txid))
+        self.tx_broadcasted.emit(True)
+        ToastManager.success(description=INFO_BTC_SENT.format(response.tx_id))

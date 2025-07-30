@@ -12,9 +12,10 @@ import os
 import shutil
 import time
 import zipfile
-from typing import Optional
-
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletType, WalletSecurityType
 
 from src.utils.build_app_path import app_paths
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
@@ -29,7 +30,15 @@ from src.views.components.usb_sync_dialog import USBSyncDialog
 
 
 class USBSyncManager:
-    """Manages USB synchronization for wallet data."""
+    """
+    Manages USB synchronization for wallet data.
+    
+    The USB sync dialog will only be shown when:
+    1. USB sync is enabled for the current wallet mode (offline or watch-only)
+    2. A USB drive is detected
+    3. The current page is the fungible page
+    4. The dialog hasn't been shown for the current session on the fungible page
+    """
 
     def __init__(self, main_window):
         """
@@ -44,22 +53,56 @@ class USBSyncManager:
         self.dialog_shown = False  # Track if dialog has been shown for current session
 
     def reset_dialog_flag(self):
-        """Reset the dialog shown flag to allow showing dialog again."""
+        """
+        Reset the dialog shown flag to allow showing dialog again.
+        This can be called manually if needed, but the flag is automatically
+        reset when navigating away from the fungible page.
+        """
         self.dialog_shown = False
         logger.debug('Dialog flag reset manually')
+
+    def _is_usb_sync_enabled(self) -> bool:
+        """
+        Check if USB sync should be enabled based on wallet mode.
+        USB sync is only enabled for offline wallets and watch-only wallets.
+        
+        Returns:
+            bool: True if USB sync should be enabled, False otherwise.
+        """
+        try:            
+            wallet_type = SettingRepository.get_wallet_type()
+            security_type = SettingRepository.get_wallet_security_type()
+
+            is_offline = wallet_type == WalletType.OFFLINE_TYPE_WALLET
+            is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+            
+            return is_offline or is_watch_only
+        except Exception as exc:
+            logger.error('Error checking USB sync enabled status: %s', str(exc))
+            return False
 
     def check_usb_and_prompt(self):
         """
         Check for USB drives and prompt user for sync if detected.
+        Only works for offline wallets and watch-only wallets.
+        Only shows dialog when on the fungible page.
         """
         try:
-            if self.sync_in_progress:
-                logger.info('USB sync already in progress, skipping check')
+            print(1)
+            # Check if USB sync is enabled for current wallet mode
+            if not self._is_usb_sync_enabled():
                 return
+                
+            if self.sync_in_progress:
+                return
+
+            # # Check if current page is fungible page
+            # if not self._is_on_fungible_page():
+            #     return
 
             # Check if USB is connected
             is_usb_connected = self.usb_detector.is_usb_connected()
-
+            
             # Return early if no USB connected
             if not is_usb_connected:
                 logger.debug('No USB drives detected')
@@ -67,21 +110,53 @@ class USBSyncManager:
 
             # Get list of USB drives
             usb_drives = self.usb_detector.detect_usb_drives()
-
+            
             if not usb_drives:
                 logger.debug('No accessible USB drives found')
                 return
 
             # Only show dialog if not already shown for this session
             if not self.dialog_shown:
-                self._show_usb_sync_dialog(usb_drives)
+                self.show_usb_sync_dialog()
                 self.dialog_shown = True  # Mark dialog as shown
 
         except Exception as exc:
             logger.error('Error checking USB drives: %s', str(exc))
             # Don't show error to user for USB detection failures
 
-    def _show_usb_sync_dialog(self, usb_drives: list[USBDrive]):
+    def _is_on_fungible_page(self) -> bool:
+        """
+        Check if the current page is the fungible page.
+        Also resets dialog flag when not on fungible page.
+        
+        Returns:
+            bool: True if on fungible page, False otherwise.
+        """
+        try:
+            # Import here to avoid circular imports
+            from src.main import PAGE_NAVIGATION
+            
+            if not hasattr(PAGE_NAVIGATION, 'current_stack') or not PAGE_NAVIGATION.current_stack:
+                # Reset dialog flag when no current stack
+                if self.dialog_shown:
+                    self.dialog_shown = False
+                    logger.debug('Dialog flag reset - no current stack')
+                return False
+                
+            current_page_name = PAGE_NAVIGATION.current_stack.get('name', '')
+            is_on_fungible = current_page_name == 'FungibleAssetWidget'
+            
+            # Reset dialog flag when not on fungible page
+            if not is_on_fungible and self.dialog_shown:
+                self.dialog_shown = False
+                logger.debug('Dialog flag reset - navigated away from fungible page')
+                
+            return is_on_fungible
+        except Exception as exc:
+            logger.error('Error checking current page: %s', str(exc))
+            return False
+
+    def show_usb_sync_dialog(self):
         """
         Show USB sync dialog to user.
 
@@ -89,6 +164,8 @@ class USBSyncManager:
             usb_drives: List of detected USB drives.
         """
         try:
+            usb_drives = self.usb_detector.detect_usb_drives()
+
             dialog = USBSyncDialog(usb_drives, self.main_window)
             if dialog.exec() == QDialog.Accepted:
                 selected_drive = dialog.get_selected_drive()

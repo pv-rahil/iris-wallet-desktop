@@ -43,7 +43,7 @@ class HardwareWalletOperationDialog(QDialog):
             parent: Optional parent widget.
         """
         super().__init__(parent)
-        self.parent_widget = parent if parent else QWidget()
+        self.parent_widget = parent
 
         self.setObjectName('hardware_wallet_device_dialog')
         self.setModal(True)
@@ -161,8 +161,8 @@ class HardwareWalletOperationDialog(QDialog):
         if self._loader_movie is not None:
             self._loader_movie.stop()
         # Map specific hardware wallet error to user-friendly message
-        hw_device = HWDeviceSelectionDialog(None)
-        message = hw_device.map_hwi_error(message)
+        # hw_device = HWDeviceSelectionDialog(None)
+        # message = hw_device.map_hwi_error(message)
         self.icon_label.setPixmap(
             self._error_pixmap.scaled(
                 75, 75, Qt.KeepAspectRatio, Qt.SmoothTransformation,
@@ -193,14 +193,14 @@ class HardwareWalletOperationDialog(QDialog):
             self.parent().setGraphicsEffect(blur)
         super().showEvent(event)
 
-    def closeEvent(self, event):
-        """
-        Remove blur effect from parent and clean up instance on close.
-        """
-        if self.parent():
-            self.parent().setGraphicsEffect(None)
-        HardwareWalletOperationDialog._instance = None
-        super().closeEvent(event)
+    # def closeEvent(self, event):
+    #     """
+    #     Remove blur effect from parent and clean up instance on close.
+    #     """
+    #     if self.parent():
+    #         self.parent().setGraphicsEffect(None)
+    #     HardwareWalletOperationDialog._instance = None
+    #     super().closeEvent(event)
 
     def accept(self):
         """

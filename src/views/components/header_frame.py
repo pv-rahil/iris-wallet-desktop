@@ -66,6 +66,9 @@ class HeaderFrame(QFrame, QObject):
         self.setFrameShadow(QFrame.Raised)
         config = get_current_wallet_mode_config()
         self.priv = config.privileges
+        self.usb_sync_manager = USBSyncManager(self.window())
+        self.is_executed = False
+        self.event_based_navigation = PageNavigationEventManager.get_instance()
 
         self.title_frame_main_horizontal_layout = QHBoxLayout(self)
         self.title_frame_main_horizontal_layout.setSpacing(4)
@@ -240,7 +243,7 @@ class HeaderFrame(QFrame, QObject):
         self.header_frame_view_model.network_status_signal.connect(
             self.handle_network_frame_visibility,
         )
-        self.header_frame_view_model.usb_status_signal.connect(
+        self.event_based_navigation.detect_usb_dialog_box.connect(
             self.handle_usb_detected,
         )
         self.set_wallet_backup_frame()
@@ -433,16 +436,19 @@ class HeaderFrame(QFrame, QObject):
             # Hide the frame if there's any error
             self.usb_sync_frame.hide()
 
-    def handle_usb_detected(self):
+    def handle_usb_detected(self,status:bool):
         """
         Handle USB detected signal.
         Shows USB sync frame only if USB is actually connected.
         """
         # Only show frame if USB is actually detected
         try:
-            usb_detector = USBDetector()
-            if usb_detector.is_usb_connected():
+            if status:
                 self.set_usb_sync_frame()
+                if self.is_executed is False:
+                    self.is_executed = True
+                    self.usb_sync_manager.show_usb_sync_dialog()
+
             else:
                 # Hide frame if no USB is connected
                 self.usb_sync_frame.hide()
@@ -456,5 +462,4 @@ class HeaderFrame(QFrame, QObject):
         Initiates USB sync process.
         """
         if self.usb_sync_frame.isVisible():
-            usb_sync_manager = USBSyncManager(self.window())
-            usb_sync_manager.check_usb_and_prompt()
+            self.usb_sync_manager.check_usb_and_prompt()

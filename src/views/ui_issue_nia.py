@@ -56,7 +56,6 @@ class IssueNIAWidget(QWidget):
         self.issue_nia_grid_layout = QGridLayout(self)
         self.issue_nia_grid_layout.setObjectName('issue_nia_grid_layout')
         self.issue_nia_wallet_logo = WalletLogoFrame(self)
-        self.nia_hw_dialog = None
         self.issue_nia_grid_layout.addWidget(
             self.issue_nia_wallet_logo, 0, 0, 1, 2,
         )
@@ -349,9 +348,10 @@ class IssueNIAWidget(QWidget):
         self._view_model.utxo_creation_view_model.psbt_finalized.connect(
             self.show_nia_psbt_page,
         )
-        self._view_model.utxo_creation_view_model.utxo_creation_started.connect(
-            self._view_model.issue_nia_asset_view_model.on_utxo_creation_started,
+        self._view_model.issue_nia_asset_view_model.utxo_creation_started.connect(
+            self._view_model.utxo_creation_view_model.create_utxos_with_hardware_wallet,
         )
+
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -465,48 +465,60 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
-            parent=self,
-        )
-        nia_hw_dialog.update_dialog(message, dialog_type)
-        if not nia_hw_dialog.isVisible():
-            nia_hw_dialog.show()
+        if message and dialog_type:
+            self._view_model.utxo_creation_view_model.hw_dialog_update.disconnect()
+            nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
+                parent=self,
+            )
+            nia_hw_dialog.update_dialog(message, dialog_type)
+            if not nia_hw_dialog.isVisible():
+                nia_hw_dialog.show()
 
-    def handle_nia_utxo_created(self):
+    def handle_nia_utxo_created(self,status:bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
-        nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
-            parent=self,
-        )
-        if nia_hw_dialog.isVisible():
-            nia_hw_dialog.accept()
+        if status:
+            self._view_model.utxo_creation_view_model.utxo_created.disconnect()
 
-        self.on_issue_nia_click()
+            nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
+                parent=self,
+            )
+            if nia_hw_dialog.isVisible():
+                nia_hw_dialog.accept()
 
-    def handle_nia_utxo_required(self):
+            self.on_issue_nia_click()
+
+    def handle_nia_utxo_required(self, status:bool):
         """Shows the dialog for utxo require"""
-        self.nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
-            parent=self,
-        )
-        self.nia_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
-        self.nia_hw_dialog.done_button.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
-            ),
-        )
-        self.nia_hw_dialog.done_button.clicked.connect(
-            self._view_model.utxo_creation_view_model.create_utxos_begin,
-        )
-        self.nia_hw_dialog.cancel_button.clicked.connect(
-            self.nia_hw_dialog.reject,
-        )
-        if not self.nia_hw_dialog.isVisible():
-            self.nia_hw_dialog.exec()
+        if status:
+            self._view_model.utxo_creation_view_model.utxo_required.disconnect()
+            nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
+                parent=self,
+            )
+            nia_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
+            nia_hw_dialog.done_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                ),
+            )
+            nia_hw_dialog.done_button.clicked.connect(
+                nia_hw_dialog.accept
+            )
+            nia_hw_dialog.done_button.clicked.connect(
+                self._view_model.utxo_creation_view_model.create_utxos_begin,
+            )
+            nia_hw_dialog.cancel_button.clicked.connect(
+                nia_hw_dialog.reject,
+            )
+            if not nia_hw_dialog.isVisible():
+                nia_hw_dialog.exec()
 
     def show_nia_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
-        self._view_model.page_navigation.receive_asset_page(
-            ReceiveAssetModel(
-                page_name='NIA page',
-                address_info='psbt_info', psbt=psbt,
-            ),
-        )
+        if psbt:
+            self._view_model.utxo_creation_view_model.psbt_finalized.disconnect()
+            self._view_model.page_navigation.receive_asset_page(
+                ReceiveAssetModel(
+                    page_name='NIA page',
+                    address_info='psbt_info', psbt=psbt,
+                ),
+            )

@@ -249,6 +249,9 @@ class BroadcastTransactionWidget(QWidget):
         self._view_model.broadcast_transaction_view_model.is_loading.connect(
             self.update_loading_state,
         )
+        self._view_model.broadcast_transaction_view_model.tx_broadcasted.connect(
+            self.on_click_close_button
+        )
 
     def retranslate_ui(self):
         """

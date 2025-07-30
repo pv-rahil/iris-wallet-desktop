@@ -366,3 +366,6 @@ class PageNavigation:
             'widget': self.pages['ReceiveAssetWidget'](self._ui.view_model, params),
         }
         self.navigate_and_toggle(False)
+
+    def get_ui(self):
+        return self._ui

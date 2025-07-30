@@ -22,16 +22,13 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
     message = Signal(ToastPreset, str)
     show_loading = Signal(bool)
     hide_loading = Signal(bool)
+    utxo_creation_started = Signal(bool)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
         self._page_navigation = page_navigation
         self.sidebar = None
-        self.suppress_error_toast = False
 
-    def on_utxo_creation_started(self):
-        """Callback when UTXO creation starts - suppress error toasts during this process"""
-        self.suppress_error_toast = True
 
     def get_rgb_invoice(self, minimum_confirmations: int, transport_endpoints: list[str], asset_id: str | None = None):
         """
@@ -57,7 +54,6 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
     def on_success(self, response: RgbInvoiceDataResponseModel):
         """Handles success logic."""
         # Reset suppress_error_toast to False after successful operation
-        self.suppress_error_toast = False
         if response.invoice:
             self.address.emit(response.invoice)
             print(response.invoice)
@@ -65,12 +61,12 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
 
     def on_error(self, error: CommonException):
         """Handles error logic."""
-        if not self.suppress_error_toast:
-            ToastManager.error(description=error.message)
-        # Reset suppress_error_toast to False after handling the error
-            self.suppress_error_toast = False
-            self.hide_loading.emit(False)
-            self._page_navigation.fungibles_asset_page()
-            self.sidebar = self._page_navigation.sidebar()
-            if self.sidebar is not None:
-                self.sidebar.my_fungibles.setChecked(True)
+        self.hide_loading.emit(False)
+        if isinstance(error, CommonException) and getattr(error, 'message', '') == 'NoAvailableUtxos':
+            self.utxo_creation_started.emit(True)
+            return
+        ToastManager.error(description=error.message)
+        self._page_navigation.fungibles_asset_page()
+        self.sidebar = self._page_navigation.sidebar()
+        if self.sidebar is not None:
+            self.sidebar.my_fungibles.setChecked(True)

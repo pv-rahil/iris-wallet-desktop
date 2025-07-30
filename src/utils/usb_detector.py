@@ -10,19 +10,9 @@ import json
 import os
 import platform
 import subprocess
-from dataclasses import dataclass
-from typing import List
 
+from src.model.common_operation_model import USBDrive
 from src.utils.logging import logger
-
-
-@dataclass
-class USBDrive:
-    """Represents a USB drive with its properties."""
-    name: str
-    path: str
-    size: str
-    is_empty: bool
 
 
 class USBDetector:
@@ -186,13 +176,13 @@ class USBDetector:
                     parts = line.split()
                     if len(parts) >= 1:
                         device_path = parts[0]
-                        mountpoint = self._get_mountpoint_macos(device_path)
+                        mountpoint,label = self._get_mountpoint_macos(device_path)
 
                         if mountpoint:
                             is_empty = self._is_directory_empty(mountpoint)
                             drives.append(
                                 USBDrive(
-                                    name=f'USB Drive {device_path}',
+                                    name=label,
                                     path=mountpoint,
                                     size='Unknown',
                                     is_empty=is_empty,
@@ -206,7 +196,7 @@ class USBDetector:
                                str(exc)
                                }') from exc
 
-    def _get_mountpoint_macos(self, device_path: str) -> str:
+    def _get_mountpoint_macos(self, device_path: str) -> tuple(str,str):
         """
         Get mountpoint for a device on macOS.
 
@@ -224,13 +214,20 @@ class USBDetector:
                 check=True,
             )
 
+            mountpoint = ''
+            label = ''
+
             lines = result.stdout.split('\n')
             for line in lines:
                 if 'Mount Point' in line:
-                    mountpoint = line.split(':')[1].strip()
-                    return mountpoint if mountpoint != 'Not applicable' else ''
+                    mountpoint = line.split(':', 1)[1].strip()
+                elif 'Volume Name' in line:
+                    label = line.split(':', 1)[1].strip()
 
-            return ''
+            if mountpoint == 'Not mounted':
+                mountpoint = ''
+
+            return mountpoint, label
         except subprocess.CalledProcessError:
             return ''
 

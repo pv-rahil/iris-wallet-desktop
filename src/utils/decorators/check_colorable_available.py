@@ -29,9 +29,6 @@ from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 def create_utxos() -> None:
     """Create UTXOs for RGB operations by calling the wallet's create_utxos method."""
     try:
-        utxo_creation_view_model = UtxoCreationViewModel.get_instance()
-        # Emit signal to notify that UTXO creation is starting
-        utxo_creation_view_model.utxo_creation_started.emit()
 
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         key_storage_type = SettingRepository.get_key_storage_type()
@@ -42,10 +39,7 @@ def create_utxos() -> None:
             num=2,
         )
         if key_storage_type == KeyStorageType.HARDWARE_WALLET or wallet_type == WalletType.OFFLINE_TYPE_WALLET:
-            utxo_creation_view_model.create_utxos_with_hardware_wallet(
-                create_utxos_model,
-            )
-            return
+            raise CommonException('NoAvailableUtxos')
         colored_wallet.wallet.create_utxos(
             online=create_utxos_model.online, up_to=create_utxos_model.up_to,
             num=create_utxos_model.num, size=create_utxos_model.size,
@@ -68,6 +62,8 @@ def create_utxos() -> None:
         )
         raise CommonException('Unable to connect to wallet') from exc
     except Exception as exc:
+        if key_storage_type == KeyStorageType.HARDWARE_WALLET or wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+            raise CommonException('NoAvailableUtxos')
         logger.error(
             'Exception occurred at Decorator: %s, Message: %s',
             type(exc).__name__, str(exc),

@@ -8,13 +8,16 @@ from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
+from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.common_operations_repository import CommonOperationRepository
+from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import KeyStorageType, WalletType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.rgb_model import CreateUtxosRequestModel
+from src.model.setting_model import DefaultFeeRate
 from src.utils.custom_exception import CommonException
 from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -31,22 +34,10 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     Provides a singleton interface and emits signals for UI updates and error handling.
     """
     hw_dialog_update = Signal(str, object)
-    utxo_created = Signal()
+    utxo_created = Signal(bool)
     psbt_finalized = Signal(str)
-    utxo_required = Signal()
-    utxo_creation_started = Signal()
+    utxo_required = Signal(bool)
 
-    _instance = None
-
-    @classmethod
-    def get_instance(cls, parent=None):
-        """
-        Returns the singleton instance of UtxoCreationViewModel.
-        Ensures only one instance exists throughout the application lifecycle.
-        """
-        if cls._instance is None:
-            cls._instance = UtxoCreationViewModel(parent)
-        return cls._instance
 
     def __init__(self, parent=None):
         """
@@ -56,18 +47,17 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         super().__init__(parent)
         self.param: CreateUtxosRequestModel = None
 
-    @require_hardware_wallet_connected()
-    def create_utxos_with_hardware_wallet(self, param: CreateUtxosRequestModel):
+    # @require_hardware_wallet_connected()
+    def create_utxos_with_hardware_wallet(self):
         """
         Initiates UTXO creation using the hardware wallet PSBT flow.
         Starts the PSBT creation process or emits utxo_required signal if hardware wallet not connected.
         """
         try:
-            self.param = param
-            self.utxo_required.emit()
+            self.utxo_required.emit(True)
         except Exception as e:
+            self.utxo_required.emit(False)
             self.hw_dialog_update.emit(str(e), PsbtStatus.ERROR)
-            self.error.emit(str(e))
             raise
 
     def create_utxos_begin(self):
@@ -75,6 +65,12 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         Create unsigned PSBT for UTXO creation in a worker thread.
         Generates an unsigned PSBT that will be used to create new UTXOs.
         """
+        default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
+        self.param=  CreateUtxosRequestModel(
+            online=colored_wallet.online,
+            fee_rate=default_fee_rate.fee_rate,
+            num=2,
+        )
         self.run_in_thread(
             BtcRepository.create_utxos_begin,
             {
@@ -107,7 +103,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
     def on_utxo_signed_done(self, finalized_psbt):
         """Callback when PSBT is signed. Updates dialog and starts broadcasting or emits PSBT for offline wallets."""
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
             )
@@ -115,7 +111,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
                 finalized_psbt=finalized_psbt,
             )
         else:
-            self.utxo_created.emit()
+            self.utxo_created.emit(True)
             self.psbt_finalized.emit(finalized_psbt)
 
     def create_utxos_end(self, finalized_psbt):
@@ -139,8 +135,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
     def on_utxo_end_done(self):
         """Callback when UTXO creation is completed. Emits utxo_created signal."""
-        self.utxo_created.emit()
-        return
+        self.utxo_created.emit(True)
 
     def on_error(self, error: Exception) -> None:
         """Handles errors during UTXO creation. Updates dialog for hardware wallets or shows toast for others."""

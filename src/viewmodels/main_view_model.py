@@ -101,4 +101,4 @@ class MainViewModel(QObject):
             self.page_navigation,
         )
 
-        self.utxo_creation_view_model = UtxoCreationViewModel.get_instance()
+        self.utxo_creation_view_model = UtxoCreationViewModel()

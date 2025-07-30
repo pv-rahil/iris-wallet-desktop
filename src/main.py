@@ -29,6 +29,7 @@ from src.utils.excluded_page import excluded_page
 from src.utils.helpers import check_google_auth_token_available
 from src.utils.logging import logger
 from src.utils.page_navigation import PageNavigation
+from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.usb_sync_manager import create_usb_sync_manager
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.custom_toast import ToasterManager
@@ -105,11 +106,13 @@ def main():
         PAGE_NAVIGATION = PageNavigation(view.ui_)
         # Initialize MainViewModel with PageNavigation
         main_view_model = MainViewModel(PAGE_NAVIGATION)
+        event_based_navigation = PageNavigationEventManager.get_instance()
+
 
         # Initialize USB sync manager and connect to header frame
         usb_sync_manager = create_usb_sync_manager(view)
         # Connect USB sync manager to header frame for automatic triggering
-        main_view_model.header_frame_view_model.usb_status_signal.connect(
+        event_based_navigation.detect_usb_dialog_box.connect(
             usb_sync_manager.check_usb_and_prompt(),
         )
 

@@ -136,3 +136,10 @@ class ReceiveAssetModel(BaseModel):
     address_info: str
     psbt: str | None = None
     close_button_navigation: object | None = None
+
+class USBDrive(BaseModel):
+    """Represents a USB drive with its properties."""
+    name: str
+    path: str
+    size: str
+    is_empty: bool
