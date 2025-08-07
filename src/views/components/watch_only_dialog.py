@@ -120,11 +120,6 @@ class WatchOnlyDialog(QDialog):
 
         self.check_box.stateChanged.connect(self.handle_continue_button)
 
-        # Connect textChanged signals for error checking and button state
-        self.xpub_vanilla_input.textChanged.connect(self.on_input_changed)
-        self.xpub_colored_input.textChanged.connect(self.on_input_changed)
-        self.fingerprint_input.textChanged.connect(self.on_input_changed)
-
         self.retranslate_ui()
 
     def retranslate_ui(self):
@@ -194,9 +189,36 @@ class WatchOnlyDialog(QDialog):
 
     def handle_continue_button(self):
         """
-        Enable or disable the continue button based on the checkbox state and error label.
+        Enable or disable the continue button based on the checkbox state and input validation.
         """
-        self.continue_btn.setEnabled(self.check_box.isChecked() and not self.error_label.isVisible())
+        vanilla = self.xpub_vanilla_input.text().strip()
+        colored = self.xpub_colored_input.text().strip()
+        fingerprint = self.fingerprint_input.text().strip()
+
+        def show_error(key: str):
+            self.error_label.setText(
+                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, key),
+            )
+            self.error_label.setVisible(True)
+            self.setMinimumSize(480, 490)
+            self.continue_btn.setEnabled(False)
+
+        if not vanilla or not colored or not fingerprint:
+            show_error('all_fields_required')
+            return
+
+        if not validate_xpub(vanilla) or not validate_xpub(colored):
+            show_error('invalid_xpub')
+            return
+    
+        if len(fingerprint) != 8 or not all(c in '0123456789abcdefABCDEF' for c in fingerprint):
+            show_error('fingerprint_should_be_8_chars')
+            return
+
+        # All validations passed
+        self.error_label.setVisible(False)
+        self.setMinimumSize(480, 420)
+        self.continue_btn.setEnabled(self.check_box.isChecked())
 
     def handle_submit(self):
         """
@@ -205,45 +227,6 @@ class WatchOnlyDialog(QDialog):
         vanilla = self.xpub_vanilla_input.text().strip()
         colored = self.xpub_colored_input.text().strip()
         fingerprint = self.fingerprint_input.text().strip()
-        # Basic validation
-        if not vanilla or not colored or not fingerprint:
-            self.error_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'all_fields_required',
-                ),
-            )
-            self.error_label.setVisible(True)
-            self.setMinimumSize(480, 490)
-            return
-        if not validate_xpub(vanilla) or not validate_xpub(colored):
-            self.error_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'invalid_xpub',
-                ),
-            )
-            self.error_label.setVisible(True)
-            self.setMinimumSize(480, 490)
-            return
-        # # Xpub length validation: typical xpubs are 111-112 chars, allow a small range
-        if not 110 <= len(vanilla) <= 120 or not 110 <= len(colored) <= 120:
-            self.error_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_must_be_between',
-                ),
-            )
-            self.error_label.setVisible(True)
-            self.setMinimumSize(480, 490)
-            return
-        # Fingerprint validation: must be 8 hex characters
-        if len(fingerprint) != 8 or not all(c in '0123456789abcdefABCDEF' for c in fingerprint):
-            self.error_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fingerprint_should_be_8_chars',
-                ),
-            )
-            self.error_label.setVisible(True)
-            self.setMinimumSize(480, 490)
-            return
         # Save to ini
         self.error_label.setVisible(False)
         self.setMinimumSize(480, 420)
@@ -251,29 +234,3 @@ class WatchOnlyDialog(QDialog):
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
         local_store.set_value(MASTER_FINGERPRINT, fingerprint)
         self.accept()
-
-    def on_input_changed(self):
-        """
-        Hide error label and update continue button state on any input change.
-        Also, perform basic validation and show error if needed.
-        """
-        self.error_label.setVisible(False)
-        self.setMinimumSize(480, 420)
-        # Optionally, you can do live validation here:
-        vanilla = self.xpub_vanilla_input.text().strip()
-        colored = self.xpub_colored_input.text().strip()
-        fingerprint = self.fingerprint_input.text().strip()
-        error = None
-        if not vanilla or not colored or not fingerprint:
-            error = self.tr('All fields are required.')
-        elif not validate_xpub(vanilla) or not validate_xpub(colored):
-            error = self.tr('Invalid xpub.')
-        elif not 110 <= len(vanilla) <= 120 or not 110 <= len(colored) <= 120:
-            error = self.tr('Xpub must be between 110 and 120 characters.')
-        elif len(fingerprint) != 8 or not all(c in '0123456789abcdefABCDEF' for c in fingerprint):
-            error = self.tr('Fingerprint should be 8 hex characters.')
-        if error:
-            self.error_label.setText(error)
-            self.error_label.setVisible(True)
-            self.setMinimumSize(480, 490)
-        self.handle_continue_button()

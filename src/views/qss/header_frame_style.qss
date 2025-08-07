@@ -39,8 +39,8 @@
 }
 
 #usb_sync_icon_frame {
-    background-color: #030B25;
-    border-radius: 4px;
+    border-radius: 8px;
+    background-color: #5f5f44;
 }
 
 /* USB Sync Info Label Styling */

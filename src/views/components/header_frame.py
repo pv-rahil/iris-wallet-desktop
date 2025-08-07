@@ -66,8 +66,7 @@ class HeaderFrame(QFrame, QObject):
         self.setFrameShadow(QFrame.Raised)
         config = get_current_wallet_mode_config()
         self.priv = config.privileges
-        self.usb_sync_manager = USBSyncManager(self.window())
-        self.is_executed = False
+        self.usb_detector = USBDetector()  # Add USB detector instance
         self.event_based_navigation = PageNavigationEventManager.get_instance()
 
         self.title_frame_main_horizontal_layout = QHBoxLayout(self)
@@ -158,7 +157,7 @@ class HeaderFrame(QFrame, QObject):
         self.usb_sync_frame_horizontal_layout = QHBoxLayout(
             self.usb_sync_frame,
         )
-        self.usb_sync_frame_horizontal_layout.setSpacing(10)
+        self.usb_sync_frame_horizontal_layout.setSpacing(4)
         self.usb_sync_frame_horizontal_layout.setObjectName(
             'usb_sync_frame_horizontal_layout',
         )
@@ -167,8 +166,8 @@ class HeaderFrame(QFrame, QObject):
         )
         self.usb_sync_icon_frame = QFrame(self.usb_sync_frame)
         self.usb_sync_icon_frame.setObjectName('usb_sync_icon_frame')
-        self.usb_sync_icon_frame.setMinimumSize(QSize(26, 26))
-        self.usb_sync_icon_frame.setMaximumSize(QSize(26, 26))
+        self.usb_sync_icon_frame.setMinimumSize(QSize(30, 30))
+        self.usb_sync_icon_frame.setMaximumSize(QSize(30, 30))
         self.usb_sync_icon_frame.setFrameShape(QFrame.StyledPanel)
         self.usb_sync_icon_frame.setFrameShadow(QFrame.Raised)
         self.usb_sync_icon_vertical_layout = QVBoxLayout(
@@ -181,9 +180,10 @@ class HeaderFrame(QFrame, QObject):
         self.usb_sync_icon_vertical_layout.setContentsMargins(0, 0, 0, 0)
         self.usb_sync_icon_label = QLabel(self.usb_sync_icon_frame)
         self.usb_sync_icon_label.setObjectName('usb_sync_icon_label')
-        self.usb_sync_icon_label.setPixmap(
-            QPixmap(':assets/swap.png'),
-        )
+        pixmap = QPixmap(':assets/sync.png')
+        scaled_pixmap = pixmap.scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.usb_sync_icon_label.setPixmap(scaled_pixmap)
+
 
         self.usb_sync_icon_vertical_layout.addWidget(
             self.usb_sync_icon_label, 0, Qt.AlignHCenter,
@@ -247,7 +247,15 @@ class HeaderFrame(QFrame, QObject):
             self.handle_usb_detected,
         )
         self.set_wallet_backup_frame()
+        
+        # Check if USB is already connected when header frame is created
+        self._check_initial_usb_status()
 
+    def _check_initial_usb_status(self):
+        """Check if USB is already connected when header frame is created."""
+        if self.usb_detector.is_usb_connected():
+            self.set_usb_sync_frame()
+       
     def retranslate_ui(self):
         """Retranslate the UI elements."""
         self.title_name.setText(
@@ -411,9 +419,8 @@ class HeaderFrame(QFrame, QObject):
         Shows the frame when USB is detected and allows user to initiate sync.
         """
         try:
-            usb_detector = USBDetector()
-            if usb_detector.is_usb_connected():
-                # Show USB sync frame
+            # Check if USB is actually connected before showing the frame
+            if self.usb_detector.is_usb_connected():
                 self.usb_sync_info_label.setText(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_detected_sync_prompt', None,
@@ -436,6 +443,16 @@ class HeaderFrame(QFrame, QObject):
             # Hide the frame if there's any error
             self.usb_sync_frame.hide()
 
+    def on_usb_sync_frame_click(self):
+        """
+        Handle logic when usb_sync_frame is clicked.
+        Initiates USB sync process.
+        """
+        usb_sync_manager = USBSyncManager(self.window())
+        if self.usb_sync_frame.isVisible():
+            usb_sync_manager.reset_dialog_flag()
+            usb_sync_manager.check_usb_and_prompt()
+
     def handle_usb_detected(self,status:bool):
         """
         Handle USB detected signal.
@@ -445,21 +462,9 @@ class HeaderFrame(QFrame, QObject):
         try:
             if status:
                 self.set_usb_sync_frame()
-                if self.is_executed is False:
-                    self.is_executed = True
-                    self.usb_sync_manager.show_usb_sync_dialog()
-
             else:
                 # Hide frame if no USB is connected
                 self.usb_sync_frame.hide()
         except Exception:
             # Hide frame if there's any error
             self.usb_sync_frame.hide()
-
-    def on_usb_sync_frame_click(self):
-        """
-        Handle logic when usb_sync_frame is clicked.
-        Initiates USB sync process.
-        """
-        if self.usb_sync_frame.isVisible():
-            self.usb_sync_manager.check_usb_and_prompt()

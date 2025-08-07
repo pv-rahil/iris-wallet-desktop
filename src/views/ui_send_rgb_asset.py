@@ -117,10 +117,10 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_asset_page.fee_rate_value.textChanged.connect(
             self.handle_button_enabled,
         )
-        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
+        self._view_model.cfa_view_model.hw_dialog_update.connect(
             self.handle_send_rgb_hw_dialog_update,
         )
-        self._view_model.utxo_creation_view_model.psbt_finalized.connect(
+        self._view_model.cfa_view_model.finalized_psbt.connect(
             self.show_send_rgb_psbt_page,
         )
 
@@ -361,6 +361,7 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
+        print('<-------------------------------------------')
         self.send_rgb_hw_dialog.update_dialog(message, dialog_type)
         if not self.send_rgb_hw_dialog.isVisible():
             self.send_rgb_hw_dialog.show()

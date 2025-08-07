@@ -6,40 +6,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.model.common_operation_model import WalletModeConfig, WalletModePrivilege
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
-
-
-@dataclass
-class WalletModePrivilege:
-    """
-    Dataclass for defining the privileges of a wallet mode.
-    """
-    can_send_transactions: bool
-    can_receive_transactions: bool
-    can_view_balance: bool
-    can_create_assets: bool
-    can_manage_assets: bool
-    can_use_hardware_wallet: bool
-    can_backup_wallet: bool
-    can_export_psbt: bool
-    can_receive_asset: bool
-    can_use_faucet: bool
-
-
-@dataclass
-class WalletModeConfig:
-    """
-    Dataclass for defining the configuration of a wallet mode.
-    """
-    mode_name: str
-    description: str
-    privileges: WalletModePrivilege
-    capabilities: list[dict]
-    limitations: list[dict]
-    recommended_for: list[dict]
 
 
 class WalletModeConfiguration:

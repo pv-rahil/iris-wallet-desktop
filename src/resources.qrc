@@ -78,6 +78,6 @@
     <file>assets/white_ledger.png</file>
     <file>assets/white_trezor.png</file>
     <file>assets/success.png</file>
-    <file>assets/swap.png</file>
+    <file>assets/sync.png</file>
   </qresource>
 </RCC>

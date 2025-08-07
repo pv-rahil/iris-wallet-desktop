@@ -31,8 +31,6 @@ from accessible_constant import BITCOIN_SPENDABLE_BALANCE
 from accessible_constant import BITCOIN_TRANSACTION_DETAIL_FRAME
 from accessible_constant import RECEIVE_BITCOIN_BUTTON
 from accessible_constant import SEND_BITCOIN_BUTTON
-from src.config.wallet_mode_config import WalletModeConfiguration
-from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import TransactionListResponse
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel

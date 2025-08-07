@@ -10,8 +10,6 @@ from PySide6.QtCore import Signal
 
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
-from src.utils.page_navigation_events import PageNavigationEventManager
-from src.utils.usb_detector import USBDetector
 
 
 class NetworkCheckerThread(QThread):
@@ -37,25 +35,18 @@ class NetworkCheckerThread(QThread):
 class HeaderFrameViewModel(QObject):
     """Handles network connectivity in the UI."""
     network_status_signal = Signal(bool)
-    usb_status_signal = Signal(bool)
 
     def __init__(self):
         super().__init__()
         self.network_checker = None
 
-        # Use QTimer in the main thread
+        # Use QTimer in the main thread for network checking
         self.timer = QTimer(self)
         self.timer.setInterval(PING_DNS_SERVER_CALL_INTERVAL)
         self.timer.timeout.connect(self.start_network_check)
 
-        # USB check timer
-        self.usb_timer = QTimer(self)
-        self.usb_timer.setInterval(5000)  # Check every 5 seconds
-        self.usb_timer.timeout.connect(self.handle_usb_status)
-
-        # Start checking
+        # Start network checking
         self.timer.start()
-        self.usb_timer.start()
 
     def start_network_check(self):
         """Start a new network check using a separate thread."""
@@ -70,19 +61,6 @@ class HeaderFrameViewModel(QObject):
         self.network_status_signal.emit(is_connected)
 
     def stop_network_checker(self):
-        """Stop network checking when it's no longer needed."""
+        """Stop network checking when no longer needed."""
         self.timer.stop()
-        # self.usb_timer.stop()
-
-    def handle_usb_status(self):
-        self.event_based_navigation = PageNavigationEventManager.get_instance()
-        """Emit usb status signal"""
-        usb = USBDetector()
-        if usb.is_usb_connected():
-            self.event_based_navigation.detect_usb_dialog_box.emit(True)
-            # self.usb_status_signal.emit(True)
-
-        else:
-            # self.usb_status_signal.emit(False)
-            self.event_based_navigation.detect_usb_dialog_box.emit(False)
 

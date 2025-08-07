@@ -17,7 +17,7 @@ from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.asset_detail_page_services import AssetDetailPageService
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import PsbtStatus, WalletType
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import ToastPreset
@@ -288,7 +288,8 @@ class CFAViewModel(QObject, ThreadManager):
         Handle the PSBT created by send_begin.
         Run signing and finalization in a background thread.
         """
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or SettingRepository.get_wallet_type()==WalletType.OFFLINE_TYPE_WALLET:
+            print('-----------------------------------------------------------------')
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
@@ -307,11 +308,11 @@ class CFAViewModel(QObject, ThreadManager):
         Callback after PSBT is signed and finalized.
         Now broadcast the transaction.
         """
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type()==WalletType.ONLINE_TYPE_WALLET:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
             )
-            self.send_btc_end(finalized_psbt)
+            self.send_end(finalized_psbt)
         else:
             self.finalized_psbt.emit(finalized_psbt)
 

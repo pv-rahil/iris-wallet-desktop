@@ -33,10 +33,10 @@ from PySide6.QtWidgets import QLineEdit
 from PySide6.QtWidgets import QPlainTextEdit
 from PySide6.QtWidgets import QWidget
 
-from src.config.wallet_mode_config import WalletModeConfig
 from src.config.wallet_mode_config import WalletModeConfiguration
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.helpers.main_asset_page_helper import get_offline_asset_ticker
+from src.model.common_operation_model import WalletModeConfig
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import TokenSymbol

@@ -25,7 +25,6 @@ from src.views.components.selection_breadcrumb_widget import BreadcrumbBar
 from src.views.components.selection_page import SelectionPage
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.views.components.wallet_mode_summary_dialog import WalletModeSummaryDialog
-from src.views.components.watch_only_dialog import WatchOnlyDialog
 
 
 class SelectionBreadcrumbWidget(QWidget):

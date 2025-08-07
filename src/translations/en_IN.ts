@@ -1956,5 +1956,29 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>selected_device</source>
         <translation>Selected device:</translation>
     </message>
+    <message>
+        <source>usb_sync_success</source>
+        <translation>Wallet data synced to USB successfully</translation>
+    </message>
+    <message>
+        <source>usb_sync_from_success</source>
+        <translation>Wallet data synced from USB successfully</translation>
+    </message>
+    <message>
+        <source>usb_invalid_data</source>
+        <translation>Invalid wallet data on USB drive</translation>
+    </message>
+    <message>
+        <source>usb_invalid_wallet_data</source>
+        <translation>USB drive contains data but not valid wallet data for this wallet. Please format the USB drive or use a different one.</translation>
+    </message>
+    <message>
+        <source>usb_no_wallet_files</source>
+        <translation>No wallet data files found for master fingerprint: {0}</translation>
+    </message>
+    <message>
+        <source>usb_master_fingerprint_not_found</source>
+        <translation>Master fingerprint not found. Please ensure wallet is properly initialized.</translation>
+    </message>
 </context>
 </TS>

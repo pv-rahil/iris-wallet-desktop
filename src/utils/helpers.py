@@ -8,13 +8,12 @@ and retrieving configuration arguments for wallet setup.
 from __future__ import annotations
 
 import base64
-import binascii
 import hashlib
 import json
 import os
 import sys
 
-from base58 import b58decode_check
+from bip32 import BIP32
 from mnemonic import Mnemonic
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -178,11 +177,12 @@ def validate_mnemonic(mnemonic_phrase: str):
 def validate_xpub(xpub: str) -> bool:
     """
     Returns True if the xpub is valid, False otherwise.
+    Uses bip32 to parse and validate the key structure.
     """
     try:
-        decoded = b58decode_check(xpub)
-        return len(decoded) == 78
-    except (ValueError, binascii.Error):
+        _ = BIP32.from_xpub(xpub)
+        return True
+    except Exception:
         return False
 
 

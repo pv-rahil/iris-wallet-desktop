@@ -57,6 +57,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def on_error(self, error: CommonException) -> None:
         """Handle error for broadcasting psbt."""
         self.is_loading.emit(False)
+        print(f"------------------------------------------------------------->:{error}")
         ToastManager.error(description=error.message)
         logger.error(
             'Exception occurred: %s, Message: %s',
