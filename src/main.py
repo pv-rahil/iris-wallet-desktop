@@ -29,9 +29,6 @@ from src.utils.excluded_page import excluded_page
 from src.utils.helpers import check_google_auth_token_available
 from src.utils.logging import logger
 from src.utils.page_navigation import PageNavigation
-from src.utils.page_navigation_events import PageNavigationEventManager
-from src.utils.usb_sync_manager import create_usb_sync_manager
-from src.utils.usb_detector import USBDetector
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.custom_toast import ToasterManager
 from src.views.components.message_box import MessageBox
@@ -107,20 +104,6 @@ def main():
         PAGE_NAVIGATION = PageNavigation(view.ui_)
         # Initialize MainViewModel with PageNavigation
         main_view_model = MainViewModel(PAGE_NAVIGATION)
-        event_based_navigation = PageNavigationEventManager.get_instance()
-
-        # Start global USB monitoring
-        usb_detector = USBDetector()
-        usb_detector.start_real_time_monitoring(
-            on_usb_connected=lambda: event_based_navigation.detect_usb_dialog_box.emit(True),
-            on_usb_disconnected=lambda: event_based_navigation.detect_usb_dialog_box.emit(False)
-        )
-
-        # Initialize USB sync manager and connect to event-based navigation for automatic triggering
-        usb_sync_manager = create_usb_sync_manager(view)
-        event_based_navigation.detect_usb_dialog_box.connect(
-            lambda is_connected: usb_sync_manager.check_usb_and_prompt() if is_connected else usb_sync_manager.reset_dialog_flag()
-        )
 
         # Set view model in your MainWindow instance
         view.ui_.set_ui_and_model(main_view_model)

@@ -12,11 +12,13 @@ import os
 import shutil
 import time
 import zipfile
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QDialog
-from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import WalletType, WalletSecurityType
 
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -34,7 +36,7 @@ from src.views.components.usb_sync_dialog import USBSyncDialog
 class USBSyncManager:
     """
     Manages USB synchronization for wallet data.
-    
+
     The USB sync dialog will only be shown when:
     1. USB sync is enabled for the current wallet mode (offline or watch-only)
     2. A USB drive is detected
@@ -54,6 +56,7 @@ class USBSyncManager:
         self.sync_in_progress = False
         self.dialog_shown = False
         self.master_fingerprint = None
+        self.selected_drive: USBDrive | None = None
 
     def reset_dialog_flag(self):
         """
@@ -67,20 +70,22 @@ class USBSyncManager:
         """
         Check if USB sync should be enabled based on wallet mode.
         USB sync is only enabled for offline wallets and watch-only wallets.
-        
+
         Returns:
             bool: True if USB sync should be enabled, False otherwise.
         """
-        try:            
+        try:
             wallet_type = SettingRepository.get_wallet_type()
             security_type = SettingRepository.get_wallet_security_type()
 
             is_offline = wallet_type == WalletType.OFFLINE_TYPE_WALLET
             is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
-            
+
             return is_offline or is_watch_only
         except Exception as exc:
-            logger.error('Error checking USB sync enabled status: %s', str(exc))
+            logger.error(
+                'Error checking USB sync enabled status: %s', str(exc),
+            )
             return False
 
     def check_usb_and_prompt(self):
@@ -94,23 +99,8 @@ class USBSyncManager:
             # Check if USB sync is enabled for current wallet mode
             if not self._is_usb_sync_enabled():
                 return
-                
+
             if self.sync_in_progress:
-                return
-
-            # Check if USB is connected
-            is_usb_connected = self.usb_detector.is_usb_connected()
-            
-            # Return early if no USB connected
-            if not is_usb_connected:
-                logger.debug('No USB drives detected')
-                return
-
-            # Get list of USB drives
-            usb_drives = self.usb_detector.detect_usb_drives()
-            
-            if not usb_drives:
-                logger.debug('No accessible USB drives found')
                 return
 
             # Only show dialog if not already shown for this session
@@ -120,7 +110,6 @@ class USBSyncManager:
 
         except Exception as exc:
             logger.error('Error checking USB drives: %s', str(exc))
-            # Don't show error to user for USB detection failures
 
     def show_usb_sync_dialog(self):
         """
@@ -131,7 +120,7 @@ class USBSyncManager:
 
             dialog = USBSyncDialog(usb_drives, self.main_window)
             if dialog.exec() == QDialog.Accepted:
-                self.selected_drive:USBDrive = dialog.get_selected_drive()
+                self.selected_drive: USBDrive = dialog.get_selected_drive()
                 if self.selected_drive:
                     self._perform_sync()
             self.reset_dialog_flag()
@@ -150,7 +139,9 @@ class USBSyncManager:
             # Check if master fingerprint is available
             if not self.master_fingerprint:
                 self._show_sync_error(
-                    QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_master_fingerprint_not_found')
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_master_fingerprint_not_found',
+                    ),
                 )
                 return
 
@@ -183,13 +174,15 @@ class USBSyncManager:
         """
         try:
             # Check if USB is empty (valid for new sync)
-            if self.selected_drive.is_empty:
+            if self.selected_drive and self.selected_drive.is_empty:
                 return True
 
             # If USB is not empty, check if it contains valid wallet data for this fingerprint
             if not self._has_valid_wallet_data():
                 self._show_sync_error(
-                    QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_invalid_wallet_data'),
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_invalid_wallet_data',
+                    ),
                 )
                 return False
 
@@ -210,6 +203,8 @@ class USBSyncManager:
         """
         try:
             # Look for ZIP files with the same master fingerprint
+            if not self.selected_drive:
+                return False
             for file in os.listdir(self.selected_drive.path):
                 if file.startswith(self.master_fingerprint) and file.endswith('.zip'):
                     return True
@@ -263,23 +258,25 @@ class USBSyncManager:
             local_fingerprint = None
 
             if os.path.exists(local_ini_path):
-                with open(local_ini_path) as f:
+                with open(local_ini_path, encoding='utf-8') as f:
                     local_ini = f.read()
                 for line in local_ini.splitlines():
                     line = line.strip()
-                    if line.startswith("account_xpub_vanilla"):
+                    if line.startswith('account_xpub_vanilla'):
                         local_xpub_vanilla = line.strip()
-                    elif line.startswith("account_xpub_colored"):
+                    elif line.startswith('account_xpub_colored'):
                         local_xpub_colored = line.strip()
-                    elif line.startswith("rgb_lib_version"):
+                    elif line.startswith('rgb_lib_version'):
                         local_rgb_lib_version = line
-                    elif line.startswith("master_fingerprint"):
+                    elif line.startswith('master_fingerprint'):
                         local_fingerprint = line.strip()
 
             with zipfile.ZipFile(zip_path, 'r') as zip_file:
-                ini_file = [f for f in zip_file.namelist() if f.endswith('.ini')]
+                ini_file = [
+                    f for f in zip_file.namelist()
+                    if f.endswith('.ini')
+                ]
                 if not ini_file:
-                    logger.error('No INI file found in USB zip')
                     return None
 
                 ini_content = zip_file.read(ini_file[0]).decode('utf-8')
@@ -290,45 +287,49 @@ class USBSyncManager:
                 usb_fingerprint = None
                 for line in ini_content.splitlines():
                     line = line.strip()
-                    if line.startswith("account_xpub_vanilla"):
+                    if line.startswith('account_xpub_vanilla'):
                         usb_xpub_vanilla = line.strip()
-                    elif line.startswith("account_xpub_colored"):
+                    elif line.startswith('account_xpub_colored'):
                         usb_xpub_colored = line.strip()
-                    elif line.startswith("rgb_lib_version"):
+                    elif line.startswith('rgb_lib_version'):
                         usb_rgb_lib_version = line
-                    elif line.startswith("master_fingerprint"):
+                    elif line.startswith('master_fingerprint'):
                         usb_fingerprint = line.strip()
 
                 if local_rgb_lib_version != usb_rgb_lib_version:
-                    logger.error("RGB lib version mismatch (local: %s, usb: %s)", local_rgb_lib_version, usb_rgb_lib_version)
+                    logger.error(
+                        'RGB lib version mismatch (local: %s, usb: %s)',
+                        local_rgb_lib_version, usb_rgb_lib_version,
+                    )
                     ToastManager.error(ERROR_RGB_LIB_INCOMPATIBILITY)
                     return None
                 if local_fingerprint != usb_fingerprint:
-                    logger.error("Master fingerprint mismatch (local: %s, usb: %s)", local_fingerprint, usb_fingerprint)
-                    ToastManager.error("Master fingerprint mismatch")
+                    logger.error(
+                        'Master fingerprint mismatch (local: %s, usb: %s)',
+                        local_fingerprint, usb_fingerprint,
+                    )
+                    ToastManager.error('Master fingerprint mismatch')
                     return None
 
                 if local_xpub_vanilla != usb_xpub_vanilla:
                     logger.error(
                         'account_xpub_vanilla mismatch (local: %s, usb: %s)',
-                        local_xpub_vanilla, usb_xpub_vanilla
+                        local_xpub_vanilla, usb_xpub_vanilla,
                     )
                     ToastManager.error('account_xpub_vanilla mismatch')
                     return None
                 if local_xpub_colored != usb_xpub_colored:
                     logger.error(
                         'account_xpub_colored mismatch (local: %s, usb: %s)',
-                        local_xpub_colored, usb_xpub_colored
+                        local_xpub_colored, usb_xpub_colored,
                     )
                     ToastManager.error('account_xpub_colored mismatch')
                     return None
-
 
                 return ini_content
         except Exception as exc:
             logger.error('USB zip validation failed: %s', str(exc))
         return None
-
 
     def _determine_sync_direction(self) -> str | None:
         """
@@ -336,36 +337,45 @@ class USBSyncManager:
         Returns:
             Optional[str]: 'to_usb', 'from_usb', or None if no sync needed.
         """
+        direction = None
         try:
-            # Find latest zip for master fingerprint
+            if not self.selected_drive:
+                return None  # critical exit, no drive selected
+
             usb_files = [
-                f for f in os.listdir(self.selected_drive.path) if f.startswith(
-                    self.master_fingerprint,
-                ) and f.endswith('.zip') and not f.endswith('_temp.zip')
+                f for f in os.listdir(self.selected_drive.path)
+                if f.startswith(self.master_fingerprint)
+                and f.endswith('.zip')
+                and not f.endswith('_temp.zip')
             ]
+
             if not usb_files:
-                return 'to_usb'
-            usb_files.sort(reverse=True)
-            latest_zip = os.path.join(self.selected_drive.path, usb_files[0])
-            # Validate USB zip and ini
-            ini_content = self._validate_usb_zip_and_get_ini(latest_zip)
-            if not ini_content:
-                logger.error('USB zip validation failed, aborting sync')
-                return None
-            # Get mtimes
-            local_mtime = self._get_local_rgb_db_mtime()
-            usb_mtime = self._get_usb_rgb_db_mtime(latest_zip)
-            if usb_mtime == 0 and local_mtime == 0:
-                return None
-            if local_mtime > usb_mtime:
-                return 'to_usb'
-            elif usb_mtime > local_mtime:
-                return 'from_usb'
+                direction = 'to_usb'
             else:
-                return None
+                usb_files.sort(reverse=True)
+                latest_zip = os.path.join(
+                    self.selected_drive.path, usb_files[0],
+                )
+                ini_content = self._validate_usb_zip_and_get_ini(latest_zip)
+                if not ini_content:
+                    logger.error('USB zip validation failed, aborting sync')
+                    direction = None
+                else:
+                    local_mtime = self._get_local_rgb_db_mtime()
+                    usb_mtime = self._get_usb_rgb_db_mtime(latest_zip)
+                    if usb_mtime == 0 and local_mtime == 0:
+                        direction = None
+                    elif local_mtime > usb_mtime:
+                        direction = 'to_usb'
+                    elif usb_mtime > local_mtime:
+                        direction = 'from_usb'
+                    else:
+                        direction = None
         except Exception as exc:
             logger.error('Error determining sync direction: %s', str(exc))
-            return 'to_usb'  # Default to sync to USB
+            direction = 'to_usb'  # default on error
+
+        return direction
 
     def _get_local_wallet_timestamp(self) -> float:
         """
@@ -409,25 +419,37 @@ class USBSyncManager:
             if fingerprint_zips and temp_zips:
                 for temp_zip in temp_zips:
                     try:
-                        os.remove(os.path.join(self.selected_drive.path, temp_zip))
-                        logger.info(f'Removed old temp wallet zip: {temp_zip}')
+                        os.remove(
+                            os.path.join(
+                                self.selected_drive.path, temp_zip,
+                            ),
+                        )
+                        logger.info(
+                            'Removed old temp wallet zip: %s', temp_zip,
+                        )
                     except Exception as exc:
-                        logger.error(f'Failed to remove old temp wallet zip {
-                                     temp_zip
-                                     }: {exc}')
+                        logger.error(
+                            'Failed to remove old temp wallet zip %s: %s',
+                            temp_zip, exc,
+                        )
 
             # If a normal zip exists, rename the latest one to _temp.zip (keep it)
             if fingerprint_zips:
                 latest_zip = fingerprint_zips[0]
-                latest_zip_path = os.path.join(self.selected_drive.path, latest_zip)
+                latest_zip_path = os.path.join(
+                    self.selected_drive.path, latest_zip,
+                )
                 temp_zip_path = os.path.join(
-                    self.selected_drive.path, latest_zip.replace('.zip', '_temp.zip'),
+                    self.selected_drive.path, latest_zip.replace(
+                        '.zip', '_temp.zip',
+                    ),
                 )
                 if not os.path.exists(temp_zip_path):
                     os.rename(latest_zip_path, temp_zip_path)
-                    logger.info(f'Renamed {latest_zip} to {
-                                os.path.basename(temp_zip_path)
-                                } as backup')
+                    logger.info(
+                        'Renamed %s to %s as backup',
+                        latest_zip, os.path.basename(temp_zip_path),
+                    )
 
             # Write the new zip
             filename = f'{self.master_fingerprint}_{timestamp}.zip'
@@ -437,8 +459,11 @@ class USBSyncManager:
             logger.info(
                 'Successfully synced wallet data to USB: %s', usb_file_path,
             )
-            self._show_sync_success(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_success'))
-
+            self._show_sync_success(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_success',
+                ),
+            )
 
             # After writing, ensure only two zips for this fingerprint: latest and temp
             all_fingerprint_zips = [
@@ -460,25 +485,35 @@ class USBSyncManager:
             if len(normal_zips) > 1:
                 for old_zip in normal_zips[1:]:
                     try:
-                        os.remove(os.path.join(self.selected_drive.path, old_zip))
-                        logger.info(f'Removed old wallet zip: {old_zip}')
+                        os.remove(
+                            os.path.join(
+                                self.selected_drive.path, old_zip,
+                            ),
+                        )
+                        logger.info('Removed old wallet zip: %s', old_zip)
                     except Exception as exc:
-                        logger.error(f'Failed to remove old wallet zip {
-                                     old_zip
-                                     }: {exc}')
+                        logger.error(
+                            'Failed to remove old wallet zip %s: %s',
+                            old_zip, exc,
+                        )
             # If more than 1 temp zip, delete all but the latest
             if len(temp_zips) > 1:
                 temp_zips.sort(reverse=True)
                 for old_temp in temp_zips[1:]:
                     try:
-                        os.remove(os.path.join(self.selected_drive.path, old_temp))
+                        os.remove(
+                            os.path.join(
+                                self.selected_drive.path, old_temp,
+                            ),
+                        )
                         logger.info(
-                            f'Removed extra temp wallet zip: {old_temp}',
+                            'Removed extra temp wallet zip: %s', old_temp,
                         )
                     except Exception as exc:
-                        logger.error(f'Failed to remove extra temp wallet zip {
-                                     old_temp
-                                     }: {exc}')
+                        logger.error(
+                            'Failed to remove extra temp wallet zip %s: %s',
+                            old_temp, exc,
+                        )
         except Exception as exc:
             logger.error('Sync to USB failed: %s', str(exc))
             raise exc
@@ -497,42 +532,56 @@ class USBSyncManager:
             if not os.path.exists(folder_path):
                 logger.warning('No local folder to backup: %s', folder_path)
                 return None
-            
+
             # Find existing temp backups for this master fingerprint
             temp_backups = []
             for file in os.listdir(self._get_wallet_data_path()):
                 if file.startswith(self.master_fingerprint) and file.endswith('_temp.zip'):
                     temp_backups.append(file)
-            
+
             # Remove old temp backups (keep only the latest one)
             if temp_backups:
                 temp_backups.sort(reverse=True)  # Sort by name (timestamp)
-                for old_temp in temp_backups[1:]:  # Keep only the latest, remove others
+                # Keep only the latest, remove others
+                for old_temp in temp_backups[1:]:
                     try:
-                        old_temp_path = os.path.join(self._get_wallet_data_path(), old_temp)
+                        old_temp_path = os.path.join(
+                            self._get_wallet_data_path(), old_temp,
+                        )
                         os.remove(old_temp_path)
-                        logger.info(f'Removed old local temp backup: {old_temp}')
+                        logger.info(
+                            'Removed old local temp backup: %s', old_temp,
+                        )
                     except Exception as exc:
-                        logger.error(f'Failed to remove old local temp backup {old_temp}: {exc}')
-            
+                        logger.error(
+                            'Failed to remove old local temp backup %s: %s',
+                            old_temp, exc,
+                        )
+
             # Create new temp backup
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
             backup_path = os.path.join(
-                self._get_wallet_data_path(), f'{self.master_fingerprint}_{timestamp}_temp.zip',
+                self._get_wallet_data_path(), f'{self.master_fingerprint}_{
+                    timestamp
+                }_temp.zip',
             )
-            
+
             with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                for root, dirs, files in os.walk(folder_path):
+                for root, _, files in os.walk(folder_path):
                     rel_dir = os.path.relpath(root, folder_path)
                     if rel_dir == '.':
                         rel_dir = ''
                     for file in files:
                         file_path = os.path.join(root, file)
-                        rel_path = os.path.join(self.master_fingerprint, rel_dir, file) if rel_dir else os.path.join(
-                            self.master_fingerprint, file,
+                        rel_path = os.path.join(
+                            self.master_fingerprint, rel_dir, file,
                         )
+                        if not rel_dir:
+                            rel_path = os.path.join(
+                                self.master_fingerprint, file,
+                            )
                         zip_file.write(file_path, rel_path)
-            
+
             logger.info('Created local temp backup: %s', backup_path)
             return backup_path
         except Exception as exc:
@@ -552,8 +601,8 @@ class USBSyncManager:
             if not usb_files:
                 raise CommonException(
                     QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_no_wallet_files').format(
-                        fingerprint=self.master_fingerprint
-                    )
+                        fingerprint=self.master_fingerprint,
+                    ),
                 )
             usb_files.sort(reverse=True)
             latest_file = usb_files[0]
@@ -564,13 +613,19 @@ class USBSyncManager:
                 with open(usb_file_path, 'rb') as f:
                     wallet_data = f.read()
                 if not self._validate_wallet_data(wallet_data):
-                    raise CommonException(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_invalid_data'))
+                    raise CommonException(
+                        QCoreApplication.translate(
+                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_invalid_data',
+                        ),
+                    )
                 self._restore_wallet_data(wallet_data, only_folder=True)
                 logger.info(
                     'Successfully synced wallet data from USB: %s', usb_file_path,
                 )
                 self._show_sync_success(
-                    QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_from_success'),
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_from_success',
+                    ),
                 )
             except Exception as exc:
                 if backup_path and os.path.exists(backup_path):
@@ -580,7 +635,9 @@ class USBSyncManager:
                 raise exc
             finally:
                 if backup_path and os.path.exists(backup_path):
-                    logger.info('Local temp backup kept at: %s (only one temp backup maintained)', backup_path)
+                    logger.info(
+                        'Local temp backup kept at: %s (only one temp backup maintained)', backup_path,
+                    )
         except Exception as exc:
             logger.error('Sync from USB failed: %s', str(exc))
             raise exc
@@ -595,7 +652,9 @@ class USBSyncManager:
         try:
             wallet_data_path = self._get_wallet_data_path()
             # Remove the existing folder before restoring
-            folder_path = os.path.join(wallet_data_path, self.master_fingerprint)
+            folder_path = os.path.join(
+                wallet_data_path, self.master_fingerprint,
+            )
             if only_folder and os.path.exists(folder_path):
                 shutil.rmtree(folder_path)
             with zipfile.ZipFile(io.BytesIO(wallet_data), 'r') as zip_file:
@@ -636,7 +695,9 @@ class USBSyncManager:
         """
         try:
             wallet_data_path = self._get_wallet_data_path()
-            folder_path = os.path.join(wallet_data_path, self.master_fingerprint)
+            folder_path = os.path.join(
+                wallet_data_path, self.master_fingerprint,
+            )
             if os.path.exists(folder_path):
                 shutil.rmtree(folder_path)
             with zipfile.ZipFile(backup_path, 'r') as zip_file:
@@ -722,7 +783,9 @@ class USBSyncManager:
                 # Add directory entry for each subdirectory
                 rel_dir = os.path.relpath(root, wallet_data_folder)
                 if rel_dir != '.':
-                    zip_dir = os.path.join(self.master_fingerprint, rel_dir) + '/'
+                    zip_dir = os.path.join(
+                        self.master_fingerprint, rel_dir,
+                    ) + '/'
                     zip_file.writestr(zip_dir, '')
                 for file in files:
                     file_path = os.path.join(root, file)
@@ -732,7 +795,9 @@ class USBSyncManager:
                     zip_path = os.path.join(self.master_fingerprint, rel_path)
                     info = zipfile.ZipInfo(zip_path)
                     stat = os.stat(file_path)
-                    info.date_time = datetime.datetime.fromtimestamp(stat.st_mtime).timetuple()[:6]
+                    info.date_time = datetime.datetime.fromtimestamp(
+                        stat.st_mtime,
+                    ).timetuple()[:6]
                     with open(file_path, 'rb') as f:
                         zip_file.writestr(info, f.read())
 
@@ -781,7 +846,9 @@ class USBSyncManager:
                 return wallet_path
 
             # Look for folder with name matching master fingerprint
-            fingerprint_folder = os.path.join(wallet_path, self.master_fingerprint)
+            fingerprint_folder = os.path.join(
+                wallet_path, self.master_fingerprint,
+            )
             if os.path.exists(fingerprint_folder) and os.path.isdir(fingerprint_folder):
                 logger.info('Found wallet data folder: %s', fingerprint_folder)
                 return fingerprint_folder

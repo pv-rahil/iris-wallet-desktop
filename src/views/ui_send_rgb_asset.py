@@ -361,7 +361,6 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
-        print('<-------------------------------------------')
         self.send_rgb_hw_dialog.update_dialog(message, dialog_type)
         if not self.send_rgb_hw_dialog.isVisible():
             self.send_rgb_hw_dialog.show()

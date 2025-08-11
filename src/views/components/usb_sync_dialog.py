@@ -1,3 +1,4 @@
+# pylint: disable=too-many-instance-attributes
 """
 USB sync dialog for selecting USB drives and confirming sync operations.
 
@@ -9,6 +10,7 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QComboBox
 from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QGraphicsBlurEffect
@@ -19,6 +21,7 @@ from PySide6.QtWidgets import QWidget
 
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
+from src.utils.usb_detector import USBDetector
 from src.utils.usb_detector import USBDrive
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
@@ -44,6 +47,8 @@ class USBSyncDialog(QDialog):
         self.parent_widget = parent if parent else QWidget()
         self.usb_drives = usb_drives
         self.selected_drive = None
+        self.usb_detector = USBDetector()
+        self.usb_row_layout = None
 
         self.blur_effect = QGraphicsBlurEffect()
         self.blur_effect.setBlurRadius(10)
@@ -56,11 +61,20 @@ class USBSyncDialog(QDialog):
             load_stylesheet('views/qss/usb_sync_dialog.qss'),
         )
 
+        # Setup timer for USB detection
+        self.usb_check_timer = QTimer(self)
+        self.usb_check_timer.timeout.connect(self.check_usb_devices)
+        self.usb_check_timer.start(3000)  # Check every 3 seconds
+
         dialog_layout = QVBoxLayout(self)
 
         # Title label
         self.title_label = QLabel(self)
         self.title_label.setObjectName('title_label')
+        self.usb_name_label = QLabel(self)
+        self.usb_name_label.setObjectName('usb_name_label')
+        self.drive_combobox = QComboBox(self)
+        self.drive_combobox.setObjectName('drive_combobox')
         dialog_layout.addWidget(self.title_label)
 
         # Message label
@@ -69,55 +83,9 @@ class USBSyncDialog(QDialog):
         self.message_label.setWordWrap(True)
         dialog_layout.addWidget(self.message_label)
 
-        # USB drive selection row
-        usb_row_layout = QHBoxLayout()
-        usb_row_layout.setContentsMargins(6, 0, 6, 0)
-        usb_row_layout.setSpacing(5)
-
-        # USB name label
-        self.usb_name_label = QLabel(self)
-        self.usb_name_label.setObjectName('usb_name_label')
-        self.usb_name_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'selected_device', None,
-            ),
-        )
-        self.usb_name_label.setMinimumWidth(90)
-        usb_row_layout.addWidget(self.usb_name_label)
-
-        if len(self.usb_drives) > 1:
-            # Dropdown for multiple drives
-            self.drive_combobox = QComboBox(self)
-            self.drive_combobox.setObjectName('drive_combobox')
-            self.drive_combobox.setMinimumSize(QSize(200, 35))
-            self.drive_combobox.setMaximumSize(QSize(400, 35))
-            for i, drive in enumerate(self.usb_drives):
-                drive_text = drive.name
-                self.drive_combobox.addItem(drive_text, i)
-            usb_row_layout.addWidget(self.drive_combobox, 1)
-        else:
-            # Single drive name
-            self.drive_combobox = QComboBox(self)
-            self.drive_combobox.setObjectName('drive_combobox')
-            self.drive_combobox.setMinimumSize(QSize(200, 35))
-            self.drive_combobox.setMaximumSize(QSize(400, 35))
-            self.drive_combobox.setEnabled(False)
-            drive = self.usb_drives[0]
-            self.drive_combobox.addItem(drive.name)
-
-            # Hide dropdown arrow
-            self.drive_combobox.setStyleSheet("""
-                QComboBox::drop-down {
-                    border: 0px;
-                    width: 0px;
-                }
-                QComboBox::down-arrow {
-                    image: none;
-                }
-            """)
-            usb_row_layout.addWidget(self.drive_combobox, 1)
-
-        dialog_layout.addLayout(usb_row_layout)
+        if self.usb_drives:
+            self.usb_row_layout = self._create_usb_selection_row()
+            dialog_layout.addLayout(self.usb_row_layout)
 
         # Button layout
         self.button_layout = QHBoxLayout()
@@ -138,6 +106,72 @@ class USBSyncDialog(QDialog):
         self.setup_connections()
         self.retranslate_ui()
 
+    def _create_usb_selection_row(self) -> QHBoxLayout:
+        """Create and return a USB drive selection layout."""
+        usb_row_layout = QHBoxLayout()
+        usb_row_layout.setContentsMargins(6, 0, 6, 0)
+        usb_row_layout.setSpacing(5)
+
+        self.usb_name_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'selected_device', None,
+            ),
+        )
+        self.usb_name_label.setMinimumWidth(90)
+        usb_row_layout.addWidget(self.usb_name_label)
+
+        self.drive_combobox.setMinimumSize(QSize(200, 35))
+        self.drive_combobox.setMaximumSize(QSize(400, 35))
+
+        if len(self.usb_drives) > 1:
+            for i, drive in enumerate(self.usb_drives):
+                usb_row_layout.addWidget(self.drive_combobox, 1)
+                self.drive_combobox.addItem(drive.name, i)
+        else:
+            self.drive_combobox.setEnabled(False)
+            self.drive_combobox.addItem(self.usb_drives[0].name)
+            self.drive_combobox.setStyleSheet("""
+                QComboBox::drop-down {
+                    border: 0px;
+                    width: 0px;
+                }
+                QComboBox::down-arrow {
+                    image: none;
+                }
+            """)
+            usb_row_layout.addWidget(self.drive_combobox, 1)
+
+        return usb_row_layout
+
+    def check_usb_devices(self):
+        """Check for USB devices and update UI if needed."""
+        try:
+            current_usb_drives = self.usb_detector.detect_usb_drives()
+            # Check if USB status has changed
+            if bool(current_usb_drives) != bool(self.usb_drives):
+                self.usb_drives = current_usb_drives
+                self.update_usb_list()
+        except Exception:
+            # Silently handle any USB detection errors
+            pass
+
+    def update_usb_list(self):
+        """Update the UI when USB status changes."""
+        if self.usb_row_layout:
+            while self.usb_row_layout.count():
+                item = self.usb_row_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+            self.usb_row_layout.deleteLater()
+            self.usb_row_layout = None
+
+        dialog_layout = self.layout()
+        if dialog_layout and self.usb_drives:
+            self.usb_row_layout = self._create_usb_selection_row()
+            dialog_layout.insertLayout(2, self.usb_row_layout)
+
+        self.retranslate_ui()
+
     def setup_connections(self):
         """Set up signal connections for UI elements."""
         self.continue_button.clicked.connect(self.accept)
@@ -145,16 +179,34 @@ class USBSyncDialog(QDialog):
 
     def retranslate_ui(self):
         """Retranslate UI elements with localized text."""
-        self.title_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_detected_sync_prompt', None,
-            ),
-        )
-        self.message_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'confirm_usb_sync', None,
-            ),
-        )
+        if self.usb_drives:
+            # USB drives are available - show sync dialog
+            self.title_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sync_prompt', None,
+                ),
+            )
+            self.message_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'confirm_usb_sync', None,
+                ),
+            )
+            self.continue_button.setEnabled(True)
+            self.resize(400, 201)
+        else:
+            # No USB drives detected - show no USB message
+            self.title_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_usb_detected', None,
+                ),
+            )
+            self.message_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_usb_detected_message', None,
+                ),
+            )
+            self.resize(400, 160)
+            self.continue_button.setEnabled(False)
         self.continue_button.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sync', None,
@@ -173,6 +225,8 @@ class USBSyncDialog(QDialog):
         Returns:
             USBDrive | None: The selected USB drive or None if no selection.
         """
+        if not self.usb_drives:
+            return None
         if len(self.usb_drives) == 1:
             return self.usb_drives[0]
         if hasattr(self, 'drive_combobox'):
@@ -189,18 +243,27 @@ class USBSyncDialog(QDialog):
 
     def closeEvent(self, event):  # pylint:disable=invalid-name
         """Remove the blur effect from the parent widget when the dialog is closed."""
+        # Stop the USB check timer
+        if hasattr(self, 'usb_check_timer'):
+            self.usb_check_timer.stop()
         if self.parent_widget:
             self.parent_widget.setGraphicsEffect(None)
         super().closeEvent(event)
 
     def accept(self):
         """Handle the Continue button click, remove blur, and accept the dialog."""
+        # Stop the USB check timer
+        if hasattr(self, 'usb_check_timer'):
+            self.usb_check_timer.stop()
         if self.parent_widget:
             self.parent_widget.setGraphicsEffect(None)
         super().accept()
 
     def reject(self):
         """Handle the Cancel button click, remove blur, and reject the dialog."""
+        # Stop the USB check timer
+        if hasattr(self, 'usb_check_timer'):
+            self.usb_check_timer.stop()
         if self.parent_widget:
             self.parent_widget.setGraphicsEffect(None)
         super().reject()

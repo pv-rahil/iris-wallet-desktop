@@ -1933,8 +1933,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>In order to recover your assets, you need a backup copy of RGB offline data, as well as your xpubs and master fingerprint.</translation>
     </message>
     <message>
-        <source>usb_detected_sync_prompt</source>
-        <translation>USB detected. Sync now?</translation>
+        <source>sync_prompt</source>
+        <translation>Sync data?</translation>
     </message>
     <message>
         <source>confirm_usb_sync</source>
@@ -1979,6 +1979,14 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>usb_master_fingerprint_not_found</source>
         <translation>Master fingerprint not found. Please ensure wallet is properly initialized.</translation>
+    </message>
+    <message>
+        <source>no_usb_detected</source>
+        <translation>No USB Drive Detected</translation>
+    </message>
+    <message>
+        <source>no_usb_detected_message</source>
+        <translation>No USB drive was detected. Please connect a USB drive and try again.</translation>
     </message>
 </context>
 </TS>
