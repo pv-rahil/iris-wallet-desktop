@@ -25,6 +25,8 @@ from PySide6.QtWidgets import QVBoxLayout
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -153,6 +155,7 @@ class HeaderFrame(QFrame, QObject):
         self.usb_sync_frame.setMinimumSize(QSize(150, 42))
         self.usb_sync_frame.setFrameShape(QFrame.StyledPanel)
         self.usb_sync_frame.setFrameShadow(QFrame.Raised)
+        self.usb_sync_frame.hide()
         self.usb_sync_frame_horizontal_layout = QHBoxLayout(
             self.usb_sync_frame,
         )
@@ -243,8 +246,8 @@ class HeaderFrame(QFrame, QObject):
             self.handle_network_frame_visibility,
         )
         self.set_wallet_backup_frame()
-
-        self.set_usb_sync_frame()
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET or SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
+            self.set_usb_sync_frame()
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -422,6 +425,7 @@ class HeaderFrame(QFrame, QObject):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'click_to_sync_usb', None,
                 ),
             )
+            self.usb_sync_frame.show()
         except Exception:
             # Hide the frame if there's any error
             self.usb_sync_frame.hide()

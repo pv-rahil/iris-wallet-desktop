@@ -64,7 +64,7 @@ class USBSyncDialog(QDialog):
         # Setup timer for USB detection
         self.usb_check_timer = QTimer(self)
         self.usb_check_timer.timeout.connect(self.check_usb_devices)
-        self.usb_check_timer.start(3000)  # Check every 3 seconds
+        self.usb_check_timer.start(5000)  # Check every 5 seconds
 
         dialog_layout = QVBoxLayout(self)
 
@@ -75,6 +75,7 @@ class USBSyncDialog(QDialog):
         self.usb_name_label.setObjectName('usb_name_label')
         self.drive_combobox = QComboBox(self)
         self.drive_combobox.setObjectName('drive_combobox')
+        self.drive_combobox.hide()
         dialog_layout.addWidget(self.title_label)
 
         # Message label
@@ -119,7 +120,7 @@ class USBSyncDialog(QDialog):
         )
         self.usb_name_label.setMinimumWidth(90)
         usb_row_layout.addWidget(self.usb_name_label)
-
+        self.drive_combobox.show()
         self.drive_combobox.setMinimumSize(QSize(200, 35))
         self.drive_combobox.setMaximumSize(QSize(400, 35))
 
