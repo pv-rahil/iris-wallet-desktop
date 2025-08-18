@@ -14,6 +14,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
@@ -24,18 +25,24 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.helpers import load_stylesheet
+from src.utils.keyring_storage import get_value
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.usb_detector import USBDetector
 from src.utils.usb_sync_manager import USBSyncManager
 from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
+from src.views.components.loading_screen import LoadingTranslucentScreen
+from src.views.components.usb_sync_dialog import USBSyncDialog
+from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
 
 
 class HeaderFrame(QFrame, QObject):
@@ -245,9 +252,16 @@ class HeaderFrame(QFrame, QObject):
         self.header_frame_view_model.network_status_signal.connect(
             self.handle_network_frame_visibility,
         )
+        self.__loading_translucent_screen = None
         self.set_wallet_backup_frame()
         if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET or SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
             self.set_usb_sync_frame()
+            self.header_frame_view_model.sync_process_started.connect(
+                self.handle_sync_process_started,
+            )
+            self.header_frame_view_model.sync_process_ended.connect(
+                self.handle_sync_process_ended,
+            )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -435,7 +449,55 @@ class HeaderFrame(QFrame, QObject):
         Handle logic when usb_sync_frame is clicked.
         Initiates USB sync process.
         """
-        usb_sync_manager = USBSyncManager(self.window())
-        if self.usb_sync_frame.isVisible():
-            usb_sync_manager.reset_dialog_flag()
-            usb_sync_manager.check_usb_and_prompt()
+        if not self.usb_sync_frame.isVisible():
+            return
+        password = self._check_keyring_state()
+        usb_drives = self.usb_detector.detect_usb_drives()
+        dialog = USBSyncDialog(usb_drives, self.window())
+        if dialog.exec() == QDialog.Accepted:
+            selected_drive = dialog.get_selected_drive()
+            if selected_drive:
+                self.header_frame_view_model.perform_sync(
+                    selected_drive, password)
+
+    def handle_sync_process_started(self):
+        """Handle logic when sync process started."""
+        self.__loading_translucent_screen = LoadingTranslucentScreen(
+            parent=self.window(), description_text='Syncing', dot_animation=True, loader_type=LoaderDisplayModel.FULL_SCREEN,
+        )
+        self.__loading_translucent_screen.make_parent_disabled_during_loading(
+            True,
+        )
+        self.__loading_translucent_screen.start()
+
+    def handle_sync_process_ended(self):
+        """Handle logic when sync process ended."""
+        self.__loading_translucent_screen.stop()
+        self.__loading_translucent_screen.make_parent_disabled_during_loading(
+            False,
+        )
+
+    def _check_keyring_state(self):
+        """Checks the keyring status and retrieves the wallet password, either
+        from secure storage if the keyring is disabled or via a user prompt
+        through a mnemonic dialog if enabled."""
+        keyring_status = SettingRepository.get_keyring_status()
+        if keyring_status is False:
+            network: NetworkEnumModel = SettingRepository.get_wallet_network()
+            password: str = get_value(WALLET_PASSWORD_KEY, network.value)
+            return password
+        if keyring_status is True:
+            mnemonic_dialog = RestoreMnemonicWidget(
+                parent=self, view_model=None, origin_page='setting_card', mnemonic_visibility=False,
+            )
+            mnemonic_dialog.mnemonic_detail_text_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'lock_unlock_password_required', None,
+                ),
+            )
+            mnemonic_dialog.mnemonic_detail_text_label.setFixedHeight(40)
+            result = mnemonic_dialog.exec()
+            if result == QDialog.Accepted:
+                password = mnemonic_dialog.password_input.text()
+                return password
+        return None
