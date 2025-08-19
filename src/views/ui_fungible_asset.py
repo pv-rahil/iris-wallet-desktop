@@ -116,7 +116,30 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.fungibles_label.setObjectName('fungibles_label')
         self.fungibles_label.setMinimumSize(QSize(1016, 57))
 
-        self.vertical_layout_fungible_2.addWidget(self.fungibles_label)
+        self.usb_last_sync_vertical_layout = QHBoxLayout()
+
+        self.usb_last_sync_info_label = QLabel()
+        self.usb_last_sync_info_label.setObjectName('usb_last_sync_info_label')
+        self.outdated_balance_label = QLabel()
+        self.outdated_balance_label.setObjectName('outdated_balance_label')
+
+        self.usb_last_sync_vertical_layout.addWidget(
+            self.usb_last_sync_info_label,
+        )
+        self.usb_last_sync_vertical_layout.addWidget(
+            self.outdated_balance_label,
+        )
+
+        self.horizontal_spacer = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
+        )
+
+        self.horizontal_layout = QHBoxLayout()
+        self.horizontal_layout.addWidget(self.fungibles_label)
+        self.horizontal_layout.addSpacerItem(self.horizontal_spacer)
+        self.horizontal_layout.addLayout(self.usb_last_sync_vertical_layout)
+
+        self.vertical_layout_fungible_2.addLayout(self.horizontal_layout)
 
         self.scroll_area_fungible = QScrollArea(self.fungibles_widget)
         self.scroll_area_fungible.setObjectName('scroll_area_1')
@@ -407,6 +430,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fungibles', None,
             ),
         )
+        self.usb_last_sync_info_label.setText('Last synced at 11:00 AM')
+        self.outdated_balance_label.setText('(Balance may be outdated)')
 
     def refresh_asset(self):
         """This method start the render timer and perform the fungible asset list refresh"""

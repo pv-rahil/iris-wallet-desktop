@@ -38,7 +38,6 @@ from src.utils.helpers import load_stylesheet
 from src.utils.keyring_storage import get_value
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.usb_detector import USBDetector
-from src.utils.usb_sync_manager import USBSyncManager
 from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.usb_sync_dialog import USBSyncDialog
@@ -458,7 +457,8 @@ class HeaderFrame(QFrame, QObject):
             selected_drive = dialog.get_selected_drive()
             if selected_drive:
                 self.header_frame_view_model.perform_sync(
-                    selected_drive, password)
+                    selected_drive, password,
+                )
 
     def handle_sync_process_started(self):
         """Handle logic when sync process started."""
@@ -476,6 +476,7 @@ class HeaderFrame(QFrame, QObject):
         self.__loading_translucent_screen.make_parent_disabled_during_loading(
             False,
         )
+        self.refresh_page_button.click()
 
     def _check_keyring_state(self):
         """Checks the keyring status and retrieves the wallet password, either

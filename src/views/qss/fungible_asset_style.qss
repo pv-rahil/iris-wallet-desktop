@@ -124,3 +124,10 @@ QLabel#name_header,#address_header,#amount_header,#outbound_amount_header,#symbo
     border: none;
     font-weight: 600;
 }
+
+QLabel#usb_last_sync_info_label,#outdated_balance_label {
+    font: 14px "Inter";
+    color: rgb(102, 108, 129);
+    border: none;
+    background: transparent;
+}

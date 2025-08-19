@@ -14,12 +14,13 @@ from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import USBDrive
+from src.model.enums.enums_model import WalletSecurityType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
-from src.utils.local_store import local_store
+from src.utils.logging import logger
 from src.utils.usb_sync_manager import USBSyncManager
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
@@ -90,50 +91,69 @@ class HeaderFrameViewModel(QObject, ThreadManager):
             self.usb_sync_manager.perform_sync,
             {
                 'args': [selected_drive],
-                'callback': self.on_sync_process_ended,
-                'error_callback': self.on_error,
+                'callback': self.handle_sync_completed,
+                'error_callback': self.handle_sync_error,
             },
         )
 
-    def on_sync_process_ended(self, direction):
-        """Emit sync process ended signal."""
+    def handle_sync_completed(self, direction: str, retry: bool = False):
+        """Handle completion of sync process."""
         if direction == 'from_usb':
             self.run_in_thread(
                 CommonOperationService.enter_wallet_password,
                 {
                     'args': [self.password],
-                    'callback': self.on_success,
-                    'error_callback': self.on_error,
+                    'callback': lambda *_: self.handle_sync_success(direction, retry),
+                    'error_callback': self.handle_sync_error,
                 },
             )
         elif direction == 'to_usb':
             self.sync_process_ended.emit()
-            ToastManager.success(description=QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_success'))
+            ToastManager.success(
+                description=QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_success',
+                ),
+            )
         elif direction == 'no_sync':
             self.sync_process_ended.emit()
-            ToastManager.success(description=QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'No sync needed - data is up to date'))
+            ToastManager.success(
+                description=QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'No sync needed - data is up to date',
+                ),
+            )
 
-    def on_error(self, error):
+    def handle_sync_error(self, error: Exception):
         """Handle sync error."""
         self.sync_process_ended.emit()
         ToastManager.error(description=str(error))
 
-    def on_success(self, response):
-        """Handle sync success."""
+    def handle_sync_success(self, direction: str, retry: bool):
+        """Handle sync success after password entry."""
         try:
-            colored_wallet.set_wallet(response)
-            network = get_bitcoin_network_from_enum(
-                SettingRepository.get_wallet_network(),
-            )
-            indexer_url = get_bitcoin_config(network, '').indexer_url
-            colored_wallet.go_online_again(indexer_url)
+            if SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
+                network = get_bitcoin_network_from_enum(
+                    SettingRepository.get_wallet_network(),
+                )
+                indexer_url = get_bitcoin_config(network, '').indexer_url
+                colored_wallet.online_wallet = colored_wallet.wallet.go_online(
+                    False, indexer_url,
+                )
             self.sync_process_ended.emit()
-            ToastManager.success(description=QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_from_success'))
-        except RgbLibError.Inconsistency as exc:
+            if not retry:
+                ToastManager.success(
+                    description=QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_from_success',
+                    ),
+                )
+        except RgbLibError.Inconsistency:
             self.usb_sync_manager.restore_local_folder_from_backup()
+            self.handle_sync_completed(direction, retry=True)
             self.sync_process_ended.emit()
             ToastManager.error(
-                description='Due to inconsistency, wallet data has been restored to the previous state')
+                description=QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_inconsistency_restored',
+                ),
+            )
+        except Exception as exc:
+            logger.error('Failed to sync wallet: %s', exc)
+            ToastManager.error(description=str(exc))

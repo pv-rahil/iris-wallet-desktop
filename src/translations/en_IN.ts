@@ -1988,5 +1988,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>no_usb_detected_message</source>
         <translation>No USB drive was detected. Please connect a USB drive and try again.</translation>
     </message>
+    <message>
+        <source>usb_sync_inconsistency_restored</source>
+        <translation>The new sync data could not be applied due to inconsistency. Your wallet has been safely restored to its previous state.</translation>
+    </message>
 </context>
 </TS>

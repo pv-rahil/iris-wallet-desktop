@@ -197,7 +197,9 @@ class WatchOnlyDialog(QDialog):
 
         def show_error(key: str):
             self.error_label.setText(
-                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, key),
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, key,
+                ),
             )
             self.error_label.setVisible(True)
             self.setMinimumSize(480, 490)
@@ -210,7 +212,7 @@ class WatchOnlyDialog(QDialog):
         if not validate_xpub(vanilla) or not validate_xpub(colored):
             show_error('invalid_xpub')
             return
-    
+
         if len(fingerprint) != 8 or not all(c in '0123456789abcdefABCDEF' for c in fingerprint):
             show_error('fingerprint_should_be_8_chars')
             return
@@ -218,7 +220,12 @@ class WatchOnlyDialog(QDialog):
         # All validations passed
         self.error_label.setVisible(False)
         self.setMinimumSize(480, 420)
-        self.continue_btn.setEnabled(self.check_box.isChecked())
+        self.continue_btn.setEnabled(
+            self.check_box.isChecked() and not self.error_label.isVisible(),
+        )
+
+        if self.error_label.isVisible() and self.check_box.isChecked():
+            self.check_box.setChecked(False)
 
     def handle_submit(self):
         """

@@ -31,7 +31,7 @@ def test_colored_wallet_initialization():
     """Test that colored_wallet is properly initialized as a singleton."""
     assert isinstance(colored_wallet, ColoredWallet)
     assert colored_wallet._wallet is None
-    assert colored_wallet._online is None
+    assert colored_wallet.online_wallet is None
 
 
 def test_set_wallet(mock_wallet):
@@ -77,7 +77,7 @@ def test_online_property_initialization(
     # Verify
     assert online == mock_online
     mock_wallet.go_online.assert_called_once_with(False, 'http://test-indexer')
-    assert colored_wallet._online == mock_online
+    assert colored_wallet.online_wallet == mock_online
 
 
 def test_go_online_again_success(mock_wallet, mock_online):
@@ -91,7 +91,7 @@ def test_go_online_again_success(mock_wallet, mock_online):
 
     # Verify
     mock_wallet.go_online.assert_called_once_with(True, 'http://new-indexer')
-    assert colored_wallet._online == mock_online
+    assert colored_wallet.online_wallet == mock_online
 
 
 def test_go_online_again_error(mock_wallet):

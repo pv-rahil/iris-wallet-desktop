@@ -31,7 +31,7 @@ class ColoredWallet:
 
     def __init__(self):
         self._wallet: rgb_lib.Wallet | None = None
-        self._online: rgb_lib.Online | None = None
+        self.online_wallet: rgb_lib.Online | None = None
 
     @property
     def wallet(self) -> rgb_lib.Wallet:
@@ -64,7 +64,7 @@ class ColoredWallet:
         Raises:
             RuntimeError: If the wallet is not initialized.
         """
-        if self._online is None:
+        if self.online_wallet is None:
             if self._wallet is None:
                 raise CommonException(
                     'Wallet must be initialized before going online.',
@@ -75,7 +75,7 @@ class ColoredWallet:
                     SettingRepository.get_wallet_network(),
                 )
                 indexer_url = get_bitcoin_config(network, '').indexer_url
-                self._online = self._wallet.go_online(False, indexer_url)
+                self.online_wallet = self._wallet.go_online(False, indexer_url)
             except Exception as exc:
                 logger.error(
                     'Failed to go online: %s, Message: %s',
@@ -88,7 +88,7 @@ class ColoredWallet:
                         'original_exception': str(exc),
                     },
                 ) from exc
-        return self._online
+        return self.online_wallet
 
     def go_online_again(self, indexer_url: str) -> None:
         """
@@ -100,7 +100,7 @@ class ColoredWallet:
         """
         if self._wallet:
             try:
-                self._online = self._wallet.go_online(True, indexer_url)
+                self.online_wallet = self._wallet.go_online(True, indexer_url)
             except RgbLibError.InvalidIndexer:
                 raise
             except Exception as exc:

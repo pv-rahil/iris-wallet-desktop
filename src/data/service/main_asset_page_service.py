@@ -8,6 +8,7 @@ from rgb_lib import AssetCfa
 from rgb_lib import AssetNia
 from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
+from rgb_lib import Balance
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.rgb_repository import RgbRepository
@@ -17,9 +18,11 @@ from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import OfflineAsset
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import GetAssetResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
+from src.utils.cache import Cache
 from src.utils.handle_exception import handle_exceptions
 
 
@@ -46,11 +49,33 @@ class MainAssetPageDataService:
             )
 
             filtered_assets: list[AssetNia | AssetCfa | AssetUda | None] = []
-            RgbRepository.refresh_transfer()
             asset_detail: GetAssetResponseModel = RgbRepository.get_assets(
                 request_model,
             )
-            btc_balance: BalanceResponseModel = BtcRepository.get_btc_balance()
+            is_offline_wallet = SettingRepository.get_wallet_type(
+            ) == WalletType.OFFLINE_TYPE_WALLET
+            if is_offline_wallet:
+                cache = Cache.get_cache_session()
+                btc_balance, _ = cache.fetch_cache(
+                    key='mainassetviewmodel_get_asset',
+                )
+                if not btc_balance:
+                    btc_balance = BalanceResponseModel(
+                        vanilla=Balance(
+                            settled=0, future=0, spendable=0,
+                        ), colored=Balance(settled=0, future=0, spendable=0),
+                    )
+                else:
+                    btc_balance = btc_balance.balance
+            else:
+                RgbRepository.refresh_transfer()
+                btc_balance: BalanceResponseModel = BtcRepository.get_btc_balance()
+                cache = Cache.get_cache_session()
+                balance, _ = cache.fetch_cache(
+                    key='mainassetviewmodel_get_asset',
+                )
+                print(balance.balance.vanilla)
+
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
             btc_ticker: str = main_asset_page_helper.get_offline_asset_ticker(
                 network=stored_network,
