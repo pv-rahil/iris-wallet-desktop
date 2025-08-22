@@ -4,6 +4,8 @@ which represents the UI for fungible assets.
 """
 from __future__ import annotations
 
+from datetime import datetime
+
 from PySide6.QtCore import QByteArray
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QRect
@@ -35,11 +37,13 @@ from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
+from src.utils.common_utils import format_epoch_time
 from src.utils.common_utils import generate_identicon
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
+from src.utils.local_store import local_store
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
 from src.viewmodels.main_view_model import MainViewModel
@@ -85,6 +89,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             title_logo_path=':/assets/my_asset.png', title_name='fungibles',
         )
         self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
+        config = get_current_wallet_mode_config()
+        self.priv = config.privileges
         self.is_watch_only = SettingRepository.get_wallet_security_type(
         ) == WalletSecurityType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
@@ -116,19 +122,21 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.fungibles_label.setObjectName('fungibles_label')
         self.fungibles_label.setMinimumSize(QSize(1016, 57))
 
-        self.usb_last_sync_vertical_layout = QHBoxLayout()
+        self.usb_last_sync_horizontal_layout = QHBoxLayout()
+        self.usb_last_sync_horizontal_layout.setContentsMargins(0, 0, 12, 0)
 
         self.usb_last_sync_info_label = QLabel()
         self.usb_last_sync_info_label.setObjectName('usb_last_sync_info_label')
         self.outdated_balance_label = QLabel()
         self.outdated_balance_label.setObjectName('outdated_balance_label')
 
-        self.usb_last_sync_vertical_layout.addWidget(
+        self.usb_last_sync_horizontal_layout.addWidget(
             self.usb_last_sync_info_label,
         )
-        self.usb_last_sync_vertical_layout.addWidget(
-            self.outdated_balance_label,
-        )
+        if self.is_offline_wallet:
+            self.usb_last_sync_horizontal_layout.addWidget(
+                self.outdated_balance_label,
+            )
 
         self.horizontal_spacer = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
@@ -137,7 +145,10 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.horizontal_layout = QHBoxLayout()
         self.horizontal_layout.addWidget(self.fungibles_label)
         self.horizontal_layout.addSpacerItem(self.horizontal_spacer)
-        self.horizontal_layout.addLayout(self.usb_last_sync_vertical_layout)
+        if self.is_offline_wallet or self.is_watch_only:
+            self.horizontal_layout.addLayout(
+                self.usb_last_sync_horizontal_layout,
+            )
 
         self.vertical_layout_fungible_2.addLayout(self.horizontal_layout)
 
@@ -401,7 +412,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
         self.update_sidebar()
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if self.priv.can_use_faucet:
             self.check_faucet_availability()
         self._view_model.main_asset_view_model.get_assets()
         self.title_frame.refresh_page_button.clicked.connect(
@@ -430,8 +441,19 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fungibles', None,
             ),
         )
-        self.usb_last_sync_info_label.setText('Last synced at 11:00 AM')
-        self.outdated_balance_label.setText('(Balance may be outdated)')
+
+        epoch_time = format_epoch_time()
+        if epoch_time is not None:
+            self.usb_last_sync_info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
+                ).format(epoch_time),
+            )
+            self.outdated_balance_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                ),
+            )
 
     def refresh_asset(self):
         """This method start the render timer and perform the fungible asset list refresh"""
@@ -439,6 +461,18 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )
+        epoch_time = format_epoch_time()
+        if epoch_time is not None:
+            self.usb_last_sync_info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
+                ).format(epoch_time),
+            )
+            self.outdated_balance_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                ),
+            )
 
     def handle_asset_frame_click(self, asset_id, asset_name, image_path, asset_type):
         """This method handles fungibles asset click of the main asset page."""

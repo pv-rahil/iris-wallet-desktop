@@ -251,7 +251,9 @@ class HeaderFrame(QFrame, QObject):
         self.header_frame_view_model.network_status_signal.connect(
             self.handle_network_frame_visibility,
         )
-        self.__loading_translucent_screen = None
+        self.__loading_translucent_screen = LoadingTranslucentScreen(
+            parent=self.window(), description_text='',
+        )
         self.set_wallet_backup_frame()
         if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET or SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
             self.set_usb_sync_frame()
@@ -470,13 +472,14 @@ class HeaderFrame(QFrame, QObject):
         )
         self.__loading_translucent_screen.start()
 
-    def handle_sync_process_ended(self):
+    def handle_sync_process_ended(self, direction: str):
         """Handle logic when sync process ended."""
         self.__loading_translucent_screen.stop()
         self.__loading_translucent_screen.make_parent_disabled_during_loading(
             False,
         )
-        self.refresh_page_button.click()
+        if direction == 'from_usb':
+            self.refresh_page_button.click()
 
     def _check_keyring_state(self):
         """Checks the keyring status and retrieves the wallet password, either

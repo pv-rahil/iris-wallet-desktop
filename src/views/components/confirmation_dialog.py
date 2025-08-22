@@ -1,9 +1,12 @@
+# pylint: disable=too-many-statements
 """Confirmation dialog box module"""
 from __future__ import annotations
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QCheckBox
 from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QHBoxLayout
@@ -14,6 +17,7 @@ from PySide6.QtWidgets import QWidget
 from accessible_constant import CONFIRMAION_DIALOG
 from accessible_constant import CONFIRMATION_DIALOG_CANCEL_BUTTON
 from accessible_constant import CONFIRMATION_DIALOG_CONTINUE_BUTTON
+from accessible_constant import SAVE_CREDENTIALS_CHECK_BOX
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton
@@ -28,11 +32,12 @@ class ConfirmationDialog(QDialog):
     or cancel an action. It uses a frameless window design with a blur effect and is modal.
     """
 
-    def __init__(self, message: str, parent):
+    def __init__(self, message: str, parent, icon_type: str):
         super().__init__(parent)
         self.parent_widget = parent if parent else QWidget()
         self.blur_effect = QGraphicsBlurEffect()
         self.blur_effect.setBlurRadius(10)
+        self.icon_type = icon_type
 
         self.setObjectName('confirmation_dialog')
         self.setAccessibleName(CONFIRMAION_DIALOG)
@@ -47,12 +52,50 @@ class ConfirmationDialog(QDialog):
 
         dialog_layout = QVBoxLayout(self)
 
-        self.message_label = QLabel(message, self)
-        self.message_label.setObjectName('message_label')
-        self.message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.message_label.setWordWrap(True)
+        # Header/message area
+        if self.icon_type == 'warning':
+            header_layout = QHBoxLayout()
+            header_layout.setObjectName('header_layout')
+            header_layout.setContentsMargins(6, 0, 5, 0)
+            header_layout.setSpacing(0)
 
-        dialog_layout.addWidget(self.message_label)
+            self.icon_label = QLabel(self)
+            self.icon_label.setObjectName('icon_label')
+            pixmap = QPixmap(':/assets/warning_yellow.png')
+            if not pixmap.isNull():
+                self.icon_label.setPixmap(
+                    pixmap.scaled(
+                        72, 72, Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation,
+                    ),
+                )
+            header_layout.addWidget(
+                self.icon_label, Qt.AlignmentFlag.AlignCenter,
+            )
+
+            self.message_label = QLabel(message, self)
+            self.message_label.setObjectName('message_label')
+            self.message_label.setStyleSheet(
+                'padding-bottom:25px;',
+            )
+            self.message_label.setMinimumSize(QSize(400, 110))
+            self.message_label.setWordWrap(True)
+            header_layout.addWidget(self.message_label)
+
+            dialog_layout.addLayout(header_layout)
+
+            # Confirmation checkbox (enables Continue when checked)
+            self.check_box = QCheckBox(self)
+            self.check_box.setObjectName('check_box')
+            self.check_box.setAccessibleName(SAVE_CREDENTIALS_CHECK_BOX)
+            dialog_layout.addWidget(self.check_box)
+        else:
+            self.message_label = QLabel(message, self)
+            self.message_label.setObjectName('message_label')
+            self.message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.message_label.setWordWrap(True)
+
+            dialog_layout.addWidget(self.message_label)
 
         self.button_layout = QHBoxLayout()
         self.button_layout.setObjectName('button_layout')
@@ -76,6 +119,11 @@ class ConfirmationDialog(QDialog):
 
         dialog_layout.addLayout(self.button_layout)
 
+        # If warning, disable Continue until confirmed
+        if self.icon_type == 'warning':
+            self.confirmation_dialog_continue_button.setEnabled(False)
+            self.check_box.stateChanged.connect(self.handle_continue_button)
+
         self.setup_ui_connection()
         self.retranslate_ui()
 
@@ -91,11 +139,24 @@ class ConfirmationDialog(QDialog):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cancel', None,
             ),
         )
+        if self.check_box:
+            self.check_box.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sync_confirmation_checkbox_message', None,
+                ),
+            )
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
         self.confirmation_dialog_continue_button.clicked.connect(self.accept)
         self.confirmation_dialog_cancel_button.clicked.connect(self.reject)
+
+    def handle_continue_button(self):
+        """Enable/disable Continue based on checkbox state (only for warning)."""
+        if self.check_box:
+            self.confirmation_dialog_continue_button.setEnabled(
+                self.check_box.isChecked(),
+            )
 
     def showEvent(self, event):  # pylint:disable=invalid-name
         """Apply the blur effect to the parent widget when the dialog is shown."""

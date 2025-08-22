@@ -25,7 +25,7 @@ QLabel#message_label {
 }
 
 /* Style for the drive combo label */
-QLabel#usb_name_label {
+QLabel#usb_name_label,#fingerprint_label,#fingerprint_value_label {
     font: 14px "Inter";
     color: rgb(121, 128, 148);
     text-align: left;

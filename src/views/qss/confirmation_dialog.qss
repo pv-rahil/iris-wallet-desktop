@@ -16,8 +16,6 @@ QLabel#message_label {
     text-align: center;
 }
 
-/* Style for the button layout */
-QHBoxLayout {
-    margin-top: 20px;
-    justify-content: center;
+QCheckBox#check_box {
+    padding-left:6px;
 }

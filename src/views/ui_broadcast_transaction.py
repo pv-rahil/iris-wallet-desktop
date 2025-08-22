@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QComboBox
+from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
@@ -28,6 +29,7 @@ from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
+from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 # from src.model.invoices_model import DecodeInvoiceResponseModel
@@ -250,7 +252,7 @@ class BroadcastTransactionWidget(QWidget):
             self.update_loading_state,
         )
         self._view_model.broadcast_transaction_view_model.tx_broadcasted.connect(
-            self.on_click_close_button
+            self.on_click_close_button,
         )
 
     def retranslate_ui(self):
@@ -284,24 +286,33 @@ class BroadcastTransactionWidget(QWidget):
         """
         signed_psbt = self.broadcast_transaction_input.toPlainText()
         method = self.method_selector.currentText()
-        if method == QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset',
-        ):
-            self._view_model.broadcast_transaction_view_model.create_utxos_end(
-                signed_psbt,
-            )
-        elif method == QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_btc',
-        ):
-            self._view_model.broadcast_transaction_view_model.send_btc_end(
-                signed_psbt,
-            )
-        elif method == QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_assets',
-        ):
-            self._view_model.broadcast_transaction_view_model.send_end(
-                signed_psbt,
-            )
+        confirmation_dialog = ConfirmationDialog(
+            message=QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'data_sync_warning',
+            ),
+            parent=self,
+            icon_type='warning',
+        )
+        if confirmation_dialog.exec() == QDialog.Accepted:
+            if method == QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset',
+            ):
+                self._view_model.broadcast_transaction_view_model.create_utxos_end(
+                    signed_psbt,
+                )
+            elif method == QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_btc',
+            ):
+                self._view_model.broadcast_transaction_view_model.send_btc_end(
+                    signed_psbt,
+                )
+            elif method == QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_assets',
+            ):
+                self._view_model.broadcast_transaction_view_model.send_end(
+                    signed_psbt,
+                )
 
     def on_success_sent_navigation(self):
         """

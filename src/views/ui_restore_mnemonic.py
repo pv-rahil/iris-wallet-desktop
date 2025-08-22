@@ -18,16 +18,26 @@ from PySide6.QtWidgets import QPushButton
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
+from rgb_lib import Keys
 
 from accessible_constant import RESTORE_CONTINUE_BUTTON
 from accessible_constant import RESTORE_DIALOG_BOX
 from accessible_constant import RESTORE_MNEMONIC_INPUT
 from accessible_constant import RESTORE_PASSWORD_INPUT
+from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletSecurityType
+from src.utils.build_app_path import app_paths
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MASTER_FINGERPRINT
+from src.utils.constant import MNEMONIC_KEY
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import load_stylesheet
+from src.utils.local_store import local_store
+from src.utils.wallet_credential_encryption import mnemonic_store
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.toast import ToastManager
 
@@ -249,6 +259,8 @@ class RestoreMnemonicWidget(QDialog):
             self.close()
         elif self.origin_page == 'setting_card':
             self.accept()
+        elif self.origin_page == 'welcome_page':
+            self.store_xpub_and_mnemonic()
         else:
             ToastManager.error('Unknown origin page')
 
@@ -299,3 +311,65 @@ class RestoreMnemonicWidget(QDialog):
             else:
                 self.setMaximumSize(QSize(370, 292))
                 self.mnemonic_input.show()
+
+    def store_xpub_and_mnemonic(self):
+        """
+        Store xpubs, mnemonic, and master fingerprint in local storage.
+
+        - If key storage type is ON_DEVICE:
+            * Encrypt and save the mnemonic.
+            * Derive keys (xpubs + fingerprint) from mnemonic.
+            * Store them in local storage.
+        - Otherwise:
+            * Use values provided by user input fields (xpubs + fingerprint).
+        """
+        storage_type = SettingRepository.get_key_storage_type()
+        if storage_type == KeyStorageType.ON_DEVICE:
+
+            # Restore keys from mnemonic
+            network = get_bitcoin_network_from_enum(
+                SettingRepository.get_wallet_network(),
+            )
+            restored_keys: Keys = CommonOperationRepository.restore_keys(
+                network, self.mnemonic_input.text(),
+            )
+
+            # Store derived values
+            local_store.set_value(
+                ACCOUNT_XPUB_VANILLA,
+                restored_keys.account_xpub_vanilla,
+            )
+            local_store.set_value(
+                ACCOUNT_XPUB_COLORED,
+                restored_keys.account_xpub_colored,
+            )
+            local_store.set_value(
+                MASTER_FINGERPRINT,
+                restored_keys.master_fingerprint,
+            )
+
+            encrypted_mnemonic = mnemonic_store.encrypt(
+                password=self.password_input.text(),
+                mnemonic=self.mnemonic_input.text(),
+            )
+            local_store.write_to_file(
+                file_name=MNEMONIC_KEY,
+                file_path=app_paths.mnemonic_file_path,
+                value=encrypted_mnemonic,
+            )
+
+        else:
+            # Store manually entered values
+            local_store.set_value(
+                ACCOUNT_XPUB_VANILLA,
+                self.xpub_vanilla_input.text(),
+            )
+            local_store.set_value(
+                ACCOUNT_XPUB_COLORED,
+                self.xpub_colored_input.text(),
+            )
+            local_store.set_value(
+                MASTER_FINGERPRINT,
+                self.fingerprint_input.text(),
+            )
+        self.accept()

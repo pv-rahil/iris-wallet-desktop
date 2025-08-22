@@ -4,9 +4,8 @@ Configuration and privilege definitions for wallet modes and their capabilities.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from src.model.common_operation_model import WalletModeConfig, WalletModePrivilege
+from src.model.common_operation_model import WalletModeConfig
+from src.model.common_operation_model import WalletModePrivilege
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletSecurityType
@@ -40,10 +39,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=False,
                     can_receive_transactions=False,
-                    can_view_balance=True,
                     can_create_assets=False,
-                    can_manage_assets=False,
-                    can_use_hardware_wallet=False,
                     can_backup_wallet=True,
                     can_export_psbt=True,
                     can_receive_asset=False,
@@ -78,10 +74,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=False,
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
@@ -116,10 +109,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=True,
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
@@ -155,10 +145,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=False,
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
@@ -195,10 +182,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=True,
                     can_backup_wallet=True,
                     can_export_psbt=False,
                     can_receive_asset=True,
@@ -233,10 +217,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=False,
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=True,
@@ -271,10 +252,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=True,
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=True,
@@ -313,10 +291,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=False,
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=True,
@@ -356,10 +331,7 @@ class WalletModeConfiguration:
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
                     can_receive_transactions=True,
-                    can_view_balance=True,
                     can_create_assets=True,
-                    can_manage_assets=True,
-                    can_use_hardware_wallet=True,
                     can_backup_wallet=False,
                     can_export_psbt=False,
                     can_receive_asset=False,
@@ -390,10 +362,7 @@ class WalletModeConfiguration:
             privileges=WalletModePrivilege(
                 can_send_transactions=False,
                 can_receive_transactions=False,
-                can_view_balance=False,
                 can_create_assets=False,
-                can_manage_assets=False,
-                can_use_hardware_wallet=False,
                 can_backup_wallet=False,
                 can_export_psbt=False,
                 can_receive_asset=False,

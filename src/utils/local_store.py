@@ -153,6 +153,34 @@ class LocalStore:
 
         return file_path
 
+    def refresh_file(self):
+        """Reload settings from the ini file."""
+        self.settings.sync()
+        self.settings = QSettings(self.config_file_path, QSettings.IniFormat)
+
+    def remove_file(self, file_name: str, file_path: str | None = None) -> bool:
+        """
+        Remove a file from the base path or given path.
+
+        Args:
+            file_name (str): The name of the file to remove (ignored if file_path is provided).
+            file_path (str, optional): The full path to the file. If None, uses base_path + file_name.
+
+        Returns:
+            bool: True if file was removed, False if file does not exist.
+        """
+        if file_path is None:
+            file_path = QDir(self.base_path).filePath(file_name)
+
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                return True
+            return False
+        except Exception as e:
+            print(f"Error removing file {file_path}: {e}")
+            return False
+
 
 # Create a singleton instance of LocalStore
 local_store = LocalStore(APP_NAME, ORGANIZATION_DOMAIN)

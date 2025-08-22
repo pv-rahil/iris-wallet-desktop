@@ -1992,5 +1992,41 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>usb_sync_inconsistency_restored</source>
         <translation>The new sync data could not be applied due to inconsistency. Your wallet has been safely restored to its previous state.</translation>
     </message>
+    <message>
+        <source>outdated_balance_label</source>
+        <translation>(Balance may be outdated)</translation>
+    </message>
+    <message>
+        <source>usb_sync_info_label</source>
+        <translation>Last synced at {0}</translation>
+    </message>
+    <message>
+    <source>load_wallet_prompt</source>
+    <translation>Load wallet?</translation>
+    </message>
+    <message>
+        <source>confirm_usb_load_wallet</source>
+        <translation>A wallet backup was found on the connected USB. Would you like to load it?</translation>
+    </message>
+    <message>
+        <source>device_master_fingerprint</source>
+        <translation>Selected device master fingerprint:</translation>
+    </message>
+    <message>
+        <source>load_wallet</source>
+        <translation>Load wallet</translation>
+    </message>
+    <message>
+        <source>data_sync_warning</source>
+        <translation>Please make sure both your online and offline wallets are up to date before broadcasting this transaction.</translation>
+    </message>
+    <message>
+        <source>sync_confirmation_checkbox_message</source>
+        <translation>I confirm both wallets are synced and up to date</translation>
+    </message>
+    <message>
+        <source>usb_sync_no_sync_needed</source>
+        <translation>No sync needed - data is up to date</translation>
+    </message>
 </context>
 </TS>

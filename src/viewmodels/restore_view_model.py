@@ -15,6 +15,7 @@ from src.model.common_operation_model import KeyringDialogModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletSecurityType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -74,7 +75,7 @@ class RestoreViewModel(QObject, ThreadManager):
             network = get_bitcoin_network_from_enum(
                 SettingRepository.get_wallet_network(),
             )
-            if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
                 self._store_hardware_wallet_data()
             else:
                 self._store_software_wallet_data()
@@ -90,13 +91,25 @@ class RestoreViewModel(QObject, ThreadManager):
                 SettingRepository.set_keyring_status(status=False)
                 self.forward_to_fungibles_page()
             else:
-                keyring_warning_dialog = KeyringErrorDialog(
-                    KeyringDialogModel(
-                        mnemonic=self.mnemonic,
-                        password=self.password,
-                        navigate_to=self.forward_to_fungibles_page,
-                    ),
-                )
+                if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET \
+                        or SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
+                    keyring_warning_dialog = KeyringErrorDialog(
+                        KeyringDialogModel(
+                            xpub_vanilla=self.xpub_vanilla,
+                            xpub_colored=self.xpub_colored,
+                            master_fingerprint=self.fingerprint,
+                            password=self.password,
+                            navigate_to=self.forward_to_fungibles_page,
+                        ),
+                    )
+                else:
+                    keyring_warning_dialog = KeyringErrorDialog(
+                        KeyringDialogModel(
+                            mnemonic=self.mnemonic,
+                            password=self.password,
+                            navigate_to=self.forward_to_fungibles_page,
+                        ),
+                    )
                 keyring_warning_dialog.exec()
         else:
             self.message.emit(

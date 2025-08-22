@@ -44,6 +44,7 @@ from src.utils.build_app_path import app_paths
 from src.utils.constant import APP_NAME
 from src.utils.constant import BITCOIN_EXPLORER_URL
 from src.utils.constant import DEFAULT_LOCALE
+from src.utils.constant import EPOCH_TIME
 from src.utils.constant import FAST_TRANSACTION_FEE_BLOCKS
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MAX_ISSUE_AMOUNT
@@ -54,6 +55,7 @@ from src.utils.error_message import ERROR_SAVE_LOGS
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_COPY_MESSAGE
 from src.utils.info_message import INFO_LOG_SAVE_DESCRIPTION
+from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.version import __version__
 from src.views.components.toast import ToastManager
@@ -585,3 +587,17 @@ def get_current_wallet_mode_config() -> WalletModeConfig:
     return WalletModeConfiguration.get_mode_config(
         wallet_type, security_type, entry_type, storage_type,
     )
+
+
+def format_epoch_time() -> str | None:
+    """Format an epoch timestamp into 'dd/mm/YYYY hh:mm AM/PM' string."""
+    try:
+        local_store.refresh_file()
+        epoch_time = local_store.get_value(EPOCH_TIME)
+        if epoch_time is None:
+            return None
+        epoch_int = int(epoch_time)
+        dt = datetime.fromtimestamp(epoch_int)
+        return dt.strftime('%d/%m/%Y %I:%M %p')
+    except Exception:
+        return 'Invalid epoch'

@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-statements
 """
 USB sync dialog for selecting USB drives and confirming sync operations.
 
@@ -6,6 +6,8 @@ This module provides a dialog interface for USB synchronization,
 allowing users to select from available USB drives and confirm sync operations.
 """
 from __future__ import annotations
+
+import os
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
@@ -19,6 +21,8 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletEntryType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.usb_detector import USBDetector
@@ -49,6 +53,7 @@ class USBSyncDialog(QDialog):
         self.selected_drive = None
         self.usb_detector = USBDetector()
         self.usb_row_layout = None
+        self.fingerprint_row_layout = None
 
         self.blur_effect = QGraphicsBlurEffect()
         self.blur_effect.setBlurRadius(10)
@@ -76,6 +81,11 @@ class USBSyncDialog(QDialog):
         self.drive_combobox = QComboBox(self)
         self.drive_combobox.setObjectName('drive_combobox')
         self.drive_combobox.hide()
+        # Master fingerprint widgets
+        self.fingerprint_label = QLabel(self)
+        self.fingerprint_label.setObjectName('fingerprint_label')
+        self.fingerprint_value_label = QLabel(self)
+        self.fingerprint_value_label.setObjectName('fingerprint_value_label')
         dialog_layout.addWidget(self.title_label)
 
         # Message label
@@ -85,6 +95,9 @@ class USBSyncDialog(QDialog):
         dialog_layout.addWidget(self.message_label)
 
         if self.usb_drives:
+            if SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD:
+                self.fingerprint_row_layout = self._create_fingerprint_row()
+                dialog_layout.addLayout(self.fingerprint_row_layout)
             self.usb_row_layout = self._create_usb_selection_row()
             dialog_layout.addLayout(self.usb_row_layout)
 
@@ -110,7 +123,7 @@ class USBSyncDialog(QDialog):
     def _create_usb_selection_row(self) -> QHBoxLayout:
         """Create and return a USB drive selection layout."""
         usb_row_layout = QHBoxLayout()
-        usb_row_layout.setContentsMargins(6, 0, 6, 0)
+        usb_row_layout.setContentsMargins(6, 5, 6, 5)
         usb_row_layout.setSpacing(5)
 
         self.usb_name_label.setText(
@@ -144,6 +157,27 @@ class USBSyncDialog(QDialog):
 
         return usb_row_layout
 
+    def _create_fingerprint_row(self) -> QHBoxLayout:
+        """Create and return a master fingerprint row with a static value label."""
+        fp_row_layout = QHBoxLayout()
+        fp_row_layout.setContentsMargins(6, 0, 6, 0)
+        fp_row_layout.setSpacing(5)
+
+        # Label
+        self.fingerprint_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'device_master_fingerprint', None,
+            ),
+        )
+        self.fingerprint_label.setMinimumWidth(90)
+        fp_row_layout.addWidget(self.fingerprint_label)
+
+        # Value label
+        self.refresh_fingerprint_value()
+        fp_row_layout.addWidget(self.fingerprint_value_label, 1)
+
+        return fp_row_layout
+
     def check_usb_devices(self):
         """Check for USB devices and update UI if needed."""
         try:
@@ -166,10 +200,22 @@ class USBSyncDialog(QDialog):
             self.usb_row_layout.deleteLater()
             self.usb_row_layout = None
 
+        # Remove fingerprint row if exists
+        if self.fingerprint_row_layout:
+            while self.fingerprint_row_layout.count():
+                item = self.fingerprint_row_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+            self.fingerprint_row_layout.deleteLater()
+            self.fingerprint_row_layout = None
+
         dialog_layout = self.layout()
         if dialog_layout and self.usb_drives:
             self.usb_row_layout = self._create_usb_selection_row()
             dialog_layout.insertLayout(2, self.usb_row_layout)
+            # Insert fingerprint row just below USB selection row
+            self.fingerprint_row_layout = self._create_fingerprint_row()
+            dialog_layout.insertLayout(3, self.fingerprint_row_layout)
 
         self.retranslate_ui()
 
@@ -177,6 +223,24 @@ class USBSyncDialog(QDialog):
         """Set up signal connections for UI elements."""
         self.continue_button.clicked.connect(self.accept)
         self.cancel_button.clicked.connect(self.reject)
+        # Refresh fingerprint value when drive selection changes
+        if hasattr(self, 'drive_combobox'):
+            self.drive_combobox.currentIndexChanged.connect(
+                self.refresh_fingerprint_value,
+            )
+
+    def refresh_fingerprint_value(self):
+        """Update the fingerprint value label based on currently selected drive."""
+        selected_index = 0
+        if self.usb_drives and len(self.usb_drives) > 1 and hasattr(self, 'drive_combobox'):
+            selected_index = max(0, self.drive_combobox.currentIndex())
+        if self.usb_drives and 0 <= selected_index < len(self.usb_drives):
+            drive = self.usb_drives[selected_index]
+            fingerprints = self.list_usb_zip_files(drive)
+            value = fingerprints[0] if fingerprints else ''
+        else:
+            value = ''
+        self.fingerprint_value_label.setText(value)
 
     def retranslate_ui(self):
         """Retranslate UI elements with localized text."""
@@ -235,6 +299,22 @@ class USBSyncDialog(QDialog):
             if current_index >= 0:
                 return self.usb_drives[current_index]
         return None
+
+    def list_usb_zip_files(self, usb_drive: USBDrive) -> list[str]:
+        """List all wallet ZIP files on the USB (excluding *_temp.zip)."""
+        try:
+            if not usb_drive or not usb_drive.path:
+                return []
+
+            files = []
+            for f in os.listdir(usb_drive.path):
+                if f.endswith('.zip') and not f.endswith('_temp.zip'):
+                    files.append(os.path.splitext(f)[0])
+
+            return files
+        except Exception as exc:
+            print('Error listing USB zip files: %s', exc)
+            return []
 
     def showEvent(self, event):  # pylint:disable=invalid-name
         """Apply the blur effect to the parent widget when the dialog is shown."""

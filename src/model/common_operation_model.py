@@ -137,6 +137,7 @@ class ReceiveAssetModel(BaseModel):
     psbt: str | None = None
     close_button_navigation: object | None = None
 
+
 class USBDrive(BaseModel):
     """Represents a USB drive with its properties."""
     name: str
@@ -150,10 +151,7 @@ class WalletModePrivilege(BaseModel):
     """
     can_send_transactions: bool
     can_receive_transactions: bool
-    can_view_balance: bool
     can_create_assets: bool
-    can_manage_assets: bool
-    can_use_hardware_wallet: bool
     can_backup_wallet: bool
     can_export_psbt: bool
     can_receive_asset: bool

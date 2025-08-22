@@ -7,7 +7,8 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QFrame
+from PySide6.QtWidgets import QDialog
+from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
@@ -21,15 +22,21 @@ import src.resources_rc
 from accessible_constant import CREATE_BUTTON
 from accessible_constant import RESTORE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
+from src.model.common_operation_model import KeyringDialogModel
+from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
+from src.utils.usb_detector import USBDetector
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
+from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
+from src.views.components.usb_sync_dialog import USBSyncDialog
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.views.components.watch_only_dialog import WatchOnlyDialog
 from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
@@ -44,6 +51,7 @@ class WelcomeWidget(QWidget):
             load_stylesheet('views/qss/welcome_style.qss'),
         )
         self._view_model: MainViewModel = view_model
+        self.usb_detector = USBDetector()
         self.is_load_wallet = SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD
         self.is_watch_only_wallet = SettingRepository.get_wallet_security_type(
         ) == WalletSecurityType.WATCH_ONLY
@@ -183,6 +191,7 @@ class WelcomeWidget(QWidget):
         self.wallet_logo = WalletLogoFrame()
         self.grid_layout_welcome.addWidget(self.wallet_logo, 0, 0, 1, 2)
 
+        self.__restore_wallet_loading_translucent_screen = None
         self.retranslate_ui()
         self.setup_ui_connection()
 
@@ -204,6 +213,15 @@ class WelcomeWidget(QWidget):
         )
         self._view_model.restore_view_model.message.connect(
             self.handle_message,
+        )
+        self._view_model.welcome_view_model.restore_process_failed.connect(
+            self.hide_loading_screen,
+        )
+        self._view_model.welcome_view_model.restore_process_success.connect(
+            self.hide_loading_screen,
+        )
+        self._view_model.welcome_view_model.restore_button_clicked.connect(
+            self.show_loading_screen,
         )
 
     def retranslate_ui(self):
@@ -262,13 +280,54 @@ class WelcomeWidget(QWidget):
 
     def restore_wallet(self):
         """This method handles update button status."""
-        blur_effect = QGraphicsBlurEffect()
-        blur_effect.setBlurRadius(10)
-        self.setGraphicsEffect(blur_effect)
-        dialog = RestoreMnemonicWidget(
-            view_model=self._view_model, parent=self,
-        )
-        dialog.exec()
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+            usb_drives = self.usb_detector.detect_usb_drives()
+            dialog = USBSyncDialog(usb_drives, self)
+            dialog.title_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'load_wallet_prompt', None,
+                ),
+            )
+            dialog.message_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'confirm_usb_load_wallet', None,
+                ),
+            )
+            dialog.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'load_wallet', None,
+                ),
+            )
+            dialog.resize(400, 235)
+            if dialog.exec() == QDialog.Accepted:
+                selected_drive = dialog.get_selected_drive()
+                selected_wallet = dialog.list_usb_zip_files(selected_drive)
+                if selected_drive:
+                    blur_effect = QGraphicsBlurEffect()
+                    blur_effect.setBlurRadius(10)
+                    self.setGraphicsEffect(blur_effect)
+                    dialog = RestoreMnemonicWidget(
+                        view_model=self._view_model, parent=self, origin_page='welcome_page',
+                    )
+                    data = KeyringDialogModel(
+                        mnemonic=dialog.mnemonic_input.text(),
+                        xpub_vanilla=dialog.xpub_vanilla_input.text(),
+                        xpub_colored=dialog.xpub_colored_input.text(),
+                        master_fingerprint=dialog.fingerprint_input.text(),
+                        password=dialog.password_input.text(),
+                    )
+                    if dialog.exec() == QDialog.Accepted:
+                        self._view_model.welcome_view_model.restore_offline_wallet(
+                            selected_drive, selected_wallet[0], data,
+                        )
+        else:
+            blur_effect = QGraphicsBlurEffect()
+            blur_effect.setBlurRadius(10)
+            self.setGraphicsEffect(blur_effect)
+            dialog = RestoreMnemonicWidget(
+                view_model=self._view_model, parent=self,
+            )
+            dialog.exec()
 
     def update_loading_state(self, is_loading: bool):
         """
@@ -299,7 +358,25 @@ class WelcomeWidget(QWidget):
             self.setGraphicsEffect(blur)
             watch_only_dialog = WatchOnlyDialog(parent=self)
             result = watch_only_dialog.exec()
-            self.setGraphicsEffect(None)  # Always remove blur after dialog closes
+            # Always remove blur after dialog closes
+            self.setGraphicsEffect(None)
             if result != QDialog.Accepted:
                 return  # Stop if dialog was not accepted
         self._view_model.welcome_view_model.on_create_click()
+
+    def show_loading_screen(self):
+        """Handle logic when sync process started."""
+        self.__restore_wallet_loading_translucent_screen = LoadingTranslucentScreen(
+            parent=self.window(), description_text='Restoring', dot_animation=True, loader_type=LoaderDisplayModel.FULL_SCREEN,
+        )
+        self.__restore_wallet_loading_translucent_screen.make_parent_disabled_during_loading(
+            True,
+        )
+        self.__restore_wallet_loading_translucent_screen.start()
+
+    def hide_loading_screen(self):
+        """Handle logic when sync process ended."""
+        self.__restore_wallet_loading_translucent_screen.stop()
+        self.__restore_wallet_loading_translucent_screen.make_parent_disabled_during_loading(
+            False,
+        )

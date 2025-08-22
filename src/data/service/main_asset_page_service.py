@@ -54,27 +54,26 @@ class MainAssetPageDataService:
             )
             is_offline_wallet = SettingRepository.get_wallet_type(
             ) == WalletType.OFFLINE_TYPE_WALLET
+
+            btc_balance: Balance
             if is_offline_wallet:
                 cache = Cache.get_cache_session()
-                btc_balance, _ = cache.fetch_cache(
-                    key='mainassetviewmodel_get_asset',
-                )
-                if not btc_balance:
-                    btc_balance = BalanceResponseModel(
-                        vanilla=Balance(
-                            settled=0, future=0, spendable=0,
-                        ), colored=Balance(settled=0, future=0, spendable=0),
+                cached_balance: BalanceResponseModel | None = None
+                if cache is not None:
+                    cached_balance, _ = cache.fetch_cache(
+                        key='mainassetviewmodel_get_asset',
                     )
+                if cached_balance is None:
+                    default_balance_response = BalanceResponseModel(
+                        vanilla=Balance(settled=0, future=0, spendable=0),
+                        colored=Balance(settled=0, future=0, spendable=0),
+                    )
+                    btc_balance = default_balance_response.vanilla
                 else:
-                    btc_balance = btc_balance.balance
+                    btc_balance = cached_balance.vanilla.balance
             else:
                 RgbRepository.refresh_transfer()
-                btc_balance: BalanceResponseModel = BtcRepository.get_btc_balance()
-                cache = Cache.get_cache_session()
-                balance, _ = cache.fetch_cache(
-                    key='mainassetviewmodel_get_asset',
-                )
-                print(balance.balance.vanilla)
+                btc_balance = BtcRepository.get_btc_balance().vanilla
 
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
             btc_ticker: str = main_asset_page_helper.get_offline_asset_ticker(
@@ -114,7 +113,7 @@ class MainAssetPageDataService:
                 uda=asset_detail.uda or [],
                 vanilla=OfflineAsset(
                     ticker=btc_ticker,
-                    balance=btc_balance.vanilla,
+                    balance=btc_balance,
                     name=btc_name,
                 ),
             )

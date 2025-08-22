@@ -32,9 +32,10 @@ from accessible_constant import SPECIFY_RGB_PROXY_URL
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigurableCardModel
 from src.model.common_operation_model import KeyringDialogModel
-from src.model.enums.enums_model import KeyStorageType, WalletType
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletType
 from src.model.setting_model import SettingPageLoadModel
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -386,7 +387,8 @@ class SettingsWidget(QWidget):
         ) == WalletSecurityType.WATCH_ONLY
         self.is_hardware_wallet = SettingRepository.get_key_storage_type(
         ) == KeyStorageType.HARDWARE_WALLET
-        self.is_offline_wallet = SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
 
         # Hide frames if watch-only wallet
         self.imp_operation_frame.setVisible(
@@ -653,7 +655,7 @@ class SettingsWidget(QWidget):
             network: NetworkEnumModel = SettingRepository.get_wallet_network()
             password: str = get_value(WALLET_PASSWORD_KEY, network.value)
 
-            if self.is_watch_only or self.is_hardware_wallet or self.is_offline_wallet:
+            if self.is_watch_only or self.is_hardware_wallet:
                 # For watch-only wallets, get xpubs and fingerprint
                 account_xpub_vanilla = local_store.get_value(
                     ACCOUNT_XPUB_VANILLA,
