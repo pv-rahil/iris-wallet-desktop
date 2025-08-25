@@ -50,6 +50,7 @@ class ReceiveAssetWidget(QWidget):
         self.address_info = params.address_info
         self.page_name = params.page_name
         self.psbt = params.psbt
+        self.is_signed = params.is_signed
         self.close_button_navigation = params.close_button_navigation
         self.get_receive_address = None
         self.receive_asset_grid_layout = QGridLayout(self)
@@ -252,11 +253,18 @@ class ReceiveAssetWidget(QWidget):
     def retranslate_ui(self):
         """Retranslate the UI elements."""
         if self.psbt:
-            self.asset_title.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signed_transaction', None,
-                ),
-            )
+            if self.is_signed:
+                self.asset_title.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signed_transaction', None,
+                    ),
+                )
+            else:
+                self.asset_title.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'unsigned_transaction', None,
+                    ),
+                )
         else:
             self.asset_title.setText(
                 QCoreApplication.translate(

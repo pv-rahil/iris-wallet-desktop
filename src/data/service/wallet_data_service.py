@@ -5,13 +5,16 @@ before syncing wallet -> USB, so the offline wallet can later read it.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import pickle
 import sqlite3
 import threading
 import time
 
-from src.data.repository.btc_repository import BtcRepository
+from rgb_lib import Balance
+
+from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import TransactionListResponse
@@ -66,15 +69,43 @@ class WalletDataService:
             updated_at INTEGER
         )
         """
+        create_psbt_table_query = """
+        CREATE TABLE IF NOT EXISTS psbt (
+            id TEXT PRIMARY KEY,           -- sha256 of PSBT base64
+            psbt TEXT NOT NULL,            -- PSBT in base64
+            signed INTEGER NOT NULL        -- 0 = unsigned, 1 = signed
+        )
+        """
         with self._db_lock:
             try:
                 with self.conn:
                     self.conn.execute(create_table_query)
+                    self.conn.execute(create_psbt_table_query)
+                    # Migrate legacy psbt table that had created_at column
+                    try:
+                        cur = self.conn.execute('PRAGMA table_info(psbt)')
+                        cols = [r[1] for r in cur.fetchall()]
+                        if 'created_at' in cols:
+                            # Perform migration to drop created_at
+                            self.conn.execute(
+                                'CREATE TABLE IF NOT EXISTS psbt_new (id TEXT PRIMARY KEY, psbt TEXT NOT NULL, signed INTEGER NOT NULL)',
+                            )
+                            self.conn.execute(
+                                'INSERT OR REPLACE INTO psbt_new (id, psbt, signed) SELECT id, psbt, signed FROM psbt',
+                            )
+                            self.conn.execute('DROP TABLE psbt')
+                            self.conn.execute(
+                                'ALTER TABLE psbt_new RENAME TO psbt',
+                            )
+                    except sqlite3.Error:
+                        # If pragma fails, ignore; table will be used as-is
+                        pass
                     logger.info('Wallet-data table ensured to exist.')
             except sqlite3.Error as exc:
                 logger.error(
                     'Exception occur in wallet-data: %s, Message: %s', type(
-                        exc).__name__, str(exc),
+                        exc,
+                    ).__name__, str(exc),
                 )
                 raise
 
@@ -93,9 +124,9 @@ class WalletDataService:
             self._ensure_dir_and_db()
 
             # Fetch latest from repositories
-            balance_resp = BtcRepository.get_btc_balance()
-            tx_list_resp = BtcRepository.list_transactions()
-            unspents_resp = BtcRepository.list_unspents(
+            balance_resp = colored_wallet.wallet.get_btc_balance()
+            tx_list_resp = colored_wallet.wallet.list_transactions()
+            unspents_resp = colored_wallet.wallet.list_unspents(
                 UnspentListRequestModel(settled_only=False, skip_sync=False),
             )
 
@@ -140,13 +171,112 @@ class WalletDataService:
                 return None
 
     def get_btc_balance(self) -> BalanceResponseModel:
-        return self._fetch_data(self.BALANCE_KEY)
+        data = self._fetch_data(self.BALANCE_KEY)
+        if data is not None:
+            return data
+        default_balance = Balance(settled=0, future=0, spendable=0)
+        return BalanceResponseModel(vanilla=default_balance, colored=default_balance)
 
     def list_transactions(self) -> TransactionListResponse:
-        return self._fetch_data(self.TRANSACTIONS_KEY)
+        data = self._fetch_data(self.TRANSACTIONS_KEY)
+        if data is not None:
+            return data
+        return TransactionListResponse(transactions=[])
 
     def list_unspents(self) -> UnspentsListResponseModel:
-        return self._fetch_data(self.UNSPENTS_KEY)
+        data = self._fetch_data(self.UNSPENTS_KEY)
+        if data is not None:
+            return data
+        return UnspentsListResponseModel(unspents=[])
+
+    @staticmethod
+    def _psbt_id(psbt_base64: str) -> str:
+        """Deterministic id for a PSBT payload (sha256 of base64 string)."""
+        return hashlib.sha256(psbt_base64.encode('utf-8')).hexdigest()
+
+    def add_psbt(self, psbt_base64: str, signed: bool = False) -> str:
+        """Insert or replace a PSBT. Returns its id. Minimal fields only."""
+        self._ensure_dir_and_db()
+        psbt_id = self._psbt_id(psbt_base64)
+        with self._db_lock:
+            try:
+                with self.conn:
+                    self.conn.execute(
+                        'INSERT OR REPLACE INTO psbt (id, psbt, signed) VALUES (?, ?, ?)',
+                        (psbt_id, psbt_base64, 1 if signed else 0),
+                    )
+                return psbt_id
+            except sqlite3.Error as exc:
+                logger.error('WalletDataService: add_psbt failed: %s', exc)
+                raise
+
+    def mark_psbt_signed(self, unsigned_psbt_base64: str, signed_psbt_base64: str) -> str:
+        """Replace an unsigned PSBT with its signed version.
+        Deletes only that unsigned PSBT and inserts the signed one.
+        Returns the new signed PSBT id.
+        """
+        self._ensure_dir_and_db()
+        unsigned_id = self._psbt_id(unsigned_psbt_base64)
+        signed_id = self._psbt_id(signed_psbt_base64)
+        with self._db_lock:
+            try:
+                with self.conn:
+                    self.conn.execute(
+                        'DELETE FROM psbt WHERE id = ?', (unsigned_id,),
+                    )
+                    self.conn.execute(
+                        'INSERT OR REPLACE INTO psbt (id, psbt, signed) VALUES (?, ?, ?)',
+                        (signed_id, signed_psbt_base64, 1),
+                    )
+                return signed_id
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: mark_psbt_signed failed: %s', exc,
+                )
+                raise
+
+    def delete_psbt(self, psbt_base64: str) -> bool:
+        """Delete only the targeted PSBT (by content).
+        Returns True if a row was deleted.
+        """
+        self._ensure_dir_and_db()
+        psbt_id = self._psbt_id(psbt_base64)
+        with self._db_lock:
+            try:
+                with self.conn:
+                    cur = self.conn.execute(
+                        'DELETE FROM psbt WHERE id = ?', (psbt_id,),
+                    )
+                return cur.rowcount > 0
+            except sqlite3.Error as exc:
+                logger.error('WalletDataService: delete_psbt failed: %s', exc)
+                raise
+
+    def list_psbts(self, signed: bool | None = None) -> list[dict]:
+        """List psbt with optional signed filter. Returns minimal info."""
+        self._ensure_dir_and_db()
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                if signed is None:
+                    cur.execute('SELECT id, psbt, signed FROM psbt')
+                else:
+                    cur.execute(
+                        'SELECT id, psbt, signed FROM psbt WHERE signed = ?',
+                        (1 if signed else 0,),
+                    )
+                rows = cur.fetchall()
+                return [
+                    {
+                        'id': r[0],
+                        'psbt': r[1],
+                        'signed': bool(r[2]),
+                    }
+                    for r in rows
+                ]
+            except sqlite3.Error as exc:
+                logger.error('WalletDataService: list_psbts failed: %s', exc)
+                raise
 
 
 # Global accessor for singleton instance

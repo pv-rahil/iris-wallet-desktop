@@ -14,9 +14,10 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import SendBtcRequestModel
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import KeyStorageType, WalletType
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import WalletType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
@@ -32,7 +33,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
     """This class represents the activities of the send bitcoin page."""
     send_button_clicked = Signal(bool)
     hw_dialog_update = Signal(str, Enum)
-    finalized_psbt = Signal(str)
+    unsigned_psbt = Signal(str)
 
     def __init__(self, page_navigation):
         super().__init__()
@@ -149,14 +150,17 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         Run signing and finalization in a background thread.
         """
         self.send_button_clicked.emit(True)
-        self.run_in_thread(
-            CommonOperationRepository.sign_and_finalize_psbt,
-            {
-                'args': [unsigned_psbt],
-                'callback': self.on_psbt_signed_and_finalized,
-                'error_callback': self.on_error,
-            },
-        )
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+            self.unsigned_psbt.emit(unsigned_psbt)
+        else:
+            self.run_in_thread(
+                CommonOperationRepository.sign_and_finalize_psbt,
+                {
+                    'args': [unsigned_psbt],
+                    'callback': self.on_psbt_signed_and_finalized,
+                    'error_callback': self.on_error,
+                },
+            )
 
     def on_psbt_signed_and_finalized(self, finalized_psbt: str):
         """
@@ -164,14 +168,12 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         Now broadcast the transaction.
         """
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
-        is_offline = SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
-        if is_hw and not is_offline:
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+        if is_hw and is_online:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
             )
             self.send_btc_end(finalized_psbt)
-        else:
-            self.finalized_psbt.emit(finalized_psbt)
 
     def send_btc_end(self, signed_psbt: str, skip_sync: bool = False):
         """

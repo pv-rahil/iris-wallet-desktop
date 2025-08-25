@@ -255,7 +255,6 @@ class USBSyncManager:
     def sync_to_usb(self):
         """Package local wallet data and write/update it on the USB drive."""
         try:
-            # Refresh wallet-data (SQLite) only for ONLINE wallets prior to packaging
             try:
                 if SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
                     wallet_data_service.refresh_wallet_data()
@@ -543,7 +542,6 @@ class USBSyncManager:
 
             with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
                 self._add_wallet_folder_to_zip(z, app_paths.app_path)
-                # Include wallet_data directory (instead of cache)
                 wallet_data_path = app_paths.wallet_data_folder_path
                 if os.path.exists(wallet_data_path):
                     for root, _, files in os.walk(wallet_data_path):
@@ -560,16 +558,12 @@ class USBSyncManager:
                     with open(app_paths.config_file_path, encoding='utf-8') as cfg:
                         lines = cfg.read().splitlines()
                     epoch_time = str(int(time.time()))
-
-                    for i, line in enumerate(lines):
-                        if line.startswith('sync_index='):
-                            lines[i] = f"sync_index={index}"
-                        else:
-                            lines.append(f"sync_index={index}")
-                        if line.startswith('epoch_time='):
-                            lines[i] = f"epoch_time={epoch_time}"
-                        else:
-                            lines.append(f"epoch_time={epoch_time}")
+                    lines = self._upsert_ini_line(
+                        lines, 'sync_index', str(index),
+                    )
+                    lines = self._upsert_ini_line(
+                        lines, 'epoch_time', epoch_time,
+                    )
 
                     z.writestr(
                         os.path.basename(
@@ -742,3 +736,14 @@ class USBSyncManager:
         except Exception as exc:
             logger.error('Error calculating USB checksum: %s', exc)
             return hashlib.sha256(b'error').hexdigest()
+
+    def _upsert_ini_line(self, lines: list[str], key: str, value: str) -> list[str]:
+        """Replace 'key=' line if present; otherwise append it exactly once."""
+        prefix = f"{key}="
+        for i, line in enumerate(lines):
+            if line.startswith(prefix):
+                lines[i] = f"{key}={value}"
+                break
+        else:
+            lines.append(f"{key}={value}")
+        return lines

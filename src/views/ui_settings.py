@@ -392,10 +392,12 @@ class SettingsWidget(QWidget):
 
         # Hide frames if watch-only wallet
         self.imp_operation_frame.setVisible(
-            not self.is_watch_only and not self.is_hardware_wallet,
+            not self.is_watch_only and not self.is_hardware_wallet and not self.is_offline_wallet,
         )
-        self.set_fee_rate_frame.setVisible(not self.is_watch_only)
-        self.set_minimum_confirmation_frame.setVisible(not self.is_watch_only)
+        self.set_fee_rate_frame.setVisible(not self.is_offline_wallet)
+        self.set_minimum_confirmation_frame.setVisible(
+            not self.is_offline_wallet,
+        )
 
         stack_1_widgets = [
             self.ask_auth_login_frame,
@@ -403,7 +405,7 @@ class SettingsWidget(QWidget):
             self.keyring_storage_frame,
         ]
 
-        if not self.is_watch_only and not self.is_hardware_wallet:
+        if not self.is_watch_only and not self.is_hardware_wallet and not self.is_offline_wallet:
             stack_1_widgets.insert(0, self.imp_operation_frame)
 
         for widget in stack_1_widgets:
@@ -416,14 +418,13 @@ class SettingsWidget(QWidget):
         )
 
         # Initialize stack_2_widgets based on wallet type
-        stack_2_widgets = [
-            self.set_indexer_url_frame,
-            self.set_proxy_endpoint_frame,
-        ]
+        stack_2_widgets = []
 
-        if not self.is_watch_only:
+        if not self.is_offline_wallet:
             stack_2_widgets.insert(0, self.set_fee_rate_frame)
             stack_2_widgets.insert(1, self.set_minimum_confirmation_frame)
+            stack_2_widgets.insert(2, self.set_indexer_url_frame)
+            stack_2_widgets.insert(3, self.set_proxy_endpoint_frame)
 
         for widget in stack_2_widgets:
             self.stack_2_vertical_layout.addWidget(widget, 0, Qt.AlignLeft)
@@ -606,10 +607,12 @@ class SettingsWidget(QWidget):
         """Handle on page load event callback"""
         # Hide/Show frames based on wallet type
         self.imp_operation_frame.setVisible(
-            not self.is_watch_only and not self.is_hardware_wallet,
+            not self.is_watch_only and not self.is_hardware_wallet and not self.is_offline_wallet,
         )
-        self.set_fee_rate_frame.setVisible(not self.is_watch_only)
-        self.set_minimum_confirmation_frame.setVisible(not self.is_watch_only)
+        self.set_fee_rate_frame.setVisible(not self.is_offline_wallet)
+        self.set_minimum_confirmation_frame.setVisible(
+            not self.is_offline_wallet,
+        )
 
         # Set toggle states
         self.imp_operation_auth_toggle_button.setChecked(

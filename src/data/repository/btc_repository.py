@@ -6,6 +6,7 @@ from rgb_lib import Transaction
 from rgb_lib import Unspent
 
 from src.data.repository.colored_wallet import colored_wallet
+from src.data.service.wallet_data_service import wallet_data_service
 from src.model.btc_model import AddressResponseModel
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import EstimateFeeRequestModel
@@ -93,9 +94,7 @@ class BtcRepository:
                 online=colored_wallet.online, skip_sync=param.skip_sync,
                 address=param.address, amount=param.amount, fee_rate=param.fee_rate,
             )
-            cache = Cache.get_cache_session()
-            if cache is not None:
-                cache.invalidate_cache()
+            wallet_data_service.add_psbt(psbt)
             return psbt
 
     @staticmethod
@@ -106,6 +105,7 @@ class BtcRepository:
                 online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
             )
             cache = Cache.get_cache_session()
+            wallet_data_service.delete_psbt(detail.signed_psbt)
             if cache is not None:
                 cache.invalidate_cache()
             return SendBtcResponseModel(tx_id=data)
@@ -118,9 +118,7 @@ class BtcRepository:
                 online=colored_wallet.online, up_to=param.up_to, num=2, size=param.size, fee_rate=param.fee_rate,
                 skip_sync=param.skip_sync,
             )
-            cache = Cache.get_cache_session()
-            if cache is not None:
-                cache.invalidate_cache()
+            wallet_data_service.add_psbt(psbt)
             return psbt
 
     @staticmethod
@@ -130,6 +128,7 @@ class BtcRepository:
             data: int = colored_wallet.wallet.create_utxos_end(
                 online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
             )
+            wallet_data_service.delete_psbt(detail.signed_psbt)
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()

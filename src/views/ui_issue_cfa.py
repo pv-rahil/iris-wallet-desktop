@@ -14,7 +14,6 @@ from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QFrame
-from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QLineEdit
@@ -32,7 +31,6 @@ from accessible_constant import CFA_UPLOAD_FILE_BUTTON
 from accessible_constant import ISSUE_CFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_CFA_BUTTON
 from src.model.common_operation_model import ReceiveAssetModel
-from src.model.enums.enums_model import PsbtStatus
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import resize_image
@@ -393,9 +391,6 @@ class IssueCFAWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_required.connect(
             self.handle_cfa_utxo_required,
         )
-        self._view_model.utxo_creation_view_model.psbt_finalized.connect(
-            self.show_cfa_psbt_page,
-        )
         self._view_model.issue_cfa_asset_view_model.utxo_creation_started.connect(
             self._view_model.utxo_creation_view_model.create_utxos_with_hardware_wallet,
         )
@@ -491,7 +486,7 @@ class IssueCFAWidget(QWidget):
             if not cfa_hw_dialog.isVisible():
                 cfa_hw_dialog.show()
 
-    def handle_cfa_utxo_created(self,status:bool):
+    def handle_cfa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation."""
         if status:
             self._view_model.utxo_creation_view_model.utxo_created.disconnect()
@@ -502,7 +497,7 @@ class IssueCFAWidget(QWidget):
                 cfa_hw_dialog.accept()
             self.on_issue_cfa()
 
-    def handle_cfa_utxo_required(self, status:bool):
+    def handle_cfa_utxo_required(self, status: bool):
         """Shows the dialog for utxo require"""
         if status:
             self._view_model.utxo_creation_view_model.utxo_required.disconnect()
@@ -526,7 +521,6 @@ class IssueCFAWidget(QWidget):
     def show_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         if psbt:
-            self._view_model.utxo_creation_view_model.psbt_finalized.disconnect()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='CFA page',

@@ -40,6 +40,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import AssetDataModel
@@ -544,7 +545,9 @@ class RGBAssetDetailWidget(QWidget):
             self.__loading_translucent_screen.make_parent_disabled_during_loading(
                 False,
             )
-            self.asset_refresh_button.setDisabled(False)
+            self.asset_refresh_button.setDisabled(
+                not self.config.privileges.can_send_transactions,
+            )
             self.send_asset.setDisabled(
                 not self.config.privileges.can_send_transactions,
             )
@@ -733,7 +736,8 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_detail_frame.transaction_amount.setText(
             self.transfer_amount,
         )
-        if self.transaction_status == TransferStatus.WAITING_COUNTERPARTY:
+        if self.transaction_status == TransferStatus.WAITING_COUNTERPARTY \
+                and SettingRepository.get_wallet_type() != WalletType.OFFLINE_TYPE_WALLET:
             self.transaction_detail_frame.transaction_type.hide()
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#959BAE;font-weight: 600',

@@ -104,7 +104,7 @@ class SendBitcoinWidget(QWidget):
         self._view_model.send_bitcoin_view_model.hw_dialog_update.connect(
             self.handle_send_bitcoin_hw_dialog_update,
         )
-        self._view_model.send_bitcoin_view_model.finalized_psbt.connect(
+        self._view_model.send_bitcoin_view_model.unsigned_psbt.connect(
             self.show_send_bitcoin_psbt_page,
         )
 

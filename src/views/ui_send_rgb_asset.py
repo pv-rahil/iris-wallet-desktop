@@ -123,9 +123,6 @@ class SendRGBAssetWidget(QWidget):
         self._view_model.cfa_view_model.hw_dialog_update.connect(
             self.handle_send_rgb_hw_dialog_update,
         )
-        self._view_model.cfa_view_model.finalized_psbt.connect(
-            self.show_send_rgb_psbt_page,
-        )
         self._view_model.cfa_view_model.unsigned_psbt.connect(
             self.show_send_rgb_psbt_page,
         )

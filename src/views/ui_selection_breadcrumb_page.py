@@ -312,7 +312,7 @@ class SelectionBreadcrumbWidget(QWidget):
             if title == WalletType.OFFLINE_TYPE_WALLET.value:
                 self.current_index = 2
                 SettingRepository.set_wallet_access_type(None)
-                SettingRepository.remove_setting('wallet_security_type')
+                SettingRepository.remove_setting('wallet_access_type')
             else:
                 self.current_index = idx + 1
             self.steps[self.current_index]['widget'].reset_selection()
@@ -420,7 +420,7 @@ class SelectionBreadcrumbWidget(QWidget):
             widget.on_click_frame(widget.params.logo_2_title, False)
             if i == 1:
                 SettingRepository.set_wallet_access_type(None)
-                SettingRepository.remove_setting('wallet_security_type')
+                SettingRepository.remove_setting('wallet_access_type')
             elif i == 2:
                 SettingRepository.set_wallet_entry_type(None)
                 SettingRepository.remove_setting('wallet_entry_type')

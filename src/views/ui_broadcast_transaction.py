@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
 from src.model.enums.enums_model import ToastPreset
+from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
@@ -32,7 +33,6 @@ from src.views.components.buttons import PrimaryButton
 from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-# from src.model.invoices_model import DecodeInvoiceResponseModel
 
 
 class BroadcastTransactionWidget(QWidget):
@@ -55,6 +55,8 @@ class BroadcastTransactionWidget(QWidget):
                 'views/qss/broadcast_transaction_style.qss',
             ),
         )
+        config = get_current_wallet_mode_config()
+        self.priv = config.privileges
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
         self.wallet_logo_frame = WalletLogoFrame(self)
@@ -144,11 +146,13 @@ class BroadcastTransactionWidget(QWidget):
         # Add a label for the method selector
         self.method_selector_label = QLabel(self.broadcast_transaction_widget)
         self.method_selector_label.setObjectName('broadcast_method_label')
+        self.method_selector_label.setVisible(self.priv.can_broadcast_psbt)
 
         # Add the method selector dropdown
         self.horizontal_layout_2 = QHBoxLayout()
         self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
         self.method_selector = QComboBox(self.broadcast_transaction_widget)
+        self.method_selector.setVisible(self.priv.can_broadcast_psbt)
         self.method_selector.addItems([
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset',
@@ -163,9 +167,12 @@ class BroadcastTransactionWidget(QWidget):
         self.method_selector.setCurrentIndex(0)
         self.method_selector.setFixedWidth(300)
         self.method_selector.setFixedHeight(40)
-        self.horizontal_layout_2.addWidget(self.method_selector_label)
-        self.horizontal_layout_2.addWidget(self.method_selector)
-        self.horizontal_layout_2.addStretch(1)  # Keep combobox left-aligned
+        if self.priv.can_broadcast_psbt:
+            self.horizontal_layout_2.addWidget(self.method_selector_label)
+            self.horizontal_layout_2.addWidget(self.method_selector)
+            self.horizontal_layout_2.addStretch(
+                1,
+            )  # Keep combobox left-aligned
         self.vertical_layout.addLayout(self.horizontal_layout_2)
 
         self.horizontal_layout_1 = QHBoxLayout()
@@ -202,7 +209,10 @@ class BroadcastTransactionWidget(QWidget):
         )
         self.broadcast_button = PrimaryButton()
         self.broadcast_button.setMinimumSize(QSize(0, 40))
-        self.broadcast_button.setMaximumSize(QSize(270, 16777215))
+        if self.priv.can_broadcast_psbt:
+            self.broadcast_button.setMaximumSize(QSize(270, 16777215))
+        else:
+            self.broadcast_button.setMaximumSize(QSize(170, 16777215))
         self.broadcast_button_horizontal_layout.addWidget(
             self.broadcast_button,
         )
@@ -259,26 +269,43 @@ class BroadcastTransactionWidget(QWidget):
         """
         Retranslate the UI elements.
         """
-        self.broadcast_transaction_title_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
-            ),
-        )
-        self.broadcast_transaction_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction_label',
-            ),
-        )
-        self.broadcast_button.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
-            ),
-        )
-        self.method_selector_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_broadcast_type',
-            ),
-        )
+        if self.priv.can_broadcast_psbt:
+            self.broadcast_transaction_title_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
+                ),
+            )
+            self.broadcast_transaction_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction_label',
+                ),
+            )
+            self.broadcast_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
+                ),
+            )
+            self.method_selector_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_broadcast_type',
+                ),
+            )
+        else:
+            self.broadcast_transaction_title_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt',
+                ),
+            )
+            self.broadcast_transaction_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_label',
+                ),
+            )
+            self.broadcast_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt',
+                ),
+            )
 
     def send_asset(self):
         """

@@ -14,6 +14,7 @@ from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import USBDrive
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
@@ -129,14 +130,14 @@ class HeaderFrameViewModel(QObject, ThreadManager):
     def handle_sync_success(self, direction: str, retry: bool):
         """Handle sync success after password entry."""
         try:
-            # if SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
-            network = get_bitcoin_network_from_enum(
-                SettingRepository.get_wallet_network(),
-            )
-            indexer_url = get_bitcoin_config(network, '').indexer_url
-            colored_wallet.online_wallet = colored_wallet.wallet.go_online(
-                False, indexer_url,
-            )
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+                network = get_bitcoin_network_from_enum(
+                    SettingRepository.get_wallet_network(),
+                )
+                indexer_url = get_bitcoin_config(network, '').indexer_url
+                colored_wallet.online_wallet = colored_wallet.wallet.go_online(
+                    False, indexer_url,
+                )
             self.sync_process_ended.emit('from_usb')
             if not retry:
                 ToastManager.success(

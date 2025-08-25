@@ -345,9 +345,6 @@ class IssueNIAWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_required.connect(
             self.handle_nia_utxo_required,
         )
-        self._view_model.utxo_creation_view_model.psbt_finalized.connect(
-            self.show_nia_psbt_page,
-        )
         self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
             self.show_nia_psbt_page,
         )
@@ -512,13 +509,12 @@ class IssueNIAWidget(QWidget):
             if not nia_hw_dialog.isVisible():
                 nia_hw_dialog.exec()
 
-    def show_nia_psbt_page(self, psbt):
+    def show_nia_psbt_page(self, psbt, is_signed):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         if psbt:
-            self._view_model.utxo_creation_view_model.psbt_finalized.disconnect()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='NIA page',
-                    address_info='psbt_info', psbt=psbt,
+                    address_info='psbt_info', psbt=psbt, is_signed=is_signed,
                 ),
             )

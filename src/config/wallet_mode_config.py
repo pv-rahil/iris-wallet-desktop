@@ -19,7 +19,7 @@ class WalletModeConfiguration:
     @staticmethod
     def get_mode_config(
         wallet_type: WalletType | None,
-        security_type: WalletAccessType | None,
+        wallet_access_type: WalletAccessType | None,
         entry_type: WalletEntryType | None,
         storage_type: KeyStorageType | None,
     ) -> WalletModeConfig:
@@ -31,7 +31,7 @@ class WalletModeConfiguration:
         # Online Watch Only
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletAccessType.WATCH_ONLY
+            wallet_access_type == WalletAccessType.WATCH_ONLY
         ):
             return WalletModeConfig(
                 mode_name='Online Watch-Only Wallet',
@@ -41,8 +41,9 @@ class WalletModeConfiguration:
                     can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
-                    can_export_psbt=True,
+                    can_broadcast_psbt=True,
                     can_use_faucet=False,
+                    can_sign_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '👁️', 'text': 'View balances & transaction history'},
@@ -63,7 +64,7 @@ class WalletModeConfiguration:
         # Online Create New with Private Key (On Device)
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletAccessType.WITH_PRIVATE_KEY and
+            wallet_access_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.ON_DEVICE and
             entry_type == WalletEntryType.CREATE
         ):
@@ -75,8 +76,9 @@ class WalletModeConfiguration:
                     can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=True,
+                    can_sign_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate new wallet & keys'},
@@ -97,7 +99,7 @@ class WalletModeConfiguration:
         # Online Create New with Hardware Wallet
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletAccessType.WITH_PRIVATE_KEY and
+            wallet_access_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.HARDWARE_WALLET and
             entry_type == WalletEntryType.CREATE
         ):
@@ -109,8 +111,9 @@ class WalletModeConfiguration:
                     can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=True,
+                    can_sign_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Initialize new wallet with hardware device'},
@@ -131,7 +134,7 @@ class WalletModeConfiguration:
         # Online Load Existing with Private Key (On Device)
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletAccessType.WITH_PRIVATE_KEY and
+            wallet_access_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.ON_DEVICE and
             entry_type == WalletEntryType.LOAD
 
@@ -144,8 +147,9 @@ class WalletModeConfiguration:
                     can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=True,
+                    can_sign_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet'},
@@ -167,7 +171,7 @@ class WalletModeConfiguration:
         # Online Load Existing with Hardware Wallet
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletAccessType.WITH_PRIVATE_KEY and
+            wallet_access_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.HARDWARE_WALLET and
             entry_type == WalletEntryType.LOAD
 
@@ -180,8 +184,9 @@ class WalletModeConfiguration:
                     can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=True,
+                    can_sign_psbt=False,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Connect hardware wallet'},
@@ -214,8 +219,9 @@ class WalletModeConfiguration:
                     can_receive_asset=False,
                     can_create_assets=False,
                     can_backup_wallet=False,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=False,
+                    can_sign_psbt=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate offline wallet'},
@@ -248,8 +254,9 @@ class WalletModeConfiguration:
                     can_receive_asset=False,
                     can_create_assets=False,
                     can_backup_wallet=False,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=False,
+                    can_sign_psbt=True,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'New wallet setup using hardware device'},
@@ -286,8 +293,9 @@ class WalletModeConfiguration:
                     can_receive_asset=False,
                     can_create_assets=False,
                     can_backup_wallet=False,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=False,
+                    can_sign_psbt=True,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet offline'},
@@ -325,8 +333,9 @@ class WalletModeConfiguration:
                     can_receive_asset=False,
                     can_create_assets=False,
                     can_backup_wallet=False,
-                    can_export_psbt=False,
+                    can_broadcast_psbt=False,
                     can_use_faucet=False,
+                    can_sign_psbt=True,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Offline hardware connection'},
@@ -355,8 +364,9 @@ class WalletModeConfiguration:
                 can_receive_asset=False,
                 can_create_assets=False,
                 can_backup_wallet=False,
-                can_export_psbt=False,
+                can_broadcast_psbt=False,
                 can_use_faucet=False,
+                can_sign_psbt=True,
             ),
             capabilities=[{'emoji': '❓', 'text': 'Invalid configuration'}],
             limitations=[

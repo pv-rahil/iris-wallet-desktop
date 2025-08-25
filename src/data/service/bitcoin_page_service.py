@@ -7,14 +7,17 @@ from __future__ import annotations
 from datetime import datetime
 
 from src.data.repository.btc_repository import BtcRepository
+from src.data.repository.setting_repository import SettingRepository
 from src.data.service.helpers.bitcoin_page_helper import calculate_transaction_amount
 from src.data.service.helpers.bitcoin_page_helper import get_transaction_status
+from src.data.service.wallet_data_service import wallet_data_service
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import Transaction
 from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import TransactionListWithBalanceResponse
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
+from src.model.enums.enums_model import WalletType
 from src.utils.custom_exception import ServiceOperationException
 from src.utils.handle_exception import handle_exceptions
 
@@ -30,8 +33,14 @@ class BitcoinPageService:
             # For transaction status
             transfer_status: TransferStatusEnumModel | None = None
             transaction_status: TransactionStatusEnumModel | None = None
-            bitcoin_balance: BalanceResponseModel = BtcRepository.get_btc_balance()
-            transaction_list: TransactionListResponse = BtcRepository.list_transactions()
+            bitcoin_balance: BalanceResponseModel | None = None
+            transaction_list: TransactionListResponse | None = None
+            if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+                bitcoin_balance = wallet_data_service.get_btc_balance()
+                transaction_list = wallet_data_service.list_transactions()
+            else:
+                bitcoin_balance = BtcRepository.get_btc_balance()
+                transaction_list = BtcRepository.list_transactions()
             if not transaction_list or not transaction_list.transactions:
                 return TransactionListWithBalanceResponse(transactions=[], balance=bitcoin_balance)
 

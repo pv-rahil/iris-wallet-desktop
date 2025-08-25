@@ -35,9 +35,8 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     """
     hw_dialog_update = Signal(str, object)
     utxo_created = Signal(bool)
-    psbt_finalized = Signal(str)
     utxo_required = Signal(bool)
-    unsigned_psbt = Signal(str)
+    unsigned_psbt = Signal(str, bool)
 
     def __init__(self, parent=None):
         """
@@ -68,9 +67,8 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         self.param = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
-            num=2,
+            num=1,
         )
-        print('i am called')
         self.run_in_thread(
             BtcRepository.create_utxos_begin,
             {
@@ -88,7 +86,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             )
             self.sign_and_finalize_psbt(unsigned_psbt)
         else:
-            self.unsigned_psbt.emit(unsigned_psbt)
+            self.unsigned_psbt.emit(unsigned_psbt, False)
 
     def sign_and_finalize_psbt(self, unsigned_psbt):
         """

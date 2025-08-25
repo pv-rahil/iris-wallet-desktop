@@ -66,7 +66,7 @@ def create_utxos() -> None:
     except Exception as exc:
         if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
                 or wallet_access_type == WalletAccessType.WATCH_ONLY:
-            raise CommonException('NoAvailableUtxos')
+            raise exc
         logger.error(
             'Exception occurred at Decorator: %s, Message: %s',
             type(exc).__name__, str(exc),

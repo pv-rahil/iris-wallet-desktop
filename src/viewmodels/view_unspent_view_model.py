@@ -9,6 +9,7 @@ from rgb_lib import Unspent
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import wallet_data_service
 from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
 from src.model.enums.enums_model import WalletType
@@ -37,16 +38,6 @@ class UnspentListViewModel(QObject, ThreadManager):
             if cache is not None:
                 cache.invalidate_cache()
         self.loading_started.emit(True)
-        is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
-        cached_unspent_list, _ = cache.fetch_cache(
-            key='unspentlistviewmodel_get_unspent_list',
-        )
-        if cached_unspent_list is not None and is_offline_wallet:
-            self.unspent_list = cached_unspent_list
-            self.list_loaded.emit(True)
-            self.loading_finished.emit(False)
-            return
 
         def success(response: UnspentsListResponseModel, is_data_ready=True):
             """This method handles success."""
@@ -66,16 +57,21 @@ class UnspentListViewModel(QObject, ThreadManager):
             )
 
         try:
-            self.run_in_thread(
-                BtcRepository.list_unspents,
-                {
-                    'args': [UnspentListRequestModel(settled_only=False, skip_sync=False)],
-                    'key': 'unspentlistviewmodel_get_unspent_list',
-                    'use_cache': True,
-                    'callback': success,
-                    'error_callback': error,
-                },
-            )
+            if SettingRepository.get_wallet_type(
+            ) == WalletType.OFFLINE_TYPE_WALLET:
+                data = wallet_data_service.list_unspents()
+                success(response=data, is_data_ready=True)
+            else:
+                self.run_in_thread(
+                    BtcRepository.list_unspents,
+                    {
+                        'args': [UnspentListRequestModel(settled_only=False, skip_sync=False)],
+                        'key': 'unspentlistviewmodel_get_unspent_list',
+                        'use_cache': True,
+                        'callback': success,
+                        'error_callback': error,
+                    },
+                )
         except Exception as e:
             self.loading_finished.emit(True)
             ToastManager.error(

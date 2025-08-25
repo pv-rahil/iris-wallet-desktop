@@ -8,7 +8,6 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
 from src.data.repository.btc_repository import BtcRepository
-from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -16,7 +15,6 @@ from src.model.rgb_model import SendAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_BTC_SENT
-from src.utils.info_message import INFO_UTXO_CREATED
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
@@ -63,16 +61,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             type(error).__name__, str(error),
         )
 
-    def finalized_psbt(self, signed_psbt):
-        """finalize psbt"""
-        self.run_in_thread(
-            CommonOperationRepository.sign_and_finalize_psbt,
-            {
-                'args': [signed_psbt],
-                'error_callback': self.on_error,
-            },
-        )
-
     def create_utxos_end(self, signed_psbt: str):
         """
         Broadcast a signed PSBT using the RgbRepository.
@@ -92,7 +80,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
-        ToastManager.success(description=INFO_UTXO_CREATED)
 
     def send_btc_end(self, signed_psbt: str):
         """

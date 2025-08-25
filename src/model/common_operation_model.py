@@ -136,6 +136,7 @@ class ReceiveAssetModel(BaseModel):
     page_name: str
     address_info: str
     psbt: str | None = None
+    is_signed: bool | None = None
     close_button_navigation: object | None = None
 
 
@@ -154,8 +155,9 @@ class WalletModePrivilege(BaseModel):
     can_receive_asset: bool
     can_create_assets: bool
     can_backup_wallet: bool
-    can_export_psbt: bool
+    can_broadcast_psbt: bool
     can_use_faucet: bool
+    can_sign_psbt: bool
 
 
 class WalletModeConfig(BaseModel):

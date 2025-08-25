@@ -56,7 +56,6 @@ class CFAViewModel(QObject, ThreadManager):
     refresh = Signal(bool)
     stop_loading = Signal(bool)
     hw_dialog_update = Signal(str, Enum)
-    finalized_psbt = Signal(str)
     unsigned_psbt = Signal(str)
 
     def __init__(self, page_navigation: Any) -> None:

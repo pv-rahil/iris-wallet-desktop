@@ -10,6 +10,7 @@ from rgb_lib import rgb_lib
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import KeyStorageType
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import wallet_data_service
 from src.model.common_operation_model import BackupRequestModel
 from src.model.common_operation_model import BackupResponseModel
 from src.model.common_operation_model import InitRequestModel
@@ -90,4 +91,5 @@ class CommonOperationRepository:
             finalized_psbt = colored_wallet.wallet.finalize_psbt(
                 signed_psbt=serialized_psbt,
             )
+            wallet_data_service.mark_psbt_signed(unsigned_psbt, finalized_psbt)
             return finalized_psbt

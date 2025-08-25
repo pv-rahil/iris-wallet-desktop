@@ -156,7 +156,7 @@ class Sidebar(QWidget):
 
         self.vertical_layout_1.addLayout(self.vertical_layout)
         self.broadcast_transaction = PrimaryButton()
-        self.broadcast_transaction.setVisible(priv.can_export_psbt)
+        self.broadcast_transaction.setVisible(priv.can_broadcast_psbt)
         self.broadcast_transaction.setMinimumSize(QSize(335, 40))
         self.broadcast_transaction.setMaximumSize(QSize(335, 40))
         self.vertical_layout.addWidget(
@@ -171,6 +171,13 @@ class Sidebar(QWidget):
         self.receive_asset_button.setVisible(priv.can_receive_asset)
         self.vertical_layout.addWidget(
             self.receive_asset_button, 0, Qt.AlignCenter,
+        )
+        self.sign_psbt = PrimaryButton()
+        self.sign_psbt.setMinimumSize(QSize(335, 40))
+        self.sign_psbt.setMaximumSize(QSize(335, 40))
+        self.sign_psbt.setVisible(priv.can_sign_psbt)
+        self.vertical_layout.addWidget(
+            self.sign_psbt, 0, Qt.AlignCenter,
         )
         self.retranslate_ui()
         self.setup_ui_connections()
@@ -209,6 +216,9 @@ class Sidebar(QWidget):
         self.broadcast_transaction.clicked.connect(
             self._view_model.page_navigation.broadcast_transaction_page,
         )
+        self.sign_psbt.clicked.connect(
+            self._view_model.page_navigation.broadcast_transaction_page,
+        )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -239,6 +249,13 @@ class Sidebar(QWidget):
                 None,
             ),
         )
+        self.sign_psbt.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'sign_psbt',
+                None,
+            ),
+        )
 
     def get_checked_button_translation_key(self):
         """
@@ -254,6 +271,7 @@ class Sidebar(QWidget):
             self.settings,
             self.about,
             self.broadcast_transaction,
+            self.sign_psbt,
         ]
         for button in buttons:
             if button.isChecked():
@@ -266,7 +284,8 @@ class Sidebar(QWidget):
         """
         priv = config.privileges
         self.backup.setVisible(priv.can_backup_wallet)
-        self.broadcast_transaction.setVisible(priv.can_export_psbt)
+        self.broadcast_transaction.setVisible(priv.can_broadcast_psbt)
         self.receive_asset_button.setVisible(priv.can_receive_asset)
         self.faucet.setVisible(priv.can_use_faucet)
+        self.sign_psbt.setVisible(priv.can_sign_psbt)
         self.retranslate_ui()

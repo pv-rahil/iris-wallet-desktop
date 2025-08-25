@@ -25,6 +25,7 @@ from accessible_constant import UNSPENT_UTXO_OUTPOINT
 from accessible_constant import UNSPENT_WIDGET
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletType
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import copy_text
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -182,7 +183,9 @@ class ViewUnspentList(QWidget):
         self._view_model.unspent_view_model.loading_finished.connect(
             self.hide_loading_screen,
         )
-        self.show_view_unspent_loading()
+        if SettingRepository.get_wallet_type(
+        ) == WalletType.ONLINE_TYPE_WALLET:
+            self.show_view_unspent_loading()
 
     def trigger_render_and_refresh(self):
         """This method start the render timer and perform the unspent list refresh"""

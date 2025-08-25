@@ -22,8 +22,6 @@ class USBDetector(QObject):
 
     def __init__(self):
         """Initialize the USB detector."""
-        if hasattr(self, 'platform'):  # Already initialized
-            return
 
         super().__init__()
         self.platform = platform.system().lower()
@@ -248,7 +246,7 @@ class USBDetector(QObject):
             ]
             return len(items) == 0
         except (OSError, PermissionError):
-            logger.warning('Cannot access directory: %s', path)
+            logger.error('Cannot access directory: %s', path)
             return False
 
     def is_usb_connected(self) -> bool:

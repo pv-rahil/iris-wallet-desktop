@@ -25,6 +25,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletEntryType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
+from src.utils.logging import logger
 from src.utils.usb_detector import USBDetector
 from src.utils.usb_detector import USBDrive
 from src.views.components.buttons import PrimaryButton
@@ -313,7 +314,7 @@ class USBSyncDialog(QDialog):
 
             return files
         except Exception as exc:
-            print('Error listing USB zip files: %s', exc)
+            logger.error('Error listing USB zip files: %s', exc)
             return []
 
     def showEvent(self, event):  # pylint:disable=invalid-name

@@ -2032,5 +2032,17 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>ledger_command_not_supported</source>
         <translation>Command not supported. Open the correct Bitcoin app or update firmware.</translation>
     </message>
+    <message>
+        <source>unsigned_transaction</source>
+        <translation>Unsigned transaction</translation>
+    </message>
+    <message>
+        <source>sign_psbt</source>
+        <translation>Sign PSBT</translation>
+    </message>
+    <message>
+        <source>sign_psbt_label</source>
+        <translation>Enter your unsigned psbt for sign</translation>
+    </message>
 </context>
 </TS>

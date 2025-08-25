@@ -45,6 +45,7 @@ QPlainTextEdit#broadcast_transaction_input {
     background-color: rgb(36, 44, 70);
     border: transparent;
     border-radius: 4px;
+    padding: 5px;
 }
 
 /* Styles for invoice_detail_label */

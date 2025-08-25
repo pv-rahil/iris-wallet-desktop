@@ -121,9 +121,6 @@ class ReceiveRGBAssetWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_required.connect(
             self.handle_receive_cfa_utxo_required,
         )
-        self._view_model.utxo_creation_view_model.psbt_finalized.connect(
-            self.show_receive_cfa_psbt_page,
-        )
 
     def close_button_navigation(self):
         """
@@ -198,7 +195,7 @@ class ReceiveRGBAssetWidget(QWidget):
             if not receive_cfa_hw_dialog.isVisible():
                 receive_cfa_hw_dialog.show()
 
-    def handle_receive_cfa_utxo_created(self, status:bool):
+    def handle_receive_cfa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation for receive CFA."""
         if status:
             self._view_model.utxo_creation_view_model.utxo_created.disconnect()
@@ -206,7 +203,7 @@ class ReceiveRGBAssetWidget(QWidget):
             if dlg.isVisible():
                 dlg.accept()
 
-    def handle_receive_cfa_utxo_required(self, status:bool):
+    def handle_receive_cfa_utxo_required(self, status: bool):
         """Shows the dialog for utxo require for receive CFA"""
         if status:
             self._view_model.utxo_creation_view_model.utxo_required.disconnect()
@@ -232,7 +229,6 @@ class ReceiveRGBAssetWidget(QWidget):
     def show_receive_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code for receive CFA."""
         if psbt:
-            self._view_model.utxo_creation_view_model.psbt_finalized.disconnect()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='Receive CFA page',
