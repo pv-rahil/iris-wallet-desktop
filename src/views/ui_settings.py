@@ -34,7 +34,7 @@ from src.model.common_operation_model import ConfigurableCardModel
 from src.model.common_operation_model import KeyringDialogModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import SettingPageLoadModel
 from src.utils.constant import ACCOUNT_XPUB_COLORED
@@ -383,8 +383,8 @@ class SettingsWidget(QWidget):
             SET_DEFAULT_MIN_EXPIRATION,
         )
 
-        self.is_watch_only = SettingRepository.get_wallet_security_type(
-        ) == WalletSecurityType.WATCH_ONLY
+        self.is_watch_only = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         self.is_hardware_wallet = SettingRepository.get_key_storage_type(
         ) == KeyStorageType.HARDWARE_WALLET
         self.is_offline_wallet = SettingRepository.get_wallet_type(

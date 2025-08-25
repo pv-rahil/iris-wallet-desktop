@@ -21,6 +21,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
@@ -62,8 +63,10 @@ class SendRGBAssetWidget(QWidget):
         )
         key_storage_type = SettingRepository.get_key_storage_type()
         self.is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
-        self.is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
+        self.is_online_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.ONLINE_TYPE_WALLET
+        self.is_watch_only = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         self._hw_operation_dialog = None
 
         layout = QVBoxLayout()
@@ -123,6 +126,9 @@ class SendRGBAssetWidget(QWidget):
         self._view_model.cfa_view_model.finalized_psbt.connect(
             self.show_send_rgb_psbt_page,
         )
+        self._view_model.cfa_view_model.unsigned_psbt.connect(
+            self.show_send_rgb_psbt_page,
+        )
 
     def refresh_asset(self):
         """This method handle the refresh asset on send asset page"""
@@ -167,7 +173,7 @@ class SendRGBAssetWidget(QWidget):
                 DecodeRgbInvoiceRequestModel(invoice=provided_invoice),
             )
             try:
-                if self.is_hardware_wallet or self.is_offline_wallet:
+                if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only:
                     self._view_model.cfa_view_model.send_begin(
                         amount, decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
                     )

@@ -8,12 +8,12 @@ from rgb_lib import AssetCfa
 from rgb_lib import AssetNia
 from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
-from rgb_lib import Balance
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.helpers import main_asset_page_helper
+from src.data.service.wallet_data_service import wallet_data_service
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import OfflineAsset
 from src.model.common_operation_model import MainPageDataResponseModel
@@ -22,7 +22,6 @@ from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import GetAssetResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
-from src.utils.cache import Cache
 from src.utils.handle_exception import handle_exceptions
 
 
@@ -55,25 +54,12 @@ class MainAssetPageDataService:
             is_offline_wallet = SettingRepository.get_wallet_type(
             ) == WalletType.OFFLINE_TYPE_WALLET
 
-            btc_balance: Balance
+            btc_balance: BalanceResponseModel
             if is_offline_wallet:
-                cache = Cache.get_cache_session()
-                cached_balance: BalanceResponseModel | None = None
-                if cache is not None:
-                    cached_balance, _ = cache.fetch_cache(
-                        key='mainassetviewmodel_get_asset',
-                    )
-                if cached_balance is None:
-                    default_balance_response = BalanceResponseModel(
-                        vanilla=Balance(settled=0, future=0, spendable=0),
-                        colored=Balance(settled=0, future=0, spendable=0),
-                    )
-                    btc_balance = default_balance_response.vanilla
-                else:
-                    btc_balance = cached_balance.vanilla.balance
+                btc_balance = wallet_data_service.get_btc_balance()
             else:
                 RgbRepository.refresh_transfer()
-                btc_balance = BtcRepository.get_btc_balance().vanilla
+                btc_balance = BtcRepository.get_btc_balance()
 
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
             btc_ticker: str = main_asset_page_helper.get_offline_asset_ticker(
@@ -113,7 +99,7 @@ class MainAssetPageDataService:
                 uda=asset_detail.uda or [],
                 vanilla=OfflineAsset(
                     ticker=btc_ticker,
-                    balance=btc_balance,
+                    balance=btc_balance.vanilla,
                     name=btc_name,
                 ),
             )

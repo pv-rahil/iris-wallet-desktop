@@ -27,7 +27,7 @@ from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.utils.common_utils import get_current_wallet_mode_config
@@ -255,7 +255,7 @@ class HeaderFrame(QFrame, QObject):
             parent=self.window(), description_text='',
         )
         self.set_wallet_backup_frame()
-        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET or SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY:
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.set_usb_sync_frame()
             self.header_frame_view_model.sync_process_started.connect(
                 self.handle_sync_process_started,

@@ -55,8 +55,8 @@ class WalletType(str, Enum):
     OFFLINE_TYPE_WALLET = 'Offline'
 
 
-class WalletSecurityType(str, Enum):
-    """Enum for security level of wallet"""
+class WalletAccessType(str, Enum):
+    """Enum for wallet access level"""
     WITH_PRIVATE_KEY = 'With Private Key'
     WATCH_ONLY = 'Watch Only'
 

@@ -8,18 +8,18 @@ from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
-from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.btc_repository import BtcRepository
+from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import KeyStorageType, WalletType
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.custom_exception import CommonException
-from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
@@ -37,7 +37,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     utxo_created = Signal(bool)
     psbt_finalized = Signal(str)
     utxo_required = Signal(bool)
-
+    unsigned_psbt = Signal(str)
 
     def __init__(self, parent=None):
         """
@@ -47,7 +47,6 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         super().__init__(parent)
         self.param: CreateUtxosRequestModel = None
 
-    # @require_hardware_wallet_connected()
     def create_utxos_with_hardware_wallet(self):
         """
         Initiates UTXO creation using the hardware wallet PSBT flow.
@@ -66,11 +65,12 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         Generates an unsigned PSBT that will be used to create new UTXOs.
         """
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
-        self.param=  CreateUtxosRequestModel(
+        self.param = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
             num=2,
         )
+        print('i am called')
         self.run_in_thread(
             BtcRepository.create_utxos_begin,
             {
@@ -82,10 +82,13 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
     def on_utxo_begin_done(self, unsigned_psbt):
         """Callback when unsigned PSBT is created. Updates dialog and starts signing process."""
-        self.hw_dialog_update.emit(
-            INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
-        )
-        self.sign_and_finalize_psbt(unsigned_psbt)
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
+            self.hw_dialog_update.emit(
+                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+            )
+            self.sign_and_finalize_psbt(unsigned_psbt)
+        else:
+            self.unsigned_psbt.emit(unsigned_psbt)
 
     def sign_and_finalize_psbt(self, unsigned_psbt):
         """
@@ -103,16 +106,12 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
     def on_utxo_signed_done(self, finalized_psbt):
         """Callback when PSBT is signed. Updates dialog and starts broadcasting or emits PSBT for offline wallets."""
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
-            self.hw_dialog_update.emit(
-                INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
-            )
-            self.create_utxos_end(
-                finalized_psbt=finalized_psbt,
-            )
-        else:
-            self.utxo_created.emit(True)
-            self.psbt_finalized.emit(finalized_psbt)
+        self.hw_dialog_update.emit(
+            INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
+        )
+        self.create_utxos_end(
+            finalized_psbt=finalized_psbt,
+        )
 
     def create_utxos_end(self, finalized_psbt):
         """

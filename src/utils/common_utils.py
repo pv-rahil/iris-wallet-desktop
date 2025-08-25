@@ -581,7 +581,7 @@ def get_current_wallet_mode_config() -> WalletModeConfig:
         WalletModeConfig: The current wallet mode configuration object.
     """
     wallet_type = SettingRepository.get_wallet_type()
-    security_type = SettingRepository.get_wallet_security_type()
+    security_type = SettingRepository.get_wallet_access_type()
     entry_type = SettingRepository.get_wallet_entry_type()
     storage_type = SettingRepository.get_key_storage_type()
     return WalletModeConfiguration.get_mode_config(

@@ -25,8 +25,8 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import KeyringDialogModel
 from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
-from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -53,8 +53,8 @@ class WelcomeWidget(QWidget):
         self._view_model: MainViewModel = view_model
         self.usb_detector = USBDetector()
         self.is_load_wallet = SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD
-        self.is_watch_only_wallet = SettingRepository.get_wallet_security_type(
-        ) == WalletSecurityType.WATCH_ONLY
+        self.is_watch_only_wallet = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         self.setObjectName('welcome_Page')
         self.grid_layout_welcome = QGridLayout(self)
         self.grid_layout_welcome.setObjectName('gridLayout')

@@ -348,10 +348,12 @@ class IssueNIAWidget(QWidget):
         self._view_model.utxo_creation_view_model.psbt_finalized.connect(
             self.show_nia_psbt_page,
         )
-        self._view_model.issue_nia_asset_view_model.utxo_creation_started.connect(
-            self._view_model.utxo_creation_view_model.create_utxos_with_hardware_wallet,
+        self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
+            self.show_nia_psbt_page,
         )
-
+        self._view_model.issue_nia_asset_view_model.utxo_creation_started.connect(
+            self._view_model.utxo_creation_view_model.create_utxos_begin,
+        )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -465,16 +467,14 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
-        if message and dialog_type:
-            self._view_model.utxo_creation_view_model.hw_dialog_update.disconnect()
-            nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
-                parent=self,
-            )
-            nia_hw_dialog.update_dialog(message, dialog_type)
-            if not nia_hw_dialog.isVisible():
-                nia_hw_dialog.show()
+        nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        nia_hw_dialog.update_dialog(message, dialog_type)
+        if not nia_hw_dialog.isVisible():
+            nia_hw_dialog.show()
 
-    def handle_nia_utxo_created(self,status:bool):
+    def handle_nia_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
         if status:
             self._view_model.utxo_creation_view_model.utxo_created.disconnect()
@@ -487,7 +487,7 @@ class IssueNIAWidget(QWidget):
 
             self.on_issue_nia_click()
 
-    def handle_nia_utxo_required(self, status:bool):
+    def handle_nia_utxo_required(self, status: bool):
         """Shows the dialog for utxo require"""
         if status:
             self._view_model.utxo_creation_view_model.utxo_required.disconnect()
@@ -501,7 +501,7 @@ class IssueNIAWidget(QWidget):
                 ),
             )
             nia_hw_dialog.done_button.clicked.connect(
-                nia_hw_dialog.accept
+                nia_hw_dialog.accept,
             )
             nia_hw_dialog.done_button.clicked.connect(
                 self._view_model.utxo_creation_view_model.create_utxos_begin,

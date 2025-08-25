@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes,invalid-name
+# pylint: disable=too-many-instance-attributes,invalid-name,too-many-statements
 """
 Dialog for selecting and connecting to a hardware wallet device.
 Provides UI for device selection, error handling, and connection logic.
@@ -6,13 +6,12 @@ Provides UI for device selection, error handling, and connection logic.
 from __future__ import annotations
 
 from hwilib.commands import enumerate as hwi_enumerate
-from hwilib.common import Chain
-from hwilib.devices.ledger import LedgerClient
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QMovie
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QButtonGroup
 from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QFrame
@@ -23,23 +22,15 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QVBoxLayout
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import NetworkEnumModel
-from src.utils.constant import ACCOUNT_XPUB_COLORED
-from src.utils.constant import ACCOUNT_XPUB_VANILLA
-from src.utils.constant import DEVICE_PATH
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import MASTER_FINGERPRINT
-from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import load_stylesheet
-from src.utils.local_store import local_store
-from src.utils.logging import logger
-from src.utils.worker import ThreadManager
+from src.viewmodels.hw_device_selection_view_model import HWDeviceSelectionViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
 from src.views.components.toast import ToastManager
 
 
-class HWDeviceSelectionDialog(QDialog, ThreadManager):
+class HWDeviceSelectionDialog(QDialog):
     """
     Dialog for selecting and connecting to a hardware wallet device.
     Handles device enumeration, user selection, error display, and connection logic.
@@ -58,6 +49,7 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
         self._loader_label = None
         self._loader_movie = None
         self._loader_text = None
+        self._device_selection_view_model = HWDeviceSelectionViewModel()
         self.setObjectName('hardware_wallet_device_dialog')
         self.setMinimumWidth(450)
         self.setMaximumHeight(400)
@@ -125,7 +117,9 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
         btn_layout.addWidget(self.connect_button)
         layout.addLayout(btn_layout)
 
-        self.button_group.buttonClicked.connect(self._on_selection_changed)
+        self.button_group.buttonClicked.connect(
+            self._update_connect_button_state,
+        )
         self.connect_button.clicked.connect(self._on_connect)
 
         # Timer for polling devices every 5 seconds
@@ -135,6 +129,12 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
         self.checking_devices()  # Initial poll
 
         self.retranslate_ui()
+        self._device_selection_view_model.connect_succeeded.connect(
+            self.accept,
+        )
+        self._device_selection_view_model.connect_failed.connect(
+            self.set_error,
+        )
 
     def retranslate_ui(self):
         """
@@ -226,12 +226,6 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
 
         self._update_connect_button_state()
 
-    def _on_selection_changed(self):
-        """
-        Enable connect button when a device is selected and no error is present.
-        """
-        self._update_connect_button_state()
-
     def _on_connect(self):
         """
         Handle connect button click, re-enumerate devices, and save xpubs/fingerprint.
@@ -272,13 +266,8 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
 
         device_path = matched_device['path']
         network = SettingRepository.get_wallet_network()
-        self.run_in_thread(
-            self.fetch_ledger_xpubs,
-            {
-                'args': [device_path, network],
-                'callback': self.on_ledger_success,
-                'error_callback': self.on_ledger_error,
-            },
+        self._device_selection_view_model.connect_to_device(
+            device_path, network,
         )
 
     def _show_connecting_loader(self):
@@ -323,57 +312,25 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
         self._loader_text.hide()
         self.connect_button.show()
 
-    def fetch_ledger_xpubs(self, device_path, network):
+    def set_error(self, message: str):
         """
-        Fetch xpubs and fingerprint from the Ledger device at the given path.
+        Show error icon and message. Shows Done, hides Cancel.
 
         Args:
-            device_path: Path to the Ledger device.
-            network: NetworkEnumModel value.
-        Returns:
-            Tuple of vanilla xpub, colored xpub, fingerprint, and device path.
+            message: The error message to display.
         """
-        try:
-            if network == NetworkEnumModel.MAINNET:
-                chain = Chain.MAIN
-            elif network == NetworkEnumModel.TESTNET:
-                chain = Chain.TEST
-            else:
-                chain = Chain.REGTEST
-            client = LedgerClient(device_path, None, True, chain)
-            vanilla = client.get_pubkey_at_path('m/86h/1h/0h').to_string()
-            colored = client.get_pubkey_at_path('m/86h/827167h/0h').to_string()
-            fingerprint = client.get_master_fingerprint().hex()
+        if self._loader_movie is not None:
+            self._loader_movie.stop()
 
-            hardware_client_store.set_client(client=client)
-            return vanilla, colored, fingerprint, device_path
-        except Exception as e:
-            logger.error('You are failing because of this :%s', e)
-
-    def on_ledger_success(self, result):
-        """
-        Handle successful retrieval of xpubs and fingerprint from Ledger.
-        """
-        vanilla, colored, fingerprint, device_path = result
-        local_store.set_value(ACCOUNT_XPUB_VANILLA, vanilla)
-        local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
-        local_store.set_value(MASTER_FINGERPRINT, fingerprint)
-        local_store.set_value(DEVICE_PATH, device_path)
-        self.connect_button.stop_loading()
-        self.accept()
-
-    def on_ledger_error(self, error):
-        """
-        Handle error during Ledger xpub/fingerprint retrieval.
-        """
-        ToastManager.error(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'failed_to_fetch_xpubs',
-            ).format(error),
+        message = self.map_hwi_error(message)
+        self._loader_label.setPixmap(
+            QPixmap(':/assets/x_circle_red.png').scaled(
+                75, 75, Qt.KeepAspectRatio, Qt.SmoothTransformation,
+            ),
         )
-        self.connect_button.stop_loading()
-        if self.poll_timer and not self.isVisible():
-            self.poll_timer.start(5000)
+        self._loader_text.setText(message)
+        self.cancel_button.setVisible(True)
+        self._loader_label.setVisible(True)
 
     def get_selected_device(self):
         """
@@ -450,6 +407,8 @@ class HWDeviceSelectionDialog(QDialog, ThreadManager):
             '0x5515': 'ledger_unlock_device',
             'open failed': 'ledger_open_failed',
             '0x6985': 'ledger_operation_cancelled',
+            '0x6a82': 'ledger_command_not_supported',
+            '0x0': 'ledger_operation_cancelled',
         }
 
         for pattern, translation_key in error_mapping.items():

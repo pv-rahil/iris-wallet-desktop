@@ -2028,5 +2028,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>usb_sync_no_sync_needed</source>
         <translation>No sync needed - data is up to date</translation>
     </message>
+    <message>
+        <source>ledger_command_not_supported</source>
+        <translation>Command not supported. Open the correct Bitcoin app or update firmware.</translation>
+    </message>
 </context>
 </TS>

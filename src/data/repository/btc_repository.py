@@ -19,7 +19,6 @@ from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
-from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 
 
 class BtcRepository:
@@ -87,7 +86,6 @@ class BtcRepository:
             return EstimateFeeResponse(fee_rate=data)
 
     @staticmethod
-    @require_hardware_wallet_connected()
     def send_btc_begin(param: SendBtcRequestModel):
         """Creates psbt for bitcoin."""
         with repository_custom_context():
@@ -117,13 +115,14 @@ class BtcRepository:
         """Creates colorable utxo psbt."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.create_utxos_begin(
-                online=colored_wallet.online,up_to=param.up_to,num=2,size=param.size,fee_rate=param.fee_rate,
-                skip_sync=param.skip_sync
+                online=colored_wallet.online, up_to=param.up_to, num=2, size=param.size, fee_rate=param.fee_rate,
+                skip_sync=param.skip_sync,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
             return psbt
+
     @staticmethod
     def create_utxos_end(detail: BroadcastPsbtRequestModel) -> int:
         """Broadcast the colorable utxo psbt."""

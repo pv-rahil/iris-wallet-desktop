@@ -8,8 +8,10 @@ from PySide6.QtCore import Signal
 from rgb_lib import Unspent
 
 from src.data.repository.btc_repository import BtcRepository
+from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
+from src.model.enums.enums_model import WalletType
 from src.utils.cache import Cache
 from src.utils.custom_exception import CommonException
 from src.utils.worker import ThreadManager
@@ -35,6 +37,16 @@ class UnspentListViewModel(QObject, ThreadManager):
             if cache is not None:
                 cache.invalidate_cache()
         self.loading_started.emit(True)
+        is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
+        cached_unspent_list, _ = cache.fetch_cache(
+            key='unspentlistviewmodel_get_unspent_list',
+        )
+        if cached_unspent_list is not None and is_offline_wallet:
+            self.unspent_list = cached_unspent_list
+            self.list_loaded.emit(True)
+            self.loading_finished.emit(False)
+            return
 
         def success(response: UnspentsListResponseModel, is_data_ready=True):
             """This method handles success."""

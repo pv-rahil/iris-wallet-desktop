@@ -35,7 +35,6 @@ class IssueNIAViewModel(QObject, ThreadManager):
         super().__init__()
         self._page_navigation = page_navigation
 
-
     def on_success_native_auth_nia(self, success: bool):
         """Callback function after native authentication successful"""
         try:
@@ -107,6 +106,7 @@ class IssueNIAViewModel(QObject, ThreadManager):
         """This method is used  handle onerror for the NIA issue page."""
         self.issue_button_clicked.emit(False)
         if isinstance(error, CommonException) and getattr(error, 'message', '') == 'NoAvailableUtxos':
+            print('NoAvailableUtxos')
             self.utxo_creation_started.emit(True)
             return
         ToastManager.error(

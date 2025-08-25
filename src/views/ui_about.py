@@ -25,8 +25,9 @@ from accessible_constant import RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import RGB_PROXY_URL_COPY_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
-from src.model.enums.enums_model import ToastPreset, WalletType
-from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import download_file
 from src.utils.common_utils import network_info
@@ -127,7 +128,7 @@ class AboutWidget(QWidget):
         )
 
         # Add vanilla xpub, colored xpub, and master fingerprint
-        if SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY or SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
             vanilla_xpub = local_store.get_value(ACCOUNT_XPUB_VANILLA)
             colored_xpub = local_store.get_value(ACCOUNT_XPUB_COLORED)
             master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)

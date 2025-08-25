@@ -31,7 +31,6 @@ from src.model.rgb_model import SendBeginResult
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.check_colorable_available import check_colorable_available
-from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 
 
 class RgbRepository:
@@ -180,7 +179,6 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
-    @require_hardware_wallet_connected()
     def send_begin(detail: SendBeginRequestModel) -> SendBeginResult:
         """Create psbt for send rgb asset"""
         with repository_custom_context():

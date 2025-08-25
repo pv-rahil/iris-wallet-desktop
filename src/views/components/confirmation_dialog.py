@@ -32,7 +32,7 @@ class ConfirmationDialog(QDialog):
     or cancel an action. It uses a frameless window design with a blur effect and is modal.
     """
 
-    def __init__(self, message: str, parent, icon_type: str):
+    def __init__(self, message: str, parent, icon_type=None):
         super().__init__(parent)
         self.parent_widget = parent if parent else QWidget()
         self.blur_effect = QGraphicsBlurEffect()

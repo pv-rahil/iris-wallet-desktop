@@ -17,7 +17,6 @@ MASTER_FINGERPRINT = 'master_fingerprint'
 LAST_SYNC_DIRECTION = 'last_sync_direction'
 EPOCH_TIME = 'epoch_time'
 SYNC_INDEX = 'sync_index'
-DEVICE_PATH = 'device_path'
 WALLET_PASSWORD_KEY = 'wallet_password'
 SAVED_INDEXER_URL = 'indexer_url'
 SAVED_PROXY_ENDPOINT = 'proxy_endpoint'
@@ -28,6 +27,7 @@ CACHE_FILE_NAME = {
 }
 DEFAULT_CACHE_FILENAME = 'iris-wallet-cache-default'
 CACHE_FOLDER_NAME = 'cache'
+WALLET_DATA_FOLDER_NAME = 'wallet-data'
 CACHE_EXPIRE_TIMEOUT = 600
 REQUEST_TIMEOUT = 120  # In seconds
 NO_OF_UTXO = 1

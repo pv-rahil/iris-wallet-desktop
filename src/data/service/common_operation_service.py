@@ -13,8 +13,7 @@ from src.model.common_operation_model import UnlockResponseModel
 from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletSecurityType
-from src.model.enums.enums_model import WalletType
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -51,9 +50,9 @@ class CommonOperationService:
                 stored_network,
             )
 
-            security_type = SettingRepository.get_wallet_security_type()
+            security_type = SettingRepository.get_wallet_access_type()
             key_storage_type = SettingRepository.get_key_storage_type()
-            is_watch_only = security_type == WalletSecurityType.WATCH_ONLY
+            is_watch_only = security_type == WalletAccessType.WATCH_ONLY
             is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
 
             response: Keys | None = None
@@ -128,8 +127,8 @@ class CommonOperationService:
             master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
 
             # Check if this is a watch-only wallet
-            is_watch_only = SettingRepository.get_wallet_security_type(
-            ) == WalletSecurityType.WATCH_ONLY
+            is_watch_only = SettingRepository.get_wallet_access_type(
+            ) == WalletAccessType.WATCH_ONLY
             is_hardware_only = SettingRepository.get_key_storage_type(
             ) == KeyStorageType.HARDWARE_WALLET
 

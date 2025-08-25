@@ -108,6 +108,7 @@ class AppPathsModel(BaseModel):
     backup_folder_path: str
     restore_folder_path: str
     mnemonic_file_path: str
+    wallet_data_folder_path: str
 
 
 class BroadcastPsbtRequestModel(BaseModel):
@@ -150,11 +151,10 @@ class WalletModePrivilege(BaseModel):
     Dataclass for defining the privileges of a wallet mode.
     """
     can_send_transactions: bool
-    can_receive_transactions: bool
+    can_receive_asset: bool
     can_create_assets: bool
     can_backup_wallet: bool
     can_export_psbt: bool
-    can_receive_asset: bool
     can_use_faucet: bool
 
 

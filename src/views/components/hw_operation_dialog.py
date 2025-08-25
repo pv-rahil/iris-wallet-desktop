@@ -16,7 +16,6 @@ from PySide6.QtWidgets import QGraphicsBlurEffect
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
-from PySide6.QtWidgets import QWidget
 
 from src.model.enums.enums_model import PsbtStatus
 from src.utils.helpers import load_stylesheet
@@ -161,8 +160,8 @@ class HardwareWalletOperationDialog(QDialog):
         if self._loader_movie is not None:
             self._loader_movie.stop()
         # Map specific hardware wallet error to user-friendly message
-        # hw_device = HWDeviceSelectionDialog(None)
-        # message = hw_device.map_hwi_error(message)
+        hw_device = HWDeviceSelectionDialog(None)
+        message = hw_device.map_hwi_error(message)
         self.icon_label.setPixmap(
             self._error_pixmap.scaled(
                 75, 75, Qt.KeepAspectRatio, Qt.SmoothTransformation,
@@ -192,15 +191,6 @@ class HardwareWalletOperationDialog(QDialog):
             blur.setBlurRadius(10)
             self.parent().setGraphicsEffect(blur)
         super().showEvent(event)
-
-    # def closeEvent(self, event):
-    #     """
-    #     Remove blur effect from parent and clean up instance on close.
-    #     """
-    #     if self.parent():
-    #         self.parent().setGraphicsEffect(None)
-    #     HardwareWalletOperationDialog._instance = None
-    #     super().closeEvent(event)
 
     def accept(self):
         """

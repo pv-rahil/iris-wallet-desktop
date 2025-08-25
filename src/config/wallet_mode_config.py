@@ -7,8 +7,8 @@ from __future__ import annotations
 from src.model.common_operation_model import WalletModeConfig
 from src.model.common_operation_model import WalletModePrivilege
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
-from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
 
 
@@ -19,7 +19,7 @@ class WalletModeConfiguration:
     @staticmethod
     def get_mode_config(
         wallet_type: WalletType | None,
-        security_type: WalletSecurityType | None,
+        security_type: WalletAccessType | None,
         entry_type: WalletEntryType | None,
         storage_type: KeyStorageType | None,
     ) -> WalletModeConfig:
@@ -31,18 +31,17 @@ class WalletModeConfiguration:
         # Online Watch Only
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletSecurityType.WATCH_ONLY
+            security_type == WalletAccessType.WATCH_ONLY
         ):
             return WalletModeConfig(
                 mode_name='Online Watch-Only Wallet',
                 description='A secure wallet for monitoring transactions and balances without private key access',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=False,
-                    can_receive_transactions=False,
-                    can_create_assets=False,
+                    can_send_transactions=True,
+                    can_receive_asset=True,
+                    can_create_assets=True,
                     can_backup_wallet=True,
                     can_export_psbt=True,
-                    can_receive_asset=False,
                     can_use_faucet=False,
                 ),
                 capabilities=[
@@ -64,7 +63,7 @@ class WalletModeConfiguration:
         # Online Create New with Private Key (On Device)
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            security_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.ON_DEVICE and
             entry_type == WalletEntryType.CREATE
         ):
@@ -73,11 +72,10 @@ class WalletModeConfiguration:
                 description='Create a new wallet with private key stored on your device',
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
-                    can_receive_transactions=True,
+                    can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
                     can_export_psbt=False,
-                    can_receive_asset=True,
                     can_use_faucet=True,
                 ),
                 capabilities=[
@@ -99,7 +97,7 @@ class WalletModeConfiguration:
         # Online Create New with Hardware Wallet
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            security_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.HARDWARE_WALLET and
             entry_type == WalletEntryType.CREATE
         ):
@@ -108,11 +106,10 @@ class WalletModeConfiguration:
                 description='Set up a new wallet with a hardware security device',
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
-                    can_receive_transactions=True,
+                    can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
                     can_export_psbt=False,
-                    can_receive_asset=True,
                     can_use_faucet=True,
                 ),
                 capabilities=[
@@ -134,7 +131,7 @@ class WalletModeConfiguration:
         # Online Load Existing with Private Key (On Device)
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            security_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.ON_DEVICE and
             entry_type == WalletEntryType.LOAD
 
@@ -144,11 +141,10 @@ class WalletModeConfiguration:
                 description='Import an existing wallet to store on your device',
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
-                    can_receive_transactions=True,
+                    can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
                     can_export_psbt=False,
-                    can_receive_asset=True,
                     can_use_faucet=True,
                 ),
                 capabilities=[
@@ -171,7 +167,7 @@ class WalletModeConfiguration:
         # Online Load Existing with Hardware Wallet
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and
-            security_type == WalletSecurityType.WITH_PRIVATE_KEY and
+            security_type == WalletAccessType.WITH_PRIVATE_KEY and
             storage_type == KeyStorageType.HARDWARE_WALLET and
             entry_type == WalletEntryType.LOAD
 
@@ -181,11 +177,10 @@ class WalletModeConfiguration:
                 description='Connect your existing hardware wallet for secure access',
                 privileges=WalletModePrivilege(
                     can_send_transactions=True,
-                    can_receive_transactions=True,
+                    can_receive_asset=True,
                     can_create_assets=True,
                     can_backup_wallet=True,
                     can_export_psbt=False,
-                    can_receive_asset=True,
                     can_use_faucet=True,
                 ),
                 capabilities=[
@@ -215,12 +210,11 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Create New (On Device)',
                 description='Create a new air-gapped cold storage wallet',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=True,
-                    can_receive_transactions=True,
-                    can_create_assets=True,
+                    can_send_transactions=False,
+                    can_receive_asset=False,
+                    can_create_assets=False,
                     can_backup_wallet=False,
                     can_export_psbt=False,
-                    can_receive_asset=True,
                     can_use_faucet=False,
                 ),
                 capabilities=[
@@ -250,12 +244,11 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Create New (Hardware)',
                 description='Create a new offline wallet with hardware security',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=True,
-                    can_receive_transactions=True,
-                    can_create_assets=True,
+                    can_send_transactions=False,
+                    can_receive_asset=False,
+                    can_create_assets=False,
                     can_backup_wallet=False,
                     can_export_psbt=False,
-                    can_receive_asset=True,
                     can_use_faucet=False,
                 ),
                 capabilities=[
@@ -289,12 +282,11 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Load Existing (On Device)',
                 description='Import an existing wallet for offline cold storage',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=True,
-                    can_receive_transactions=True,
-                    can_create_assets=True,
+                    can_send_transactions=False,
+                    can_receive_asset=False,
+                    can_create_assets=False,
                     can_backup_wallet=False,
                     can_export_psbt=False,
-                    can_receive_asset=True,
                     can_use_faucet=False,
                 ),
                 capabilities=[
@@ -329,12 +321,11 @@ class WalletModeConfiguration:
                 mode_name='Offline Wallet - Load Existing (Hardware)',
                 description='Connect existing hardware wallet in offline mode',
                 privileges=WalletModePrivilege(
-                    can_send_transactions=True,
-                    can_receive_transactions=True,
-                    can_create_assets=True,
+                    can_send_transactions=False,
+                    can_receive_asset=False,
+                    can_create_assets=False,
                     can_backup_wallet=False,
                     can_export_psbt=False,
-                    can_receive_asset=False,
                     can_use_faucet=False,
                 ),
                 capabilities=[
@@ -361,11 +352,10 @@ class WalletModeConfiguration:
             description='Invalid wallet mode combination',
             privileges=WalletModePrivilege(
                 can_send_transactions=False,
-                can_receive_transactions=False,
+                can_receive_asset=False,
                 can_create_assets=False,
                 can_backup_wallet=False,
                 can_export_psbt=False,
-                can_receive_asset=False,
                 can_use_faucet=False,
             ),
             capabilities=[{'emoji': '❓', 'text': 'Invalid configuration'}],

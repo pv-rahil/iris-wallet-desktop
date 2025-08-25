@@ -15,6 +15,7 @@ from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
@@ -23,7 +24,6 @@ from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
-from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 
 
 def create_utxos() -> None:
@@ -33,12 +33,14 @@ def create_utxos() -> None:
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         key_storage_type = SettingRepository.get_key_storage_type()
         wallet_type = SettingRepository.get_wallet_type()
+        wallet_access_type = SettingRepository.get_wallet_access_type()
         create_utxos_model = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
             num=2,
         )
-        if key_storage_type == KeyStorageType.HARDWARE_WALLET or wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+        if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
+                or wallet_access_type == WalletAccessType.WATCH_ONLY:
             raise CommonException('NoAvailableUtxos')
         colored_wallet.wallet.create_utxos(
             online=create_utxos_model.online, up_to=create_utxos_model.up_to,
@@ -62,7 +64,8 @@ def create_utxos() -> None:
         )
         raise CommonException('Unable to connect to wallet') from exc
     except Exception as exc:
-        if key_storage_type == KeyStorageType.HARDWARE_WALLET or wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+        if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
+                or wallet_access_type == WalletAccessType.WATCH_ONLY:
             raise CommonException('NoAvailableUtxos')
         logger.error(
             'Exception occurred at Decorator: %s, Message: %s',

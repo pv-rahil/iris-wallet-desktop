@@ -64,7 +64,7 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
 
             except Exception as e:
                 logger.error('[HW Wallet Decorator] Exception: %s', e)
-                hardware_client_store.set_client(None)
+                hardware_client_store.stop_client()
                 raise RuntimeError(
                     f"Hardware wallet connection failed: {e}",
                 ) from e
@@ -72,7 +72,6 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
             finally:
                 if client:
                     client.close()
-                hardware_client_store.set_client(None)
 
         return wrapper
 

@@ -33,7 +33,7 @@ from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
-from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
@@ -91,8 +91,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
         config = get_current_wallet_mode_config()
         self.priv = config.privileges
-        self.is_watch_only = SettingRepository.get_wallet_security_type(
-        ) == WalletSecurityType.WATCH_ONLY
+        self.is_watch_only = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
         self.fungible_frame = None

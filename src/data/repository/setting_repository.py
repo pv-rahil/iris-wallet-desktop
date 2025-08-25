@@ -11,8 +11,8 @@ import src.flavour as bitcoin_network
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
-from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
@@ -328,26 +328,26 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def set_wallet_security_type(security_type: WalletSecurityType):
-        """Set the wallet security type."""
+    def set_wallet_access_type(access_type: WalletAccessType):
+        """Set the wallet access type."""
         try:
             local_store.set_value(
-                'wallet_security_type',
-                security_type.value if security_type else None,
+                'wallet_access_type',
+                access_type.value if access_type else None,
             )
             # Verify the setting was applied
-            if local_store.get_value('wallet_security_type') == (security_type.value if security_type else None):
+            if local_store.get_value('wallet_access_type') == (access_type.value if access_type else None):
                 return True
             return False
         except Exception as exe:
             return handle_exceptions(exe)
 
     @staticmethod
-    def get_wallet_security_type() -> WalletSecurityType | None:
-        """Get the wallet security type."""
+    def get_wallet_access_type() -> WalletAccessType | None:
+        """Get the wallet access type."""
         try:
-            value = local_store.get_value('wallet_security_type')
-            return WalletSecurityType(value) if value else None
+            value = local_store.get_value('wallet_access_type')
+            return WalletAccessType(value) if value else None
         except Exception as exe:
             return handle_exceptions(exe)
 

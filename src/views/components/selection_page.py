@@ -29,8 +29,8 @@ from PySide6.QtWidgets import QWidget
 import src.resources_rc
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
-from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
 from src.model.selection_page_model import SelectionPageModel
 from src.utils.clickable_frame import ClickableFrame
@@ -375,13 +375,13 @@ class SelectionPage(QWidget):
             SettingRepository.set_wallet_type(WalletType.ONLINE_TYPE_WALLET)
         elif self.selected_frame == WalletType.OFFLINE_TYPE_WALLET.value:
             SettingRepository.set_wallet_type(WalletType.OFFLINE_TYPE_WALLET)
-        elif self.selected_frame == WalletSecurityType.WITH_PRIVATE_KEY.value:
-            SettingRepository.set_wallet_security_type(
-                WalletSecurityType.WITH_PRIVATE_KEY,
+        elif self.selected_frame == WalletAccessType.WITH_PRIVATE_KEY.value:
+            SettingRepository.set_wallet_access_type(
+                WalletAccessType.WITH_PRIVATE_KEY,
             )
-        elif self.selected_frame == WalletSecurityType.WATCH_ONLY.value:
-            SettingRepository.set_wallet_security_type(
-                WalletSecurityType.WATCH_ONLY,
+        elif self.selected_frame == WalletAccessType.WATCH_ONLY.value:
+            SettingRepository.set_wallet_access_type(
+                WalletAccessType.WATCH_ONLY,
             )
         elif self.selected_frame == WalletEntryType.CREATE.value:
             SettingRepository.set_wallet_entry_type(WalletEntryType.CREATE)

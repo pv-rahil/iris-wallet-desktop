@@ -30,7 +30,7 @@ from accessible_constant import SHOW_MNEMONIC_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.error_message import ERROR_G_DRIVE_CONFIG_FAILED
 from src.utils.gauth import authenticate
@@ -56,8 +56,8 @@ class Backup(QWidget):
         self.sidebar = None
         self.is_hardware_wallet = SettingRepository.get_key_storage_type(
         ) == KeyStorageType.HARDWARE_WALLET
-        self.is_watch_only_wallet = SettingRepository.get_wallet_security_type(
-        ) == WalletSecurityType.WATCH_ONLY
+        self.is_watch_only_wallet = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         self.grid_layout_backup_page.setObjectName('grid_layout_backup_page')
         self.vertical_spacer_19 = QSpacerItem(
             20, 190, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,

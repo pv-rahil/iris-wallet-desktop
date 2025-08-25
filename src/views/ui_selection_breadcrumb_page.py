@@ -17,8 +17,8 @@ from PySide6.QtWidgets import QWidget
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
-from src.model.enums.enums_model import WalletSecurityType
 from src.model.enums.enums_model import WalletType
 from src.model.selection_page_model import SelectionPageModel
 from src.views.components.selection_breadcrumb_widget import BreadcrumbBar
@@ -71,10 +71,10 @@ class SelectionBreadcrumbWidget(QWidget):
                     params=SelectionPageModel(
                         title='select_security_type',
                         logo_1_path=':/assets/private_key.png',
-                        logo_1_title=WalletSecurityType.WITH_PRIVATE_KEY.value,
+                        logo_1_title=WalletAccessType.WITH_PRIVATE_KEY.value,
                         logo_1_info='with_private_key_info',
                         logo_2_path=':/assets/eye_icon.png',
-                        logo_2_title=WalletSecurityType.WATCH_ONLY.value,
+                        logo_2_title=WalletAccessType.WATCH_ONLY.value,
                         logo_2_info='watch_only_info',
                     ),
                 ),
@@ -311,14 +311,14 @@ class SelectionBreadcrumbWidget(QWidget):
         if idx == 0:
             if title == WalletType.OFFLINE_TYPE_WALLET.value:
                 self.current_index = 2
-                SettingRepository.set_wallet_security_type(None)
+                SettingRepository.set_wallet_access_type(None)
                 SettingRepository.remove_setting('wallet_security_type')
             else:
                 self.current_index = idx + 1
             self.steps[self.current_index]['widget'].reset_selection()
             self.update_breadcrumbs()
         elif idx == 1:
-            if title == WalletSecurityType.WATCH_ONLY.value:
+            if title == WalletAccessType.WATCH_ONLY.value:
                 self._show_watch_only_flow()
             else:
                 self.current_index = idx + 1
@@ -333,7 +333,7 @@ class SelectionBreadcrumbWidget(QWidget):
                 self.update_breadcrumbs()
             else:
                 self._show_final_summary_flow()
-        if (idx != 1 or title != WalletSecurityType.WATCH_ONLY.value) and idx != len(self.steps) - 1:
+        if (idx != 1 or title != WalletAccessType.WATCH_ONLY.value) and idx != len(self.steps) - 1:
             self.update_breadcrumbs()
         self._view_model.selected_logos = self.selected_logos
         self._view_model.selected_titles = self.selected_titles
@@ -419,7 +419,7 @@ class SelectionBreadcrumbWidget(QWidget):
             widget.on_click_frame(widget.params.logo_1_title, False)
             widget.on_click_frame(widget.params.logo_2_title, False)
             if i == 1:
-                SettingRepository.set_wallet_security_type(None)
+                SettingRepository.set_wallet_access_type(None)
                 SettingRepository.remove_setting('wallet_security_type')
             elif i == 2:
                 SettingRepository.set_wallet_entry_type(None)

@@ -17,7 +17,9 @@ import zipfile
 from PySide6.QtCore import QCoreApplication
 
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import wallet_data_service
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -253,6 +255,16 @@ class USBSyncManager:
     def sync_to_usb(self):
         """Package local wallet data and write/update it on the USB drive."""
         try:
+            # Refresh wallet-data (SQLite) only for ONLINE wallets prior to packaging
+            try:
+                if SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
+                    wallet_data_service.refresh_wallet_data()
+            except Exception as exc:
+                logger.warning(
+                    'Failed refreshing wallet-data before USB sync: %s', exc,
+                )
+                raise exc
+
             current_local_index = local_store.get_value(SYNC_INDEX)
             if current_local_index is None:  # initial backup
                 logger.info('Creating initial USB backup')
@@ -449,25 +461,25 @@ class USBSyncManager:
             return None
 
     def _restore_wallet_data(self, data: bytes, only_folder: bool = False):
-        """Restore wallet data from ZIP; if only_folder, restore fingerprint and cache only."""
+        """Restore wallet data from ZIP; if only_folder, restore fingerprint and wallet_data only."""
         try:
             fingerprint_folder = os.path.join(
                 app_paths.app_path, self.master_fingerprint,
             )
 
             if only_folder:
-                # Remove only fingerprint folder, keep cache (will be overwritten)
+                # Remove only fingerprint folder, keep wallet_data (will be overwritten)
                 if os.path.exists(fingerprint_folder):
                     shutil.rmtree(fingerprint_folder)
 
             with zipfile.ZipFile(io.BytesIO(data), 'r') as z:
                 if only_folder:
-                    # Restore only fingerprint folder and cache folder
+                    # Restore only fingerprint folder and wallet_data folder
                     fingerprint_prefix = self.master_fingerprint + '/'
-                    cache_prefix = 'cache/'
+                    wallet_data_prefix = 'wallet-data/'
 
                     for m in z.namelist():
-                        if m.startswith(fingerprint_prefix) or m.startswith(cache_prefix):
+                        if m.startswith(fingerprint_prefix) or m.startswith(wallet_data_prefix):
                             target = os.path.join(app_paths.app_path, m)
                             if m.endswith('/'):
                                 # Create empty directory
@@ -482,7 +494,7 @@ class USBSyncManager:
                                 with open(target, 'wb') as f:
                                     f.write(z.read(m))
                 else:
-                    # Full restore (wallet folder + cache + ini + everything else)
+                    # Full restore (wallet folder + wallet_data + ini + everything else)
                     z.extractall(app_paths.app_path)
 
         except Exception as exc:
@@ -525,16 +537,16 @@ class USBSyncManager:
             logger.error('Failed to rollback USB wallet: %s', exc)
 
     def _create_wallet_data_package_with_index(self, index: int) -> bytes:
-        """Create wallet data package as ZIP containing wallet folder + cache + INI file with updated sync_index and epoch_time."""
+        """Create wallet data package as ZIP containing wallet folder + wallet_data + INI file with updated sync_index and epoch_time."""
         try:
             buf = io.BytesIO()
 
             with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
                 self._add_wallet_folder_to_zip(z, app_paths.app_path)
-
-                cache_path = os.path.join(app_paths.app_path, 'cache')
-                if os.path.exists(cache_path):
-                    for root, _, files in os.walk(cache_path):
+                # Include wallet_data directory (instead of cache)
+                wallet_data_path = app_paths.wallet_data_folder_path
+                if os.path.exists(wallet_data_path):
+                    for root, _, files in os.walk(wallet_data_path):
                         for f in files:
                             path = os.path.join(root, f)
                             rel = os.path.relpath(path, app_paths.app_path)
@@ -570,7 +582,7 @@ class USBSyncManager:
             raise
 
     def _add_wallet_folder_to_zip(self, z, wallet_path: str):
-        """Add wallet folder contents to ZIP, excluding logs and cache."""
+        """Add wallet folder contents to ZIP, excluding logs."""
         try:
             folder = os.path.join(wallet_path, self.master_fingerprint)
             if not os.path.exists(folder):

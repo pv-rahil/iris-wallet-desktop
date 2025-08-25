@@ -27,7 +27,7 @@ from accessible_constant import RESTORE_PASSWORD_INPUT
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
-from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -55,8 +55,8 @@ class RestoreMnemonicWidget(QDialog):
         self.mnemonic_visibility = mnemonic_visibility
         self.is_hardware_wallet = SettingRepository.get_key_storage_type(
         ) == KeyStorageType.HARDWARE_WALLET
-        self.is_watch_only_wallet = SettingRepository.get_wallet_security_type(
-        ) == WalletSecurityType.WATCH_ONLY
+        self.is_watch_only_wallet = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         # Hide the title bar and close button
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setModal(True)

@@ -549,7 +549,7 @@ class RGBAssetDetailWidget(QWidget):
                 not self.config.privileges.can_send_transactions,
             )
             self.receive_rgb_asset.setDisabled(
-                not self.config.privileges.can_receive_transactions,
+                not self.config.privileges.can_receive_asset,
             )
 
     def handle_page_navigation(self):

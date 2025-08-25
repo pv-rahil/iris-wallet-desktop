@@ -11,7 +11,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import KeyringDialogModel
 from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import KeyStorageType
-from src.model.enums.enums_model import WalletSecurityType
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTORE_COMPLETED
@@ -67,7 +67,7 @@ class WelcomeViewModel(QObject, ThreadManager):
             SettingRepository.set_keyring_status(status=False)
             self._page_navigation.enter_wallet_password_page()
         else:
-            if SettingRepository.get_wallet_security_type() == WalletSecurityType.WATCH_ONLY or SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
                 keyring_warning_dialog = KeyringErrorDialog(
                     KeyringDialogModel(
                         xpub_vanilla=data.xpub_vanilla,

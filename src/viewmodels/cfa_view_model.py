@@ -21,6 +21,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
@@ -56,6 +57,7 @@ class CFAViewModel(QObject, ThreadManager):
     stop_loading = Signal(bool)
     hw_dialog_update = Signal(str, Enum)
     finalized_psbt = Signal(str)
+    unsigned_psbt = Signal(str)
 
     def __init__(self, page_navigation: Any) -> None:
         super().__init__()
@@ -289,32 +291,31 @@ class CFAViewModel(QObject, ThreadManager):
         Handle the PSBT created by send_begin.
         Run signing and finalization in a background thread.
         """
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
-        self.send_cfa_button_clicked.emit(True)
-        self.run_in_thread(
-            CommonOperationRepository.sign_and_finalize_psbt,
-            {
-                'args': [unsigned_psbt],
-                'callback': self.on_psbt_signed_and_finalized,
-                'error_callback': self.on_error,
-            },
-        )
+            self.send_cfa_button_clicked.emit(True)
+            self.run_in_thread(
+                CommonOperationRepository.sign_and_finalize_psbt,
+                {
+                    'args': [unsigned_psbt],
+                    'callback': self.on_psbt_signed_and_finalized,
+                    'error_callback': self.on_error,
+                },
+            )
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+            self.unsigned_psbt.emit(unsigned_psbt)
 
     def on_psbt_signed_and_finalized(self, finalized_psbt: str):
         """
         Callback after PSBT is signed and finalized.
         Now broadcast the transaction.
         """
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
-            self.hw_dialog_update.emit(
-                INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
-            )
-            self.send_end(finalized_psbt)
-        else:
-            self.finalized_psbt.emit(finalized_psbt)
+        self.hw_dialog_update.emit(
+            INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
+        )
+        self.send_end(finalized_psbt)
 
     def send_end(self, signed_psbt: str, skip_sync: bool = False):
         """
