@@ -9,7 +9,7 @@ from rgb_lib import Unspent
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.data.service.wallet_data_service import wallet_data_service
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
 from src.model.enums.enums_model import WalletType
@@ -57,10 +57,11 @@ class UnspentListViewModel(QObject, ThreadManager):
             )
 
         try:
-            if SettingRepository.get_wallet_type(
-            ) == WalletType.OFFLINE_TYPE_WALLET:
-                data = wallet_data_service.list_unspents()
-                success(response=data, is_data_ready=True)
+            if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+                wallet_service = WalletDataService.get_session()
+                if wallet_service is not None:
+                    data = wallet_service.list_unspents()
+                    success(response=data, is_data_ready=True)
             else:
                 self.run_in_thread(
                     BtcRepository.list_unspents,

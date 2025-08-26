@@ -50,6 +50,18 @@
     color: #fff;
 }
 
+/* PSBT Info Frame Styling */
+#psbt_info_frame {
+    border-radius: 8px;
+    background-color: #7a7a65;
+}
+/* PSBT Info Label Styling */
+#psbt_info_label {
+    font: 14px "Inter";
+    font-weight: 400;
+    color: #fff;
+}
+
 /* Action Button Styling */
 #action_button {
     color: rgb(3, 202, 155);

@@ -1,4 +1,4 @@
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,too-many-statements
 """
 This module provides the service for bitcoin page.
 """
@@ -10,7 +10,7 @@ from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.helpers.bitcoin_page_helper import calculate_transaction_amount
 from src.data.service.helpers.bitcoin_page_helper import get_transaction_status
-from src.data.service.wallet_data_service import wallet_data_service
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import Transaction
 from src.model.btc_model import TransactionListResponse
@@ -35,12 +35,7 @@ class BitcoinPageService:
             transaction_status: TransactionStatusEnumModel | None = None
             bitcoin_balance: BalanceResponseModel | None = None
             transaction_list: TransactionListResponse | None = None
-            if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
-                bitcoin_balance = wallet_data_service.get_btc_balance()
-                transaction_list = wallet_data_service.list_transactions()
-            else:
-                bitcoin_balance = BtcRepository.get_btc_balance()
-                transaction_list = BtcRepository.list_transactions()
+            bitcoin_balance, transaction_list = BitcoinPageService._fetch_balance_and_transactions()
             if not transaction_list or not transaction_list.transactions:
                 return TransactionListWithBalanceResponse(transactions=[], balance=bitcoin_balance)
 
@@ -121,3 +116,19 @@ class BitcoinPageService:
             return TransactionListWithBalanceResponse(transactions=sorted_transactions.transactions, balance=bitcoin_balance)
         except Exception as exc:
             return handle_exceptions(exc)
+
+    @staticmethod
+    def _fetch_balance_and_transactions() -> tuple[BalanceResponseModel, TransactionListResponse]:
+        """Fetch balance and transactions depending on wallet type."""
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is None:
+                return BalanceResponseModel(balance=0), TransactionListResponse(transactions=[])
+            return (
+                wallet_service.get_btc_balance(),
+                wallet_service.list_transactions(),
+            )
+        return (
+            BtcRepository.get_btc_balance(),
+            BtcRepository.list_transactions(),
+        )

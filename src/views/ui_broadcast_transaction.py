@@ -4,6 +4,8 @@ Widget for broadcasting signed transactions (PSBTs) in the application.
 """
 from __future__ import annotations
 
+from enum import Enum
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
@@ -23,6 +25,8 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
+from src.data.service.wallet_data_service import WalletDataService
+from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -31,6 +35,7 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.confirmation_dialog import ConfirmationDialog
+from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
@@ -40,7 +45,7 @@ class BroadcastTransactionWidget(QWidget):
     Widget for broadcasting signed transactions (PSBTs) in the application.
     """
 
-    def __init__(self, view_model):
+    def __init__(self, view_model, from_sidebar: bool = False):
         """
         Initialize the BroadcastTransactionWidget.
         """
@@ -50,6 +55,7 @@ class BroadcastTransactionWidget(QWidget):
             task_name='Broadcast Transaction Rendering',
         )
         self._view_model: MainViewModel = view_model
+        self.from_sidebar = from_sidebar
         self.setStyleSheet(
             load_stylesheet(
                 'views/qss/broadcast_transaction_style.qss',
@@ -146,33 +152,17 @@ class BroadcastTransactionWidget(QWidget):
         # Add a label for the method selector
         self.method_selector_label = QLabel(self.broadcast_transaction_widget)
         self.method_selector_label.setObjectName('broadcast_method_label')
-        self.method_selector_label.setVisible(self.priv.can_broadcast_psbt)
-
-        # Add the method selector dropdown
+        self.method_selector_label.setVisible(False)
         self.horizontal_layout_2 = QHBoxLayout()
         self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
         self.method_selector = QComboBox(self.broadcast_transaction_widget)
-        self.method_selector.setVisible(self.priv.can_broadcast_psbt)
-        self.method_selector.addItems([
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset',
-            ),
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_btc',
-            ),
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_assets',
-            ),
-        ])
-        self.method_selector.setCurrentIndex(0)
+        # Start hidden; loaders manage visibility and contents
+        self.method_selector.setVisible(False)
         self.method_selector.setFixedWidth(300)
         self.method_selector.setFixedHeight(40)
-        if self.priv.can_broadcast_psbt:
-            self.horizontal_layout_2.addWidget(self.method_selector_label)
-            self.horizontal_layout_2.addWidget(self.method_selector)
-            self.horizontal_layout_2.addStretch(
-                1,
-            )  # Keep combobox left-aligned
+        self.horizontal_layout_2.addWidget(self.method_selector_label)
+        self.horizontal_layout_2.addWidget(self.method_selector)
+        self.horizontal_layout_2.addStretch(1)  # Keep combobox left-aligned
         self.vertical_layout.addLayout(self.horizontal_layout_2)
 
         self.horizontal_layout_1 = QHBoxLayout()
@@ -200,6 +190,13 @@ class BroadcastTransactionWidget(QWidget):
         )
         self.vertical_layout.addItem(self.vertical_spacer)
 
+        # Prepare PSBT storage for optional signing flow
+        if self.priv.can_sign_psbt:
+            self._psbt_items: list[dict] = []
+        # Prepare PSBT storage for broadcast flow
+        if self.priv.can_broadcast_psbt:
+            self._psbt_signed_items: list[dict] = []
+
         self.broadcast_button_horizontal_layout = QHBoxLayout()
         self.broadcast_button_horizontal_layout.setObjectName(
             'broadcast_button_horizontal_layout',
@@ -217,6 +214,10 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_button,
         )
         self.vertical_layout.addLayout(self.broadcast_button_horizontal_layout)
+
+        # Load PSBT drafts AFTER broadcast_button exists to avoid init-order issues
+        if self.priv.can_sign_psbt and not self.from_sidebar:
+            self._load_psbts_for_signing()
 
         self.grid_layout.addWidget(
             self.broadcast_transaction_widget, 1, 1, 2, 2,
@@ -246,6 +247,15 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_label.setVisible(True)
         self.broadcast_transaction_input.setVisible(True)
         self.broadcast_button.setVisible(True)
+        self.hw_dialog = HardwareWalletOperationDialog.get_instance(
+            parent=self,
+        )
+        # Evaluate initial button state once the UI is ready
+        self.handle_button_enable()
+
+        # Load PSBTs for broadcast AFTER widgets exist
+        if self.priv.can_broadcast_psbt and not self.from_sidebar:
+            self._load_psbts_for_broadcast()
 
     def setup_ui_connection(self):
         """
@@ -263,6 +273,12 @@ class BroadcastTransactionWidget(QWidget):
         )
         self._view_model.broadcast_transaction_view_model.tx_broadcasted.connect(
             self.on_click_close_button,
+        )
+        self._view_model.broadcast_transaction_view_model.finalized_psbt.connect(
+            self.show_signed_psbt_page,
+        )
+        self._view_model.broadcast_transaction_view_model.hw_dialog_update.connect(
+            self.handle_nia_hw_dialog,
         )
 
     def retranslate_ui(self):
@@ -285,11 +301,7 @@ class BroadcastTransactionWidget(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
                 ),
             )
-            self.method_selector_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'select_broadcast_type',
-                ),
-            )
+            # The selector label text is set dynamically in loader based on context
         else:
             self.broadcast_transaction_title_label.setText(
                 QCoreApplication.translate(
@@ -312,7 +324,6 @@ class BroadcastTransactionWidget(QWidget):
         Broadcast the signed PSBT using the selected method.
         """
         signed_psbt = self.broadcast_transaction_input.toPlainText()
-        method = self.method_selector.currentText()
         confirmation_dialog = ConfirmationDialog(
             message=QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -321,23 +332,33 @@ class BroadcastTransactionWidget(QWidget):
             parent=self,
             icon_type='warning',
         )
-        if confirmation_dialog.exec() == QDialog.Accepted:
-            if method == QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset',
-            ):
-                self._view_model.broadcast_transaction_view_model.create_utxos_end(
-                    signed_psbt,
-                )
-            elif method == QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_btc',
-            ):
-                self._view_model.broadcast_transaction_view_model.send_btc_end(
-                    signed_psbt,
-                )
-            elif method == QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'send_assets',
-            ):
-                self._view_model.broadcast_transaction_view_model.send_end(
+        if self.priv.can_broadcast_psbt:
+            if confirmation_dialog.exec() == QDialog.Accepted:
+                # Determine purpose from DB (like sign psbt flow)
+                purpose = None
+                if self._psbt_signed_items:
+                    if self.method_selector.isVisible() and self.method_selector.count() > 0:
+                        idx = max(0, self.method_selector.currentIndex())
+                    else:
+                        idx = 0  # single PSBT case
+                    if 0 <= idx < len(self._psbt_signed_items):
+                        purpose = self._psbt_signed_items[idx].get('purpose')
+
+                if purpose == 'issue_asset':
+                    self._view_model.broadcast_transaction_view_model.create_utxos_end(
+                        signed_psbt,
+                    )
+                elif purpose == 'send_btc':
+                    self._view_model.broadcast_transaction_view_model.send_btc_end(
+                        signed_psbt,
+                    )
+                elif purpose == 'send_asset':
+                    self._view_model.broadcast_transaction_view_model.send_end(
+                        signed_psbt,
+                    )
+        else:
+            if confirmation_dialog.exec() == QDialog.Accepted:
+                self._view_model.broadcast_transaction_view_model.sign_and_finalize_psbt(
                     signed_psbt,
                 )
 
@@ -351,9 +372,15 @@ class BroadcastTransactionWidget(QWidget):
         """
         Enable or disable the broadcast button based on input and method selection.
         """
-        method_selected = self.method_selector.currentIndex() >= 0
         has_input = bool(self.broadcast_transaction_input.toPlainText())
-        self.broadcast_button.setDisabled(not (method_selected and has_input))
+        if self.priv.can_broadcast_psbt:
+            selector_visible = self.method_selector.isVisible()
+            method_ok = (not selector_visible) or (
+                self.method_selector.currentIndex() >= 0
+            )
+            self.broadcast_button.setEnabled(has_input and method_ok)
+        else:
+            self.broadcast_button.setEnabled(has_input)
 
     def update_loading_state(self, is_loading: bool):
         """
@@ -362,7 +389,7 @@ class BroadcastTransactionWidget(QWidget):
         if is_loading:
             self.render_timer.start()
             self.broadcast_button.start_loading()
-            self.broadcast_button.setDisabled(True)
+            self.broadcast_button.setEnabled(False)
         else:
             self.render_timer.stop()
             self.broadcast_button.stop_loading()
@@ -420,3 +447,139 @@ class BroadcastTransactionWidget(QWidget):
             if button.isChecked():
                 return button.get_translation_key()
         return None
+
+    def _load_psbts_for_signing(self) -> None:
+        """Populate the PSBT input from stored unsigned drafts.
+        Reuse the existing method selector and label as a PSBT selector when
+        broadcasting is not permitted (sign-only mode).
+        """
+        try:
+            wallet_service = WalletDataService.get_session()
+            drafts = wallet_service.list_psbt(
+                False,
+            ) if wallet_service is not None else []
+        except Exception:
+            drafts = []
+
+        self._psbt_items = drafts or []
+        count = len(self._psbt_items)
+
+        # 0 PSBTs: hide selector, clear input, disable button
+        if count == 0:
+            self.method_selector_label.setVisible(False)
+            self.method_selector.setVisible(False)
+            self.broadcast_transaction_input.clear()
+            self.broadcast_button.setEnabled(False)
+            return
+
+        # 1 PSBT: hide selector, set text, enable button
+        if count == 1:
+            self.method_selector_label.setVisible(False)
+            self.method_selector.setVisible(False)
+            self.broadcast_transaction_input.setPlainText(
+                self._psbt_items[0].get('psbt', ''),
+            )
+            self.handle_button_enable()
+            return
+
+        # >1 PSBTs: show and populate selector
+        self.method_selector_label.setVisible(True)
+        self.method_selector.setVisible(True)
+        self.method_selector_label.setText('Select PSBT to sign')
+
+        self.method_selector.blockSignals(True)
+        self.method_selector.clear()
+        titles = []
+        for item in self._psbt_items:
+            purpose = item.get('purpose') or 'psbt'
+            psbt_id = item.get('id', '')
+            titles.append(f"{purpose} ({psbt_id[:8]})" if psbt_id else purpose)
+        if titles:
+            self.method_selector.addItems(titles)
+        self.method_selector.blockSignals(False)
+
+        def on_index_changed(idx: int):
+            psbt_text = self._psbt_items[idx].get(
+                'psbt', '',
+            ) if 0 <= idx < len(self._psbt_items) else ''
+            self.broadcast_transaction_input.setPlainText(psbt_text)
+            self.handle_button_enable()
+
+        self.method_selector.currentIndexChanged.connect(on_index_changed)
+        on_index_changed(0)
+
+    def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
+        """Centralized hardware wallet dialog update handler."""
+        self.hw_dialog.update_dialog(message, dialog_type)
+        if not self.hw_dialog.isVisible():
+            self.hw_dialog.show()
+
+    def show_signed_psbt_page(self, psbt):
+        """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if psbt:
+            if self.hw_dialog.isVisible():
+                self.hw_dialog.accept()
+            self._view_model.page_navigation.receive_asset_page(
+                ReceiveAssetModel(
+                    page_name='NIA page',
+                    address_info='psbt_info', psbt=psbt, is_signed=True,
+                ),
+            )
+
+    def _load_psbts_for_broadcast(self) -> None:
+        """Populate the PSBT input from stored signed drafts for broadcasting.
+        Reuse the same selector as a PSBT selector (no separate widget).
+        """
+        try:
+            wallet_service = WalletDataService.get_session()
+            drafts = wallet_service.list_psbt(
+                True,
+            ) if wallet_service is not None else []
+        except Exception:
+            drafts = []
+
+        self._psbt_signed_items = drafts or []
+        count = len(self._psbt_signed_items)
+
+        # 0 PSBTs: hide selector, clear input, disable button
+        if count == 0:
+            self.method_selector_label.setVisible(False)
+            self.method_selector.setVisible(False)
+            self.handle_button_enable()
+            return
+
+        # 1 PSBT: hide selector, set text, enable button
+        if count == 1:
+            self.method_selector_label.setVisible(False)
+            self.method_selector.setVisible(False)
+            self.broadcast_transaction_input.setPlainText(
+                self._psbt_signed_items[0].get('psbt', ''),
+            )
+            self.handle_button_enable()
+            return
+
+        # >1 PSBTs: show and populate selector
+        self.method_selector_label.setVisible(True)
+        self.method_selector.setVisible(True)
+        self.method_selector_label.setText('Select PSBT to broadcast')
+
+        self.method_selector.blockSignals(True)
+        self.method_selector.clear()
+        titles = []
+        for item in self._psbt_signed_items:
+            purpose = item.get('purpose') or 'psbt'
+            psbt_id = item.get('id', '')
+            titles.append(f"{purpose} ({psbt_id[:8]})" if psbt_id else purpose)
+        if titles:
+            self.method_selector.addItems(titles)
+        self.method_selector.blockSignals(False)
+
+        def on_index_changed(idx: int):
+            psbt_text = self._psbt_signed_items[idx].get(
+                'psbt', '',
+            ) if 0 <= idx < len(self._psbt_signed_items) else ''
+            self.broadcast_transaction_input.setPlainText(psbt_text)
+            self.handle_button_enable()
+
+        self.method_selector.currentIndexChanged.connect(on_index_changed)
+        on_index_changed(0)

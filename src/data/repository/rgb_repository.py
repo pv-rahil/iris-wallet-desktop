@@ -13,7 +13,7 @@ from rgb_lib import SendResult
 from rgb_lib import Transfer
 
 from src.data.repository.colored_wallet import colored_wallet
-from src.data.service.wallet_data_service import wallet_data_service
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
@@ -194,7 +194,9 @@ class RgbRepository:
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
                 fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
             )
-            wallet_data_service.add_psbt(psbt)
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.add_psbt(psbt, purpose='send_asset')
             return psbt
 
     @staticmethod
@@ -205,8 +207,10 @@ class RgbRepository:
             data: SendResult = colored_wallet.wallet.send_end(
                 online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
             )
-            wallet_data_service.delete_psbt(detail.signed_psbt)
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_psbt(detail.signed_psbt)
             return data

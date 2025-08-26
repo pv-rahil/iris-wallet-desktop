@@ -109,7 +109,9 @@ class ReceiveRGBAssetWidget(QWidget):
             self.hide_loading_screen,
         )
         self._view_model.receive_cfa_view_model.utxo_creation_started.connect(
-            self._view_model.utxo_creation_view_model.create_utxos_with_hardware_wallet,
+            lambda: self._view_model.utxo_creation_view_model.create_utxos_begin(
+                purpose='receive_asset',
+            ),
         )
         # Connect to hardware wallet dialog signals
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
@@ -117,9 +119,6 @@ class ReceiveRGBAssetWidget(QWidget):
         )
         self._view_model.utxo_creation_view_model.utxo_created.connect(
             self.handle_receive_cfa_utxo_created,
-        )
-        self._view_model.utxo_creation_view_model.utxo_required.connect(
-            self.handle_receive_cfa_utxo_required,
         )
 
     def close_button_navigation(self):
@@ -203,28 +202,12 @@ class ReceiveRGBAssetWidget(QWidget):
             if dlg.isVisible():
                 dlg.accept()
 
-    def handle_receive_cfa_utxo_required(self, status: bool):
-        """Shows the dialog for utxo require for receive CFA"""
-        if status:
-            self._view_model.utxo_creation_view_model.utxo_required.disconnect()
-            receive_cfa_utxo_required_dialog = HardwareWalletOperationDialog.get_instance(
-                parent=self,
-            )
-            receive_cfa_utxo_required_dialog.set_utxo_required_dialog(
-                INFO_UTXO_REQUIRED,
-            )
-            receive_cfa_utxo_required_dialog.done_button.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
-                ),
-            )
-            receive_cfa_utxo_required_dialog.done_button.clicked.connect(
-                self._view_model.utxo_creation_view_model.create_utxos_begin,
-            )
-            receive_cfa_utxo_required_dialog.cancel_button.clicked.connect(
-                receive_cfa_utxo_required_dialog.reject,
-            )
-            receive_cfa_utxo_required_dialog.exec()
+    def handle_receive_asset(self):
+        """ handle receive asset"""
+        self._view_model.receive_cfa_view_model.utxo_creation_started.disconnect()
+        self._view_model.utxo_creation_view_model.create_utxos_begin(
+            purpose='receive_asset',
+        )
 
     def show_receive_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code for receive CFA."""

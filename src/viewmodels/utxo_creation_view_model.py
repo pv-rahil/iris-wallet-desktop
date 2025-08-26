@@ -35,8 +35,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     """
     hw_dialog_update = Signal(str, object)
     utxo_created = Signal(bool)
-    utxo_required = Signal(bool)
-    unsigned_psbt = Signal(str, bool)
+    unsigned_psbt = Signal(str)
 
     def __init__(self, parent=None):
         """
@@ -46,19 +45,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         super().__init__(parent)
         self.param: CreateUtxosRequestModel = None
 
-    def create_utxos_with_hardware_wallet(self):
-        """
-        Initiates UTXO creation using the hardware wallet PSBT flow.
-        Starts the PSBT creation process or emits utxo_required signal if hardware wallet not connected.
-        """
-        try:
-            self.utxo_required.emit(True)
-        except Exception as e:
-            self.utxo_required.emit(False)
-            self.hw_dialog_update.emit(str(e), PsbtStatus.ERROR)
-            raise
-
-    def create_utxos_begin(self):
+    def create_utxos_begin(self, purpose=None):
         """
         Create unsigned PSBT for UTXO creation in a worker thread.
         Generates an unsigned PSBT that will be used to create new UTXOs.
@@ -72,7 +59,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         self.run_in_thread(
             BtcRepository.create_utxos_begin,
             {
-                'args': [self.param],
+                'args': [self.param, purpose],
                 'callback': self.on_utxo_begin_done,
                 'error_callback': self.on_error,
             },
@@ -86,7 +73,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             )
             self.sign_and_finalize_psbt(unsigned_psbt)
         else:
-            self.unsigned_psbt.emit(unsigned_psbt, False)
+            self.unsigned_psbt.emit(unsigned_psbt)
 
     def sign_and_finalize_psbt(self, unsigned_psbt):
         """

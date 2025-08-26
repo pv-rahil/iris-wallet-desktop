@@ -17,7 +17,7 @@ import zipfile
 from PySide6.QtCore import QCoreApplication
 
 from src.data.repository.setting_repository import SettingRepository
-from src.data.service.wallet_data_service import wallet_data_service
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletType
 from src.utils.build_app_path import app_paths
@@ -256,8 +256,11 @@ class USBSyncManager:
         """Package local wallet data and write/update it on the USB drive."""
         try:
             try:
+                wallet_service = None
                 if SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
-                    wallet_data_service.refresh_wallet_data()
+                    wallet_service = WalletDataService.get_session()
+                    if wallet_service is not None:
+                        wallet_service.refresh_wallet_data()
             except Exception as exc:
                 logger.warning(
                     'Failed refreshing wallet-data before USB sync: %s', exc,
@@ -668,7 +671,7 @@ class USBSyncManager:
             return False
 
     def _calculate_wallet_checksum(self) -> str:
-        """Calculate SHA256 checksum of all files in master fingerprint folder (excluding logs)."""
+        """Calculate SHA256 checksum of all files in the wallet folder (excluding logs)."""
         try:
             folder = os.path.join(
                 app_paths.app_path, self.master_fingerprint,
@@ -700,6 +703,33 @@ class USBSyncManager:
                     )
                     h.update(rel.encode())
 
+            # Also include wallet-data folder under app path (excluding logs)
+            wallet_data_dir = os.path.join(app_paths.app_path, 'wallet-data')
+            if os.path.isdir(wallet_data_dir):
+                wallet_files = []
+                for root, _, fs in os.walk(wallet_data_dir):
+                    for filename in fs:
+                        rel = os.path.relpath(
+                            os.path.join(
+                                root, filename,
+                            ), wallet_data_dir,
+                        )
+                        if not rel.startswith('log'):
+                            wallet_files.append(rel)
+                for rel in sorted(wallet_files):
+                    try:
+                        with open(os.path.join(wallet_data_dir, rel), 'rb') as fh:
+                            while True:
+                                chunk = fh.read(4096)
+                                if not chunk:
+                                    break
+                                h.update(chunk)
+                    except Exception as exc:
+                        logger.warning(
+                            'Could not read wallet-data file for checksum: %s (%s)', rel, exc,
+                        )
+                        h.update(rel.encode())
+
             return h.hexdigest()
         except Exception as exc:
             logger.error('Error calculating wallet checksum: %s', exc)
@@ -722,15 +752,16 @@ class USBSyncManager:
             h = hashlib.sha256()
             with zipfile.ZipFile(path, 'r') as z:
                 prefix = self.master_fingerprint + '/'
-                files = [
-                    n[len(prefix):]
-                    for n in z.namelist()
-                    if n.startswith(prefix)
-                    and not n.endswith('/')
-                    and not n.startswith(prefix + 'log')
+                # Collect full zip names under master fingerprint (excluding logs)
+                names = [
+                    n for n in z.namelist()
+                    if (
+                        (n.startswith(prefix) and not n.startswith(prefix + 'log'))
+                        or (n.startswith('wallet-data/') and not n.startswith('wallet-data/log'))
+                    ) and not n.endswith('/')
                 ]
-                for rel in sorted(files):
-                    h.update(z.read(prefix + rel))
+                for name in sorted(names):
+                    h.update(z.read(name))
 
             return h.hexdigest()
         except Exception as exc:

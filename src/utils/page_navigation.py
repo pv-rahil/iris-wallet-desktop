@@ -355,9 +355,13 @@ class PageNavigation:
         error_report_dialog = ErrorReportDialog()
         error_report_dialog.exec()
 
-    def broadcast_transaction_page(self):
+    def broadcast_transaction_page(self, from_sidebar: bool = False):
         """This method display the help page."""
-        self.navigate_to_page('BroadcastTransactionWidget')
+        self.current_stack = {
+            'name': 'ReceiveAssetWidget',
+            'widget': self.pages['BroadcastTransactionWidget'](self._ui.view_model, from_sidebar),
+        }
+        self.navigate_and_toggle(False)
 
     def receive_asset_page(self, params: ReceiveAssetModel):
         """This method display the receive asset page with PSBT."""
@@ -366,6 +370,3 @@ class PageNavigation:
             'widget': self.pages['ReceiveAssetWidget'](self._ui.view_model, params),
         }
         self.navigate_and_toggle(False)
-
-    def get_ui(self):
-        return self._ui

@@ -105,7 +105,6 @@ class IssueNIAViewModel(QObject, ThreadManager):
     def on_error(self, error) -> None:
         """This method is used  handle onerror for the NIA issue page."""
         self.issue_button_clicked.emit(False)
-        print('error------->', error.message)
         if isinstance(error, CommonException):
             if getattr(error, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)

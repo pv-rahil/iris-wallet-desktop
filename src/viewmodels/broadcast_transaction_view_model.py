@@ -8,13 +8,17 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
 from src.data.repository.btc_repository import BtcRepository
+from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
+from src.model.enums.enums_model import PsbtStatus
 from src.model.rgb_model import SendAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_BTC_SENT
+from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
+from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
@@ -26,6 +30,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     """
     is_loading = Signal(bool)
     tx_broadcasted = Signal(bool)
+    hw_dialog_update = Signal(str, object)
+    finalized_psbt = Signal(str)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
@@ -101,3 +107,25 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
         ToastManager.success(description=INFO_BTC_SENT.format(response.tx_id))
+
+    def sign_and_finalize_psbt(self, unsigned_psbt):
+        """
+        Sign and finalize the PSBT in a worker thread.
+        Signs the PSBT with hardware wallet and finalizes the transaction.
+        """
+        self.hw_dialog_update.emit(
+            INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+        )
+        self.run_in_thread(
+            CommonOperationRepository.sign_and_finalize_psbt,
+            {
+                'args': [unsigned_psbt],
+                'callback': self.on_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_success(self, finalized_psbt):
+        """Handle success method for signing"""
+        self.finalized_psbt.emit(finalized_psbt)
+        ToastManager.success(description=INFO_PSBT_SIGN_SUCCESSFULLY)

@@ -6,7 +6,7 @@ from rgb_lib import Transaction
 from rgb_lib import Unspent
 
 from src.data.repository.colored_wallet import colored_wallet
-from src.data.service.wallet_data_service import wallet_data_service
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.btc_model import AddressResponseModel
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import EstimateFeeRequestModel
@@ -91,11 +91,16 @@ class BtcRepository:
         """Creates psbt for bitcoin."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.send_btc_begin(
-                online=colored_wallet.online, skip_sync=param.skip_sync,
-                address=param.address, amount=param.amount, fee_rate=param.fee_rate,
+                online=colored_wallet.online,
+                recipient=param.recipient,
+                amount=param.amount,
+                fee_rate=param.fee_rate,
+                min_confirmations=param.min_confirmations,
             )
-            wallet_data_service.add_psbt(psbt)
-            return psbt
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.add_psbt(psbt, purpose='send_btc')
+            return SendBtcResponseModel(psbt=psbt)
 
     @staticmethod
     def send_btc_end(detail: BroadcastPsbtRequestModel) -> SendBtcResponseModel:
@@ -104,21 +109,25 @@ class BtcRepository:
             data = colored_wallet.wallet.send_btc_end(
                 online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
             )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_psbt(detail.signed_psbt)
             cache = Cache.get_cache_session()
-            wallet_data_service.delete_psbt(detail.signed_psbt)
             if cache is not None:
                 cache.invalidate_cache()
             return SendBtcResponseModel(tx_id=data)
 
     @staticmethod
-    def create_utxos_begin(param: CreateUtxosRequestModel):
+    def create_utxos_begin(param: CreateUtxosRequestModel, purpose: str | None = None):
         """Creates colorable utxo psbt."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.create_utxos_begin(
                 online=colored_wallet.online, up_to=param.up_to, num=2, size=param.size, fee_rate=param.fee_rate,
                 skip_sync=param.skip_sync,
             )
-            wallet_data_service.add_psbt(psbt)
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.add_psbt(psbt, purpose=purpose)
             return psbt
 
     @staticmethod
@@ -128,7 +137,9 @@ class BtcRepository:
             data: int = colored_wallet.wallet.create_utxos_end(
                 online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
             )
-            wallet_data_service.delete_psbt(detail.signed_psbt)
+            wallet_data_service = WalletDataService.get_session()
+            if wallet_data_service is not None:
+                wallet_data_service.delete_psbt(detail.signed_psbt)
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()

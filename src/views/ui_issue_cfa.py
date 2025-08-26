@@ -388,11 +388,10 @@ class IssueCFAWidget(QWidget):
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
             self.handle_cfa_hw_dialog_update,
         )
-        self._view_model.utxo_creation_view_model.utxo_required.connect(
-            self.handle_cfa_utxo_required,
-        )
         self._view_model.issue_cfa_asset_view_model.utxo_creation_started.connect(
-            self._view_model.utxo_creation_view_model.create_utxos_with_hardware_wallet,
+            lambda: self._view_model.utxo_creation_view_model.create_utxos_begin(
+                purpose='issue_asset',
+            ),
         )
 
     def show_file_preview(self, file_upload_message):
@@ -497,26 +496,12 @@ class IssueCFAWidget(QWidget):
                 cfa_hw_dialog.accept()
             self.on_issue_cfa()
 
-    def handle_cfa_utxo_required(self, status: bool):
-        """Shows the dialog for utxo require"""
-        if status:
-            self._view_model.utxo_creation_view_model.utxo_required.disconnect()
-            cfa_hw_dialog = HardwareWalletOperationDialog(
-                parent=self,
-            )
-            cfa_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
-            cfa_hw_dialog.done_button.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
-                ),
-            )
-            cfa_hw_dialog.done_button.clicked.connect(
-                self._view_model.utxo_creation_view_model.create_utxos_begin,
-            )
-            cfa_hw_dialog.cancel_button.clicked.connect(
-                cfa_hw_dialog.reject,
-            )
-            cfa_hw_dialog.exec()
+    def handle_cfa_issue(self):
+        """handle cfa issue"""
+        self._view_model.issue_cfa_asset_view_model.utxo_creation_started.disconnect()
+        self._view_model.utxo_creation_view_model.create_utxos_begin(
+            purpose='issue_asset',
+        )
 
     def show_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""

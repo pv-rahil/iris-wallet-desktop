@@ -214,10 +214,14 @@ class Sidebar(QWidget):
             ),
         )
         self.broadcast_transaction.clicked.connect(
-            self._view_model.page_navigation.broadcast_transaction_page,
+            lambda: self._view_model.page_navigation.broadcast_transaction_page(
+                from_sidebar=True,
+            ),
         )
         self.sign_psbt.clicked.connect(
-            self._view_model.page_navigation.broadcast_transaction_page,
+            lambda: self._view_model.page_navigation.broadcast_transaction_page(
+                from_sidebar=True,
+            ),
         )
 
     def retranslate_ui(self):

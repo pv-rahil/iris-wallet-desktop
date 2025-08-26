@@ -25,6 +25,7 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
@@ -65,6 +66,7 @@ class HeaderFrame(QFrame, QObject):
         self.is_backup_warning = False
         self.title_logo_path = title_logo_path
         self.header_frame_view_model = HeaderFrameViewModel()
+        self.page_navigation = PageNavigationEventManager.get_instance()
         self.setObjectName('title_frame_main')
         self.setStyleSheet(load_stylesheet('views/qss/header_frame_style.qss'))
         self.setGeometry(QRect(200, 190, 1016, 70))
@@ -213,6 +215,24 @@ class HeaderFrame(QFrame, QObject):
             self.usb_sync_frame,
         )
 
+        # PSBT notice frame (hidden by default). Shown after USB sync based on wallet type
+        self.psbt_info_frame = QFrame(self)
+        self.psbt_info_frame.setObjectName('psbt_info_frame')
+        self.psbt_info_frame.setMinimumSize(QSize(180, 42))
+        self.psbt_info_frame.setFrameShape(QFrame.StyledPanel)
+        self.psbt_info_frame.setFrameShadow(QFrame.Raised)
+        self.psbt_info_frame.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor),
+        )
+        self.psbt_info_frame.hide()
+        self.psbt_info_layout = QHBoxLayout(self.psbt_info_frame)
+        self.psbt_info_layout.setSpacing(10)
+        self.psbt_info_layout.setContentsMargins(16, 8, 16, 8)
+        self.psbt_info_label = QLabel(self.psbt_info_frame)
+        self.psbt_info_label.setObjectName('psbt_info_label')
+        self.psbt_info_layout.addWidget(self.psbt_info_label)
+        self.title_frame_main_horizontal_layout.addWidget(self.psbt_info_frame)
+
         self.horizontal_spacer = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
@@ -263,6 +283,7 @@ class HeaderFrame(QFrame, QObject):
             self.header_frame_view_model.sync_process_ended.connect(
                 self.handle_sync_process_ended,
             )
+        self.update_psbt_info()
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -409,6 +430,11 @@ class HeaderFrame(QFrame, QObject):
             if frame_rect.contains(event.pos()):
                 self.on_usb_sync_frame_click()
 
+        if self.psbt_info_frame.isVisible():
+            frame_rect = self.psbt_info_frame.geometry()
+            if frame_rect.contains(event.pos()):
+                self.page_navigation.broadcast_transaction_page_signal.emit()
+
         # Call the parent method to ensure other click functionality works
         super().mousePressEvent(event)
 
@@ -419,31 +445,27 @@ class HeaderFrame(QFrame, QObject):
         """
         if self.network_error_frame.isVisible() and self.is_backup_warning:
             # Only navigate if the frame is visible and it's showing a backup warning
-            PageNavigationEventManager.get_instance().backup_page_signal.emit()
+            self.page_navigation.backup_page_signal.emit()
 
     def set_usb_sync_frame(self):
         """
         This method manages the USB sync frame visibility.
         Shows the frame when USB is detected and allows user to initiate sync.
         """
-        try:
-            self.usb_sync_info_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sync_prompt', None,
-                ),
-            )
-            self.usb_sync_frame.setCursor(
-                QCursor(Qt.CursorShape.PointingHandCursor),
-            )
-            self.usb_sync_frame.setToolTip(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'click_to_sync_usb', None,
-                ),
-            )
-            self.usb_sync_frame.show()
-        except Exception:
-            # Hide the frame if there's any error
-            self.usb_sync_frame.hide()
+        self.usb_sync_info_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sync_prompt', None,
+            ),
+        )
+        self.usb_sync_frame.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor),
+        )
+        self.usb_sync_frame.setToolTip(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'click_to_sync_usb', None,
+            ),
+        )
+        self.usb_sync_frame.show()
 
     def on_usb_sync_frame_click(self):
         """
@@ -480,6 +502,7 @@ class HeaderFrame(QFrame, QObject):
         )
         if direction == 'from_usb':
             self.refresh_page_button.click()
+            self.update_psbt_info()
 
     def _check_keyring_state(self):
         """Checks the keyring status and retrieves the wallet password, either
@@ -505,3 +528,40 @@ class HeaderFrame(QFrame, QObject):
                 password = mnemonic_dialog.password_input.text()
                 return password
         return None
+
+    def update_psbt_info(self):
+        """Determine PSBT drafts of interest based on wallet type and update the banner.
+        - Watch-only wallet: show signed drafts (ready to broadcast)
+        - Offline wallet: show unsigned drafts (need signing)
+        Otherwise: hide the banner.
+        """
+        access_type = SettingRepository.get_wallet_access_type()
+        wallet_type = SettingRepository.get_wallet_type()
+
+        label_text = ''
+
+        wallet_service = WalletDataService.get_session()
+        if access_type == WalletAccessType.WATCH_ONLY:
+            drafts = wallet_service.list_psbt(
+                True,
+            ) if wallet_service is not None else []
+            count = len(drafts) if drafts is not None else 0
+            if count > 0:
+                label_text = f"{count} PSBT(s) ready to broadcast"
+        elif wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+            drafts = wallet_service.list_psbt(
+                False,
+            ) if wallet_service is not None else []
+            count = len(drafts) if drafts is not None else 0
+            if count > 0:
+                label_text = f"{count} PSBT(s) need signing"
+        else:
+            drafts = []
+            count = 0
+
+        if count > 0:
+            self.psbt_info_label.setText(label_text)
+            self.psbt_info_frame.setToolTip(label_text)
+            self.psbt_info_frame.show()
+        else:
+            self.psbt_info_frame.hide()

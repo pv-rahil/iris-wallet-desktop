@@ -29,6 +29,7 @@ from accessible_constant import NIA_ASSET_AMOUNT
 from accessible_constant import NIA_ASSET_NAME
 from accessible_constant import NIA_ASSET_TICKER
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
@@ -342,14 +343,11 @@ class IssueNIAWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_created.connect(
             self.handle_nia_utxo_created,
         )
-        self._view_model.utxo_creation_view_model.utxo_required.connect(
-            self.handle_nia_utxo_required,
-        )
         self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
             self.show_nia_psbt_page,
         )
         self._view_model.issue_nia_asset_view_model.utxo_creation_started.connect(
-            self._view_model.utxo_creation_view_model.create_utxos_begin,
+            self.handle_nia_issue,
         )
 
     def retranslate_ui(self):
@@ -484,37 +482,54 @@ class IssueNIAWidget(QWidget):
 
             self.on_issue_nia_click()
 
-    def handle_nia_utxo_required(self, status: bool):
-        """Shows the dialog for utxo require"""
-        if status:
-            self._view_model.utxo_creation_view_model.utxo_required.disconnect()
-            nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
-                parent=self,
-            )
-            nia_hw_dialog.set_utxo_required_dialog(INFO_UTXO_REQUIRED)
-            nia_hw_dialog.done_button.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
-                ),
-            )
-            nia_hw_dialog.done_button.clicked.connect(
-                nia_hw_dialog.accept,
-            )
-            nia_hw_dialog.done_button.clicked.connect(
-                self._view_model.utxo_creation_view_model.create_utxos_begin,
-            )
-            nia_hw_dialog.cancel_button.clicked.connect(
-                nia_hw_dialog.reject,
-            )
-            if not nia_hw_dialog.isVisible():
-                nia_hw_dialog.exec()
+    def handle_nia_issue(self):
+        """handle nia issue"""
+        self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
+        self._view_model.utxo_creation_view_model.create_utxos_begin(
+            purpose='issue_asset',
+        )
 
-    def show_nia_psbt_page(self, psbt, is_signed):
+    def show_nia_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         if psbt:
+            self.create_issue_asset_draft()
+            self._view_model.utxo_creation_view_model.unsigned_psbt.disconnect()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='NIA page',
-                    address_info='psbt_info', psbt=psbt, is_signed=is_signed,
+                    address_info='psbt_info', psbt=psbt, is_signed=False,
                 ),
             )
+
+    def create_issue_asset_draft(self):
+        """Create and save an Issue Asset draft when UTXOs are not available.
+        It stores minimal metadata so the draft can be shown on the fungible page.
+        """
+        # Read current form inputs
+        ticker = (self.short_identifier_input.text() or '').upper().strip()
+        name = (self.asset_name_input.text() or '').strip()
+        amount_text = (self.amount_input.text() or '0').strip()
+
+        try:
+            amount = int(amount_text)
+        except Exception:
+            amount = 0
+
+        if not ticker or not name or amount <= 0:
+            # Ignore if inputs are not valid; keep UX simple here
+            return
+
+        try:
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.upsert_draft_issue_asset(
+                    name=name,
+                    ticker=ticker,
+                    issued_amount=amount,
+                )
+        except Exception:
+            # Swallow errors to avoid breaking user flow; logging is handled in service
+            pass
+
+        # Navigate back to fungible assets so the draft card appears at the top
+        self._view_model.page_navigation.fungibles_asset_page()

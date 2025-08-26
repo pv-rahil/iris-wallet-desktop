@@ -13,7 +13,7 @@ from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.helpers import main_asset_page_helper
-from src.data.service.wallet_data_service import wallet_data_service
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import OfflineAsset
 from src.model.common_operation_model import MainPageDataResponseModel
@@ -56,7 +56,11 @@ class MainAssetPageDataService:
 
             btc_balance: BalanceResponseModel
             if is_offline_wallet:
-                btc_balance = wallet_data_service.get_btc_balance()
+                wallet_service = WalletDataService.get_session()
+                if wallet_service is not None:
+                    btc_balance = wallet_service.get_btc_balance()
+                else:
+                    btc_balance = BtcRepository.get_btc_balance()
             else:
                 RgbRepository.refresh_transfer()
                 btc_balance = BtcRepository.get_btc_balance()

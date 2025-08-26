@@ -29,6 +29,7 @@ import src.resources_rc
 from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
 from accessible_constant import ISSUE_NIA_ASSET
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
@@ -43,7 +44,6 @@ from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
-from src.utils.local_store import local_store
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
 from src.viewmodels.main_view_model import MainViewModel
@@ -255,6 +255,34 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.header_layout.addWidget(self.symbol_header, 0, 5, Qt.AlignLeft)
 
         self.vertical_layout_3.addWidget(self.header_frame)
+        # # Insert up to two draft issue-asset cards right below header and above Bitcoin
+        # try:
+        #     wallet_service = WalletDataService.get_session()
+        #     _drafts = (
+        #         wallet_service.list_draft_issue_assets() if wallet_service is not None else []
+        #     )
+        #     print(_drafts)
+        # except Exception:
+        #     _drafts = []
+        # _issue_drafts = _drafts[:2]
+
+        # class _DraftAsset:
+        #     def __init__(self, name: str, ticker: str, amount: int):
+        #         # Show the literal id label as requested
+        #         self.asset_id = 'draft issue asset'
+        #         self.name = name
+        #         self.ticker = ticker
+        #         class _Bal:
+        #             def __init__(self, v: int):
+        #                 self.future = v
+        #         self.balance = _Bal(int(amount))
+
+        # for d in _issue_drafts:
+        #     draft_asset = _DraftAsset(
+        #         d.get('name', 'Issue Asset Draft'), d.get('ticker', 'NIA'), d.get('issued_amount', 0),
+        #     )
+        #     self.create_fungible_card(draft_asset)
+        #     self.fungible_frame.clicked.connect(self._view_model.page_navigation.issue_nia_asset_page)
         bitcoin = self._view_model.main_asset_view_model.assets.vanilla
 
         bitcoin_img_path = {
