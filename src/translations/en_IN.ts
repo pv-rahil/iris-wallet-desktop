@@ -2044,5 +2044,17 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>sign_psbt_label</source>
         <translation>Enter your unsigned psbt for sign</translation>
     </message>
+    <message>
+        <source>psbt</source>
+        <translation>PSBT</translation>
+    </message>
+    <message>
+        <source>select_psbt_for_broadcast</source>
+        <translation>Select PSBT to broadcast</translation>
+    </message>
+    <message>
+        <source>select_psbt_for_sign</source>
+        <translation>Select PSBT to sign</translation>
+    </message>
 </context>
 </TS>

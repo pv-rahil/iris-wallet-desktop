@@ -24,6 +24,7 @@ import src.resources_rc
 from accessible_constant import INVOICE_COPY_BUTTON
 from accessible_constant import RECEIVE_ASSET_CLOSE_BUTTON
 from accessible_constant import RECEIVER_ADDRESS
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.utils.common_utils import copy_text
 from src.utils.common_utils import set_qr_code
@@ -265,19 +266,24 @@ class ReceiveAssetWidget(QWidget):
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'unsigned_transaction', None,
                     ),
                 )
+                self.address_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt', None,
+                    ),
+                )
         else:
             self.asset_title.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'receive', None,
                 ),
             )
+            self.address_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'address', None,
+                ),
+            )
         self.receive_asset_close_button.setText('')
         self.label.setText('')
-        self.address_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'address', None,
-            ),
-        )
         self.wallet_address_description_text.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -301,13 +307,29 @@ class ReceiveAssetWidget(QWidget):
 
     def update_qr_and_address(self, address: str):
         """This method used to set qr and address"""
+        display_text = str(address)
+        if self.psbt:
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                for signed_status in [False, True]:
+                    drafts = wallet_service.list_psbt(signed_status) or []
+                    for draft in drafts:
+                        if draft.get('psbt') == address:
+                            purpose = draft.get('purpose')
+                            if purpose:
+                                display_text = f"psbt:{purpose}:{address}"
+                                break
+                    else:
+                        continue
+                    break
+
         qr_image = set_qr_code(str(address))
         pixmap = QPixmap.fromImage(qr_image)
         self.label.setPixmap(pixmap)
         self.receiver_address.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, str(
-                    address,
-                ), None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                display_text,
+                None,
             ),
         )

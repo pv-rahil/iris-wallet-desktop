@@ -19,6 +19,7 @@ from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
+from src.utils.constant import NO_OF_UTXO
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
@@ -54,7 +55,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         self.param = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
-            num=1,
+            num=NO_OF_UTXO,
         )
         self.run_in_thread(
             BtcRepository.create_utxos_begin,

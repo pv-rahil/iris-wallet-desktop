@@ -287,4 +287,12 @@ class FailTransferResponseModel(BaseModel):
 
 class SendBeginResult(BaseModel):
     """Response model for send begin"""
-    psbt : str
+    psbt: str
+
+
+class DraftAsset(BaseModel):
+    """Draft asset model"""
+    draft_id: int
+    asset_id: str
+    name: str
+    ticker: str

@@ -48,7 +48,7 @@ from src.views.components.wallet_logo_frame import WalletLogoFrame
 class IssueNIAWidget(QWidget):
     """This class represents the UI for issuing NIA assets."""
 
-    def __init__(self, view_model):
+    def __init__(self, view_model, id=None, from_draft=False):
         super().__init__()
         self.render_timer = RenderTimer(task_name='IssueNIAAsset Rendering')
         self._view_model: MainViewModel = view_model
@@ -60,6 +60,8 @@ class IssueNIAWidget(QWidget):
         self.issue_nia_grid_layout.addWidget(
             self.issue_nia_wallet_logo, 0, 0, 1, 2,
         )
+        self.draft_id = id
+        self.from_draft = from_draft
 
         self.horizontal_spacer_nia_widget = QSpacerItem(
             265,
@@ -313,6 +315,8 @@ class IssueNIAWidget(QWidget):
         )
         self.setup_ui_connection()
         self.retranslate_ui()
+        if self.from_draft and self.draft_id:
+            self._load_draft_data()
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
@@ -429,6 +433,9 @@ class IssueNIAWidget(QWidget):
         short_identifier = self.short_identifier_input.text().upper()
         asset_name = self.asset_name_input.text()
         amount_to_issue = self.amount_input.text()
+        self.pending_ticker = short_identifier
+        self.pending_name = asset_name
+        self.pending_amount = amount_to_issue
 
         # Call the view model method and pass the text values as arguments
         self._view_model.issue_nia_asset_view_model.on_issue_click(
@@ -446,6 +453,11 @@ class IssueNIAWidget(QWidget):
 
     def asset_issued(self, asset_name):
         """This method handled after asset issued"""
+        # Clean up draft if issuance was started from a draft
+        if self.from_draft and self.draft_id:
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_draft_issue_asset(self.draft_id)
         header = 'Issue new ticker'
         title = 'You’re all set!'
         description = f"Asset '{asset_name}' has been issued successfully."
@@ -485,15 +497,27 @@ class IssueNIAWidget(QWidget):
     def handle_nia_issue(self):
         """handle nia issue"""
         self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
-        self._view_model.utxo_creation_view_model.create_utxos_begin(
-            purpose='issue_asset',
+        wallet_service = WalletDataService.get_session()
+        unsigned_psbts = wallet_service.list_psbt(signed=False)
+        existing = next(
+            (
+                p for p in unsigned_psbts if p.get(
+                    'purpose',
+                ) == 'issue_asset'
+            ), None,
         )
+        if existing and existing.get('psbt'):
+            self.show_nia_psbt_page(existing.get('psbt'))
+        else:
+            self._view_model.utxo_creation_view_model.create_utxos_begin(
+                purpose='issue_asset',
+            )
 
     def show_nia_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         if psbt:
-            self.create_issue_asset_draft()
             self._view_model.utxo_creation_view_model.unsigned_psbt.disconnect()
+            self.create_issue_asset_draft()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='NIA page',
@@ -505,31 +529,29 @@ class IssueNIAWidget(QWidget):
         """Create and save an Issue Asset draft when UTXOs are not available.
         It stores minimal metadata so the draft can be shown on the fungible page.
         """
-        # Read current form inputs
-        ticker = (self.short_identifier_input.text() or '').upper().strip()
-        name = (self.asset_name_input.text() or '').strip()
-        amount_text = (self.amount_input.text() or '0').strip()
+        ticker = self.pending_ticker
+        name = self.pending_name
+        amount = self.pending_amount
+        print('ticker', ticker, 'name', name, 'amount', amount, '----'*20)
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is not None:
+            wallet_service.upsert_draft_issue_asset(
+                name=name,
+                ticker=ticker,
+                issued_amount=int(amount),
+            )
 
-        try:
-            amount = int(amount_text)
-        except Exception:
-            amount = 0
+    def _load_draft_data(self):
+        """Load draft data using the draft ID"""
+        wallet_service = WalletDataService.get_session()
 
-        if not ticker or not name or amount <= 0:
-            # Ignore if inputs are not valid; keep UX simple here
-            return
-
-        try:
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.upsert_draft_issue_asset(
-                    name=name,
-                    ticker=ticker,
-                    issued_amount=amount,
-                )
-        except Exception:
-            # Swallow errors to avoid breaking user flow; logging is handled in service
-            pass
-
-        # Navigate back to fungible assets so the draft card appears at the top
-        self._view_model.page_navigation.fungibles_asset_page()
+        drafts = wallet_service.list_draft_issue_assets()
+        draft = next((d for d in drafts if d.get('id') == self.draft_id), None)
+        if draft:
+            if 'name' in draft:
+                self.asset_name_input.setText(draft['name'])
+            if 'ticker' in draft:
+                self.short_identifier_input.setText(draft['ticker'])
+            if 'issued_amount' in draft:
+                self.amount_input.setText(str(draft['issued_amount']))
+            self.handle_button_enabled()

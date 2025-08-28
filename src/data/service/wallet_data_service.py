@@ -127,10 +127,10 @@ class WalletDataService:
         """
         create_draft_issue_asset_table_query = """
         CREATE TABLE IF NOT EXISTS draft_issue_asset (
+            id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             ticker TEXT NOT NULL,
-            issued_amount INTEGER NOT NULL,
-            created_at INTEGER
+            issued_amount INTEGER NOT NULL
         )
         """
         with self._db_lock:
@@ -139,25 +139,6 @@ class WalletDataService:
                     self.conn.execute(create_table_query)
                     self.conn.execute(create_psbt_table_query)
                     self.conn.execute(create_draft_issue_asset_table_query)
-                    # Migrate legacy psbt table that had created_at column
-                    try:
-                        cur = self.conn.execute('PRAGMA table_info(psbt)')
-                        cols = [r[1] for r in cur.fetchall()]
-                        if 'created_at' in cols:
-                            # Perform migration to drop created_at
-                            self.conn.execute(
-                                'CREATE TABLE IF NOT EXISTS psbt_new (id TEXT PRIMARY KEY, psbt TEXT NOT NULL, signed INTEGER NOT NULL, purpose TEXT)',
-                            )
-                            self.conn.execute(
-                                'INSERT OR REPLACE INTO psbt_new (id, psbt, signed, purpose) SELECT id, psbt, signed, NULL as purpose FROM psbt',
-                            )
-                            self.conn.execute('DROP TABLE psbt')
-                            self.conn.execute(
-                                'ALTER TABLE psbt_new RENAME TO psbt',
-                            )
-                    except sqlite3.Error:
-                        # If pragma fails, ignore; table will be used as-is
-                        pass
             except sqlite3.Error as exc:
                 logger.error(
                     'Exception occur in wallet-data: %s, Message: %s', type(
@@ -206,20 +187,18 @@ class WalletDataService:
             )
             raise
 
-    # ------------------------------
-    # Draft Issue Asset helpers
-    # ------------------------------
-    def upsert_draft_issue_asset(self, name: str, ticker: str, issued_amount: int, created_at: int | None = None) -> None:
+    def upsert_draft_issue_asset(self, name: str, ticker: str, issued_amount: int) -> None:
         """Insert or replace a draft issue asset row."""
+        print('name', name, 'ticker', ticker, 'issued_amount', issued_amount)
         if not (self.is_watch_only or self.is_offline_wallet):
             return
-        ts = int(time.time()) if created_at is None else created_at
         with self._db_lock:
             try:
+                # Use a transaction so the insert is committed and survives app restarts
                 with self.conn:
                     self.conn.execute(
-                        'INSERT OR REPLACE INTO draft_issue_asset (name, ticker, issued_amount, created_at) VALUES (?, ?, ?, ?)',
-                        (name, ticker, int(issued_amount), ts),
+                        'INSERT OR REPLACE INTO draft_issue_asset (name, ticker, issued_amount) VALUES (?, ?, ?)',
+                        (name, ticker, int(issued_amount)),
                     )
             except sqlite3.Error as exc:
                 logger.error(
@@ -235,15 +214,15 @@ class WalletDataService:
             try:
                 cur = self.conn.cursor()
                 cur.execute(
-                    'SELECT name, ticker, issued_amount, created_at FROM draft_issue_asset ORDER BY created_at DESC',
+                    'SELECT id, name, ticker, issued_amount FROM draft_issue_asset',
                 )
                 rows = cur.fetchall()
                 return [
                     {
-                        'name': r[0],
-                        'ticker': r[1],
-                        'issued_amount': int(r[2]) if r[2] is not None else 0,
-                        'created_at': r[3],
+                        'id': r[0],
+                        'name': r[1],
+                        'ticker': r[2],
+                        'issued_amount': int(r[3]),
                     }
                     for r in rows
                 ]
@@ -260,12 +239,12 @@ class WalletDataService:
         with self._db_lock:
             try:
                 with self.conn:
-                    cur = self.conn.execute(
+                    self.conn.execute(
                         'DELETE FROM draft_issue_asset WHERE id = ?', (
                             draft_id,
                         ),
                     )
-                return cur.rowcount > 0
+                return True
             except sqlite3.Error as exc:
                 logger.error(
                     'WalletDataService: delete_draft_issue_asset failed: %s', exc,

@@ -121,6 +121,7 @@ class BtcRepository:
     def create_utxos_begin(param: CreateUtxosRequestModel, purpose: str | None = None):
         """Creates colorable utxo psbt."""
         with repository_custom_context():
+            print('param is -------------->', param)
             psbt = colored_wallet.wallet.create_utxos_begin(
                 online=colored_wallet.online, up_to=param.up_to, num=2, size=param.size, fee_rate=param.fee_rate,
                 skip_sync=param.skip_sync,

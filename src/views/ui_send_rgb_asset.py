@@ -370,8 +370,6 @@ class SendRGBAssetWidget(QWidget):
 
     def show_send_rgb_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
-        if self.send_rgb_hw_dialog.isVisible():
-            self.send_rgb_hw_dialog.accept()
         if self.asset_type == AssetSchema.NIA:
             page_name = 'NIA page'
         else:

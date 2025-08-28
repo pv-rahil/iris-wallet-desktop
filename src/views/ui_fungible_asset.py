@@ -36,6 +36,7 @@ from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
+from src.model.rgb_model import DraftAsset
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import format_epoch_time
@@ -255,46 +256,30 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.header_layout.addWidget(self.symbol_header, 0, 5, Qt.AlignLeft)
 
         self.vertical_layout_3.addWidget(self.header_frame)
-        # # Insert up to two draft issue-asset cards right below header and above Bitcoin
-        # try:
-        #     wallet_service = WalletDataService.get_session()
-        #     _drafts = (
-        #         wallet_service.list_draft_issue_assets() if wallet_service is not None else []
-        #     )
-        #     print(_drafts)
-        # except Exception:
-        #     _drafts = []
-        # _issue_drafts = _drafts[:2]
 
-        # class _DraftAsset:
-        #     def __init__(self, name: str, ticker: str, amount: int):
-        #         # Show the literal id label as requested
-        #         self.asset_id = 'draft issue asset'
-        #         self.name = name
-        #         self.ticker = ticker
-        #         class _Bal:
-        #             def __init__(self, v: int):
-        #                 self.future = v
-        #         self.balance = _Bal(int(amount))
-
-        # for d in _issue_drafts:
-        #     draft_asset = _DraftAsset(
-        #         d.get('name', 'Issue Asset Draft'), d.get('ticker', 'NIA'), d.get('issued_amount', 0),
-        #     )
-        #     self.create_fungible_card(draft_asset)
-        #     self.fungible_frame.clicked.connect(self._view_model.page_navigation.issue_nia_asset_page)
         bitcoin = self._view_model.main_asset_view_model.assets.vanilla
-
         bitcoin_img_path = {
             NetworkEnumModel.MAINNET.value: ':/assets/bitcoin.png',
             NetworkEnumModel.REGTEST.value: ':/assets/regtest_bitcoin.png',
             NetworkEnumModel.TESTNET.value: ':/assets/testnet_bitcoin.png',
         }
-
         img_path = bitcoin_img_path.get(self.network.value)
-
         if img_path:
             self.create_fungible_card(bitcoin, img_path=img_path)
+
+        wallet_service = WalletDataService.get_session()
+        draft_assets = (
+            wallet_service.list_draft_issue_assets() if wallet_service is not None else []
+        )
+        for d in draft_assets:
+            draft_asset = DraftAsset(
+                draft_id=d.get('id'),
+                asset_id='draft_asset',
+                name=f'{d.get("name")} (Draft)',
+                ticker=d.get('ticker'),
+            )
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+                self.create_fungible_card(draft_asset)
 
         for asset in self._view_model.main_asset_view_model.assets.nia:
             self.create_fungible_card(asset)
@@ -392,6 +377,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 self.address.setText(TokenSymbol.REGTEST_BITCOIN)
             elif network == NetworkEnumModel.TESTNET:
                 self.address.setText(TokenSymbol.TESTNET_BITCOIN)
+        elif asset.asset_id == 'draft_asset':
+            self.address.setText('Click to continue issuence')
         else:
             self.address.setText(asset.asset_id)
 
@@ -403,7 +390,10 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.amount.setObjectName('amount')
         self.amount.setMinimumSize(QSize(100, 40))
 
-        self.amount.setText(str(asset.balance.future))
+        if asset.asset_id == 'draft_asset':
+            self.amount.setText('-')
+        else:
+            self.amount.setText(str(asset.balance.future))
         self.grid_layout_fungible_frame.addWidget(
             self.amount, 0, 3, Qt.AlignLeft,
         )
@@ -435,7 +425,15 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 )
 
         self.vertical_layout_3.addWidget(self.fungible_frame)
-        self.fungible_frame.clicked.connect(self.handle_asset_frame_click)
+        if asset.asset_id == 'draft_asset':
+            draft_id = asset.draft_id
+            self.fungible_frame.clicked.connect(
+                lambda: self._view_model.page_navigation.issue_nia_asset_page(
+                    draft_id, from_draft=True,
+                ),
+            )
+        else:
+            self.fungible_frame.clicked.connect(self.handle_asset_frame_click)
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""

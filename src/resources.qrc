@@ -79,5 +79,6 @@
     <file>assets/white_trezor.png</file>
     <file>assets/success.png</file>
     <file>assets/sync.png</file>
+    <file>assets/channel_management.png</file>
   </qresource>
 </RCC>

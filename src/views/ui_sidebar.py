@@ -143,6 +143,15 @@ class Sidebar(QWidget):
         self.about.setAccessibleName(ABOUT_BUTTON)
         self.grid_layout_sidebar.addWidget(self.about, 9, 0, 1, 1)
 
+        self.broadcast_transaction = SidebarButton(
+            'Broadcast Transaction', ':/assets/channel_management.png', translation_key='broadcast_transaction',
+        )
+        self.broadcast_transaction.setVisible(priv.can_broadcast_psbt)
+        self.broadcast_transaction.setCheckable(False)
+        self.grid_layout_sidebar.addWidget(
+            self.broadcast_transaction, 10, 0, 1, 1,
+        )
+
         self.vertical_layout.addLayout(self.grid_layout_sidebar)
 
         self.vertical_spacer = QSpacerItem(
@@ -155,13 +164,6 @@ class Sidebar(QWidget):
         self.vertical_layout.addItem(self.vertical_spacer)
 
         self.vertical_layout_1.addLayout(self.vertical_layout)
-        self.broadcast_transaction = PrimaryButton()
-        self.broadcast_transaction.setVisible(priv.can_broadcast_psbt)
-        self.broadcast_transaction.setMinimumSize(QSize(335, 40))
-        self.broadcast_transaction.setMaximumSize(QSize(335, 40))
-        self.vertical_layout.addWidget(
-            self.broadcast_transaction, 0, Qt.AlignCenter,
-        )
         self.receive_asset_button = PrimaryButton()
         self.receive_asset_button.setAccessibleName(
             SIDEBAR_RECEIVE_ASSET_BUTTON,

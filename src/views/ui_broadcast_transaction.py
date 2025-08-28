@@ -323,7 +323,18 @@ class BroadcastTransactionWidget(QWidget):
         """
         Broadcast the signed PSBT using the selected method.
         """
-        signed_psbt = self.broadcast_transaction_input.toPlainText()
+        signed_psbt = self.broadcast_transaction_input.toPlainText().strip()
+
+        # Check if pasted text is in format "psbt:<purpose>:<psbt>" or "psbt:<psbt>"
+        purpose = None
+        if signed_psbt.startswith('psbt:'):
+            parts = signed_psbt.split(':', 2)
+            if len(parts) == 3:  # Format: psbt:<purpose>:<psbt>
+                purpose = parts[1]
+                signed_psbt = parts[2]
+            elif len(parts) == 2:  # Format: psbt:<psbt>
+                signed_psbt = parts[1]
+
         confirmation_dialog = ConfirmationDialog(
             message=QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -334,9 +345,8 @@ class BroadcastTransactionWidget(QWidget):
         )
         if self.priv.can_broadcast_psbt:
             if confirmation_dialog.exec() == QDialog.Accepted:
-                # Determine purpose from DB (like sign psbt flow)
-                purpose = None
-                if self._psbt_signed_items:
+                # If purpose wasn't in the pasted text, try to get it from DB
+                if purpose is None and self._psbt_signed_items:
                     if self.method_selector.isVisible() and self.method_selector.count() > 0:
                         idx = max(0, self.method_selector.currentIndex())
                     else:
@@ -479,13 +489,19 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_transaction_input.setPlainText(
                 self._psbt_items[0].get('psbt', ''),
             )
+            self.broadcast_transaction_input.setReadOnly(True)
             self.handle_button_enable()
             return
 
         # >1 PSBTs: show and populate selector
         self.method_selector_label.setVisible(True)
         self.method_selector.setVisible(True)
-        self.method_selector_label.setText('Select PSBT to sign')
+        self.method_selector_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'select_psbt_for_sign',
+            ),
+        )
 
         self.method_selector.blockSignals(True)
         self.method_selector.clear()
@@ -503,6 +519,7 @@ class BroadcastTransactionWidget(QWidget):
                 'psbt', '',
             ) if 0 <= idx < len(self._psbt_items) else ''
             self.broadcast_transaction_input.setPlainText(psbt_text)
+            self.broadcast_transaction_input.setReadOnly(True)
             self.handle_button_enable()
 
         self.method_selector.currentIndexChanged.connect(on_index_changed)
@@ -555,13 +572,19 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_transaction_input.setPlainText(
                 self._psbt_signed_items[0].get('psbt', ''),
             )
+            self.broadcast_transaction_input.setReadOnly(True)
             self.handle_button_enable()
             return
 
         # >1 PSBTs: show and populate selector
         self.method_selector_label.setVisible(True)
         self.method_selector.setVisible(True)
-        self.method_selector_label.setText('Select PSBT to broadcast')
+        self.method_selector_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'select_psbt_for_broadcast',
+            ),
+        )
 
         self.method_selector.blockSignals(True)
         self.method_selector.clear()
@@ -579,6 +602,7 @@ class BroadcastTransactionWidget(QWidget):
                 'psbt', '',
             ) if 0 <= idx < len(self._psbt_signed_items) else ''
             self.broadcast_transaction_input.setPlainText(psbt_text)
+            self.broadcast_transaction_input.setReadOnly(True)
             self.handle_button_enable()
 
         self.method_selector.currentIndexChanged.connect(on_index_changed)

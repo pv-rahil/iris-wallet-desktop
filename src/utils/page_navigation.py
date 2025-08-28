@@ -258,9 +258,13 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def issue_nia_asset_page(self):
+    def issue_nia_asset_page(self, id=None, from_draft=False):
         """This method display the issue NIA asset page."""
-        self.navigate_to_page('IssueNIA')
+        self.current_stack = {
+            'name': 'IssueNIA',
+            'widget': self.pages['IssueNIA'](self._ui.view_model, id, from_draft),
+        }
+        self.navigate_and_toggle(False)
 
     def bitcoin_page(self):
         """This method display the bitcoin page."""
