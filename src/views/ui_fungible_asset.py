@@ -272,10 +272,12 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             wallet_service.list_draft_issue_assets() if wallet_service is not None else []
         )
         for d in draft_assets:
+            if d.get('file_path'):
+                continue
             draft_asset = DraftAsset(
                 draft_id=d.get('id'),
                 asset_id='draft_asset',
-                name=f'{d.get("name")} (Draft)',
+                name=f"{d.get('name')} (Draft)",
                 ticker=d.get('ticker'),
             )
             if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:

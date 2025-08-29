@@ -324,14 +324,12 @@ class BroadcastTransactionWidget(QWidget):
         Broadcast the signed PSBT using the selected method.
         """
         signed_psbt = self.broadcast_transaction_input.toPlainText().strip()
-
-        # Check if pasted text is in format "psbt:<purpose>:<psbt>" or "psbt:<psbt>"
         purpose = None
+
         if signed_psbt.startswith('psbt:'):
             parts = signed_psbt.split(':', 2)
             if len(parts) == 3:  # Format: psbt:<purpose>:<psbt>
-                purpose = parts[1]
-                signed_psbt = parts[2]
+                purpose, signed_psbt = parts[1], parts[2]
             elif len(parts) == 2:  # Format: psbt:<psbt>
                 signed_psbt = parts[1]
 
@@ -343,34 +341,30 @@ class BroadcastTransactionWidget(QWidget):
             parent=self,
             icon_type='warning',
         )
-        if self.priv.can_broadcast_psbt:
-            if confirmation_dialog.exec() == QDialog.Accepted:
-                # If purpose wasn't in the pasted text, try to get it from DB
-                if purpose is None and self._psbt_signed_items:
-                    if self.method_selector.isVisible() and self.method_selector.count() > 0:
-                        idx = max(0, self.method_selector.currentIndex())
-                    else:
-                        idx = 0  # single PSBT case
-                    if 0 <= idx < len(self._psbt_signed_items):
-                        purpose = self._psbt_signed_items[idx].get('purpose')
 
-                if purpose == 'issue_asset':
-                    self._view_model.broadcast_transaction_view_model.create_utxos_end(
-                        signed_psbt,
-                    )
-                elif purpose == 'send_btc':
-                    self._view_model.broadcast_transaction_view_model.send_btc_end(
-                        signed_psbt,
-                    )
-                elif purpose == 'send_asset':
-                    self._view_model.broadcast_transaction_view_model.send_end(
-                        signed_psbt,
-                    )
+        if not confirmation_dialog.exec() == QDialog.Accepted:
+            return
+
+        if self.priv.can_broadcast_psbt:
+            if purpose is None and self._psbt_signed_items:
+                idx = self.method_selector.currentIndex() if self.method_selector.isVisible() else 0
+                if 0 <= idx < len(self._psbt_signed_items):
+                    purpose = self._psbt_signed_items[idx].get('purpose')
+
+            purpose_map = {
+                'send_btc': self._view_model.broadcast_transaction_view_model.send_btc_end,
+                'send_asset': self._view_model.broadcast_transaction_view_model.send_end,
+            }
+
+            handler = purpose_map.get(
+                purpose, self._view_model.broadcast_transaction_view_model.create_utxos_end,
+            )
+            handler(signed_psbt)
+
         else:
-            if confirmation_dialog.exec() == QDialog.Accepted:
-                self._view_model.broadcast_transaction_view_model.sign_and_finalize_psbt(
-                    signed_psbt,
-                )
+            self._view_model.broadcast_transaction_view_model.sign_and_finalize_psbt(
+                signed_psbt,
+            )
 
     def on_success_sent_navigation(self):
         """

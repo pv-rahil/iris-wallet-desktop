@@ -11,6 +11,7 @@ from rgb_lib import AssetSchema
 
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import Enum
 from src.model.enums.enums_model import ToastPreset
@@ -18,7 +19,6 @@ from src.model.selection_page_model import AssetDataModel
 from src.model.setting_model import DefaultProxyEndpoint
 from src.utils.common_utils import copy_text
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.info_message import INFO_UTXO_REQUIRED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
@@ -109,9 +109,7 @@ class ReceiveRGBAssetWidget(QWidget):
             self.hide_loading_screen,
         )
         self._view_model.receive_cfa_view_model.utxo_creation_started.connect(
-            lambda: self._view_model.utxo_creation_view_model.create_utxos_begin(
-                purpose='receive_asset',
-            ),
+            self.handle_receive_asset,
         )
         # Connect to hardware wallet dialog signals
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
@@ -205,9 +203,20 @@ class ReceiveRGBAssetWidget(QWidget):
     def handle_receive_asset(self):
         """ handle receive asset"""
         self._view_model.receive_cfa_view_model.utxo_creation_started.disconnect()
-        self._view_model.utxo_creation_view_model.create_utxos_begin(
-            purpose='receive_asset',
+        wallet_service = WalletDataService.get_session()
+        unsigned_psbts = wallet_service.list_psbt(
+            signed=False,
+        ) if wallet_service else []
+        existing = next(
+            (
+                p for p in unsigned_psbts if p.get('purpose') is None
+            ),
+            None,
         )
+        if existing and existing.get('psbt'):
+            self.show_receive_cfa_psbt_page(existing.get('psbt'))
+        else:
+            self._view_model.utxo_creation_view_model.create_utxos_begin()
 
     def show_receive_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code for receive CFA."""

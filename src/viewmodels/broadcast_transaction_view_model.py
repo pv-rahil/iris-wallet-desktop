@@ -82,9 +82,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_success_create_utxos_end(self, num):
+    def on_success_create_utxos_end(self):
         """Handle success message for broadcast"""
-        print(num, '<-------------------')
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
 

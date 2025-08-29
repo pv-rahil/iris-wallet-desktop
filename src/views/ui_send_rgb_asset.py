@@ -30,7 +30,6 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SEND_ASSET
 from src.utils.error_message import ERROR_UNEXPECTED
-from src.utils.info_message import INFO_UTXO_REQUIRED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog

@@ -127,9 +127,10 @@ class IssueCFAViewModel(QObject, ThreadManager):
     def on_error(self, error: CommonException):
         """on error callback of issue CFA """
         self.is_loading.emit(False)
-        if isinstance(error, CommonException) and getattr(error, 'message', '') == 'NoAvailableUtxos':
-            self.utxo_creation_started.emit(True)
-            return
+        if isinstance(error, CommonException):
+            if getattr(error, 'message', '') == 'NoAvailableUtxos':
+                self.utxo_creation_started.emit(True)
+                return
         ToastManager.error(
             description=error.message,
         )

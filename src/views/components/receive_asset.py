@@ -311,19 +311,20 @@ class ReceiveAssetWidget(QWidget):
         if self.psbt:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                for signed_status in [False, True]:
-                    drafts = wallet_service.list_psbt(signed_status) or []
-                    for draft in drafts:
-                        if draft.get('psbt') == address:
-                            purpose = draft.get('purpose')
-                            if purpose:
-                                display_text = f"psbt:{purpose}:{address}"
-                                break
-                    else:
-                        continue
-                    break
+                drafts_unsigned = wallet_service.list_psbt(False) or []
+                drafts_signed = wallet_service.list_psbt(True) or []
+                all_drafts = drafts_unsigned + drafts_signed
+                match = next(
+                    (
+                        d for d in all_drafts
+                        if d.get('psbt') == address and d.get('purpose')
+                    ),
+                    None,
+                )
+                if match:
+                    display_text = f"psbt:{match.get('purpose')}:{address}"
 
-        qr_image = set_qr_code(str(address))
+        qr_image = set_qr_code(str(display_text))
         pixmap = QPixmap.fromImage(qr_image)
         self.label.setPixmap(pixmap)
         self.receiver_address.setText(

@@ -30,6 +30,7 @@ from accessible_constant import CFA_ASSET_NAME
 from accessible_constant import CFA_UPLOAD_FILE_BUTTON
 from accessible_constant import ISSUE_CFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_CFA_BUTTON
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
@@ -39,7 +40,6 @@ from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MAX_ASSET_FILE_SIZE
 from src.utils.helpers import load_stylesheet
-from src.utils.info_message import INFO_UTXO_REQUIRED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -50,12 +50,15 @@ from src.views.components.wallet_logo_frame import WalletLogoFrame
 class IssueCFAWidget(QWidget):
     """This class represents the UI for issuing CFA assets."""
 
-    def __init__(self, view_model: MainViewModel):
+    def __init__(self, view_model: MainViewModel, draft_id=None, from_draft: bool = False):
         """Initialize the IssueCFAWidget class."""
         super().__init__()
         self.render_timer = RenderTimer(task_name='IssueCFAAsset Rendering')
         self.setStyleSheet(load_stylesheet('views/qss/issue_cfa_style.qss'))
         self._view_model: MainViewModel = view_model
+        self.from_draft = from_draft
+        self.draft_id = draft_id
+        self.selected_file_path: str | None = None
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('gridLayout')
         self.wallet_logo_frame = WalletLogoFrame()
@@ -299,6 +302,13 @@ class IssueCFAWidget(QWidget):
         self.issue_cfa_button.setDisabled(True)
         self.retranslate_ui()
         self.setup_ui_connections()
+        # Initialize form state depending on draft context
+        if self.from_draft:
+            self._load_cfa_draft_data()
+        else:
+            self.asset_description_input.setText('')
+            self.name_of_the_asset_input.setText('')
+            self.amount_input.setText('')
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -389,9 +399,7 @@ class IssueCFAWidget(QWidget):
             self.handle_cfa_hw_dialog_update,
         )
         self._view_model.issue_cfa_asset_view_model.utxo_creation_started.connect(
-            lambda: self._view_model.utxo_creation_view_model.create_utxos_begin(
-                purpose='issue_asset',
-            ),
+            self.handle_cfa_issue,
         )
 
     def show_file_preview(self, file_upload_message):
@@ -405,6 +413,7 @@ class IssueCFAWidget(QWidget):
             self.file_path.setText(validation_text)
             self.issue_cfa_button.setDisabled(True)
             self.issue_cfa_card.setMaximumSize(QSize(499, 608))
+            self.selected_file_path = None
         else:
             self.file_path.setText(file_upload_message)
             self.issue_cfa_card.setMaximumSize(QSize(499, 808))
@@ -412,6 +421,7 @@ class IssueCFAWidget(QWidget):
             self.file_path.setPixmap(
                 QPixmap(pixmap),
             )
+            self.selected_file_path = file_upload_message
             self.upload_file.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'change_uploaded_file', 'CHANGE UPLOADED FILE',
@@ -424,6 +434,14 @@ class IssueCFAWidget(QWidget):
         asset_description = self.asset_description_input.text()
         asset_name = self.name_of_the_asset_input.text()
         total_supply = self.amount_input.text()
+        # Create a draft only when starting from fresh inputs
+        if not self.from_draft:
+            self.create_issue_cfa_draft(
+                name=asset_name,
+                description=asset_description,
+                total_supply=total_supply,
+                file_path=self.selected_file_path,
+            )
         self._view_model.issue_cfa_asset_view_model.issue_cfa_asset(
             asset_description, asset_name, total_supply,
         )
@@ -471,6 +489,10 @@ class IssueCFAWidget(QWidget):
             button_text=home_button,
             callback=self._view_model.page_navigation.collectibles_asset_page,
         )
+        if self.from_draft and self.draft_id:
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_draft_issue_asset(self.draft_id)
         self.render_timer.stop()
         self._view_model.page_navigation.show_success_page(params)
 
@@ -497,11 +519,56 @@ class IssueCFAWidget(QWidget):
             self.on_issue_cfa()
 
     def handle_cfa_issue(self):
-        """handle cfa issue"""
+        """Handle CFA issue start with PSBT reuse if available."""
         self._view_model.issue_cfa_asset_view_model.utxo_creation_started.disconnect()
-        self._view_model.utxo_creation_view_model.create_utxos_begin(
-            purpose='issue_asset',
+        wallet_service = WalletDataService.get_session()
+        unsigned_psbts = wallet_service.list_psbt(signed=False)
+        existing_psbt = next(
+            (
+                p for p in unsigned_psbts if p.get(
+                    'purpose',
+                ) is None
+            ), None,
         )
+        if existing_psbt and existing_psbt.get('psbt'):
+            self.show_cfa_psbt_page(existing_psbt.get('psbt'))
+        else:
+            self._view_model.utxo_creation_view_model.create_utxos_begin()
+
+    def create_issue_cfa_draft(self, name: str, description: str, total_supply: str, file_path: str | None) -> None:
+        """Create and save a CFA draft using the shared draft_issue_asset table."""
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is not None:
+            try:
+                wallet_service.upsert_draft_issue_asset(
+                    name=name,
+                    ticker=description,
+                    issued_amount=int(total_supply) if total_supply else 0,
+                    file_path=file_path,
+                )
+            except Exception:
+                pass
+
+    def _load_cfa_draft_data(self) -> None:
+        """Load CFA draft data into the form when opened from a draft."""
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            return
+        drafts = wallet_service.list_draft_issue_assets()
+        draft = next((d for d in drafts if d.get('id') == self.draft_id), None)
+        if not draft:
+            return
+        if 'name' in draft and draft['name']:
+            self.name_of_the_asset_input.setText(draft['name'])
+        if 'ticker' in draft and draft['ticker']:
+            self.asset_description_input.setText(draft['ticker'])
+        if 'issued_amount' in draft:
+            self.amount_input.setText(str(draft['issued_amount']))
+        fp = draft.get('file_path')
+        if fp and os.path.exists(fp):
+            self._view_model.issue_cfa_asset_view_model.uploaded_file_path = fp
+            self.show_file_preview(fp)
+        self.handle_button_enabled()
 
     def show_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""

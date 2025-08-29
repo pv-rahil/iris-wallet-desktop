@@ -258,11 +258,11 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def issue_nia_asset_page(self, id=None, from_draft=False):
+    def issue_nia_asset_page(self, draft_id=None, from_draft=False):
         """This method display the issue NIA asset page."""
         self.current_stack = {
             'name': 'IssueNIA',
-            'widget': self.pages['IssueNIA'](self._ui.view_model, id, from_draft),
+            'widget': self.pages['IssueNIA'](self._ui.view_model, draft_id, from_draft),
         }
         self.navigate_and_toggle(False)
 
@@ -270,9 +270,13 @@ class PageNavigation:
         """This method display the bitcoin page."""
         self.navigate_to_page('Bitcoin')
 
-    def issue_cfa_asset_page(self):
+    def issue_cfa_asset_page(self, draft_id=None, from_draft=False):
         """This method display the issue CFA page."""
-        self.navigate_to_page('IssueCFA')
+        self.current_stack = {
+            'name': 'IssueCFA',
+            'widget': self.pages['IssueCFA'](self._ui.view_model, draft_id, from_draft),
+        }
+        self.navigate_and_toggle(False)
 
     def send_cfa_page(self):
         """This method display the send CFA page."""

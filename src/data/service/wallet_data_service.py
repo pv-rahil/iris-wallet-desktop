@@ -130,7 +130,8 @@ class WalletDataService:
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             ticker TEXT NOT NULL,
-            issued_amount INTEGER NOT NULL
+            issued_amount INTEGER NOT NULL,
+            file_path TEXT
         )
         """
         with self._db_lock:
@@ -187,9 +188,8 @@ class WalletDataService:
             )
             raise
 
-    def upsert_draft_issue_asset(self, name: str, ticker: str, issued_amount: int) -> None:
+    def upsert_draft_issue_asset(self, name: str, ticker: str, issued_amount: int, file_path: str | None = None) -> None:
         """Insert or replace a draft issue asset row."""
-        print('name', name, 'ticker', ticker, 'issued_amount', issued_amount)
         if not (self.is_watch_only or self.is_offline_wallet):
             return
         with self._db_lock:
@@ -197,8 +197,8 @@ class WalletDataService:
                 # Use a transaction so the insert is committed and survives app restarts
                 with self.conn:
                     self.conn.execute(
-                        'INSERT OR REPLACE INTO draft_issue_asset (name, ticker, issued_amount) VALUES (?, ?, ?)',
-                        (name, ticker, int(issued_amount)),
+                        'INSERT INTO draft_issue_asset (name, ticker, issued_amount, file_path) VALUES (?, ?, ?, ?)',
+                        (name, ticker, int(issued_amount), file_path),
                     )
             except sqlite3.Error as exc:
                 logger.error(
@@ -214,7 +214,7 @@ class WalletDataService:
             try:
                 cur = self.conn.cursor()
                 cur.execute(
-                    'SELECT id, name, ticker, issued_amount FROM draft_issue_asset',
+                    'SELECT id, name, ticker, issued_amount, file_path FROM draft_issue_asset ORDER BY id DESC',
                 )
                 rows = cur.fetchall()
                 return [
@@ -223,6 +223,7 @@ class WalletDataService:
                         'name': r[1],
                         'ticker': r[2],
                         'issued_amount': int(r[3]),
+                        'file_path': r[4],
                     }
                     for r in rows
                 ]
@@ -233,7 +234,7 @@ class WalletDataService:
                 raise
 
     def delete_draft_issue_asset(self, draft_id: str) -> bool:
-        """Delete a draft issue asset row by id."""
+        """Delete a draft issue asset row by ID."""
         if not (self.is_watch_only or self.is_offline_wallet):
             return False
         with self._db_lock:

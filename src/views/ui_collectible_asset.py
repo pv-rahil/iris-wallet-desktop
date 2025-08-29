@@ -21,6 +21,7 @@ from rgb_lib import AssetSchema
 
 import src.resources_rc
 from accessible_constant import ISSUE_CFA_ASSET
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
@@ -139,7 +140,20 @@ class CollectiblesAssetWidget(QWidget):
         """Update the grid layout with new number of columns"""
         num_columns = self.calculate_columns()
         collectibles_list = self._view_model.main_asset_view_model.assets.cfa
-        total_items = len(collectibles_list)
+        # Build frames list including CFA drafts (identified by file_path in shared drafts table)
+        frames = []
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is not None:
+            drafts = wallet_service.list_draft_issue_assets()
+            for d in drafts:
+                fp = d.get('file_path')
+                if not fp:
+                    continue
+                frames.append(self.create_collectible_frame(draft=d))
+        # Then append actual issued CFA assets
+        for coll_asset in collectibles_list:
+            frames.append(self.create_collectible_frame(coll_asset=coll_asset))
+        total_items = len(frames)
 
         if hasattr(self, 'scroll_area'):
             grid_widget = self.scroll_area.widget()
@@ -156,11 +170,10 @@ class CollectiblesAssetWidget(QWidget):
                     grid_layout.removeItem(item)
 
             # Add widgets to the grid layout
-            for index, coll_asset in enumerate(collectibles_list):
-                collectibles_frame = self.create_collectible_frame(coll_asset)
+            for index, frame in enumerate(frames):
                 row = index // num_columns
                 col = index % num_columns
-                grid_layout.addWidget(collectibles_frame, row, col)
+                grid_layout.addWidget(frame, row, col)
             # Add spacers if the last row is not full
             if total_items < 5:
                 remaining_columns = num_columns - (total_items % num_columns)
@@ -201,12 +214,19 @@ class CollectiblesAssetWidget(QWidget):
         self.update_grid_layout()
         self.resizeEvent = self.resize_event_called
 
-    def create_collectible_frame(self, coll_asset):
-        """Create a single collectible frame"""
-        image_path = coll_asset.media.file_path
+    def create_collectible_frame(self, coll_asset=None, draft=None):
+        """Create a single collectible or draft frame (reused for drafts)."""
+        if draft is not None:
+            image_path = draft.get('file_path')
+            asset_name = f"{draft.get('name', 'Draft')} (Draft)"
+            asset_id = 'draft_asset'
+        else:
+            image_path = coll_asset.media.file_path
+            asset_name = coll_asset.name
+            asset_id = coll_asset.asset_id
         collectibles_frame = ClickableFrame(
-            coll_asset.asset_id,
-            coll_asset.name,
+            asset_id,
+            asset_name,
             image_path=image_path,
             asset_type=AssetSchema.CFA,
         )
@@ -252,8 +272,8 @@ class CollectiblesAssetWidget(QWidget):
             '}\n',
         )
 
-        if coll_asset.media.file_path:
-            resized_image = resize_image(coll_asset.media.file_path, 242, 242)
+        if image_path:
+            resized_image = resize_image(image_path, 242, 242)
             image_label.setPixmap(resized_image)
 
         form_layout.addRow(image_label)
@@ -274,11 +294,22 @@ class CollectiblesAssetWidget(QWidget):
             '}\n'
             '',
         )
-        collectible_asset_name.setText(coll_asset.name)
+        collectible_asset_name.setText(asset_name)
 
         form_layout.addRow(collectible_asset_name)
 
-        collectibles_frame.clicked.connect(self.handle_collectible_frame_click)
+        if draft is not None:
+            draft_id = draft.get('id')
+            if draft_id is not None:
+                collectibles_frame.clicked.connect(
+                    lambda _a=None, _b=None, _c=None, _d=None: self._view_model.page_navigation.issue_cfa_asset_page(
+                        draft_id, from_draft=True,
+                    ),
+                )
+        else:
+            collectibles_frame.clicked.connect(
+                self.handle_collectible_frame_click,
+            )
         self.resizeEvent = self.resize_event_called
         return collectibles_frame
 
