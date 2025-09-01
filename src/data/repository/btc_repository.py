@@ -92,15 +92,15 @@ class BtcRepository:
         with repository_custom_context():
             psbt = colored_wallet.wallet.send_btc_begin(
                 online=colored_wallet.online,
-                recipient=param.recipient,
+                address=param.address,
                 amount=param.amount,
                 fee_rate=param.fee_rate,
-                min_confirmations=param.min_confirmations,
+                skip_sync=param.skip_sync,
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(psbt, purpose='send_btc')
-            return SendBtcResponseModel(psbt=psbt)
+            return psbt
 
     @staticmethod
     def send_btc_end(detail: BroadcastPsbtRequestModel) -> SendBtcResponseModel:
@@ -118,7 +118,7 @@ class BtcRepository:
             return SendBtcResponseModel(tx_id=data)
 
     @staticmethod
-    def create_utxos_begin(param: CreateUtxosRequestModel):
+    def create_utxos_begin(param: CreateUtxosRequestModel, purpose: str | None = None):
         """Creates colorable utxo psbt."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.create_utxos_begin(
@@ -127,7 +127,7 @@ class BtcRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.add_psbt(psbt)
+                wallet_service.add_psbt(psbt, purpose=purpose)
             return psbt
 
     @staticmethod

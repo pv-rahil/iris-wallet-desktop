@@ -373,23 +373,30 @@ class HWDeviceSelectionDialog(QDialog):
     @staticmethod
     def map_model_name(model):
         """
-        Map the model string to a user-friendly model name.
+        Map the model string to a translated user-friendly model name.
         Args:
             model: The model string from the device info.
         Returns:
-            str: User-friendly model name.
+            str: Translated user-friendly model name.
         """
         model = model or ''
         model_lower = model.lower()
+
         if 'nano_s_plus' in model_lower:
-            return 'Ledger Nano S Plus'
+            return QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ledger_nano_s_plus')
         if 'nano_s' in model_lower:
-            return 'Ledger Nano S'
+            return QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ledger_nano_s')
         if 'nano_x' in model_lower:
-            return 'Ledger Nano X'
+            return QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ledger_nano_x')
+        if 'stax' in model_lower:
+            return QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ledger_stax')
+        if 'flex' in model_lower:
+            return QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'ledger_flex')
+
         return model.title()
 
-    def map_hwi_error(self, error_message: str) -> str:
+    @staticmethod
+    def map_hwi_error(error_message: str) -> str:
         """
         Maps raw HWI error messages to user-friendly translated messages.
         Args:

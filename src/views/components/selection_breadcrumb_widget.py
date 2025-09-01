@@ -87,7 +87,7 @@ class BreadcrumbBar(QWidget):
         Initialize the BreadcrumbBar widget.
         """
         super().__init__(parent)
-        self._crumbs = []
+        self.crumbs = []
         self._active_index = 0
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(38, 15, 15, 15)
@@ -148,7 +148,7 @@ class BreadcrumbBar(QWidget):
             item = self.layout.itemAt(i)
             if item and item.widget():
                 item.widget().setParent(None)
-        self._crumbs = []
+        self.crumbs = []
 
         for i, crumb in enumerate(crumbs):
             frame = QFrame()
@@ -226,7 +226,7 @@ class BreadcrumbBar(QWidget):
                 frame.mousePressEvent = lambda e: None
 
             self.layout.addWidget(frame)
-            self._crumbs.append(frame)
+            self.crumbs.append(frame)
 
             if i < len(crumbs) - 1:
                 separator = QLabel(self.separator_text)

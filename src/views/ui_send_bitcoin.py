@@ -18,6 +18,7 @@ from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import FEE_RATE
@@ -50,8 +51,10 @@ class SendBitcoinWidget(QWidget):
         )
         key_storage_type = SettingRepository.get_key_storage_type()
         self.is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
-        self.is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
+        self.is_online_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.ONLINE_TYPE_WALLET
+        self.is_watch_only_wallet = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         layout = QVBoxLayout()
         layout.addWidget(self.send_bitcoin_page)
         self.setLayout(layout)
@@ -127,7 +130,7 @@ class SendBitcoinWidget(QWidget):
         address = self.send_bitcoin_page.asset_address_value.text()
         amount = self.send_bitcoin_page.asset_amount_value.text()
         fee = self.send_bitcoin_page.fee_rate_value.text() or FEE_RATE
-        if self.is_hardware_wallet or self.is_offline_wallet:
+        if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only_wallet:
             self._view_model.send_bitcoin_view_model.send_btc_begin(
                 address, amount, fee,
             )
@@ -268,8 +271,6 @@ class SendBitcoinWidget(QWidget):
 
     def show_send_bitcoin_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
-        if self.send_bitcoin_hw_dialog.isVisible():
-            self.send_bitcoin_hw_dialog.accept()
         self._view_model.page_navigation.receive_asset_page(
             ReceiveAssetModel(
                 page_name='send_bitcoin',

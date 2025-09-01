@@ -12,9 +12,14 @@ import pytest
 from PySide6.QtWidgets import QLineEdit
 
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.custom_exception import CommonException
+from src.utils.error_message import ERROR_NETWORK_MISMATCH
+from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.local_store import local_store
+from src.viewmodels.set_wallet_password_view_model import CommonException as VMCommonException
 from src.viewmodels.set_wallet_password_view_model import SetWalletPasswordViewModel
 
 
@@ -308,3 +313,181 @@ def test_forward_to_fungibles_page(set_wallet_password_view_model, mock_page_nav
     mock_page_navigation.sidebar.assert_called_once()
     mock_sidebar.my_fungibles.setChecked.assert_called_once_with(True)
     mock_page_navigation.fungibles_asset_page.assert_called_once()
+
+
+def test_on_success_watch_only_password_not_stored_forwards_no_encrypt(set_wallet_password_view_model, mocker):
+    """If watch-only and keyring set_value False, should skip encrypt and forward directly."""
+    # Arrange enums and storage
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_key_storage_type', return_value=None,
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_network',
+        return_value=mocker.Mock(value='net'),
+    )
+    set_val = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.set_value', return_value=False,
+    )
+    enc = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.mnemonic_store.encrypt',
+    )
+    write = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.local_store.write_to_file',
+    )
+    # Response model mock
+    resp = mocker.Mock(
+        mnemonic='mn', account_xpub_vanilla='vx',
+        account_xpub_colored='cx', master_fingerprint='ff',
+    )
+    go = mocker.patch.object(
+        set_wallet_password_view_model, 'forward_to_fungibles_page',
+    )
+
+    set_wallet_password_view_model.password = 'pwd'
+    set_wallet_password_view_model.on_success((resp, 'pwd'), password='pwd')
+
+    enc.assert_not_called()
+    write.assert_not_called()
+    assert set_val.call_count == 1
+    go.assert_called_once_with()
+
+
+def test_on_success_hardware_password_not_stored_forwards_no_encrypt(set_wallet_password_view_model, mocker):
+    """If hardware wallet and keyring set_value False, skip encrypt and forward."""
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_access_type', return_value=None,
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_network',
+        return_value=mocker.Mock(value='net'),
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.set_value', return_value=False,
+    )
+    enc = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.mnemonic_store.encrypt',
+    )
+    write = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.local_store.write_to_file',
+    )
+    resp = mocker.Mock(
+        mnemonic='mn', account_xpub_vanilla='vx',
+        account_xpub_colored='cx', master_fingerprint='ff',
+    )
+    go = mocker.patch.object(
+        set_wallet_password_view_model, 'forward_to_fungibles_page',
+    )
+
+    set_wallet_password_view_model.password = 'pwd'
+    set_wallet_password_view_model.on_success((resp, 'pwd'), password='pwd')
+
+    enc.assert_not_called()
+    write.assert_not_called()
+    go.assert_called_once_with()
+
+
+def test_on_success_software_password_not_stored_opens_keyring_dialog(set_wallet_password_view_model, mocker):
+    """If software wallet and set_value False, opens KeyringErrorDialog and encrypts mnemonic."""
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_access_type', return_value=None,
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_key_storage_type', return_value=None,
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_network',
+        return_value=mocker.Mock(value='net'),
+    )
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.set_value', return_value=False,
+    )
+    enc = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.mnemonic_store.encrypt', return_value=b'enc',
+    )
+    write = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.local_store.write_to_file',
+    )
+    dlg_cls = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.KeyringErrorDialog',
+    )
+    resp = mocker.Mock(
+        mnemonic='mn', account_xpub_vanilla='vx',
+        account_xpub_colored='cx', master_fingerprint='ff',
+    )
+
+    set_wallet_password_view_model.password = 'pwd'
+    set_wallet_password_view_model.on_success((resp, 'pwd'), password='pwd')
+
+    enc.assert_called_once()
+    write.assert_called_once()
+    dlg_cls.assert_called_once()
+    dlg_cls.return_value.exec.assert_called_once_with()
+
+
+def test_on_success_common_exception_message_emitted(set_wallet_password_view_model, mocker):
+    """If a CommonException bubbles, message signal should be emitted with its message."""
+    # Raise the module's CommonException from inside on_success
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_access_type',
+        side_effect=VMCommonException('oops'),
+    )
+    slot = mocker.MagicMock()
+    set_wallet_password_view_model.message.connect(slot)
+
+    set_wallet_password_view_model.on_success((None, 'pwd'), password='pwd')
+
+    slot.assert_called_once()
+    args = slot.call_args[0]
+    assert args[0] == ToastPreset.ERROR
+    assert 'oops' in args[1]
+
+
+def test_on_success_generic_exception_emits_default_error(set_wallet_password_view_model, mocker):
+    """Generic exceptions should log and emit ERROR_SOMETHING_WENT_WRONG."""
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_access_type',
+        side_effect=Exception('boom'),
+    )
+    log = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.logger.error',
+    )
+    slot = mocker.MagicMock()
+    set_wallet_password_view_model.message.connect(slot)
+
+    set_wallet_password_view_model.on_success((None, 'pwd'), password='pwd')
+
+    log.assert_called_once()
+    slot.assert_called_once_with(ToastPreset.ERROR, ERROR_SOMETHING_WENT_WRONG)
+
+
+def test_on_error_network_mismatch_clears_and_exits(set_wallet_password_view_model, mocker):
+    """on_error with ERROR_NETWORK_MISMATCH should clear settings, show MessageBox, and exit app."""
+    exc = VMCommonException(ERROR_NETWORK_MISMATCH)
+    exc.message = ERROR_NETWORK_MISMATCH
+    clear = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.local_store.clear_settings',
+    )
+    msgbox = mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.MessageBox',
+    )
+    app = mocker.Mock()
+    mocker.patch(
+        'src.viewmodels.set_wallet_password_view_model.QApplication.instance', return_value=app,
+    )
+    slot = mocker.MagicMock()
+    set_wallet_password_view_model.message.connect(slot)
+
+    set_wallet_password_view_model.on_error(exc)
+
+    clear.assert_called_once_with()
+    msgbox.assert_called_once()
+    app.exit.assert_called_once_with()
+    slot.assert_called_once_with(ToastPreset.ERROR, ERROR_NETWORK_MISMATCH)

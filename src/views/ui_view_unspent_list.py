@@ -25,9 +25,11 @@ from accessible_constant import UNSPENT_UTXO_OUTPOINT
 from accessible_constant import UNSPENT_WIDGET
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import copy_text
+from src.utils.common_utils import format_epoch_time
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
@@ -83,16 +85,68 @@ class ViewUnspentList(QWidget):
         self.header_unspent_frame.action_button.hide()
         self.vertical_layout_2_unspent.addWidget(self.header_unspent_frame)
 
-        # Sorting drop down
+        # Title row with last sync info (similar to fungible page)
         self.sub_title = QLabel()
         self.sub_title.setFixedSize(QSize(150, 50))
 
+        self.usb_last_sync_horizontal_layout = QHBoxLayout()
+        self.usb_last_sync_horizontal_layout.setContentsMargins(0, 0, 12, 0)
+
+        self.usb_last_sync_view_unspent_info_label = QLabel()
+        self.usb_last_sync_view_unspent_info_label.setObjectName(
+            'usb_last_sync_info_label',
+        )
+        self.outdated_view_unspent_balance_label = QLabel()
+        self.outdated_view_unspent_balance_label.setObjectName(
+            'outdated_balance_label',
+        )
+
+        self.usb_last_sync_horizontal_layout.addWidget(
+            self.usb_last_sync_view_unspent_info_label,
+        )
+
+        self.is_watch_only = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
+
+        self._title_row_layout = QHBoxLayout()
+        self._title_row_layout.addWidget(self.sub_title)
+        # right spacer
+        self.horizontal_spacer = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
+        )
+        self._title_row_layout.addSpacerItem(self.horizontal_spacer)
+        if self.is_offline_wallet:
+            self.usb_last_sync_horizontal_layout.addWidget(
+                self.outdated_view_unspent_balance_label,
+            )
+        if self.is_offline_wallet or self.is_watch_only:
+            self._title_row_layout.addLayout(
+                self.usb_last_sync_horizontal_layout,
+            )
+
+        self.vertical_layout_2_unspent.addLayout(self._title_row_layout)
+
+        # Set initial texts
         self.sub_title.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'unspent_list', None,
             ),
         )
-        self.vertical_layout_2_unspent.addWidget(self.sub_title)
+        epoch_time = format_epoch_time()
+        if epoch_time is not None and (self.is_offline_wallet or self.is_watch_only):
+            self.usb_last_sync_view_unspent_info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
+                ).format(epoch_time),
+            )
+            if self.is_offline_wallet:
+                self.outdated_view_unspent_balance_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                    ),
+                )
 
         self.unspent_list_widget = QWidget()
         self.unspent_list_widget.setObjectName('unspent_list_widget')
@@ -193,6 +247,19 @@ class ViewUnspentList(QWidget):
         self._view_model.unspent_view_model.get_unspent_list(
             is_hard_refresh=True,
         )
+        epoch_time = format_epoch_time()
+        if epoch_time is not None and (self.is_offline_wallet or self.is_watch_only):
+            self.usb_last_sync_view_unspent_info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
+                ).format(epoch_time),
+            )
+            if self.is_offline_wallet:
+                self.outdated_view_unspent_balance_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                    ),
+                )
 
     def handle_asset_frame_click(self, asset_id):
         """This method handles frame click of the view unspent list page."""

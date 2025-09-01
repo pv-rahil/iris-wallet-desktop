@@ -11,6 +11,7 @@ from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QFormLayout
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
+from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QScrollArea
 from PySide6.QtWidgets import QSizePolicy
@@ -21,10 +22,14 @@ from rgb_lib import AssetSchema
 
 import src.resources_rc
 from accessible_constant import ISSUE_CFA_ASSET
+from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
+from src.utils.common_utils import format_epoch_time
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -90,7 +95,46 @@ class CollectiblesAssetWidget(QWidget):
         self.collectibles_label.setMinimumSize(QSize(1016, 50))
         self.collectibles_label.setMaximumSize(QSize(1016, 50))
 
-        self.vertical_layout_2.addWidget(self.collectibles_label)
+        self.usb_last_sync_collectible_horizontal_layout = QHBoxLayout()
+        self.usb_last_sync_collectible_horizontal_layout.setContentsMargins(
+            0, 0, 12, 0,
+        )
+
+        self.usb_last_sync_collectible_info_label = QLabel()
+        self.usb_last_sync_collectible_info_label.setObjectName(
+            'usb_last_sync_collectible_info_label',
+        )
+        self.outdated_collectible_balance_label = QLabel()
+        self.outdated_collectible_balance_label.setObjectName(
+            'outdated_balance_label',
+        )
+
+        self.usb_last_sync_collectible_horizontal_layout.addWidget(
+            self.usb_last_sync_collectible_info_label,
+        )
+
+        self.is_watch_only = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
+
+        self.horizontal_spacer = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
+        )
+
+        self._top_row_layout = QHBoxLayout()
+        self._top_row_layout.addWidget(self.collectibles_label)
+        self._top_row_layout.addSpacerItem(self.horizontal_spacer)
+        if self.is_offline_wallet:
+            self.usb_last_sync_collectible_horizontal_layout.addWidget(
+                self.outdated_collectible_balance_label,
+            )
+        if self.is_offline_wallet or self.is_watch_only:
+            self._top_row_layout.addLayout(
+                self.usb_last_sync_collectible_horizontal_layout,
+            )
+
+        self.vertical_layout_2.addLayout(self._top_row_layout)
 
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(6)
@@ -340,6 +384,19 @@ class CollectiblesAssetWidget(QWidget):
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )
+        formated_epoch_time = format_epoch_time()
+        if formated_epoch_time is not None:
+            self.usb_last_sync_collectible_info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
+                ).format(formated_epoch_time),
+            )
+            if self.is_offline_wallet:
+                self.outdated_collectible_balance_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                    ),
+                )
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -354,6 +411,19 @@ class CollectiblesAssetWidget(QWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'collectibles', None,
             ),
         )
+        formated_epoch_time = format_epoch_time()
+        if formated_epoch_time is not None:
+            self.usb_last_sync_collectible_info_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
+                ).format(formated_epoch_time),
+            )
+            if self.is_offline_wallet:
+                self.outdated_collectible_balance_label.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                    ),
+                )
 
     def handle_collectible_frame_click(self, asset_id, asset_name, image_path, asset_type):
         """This method handles collectibles asset click of the main asset page."""

@@ -81,3 +81,19 @@ def test_on_error_shows_error_and_navigates(mock_toast, receive_cfa_view_model):
     receive_cfa_view_model._page_navigation.sidebar.return_value = sidebar_mock
     receive_cfa_view_model.on_error(mock_error)
     sidebar_mock.my_fungibles.setChecked.assert_called_once_with(True)
+
+
+@patch('src.views.components.toast.ToastManager.error')
+def test_on_error_no_available_utxos_triggers_utxo_creation_started(mock_toast, receive_cfa_view_model):
+    """on_error should emit utxo_creation_started(True) and return without toast for NoAvailableUtxos."""
+    utxo_slot = Mock()
+    receive_cfa_view_model.utxo_creation_started.connect(utxo_slot)
+
+    err = CommonException('NoAvailableUtxos')
+    err.message = 'NoAvailableUtxos'
+
+    receive_cfa_view_model.on_error(err)
+
+    utxo_slot.assert_called_once_with(True)
+    # The patched ToastManager.error should not be called in this path
+    mock_toast.assert_not_called()

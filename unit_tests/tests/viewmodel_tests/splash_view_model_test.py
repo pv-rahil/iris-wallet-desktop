@@ -325,7 +325,7 @@ def test_handle_application_open_main_flow(
     mock_get_network.return_value = 'bitcoin_network'
 
     mock_local_store.get_value.side_effect = [
-        'account_xpub_vanilla', 'account_xpub_colored',
+        'account_xpub_vanilla', 'account_xpub_colored', 'master_fingerprint',
     ]
     mock_wallet_instance = Mock()
     mock_wallet_request_model.return_value = mock_wallet_instance
@@ -348,6 +348,7 @@ def test_handle_application_open_main_flow(
         account_xpub_vanilla='account_xpub_vanilla',
         account_xpub_colored='account_xpub_colored',
         mnemonic='decrypted_mnemonic',
+        master_fingerprint='master_fingerprint',
     )
     view_model.run_in_thread.assert_called()
     mock_local_store.get_value.reset_mock()

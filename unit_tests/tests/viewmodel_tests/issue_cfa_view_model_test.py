@@ -175,6 +175,22 @@ def test_on_success(mock_toast_manager, issue_cfa_view_model):
 
 
 @patch('src.views.components.toast.ToastManager.error')
+def test_on_error_no_available_utxos_triggers_utxo_creation_started(mock_toast_error, issue_cfa_view_model):
+    """on_error should emit utxo_creation_started(True) and return without toast for NoAvailableUtxos."""
+    # Connect signal
+    utxo_slot = Mock()
+    issue_cfa_view_model.utxo_creation_started.connect(utxo_slot)
+
+    err = CommonException('NoAvailableUtxos')
+    err.message = 'NoAvailableUtxos'
+
+    issue_cfa_view_model.on_error(err)
+
+    utxo_slot.assert_called_once_with(True)
+    mock_toast_error.assert_not_called()
+
+
+@patch('src.views.components.toast.ToastManager.error')
 def test_on_error(mock_toast_manager, issue_cfa_view_model):
     """Test on_error callback"""
     issue_cfa_view_model.is_loading = MagicMock()

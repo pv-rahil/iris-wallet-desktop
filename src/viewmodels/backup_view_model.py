@@ -8,6 +8,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.backup_service import BackupService
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_BACKUP_FAILED
@@ -111,14 +112,15 @@ class BackupViewModel(QObject, ThreadManager):
         password = get_value(
             key=WALLET_PASSWORD_KEY, network=network.value,
         )
-        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET:
-            mnemonic = mnemonic_store.decrypted_mnemonic
-            if mnemonic is None:
-                raise ValueError('Mnemonic is not available for backup.')
-        else:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or \
+                SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             mnemonic = local_store.get_value(ACCOUNT_XPUB_VANILLA)
             if mnemonic is None:
                 raise ValueError('xpub is not available for backup.')
+        else:
+            mnemonic = mnemonic_store.decrypted_mnemonic
+            if mnemonic is None:
+                raise ValueError('Mnemonic is not available for backup.')
         self.run_backup_service_thread(
             mnemonic=mnemonic, password=password,
         )

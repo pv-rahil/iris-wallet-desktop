@@ -17,6 +17,7 @@ from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -127,8 +128,8 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.fee_rate = fee_rate
         self.send_button_clicked.emit(True)
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
-        is_offline = SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
-        if is_hw or is_offline:
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+        if is_hw and is_online:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
@@ -150,7 +151,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         Run signing and finalization in a background thread.
         """
         self.send_button_clicked.emit(True)
-        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
         else:
             self.run_in_thread(

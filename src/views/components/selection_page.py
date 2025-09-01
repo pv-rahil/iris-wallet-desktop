@@ -4,23 +4,16 @@ which represents the UI for wallet selection methods.
 """
 from __future__ import annotations
 
-from PySide6.QtCore import Property
 from PySide6.QtCore import QCoreApplication
-from PySide6.QtCore import QEasingCurve
-from PySide6.QtCore import QEvent
-from PySide6.QtCore import QPropertyAnimation
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QCursor
-from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
-from PySide6.QtWidgets import QMessageBox
-from PySide6.QtWidgets import QPushButton
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
@@ -38,9 +31,6 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
-# from accessible_constant import OPTION_1_FRAME
-# from accessible_constant import OPTION_2_FRAME
-# from accessible_constant import WALLET_OR_TRANSFER_SELECTION_CONTINUE_BUTTON
 
 
 class SelectionPage(QWidget):
@@ -113,7 +103,6 @@ class SelectionPage(QWidget):
             self.params.logo_1_title,
         )
         self.option_1_frame.setObjectName('option_1_frame')
-        # self.option_1_frame.setAccessibleName(OPTION_1_FRAME)
         self.option_1_frame.setMinimumSize(QSize(315, 200))
         self.option_1_frame.setMaximumSize(QSize(315, 200))
 
@@ -158,7 +147,6 @@ class SelectionPage(QWidget):
             self.params.logo_2_title, self.widget_page,
         )
         self.option_2_frame.setObjectName('option_2_frame')
-        # self.option_2_frame.setAccessibleName(OPTION_2_FRAME)
         self.option_2_frame.setMinimumSize(QSize(315, 200))
         self.option_2_frame.setMaximumSize(QSize(315, 200))
 
@@ -227,9 +215,7 @@ class SelectionPage(QWidget):
         self.info_frame_layout.addWidget(self.wallet_connection_info_label)
 
         self.continue_button = PrimaryButton()
-        # self.continue_button.setAccessibleName(
-        #     WALLET_OR_TRANSFER_SELECTION_CONTINUE_BUTTON,
-        # )
+
         self.info_frame_layout.addWidget(self.continue_button)
         self.info_frame_wrapper = QHBoxLayout()
         self.info_frame_wrapper.setContentsMargins(50, 0, 0, 0)
@@ -265,7 +251,6 @@ class SelectionPage(QWidget):
         )
 
         self.grid_layout.addItem(self.vertical_spacer_4, 5, 2, 1, 1)
-        # self.adjust_size()
         self.retranslate_ui()
         self.setup_ui_connection()
         # Select option 1 by default and show info frame

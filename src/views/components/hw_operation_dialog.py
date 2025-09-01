@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from enum import Enum
 
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QMovie
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
 
 from src.model.enums.enums_model import PsbtStatus
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
@@ -78,12 +80,12 @@ class HardwareWalletOperationDialog(QDialog):
         self.button_layout.setContentsMargins(0, 12, 0, 0)
         self.button_layout.setSpacing(16)
         self.button_layout.setAlignment(Qt.AlignHCenter)
-        self.cancel_button = SecondaryButton('Cancel')
+        self.cancel_button = SecondaryButton()
         self.cancel_button.setMinimumWidth(180)
         self.cancel_button.clicked.connect(self.reject)
         self.button_layout.addWidget(self.cancel_button)
 
-        self.done_button = PrimaryButton('Done')
+        self.done_button = PrimaryButton()
         self.done_button.setVisible(False)
         self.done_button.setMinimumWidth(180)
         self.done_button.clicked.connect(self.accept)
@@ -97,6 +99,20 @@ class HardwareWalletOperationDialog(QDialog):
         self._error_pixmap = QPixmap(':/assets/x_circle_red.png')
         if dialog_type is not None:
             self._set_dialog_state(message, dialog_type)
+        self.retranslate_ui()
+
+    def retranslate_ui(self):
+        """Retranslate the UI elements."""
+        self.cancel_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cancel',
+            ),
+        )
+        self.done_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'done',
+            ),
+        )
 
     def _set_dialog_state(self, message: str, dialog_type: Enum):
         """
@@ -207,27 +223,6 @@ class HardwareWalletOperationDialog(QDialog):
         if self.parent_widget:
             self.parent_widget.setGraphicsEffect(None)
         super().reject()
-
-    def set_utxo_required_dialog(self, message: str):
-        """
-        Show a warning dialog for UTXO requirement, with message, warning icon, Continue and Cancel buttons.
-
-        Args:
-            message: The warning message to display.
-        """
-        if self._loader_movie is not None:
-            self._loader_movie.stop()
-        warning_pixmap = QPixmap(':/assets/warning_yellow.png')
-        self.icon_label.setPixmap(
-            warning_pixmap.scaled(
-                75, 75, Qt.KeepAspectRatio, Qt.SmoothTransformation,
-            ),
-        )
-        self.message_label.setText(message)
-        self.cancel_button.setVisible(True)
-        self.done_button.setVisible(True)
-        self.done_button.setText('Continue')
-        self.icon_label.setVisible(True)
 
     @classmethod
     def get_instance(cls, parent=None):

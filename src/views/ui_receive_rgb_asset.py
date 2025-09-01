@@ -111,6 +111,10 @@ class ReceiveRGBAssetWidget(QWidget):
         self._view_model.receive_cfa_view_model.utxo_creation_started.connect(
             self.handle_receive_asset,
         )
+        # When a new unsigned PSBT is created (software/offline), update in-place
+        self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
+            self.show_receive_cfa_psbt_page,
+        )
         # Connect to hardware wallet dialog signals
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
             self.handle_receive_cfa_hw_dialog_update,
@@ -199,6 +203,7 @@ class ReceiveRGBAssetWidget(QWidget):
             dlg = HardwareWalletOperationDialog.get_instance(parent=self)
             if dlg.isVisible():
                 dlg.accept()
+                self.generate_invoice()
 
     def handle_receive_asset(self):
         """ handle receive asset"""
@@ -209,17 +214,20 @@ class ReceiveRGBAssetWidget(QWidget):
         ) if wallet_service else []
         existing = next(
             (
-                p for p in unsigned_psbts if p.get('purpose') is None
+                p for p in unsigned_psbts if p.get('purpose') == 'receive_asset'
             ),
             None,
         )
         if existing and existing.get('psbt'):
             self.show_receive_cfa_psbt_page(existing.get('psbt'))
         else:
-            self._view_model.utxo_creation_view_model.create_utxos_begin()
+            self._view_model.utxo_creation_view_model.create_utxos_begin(
+                'receive_asset',
+            )
 
     def show_receive_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code for receive CFA."""
+        print(psbt)
         if psbt:
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(

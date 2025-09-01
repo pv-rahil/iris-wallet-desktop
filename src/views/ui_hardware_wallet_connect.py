@@ -139,7 +139,7 @@ class HardwareWalletConnectWidget(QWidget):
         ledger_layout.addWidget(ledger_icon)
         ledger_layout.addWidget(self.ledger_label)
         self.ledger_btn.clicked.connect(
-            self._make_option_click_handler(self.ledger_btn, 'Ledger'),
+            self.make_option_click_handler(self.ledger_btn, 'Ledger'),
         )
         self.ledger_btn.installEventFilter(self)
         self._option_buttons.append(self.ledger_btn)
@@ -174,7 +174,7 @@ class HardwareWalletConnectWidget(QWidget):
         trezor_layout.addWidget(self.trezor_label)
         self.trezor_btn.setDisabled(True)
         self.trezor_btn.clicked.connect(
-            self._make_option_click_handler(self.trezor_btn, 'Trezor'),
+            self.make_option_click_handler(self.trezor_btn, 'Trezor'),
         )
         self.trezor_btn.installEventFilter(self)
         self._option_buttons.append(self.trezor_btn)
@@ -257,7 +257,7 @@ class HardwareWalletConnectWidget(QWidget):
                 return True
         return super().eventFilter(watched, event)
 
-    def _make_option_click_handler(self, btn, wallet_name):
+    def make_option_click_handler(self, btn, wallet_name):
         """
         Return a handler function for wallet option button clicks.
         """

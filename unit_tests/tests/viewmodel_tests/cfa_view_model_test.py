@@ -13,7 +13,11 @@ import pytest
 from rgb_lib import AssetSchema
 from rgb_lib import TransferStatus
 
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import TransferStatusEnumModel
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import Balance
 from src.model.rgb_model import FailTransferResponseModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
@@ -507,3 +511,158 @@ def test_on_success_cfa(cfa_view_model, mocker):
         description=INFO_ASSET_SENT.format(mock_tx_id.txid),
     )
     cfa_view_model._page_navigation.fungibles_asset_page.assert_called_once()
+
+
+@patch('src.viewmodels.cfa_view_model.ToastManager.error')
+@patch('src.viewmodels.cfa_view_model.AssetDetailPageService.get_asset_transactions')
+def test_get_cfa_asset_detail_error_and_exception(mock_get_tx, mock_toast_error, cfa_view_model):
+    """Cover error and exception paths in get_cfa_asset_detail."""
+    # Patch run_in_thread to call error_callback directly
+    def run_calls_error(func, kwargs):
+        kwargs['error_callback'](CommonException('boom'))
+
+    cfa_view_model.run_in_thread = MagicMock(side_effect=run_calls_error)
+    txn_loaded = Mock()
+    is_loading = Mock()
+    cfa_view_model.txn_list_loaded.connect(txn_loaded)
+    cfa_view_model.is_loading.connect(is_loading)
+
+    cfa_view_model.get_cfa_asset_detail('aid', 'aname', 'img', AssetSchema.CFA)
+    txn_loaded.assert_called_once_with('aid', 'aname', 'img', AssetSchema.CFA)
+    is_loading.assert_called_with(False)
+    mock_toast_error.assert_called()
+
+    # Now make run_in_thread raise to exercise except branch
+    cfa_view_model.run_in_thread = MagicMock(side_effect=Exception('crash'))
+    mock_toast_error.reset_mock()
+    txn_loaded = Mock()
+    cfa_view_model.txn_list_loaded.connect(txn_loaded)
+    cfa_view_model.get_cfa_asset_detail(
+        'aid2', 'aname2', 'img2', AssetSchema.NIA,
+    )
+    mock_toast_error.assert_called()
+
+
+def test_on_error_native_auth(cfa_view_model, mocker):
+    """Cover on_error_native_auth for CommonException and generic Exception."""
+    toast_err = mocker.patch(
+        'src.viewmodels.cfa_view_model.ToastManager.error',
+    )
+    # CommonException -> use error.message
+    cfa_view_model.on_error_native_auth(CommonException('nope'))
+    toast_err.assert_called_with(description='nope')
+    # Generic -> SOMETHING_WENT_WRONG
+    toast_err.reset_mock()
+    cfa_view_model.on_error_native_auth(Exception('x'))
+    toast_err.assert_called_with(description=ERROR_SOMETHING_WENT_WRONG)
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+def test_on_psbt_created_hardware_wallet(mock_get_kst, mock_get_wt, cfa_view_model):
+    """When HW + online wallet, emit signing status and run sign_and_finalize."""
+    emitted = []
+    cfa_view_model.hw_dialog_update.connect(
+        lambda msg, st: emitted.append((msg, st)),
+    )
+    cfa_view_model.send_cfa_button_clicked = MagicMock()
+    cfa_view_model.run_in_thread = MagicMock()
+    cfa_view_model.on_psbt_created('psbt')
+    # hw dialog shows signing
+    assert any(msg for (msg, st) in emitted if st == PsbtStatus.SIGNING)
+    # run_in_thread called targeting CommonOperationRepository.sign_and_finalize_psbt
+    args = cfa_view_model.run_in_thread.call_args[0][1]
+    assert args['args'] == ['psbt']
+    assert args['callback'] == cfa_view_model.on_psbt_signed_and_finalized
+    assert args['error_callback'] == cfa_view_model.on_error
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
+def test_on_psbt_created_watch_only(mock_get_acc, cfa_view_model):
+    """WATCH_ONLY should emit unsigned_psbt signal."""
+    got = []
+    cfa_view_model.unsigned_psbt.connect(got.append)
+    cfa_view_model.on_psbt_created('raw_psbt')
+    assert got == ['raw_psbt']
+
+
+def test_on_psbt_signed_and_finalized_calls_send_end_and_broadcasts(cfa_view_model):
+    """Ensure broadcasting status and send_end call."""
+    emitted = []
+    cfa_view_model.hw_dialog_update.connect(lambda msg, st: emitted.append(st))
+    cfa_view_model.send_end = MagicMock()
+    cfa_view_model.on_psbt_signed_and_finalized('final_psbt')
+    assert PsbtStatus.BROADCASTING in emitted
+    cfa_view_model.send_end.assert_called_once_with('final_psbt')
+
+
+def test_send_begin_sets_request_and_runs(cfa_view_model):
+    """send_begin calls RgbRepository.send_begin with correct request and callbacks."""
+    cfa_view_model.asset_id = 'aid'
+    cfa_view_model.run_in_thread = MagicMock()
+    cfa_view_model.send_cfa_button_clicked = Mock()
+    cfa_view_model.send_begin(1, 'blind', ['te'], 2, 3)
+    cfa_view_model.send_cfa_button_clicked.emit.assert_called_once_with(True)
+    params = cfa_view_model.run_in_thread.call_args[0][1]
+    req = params['args'][0]
+    assert req.asset_id == 'aid'
+    assert req.amount == 1
+    assert req.recipient_id == 'blind'
+    assert req.transport_endpoints == ['te']
+    assert req.fee_rate == 2
+    assert req.min_confirmations == 3
+    assert params['callback'] == cfa_view_model.on_psbt_created
+    assert params['error_callback'] == cfa_view_model.on_error
+
+
+def test_send_end_runs_with_request(cfa_view_model):
+    """send_end calls RgbRepository.send_end with broadcast request and callbacks."""
+    cfa_view_model.run_in_thread = MagicMock()
+    cfa_view_model.send_cfa_button_clicked = Mock()
+    cfa_view_model.send_end('signed', skip_sync=True)
+    cfa_view_model.send_cfa_button_clicked.emit.assert_called_once_with(True)
+    params = cfa_view_model.run_in_thread.call_args[0][1]
+    req = params['args'][0]
+    assert req.signed_psbt == 'signed'
+    assert req.skip_sync is True
+    assert params['callback'] == cfa_view_model.on_success_cfa
+    assert params['error_callback'] == cfa_view_model.on_error
+
+
+@patch('src.viewmodels.cfa_view_model.hardware_client_store.stop_client')
+def test_cancel_operation_emits_and_stops(mock_stop, cfa_view_model):
+    """Cancel should close dialog and stop HW client."""
+    clicked = Mock()
+    cfa_view_model.send_cfa_button_clicked.connect(clicked)
+    cfa_view_model.cancel_operation()
+    clicked.assert_called_once_with(False)
+    mock_stop.assert_called_once()
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+def test_on_success_cfa_hardware_branch(mock_kst, cfa_view_model, mocker):
+    """Cover hardware wallet success branch emitting hw dialog update."""
+    cfa_view_model._page_navigation = MagicMock()
+    emitted = []
+    cfa_view_model.hw_dialog_update.connect(lambda msg, st: emitted.append(st))
+    mock_toast_success = mocker.patch(
+        'src.viewmodels.cfa_view_model.ToastManager.success',
+    )
+    cfa_view_model.asset_type = AssetSchema.CFA
+    cfa_view_model.on_success_cfa(SendAssetResponseModel(txid='t'))
+    assert PsbtStatus.SUCCESS in emitted
+    mock_toast_success.assert_not_called()
+    cfa_view_model._page_navigation.collectibles_asset_page.assert_called_once()
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+def test_on_error_hardware_branch(mock_kst, cfa_view_model, mocker):
+    """Cover hardware branch of on_error emitting hw error status."""
+    emitted = []
+    cfa_view_model.hw_dialog_update.connect(lambda msg, st: emitted.append(st))
+    mock_toast_error = mocker.patch(
+        'src.viewmodels.cfa_view_model.ToastManager.error',
+    )
+    cfa_view_model.on_error(CommonException('e'))
+    assert PsbtStatus.ERROR in emitted
+    mock_toast_error.assert_not_called()

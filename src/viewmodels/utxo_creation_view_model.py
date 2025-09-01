@@ -46,7 +46,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         super().__init__(parent)
         self.param: CreateUtxosRequestModel = None
 
-    def create_utxos_begin(self):
+    def create_utxos_begin(self, purpose: str | None = None):
         """
         Create unsigned PSBT for UTXO creation in a worker thread.
         Generates an unsigned PSBT that will be used to create new UTXOs.
@@ -60,7 +60,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         self.run_in_thread(
             BtcRepository.create_utxos_begin,
             {
-                'args': [self.param],
+                'args': [self.param, purpose],
                 'callback': self.on_utxo_begin_done,
                 'error_callback': self.on_error,
             },
@@ -74,6 +74,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             )
             self.sign_and_finalize_psbt(unsigned_psbt)
         else:
+            print('emit')
             self.unsigned_psbt.emit(unsigned_psbt)
 
     def sign_and_finalize_psbt(self, unsigned_psbt):

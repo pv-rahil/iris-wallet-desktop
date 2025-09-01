@@ -11,6 +11,9 @@ from unittest.mock import patch
 import pytest
 
 from src.model.btc_model import SendBtcResponseModel
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_BITCOIN_SENT
@@ -125,3 +128,120 @@ def test_on_send_click(send_bitcoin_view_model):
 
     # Assert run_in_thread was called with correct parameters
     send_bitcoin_view_model.run_in_thread.assert_called_once()
+
+
+def test_on_success_hardware_wallet_emits_hw_dialog(send_bitcoin_view_model, mocker):
+    """When using a hardware wallet, on_success emits hw dialog update with SUCCESS."""
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    hw_slot = MagicMock()
+    send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
+    resp = SendBtcResponseModel(tx_id='abc')
+
+    send_bitcoin_view_model.on_success(resp)
+
+    assert hw_slot.call_count == 1
+
+
+def test_on_error_hardware_wallet_emits_error(send_bitcoin_view_model, mocker):
+    """on_error should emit hw_dialog_update with PsbtStatus.ERROR for hardware wallets."""
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    hw_slot = MagicMock()
+    send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
+
+    send_bitcoin_view_model.on_error(Exception('boom'))
+
+    assert hw_slot.call_count == 1
+
+
+def test_send_btc_begin_hw_online_emits_signing_and_calls_repo(send_bitcoin_view_model, mocker):
+    """send_btc_begin should emit signing state when HW+online and schedule repo call."""
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    send_bitcoin_view_model.run_in_thread = Mock()
+    hw_slot = MagicMock()
+    send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
+
+    send_bitcoin_view_model.send_btc_begin('addr', 1, 2)
+
+    assert hw_slot.call_count == 1
+    send_bitcoin_view_model.run_in_thread.assert_called_once()
+
+
+def test_on_psbt_created_watch_only_emits_unsigned(send_bitcoin_view_model, mocker):
+    """If WATCH_ONLY, unsigned_psbt signal should be emitted directly."""
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+    slot = MagicMock()
+    send_bitcoin_view_model.unsigned_psbt.connect(slot)
+
+    send_bitcoin_view_model.on_psbt_created('psbt')
+
+    slot.assert_called_once_with('psbt')
+
+
+def test_on_psbt_created_non_watch_runs_sign_finalize(send_bitcoin_view_model, mocker):
+    """If not WATCH_ONLY, run sign_and_finalize in thread."""
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_access_type',
+        return_value=mocker.Mock(name='NOT_WATCH_ONLY'),
+    )
+    send_bitcoin_view_model.run_in_thread = Mock()
+
+    send_bitcoin_view_model.on_psbt_created('psbt')
+
+    send_bitcoin_view_model.run_in_thread.assert_called_once()
+
+
+def test_on_psbt_signed_and_finalized_hw_online_triggers_broadcast(send_bitcoin_view_model, mocker):
+    """After finalize, for HW+online, emit broadcasting and call send_btc_end."""
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    hw_slot = MagicMock()
+    send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
+    send_bitcoin_view_model.send_btc_end = Mock()
+
+    send_bitcoin_view_model.on_psbt_signed_and_finalized('final')
+
+    assert hw_slot.call_count == 1
+    send_bitcoin_view_model.send_btc_end.assert_called_once_with('final')
+
+
+def test_send_end_runs_with_request(send_bitcoin_view_model, mocker):
+    """send_btc_end should start background broadcast with correct request."""
+    send_bitcoin_view_model.run_in_thread = Mock()
+    send_bitcoin_view_model.send_btc_end('signed_psbt', skip_sync=True)
+    send_bitcoin_view_model.run_in_thread.assert_called_once()
+
+
+def test_cancel_operation_stops_hardware_client(send_bitcoin_view_model, mocker):
+    """Cancel should emit False and stop hardware client."""
+    slot = MagicMock()
+    send_bitcoin_view_model.send_button_clicked.connect(slot)
+    stop_client = mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.hardware_client_store.stop_client',
+    )
+
+    send_bitcoin_view_model.cancel_operation()
+
+    slot.assert_called_once_with(False)
+    stop_client.assert_called_once_with()

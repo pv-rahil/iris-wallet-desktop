@@ -7,8 +7,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_GOOGLE_CONFIGURE_FAILED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -192,7 +194,7 @@ def test_restore_success(restore_view_model, mocker):
     test_password = 'test password'
 
     # Act
-    restore_view_model.restore(test_mnemonic, test_password)
+    restore_view_model.restore(test_password, test_mnemonic)
 
     # Assert
     restore_view_model.is_loading.emit.assert_called_once_with(True)
@@ -231,3 +233,226 @@ def test_restore_generic_exception(restore_view_model, mocker):
         ToastPreset.ERROR,
         ERROR_SOMETHING_WENT_WRONG,
     )
+
+
+def test_store_software_wallet_data_writes_and_sets_keys(restore_view_model, mocker):
+    """_store_software_wallet_data should encrypt mnemonic, write file, derive and save keys."""
+    restore_view_model.password = 'pwd'
+    restore_view_model.mnemonic = 'mn'
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.mnemonic_store.encrypt',
+        return_value=b'encrypted',
+    )
+    write_file = mocker.patch(
+        'src.viewmodels.restore_view_model.local_store.write_to_file',
+    )
+    keys = mocker.Mock(
+        account_xpub_vanilla='vx',
+        account_xpub_colored='cx', master_fingerprint='ff',
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.CommonOperationRepository.restore_keys', return_value=keys,
+    )
+    set_value_mock = mocker.patch(
+        'src.viewmodels.restore_view_model.local_store.set_value',
+    )
+
+    restore_view_model._store_software_wallet_data()
+
+    write_file.assert_called_once()
+    assert set_value_mock.call_count == 3
+
+
+def test_store_hardware_wallet_data_sets_values(restore_view_model, mocker):
+    """_store_hardware_wallet_data should set xpubs and fingerprint."""
+    restore_view_model.xpub_vanilla = 'vx'
+    restore_view_model.xpub_colored = 'cx'
+    restore_view_model.fingerprint = 'ff'
+    set_value_mock = mocker.patch(
+        'src.viewmodels.restore_view_model.local_store.set_value',
+    )
+
+    restore_view_model._store_hardware_wallet_data()
+
+    assert set_value_mock.call_count == 3
+
+
+def test_on_success_keyring_dialog_hw_watch_only_branch(mocker, restore_view_model):
+    """When set_value returns False for HW/WatchOnly, open KeyringErrorDialog with xpubs."""
+    # Arrange base state
+    restore_view_model.password = 'pwd'
+    restore_view_model.mnemonic = 'mn'
+    restore_view_model.xpub_vanilla = 'vx'
+    restore_view_model.xpub_colored = 'cx'
+    restore_view_model.fingerprint = 'ff'
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.get_bitcoin_network_from_enum',
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+    mocker.patch.object(restore_view_model, '_store_hardware_wallet_data')
+    mocker.patch(
+        'src.viewmodels.restore_view_model.set_value',
+        return_value=False,
+    )
+    dlg_cls = mocker.patch(
+        'src.viewmodels.restore_view_model.KeyringErrorDialog',
+    )
+
+    # Act
+    restore_view_model.on_success(True)
+
+    # Assert
+    dlg_cls.assert_called_once()
+    dlg_cls.return_value.exec.assert_called_once_with()
+
+
+def test_on_success_keyring_dialog_software_branch(mocker, restore_view_model):
+    """When set_value returns False for software wallet, open KeyringErrorDialog with mnemonic."""
+    restore_view_model.password = 'pwd'
+    restore_view_model.mnemonic = 'mn'
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.get_bitcoin_network_from_enum',
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_key_storage_type', return_value=None,
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_wallet_access_type', return_value=None,
+    )
+    mocker.patch.object(restore_view_model, '_store_software_wallet_data')
+    mocker.patch(
+        'src.viewmodels.restore_view_model.set_value',
+        return_value=False,
+    )
+    dlg_cls = mocker.patch(
+        'src.viewmodels.restore_view_model.KeyringErrorDialog',
+    )
+
+    restore_view_model.on_success(True)
+
+    dlg_cls.assert_called_once()
+    dlg_cls.return_value.exec.assert_called_once_with()
+
+
+def test_handle_rgb_lib_incompatibility_close_app(mocker, restore_view_model):
+    """Handle close button path: application exits."""
+    dlg = mocker.Mock()
+    dlg.rgb_lib_incompatibility_dialog.clickedButton.return_value = 'close'
+    dlg.close_button = 'close'
+    dlg.delete_app_data_button = 'del'
+    mocker.patch(
+        'src.viewmodels.restore_view_model.RgbLibIncompatibilityDialog', return_value=dlg,
+    )
+    app = mocker.Mock()
+    mocker.patch(
+        'src.viewmodels.restore_view_model.QApplication.instance', return_value=app,
+    )
+
+    restore_view_model.handle_rgb_lib_incompatibility()
+
+    app.exit.assert_called_once_with()
+
+
+def test_handle_rgb_lib_incompatibility_delete_data_confirm(mocker, restore_view_model):
+    """Delete data flow with confirm should call on_delete_app_data."""
+    dlg = mocker.Mock()
+    dlg.rgb_lib_incompatibility_dialog.clickedButton.return_value = 'del'
+    dlg.close_button = 'close'
+    dlg.delete_app_data_button = 'del'
+    dlg.confirmation_dialog.clickedButton.return_value = 'confirm'
+    dlg.confirm_delete_button = 'confirm'
+    dlg.cancel = 'cancel'
+    mocker.patch(
+        'src.viewmodels.restore_view_model.RgbLibIncompatibilityDialog', return_value=dlg,
+    )
+    restore_view_model.on_delete_app_data = MagicMock()
+
+    restore_view_model.handle_rgb_lib_incompatibility()
+
+    dlg.show_confirmation_dialog.assert_called_once_with()
+    restore_view_model.on_delete_app_data.assert_called_once_with()
+
+
+def test_handle_rgb_lib_incompatibility_delete_cancel_recurses(mocker, restore_view_model):
+    """Cancel after delete should show confirm then re-open dialog once more."""
+    # First dialog: choose delete then cancel confirmation
+    dlg1 = mocker.Mock()
+    dlg1.rgb_lib_incompatibility_dialog.clickedButton.return_value = 'del'
+    dlg1.close_button = 'close'
+    dlg1.delete_app_data_button = 'del'
+    dlg1.confirmation_dialog.clickedButton.return_value = 'cancel'
+    dlg1.confirm_delete_button = 'confirm'
+    dlg1.cancel = 'cancel'
+    # Second dialog: choose close to end flow
+    dlg2 = mocker.Mock()
+    dlg2.rgb_lib_incompatibility_dialog.clickedButton.return_value = 'close'
+    dlg2.close_button = 'close'
+    dlg2.delete_app_data_button = 'del'
+    app = mocker.Mock()
+    mocker.patch(
+        'src.viewmodels.restore_view_model.QApplication.instance', return_value=app,
+    )
+    dlg_patch = mocker.patch(
+        'src.viewmodels.restore_view_model.RgbLibIncompatibilityDialog', side_effect=[dlg1, dlg2],
+    )
+
+    restore_view_model.handle_rgb_lib_incompatibility()
+
+    assert dlg_patch.call_count == 2
+    dlg1.show_confirmation_dialog.assert_called_once_with()
+
+
+def test_restore_uses_xpub_when_mnemonic_missing(restore_view_model, mocker):
+    """restore should pass xpub to service when mnemonic is None."""
+    mocker.patch(
+        'src.viewmodels.restore_view_model.authenticate',
+        return_value=True,
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.QApplication.instance',
+        return_value=MagicMock(),
+    )
+    restore_view_model.run_in_thread = MagicMock()
+
+    restore_view_model.restore('pwd', mnemonic=None, xpub_vanilla='xv')
+
+    args = restore_view_model.run_in_thread.call_args[0][1]['args']
+    assert args[0] == 'xv'
+
+
+def test_on_delete_app_data_calls_delete(restore_view_model, mocker):
+    """on_delete_app_data should call delete_app_data with base path and network."""
+    mocker.patch(
+        'src.viewmodels.restore_view_model.local_store.get_path',
+        return_value='/tmp/base',
+    )
+    mocker.patch(
+        'src.viewmodels.restore_view_model.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.MAINNET,
+    )
+    delete = mocker.patch('src.viewmodels.restore_view_model.delete_app_data')
+    log = mocker.patch('src.viewmodels.restore_view_model.logger.info')
+
+    restore_view_model.on_delete_app_data()
+
+    delete.assert_called_once()
+    log.assert_called_once()

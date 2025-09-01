@@ -4,8 +4,6 @@ which represents the UI for fungible assets.
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from PySide6.QtCore import QByteArray
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QRect
@@ -126,17 +124,21 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.usb_last_sync_horizontal_layout = QHBoxLayout()
         self.usb_last_sync_horizontal_layout.setContentsMargins(0, 0, 12, 0)
 
-        self.usb_last_sync_info_label = QLabel()
-        self.usb_last_sync_info_label.setObjectName('usb_last_sync_info_label')
-        self.outdated_balance_label = QLabel()
-        self.outdated_balance_label.setObjectName('outdated_balance_label')
+        self.usb_last_sync_fungible_info_label = QLabel()
+        self.usb_last_sync_fungible_info_label.setObjectName(
+            'usb_last_sync_info_label',
+        )
+        self.outdated_fungible_balance_label = QLabel()
+        self.outdated_fungible_balance_label.setObjectName(
+            'outdated_balance_label',
+        )
 
         self.usb_last_sync_horizontal_layout.addWidget(
-            self.usb_last_sync_info_label,
+            self.usb_last_sync_fungible_info_label,
         )
         if self.is_offline_wallet:
             self.usb_last_sync_horizontal_layout.addWidget(
-                self.outdated_balance_label,
+                self.outdated_fungible_balance_label,
             )
 
         self.horizontal_spacer = QSpacerItem(
@@ -472,12 +474,12 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
         epoch_time = format_epoch_time()
         if epoch_time is not None:
-            self.usb_last_sync_info_label.setText(
+            self.usb_last_sync_fungible_info_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
                 ).format(epoch_time),
             )
-            self.outdated_balance_label.setText(
+            self.outdated_fungible_balance_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
                 ),
@@ -491,12 +493,12 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         )
         epoch_time = format_epoch_time()
         if epoch_time is not None:
-            self.usb_last_sync_info_label.setText(
+            self.usb_last_sync_fungible_info_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
                 ).format(epoch_time),
             )
-            self.outdated_balance_label.setText(
+            self.outdated_fungible_balance_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
                 ),

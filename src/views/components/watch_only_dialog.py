@@ -204,6 +204,7 @@ class WatchOnlyDialog(QDialog):
             self.error_label.setVisible(True)
             self.setMinimumSize(480, 490)
             self.continue_btn.setEnabled(False)
+            self.check_box.setChecked(False)
 
         if not vanilla or not colored or not fingerprint:
             show_error('all_fields_required')
@@ -223,9 +224,6 @@ class WatchOnlyDialog(QDialog):
         self.continue_btn.setEnabled(
             self.check_box.isChecked() and not self.error_label.isVisible(),
         )
-
-        if self.error_label.isVisible() and self.check_box.isChecked():
-            self.check_box.setChecked(False)
 
     def handle_submit(self):
         """

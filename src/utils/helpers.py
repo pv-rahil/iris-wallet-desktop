@@ -25,6 +25,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
@@ -148,7 +149,8 @@ def hash_mnemonic(mnemonic_phrase: str) -> str:
     Returns:
     str: The hashed and encoded mnemonic.
     """
-    if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+    if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or \
+            SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
         validate_xpub(mnemonic_phrase)
     else:
         validate_mnemonic(mnemonic_phrase=mnemonic_phrase)

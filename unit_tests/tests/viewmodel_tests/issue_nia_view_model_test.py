@@ -276,3 +276,22 @@ def test_on_close_click(mocker, issue_nia_view_model):
     issue_nia_view_model.on_close_click()
 
     mock_nav.assert_called_once()
+
+
+@patch('src.views.components.toast.ToastManager.error')
+def test_on_error_no_available_utxos_triggers_utxo_creation_started(mock_toast_error, issue_nia_view_model):
+    """on_error should emit utxo_creation_started(True) and return without toast for NoAvailableUtxos."""
+    # Connect signals
+    utxo_slot = Mock()
+    issue_nia_view_model.utxo_creation_started.connect(utxo_slot)
+    btn_slot = Mock()
+    issue_nia_view_model.issue_button_clicked.connect(btn_slot)
+
+    err = CommonException('NoAvailableUtxos')
+    err.message = 'NoAvailableUtxos'
+
+    issue_nia_view_model.on_error(err)
+
+    btn_slot.assert_called_once_with(False)
+    utxo_slot.assert_called_once_with(True)
+    mock_toast_error.assert_not_called()

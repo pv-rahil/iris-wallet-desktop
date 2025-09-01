@@ -501,18 +501,20 @@ class IssueNIAWidget(QWidget):
         """handle nia issue"""
         self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
         wallet_service = WalletDataService.get_session()
-        unsigned_psbts = wallet_service.list_psbt(signed=False)
-        existing = next(
+        unsigned_psbts = wallet_service.list_psbt(
+            signed=False,
+        ) if wallet_service else []
+        existing_psbt = next(
             (
-                p for p in unsigned_psbts if p.get(
-                    'purpose',
-                ) is None
+                p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
             ), None,
         )
-        if existing and existing.get('psbt'):
-            self.show_nia_psbt_page(existing.get('psbt'))
+        if existing_psbt and existing_psbt.get('psbt'):
+            self.show_nia_psbt_page(existing_psbt.get('psbt'))
         else:
-            self._view_model.utxo_creation_view_model.create_utxos_begin()
+            self._view_model.utxo_creation_view_model.create_utxos_begin(
+                'issue_asset',
+            )
 
     def show_nia_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""

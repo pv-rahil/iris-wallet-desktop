@@ -2056,5 +2056,29 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>select_psbt_for_sign</source>
         <translation>Select PSBT to sign</translation>
     </message>
+    <message>
+        <source>done</source>
+        <translation>Done</translation>
+    </message>
+    <message>
+        <source>ledger_nano_s</source>
+        <translation>Ledger Nano S</translation>
+    </message>
+    <message>
+        <source>ledger_nano_s_plus</source>
+        <translation>Ledger Nano S Plus</translation>
+    </message>
+    <message>
+        <source>ledger_nano_x</source>
+        <translation>Ledger Nano X</translation>
+    </message>
+    <message>
+        <source>ledger_stax</source>
+        <translation>Ledger Stax</translation>
+    </message>
+    <message>
+        <source>ledger_flex</source>
+        <translation>Ledger Flex</translation>
+    </message>
 </context>
 </TS>

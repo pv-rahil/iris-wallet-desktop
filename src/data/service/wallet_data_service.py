@@ -33,6 +33,10 @@ from src.model.btc_model import UnspentsListResponseModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.utils.build_app_path import app_paths
+from src.utils.constant import BALANCE_KEY
+from src.utils.constant import DB_FILE_NAME
+from src.utils.constant import TRANSACTIONS_KEY
+from src.utils.constant import UNSPENTS_KEY
 from src.utils.logging import logger
 
 
@@ -41,11 +45,6 @@ class WalletDataService:
 
     _instance: WalletDataService | None = None
     _lock = threading.Lock()
-
-    DB_FILE_NAME = 'wallet.db'
-    BALANCE_KEY = 'balance'
-    TRANSACTIONS_KEY = 'transactions'
-    UNSPENTS_KEY = 'unspents'
 
     def __init__(self, db_path: str):
         """
@@ -83,7 +82,7 @@ class WalletDataService:
                     )
 
                 db_path = os.path.join(
-                    app_paths.wallet_data_folder_path, WalletDataService.DB_FILE_NAME,
+                    app_paths.wallet_data_folder_path, DB_FILE_NAME,
                 )
                 return WalletDataService(db_path=db_path)
             return None
@@ -170,9 +169,9 @@ class WalletDataService:
                 now_ts = int(time.time())
                 # Insert/replace rows in data table
                 for key, value in [
-                    (self.BALANCE_KEY, balance_resp),
-                    (self.TRANSACTIONS_KEY, tx_list_resp),
-                    (self.UNSPENTS_KEY, unspents_resp),
+                    (BALANCE_KEY, balance_resp),
+                    (TRANSACTIONS_KEY, tx_list_resp),
+                    (UNSPENTS_KEY, unspents_resp),
                 ]:
                     cur.execute(
                         'INSERT OR REPLACE INTO data (key, data, updated_at) VALUES (?, ?, ?)',
@@ -270,7 +269,7 @@ class WalletDataService:
 
     def get_btc_balance(self) -> BalanceResponseModel:
         """Get the current balance of the wallet."""
-        data = self._fetch_data(self.BALANCE_KEY)
+        data = self._fetch_data(BALANCE_KEY)
         if data is not None:
             return BalanceResponseModel(vanilla=data.vanilla, colored=data.colored)
         default_balance = Balance(settled=0, future=0, spendable=0)
@@ -278,14 +277,14 @@ class WalletDataService:
 
     def list_transactions(self) -> TransactionListResponse:
         """Get the list of transactions."""
-        data = self._fetch_data(self.TRANSACTIONS_KEY)
+        data = self._fetch_data(TRANSACTIONS_KEY)
         if data is not None:
             return TransactionListResponse(transactions=data)
         return TransactionListResponse(transactions=[])
 
     def list_unspents(self) -> UnspentsListResponseModel:
         """Get the list of unspent outputs."""
-        data = self._fetch_data(self.UNSPENTS_KEY)
+        data = self._fetch_data(UNSPENTS_KEY)
         if data is not None:
             return UnspentsListResponseModel(unspents=data)
         return UnspentsListResponseModel(unspents=[])
