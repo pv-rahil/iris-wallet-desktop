@@ -138,3 +138,58 @@ def test_show_and_close_event(confirmation_dialog, qtbot):
     dialog.closeEvent = MagicMock()
     dialog.close()
     dialog.closeEvent.assert_called_once()
+
+
+@pytest.fixture
+def warning_dialog(qtbot):
+    """Fixture for creating a warning-styled ConfirmationDialog with checkbox."""
+    dialog = ConfirmationDialog(
+        'Sync may overwrite data', None, icon_type='warning',
+    )
+    qtbot.addWidget(dialog)
+    return dialog
+
+
+def test_warning_initialization(warning_dialog):
+    """Warning dialog should show checkbox and have Continue disabled initially."""
+    dlg = warning_dialog
+    assert dlg.icon_type == 'warning'
+    assert dlg.check_box is not None
+    assert dlg.confirmation_dialog_continue_button.isEnabled() is False
+
+
+def test_warning_checkbox_enables_continue(warning_dialog, qtbot):
+    """Checking the checkbox should enable the Continue button; unchecking disables it."""
+    dlg = warning_dialog
+    # Initially disabled
+    assert not dlg.confirmation_dialog_continue_button.isEnabled()
+    # Check -> enabled
+    dlg.check_box.setChecked(True)
+    qtbot.wait(50)
+    assert dlg.confirmation_dialog_continue_button.isEnabled()
+    # Uncheck -> disabled
+    dlg.check_box.setChecked(False)
+    qtbot.wait(50)
+    assert not dlg.confirmation_dialog_continue_button.isEnabled()
+
+
+def test_warning_retranslate_checkbox_text(warning_dialog):
+    """retranslate_ui should also set checkbox text for warning dialog."""
+    dlg = warning_dialog
+    dlg.retranslate_ui()
+    # Ensure some non-empty text is set on checkbox
+    assert isinstance(dlg.check_box.text(), str)
+    assert dlg.check_box.text() != ''
+
+
+def test_accept_clears_blur_effect(warning_dialog, qtbot):
+    """accept() should clear blur effect from parent widget."""
+    dlg = warning_dialog
+    parent_widget = dlg.parent_widget
+    # Show to apply blur via showEvent
+    dlg.show()
+    qtbot.waitExposed(dlg)
+    assert parent_widget.graphicsEffect() is not None
+    # Accept clears effect
+    dlg.accept()
+    assert parent_widget.graphicsEffect() is None

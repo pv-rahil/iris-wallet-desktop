@@ -547,14 +547,18 @@ class HeaderFrame(QFrame, QObject):
             ) if wallet_service is not None else []
             count = len(drafts) if drafts is not None else 0
             if count > 0:
-                label_text = f"{count} PSBT(s) ready to broadcast"
+                label_text = QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
+                ).format(count)
         elif wallet_type == WalletType.OFFLINE_TYPE_WALLET:
             drafts = wallet_service.list_psbt(
                 False,
             ) if wallet_service is not None else []
             count = len(drafts) if drafts is not None else 0
             if count > 0:
-                label_text = f"{count} PSBT(s) need signing"
+                label_text = QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
+                ).format(count)
         else:
             drafts = []
             count = 0

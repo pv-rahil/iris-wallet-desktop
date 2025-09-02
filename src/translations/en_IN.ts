@@ -2080,5 +2080,13 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>ledger_flex</source>
         <translation>Ledger Flex</translation>
     </message>
+    <message>
+        <source>broadcast_psbt_detection_label</source>
+        <translation>{0} transaction detected waiting to be broadcasted</translation>
+    </message>
+    <message>
+        <source>sign_psbt_detection_label</source>
+        <translation>{0} transaction detected waiting to be signed</translation>
+    </message>
 </context>
 </TS>

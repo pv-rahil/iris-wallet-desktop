@@ -181,6 +181,11 @@ def test_hide_loading_screen(bitcoin_widget):
     bitcoin_widget.refresh_button = MagicMock()
     bitcoin_widget.send_asset_btn = MagicMock()
     bitcoin_widget.receive_asset_btn = MagicMock()
+    # Ensure privileges allow enabling buttons
+    bitcoin_widget.priv = MagicMock(
+        can_send_transactions=True,
+        can_receive_asset=True,
+    )
 
     # Call the method to test
     bitcoin_widget.hide_loading_screen()

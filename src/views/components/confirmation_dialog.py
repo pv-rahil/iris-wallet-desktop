@@ -38,6 +38,7 @@ class ConfirmationDialog(QDialog):
         self.blur_effect = QGraphicsBlurEffect()
         self.blur_effect.setBlurRadius(10)
         self.icon_type = icon_type
+        self.check_box = None
 
         self.setObjectName('confirmation_dialog')
         self.setAccessibleName(CONFIRMAION_DIALOG)
@@ -122,7 +123,10 @@ class ConfirmationDialog(QDialog):
         # If warning, disable Continue until confirmed
         if self.icon_type == 'warning':
             self.confirmation_dialog_continue_button.setEnabled(False)
-            self.check_box.stateChanged.connect(self.handle_continue_button)
+            if self.check_box:
+                self.check_box.stateChanged.connect(
+                    self.handle_continue_button,
+                )
 
         self.setup_ui_connection()
         self.retranslate_ui()

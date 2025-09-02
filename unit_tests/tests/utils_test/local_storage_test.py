@@ -2,10 +2,12 @@
 # pylint: disable=redefined-outer-name,unused-argument,too-many-arguments
 from __future__ import annotations
 
+import os
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from PySide6.QtCore import QSettings
 
 from src.utils.constant import APP_NAME
 from src.utils.constant import ORGANIZATION_DOMAIN
@@ -29,10 +31,10 @@ def mock_qdir():
 
 
 @pytest.fixture
-def local_store(mock_qsettings, mock_qdir):
-    """Fixture to initialize LocalStore."""
-    # Mock the writableLocation return value
-    with patch('PySide6.QtCore.QStandardPaths.writableLocation', return_value='/mock/path'):
+def local_store(tmp_path, mock_qsettings):
+    """Fixture to initialize LocalStore in a temp sandbox path."""
+    # Point writableLocation to a temporary directory to avoid touching real data
+    with patch('PySide6.QtCore.QStandardPaths.writableLocation', return_value=str(tmp_path)):
         return LocalStore(APP_NAME, ORGANIZATION_DOMAIN)
 
 
@@ -97,25 +99,52 @@ def test_get_path(local_store):
     assert result == '/mock/path/regtest'
 
 
-def test_create_folder(local_store, mock_qdir, mocker):
-    """Test that create_folder creates a folder and returns its path."""
-    # Mock the network to always return REGTEST
-    mocker.patch(
-        'src.utils.common_utils.SettingRepository.get_wallet_network', return_value='regtest',
-    )
-
-    # Mock the QDir instance and its mkpath method
-    mock_qdir_instance = mock_qdir()
-    mock_qdir_instance.filePath = MagicMock(
-        return_value='/mock/path/regtest/test_folder',
-    )
-    mock_qdir().mkpath = MagicMock()
-
-    # Call the create_folder method
+def test_create_folder(local_store):
+    """Test that create_folder creates a folder and returns its path under base path."""
     result = local_store.create_folder('test_folder')
+    assert os.path.isdir(result)
+    assert result.startswith(local_store.get_path())
 
-    # Construct the expected return value
-    return_value = '/mock/path/regtest/test_folder'
 
-    # Assert the result
-    assert result == return_value
+def test_write_to_file_text_and_bytes(local_store):
+    """Test that write_to_file creates files with correct content."""
+    # write text under base path
+    file_rel = 'notes.txt'
+    path = local_store.write_to_file(file_rel, value='hello')
+    assert os.path.isfile(path)
+    with open(path, encoding='utf-8') as f:
+        assert f.read() == 'hello'
+
+    # write bytes
+    path2 = local_store.write_to_file('bytes.txt', value=b'world')
+    with open(path2, encoding='utf-8') as f:
+        assert f.read() == 'world'
+
+    # explicit file_path
+    explicit = os.path.join(local_store.get_path(), 'explicit.txt')
+    path3 = local_store.write_to_file('ignored', file_path=explicit, value='x')
+    assert path3 == explicit and os.path.isfile(explicit)
+
+
+def test_refresh_file_reinits_qsettings(local_store):
+    """Test that refresh_file reinitializes QSettings."""
+    # swap out current settings with a mock to observe sync()
+    old_settings = local_store.settings = MagicMock(spec=QSettings)
+    with patch('src.utils.local_store.QSettings') as mock_qsettings:
+        local_store.refresh_file()
+        old_settings.sync.assert_called_once()
+        mock_qsettings.assert_called_once()  # re-init called
+
+
+def test_remove_file_true_false_and_exception(local_store):
+    """Test that remove_file returns True/False and handles exceptions."""
+    # create file to remove
+    victim = local_store.write_to_file('todelete.txt', value='bye')
+    assert local_store.remove_file('todelete.txt') is True
+    # already removed
+    assert local_store.remove_file('todelete.txt') is False
+
+    # simulate exception path
+    with patch('src.utils.local_store.os.path.exists', return_value=True), \
+            patch('src.utils.local_store.os.remove', side_effect=OSError('err')):
+        assert local_store.remove_file('ignored', file_path=victim) is False

@@ -4,11 +4,13 @@
 # pylint: disable=redefined-outer-name,unused-argument,protected-access
 from __future__ import annotations
 
+from unittest.mock import call
 from unittest.mock import patch
 
 import pytest
 from PySide6.QtCore import Qt
 
+from src.model.common_operation_model import KeyringDialogModel
 from src.utils.custom_exception import CommonException
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
 
@@ -16,9 +18,13 @@ from src.views.components.keyring_error_dialog import KeyringErrorDialog
 @pytest.fixture
 def keyring_error_dialog_widget(qtbot):
     """Fixture to create and return an instance of KeyringErrorDialog."""
-    widget = KeyringErrorDialog(
-        mnemonic='mnemonic', password='password', navigate_to='fungibles_asset_page', originating_page='settings_page',
+    model = KeyringDialogModel(
+        mnemonic='mnemonic',
+        password='password',
+        navigate_to=lambda: None,
+        originating_page='settings_page',
     )
+    widget = KeyringErrorDialog(model)
     qtbot.addWidget(widget)
     return widget
 
@@ -26,11 +32,31 @@ def keyring_error_dialog_widget(qtbot):
 @pytest.fixture
 def keyring_error_dialog(qtbot):
     """Set up the test environment for KeyringErrorDialog."""
-    mnemonic = 'test mnemonic'
-    password = 'test password'
-    dialog = KeyringErrorDialog(mnemonic, password)
+    model = KeyringDialogModel(
+        mnemonic='test mnemonic',
+        password='test password',
+        originating_page=None,
+    )
+    dialog = KeyringErrorDialog(model)
     qtbot.addWidget(dialog)
     return dialog
+
+
+@pytest.fixture
+def watch_only_dialog_widget(qtbot):
+    """Create a watch-only dialog (mnemonic None, xpubs present)."""
+    model = KeyringDialogModel(
+        mnemonic=None,
+        password='pw',
+        xpub_vanilla='x' * 64,
+        xpub_colored='y' * 64,
+        master_fingerprint='deadbeef',
+        originating_page='settings_page',
+        navigate_to=lambda: None,
+    )
+    dlg = KeyringErrorDialog(model)
+    qtbot.addWidget(dlg)
+    return dlg
 
 
 def test_dialog_initialization(keyring_error_dialog):
@@ -85,7 +111,9 @@ def test_on_click_copy_button_password(mock_copy_text, keyring_error_dialog_widg
 def test_on_click_cancel(keyring_error_dialog, qtbot):
     """Test cancel button click functionality."""
     dialog = keyring_error_dialog
-
+    # Make cancel button visible for this test
+    dialog.originating_page = 'settings_page'
+    dialog.handle_disable_keyring()
     # Simulate clicking the cancel button
     qtbot.mouseClick(dialog.cancel_button, Qt.LeftButton)
 
@@ -247,6 +275,67 @@ def test_handle_when_origin_page_set_wallet_general_exception(keyring_error_dial
     # Verify exception handling
     mock_set_keyring.assert_called_once_with(status=True)
     mock_toast_manager.assert_called_once_with(test_error)
+
+
+def test_watch_only_initialization_and_layout(watch_only_dialog_widget):
+    """Watch-only dialog should hide mnemonic and show xpub/fingerprint frames."""
+    dlg = watch_only_dialog_widget
+    assert dlg.is_watch_only is True
+    assert dlg.mnemonic_frame.isHidden() is True
+    assert dlg.xpub_vanilla_frame.isHidden() is False
+    assert dlg.xpub_colored_frame.isHidden() is False
+    assert dlg.fingerprint_frame.isHidden() is False
+
+
+@patch('src.views.components.keyring_error_dialog.copy_text')
+def test_watch_only_copy_buttons(mock_copy_text, watch_only_dialog_widget):
+    """Copy buttons should forward correct targets for watch-only data."""
+    dlg = watch_only_dialog_widget
+    # xpub vanilla uses raw string value
+    dlg.on_click_copy_button('xpub_vanilla')
+    # xpub colored uses raw string value
+    dlg.on_click_copy_button('xpub_colored')
+    # fingerprint uses QLabel widget value label
+    dlg.on_click_copy_button('fingerprint')
+    calls = [
+        call(dlg._xpub_vanilla),
+        call(dlg._xpub_colored),
+        call(dlg.fingerprint_value),
+    ]
+    # Order is preserved as above
+    mock_copy_text.assert_has_calls(calls, any_order=False)
+
+
+def test_retranslate_ui_watch_only_sets_values(watch_only_dialog_widget):
+    """retranslate_ui populates labels; xpub values are truncated."""
+    dlg = watch_only_dialog_widget
+    dlg.retranslate_ui()
+    assert dlg.xpub_vanilla_value.text() == dlg._truncate_xpub(dlg._xpub_vanilla)
+    assert dlg.xpub_colored_value.text() == dlg._truncate_xpub(dlg._xpub_colored)
+    assert dlg.fingerprint_value.text() != ''
+
+
+def test_truncate_xpub_helper():
+    """_truncate_xpub returns unchanged for short, truncated for long."""
+    # Create a lightweight dialog instance via minimal model
+    model = KeyringDialogModel(mnemonic='m', password='p')
+    dlg = KeyringErrorDialog(model)
+    short = 'abcd'
+    long = 'a' * 40
+    assert dlg._truncate_xpub(short) == short
+    truncated = dlg._truncate_xpub(long)
+    assert '...' in truncated
+    assert truncated.startswith(long[:12])
+    assert truncated.endswith(long[-12:])
+
+
+def test_handle_disable_keyring_watch_only_sets_info_and_cancel(watch_only_dialog_widget):
+    """When on settings page, info text is set and cancel is shown for watch-only."""
+    dlg = watch_only_dialog_widget
+    dlg.originating_page = 'settings_page'
+    dlg.handle_disable_keyring()
+    assert not dlg.cancel_button.isHidden()
+    assert dlg.info_label.text() != ''
 
 
 def test_handle_when_origin_setting_page_success(keyring_error_dialog_widget, mocker):

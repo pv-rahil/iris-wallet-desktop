@@ -10,8 +10,12 @@ from unittest.mock import patch
 import pytest
 
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsNativeLoginIntoAppEnabled
 from src.model.setting_model import IsWalletInitialized
@@ -19,6 +23,7 @@ from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SetWalletInitialized
 from src.utils.constant import IS_NATIVE_AUTHENTICATION_ENABLED
 from src.utils.constant import NATIVE_LOGIN_ENABLED
+from src.utils.constant import RGB_LIB_VERSION_KEY
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_KEYRING_STATUS
 
@@ -1083,4 +1088,264 @@ def test_get_config_value_exception(mock_local_store, mock_handle_exceptions):
     mock_local_store.get_value.assert_called_once_with(
         'test_key', value_type=None,
     )
+    mock_handle_exceptions.assert_called_once()
+
+
+def test_set_wallet_type_success(mock_local_store):
+    """set_wallet_type returns True when persisted value matches."""
+    mock_local_store.get_value.return_value = WalletType.OFFLINE_TYPE_WALLET.value
+
+    res = SettingRepository.set_wallet_type(WalletType.OFFLINE_TYPE_WALLET)
+
+    assert res is True
+    mock_local_store.set_value.assert_called_once_with(
+        'wallet_type', WalletType.OFFLINE_TYPE_WALLET.value,
+    )
+    mock_local_store.get_value.assert_called_once_with('wallet_type')
+
+
+def test_set_wallet_type_none_success(mock_local_store):
+    """set_wallet_type returns True when persisted value matches."""
+    mock_local_store.get_value.return_value = None
+
+    res = SettingRepository.set_wallet_type(None)
+
+    assert res is True
+    mock_local_store.set_value.assert_called_once_with('wallet_type', None)
+    mock_local_store.get_value.assert_called_once_with('wallet_type')
+
+
+def test_set_wallet_type_failure(mock_local_store):
+    """set_wallet_type returns False when persisted value does not match."""
+    mock_local_store.get_value.return_value = 'DIFFERENT'
+
+    res = SettingRepository.set_wallet_type(WalletType.OFFLINE_TYPE_WALLET)
+
+    assert res is False
+    mock_local_store.set_value.assert_called_once_with(
+        'wallet_type', WalletType.OFFLINE_TYPE_WALLET.value,
+    )
+    mock_local_store.get_value.assert_called_once_with('wallet_type')
+
+
+def test_set_wallet_type_exception(mock_local_store, mock_handle_exceptions):
+    """set_wallet_type returns 'Error handled' when exception occurs."""
+    mock_local_store.set_value.side_effect = Exception('x')
+
+    res = SettingRepository.set_wallet_type(WalletType.OFFLINE_TYPE_WALLET)
+
+    assert res == 'Error handled'
+
+
+def test_get_wallet_type_value(mock_local_store):
+    """get_wallet_type returns persisted value when it exists."""
+    mock_local_store.get_value.return_value = WalletType.OFFLINE_TYPE_WALLET.value
+
+    res = SettingRepository.get_wallet_type()
+
+    assert res == WalletType.OFFLINE_TYPE_WALLET
+    mock_local_store.get_value.assert_called_once_with('wallet_type')
+
+
+def test_get_wallet_type_none(mock_local_store):
+    """get_wallet_type returns None when persisted value does not exist."""
+    mock_local_store.get_value.return_value = None
+
+    res = SettingRepository.get_wallet_type()
+
+    assert res is None
+    mock_local_store.get_value.assert_called_once_with('wallet_type')
+
+
+def test_get_wallet_type_exception(mock_local_store, mock_handle_exceptions):
+    """get_wallet_type returns 'Error handled' when exception occurs."""
+    mock_local_store.get_value.side_effect = Exception('x')
+
+    res = SettingRepository.get_wallet_type()
+
+    assert res == 'Error handled'
+
+
+def test_set_wallet_access_type_success(mock_local_store):
+    """set_wallet_access_type returns True when persisted value matches."""
+    mock_local_store.get_value.return_value = WalletAccessType.WITH_PRIVATE_KEY.value
+
+    res = SettingRepository.set_wallet_access_type(
+        WalletAccessType.WITH_PRIVATE_KEY,
+    )
+
+    assert res is True
+    mock_local_store.set_value.assert_called_once_with(
+        'wallet_access_type', WalletAccessType.WITH_PRIVATE_KEY.value,
+    )
+    mock_local_store.get_value.assert_called_once_with('wallet_access_type')
+
+
+def test_set_wallet_access_type_exception(mock_local_store, mock_handle_exceptions):
+    """set_wallet_access_type returns 'Error handled' when exception occurs."""
+    mock_local_store.set_value.side_effect = Exception('x')
+
+    res = SettingRepository.set_wallet_access_type(
+        WalletAccessType.WITH_PRIVATE_KEY,
+    )
+
+    assert res == 'Error handled'
+
+
+def test_get_wallet_access_type_exception(mock_local_store, mock_handle_exceptions):
+    """get_wallet_access_type returns 'Error handled' when exception occurs."""
+    mock_local_store.get_value.side_effect = Exception('x')
+
+    res = SettingRepository.get_wallet_access_type()
+
+    assert res == 'Error handled'
+
+
+def test_get_wallet_access_type_value(mock_local_store):
+    """get_wallet_access_type returns persisted value when it exists."""
+    mock_local_store.get_value.return_value = WalletAccessType.WITH_PRIVATE_KEY.value
+
+    res = SettingRepository.get_wallet_access_type()
+
+    assert res == WalletAccessType.WITH_PRIVATE_KEY
+    mock_local_store.get_value.assert_called_once_with('wallet_access_type')
+
+
+def test_set_wallet_entry_type_success(mock_local_store):
+    """set_wallet_entry_type returns True when persisted value matches."""
+    mock_local_store.get_value.return_value = WalletEntryType.CREATE.value
+
+    res = SettingRepository.set_wallet_entry_type(WalletEntryType.CREATE)
+
+    assert res is True
+    mock_local_store.set_value.assert_called_once_with(
+        'wallet_entry_type', WalletEntryType.CREATE.value,
+    )
+    mock_local_store.get_value.assert_called_once_with('wallet_entry_type')
+
+
+def test_set_wallet_entry_type_exception(mock_local_store, mock_handle_exceptions):
+    """set_wallet_entry_type returns 'Error handled' when exception occurs."""
+    mock_local_store.set_value.side_effect = Exception('x')
+
+    res = SettingRepository.set_wallet_entry_type(WalletEntryType.CREATE)
+
+    assert res == 'Error handled'
+
+
+def test_get_wallet_entry_type_exception(mock_local_store, mock_handle_exceptions):
+    """get_wallet_entry_type returns 'Error handled' when exception occurs."""
+    mock_local_store.get_value.side_effect = Exception('x')
+
+    res = SettingRepository.get_wallet_entry_type()
+
+    assert res == 'Error handled'
+
+
+def test_get_wallet_entry_type_value(mock_local_store):
+    """get_wallet_entry_type returns persisted value when it exists."""
+    mock_local_store.get_value.return_value = WalletEntryType.CREATE.value
+
+    res = SettingRepository.get_wallet_entry_type()
+
+    assert res == WalletEntryType.CREATE
+    mock_local_store.get_value.assert_called_once_with('wallet_entry_type')
+
+
+def test_set_key_storage_type_success(mock_local_store):
+    """set_key_storage_type returns True when persisted value matches."""
+    mock_local_store.get_value.return_value = KeyStorageType.HARDWARE_WALLET.value
+
+    res = SettingRepository.set_key_storage_type(
+        KeyStorageType.HARDWARE_WALLET,
+    )
+
+    assert res is True
+    mock_local_store.set_value.assert_called_once_with(
+        'key_storage_type', KeyStorageType.HARDWARE_WALLET.value,
+    )
+    mock_local_store.get_value.assert_called_once_with('key_storage_type')
+
+
+def test_set_key_storage_type_exception(mock_local_store, mock_handle_exceptions):
+    """set_key_storage_type returns 'Error handled' when exception occurs."""
+    mock_local_store.set_value.side_effect = Exception('x')
+
+    res = SettingRepository.set_key_storage_type(
+        KeyStorageType.HARDWARE_WALLET,
+    )
+
+    assert res == 'Error handled'
+
+
+def test_get_key_storage_type_exception(mock_local_store, mock_handle_exceptions):
+    """get_key_storage_type returns 'Error handled' when exception occurs."""
+    mock_local_store.get_value.side_effect = Exception('x')
+
+    res = SettingRepository.get_key_storage_type()
+
+    assert res == 'Error handled'
+
+
+def test_get_key_storage_type_value(mock_local_store):
+    """get_key_storage_type returns persisted value when it exists."""
+    mock_local_store.get_value.return_value = KeyStorageType.HARDWARE_WALLET.value
+
+    res = SettingRepository.get_key_storage_type()
+
+    assert res == KeyStorageType.HARDWARE_WALLET
+    mock_local_store.get_value.assert_called_once_with('key_storage_type')
+
+
+def test_remove_setting_success(mock_local_store):
+    """remove_setting returns True when key is removed successfully."""
+    res = SettingRepository.remove_setting('some_key')
+
+    assert res is True
+    mock_local_store.remove_key.assert_called_once_with('some_key')
+
+
+def test_remove_setting_exception(mock_local_store, mock_handle_exceptions):
+    """remove_setting returns 'Error handled' when exception occurs."""
+    mock_local_store.remove_key.side_effect = Exception('x')
+
+    res = SettingRepository.remove_setting('k')
+
+    assert res == 'Error handled'
+
+
+def test_get_rgb_lib_version_success(mock_local_store):
+    """get_rgb_lib_version returns persisted value when it exists."""
+    mock_local_store.get_value.return_value = '1.2.3'
+
+    res = SettingRepository.get_rgb_lib_version()
+
+    assert res == '1.2.3'
+    mock_local_store.get_value.assert_called_once_with(RGB_LIB_VERSION_KEY)
+
+
+def test_get_rgb_lib_version_exception(mock_local_store, mock_handle_exceptions):
+    """get_rgb_lib_version returns 'Error handled' when exception occurs."""
+    mock_local_store.get_value.side_effect = Exception('x')
+
+    res = SettingRepository.get_rgb_lib_version()
+
+    assert res == 'Error handled'
+
+
+def test_set_rgb_lib_version_success(mock_local_store):
+    """set_rgb_lib_version returns True when version is set successfully."""
+    SettingRepository.set_rgb_lib_version('9.9.9')
+
+    mock_local_store.set_value.assert_called_once_with(
+        RGB_LIB_VERSION_KEY, '9.9.9',
+    )
+
+
+def test_set_rgb_lib_version_exception(mock_local_store, mock_handle_exceptions):
+    """set_rgb_lib_version returns 'Error handled' when exception occurs."""
+    mock_local_store.set_value.side_effect = Exception('x')
+
+    SettingRepository.set_rgb_lib_version('0.0.1')
+
     mock_handle_exceptions.assert_called_once()

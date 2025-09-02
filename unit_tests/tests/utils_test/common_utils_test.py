@@ -8,6 +8,7 @@ import base64
 import binascii
 import os
 import zipfile
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -21,8 +22,12 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QPlainTextEdit
 
 from src.flavour import __network__
+from src.model.common_operation_model import WalletModeConfig
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import TokenSymbol
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import convert_timestamp
@@ -31,9 +36,11 @@ from src.utils.common_utils import download_file
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import extract_amount
 from src.utils.common_utils import find_files_with_name
+from src.utils.common_utils import format_epoch_time
 from src.utils.common_utils import generate_identicon
 from src.utils.common_utils import get_bitcoin_explorer_url
 from src.utils.common_utils import get_bitcoin_info_by_network
+from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.common_utils import insert_zero_width_spaces
 from src.utils.common_utils import load_translator
 from src.utils.common_utils import network_info
@@ -1266,3 +1273,54 @@ def test_enforce_u64_max_input_value_error(mocker):
     with mocker.patch('src.utils.common_utils.int', side_effect=ValueError):
         enforce_u64_max_input(mock_line_edit, '12345')
         mock_line_edit.setText.assert_called_once_with('')
+
+
+def test_get_current_wallet_mode_config_calls_with_repo_values():
+    """get_current_wallet_mode_config should fetch all settings and call WalletModeConfiguration.get_mode_config."""
+    with patch('src.utils.common_utils.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET) as g_wt, \
+            patch('src.utils.common_utils.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY) as g_at, \
+            patch('src.utils.common_utils.SettingRepository.get_wallet_entry_type', return_value='mnemonic') as g_et, \
+            patch('src.utils.common_utils.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET) as g_ks, \
+            patch('src.utils.common_utils.WalletModeConfiguration.get_mode_config') as get_cfg:
+        sentinel = MagicMock(spec=WalletModeConfig)
+        get_cfg.return_value = sentinel
+        cfg = get_current_wallet_mode_config()
+        assert cfg is sentinel
+        get_cfg.assert_called_once_with(
+            WalletType.ONLINE_TYPE_WALLET, WalletAccessType.WATCH_ONLY, 'mnemonic', KeyStorageType.HARDWARE_WALLET,
+        )
+        # Ensure each repo function was called
+        g_wt.assert_called_once()
+        g_at.assert_called_once()
+        g_et.assert_called_once()
+        g_ks.assert_called_once()
+
+
+def test_format_epoch_time_none_returns_none():
+    """When EPOCH_TIME is None, format_epoch_time should return None."""
+    with patch('src.utils.common_utils.local_store.refresh_file') as ref, \
+            patch('src.utils.common_utils.local_store.get_value', return_value=None):
+        assert format_epoch_time() is None
+        ref.assert_called_once()
+
+
+def test_format_epoch_time_success_formats_datetime():
+    """format_epoch_time should format epoch into dd/mm/YYYY hh:mm AM/PM using module datetime."""
+    # Mock datetime in module to control formatting regardless of timezone
+    fake_dt = MagicMock()
+    fake_dt.strftime.return_value = '01/01/1970 12:00 AM'
+
+    def fromtimestamp(_):
+        """Mock datetime.fromtimestamp."""
+        return fake_dt
+    with patch('src.utils.common_utils.local_store.refresh_file'), \
+            patch('src.utils.common_utils.local_store.get_value', return_value='0'), \
+            patch('src.utils.common_utils.datetime', new=SimpleNamespace(fromtimestamp=fromtimestamp)):
+        assert format_epoch_time() == '01/01/1970 12:00 AM'
+
+
+def test_format_epoch_time_exception_returns_invalid():
+    """On unexpected exception, returns 'Invalid epoch'."""
+    with patch('src.utils.common_utils.local_store.refresh_file'), \
+            patch('src.utils.common_utils.local_store.get_value', side_effect=RuntimeError('boom')):
+        assert format_epoch_time() == 'Invalid epoch'

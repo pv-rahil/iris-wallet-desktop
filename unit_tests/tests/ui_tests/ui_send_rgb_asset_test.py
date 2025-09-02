@@ -615,3 +615,75 @@ def test_validate_rgb_invoice(send_rgb_asset_widget: SendRGBAssetWidget):
             ),
         )
         assert not send_rgb_asset_widget.send_rgb_asset_page.send_btn.isEnabled()
+
+
+def test_handle_send_rgb_hw_dialog_update_shows_when_not_visible(send_rgb_asset_widget: SendRGBAssetWidget, monkeypatch):
+    """Ensure HW dialog is retrieved, updated and shown when not visible."""
+    dummy = MagicMock()
+    dummy.update_dialog = MagicMock()
+    dummy.show = MagicMock()
+    dummy.isVisible.return_value = False
+    monkeypatch.setattr(
+        'src.views.ui_send_rgb_asset.HardwareWalletOperationDialog.get_instance',
+        lambda parent: dummy,
+    )
+
+    msg = 'Processing'
+    dtype = MagicMock()
+    send_rgb_asset_widget.handle_send_rgb_hw_dialog_update(msg, dtype)
+
+    dummy.update_dialog.assert_called_once_with(msg, dtype)
+    dummy.show.assert_called_once()
+
+
+def test_handle_send_rgb_hw_dialog_update_no_show_when_visible(send_rgb_asset_widget: SendRGBAssetWidget, monkeypatch):
+    """If dialog already visible, do not call show()."""
+    dummy = MagicMock()
+    dummy.update_dialog = MagicMock()
+    dummy.show = MagicMock()
+    dummy.isVisible.return_value = True
+    monkeypatch.setattr(
+        'src.views.ui_send_rgb_asset.HardwareWalletOperationDialog.get_instance',
+        lambda parent: dummy,
+    )
+
+    send_rgb_asset_widget.handle_send_rgb_hw_dialog_update('msg', MagicMock())
+
+    dummy.update_dialog.assert_called_once()
+    dummy.show.assert_not_called()
+
+
+def test_show_send_rgb_psbt_page_nia(send_rgb_asset_widget: SendRGBAssetWidget):
+    """For NIA asset type, page name should be 'NIA page' and navigation invoked with ReceiveAssetModel."""
+    send_rgb_asset_widget.asset_type = AssetSchema.NIA
+    with patch('src.views.ui_send_rgb_asset.ReceiveAssetModel') as mock_receive_model:
+        model_instance = MagicMock()
+        mock_receive_model.return_value = model_instance
+        psbt = 'psbt-string'
+
+        send_rgb_asset_widget.show_send_rgb_psbt_page(psbt)
+
+        mock_receive_model.assert_called_once_with(
+            page_name='NIA page', address_info='psbt_info', psbt=psbt,
+        )
+        send_rgb_asset_widget._view_model.page_navigation.receive_asset_page.assert_called_once_with(
+            model_instance,
+        )
+
+
+def test_show_send_rgb_psbt_page_cfa(send_rgb_asset_widget: SendRGBAssetWidget):
+    """For non-NIA (CFA) asset type, page name should be 'CFA page'."""
+    send_rgb_asset_widget.asset_type = AssetSchema.CFA
+    with patch('src.views.ui_send_rgb_asset.ReceiveAssetModel') as mock_receive_model:
+        model_instance = MagicMock()
+        mock_receive_model.return_value = model_instance
+        psbt = 'psbt-2'
+
+        send_rgb_asset_widget.show_send_rgb_psbt_page(psbt)
+
+        mock_receive_model.assert_called_once_with(
+            page_name='CFA page', address_info='psbt_info', psbt=psbt,
+        )
+        send_rgb_asset_widget._view_model.page_navigation.receive_asset_page.assert_called_once_with(
+            model_instance,
+        )

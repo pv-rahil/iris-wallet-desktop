@@ -53,11 +53,11 @@ class WelcomeViewModel(QObject, ThreadManager):
 
     def handle_sync_completed(self, data: KeyringDialogModel):
         """This method handles the restore process completion."""
+        if data.password is None:
+            return
         network = get_bitcoin_network_from_enum(
             SettingRepository.get_wallet_network(),
         )
-        if data.password is None:
-            return
         is_set_password: bool = set_value(
             WALLET_PASSWORD_KEY, data.password, network.value,
         )

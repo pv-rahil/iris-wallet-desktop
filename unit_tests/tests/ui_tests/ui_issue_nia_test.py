@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -30,6 +31,158 @@ def mock_issue_nia_view_model(issue_nia_page_navigation: MagicMock):
 def issue_nia_widget(mock_issue_nia_view_model: MainViewModel):
     """Fixture to create a IssueNIAWidget instance."""
     return IssueNIAWidget(mock_issue_nia_view_model)
+
+
+def test_asset_issued_success_and_draft_cleanup(issue_nia_widget: IssueNIAWidget, mocker):
+    """Cover draft cleanup, timer stop, and success page navigation with correct callback."""
+    widget = issue_nia_widget
+    widget.from_draft = True
+    widget.draft_id = 7
+    widget.render_timer.stop = MagicMock()
+
+    svc = MagicMock()
+    mocker.patch(
+        'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+    )
+    widget._view_model.page_navigation.show_success_page = MagicMock()
+    widget._view_model.page_navigation.fungibles_asset_page = MagicMock()
+
+    asset_name = 'NIA-Asset'
+    widget.asset_issued(asset_name)
+
+    # Draft cleanup and success page
+    svc.delete_draft_issue_asset.assert_called_once_with(7)
+    widget.render_timer.stop.assert_called_once()
+    widget._view_model.page_navigation.show_success_page.assert_called_once()
+
+    params = widget._view_model.page_navigation.show_success_page.call_args[0][0]
+    assert_success_page_called(widget, asset_name)
+    assert params.callback == widget._view_model.page_navigation.fungibles_asset_page
+
+
+def test_handle_nia_hw_dialog_update_shows_dialog(issue_nia_widget: IssueNIAWidget, mocker):
+    """Cover dialog update and show when not visible using get_instance()."""
+    widget = issue_nia_widget
+    dlg = MagicMock()
+    dlg.isVisible.return_value = False
+    mocker.patch(
+        'src.views.ui_issue_nia.HardwareWalletOperationDialog.get_instance', return_value=dlg,
+    )
+
+    widget.handle_nia_hw_dialog('msg', MagicMock())
+
+    dlg.update_dialog.assert_called_once()
+    dlg.show.assert_called_once()
+
+
+def test_handle_nia_utxo_created_accepts_and_calls_issue(issue_nia_widget: IssueNIAWidget, mocker):
+    """On status True: accept dialog if visible and call on_issue_nia_click."""
+    widget = issue_nia_widget
+    dlg = MagicMock()
+    with patch.object(widget, 'on_issue_nia_click', new=MagicMock()) as mock_click:
+        dlg.isVisible.return_value = True
+        mocker.patch(
+            'src.views.ui_issue_nia.HardwareWalletOperationDialog.get_instance', return_value=dlg,
+        )
+
+        widget.handle_nia_utxo_created(True)
+
+        dlg.accept.assert_called_once()
+        mock_click.assert_called_once()
+
+
+def test_handle_nia_issue_reuse_existing_psbt(issue_nia_widget: IssueNIAWidget, mocker):
+    """Cover existing PSBT branch -> show_nia_psbt_page called."""
+    widget = issue_nia_widget
+    svc = MagicMock()
+    svc.list_psbt.return_value = [
+        {'purpose': 'issue_asset', 'psbt': 'psbt123'},
+    ]
+    with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()) as mock_show:
+        mocker.patch(
+            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+        )
+
+        widget.handle_nia_issue()
+        mock_show.assert_called_once_with('psbt123')
+
+
+def test_handle_nia_issue_create_utxos_when_no_psbt(issue_nia_widget: IssueNIAWidget, mocker):
+    """Cover else branch -> create_utxos_begin called (also covers wallet_service None path separately)."""
+    widget = issue_nia_widget
+    svc = MagicMock()
+    svc.list_psbt.return_value = []
+    with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
+        mocker.patch(
+            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+        )
+    widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
+
+    widget.handle_nia_issue()
+    widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
+        'issue_asset',
+    )
+
+
+def test_handle_nia_issue_wallet_service_none(issue_nia_widget: IssueNIAWidget, mocker):
+    """If wallet service is None, unsigned_psbts becomes [], so create_utxos_begin is called."""
+    widget = issue_nia_widget
+    with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
+        mocker.patch(
+            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=None,
+        )
+    widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
+
+    widget.handle_nia_issue()
+    widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
+        'issue_asset',
+    )
+
+
+def test_show_nia_psbt_page_navigates(issue_nia_widget: IssueNIAWidget):
+    """Cover positive path of show_nia_psbt_page: disconnect unsigned_psbt and navigate."""
+    widget = issue_nia_widget
+    widget._view_model.page_navigation.receive_asset_page = MagicMock()
+    widget.show_nia_psbt_page('psbtXYZ')
+    widget._view_model.page_navigation.receive_asset_page.assert_called_once()
+
+
+def test_create_issue_asset_draft_calls_upsert(issue_nia_widget: IssueNIAWidget, mocker):
+    """Cover upsert call with int conversion."""
+    widget = issue_nia_widget
+    svc = MagicMock()
+    with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
+        mocker.patch(
+            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+        )
+
+    widget.create_issue_asset_draft('TICK', 'Name', '25')
+    svc.upsert_draft_issue_asset.assert_called_once_with(
+        name='Name', ticker='TICK', issued_amount=25,
+    )
+
+
+def test_load_draft_data_populates_fields(issue_nia_widget: IssueNIAWidget, mocker):
+    """Cover population of fields when draft exists and matches draft_id."""
+    widget = issue_nia_widget
+    widget.draft_id = 9
+    svc = MagicMock()
+    svc.list_draft_issue_assets.return_value = [{
+        'id': 9, 'name': 'nm', 'ticker': 'tk', 'issued_amount': 3,
+    }]
+    mocker.patch(
+        'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+    )
+
+    widget.asset_name_input = MagicMock()
+    widget.short_identifier_input = MagicMock()
+    widget.amount_input = MagicMock()
+    with patch.object(widget, 'handle_button_enabled', new=MagicMock()):
+        widget._load_draft_data()
+
+    widget.asset_name_input.setText.assert_called_once_with('nm')
+    widget.short_identifier_input.setText.assert_called_once_with('tk')
+    widget.amount_input.setText.assert_called_once_with('3')
 
 
 def test_retranslate_ui(issue_nia_widget: IssueNIAWidget):

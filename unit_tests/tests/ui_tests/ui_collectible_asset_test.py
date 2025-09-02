@@ -1,6 +1,6 @@
 """Unit test for collectibles asset UI"""
 # Disable the redefined-outer-name warning as it's normal to pass mocked object in tests function
-# pylint: disable=redefined-outer-name,unused-argument,protected-access
+# pylint: disable=redefined-outer-name,unused-argument,protected-access, too-few-public-methods
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -18,9 +18,12 @@ from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QScrollArea
+from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QWidget
 
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
@@ -485,22 +488,137 @@ def test_resize_event_called(collectible_asset_widget, mocker):
 
 def test_trigger_render_and_refresh(collectible_asset_widget, mocker):
     """Test the trigger_render_and_refresh method to ensure timer starts and assets are refreshed."""
-
-    # Mock the render_timer's start method
-    mock_start = mocker.patch.object(
-        collectible_asset_widget.render_timer, 'start',
-    )
-
-    # Mock the get_assets method of the main_asset_view_model
-    mock_get_assets = mocker.patch.object(
-        collectible_asset_widget._view_model.main_asset_view_model, 'get_assets',
-    )
+    # Mock render_timer and get_assets
+    collectible_asset_widget.render_timer = MagicMock()
+    collectible_asset_widget._view_model.main_asset_view_model.get_assets = MagicMock()
 
     # Call the trigger_render_and_refresh method
     collectible_asset_widget.trigger_render_and_refresh()
 
     # Verify that the render_timer's start method was called
-    mock_start.assert_called_once()
+    collectible_asset_widget.render_timer.start.assert_called_once()
 
     # Verify that the get_assets method was called with the correct argument
-    mock_get_assets.assert_called_once_with(rgb_asset_hard_refresh=True)
+    collectible_asset_widget._view_model.main_asset_view_model.get_assets.assert_called_once_with(
+        rgb_asset_hard_refresh=True,
+    )
+
+
+def test_init_top_row_offline_and_watch_only_branches(qtbot, mocker, mock_collectible_asset_view_model):
+    """Covers branches adding outdated label and usb layout when offline/watch-only."""
+    # Make flags true during __init__ so conditional branches at lines 129 and 133 execute
+    mocker.patch(
+        'src.views.ui_collectible_asset.SettingRepository.get_wallet_type',
+        return_value=WalletType.OFFLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_collectible_asset.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+
+    widget = CollectiblesAssetWidget(mock_collectible_asset_view_model)
+    qtbot.addWidget(widget)
+    # usb layout should be present in the top row and outdated label inside usb layout
+    assert widget.usb_last_sync_collectible_horizontal_layout.indexOf(
+        widget.outdated_collectible_balance_label,
+    ) != -1
+    # Top row should contain at least label, spacer, and usb layout
+    assert widget._top_row_layout.count() >= 2
+
+
+def test_update_grid_layout_covers_drafts_and_remove_item(collectible_asset_widget, mocker, qtbot):
+    """Covers drafts path (191-196) and removeItem branch (212)."""
+    # Ensure scroll_area exists with a layout containing a spacer (so removeItem executes)
+    collectible_asset_widget.create_collectibles_frames()
+    grid_widget = QWidget()
+    grid_layout = QGridLayout()
+    grid_widget.setLayout(grid_layout)
+    # Add a spacer so that clear loop finds a non-widget item
+    grid_layout.addItem(QSpacerItem(10, 10))
+    collectible_asset_widget.scroll_area.setWidget(grid_widget)
+
+    # Mock session to return a draft with a file_path
+    class _Session:
+        def list_draft_issue_assets(self):
+            """Return a draft with a file_path."""
+            return [{'id': 7, 'name': 'Draft A', 'file_path': '/tmp/a.png'}]
+
+    mocker.patch(
+        'src.views.ui_collectible_asset.WalletDataService.get_session', return_value=_Session(),
+    )
+    # Empty CFA list to focus on drafts
+    collectible_asset_widget._view_model.main_asset_view_model.assets.cfa = []
+
+    # Spy create_collectible_frame to let it run but count calls
+    with patch.object(collectible_asset_widget, 'create_collectible_frame', wraps=collectible_asset_widget.create_collectible_frame) as spy_create:
+        collectible_asset_widget.update_grid_layout()
+        # One call for the draft
+        assert any(
+            'draft' in str(k) or 'draft' in str(v)
+            for (k, v) in spy_create.call_args.kwargs.items()
+        )
+
+
+def test_create_collectible_frame_for_draft_and_click(collectible_asset_widget, mocker):
+    """Covers draft frame setup (264-266) and connection (346-348)."""
+    # Provide a draft with id and file_path
+    draft = {'id': 11, 'name': 'Draft NFT', 'file_path': '/tmp/img.png'}
+    # Mock page navigation method to verify lambda is wired
+    collectible_asset_widget._view_model.page_navigation.issue_cfa_asset_page = MagicMock()
+
+    frame = collectible_asset_widget.create_collectible_frame(draft=draft)
+    # Name should include (Draft)
+    name_lbl = frame.findChild(QLabel, 'collectible_asset_name')
+    assert name_lbl.text().endswith('(Draft)')
+    # Emit click to trigger lambda
+    frame.clicked.emit(None, None, None, None)
+    collectible_asset_widget._view_model.page_navigation.issue_cfa_asset_page.assert_called_once_with(
+        11, from_draft=True,
+    )
+
+
+def test_trigger_render_and_refresh_offline_labels(collectible_asset_widget, mocker):
+    """Covers labels set when offline in trigger_render_and_refresh (389-395)."""
+    collectible_asset_widget.is_offline_wallet = True
+    mocker.patch(
+        'src.views.ui_collectible_asset.format_epoch_time',
+        return_value='now',
+    )
+    collectible_asset_widget.trigger_render_and_refresh()
+    assert collectible_asset_widget.usb_last_sync_collectible_info_label.text() != ''
+    assert collectible_asset_widget.outdated_collectible_balance_label.text() != ''
+
+
+def test_retranslate_ui_offline_labels(collectible_asset_widget, mocker):
+    """Covers labels set when offline in retranslate_ui (416-422)."""
+    collectible_asset_widget.is_offline_wallet = True
+    mocker.patch(
+        'src.views.ui_collectible_asset.format_epoch_time',
+        return_value='now',
+    )
+    collectible_asset_widget.retranslate_ui()
+    assert collectible_asset_widget.usb_last_sync_collectible_info_label.text() != ''
+    assert collectible_asset_widget.outdated_collectible_balance_label.text() != ''
+
+
+def test_update_grid_layout_skips_draft_without_file_path(collectible_asset_widget, mocker, qtbot):
+    """Covers the 'continue' branch when draft has no file_path (line 195)."""
+    # Ensure scroll_area exists
+    collectible_asset_widget.create_collectibles_frames()
+    # Empty CFA list so only drafts are considered
+    collectible_asset_widget._view_model.main_asset_view_model.assets.cfa = []
+
+    # Session returns a draft without file_path to trigger 'continue'
+    class _Session:
+        def list_draft_issue_assets(self):
+            """Return a draft without file_path."""
+            return [{'id': 9, 'name': 'NoPath Draft', 'file_path': ''}]
+
+    mocker.patch(
+        'src.views.ui_collectible_asset.WalletDataService.get_session', return_value=_Session(),
+    )
+
+    with patch.object(collectible_asset_widget, 'create_collectible_frame', wraps=collectible_asset_widget.create_collectible_frame) as spy_create:
+        collectible_asset_widget.update_grid_layout()
+        # No frames should be created for drafts with missing file_path
+        assert spy_create.call_count == 0

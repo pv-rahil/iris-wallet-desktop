@@ -57,13 +57,15 @@ def teardown_directory_after_test():
 @patch('src.utils.local_store.local_store.get_path')
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.restore')
 @patch('src.data.service.restore_service.GoogleDriveManager')
-def test_restore(mock_google_drive_manager, mock_restore, mock_get_path, mock_get_hashed_mnemonic, setup_directory):
+@patch('src.data.service.restore_service.read_rgb_lib_version_file')
+def test_restore(mock_read_version, mock_google_drive_manager, mock_restore, mock_get_path, mock_get_hashed_mnemonic, setup_directory):
     """Case 1: Test restore service"""
     test_dir, _ = setup_directory
 
     # Setup mocks
     mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
     mock_get_path.return_value = test_dir
+    mock_read_version.return_value = '0.3.0a14.dev1'
 
     mock_restore_instance = MagicMock()
     mock_restore.return_value = RestoreResponseModel(status=True)
@@ -84,13 +86,15 @@ def test_restore(mock_google_drive_manager, mock_restore, mock_get_path, mock_ge
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.restore')
 @patch('src.data.service.restore_service.GoogleDriveManager')
 @patch('src.data.service.restore_service.app_paths')
-def test_restore_when_file_not_exists(mock_app_paths, mock_google_drive_manager, mock_restore, mock_get_path, mock_get_hashed_mnemonic, setup_directory):
+@patch('src.data.service.restore_service.read_rgb_lib_version_file')
+def test_restore_when_file_not_exists(mock_read_version, mock_app_paths, mock_google_drive_manager, mock_restore, mock_get_path, mock_get_hashed_mnemonic, setup_directory):
     """Case 2: When restore file does not exist after download"""
     test_dir, restore_dir = setup_directory
 
     # Setup mocks
     mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
     mock_get_path.return_value = test_dir
+    mock_read_version.return_value = '0.3.0a14.dev1'
 
     # Mock app_paths to avoid FileNotFoundError during cleanup
     mock_app_paths.restore_folder_path = restore_dir
@@ -183,11 +187,13 @@ def test_restore_no_hashed_value(mock_app_paths, mock_restore, mock_google_drive
 
 @patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
 @patch('src.data.service.restore_service.GoogleDriveManager')
-def test_restore_download_error(mock_google_drive_manager, mock_get_hashed_mnemonic):
+@patch('src.data.service.restore_service.read_rgb_lib_version_file')
+def test_restore_download_error(mock_read_version, mock_google_drive_manager, mock_get_hashed_mnemonic):
     """Case 6: Test restore service with download failure"""
 
     # Setup mocks
     mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
+    mock_read_version.return_value = '0.3.0a14.dev1'
     mock_google_drive_manager.return_value = MagicMock()
     mock_google_drive_manager.return_value.download_from_drive.return_value = False
 

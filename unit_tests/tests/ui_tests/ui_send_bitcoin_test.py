@@ -310,3 +310,77 @@ def test_validate_bitcoin_address(send_bitcoin_widget: SendBitcoinWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'invalid_address',
             ),
         )
+
+
+def test_handle_send_bitcoin_hw_dialog_update_shows_when_not_visible(send_bitcoin_widget: SendBitcoinWidget, monkeypatch):
+    """Ensure dialog is created, update called, cancel connected, and show invoked when not visible."""
+    dummy = MagicMock()
+    dummy.cancel_button = MagicMock()
+    dummy.cancel_button.clicked = MagicMock()
+    dummy.cancel_button.clicked.connect = MagicMock()
+    dummy.update_dialog = MagicMock()
+    dummy.show = MagicMock()
+    dummy.isVisible.return_value = False
+    monkeypatch.setattr(
+        'src.views.ui_send_bitcoin.HardwareWalletOperationDialog.get_instance',
+        lambda parent: dummy,
+    )
+
+    message = 'Processing'
+    dialog_type = MagicMock()
+    send_bitcoin_widget.handle_send_bitcoin_hw_dialog_update(
+        message, dialog_type,
+    )
+
+    # cancel connect
+    dummy.cancel_button.clicked.connect.assert_called_once_with(
+        send_bitcoin_widget._view_model.send_bitcoin_view_model.cancel_operation,
+    )
+    # update called with args
+    dummy.update_dialog.assert_called_once_with(message, dialog_type)
+    # since not visible, show must be called
+    dummy.show.assert_called_once()
+
+
+def test_handle_send_bitcoin_hw_dialog_update_no_show_when_visible(send_bitcoin_widget: SendBitcoinWidget, monkeypatch):
+    """If dialog is already visible, do not call show()."""
+    dummy = MagicMock()
+    dummy.cancel_button = MagicMock()
+    dummy.cancel_button.clicked = MagicMock()
+    dummy.cancel_button.clicked.connect = MagicMock()
+    dummy.update_dialog = MagicMock()
+    dummy.show = MagicMock()
+    dummy.isVisible.return_value = True
+    monkeypatch.setattr(
+        'src.views.ui_send_bitcoin.HardwareWalletOperationDialog.get_instance',
+        lambda parent: dummy,
+    )
+
+    send_bitcoin_widget.handle_send_bitcoin_hw_dialog_update(
+        'msg', MagicMock(),
+    )
+
+    # still connects and updates
+    dummy.cancel_button.clicked.connect.assert_called_once()
+    dummy.update_dialog.assert_called_once()
+    # but does not show
+    dummy.show.assert_not_called()
+
+
+def test_show_send_bitcoin_psbt_page_navigates_with_receive_model(send_bitcoin_widget: SendBitcoinWidget):
+    """Navigate to receive_asset_page with ReceiveAssetModel constructed with psbt details."""
+    with patch('src.views.ui_send_bitcoin.ReceiveAssetModel') as mock_receive_model:
+        instance = MagicMock()
+        mock_receive_model.return_value = instance
+        psbt = 'cHNidP8BAHE...'
+
+        send_bitcoin_widget.show_send_bitcoin_psbt_page(psbt)
+
+        # The model should be constructed with specific kwargs
+        mock_receive_model.assert_called_once_with(
+            page_name='send_bitcoin', address_info='psbt_info', psbt=psbt,
+        )
+        # And passed to page_navigation.receive_asset_page
+        send_bitcoin_widget._view_model.page_navigation.receive_asset_page.assert_called_once_with(
+            instance,
+        )

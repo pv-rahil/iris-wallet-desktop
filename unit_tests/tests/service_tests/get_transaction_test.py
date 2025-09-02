@@ -11,6 +11,7 @@ from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import TransactionListWithBalanceResponse
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
+from src.model.enums.enums_model import WalletType
 from src.utils.constant import NO_OF_UTXO
 from src.utils.constant import UTXO_SIZE_SAT
 from src.utils.custom_exception import CommonException
@@ -27,6 +28,15 @@ from unit_tests.service_test_resources.mocked_fun_return_values.get_transaction_
 from unit_tests.service_test_resources.mocked_fun_return_values.get_transaction_service import mock_data_transaction_unconfirm_type_user_receive
 from unit_tests.service_test_resources.mocked_fun_return_values.get_transaction_service import mock_data_transaction_unconfirm_type_user_send
 from unit_tests.service_test_resources.mocked_fun_return_values.get_transaction_service import mocked_data_balance
+
+
+@pytest.fixture(autouse=True)
+def force_online_wallet_type(mocker):
+    """Force wallet type to ONLINE so that BtcRepository mocks are used consistently."""
+    return mocker.patch(
+        'src.data.repository.setting_repository.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
 
 
 def test_list_transaction_all(mock_list_transactions, mock_get_btc_balance):

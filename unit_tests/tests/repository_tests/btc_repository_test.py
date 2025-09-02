@@ -21,6 +21,8 @@ from src.model.btc_model import SendBtcResponseModel
 from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
+from src.model.common_operation_model import BroadcastPsbtRequestModel
+from src.model.rgb_model import CreateUtxosRequestModel
 
 
 @pytest.fixture
@@ -189,3 +191,126 @@ def test_estimate_fee(mock_wallet):
     mock_wallet.get_fee_estimation.assert_called_once_with(
         online=True, blocks=6,
     )
+
+
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_send_btc_begin_with_session(mock_get_session, mock_wallet):
+    """send_btc_begin should call wallet.send_btc_begin and add_psbt on session with purpose 'send_btc'."""
+    mock_wallet.send_btc_begin.return_value = 'psbt_base64'
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+    req = SendBtcRequestModel(
+        address='addr', amount=10, fee_rate=2, skip_sync=False,
+    )
+    psbt = BtcRepository.send_btc_begin(req)
+    assert psbt == 'psbt_base64'
+    mock_wallet.send_btc_begin.assert_called_once_with(
+        online=True, address='addr', amount=10, fee_rate=2, skip_sync=False,
+    )
+    svc.add_psbt.assert_called_once_with('psbt_base64', purpose='send_btc')
+
+
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_send_btc_begin_without_session(mock_get_session, mock_wallet):
+    """send_btc_begin should not fail when no session; returns psbt and no add_psbt calls."""
+    mock_wallet.send_btc_begin.return_value = 'psbt_base64'
+    mock_get_session.return_value = None
+    req = SendBtcRequestModel(
+        address='addr', amount=10, fee_rate=2, skip_sync=True,
+    )
+    psbt = BtcRepository.send_btc_begin(req)
+    assert psbt == 'psbt_base64'
+    mock_wallet.send_btc_begin.assert_called_once()
+
+
+@patch('src.data.repository.btc_repository.Cache')
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_send_btc_end_with_session_and_cache(mock_get_session, mock_cache, mock_wallet):
+    """send_btc_end should delete psbt from session and invalidate cache, returning tx id model."""
+    mock_wallet.send_btc_end.return_value = 'txid999'
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+    cache = MagicMock()
+    mock_cache.get_cache_session.return_value = cache
+    res = BtcRepository.send_btc_end(
+        BroadcastPsbtRequestModel(signed_psbt='abc', skip_sync=False),
+    )
+    assert isinstance(res, SendBtcResponseModel)
+    assert res.tx_id == 'txid999'
+    svc.delete_psbt.assert_called_once_with('abc')
+    cache.invalidate_cache.assert_called_once()
+
+
+@patch('src.data.repository.btc_repository.Cache')
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_send_btc_end_without_session_no_cache(mock_get_session, mock_cache, mock_wallet):
+    """send_btc_end should work without session and without cache."""
+    mock_wallet.send_btc_end.return_value = 'txid777'
+    mock_get_session.return_value = None
+    mock_cache.get_cache_session.return_value = None
+    res = BtcRepository.send_btc_end(
+        BroadcastPsbtRequestModel(signed_psbt='zzz', skip_sync=True),
+    )
+    assert res.tx_id == 'txid777'
+    mock_wallet.send_btc_end.assert_called_once()
+
+
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_create_utxos_begin_with_session(mock_get_session, mock_wallet):
+    """create_utxos_begin should add psbt with provided purpose when session exists."""
+    mock_wallet.create_utxos_begin.return_value = 'psbt_colorable'
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+    req = CreateUtxosRequestModel(
+        online=True, up_to=False, num=2, size=546, fee_rate=3, skip_sync=False,
+    )
+    psbt = BtcRepository.create_utxos_begin(req, purpose='create_utxos')
+    assert psbt == 'psbt_colorable'
+    mock_wallet.create_utxos_begin.assert_called_once_with(
+        online=True, up_to=False, num=2, size=546, fee_rate=3, skip_sync=False,
+    )
+    svc.add_psbt.assert_called_once_with(
+        'psbt_colorable', purpose='create_utxos',
+    )
+
+
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_create_utxos_begin_without_session(mock_get_session, mock_wallet):
+    """create_utxos_begin should not call add_psbt when session is None."""
+    mock_wallet.create_utxos_begin.return_value = 'psbt_colorable'
+    mock_get_session.return_value = None
+    req = CreateUtxosRequestModel(
+        online=True, up_to=False, num=1, size=546, fee_rate=1, skip_sync=True,
+    )
+    psbt = BtcRepository.create_utxos_begin(req)
+    assert psbt == 'psbt_colorable'
+
+
+@patch('src.data.repository.btc_repository.Cache')
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_create_utxos_end_with_session_and_cache(mock_get_session, mock_cache, mock_wallet):
+    """create_utxos_end should delete psbt and invalidate cache, returning count."""
+    mock_wallet.create_utxos_end.return_value = 3
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+    cache = MagicMock()
+    mock_cache.get_cache_session.return_value = cache
+    count = BtcRepository.create_utxos_end(
+        BroadcastPsbtRequestModel(signed_psbt='psbt', skip_sync=False),
+    )
+    assert count == 3
+    svc.delete_psbt.assert_called_once_with('psbt')
+    cache.invalidate_cache.assert_called_once()
+
+
+@patch('src.data.repository.btc_repository.Cache')
+@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+def test_create_utxos_end_without_session_no_cache(mock_get_session, mock_cache, mock_wallet):
+    """create_utxos_end should still return value without session and without cache."""
+    mock_wallet.create_utxos_end.return_value = 1
+    mock_get_session.return_value = None
+    mock_cache.get_cache_session.return_value = None
+    count = BtcRepository.create_utxos_end(
+        BroadcastPsbtRequestModel(signed_psbt='p', skip_sync=True),
+    )
+    assert count == 1

@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name,unused-argument, protected-access
+# pylint: disable=redefined-outer-name,unused-argument, protected-access, too-few-public-methods
 """Unit tests for `WalletDataService`.
 
 Structured similarly to `unit_tests/tests/utils_test/cache_test.py`.
@@ -206,6 +206,71 @@ def test_get_session_singleton_watch_only(app_paths, get_wallet_type, get_access
             assert a is not None and a is b
         finally:
             WalletDataService._instance = None
+
+
+def test_refresh_wallet_data_returns_early_when_not_watch_only(tmp_db, mocker):
+    """refresh_wallet_data should return early if not watch-only (no repository calls)."""
+    tmp_db.is_watch_only = False
+    colored_mock = mocker.patch(
+        'src.data.service.wallet_data_service.colored_wallet',
+    )
+    tmp_db.refresh_wallet_data()
+    assert not colored_mock.wallet.get_btc_balance.called
+
+
+def test_list_psbt_not_allowed_returns_empty(tmp_db):
+    """list_psbt should return [] when not watch-only/offline."""
+    tmp_db.is_watch_only = False
+    tmp_db.is_offline_wallet = False
+    assert tmp_db.list_psbt(signed=False) == []
+    assert tmp_db.list_psbt(signed=True) == []
+
+
+def test_draft_issue_asset_not_allowed_paths(tmp_db):
+    """list/delete draft_issue_asset should be gated when not allowed."""
+    tmp_db.is_watch_only = False
+    tmp_db.is_offline_wallet = False
+    assert tmp_db.list_draft_issue_assets() == []
+    assert tmp_db.delete_draft_issue_asset('1') is False
+
+
+def test_mark_psbt_signed_without_unsigned_row(tmp_db):
+    """mark_psbt_signed should handle missing unsigned row (purpose None) and still insert signed row."""
+    tmp_db.is_watch_only = True
+    tmp_db.is_offline_wallet = False
+    signed_id = tmp_db.mark_psbt_signed('missing_unsigned', 'signed_payload')
+    assert signed_id is not None
+    lst = tmp_db.list_psbt(signed=True)
+    assert len(
+        lst,
+    ) == 1 and lst[0]['id'] == signed_id and lst[0]['purpose'] is None
+
+
+@patch('src.data.service.wallet_data_service.logger')
+def test_connect_db_error_path_logs_and_raises(mock_logger, tmp_path, monkeypatch):
+    """_connect_db should log and raise when sqlite3.connect fails."""
+    class Boom(sqlite3.Error):
+        """Exception class for testing."""
+
+    def boom_connect(*args, **kwargs):
+        """Exception class for testing."""
+        raise Boom('nope')
+
+    monkeypatch.setattr('sqlite3.connect', boom_connect)
+    # Constructing the service tries to connect immediately
+    with pytest.raises(Boom):
+        WalletDataService(str(tmp_path / 'wallet.db'))
+    assert mock_logger.error.called
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_initialize_service_exception_handled_returns_none(mock_get_type, mock_get_access, mocker):
+    """_initialize_service should catch exceptions and return None (and log)."""
+    mock_get_access.side_effect = Exception('boom')
+    log = mocker.patch('src.data.service.wallet_data_service.logger')
+    assert WalletDataService._initialize_service() is None
+    assert log.error.called
 
 
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')

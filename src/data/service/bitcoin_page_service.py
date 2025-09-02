@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from rgb_lib import Balance
+
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.helpers.bitcoin_page_helper import calculate_transaction_amount
@@ -123,7 +125,10 @@ class BitcoinPageService:
         if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
             wallet_service = WalletDataService.get_session()
             if wallet_service is None:
-                return BalanceResponseModel(balance=0), TransactionListResponse(transactions=[])
+                return BalanceResponseModel(
+                    vanilla=Balance(settled=0, future=0, spendable=0),
+                    colored=Balance(settled=0, future=0, spendable=0),
+                ), TransactionListResponse(transactions=[])
             return (
                 wallet_service.get_btc_balance(),
                 wallet_service.list_transactions(),

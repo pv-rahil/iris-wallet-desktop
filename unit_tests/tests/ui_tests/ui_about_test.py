@@ -15,6 +15,11 @@ from PySide6.QtCore import QDir
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
 
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import network_info
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_DOWNLOAD_CANCELED
@@ -22,6 +27,7 @@ from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.toast import ToastManager
 from src.views.components.toast import ToastPreset
 from src.views.ui_about import AboutWidget
+from src.views.ui_about import truncate_xpub
 
 
 @pytest.fixture
@@ -49,6 +55,94 @@ def about_widget(mock_about_view_model, qtbot, mocker):
 
         mock_get_config_value.side_effect = lambda key, default=None: mock_config_values.get(
             key, default,
+        )
+
+        # Prevent stylesheet I/O and invalid enum issues in constructor
+        mocker.patch('src.views.ui_about.load_stylesheet', return_value='')
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_type',
+            return_value=WalletType.ONLINE_TYPE_WALLET,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_access_type',
+            return_value=WalletAccessType.WITH_PRIVATE_KEY,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
+            return_value=NetworkEnumModel.REGTEST,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_entry_type',
+            return_value=WalletEntryType.CREATE,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_key_storage_type',
+            return_value=KeyStorageType.ON_DEVICE,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.is_backup_configured',
+            return_value=MagicMock(is_backup_configured=True),
+        )
+
+        widget = AboutWidget(mock_about_view_model)
+        qtbot.addWidget(widget)
+
+    return widget
+
+
+@pytest.fixture
+def about_widget_watch_only(mock_about_view_model, qtbot, mocker):
+    """Fixture to create AboutWidget with WATCH_ONLY to cover xpub/fingerprint section."""
+    mock_config_values = {
+        'indexer_url': 'test_url',
+        'proxy_endpoint': 'test_endpoint',
+    }
+
+    with patch('src.utils.local_store.local_store.get_value') as mock_get_value, \
+            patch('src.utils.common_utils.zip_logger_folder') as mock_zip_logger_folder, \
+            patch('src.utils.helpers.SettingRepository.get_config_value') as mock_get_config_value:
+
+        # Provide specific values for xpubs and fingerprint
+        def _get_value(key):
+            mapping = {
+                'account_xpub_vanilla': 'xpubVANILLA0123456789XYZ',
+                'account_xpub_colored': 'xpubCOLORED0123456789XYZ',
+                'master_fingerprint': 'deadbeef',
+            }
+            return mapping.get(key, '')
+
+        mock_get_value.side_effect = _get_value
+        mock_zip_logger_folder.return_value = (
+            '/mock/logs.zip', '/mock/output/dir',
+        )
+        mock_get_config_value.side_effect = lambda key, default=None: mock_config_values.get(
+            key, default,
+        )
+
+        mocker.patch('src.views.ui_about.load_stylesheet', return_value='')
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_type',
+            return_value=WalletType.ONLINE_TYPE_WALLET,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_access_type',
+            return_value=WalletAccessType.WATCH_ONLY,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
+            return_value=NetworkEnumModel.REGTEST,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_entry_type',
+            return_value=WalletEntryType.CREATE,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_key_storage_type',
+            return_value=KeyStorageType.ON_DEVICE,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.is_backup_configured',
+            return_value=MagicMock(is_backup_configured=True),
         )
 
         widget = AboutWidget(mock_about_view_model)
@@ -82,7 +176,7 @@ def test_network_info_success(about_widget, mocker):
     mock_network = mocker.patch(
         'src.data.repository.setting_repository.SettingRepository.get_wallet_network',
     )
-    mock_network.return_value.value = 'testnet'
+    mock_network.return_value = NetworkEnumModel.TESTNET
     network_info(about_widget)
     assert about_widget.network == 'testnet'
 
@@ -121,6 +215,47 @@ def test_network_info_generic_exception(about_widget, mocker):
     mock_toast.assert_called_once_with(
         parent=None, title=None, description='Something went wrong',
     )
+
+
+def test_watch_only_widgets_present(about_widget_watch_only):
+    """Ensure xpub and fingerprint widgets exist for WATCH_ONLY access type."""
+    assert hasattr(about_widget_watch_only, 'vanilla_xpub_widget')
+    assert hasattr(about_widget_watch_only, 'colored_xpub_widget')
+    assert hasattr(about_widget_watch_only, 'master_fingerprint_widget')
+
+
+def test_download_logs_exception_flow(about_widget, mocker):
+    """Force an exception during save dialog and ensure error toast and cleanup happen."""
+    base_path = '/mock/base/path'
+    mocker.patch(
+        'src.utils.local_store.local_store.get_path',
+        return_value=base_path,
+    )
+    zip_filename = 'mock/logs.zip'
+    output_dir = '/mock/output/dir'
+    zip_file_path = '/mock/base/path.zip'
+    mocker.patch(
+        'src.views.ui_about.zip_logger_folder',
+        return_value=(zip_filename, output_dir, zip_file_path),
+    )
+
+    # Raise exception inside try block
+    mocker.patch(
+        'PySide6.QtWidgets.QFileDialog.getSaveFileName',
+        side_effect=Exception('boom'),
+    )
+
+    mock_cleanup = mocker.patch('src.views.ui_about.cleanup_debug_logs')
+    mock_toast = mocker.patch(
+        'src.views.components.toast.ToastManager.show_toast',
+    )
+    mock_logger = mocker.patch('src.views.ui_about.logger')
+
+    about_widget.download_logs()
+
+    mock_logger.error.assert_called()
+    mock_toast.assert_called_once()
+    mock_cleanup.assert_called_once_with(zip_file_path, output_dir)
 
 
 def test_download_logs_with_save_path(about_widget, qtbot, mocker):
@@ -275,3 +410,17 @@ def test_download_logs_button_functionality(about_widget, qtbot, mocker):
 
     # Verify the method was called
     mock_download_logs.assert_called_once()
+
+
+def test_truncate_xpub_returns_same_when_short():
+    """If xpub is short enough, it should be returned unchanged."""
+    xpub = 'xpubSHORT'
+    assert truncate_xpub(xpub, head=4, tail=4) == xpub
+
+
+def test_truncate_xpub_truncates_long_value():
+    """Long xpub should be truncated with ellipsis preserving head and tail lengths."""
+    xpub = 'xpub1234567890ABCDEFGHIJKLMNOPQRSTUV'  # length > head+tail+3
+    result = truncate_xpub(xpub, head=6, tail=6)
+    assert result.startswith(xpub[:6] + '...')
+    assert result.endswith(xpub[-6:])

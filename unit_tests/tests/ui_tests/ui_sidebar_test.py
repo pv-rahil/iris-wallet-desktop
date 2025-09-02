@@ -132,3 +132,48 @@ def test_retranslate_ui(sidebar_widget: Sidebar, mocker):
     mock_receive_asset_button.setText.assert_called_once_with(
         'translated_text',
     )
+
+    # Also verify broadcast_transaction and sign_psbt texts are set
+    sidebar_widget.broadcast_transaction = MagicMock()
+    sidebar_widget.sign_psbt = MagicMock()
+    sidebar_widget.retranslate_ui()
+    sidebar_widget.broadcast_transaction.setText.assert_called_with(
+        'translated_text',
+    )
+    sidebar_widget.sign_psbt.setText.assert_called_with('translated_text')
+
+
+def test_update_privileges_toggles_visibility_and_retranslate(sidebar_widget: Sidebar, mocker):
+    """Ensure update_privileges shows/hides widgets and calls retranslate_ui."""
+    config = MagicMock()
+    priv = MagicMock(
+        can_backup_wallet=True,
+        can_broadcast_psbt=False,
+        can_receive_asset=True,
+        can_use_faucet=False,
+        can_sign_psbt=True,
+    )
+    config.privileges = priv
+
+    # Spy on retranslate_ui
+    mocker.patch.object(sidebar_widget, 'retranslate_ui')
+
+    # Patch setVisible on widgets to assert calls
+    backup_vis = mocker.patch.object(sidebar_widget.backup, 'setVisible')
+    broadcast_vis = mocker.patch.object(
+        sidebar_widget.broadcast_transaction, 'setVisible',
+    )
+    receive_vis = mocker.patch.object(
+        sidebar_widget.receive_asset_button, 'setVisible',
+    )
+    faucet_vis = mocker.patch.object(sidebar_widget.faucet, 'setVisible')
+    sign_vis = mocker.patch.object(sidebar_widget.sign_psbt, 'setVisible')
+
+    # Call update
+    sidebar_widget.update_privileges(config)
+
+    backup_vis.assert_called_once_with(True)
+    broadcast_vis.assert_called_once_with(False)
+    receive_vis.assert_called_once_with(True)
+    faucet_vis.assert_called_once_with(False)
+    sign_vis.assert_called_once_with(True)

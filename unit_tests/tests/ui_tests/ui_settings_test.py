@@ -125,14 +125,20 @@ def test_handle_keyring_storage_disabled(setting_widget: SettingsWidget, mocker)
     # Call the method
     setting_widget.handle_keyring_storage()
 
-    # Verify the dialog was created and executed
-    mock_keyring_dialog.assert_called_once_with(
-        parent=setting_widget,
-        mnemonic=None,
-        password='test_password',
-        originating_page='settings_page',
-        navigate_to=setting_widget._view_model.page_navigation.settings_page,
-    )
+    # Verify the dialog was created with a KeyringDialogModel and executed
+    mock_keyring_dialog.assert_called_once()
+    args, _ = mock_keyring_dialog.call_args
+    # The first positional arg should be a model-like object with expected attributes
+    assert args, 'KeyringErrorDialog should be called with a model instance as positional arg'
+    model = args[0]
+    assert getattr(model, 'mnemonic', 'SENTINEL') is None
+    assert getattr(model, 'password', None) == 'test_password'
+    assert getattr(model, 'parent', None) is setting_widget
+    assert getattr(model, 'originating_page', None) == 'settings_page'
+    assert getattr(
+        model, 'navigate_to',
+        None,
+    ) == setting_widget._view_model.page_navigation.settings_page
     mock_exec.assert_called_once()
 
     # Verify that the toggle status handler was connected

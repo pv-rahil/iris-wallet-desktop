@@ -20,6 +20,7 @@ from rgb_lib import SendResult
 from rgb_lib import Transfer
 
 from src.data.repository.rgb_repository import RgbRepository
+from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
@@ -30,6 +31,8 @@ from src.model.rgb_model import IssueAssetUdaRequestModel
 from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
+from src.model.rgb_model import SendBeginRequestModel
+from src.model.rgb_model import SendBeginResult
 
 
 @pytest.fixture
@@ -145,6 +148,55 @@ def test_rgb_invoice(mock_wallet, mock_cache):
         min_confirmations=1,
     )
     mock_cache.invalidate_cache.assert_called_once()
+
+
+@patch('src.data.repository.rgb_repository.WalletDataService.get_session')
+@patch('src.data.repository.rgb_repository.Recipient')
+def test_send_begin_with_session(mock_recipient_cls, mock_get_session, mock_wallet):
+    """Test send_begin adds psbt to session with purpose and returns psbt."""
+    # Setup Recipient and send_begin return
+    mock_recipient = MagicMock(spec=Recipient)
+    mock_recipient_cls.return_value = mock_recipient
+    psbt = MagicMock(spec=SendBeginResult)
+    mock_wallet.send_begin.return_value = psbt
+
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    # Execute
+    req = SendBeginRequestModel(
+        asset_id='aid', amount=123, recipient_id='rid', donation=False,
+        fee_rate=2, min_confirmations=1, transport_endpoints=['te1'],
+    )
+    result = RgbRepository.send_begin(req)
+
+    # Assert
+    assert result == psbt
+    mock_recipient_cls.assert_called_once_with(
+        recipient_id='rid', witness_data=None, amount=123, transport_endpoints=['te1'],
+    )
+    mock_wallet.send_begin.assert_called_once()
+    svc.add_psbt.assert_called_once_with(psbt, purpose='send_asset')
+
+
+@patch('src.data.repository.rgb_repository.WalletDataService.get_session')
+def test_send_end_with_session_and_cache(mock_get_session, mock_wallet, mock_cache):
+    """Test send_end invalidates cache and deletes psbt in session."""
+    send_result = MagicMock(spec=SendResult)
+    mock_wallet.send_end.return_value = send_result
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    res = RgbRepository.send_end(
+        BroadcastPsbtRequestModel(
+            signed_psbt='psbt_s', skip_sync=False,
+        ),
+    )
+
+    assert res == send_result
+    mock_wallet.send_end.assert_called_once()
+    mock_cache.invalidate_cache.assert_called_once()
+    svc.delete_psbt.assert_called_once_with('psbt_s')
 
 
 def test_send_asset(mock_wallet, mock_cache):

@@ -5,12 +5,14 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 from PySide6.QtCore import QSize
 
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
+from src.views.components.toast import ToastManager
 from src.views.ui_issue_cfa import IssueCFAWidget
 from unit_tests.tests.ui_tests.ui_helper_test.issue_asset_helper_test import assert_success_page_called
 
@@ -33,6 +35,24 @@ def issue_cfa_widget(mock_issue_cfa_view_model: MainViewModel):
     """Fixture to create a IssueCFAWidget instance."""
 
     return IssueCFAWidget(mock_issue_cfa_view_model)
+
+
+@pytest.fixture(autouse=True, scope='session')
+def _disable_toast_ui():
+    """Disable toast UI creation for the whole test session to avoid headless teardown errors."""
+
+    def _noop(*_a, **_k):
+        return None
+
+    # Persist stubs for the session; do not restore to avoid late event-loop callbacks
+    try:
+        setattr(ToastManager, '_create_toast', _noop)
+    except Exception:
+        pass
+    try:
+        setattr(ToastManager, 'error', _noop)
+    except Exception:
+        pass
 
 
 def test_retranslate_ui(issue_cfa_widget: IssueCFAWidget):
@@ -154,6 +174,159 @@ def test_show_asset_issued(issue_cfa_widget: IssueCFAWidget, qtbot):
     params = widget._view_model.page_navigation.show_success_page.call_args[0][0]
     assert_success_page_called(widget, asset_name)
     assert params.callback == widget._view_model.page_navigation.collectibles_asset_page
+
+
+def test_show_asset_issued_deletes_draft_when_from_draft(issue_cfa_widget: IssueCFAWidget, mocker):
+    """Cover draft cleanup and render timer stop and success navigation."""
+    widget = issue_cfa_widget
+    widget.from_draft = True
+    widget.draft_id = 42
+    with patch.object(widget.render_timer, 'stop', new=MagicMock()) as mock_stop:
+        svc = MagicMock()
+        mocker.patch(
+            'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+        )
+        widget._view_model.page_navigation.show_success_page = MagicMock()
+
+        widget.show_asset_issued('A')
+
+        svc.delete_draft_issue_asset.assert_called_once_with(42)
+        mock_stop.assert_called_once()
+        widget._view_model.page_navigation.show_success_page.assert_called_once()
+
+
+def test_handle_cfa_hw_dialog_update_shows_dialog(issue_cfa_widget: IssueCFAWidget, mocker):
+    """Cover dialog creation, update, and show when message/type present."""
+    widget = issue_cfa_widget
+    dlg = MagicMock()
+    dlg.isVisible.return_value = False
+    mocker.patch(
+        'src.views.ui_issue_cfa.HardwareWalletOperationDialog', return_value=dlg,
+    )
+
+    widget.handle_cfa_hw_dialog_update('msg', MagicMock())
+
+    dlg.update_dialog.assert_called_once()
+    dlg.show.assert_called_once()
+
+
+def test_handle_cfa_utxo_created_accepts_and_calls_issue(issue_cfa_widget: IssueCFAWidget, mocker):
+    """Cover utxo created path: disconnect, accept visible dialog, then on_issue_cfa."""
+    widget = issue_cfa_widget
+    dlg = MagicMock()
+    dlg.isVisible.return_value = True
+    with patch.object(widget, 'on_issue_cfa', new=MagicMock()):
+        mocker.patch(
+            'src.views.ui_issue_cfa.HardwareWalletOperationDialog', return_value=dlg,
+        )
+
+    widget.handle_cfa_utxo_created(True)
+
+    dlg.accept.assert_called_once()
+
+
+def test_handle_cfa_issue_reuse_existing_psbt(issue_cfa_widget: IssueCFAWidget, mocker):
+    """Cover existing PSBT branch -> show_cfa_psbt_page called."""
+    widget = issue_cfa_widget
+    svc = MagicMock()
+    svc.list_psbt.return_value = [{'purpose': 'issue_asset', 'psbt': 'abc'}]
+    mocker.patch(
+        'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+    )
+    with patch.object(widget, 'show_cfa_psbt_page', new=MagicMock()) as mock_show:
+        widget.handle_cfa_issue()
+        mock_show.assert_called_once_with('abc')
+
+
+def test_handle_cfa_issue_create_utxos_when_no_psbt(issue_cfa_widget: IssueCFAWidget, mocker):
+    """Cover else branch -> create_utxos_begin called."""
+    widget = issue_cfa_widget
+    svc = MagicMock()
+    svc.list_psbt.return_value = []
+    with patch.object(widget._view_model.utxo_creation_view_model, 'create_utxos_begin', new=MagicMock()):
+        mocker.patch(
+            'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+        )
+
+        widget.handle_cfa_issue()
+        widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
+            'issue_asset',
+        )
+
+
+def test_create_issue_cfa_draft_success_and_exception(issue_cfa_widget: IssueCFAWidget, mocker):
+    """Cover upsert call (with int conversion) and exception swallow path."""
+    widget = issue_cfa_widget
+    svc = MagicMock()
+    with patch.object(widget._view_model.utxo_creation_view_model, 'create_utxos_begin', new=MagicMock()):
+        mocker.patch(
+            'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+        )
+
+    widget.create_issue_cfa_draft('N', 'TICK', '10', '/tmp/x')
+    svc.upsert_draft_issue_asset.assert_called_once_with(
+        name='N', ticker='TICK', issued_amount=10, file_path='/tmp/x',
+    )
+
+    # exception path
+    svc.upsert_draft_issue_asset.side_effect = Exception('boom')
+    widget.create_issue_cfa_draft('N', 'TICK', '0', None)
+
+
+def test_load_cfa_draft_data_paths(issue_cfa_widget: IssueCFAWidget, mocker):
+    """Cover wallet_service None, no draft, and full draft with file path branch."""
+    widget = issue_cfa_widget
+
+    # wallet_service is None branch
+    mocker.patch(
+        'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=None,
+    )
+    widget._load_cfa_draft_data()  # should early return without error
+
+    # no draft branch
+    widget.draft_id = 5
+    svc = MagicMock()
+    svc.list_draft_issue_assets.return_value = [{'id': 1}]
+    mocker.patch(
+        'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+    )
+    widget._load_cfa_draft_data()  # early return
+
+    # full draft with file path and existing file
+    widget.name_of_the_asset_input = MagicMock()
+    widget.asset_description_input = MagicMock()
+    widget.amount_input = MagicMock()
+    widget.file_path = MagicMock()
+    with patch.object(widget, 'handle_button_enabled', new=MagicMock()) as mock_button:
+        with patch.object(widget, 'show_file_preview', new=MagicMock()) as mock_preview:
+            widget._view_model.issue_cfa_asset_view_model.uploaded_file_path = None
+            fp = '/tmp/file.png'
+            svc.list_draft_issue_assets.return_value = [{
+                'id': 5, 'name': 'nm', 'ticker': 'tk', 'issued_amount': 3, 'file_path': fp,
+            }]
+            mocker.patch(
+                'src.views.ui_issue_cfa.os.path.exists',
+                return_value=True,
+            )
+            widget._load_cfa_draft_data()
+            widget.name_of_the_asset_input.setText.assert_called_once_with(
+                'nm',
+            )
+            widget.asset_description_input.setText.assert_called_once_with(
+                'tk',
+            )
+            widget.amount_input.setText.assert_called_once_with('3')
+            assert widget._view_model.issue_cfa_asset_view_model.uploaded_file_path == fp
+            mock_preview.assert_called_once_with(fp)
+            mock_button.assert_called_once()
+
+
+def test_show_cfa_psbt_page_navigates(issue_cfa_widget: IssueCFAWidget):
+    """Cover positive path of show_cfa_psbt_page."""
+    widget = issue_cfa_widget
+    widget._view_model.page_navigation.receive_asset_page = MagicMock()
+    widget.show_cfa_psbt_page('abc')
+    widget._view_model.page_navigation.receive_asset_page.assert_called_once()
 
 
 def test_show_file_preview(issue_cfa_widget: IssueCFAWidget, mocker):

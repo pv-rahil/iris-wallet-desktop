@@ -20,7 +20,6 @@ from rgb_lib import Outpoint
 from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
 
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
@@ -213,7 +212,7 @@ def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWid
     """Test the select_receive_transfer_type method."""
     # Set up mock data for the test
     asset_id = 'test_asset_id'
-    asset_type = AssetType.NIA.value
+    asset_type = AssetSchema.NIA.name
     rgb_asset_detail_widget.asset_id_detail.setPlainText(asset_id)
     rgb_asset_detail_widget.asset_type = asset_type
 
@@ -365,6 +364,12 @@ def test_show_loading_screen(rgb_asset_detail_widget: RGBAssetDetailWidget):
     """Test the show_loading_screen method for both loading states."""
 
     # Test loading state
+    # Ensure privileges allow enabling buttons when unloading
+    rgb_asset_detail_widget.config = MagicMock()
+    rgb_asset_detail_widget.config.privileges = MagicMock(
+        can_send_transactions=True,
+        can_receive_asset=True,
+    )
     rgb_asset_detail_widget.show_loading_screen(True)
 
     # Verify loading screen is shown and buttons are disabled

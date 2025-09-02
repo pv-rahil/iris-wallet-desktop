@@ -2,7 +2,7 @@
 # Unit test for Enter Fungible Asset UI.
 # Disable the redefined-outer-name warning as
 # it's normal to pass mocked objects in test functions
-# pylint: disable=redefined-outer-name,unused-argument,protected-access
+# pylint: disable=redefined-outer-name,unused-argument,protected-access,too-few-public-methods
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -17,11 +17,14 @@ from PySide6.QtWidgets import QPushButton
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import AssetSchema
 
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
@@ -343,24 +346,21 @@ def test_fungible_show_message_warning(create_fungible_asset_widget):
         mock_warning.assert_called_once_with(description=message)
 
 
-def test_handle_backup_visibility(create_fungible_asset_widget):
-    """Test that handle_backup_visibility shows or hides the backup button based on wallet type."""
+def test_update_sidebar(create_fungible_asset_widget):
+    """Test that update_sidebar calls sidebar.update_privileges with current config."""
     widget = create_fungible_asset_widget
 
     # Mock the view model and sidebar
     sidebar_mock = MagicMock()
-    backup_mock = MagicMock()
-    sidebar_mock.backup = backup_mock
     widget._view_model.page_navigation.sidebar = MagicMock(
         return_value=sidebar_mock,
     )
 
-    # Call the method
-    widget.handle_backup_visibility()
-
-    # Verify that the backup button is shown
-    sidebar_mock.backup.show.assert_called_once()
-    sidebar_mock.backup.hide.assert_not_called()
+    with patch('src.views.ui_fungible_asset.get_current_wallet_mode_config') as mock_cfg:
+        cfg = MagicMock()
+        mock_cfg.return_value = cfg
+        widget.update_sidebar()
+        sidebar_mock.update_privileges.assert_called_once_with(cfg)
 
 
 def test_refresh_asset(create_fungible_asset_widget):
@@ -380,6 +380,141 @@ def test_refresh_asset(create_fungible_asset_widget):
     # Verify that the asset list is refreshed with a hard refresh
     widget._view_model.main_asset_view_model.get_assets.assert_called_once_with(
         rgb_asset_hard_refresh=True,
+    )
+
+
+def test_init_offline_and_watch_only_top_row(qtbot, mocker, mock_fungible_asset_view_model):
+    """Cover lines 140 and 152: offline/watch-only layout branches in __init__."""
+    mocker.patch(
+        'src.views.ui_fungible_asset.SettingRepository.get_wallet_type',
+        return_value=WalletType.OFFLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_fungible_asset.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+    widget = FungibleAssetWidget(mock_fungible_asset_view_model)
+    qtbot.addWidget(widget)
+    # outdated label should be inside usb layout when offline
+    assert widget.usb_last_sync_horizontal_layout.indexOf(
+        widget.outdated_fungible_balance_label,
+    ) != -1
+    # usb layout should be part of top horizontal layout
+    assert widget.horizontal_layout.indexOf(widget.fungibles_label) != -1
+
+
+def test_show_assets_creates_draft_card_for_watch_only(create_fungible_asset_widget, mocker):
+    """Cover lines 277-286: draft without file_path creates a draft card if WATCH_ONLY."""
+    widget = create_fungible_asset_widget
+
+    class _Session:
+        def list_draft_issue_assets(self):
+            """Return a draft without file_path."""
+            return [{'id': 3, 'name': 'NFT', 'ticker': 'N', 'file_path': ''}]
+
+    mocker.patch(
+        'src.views.ui_fungible_asset.WalletDataService.get_session', return_value=_Session(),
+    )
+    mocker.patch(
+        'src.views.ui_fungible_asset.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+
+    with patch.object(widget, 'create_fungible_card') as mock_create:
+        widget.show_assets()
+        mock_create.assert_called()  # draft card created
+
+
+def test_create_fungible_card_address_for_networks(create_fungible_asset_widget, mocker):
+    """Cover lines 379-383: address text for REGTEST and TESTNET when asset_id is None."""
+    widget = create_fungible_asset_widget
+    asset = MagicMock()
+    asset.name = 'BTC'
+    asset.asset_id = None
+    asset.ticker = TokenSymbol.BITCOIN.value
+    asset.balance.future = 0
+
+    # REGTEST branch
+    mocker.patch(
+        'src.views.ui_fungible_asset.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.REGTEST,
+    )
+    widget.create_fungible_card(asset, img_path=':/assets/bitcoin.png')
+    assert widget.address.text() == TokenSymbol.REGTEST_BITCOIN
+
+    # TESTNET branch
+    mocker.patch(
+        'src.views.ui_fungible_asset.SettingRepository.get_wallet_network',
+        return_value=NetworkEnumModel.TESTNET,
+    )
+    widget.create_fungible_card(asset, img_path=':/assets/bitcoin.png')
+    assert widget.address.text() == TokenSymbol.TESTNET_BITCOIN
+
+
+def test_create_fungible_card_draft_amount_and_click(create_fungible_asset_widget):
+    """Cover lines 385, 398, 433-434: draft address/amount and click lambda."""
+    widget = create_fungible_asset_widget
+    asset = MagicMock()
+    asset.asset_id = 'draft_asset'
+    asset.draft_id = 7
+    asset.name = 'Draft NIA'
+    asset.ticker = 'D'
+
+    widget._view_model.page_navigation.issue_nia_asset_page = MagicMock()
+    widget.create_fungible_card(asset)
+    # Amount '-' for draft
+    assert widget.amount.text() == '-'
+    # Emit click to trigger lambda (signal expects 4 args)
+    widget.fungible_frame.clicked.emit(
+        '', 'Draft NIA', widget.fungibles_widget, AssetSchema.NIA,
+    )
+    widget._view_model.page_navigation.issue_nia_asset_page.assert_called_once_with(
+        7, from_draft=True,
+    )
+
+
+def test_setup_ui_connection_calls_check_faucet_when_allowed(create_fungible_asset_widget, mocker):
+    """Cover line 446: can_use_faucet path."""
+    widget = create_fungible_asset_widget
+    widget.priv.can_use_faucet = True
+    with patch.object(widget, 'check_faucet_availability') as mock_check:
+        widget.setup_ui_connection()
+        mock_check.assert_called_once()
+
+
+def test_retranslate_ui_sets_sync_and_outdated_labels(create_fungible_asset_widget, mocker):
+    """Cover lines 477-482: label updates in retranslate_ui when epoch_time present."""
+    widget = create_fungible_asset_widget
+    mocker.patch(
+        'src.views.ui_fungible_asset.format_epoch_time',
+        return_value='now',
+    )
+    widget.retranslate_ui()
+    assert widget.usb_last_sync_fungible_info_label.text() != ''
+    assert widget.outdated_fungible_balance_label.text() != ''
+
+
+def test_refresh_asset_sets_labels_when_epoch_available(create_fungible_asset_widget, mocker):
+    """Cover lines 496-501: label updates in refresh_asset when epoch_time present."""
+    widget = create_fungible_asset_widget
+    mocker.patch(
+        'src.views.ui_fungible_asset.format_epoch_time',
+        return_value='now',
+    )
+    widget.refresh_asset()
+    assert widget.usb_last_sync_fungible_info_label.text() != ''
+    assert widget.outdated_fungible_balance_label.text() != ''
+
+
+def test_check_faucet_availability_triggers_calls(create_fungible_asset_widget):
+    """Cover lines 552-553: get_faucet_list and connect are called."""
+    widget = create_fungible_asset_widget
+    fv = MagicMock()
+    widget._view_model.faucets_view_model = fv
+    widget.check_faucet_availability()
+    fv.get_faucet_list.assert_called_once()
+    fv.faucet_available.connect.assert_called_once_with(
+        widget.update_faucet_availability,
     )
 
 
@@ -416,7 +551,7 @@ def test_handle_asset_frame_click(create_fungible_asset_widget):
     rgb_asset_id = 'rgb_asset_id'
     rgb_asset_name = 'RGB Asset'
     rgb_image_path = ':/assets/rgb.png'
-    rgb_asset_type = AssetType.CFA.value
+    rgb_asset_type = AssetSchema.CFA.name
 
     widget.handle_asset_frame_click(
         asset_id=rgb_asset_id,

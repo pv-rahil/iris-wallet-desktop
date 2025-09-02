@@ -23,7 +23,10 @@ from src.utils.helpers import get_build_info
 from src.utils.helpers import handle_asset_address
 from src.utils.helpers import hash_mnemonic
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import read_rgb_lib_version_file
 from src.utils.helpers import validate_mnemonic
+from src.utils.helpers import validate_xpub
+from src.utils.helpers import write_rgb_lib_version_file
 
 
 # Constants for mocking
@@ -237,3 +240,85 @@ def test_get_bitcoin_config(mock_get_config_value, network):
     assert config.network == network
 
     assert mock_get_config_value.call_count == 2
+
+
+def test_validate_xpub_valid():
+    """validate_xpub should return True when BIP32.from_xpub does not raise."""
+    with patch('src.utils.helpers.BIP32.from_xpub', return_value=object()):
+        assert validate_xpub('xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKp') is True
+
+
+def test_validate_xpub_invalid():
+    """validate_xpub should return False when BIP32.from_xpub raises."""
+    with patch('src.utils.helpers.BIP32.from_xpub', side_effect=Exception('bad')):
+        assert validate_xpub('invalid') is False
+
+
+@patch('src.utils.helpers.SettingRepository.get_rgb_lib_version', return_value='1.2.3')
+def test_write_rgb_lib_version_file_success(_mock_get_version, mocker):
+    """write_rgb_lib_version_file writes version and returns (path, name)."""
+    mocker.patch('src.utils.helpers.app_paths.backup_folder_path', '/tmp')
+    m = mock_open()
+    mocker.patch('builtins.open', m)
+
+    path, name = write_rgb_lib_version_file('wallet')
+
+    assert name == 'wallet.version'
+    assert path.endswith('/tmp/wallet.version')
+    m.assert_called_once()
+    handle = m()
+    handle.write.assert_called_once_with('1.2.3')
+
+
+def test_write_rgb_lib_version_file_oserror(mocker):
+    """write_rgb_lib_version_file should wrap OSError in RuntimeError."""
+    mocker.patch('src.utils.helpers.app_paths.backup_folder_path', '/tmp')
+    mocker.patch('builtins.open', side_effect=OSError('disk full'))
+
+    with pytest.raises(RuntimeError) as exc:
+        write_rgb_lib_version_file('wallet')
+    assert 'Failed to write version file' in str(exc.value)
+
+
+def test_read_rgb_lib_version_file_success(mocker):
+    """read_rgb_lib_version_file returns file content."""
+    mocker.patch('src.utils.helpers.app_paths.restore_folder_path', '/tmp')
+    m = mock_open(read_data='2.0.1')
+    mocker.patch('builtins.open', m)
+
+    val = read_rgb_lib_version_file('wallet.version')
+    assert val == '2.0.1'
+
+
+def test_read_rgb_lib_version_file_not_found(mocker):
+    """read_rgb_lib_version_file returns 'unknown' if file missing."""
+    mocker.patch('src.utils.helpers.app_paths.restore_folder_path', '/tmp')
+    mocker.patch('builtins.open', side_effect=FileNotFoundError)
+
+    val = read_rgb_lib_version_file('wallet.version')
+    assert val == 'unknown'
+
+
+def test_read_rgb_lib_version_file_oserror(mocker):
+    """read_rgb_lib_version_file wraps OSError in RuntimeError."""
+    mocker.patch('src.utils.helpers.app_paths.restore_folder_path', '/tmp')
+    mocker.patch('builtins.open', side_effect=OSError('perm'))
+
+    with pytest.raises(RuntimeError) as exc:
+        read_rgb_lib_version_file('wallet.version')
+    assert 'Failed to read version file' in str(exc.value)
+
+
+def test_get_build_info_json_decode_error(mocker):
+    """get_build_info returns None and logs on JSONDecodeError when frozen."""
+    # simulate frozen app
+    with patch('src.utils.helpers.sys') as mock_sys:
+        mock_sys.frozen = True
+        # make open return bad json and json.load raise JSONDecodeError
+        m = mock_open(read_data='{bad json')
+        mocker.patch('builtins.open', m)
+        with patch('src.utils.helpers.logger') as mock_logger:
+            # patch json.load to raise JSONDecodeError explicitly
+            with patch('json.load', side_effect=json.JSONDecodeError('msg', 'doc', 0)):
+                assert get_build_info() is None
+                mock_logger.error.assert_called_once()

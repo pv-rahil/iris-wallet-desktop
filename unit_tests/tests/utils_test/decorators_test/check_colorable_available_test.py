@@ -155,6 +155,23 @@ def test_check_colorable_available_decorator_fallback_exception(mock_create_utxo
 
 
 @patch('src.utils.decorators.check_colorable_available.create_utxos')
+def test_check_colorable_available_decorator_fallback_common_exception_propagates(mock_create_utxos):
+    """If fallback raises CommonException, decorator should propagate without wrapping."""
+    mock_method = MagicMock(
+        side_effect=RgbLibError.InsufficientAllocationSlots(),
+    )
+    mock_create_utxos.side_effect = CommonException('NoAvailableUtxos')
+
+    @check_colorable_available()
+    def decorated_method():
+        return mock_method()
+
+    with pytest.raises(CommonException) as exc_info:
+        decorated_method()
+    assert str(exc_info.value) == 'NoAvailableUtxos'
+
+
+@patch('src.utils.decorators.check_colorable_available.create_utxos')
 def test_check_colorable_available_decorator_unhandled_exception(mock_create_utxos):
     """Test check_colorable_available decorator with unhandled exception."""
     mock_method = MagicMock(side_effect=Exception('Unhandled error'))

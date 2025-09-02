@@ -30,6 +30,91 @@ def receive_rgb_asset_widget(qtbot):
     return widget
 
 
+def test_handle_receive_cfa_hw_dialog_update_shows_dialog(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
+    """Cover HW dialog update and show when not visible for receive CFA."""
+    widget = receive_rgb_asset_widget
+    dlg = MagicMock()
+    dlg.isVisible.return_value = False
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.HardwareWalletOperationDialog.get_instance', return_value=dlg,
+    )
+
+    widget.handle_receive_cfa_hw_dialog_update('msg', MagicMock())
+
+    dlg.update_dialog.assert_called_once()
+    dlg.show.assert_called_once()
+
+
+def test_handle_receive_cfa_utxo_created_accepts_and_generates_invoice(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
+    """On status True: accept visible dialog and call generate_invoice."""
+    widget = receive_rgb_asset_widget
+    with patch.object(widget, 'generate_invoice', new=MagicMock()):
+        dlg = MagicMock()
+        dlg.isVisible.return_value = True
+        mocker.patch(
+            'src.views.ui_receive_rgb_asset.HardwareWalletOperationDialog.get_instance', return_value=dlg,
+        )
+
+    widget.handle_receive_cfa_utxo_created(True)
+
+    dlg.accept.assert_called_once()
+
+
+def test_handle_receive_asset_reuse_existing_psbt(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
+    """If existing receive_asset PSBT exists, show_receive_cfa_psbt_page is called."""
+    widget = receive_rgb_asset_widget
+    svc = MagicMock()
+    svc.list_psbt.return_value = [
+        {'purpose': 'receive_asset', 'psbt': 'psbt123'},
+    ]
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.WalletDataService.get_session', return_value=svc,
+    )
+    with patch.object(widget, 'show_receive_cfa_psbt_page', new=MagicMock()) as mock_show:
+        widget.handle_receive_asset()
+        mock_show.assert_called_once_with('psbt123')
+
+
+def test_handle_receive_asset_create_utxos_when_no_psbt(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
+    """If no PSBT, create_utxos_begin('receive_asset') is called."""
+    widget = receive_rgb_asset_widget
+    svc = MagicMock()
+    svc.list_psbt.return_value = []
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.WalletDataService.get_session', return_value=svc,
+    )
+    widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
+
+    widget.handle_receive_asset()
+    widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
+        'receive_asset',
+    )
+
+
+def test_handle_receive_asset_wallet_service_none(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
+    """When wallet service None, behaves like no PSBT and starts UTXO creation."""
+    widget = receive_rgb_asset_widget
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.WalletDataService.get_session', return_value=None,
+    )
+    widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
+
+    widget.handle_receive_asset()
+    widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
+        'receive_asset',
+    )
+
+
+def test_show_receive_cfa_psbt_page_navigates_and_connects_close(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
+    """Cover positive path: navigate with ReceiveAssetModel and connect close button."""
+    widget = receive_rgb_asset_widget
+    widget._view_model.page_navigation.receive_asset_page = MagicMock()
+
+    widget.show_receive_cfa_psbt_page('psbtXYZ')
+
+    widget._view_model.page_navigation.receive_asset_page.assert_called_once()
+
+
 def test_generate_invoice(receive_rgb_asset_widget: ReceiveRGBAssetWidget):
     """Test that generate_invoice calls get_rgb_invoice for specific asset types."""
     # Mock dependencies

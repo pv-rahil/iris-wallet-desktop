@@ -1,5 +1,5 @@
 """Unit tests for CommonOperationRepository."""
-# pylint: disable=redefined-outer-name, unused-argument
+# pylint: disable=redefined-outer-name, unused-argument,too-many-arguments
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -11,12 +11,14 @@ from rgb_lib import DatabaseType
 from rgb_lib import Keys
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
+from src.data.repository.setting_repository import KeyStorageType
 from src.model.common_operation_model import BackupRequestModel
 from src.model.common_operation_model import BackupResponseModel
 from src.model.common_operation_model import InitRequestModel
 from src.model.common_operation_model import RestoreRequestModel
 from src.model.common_operation_model import RestoreResponseModel
 from src.model.common_operation_model import WalletRequestModel
+from src.model.enums.enums_model import NetworkEnumModel
 
 
 @pytest.fixture
@@ -63,6 +65,7 @@ def test_unlock(mock_rgb_lib, mock_colored_wallet):
         account_xpub_colored='test_pubkey_colored',
         account_xpub_vanilla='test_pubkey_vanilla',
         mnemonic='test mnemonic',
+        master_fingerprint='test_master_fingerprint',
         max_allocations_per_utxo=5,
         vanilla_keychain=1,
     )
@@ -84,6 +87,7 @@ def test_unlock(mock_rgb_lib, mock_colored_wallet):
     assert mock_rgb_lib.WalletData.call_args.kwargs['account_xpub_colored'] == 'test_pubkey_colored'
     assert mock_rgb_lib.WalletData.call_args.kwargs['mnemonic'] == 'test mnemonic'
     assert mock_rgb_lib.WalletData.call_args.kwargs['vanilla_keychain'] == 1
+    assert mock_rgb_lib.WalletData.call_args.kwargs['master_fingerprint'] == 'test_master_fingerprint'
 
 
 def test_backup(mock_colored_wallet):
@@ -149,3 +153,111 @@ def test_restore_keys(mock_rgb_lib):
         bitcoin_network, mnemonic,
     )
     assert result == mock_rgb_lib.restore_keys.return_value
+
+
+@patch('src.data.repository.common_operations_repository.PSBT')
+@patch('src.data.repository.common_operations_repository.colored_wallet')
+@patch('src.data.repository.common_operations_repository.WalletDataService.get_session')
+@patch('src.utils.decorators.require_hardware_wallet_connected.SettingRepository.get_wallet_network')
+@patch('src.utils.decorators.require_hardware_wallet_connected.LedgerClient')
+@patch('src.utils.decorators.require_hardware_wallet_connected.hwi_enumerate')
+@patch('src.utils.decorators.require_hardware_wallet_connected.hardware_client_store')
+@patch('src.data.repository.common_operations_repository.hardware_client_store')
+@patch('src.data.repository.common_operations_repository.SettingRepository.get_key_storage_type')
+def test_sign_and_finalize_psbt_hardware(
+    mock_get_key_storage_type,
+    repo_hc_store,
+    deco_hc_store,
+    mock_hwi_enum,
+    mock_ledger_client,
+    mock_get_wallet_network,
+    mock_get_session,
+    mock_colored_wallet,
+    mock_psbt_cls,
+):
+    """Hardware wallet path: decorator initializes client and repository uses it to sign, then finalizes and marks signed."""
+    # Setup hardware flag
+    mock_get_key_storage_type.return_value = KeyStorageType.HARDWARE_WALLET
+    # Prepare repo hardware client directly; keep decorator store separate
+    repo_client = MagicMock()
+    repo_hc_store.client = repo_client
+
+    # Decorator environment
+    mock_hwi_enum.return_value = [{'path': '/dev/hw'}]
+    mock_get_wallet_network.return_value = NetworkEnumModel.TESTNET
+    client = MagicMock()
+    mock_ledger_client.return_value = client
+
+    # Repository signing path: client.sign_tx returns obj with serialize
+    signed_obj = MagicMock()
+    signed_obj.serialize.return_value = 'serialized_psbt'
+    repo_client.sign_tx.return_value = signed_obj
+
+    # PSBT stub
+    psbt_instance = MagicMock()
+    mock_psbt_cls.return_value = psbt_instance
+
+    # Finalize path
+    mock_colored_wallet.wallet.finalize_psbt.return_value = 'final_psbt'
+
+    # Session
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    # Execute
+    result = CommonOperationRepository.sign_and_finalize_psbt('unsigned_psbt')
+
+    # Assert
+    assert result == 'final_psbt'
+    repo_client.sign_tx.assert_called_once_with(psbt_instance)
+    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(
+        signed_psbt='serialized_psbt',
+    )
+    svc.mark_psbt_signed.assert_called_once_with('unsigned_psbt', 'final_psbt')
+
+
+@patch('src.data.repository.common_operations_repository.PSBT')
+@patch('src.data.repository.common_operations_repository.colored_wallet')
+@patch('src.data.repository.common_operations_repository.WalletDataService.get_session')
+@patch('src.data.repository.common_operations_repository.SettingRepository.get_key_storage_type')
+def test_sign_and_finalize_psbt_software(mock_get_key_storage_type, mock_get_session, mock_colored_wallet, mock_psbt_cls):
+    """Software path: uses wallet.sign_psbt and finalize_psbt; marks signed."""
+    mock_get_key_storage_type.return_value = MagicMock()  # not HARDWARE_WALLET
+    mock_colored_wallet.wallet.sign_psbt.return_value = 'signed_sw'
+    mock_colored_wallet.wallet.finalize_psbt.return_value = 'final_psbt'
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    result = CommonOperationRepository.sign_and_finalize_psbt('unsigned_psbt')
+
+    assert result == 'final_psbt'
+    mock_colored_wallet.wallet.sign_psbt.assert_called_once_with(
+        'unsigned_psbt',
+    )
+    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(
+        signed_psbt='signed_sw',
+    )
+    svc.mark_psbt_signed.assert_called_once_with('unsigned_psbt', 'final_psbt')
+
+
+@patch('src.data.repository.common_operations_repository.PSBT')
+@patch('src.data.repository.common_operations_repository.colored_wallet')
+@patch('src.data.repository.common_operations_repository.WalletDataService.get_session')
+@patch('src.data.repository.common_operations_repository.SettingRepository.get_key_storage_type')
+def test_sign_and_finalize_psbt_no_session(mock_get_key_storage_type, mock_get_session, mock_colored_wallet, mock_psbt_cls):
+    """No session: ensure no mark call and still returns finalized_psbt (software path)."""
+    mock_get_key_storage_type.return_value = MagicMock()  # not HARDWARE_WALLET
+    mock_colored_wallet.wallet.sign_psbt.return_value = 'signed_sw'
+    mock_colored_wallet.wallet.finalize_psbt.return_value = 'final_psbt'
+    mock_get_session.return_value = None
+
+    result = CommonOperationRepository.sign_and_finalize_psbt('unsigned_psbt')
+
+    assert result == 'final_psbt'
+    mock_colored_wallet.wallet.sign_psbt.assert_called_once_with(
+        'unsigned_psbt',
+    )
+    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(
+        signed_psbt='signed_sw',
+    )
+    mock_get_session.assert_called_once()
