@@ -55,7 +55,7 @@ class CFAViewModel(QObject, ThreadManager):
     is_loading = Signal(bool)
     refresh = Signal(bool)
     stop_loading = Signal(bool)
-    hw_dialog_update = Signal(str, Enum)
+    hw_dialog_update = Signal(object, Enum)
     unsigned_psbt = Signal(str)
 
     def __init__(self, page_navigation: Any) -> None:
@@ -113,14 +113,11 @@ class CFAViewModel(QObject, ThreadManager):
         self.send_cfa_button_clicked.emit(False)
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
             self.hw_dialog_update.emit(
-                INFO_ASSET_SENT.format(
-                    tx_id.txid,
-                ), PsbtStatus.SUCCESS,
+                None, PsbtStatus.SUCCESS,
             )
-        else:
-            ToastManager.success(
-                description=INFO_ASSET_SENT.format(tx_id.txid),
-            )
+        ToastManager.success(
+            description=INFO_ASSET_SENT.format(tx_id.txid),
+        )
 
         if self.asset_type == AssetSchema.CFA:
             self._page_navigation.collectibles_asset_page()
@@ -299,14 +296,14 @@ class CFAViewModel(QObject, ThreadManager):
                 CommonOperationRepository.sign_and_finalize_psbt,
                 {
                     'args': [unsigned_psbt],
-                    'callback': self.on_psbt_signed_and_finalized,
+                    'callback': self.on_psbt_signed_and_finalized_success,
                     'error_callback': self.on_error,
                 },
             )
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
 
-    def on_psbt_signed_and_finalized(self, finalized_psbt: str):
+    def on_psbt_signed_and_finalized_success(self, finalized_psbt: str):
         """
         Callback after PSBT is signed and finalized.
         Now broadcast the transaction.

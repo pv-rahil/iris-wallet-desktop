@@ -18,6 +18,7 @@ from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import DefaultFeeRate
@@ -257,11 +258,14 @@ class SendBitcoinWidget(QWidget):
                 ),
             )
 
-    def handle_send_bitcoin_hw_dialog_update(self, message: str, dialog_type: Enum):
+    def handle_send_bitcoin_hw_dialog_update(self, message: str | None, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
         self.send_bitcoin_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
+        if dialog_type == PsbtStatus.SUCCESS:
+            self.send_bitcoin_hw_dialog.accept()
+            return
         self.send_bitcoin_hw_dialog.cancel_button.clicked.connect(
             self._view_model.send_bitcoin_view_model.cancel_operation,
         )

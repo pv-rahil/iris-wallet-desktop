@@ -573,7 +573,7 @@ def test_on_psbt_created_hardware_wallet(mock_get_kst, mock_get_wt, cfa_view_mod
     # run_in_thread called targeting CommonOperationRepository.sign_and_finalize_psbt
     args = cfa_view_model.run_in_thread.call_args[0][1]
     assert args['args'] == ['psbt']
-    assert args['callback'] == cfa_view_model.on_psbt_signed_and_finalized
+    assert args['callback'] == cfa_view_model.on_psbt_signed_and_finalized_success
     assert args['error_callback'] == cfa_view_model.on_error
 
 
@@ -591,7 +591,7 @@ def test_on_psbt_signed_and_finalized_calls_send_end_and_broadcasts(cfa_view_mod
     emitted = []
     cfa_view_model.hw_dialog_update.connect(lambda msg, st: emitted.append(st))
     cfa_view_model.send_end = MagicMock()
-    cfa_view_model.on_psbt_signed_and_finalized('final_psbt')
+    cfa_view_model.on_psbt_signed_and_finalized_success('final_psbt')
     assert PsbtStatus.BROADCASTING in emitted
     cfa_view_model.send_end.assert_called_once_with('final_psbt')
 
@@ -637,22 +637,6 @@ def test_cancel_operation_emits_and_stops(mock_stop, cfa_view_model):
     cfa_view_model.cancel_operation()
     clicked.assert_called_once_with(False)
     mock_stop.assert_called_once()
-
-
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-def test_on_success_cfa_hardware_branch(mock_kst, cfa_view_model, mocker):
-    """Cover hardware wallet success branch emitting hw dialog update."""
-    cfa_view_model._page_navigation = MagicMock()
-    emitted = []
-    cfa_view_model.hw_dialog_update.connect(lambda msg, st: emitted.append(st))
-    mock_toast_success = mocker.patch(
-        'src.viewmodels.cfa_view_model.ToastManager.success',
-    )
-    cfa_view_model.asset_type = AssetSchema.CFA
-    cfa_view_model.on_success_cfa(SendAssetResponseModel(txid='t'))
-    assert PsbtStatus.SUCCESS in emitted
-    mock_toast_success.assert_not_called()
-    cfa_view_model._page_navigation.collectibles_asset_page.assert_called_once()
 
 
 @patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)

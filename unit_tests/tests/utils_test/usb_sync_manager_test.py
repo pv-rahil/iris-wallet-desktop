@@ -340,7 +340,7 @@ def test_update_usb_ini_index_paths_and_exception(manager: USBSyncManager, tmp_p
 
 
 def test_sync_to_usb_refresh_exception_path(manager: USBSyncManager, tmp_path, fake_local_store):
-    """Raise when refresh path (online wallet) fails during sync to USB."""
+    """Do not raise when refresh path fails during initial backup; proceed and bump SYNC_INDEX."""
     d = tmp_path / 'usb'
     d.mkdir()
     manager.selected_drive = USBDrive(name='USB', path=str(d), is_empty=False)
@@ -349,8 +349,11 @@ def test_sync_to_usb_refresh_exception_path(manager: USBSyncManager, tmp_path, f
     with patch('src.utils.usb_sync_manager.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET), \
             patch('src.utils.usb_sync_manager.WalletDataService.get_session', return_value=object()), \
             patch('src.utils.usb_sync_manager.WalletDataService.refresh_wallet_data', side_effect=Exception('fail')):
-        with pytest.raises(Exception):
-            manager.sync_to_usb()
+        # Should not raise; initial backup continues
+        manager.sync_to_usb()
+        # SYNC_INDEX bumped to 1 and zip created
+        assert fake_local_store.get_value(SYNC_INDEX) == 1
+        assert (d / 'abcd.zip').exists()
 
 
 def test_create_usb_temp_file_exception_and_cleanup_exception(manager: USBSyncManager, tmp_path):

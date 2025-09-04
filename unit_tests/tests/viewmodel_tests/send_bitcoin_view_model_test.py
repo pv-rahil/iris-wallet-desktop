@@ -130,21 +130,6 @@ def test_on_send_click(send_bitcoin_view_model):
     send_bitcoin_view_model.run_in_thread.assert_called_once()
 
 
-def test_on_success_hardware_wallet_emits_hw_dialog(send_bitcoin_view_model, mocker):
-    """When using a hardware wallet, on_success emits hw dialog update with SUCCESS."""
-    mocker.patch(
-        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
-        return_value=KeyStorageType.HARDWARE_WALLET,
-    )
-    hw_slot = MagicMock()
-    send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
-    resp = SendBtcResponseModel(tx_id='abc')
-
-    send_bitcoin_view_model.on_success(resp)
-
-    assert hw_slot.call_count == 1
-
-
 def test_on_error_hardware_wallet_emits_error(send_bitcoin_view_model, mocker):
     """on_error should emit hw_dialog_update with PsbtStatus.ERROR for hardware wallets."""
     mocker.patch(

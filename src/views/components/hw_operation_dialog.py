@@ -124,8 +124,6 @@ class HardwareWalletOperationDialog(QDialog):
         """
         if dialog_type in (PsbtStatus.SIGNING, PsbtStatus.BROADCASTING):
             self.set_loading(message)
-        elif dialog_type == PsbtStatus.SUCCESS:
-            self.set_success(message)
         elif dialog_type == PsbtStatus.ERROR:
             self.set_error(message)
 
@@ -145,25 +143,6 @@ class HardwareWalletOperationDialog(QDialog):
         self.message_label.setText(message)
         self.cancel_button.setVisible(True)
         self.done_button.setVisible(False)
-        self.icon_label.setVisible(True)
-
-    def set_success(self, message: str):
-        """
-        Show success icon and message. Shows Done, hides Cancel.
-
-        Args:
-            message: The message to display.
-        """
-        if self._loader_movie is not None:
-            self._loader_movie.stop()
-        self.icon_label.setPixmap(
-            self._success_pixmap.scaled(
-                75, 75, Qt.KeepAspectRatio, Qt.SmoothTransformation,
-            ),
-        )
-        self.message_label.setText(message)
-        self.cancel_button.setVisible(False)
-        self.done_button.setVisible(True)
         self.icon_label.setVisible(True)
 
     def set_error(self, message: str):

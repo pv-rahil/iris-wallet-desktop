@@ -34,13 +34,6 @@ def test_set_loading(dialog: HardwareWalletOperationDialog):
     assert not dialog.icon_label.isHidden()
 
 
-def test_set_success(dialog: HardwareWalletOperationDialog):
-    """Success state updates message and shows done button."""
-    dialog.set_success('Done')
-    assert dialog.message_label.text() == 'Done'
-    assert not dialog.done_button.isHidden()
-
-
 @patch('src.views.components.hw_device_selection_dialog.HWDeviceSelectionDialog.map_hwi_error', return_value='mapped')
 @patch('src.views.components.hw_device_selection_dialog.HWDeviceSelectionDialog.__init__', return_value=None)
 def test_set_error_maps_and_shows_buttons(_init, _map, dialog: HardwareWalletOperationDialog):
@@ -55,5 +48,3 @@ def test_update_dialog_switches_states(dialog: HardwareWalletOperationDialog):
     """Update dialog should switch UI according to status enum."""
     dialog.update_dialog('x', PsbtStatus.SIGNING)
     assert not dialog.cancel_button.isHidden()
-    dialog.update_dialog('ok', PsbtStatus.SUCCESS)
-    assert not dialog.done_button.isHidden()

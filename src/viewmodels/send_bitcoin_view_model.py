@@ -33,7 +33,7 @@ from src.views.components.toast import ToastManager
 class SendBitcoinViewModel(QObject, ThreadManager):
     """This class represents the activities of the send bitcoin page."""
     send_button_clicked = Signal(bool)
-    hw_dialog_update = Signal(str, Enum)
+    hw_dialog_update = Signal(object, Enum)
     unsigned_psbt = Signal(str)
 
     def __init__(self, page_navigation):
@@ -91,14 +91,12 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.send_button_clicked.emit(False)
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
             self.hw_dialog_update.emit(
-                INFO_BITCOIN_SENT.format(
-                    str(response.tx_id),
-                ), PsbtStatus.SUCCESS,
+                None,
+                PsbtStatus.SUCCESS,
             )
-        else:
-            ToastManager.success(
-                description=INFO_BITCOIN_SENT.format(str(response.tx_id)),
-            )
+        ToastManager.success(
+            description=INFO_BITCOIN_SENT.format(str(response.tx_id)),
+        )
         self._page_navigation.bitcoin_page()
 
     def on_error(self, error: Exception) -> None:

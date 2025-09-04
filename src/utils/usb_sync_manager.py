@@ -265,8 +265,6 @@ class USBSyncManager:
                 logger.warning(
                     'Failed refreshing wallet-data before USB sync: %s', exc,
                 )
-                raise exc
-
             current_local_index = local_store.get_value(SYNC_INDEX)
             if current_local_index is None:  # initial backup
                 logger.info('Creating initial USB backup')

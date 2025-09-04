@@ -20,6 +20,7 @@ from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
@@ -358,11 +359,14 @@ class SendRGBAssetWidget(QWidget):
                 ),
             )
 
-    def handle_send_rgb_hw_dialog_update(self, message: str, dialog_type: Enum):
+    def handle_send_rgb_hw_dialog_update(self, message: str | None, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
         self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
+        if dialog_type == PsbtStatus.SUCCESS:
+            self.send_rgb_hw_dialog.accept()
+            return
         self.send_rgb_hw_dialog.update_dialog(message, dialog_type)
         if not self.send_rgb_hw_dialog.isVisible():
             self.send_rgb_hw_dialog.show()
