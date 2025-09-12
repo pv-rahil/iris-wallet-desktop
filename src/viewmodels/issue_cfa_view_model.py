@@ -20,6 +20,7 @@ from src.utils.error_message import ERROR_AUTHENTICATION
 from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_UNEXPECTED
+from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.info_message import INFO_NO_FILE
 from src.utils.worker import ThreadManager
@@ -153,3 +154,11 @@ class IssueCFAViewModel(QObject, ThreadManager):
                 'error_callback': self.on_error_native_auth_cfa,
             },
         )
+
+    def cancel_operation(self):
+        """
+        Called when the user clicks Cancel on the hardware wallet dialog.
+        Sets a cancel flag and emits stop_sign_tx_loader to close the dialog.
+        """
+        self.is_loading.emit(False)
+        hardware_client_store.stop_client()

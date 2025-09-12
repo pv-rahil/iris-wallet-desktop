@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
-from shiboken6 import Object
 
 
 class PageNavigationEventManager(QObject):
@@ -21,6 +20,7 @@ class PageNavigationEventManager(QObject):
     welcome_page_signal = Signal()
     term_and_condition_page_signal = Signal()
     fungibles_asset_page_signal = Signal()
+    inflatable_asset_page_signal = Signal()
     collectibles_asset_page_signal = Signal()
     set_wallet_password_page_signal = Signal(object)
     enter_wallet_password_page_signal = Signal()
@@ -45,6 +45,8 @@ class PageNavigationEventManager(QObject):
     broadcast_transaction_page_signal = Signal()
     receive_asset_page_signal = Signal(object)
     detect_usb_dialog_box = Signal(bool)
+    refresh_transfer_result_dialog_signal = Signal(object)
+    issue_ifa_signal = Signal()
 
     def __init__(self):
         super().__init__()

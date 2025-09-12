@@ -96,6 +96,7 @@ class RGBAssetDetailWidget(QWidget):
         self.__loading_translucent_screen = LoadingTranslucentScreen(self)
         self.asset_type = params.asset_type
         self.image_path = params.image_path
+        self.is_secondary_issuance = params.is_secondary_issuance
         self._view_model: MainViewModel = view_model
         self.config = get_current_wallet_mode_config()
         self.grid_layout_2 = QGridLayout(self)
@@ -129,7 +130,7 @@ class RGBAssetDetailWidget(QWidget):
             self.top_line, 1, 0, 1, 1,
         )
         self.send_receive_button_layout = QHBoxLayout()
-        self.send_receive_button_layout.setSpacing(18)
+        self.send_receive_button_layout.setSpacing(12)
         self.send_receive_button_layout.setObjectName('horizontal_layout_11')
         self.send_receive_button_layout.setContentsMargins(0, 20, 0, -1)
         self.horizontal_spacer = QSpacerItem(
@@ -152,6 +153,22 @@ class RGBAssetDetailWidget(QWidget):
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
         self.send_receive_button_layout.addWidget(self.send_asset)
+        # Secondary issuance entry point within the action row (compact sizing)
+        if self.is_secondary_issuance:
+            self.issue_more_button = AssetTransferButton('Secondary\nIssuance')
+            self.issue_more_button.setCursor(
+                QCursor(Qt.CursorShape.PointingHandCursor),
+            )
+            self.receive_rgb_asset.setFixedSize(QSize(104, 50))
+            self.send_asset.setFixedSize(QSize(104, 50))
+            self.issue_more_button.setFixedSize(QSize(104, 50))
+            self.receive_rgb_asset.setText(
+                self.receive_rgb_asset.text().replace(' ', '\n', 1),
+            )
+            self.send_asset.setText(
+                self.send_asset.text().replace(' ', '\n', 1),
+            )
+            self.send_receive_button_layout.addWidget(self.issue_more_button)
         self.horizontal_spacer_2 = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
@@ -307,6 +324,7 @@ class RGBAssetDetailWidget(QWidget):
         self.rgb_asset_detail_title_layout.addWidget(
             self.widget_title_asset_name,
         )
+        # Issue supply button now lives in the action row; no title-bar button.
         self.asset_refresh_button = QPushButton(
             self.rgb_asset_detail_widget,
         )
@@ -426,13 +444,30 @@ class RGBAssetDetailWidget(QWidget):
             self.show_loading_screen,
         )
         self.asset_refresh_button.clicked.connect(
-            self._view_model.cfa_view_model.on_refresh_click,
+            self.refresh_transaction,
         )
+        if getattr(self, 'issue_more_button', None) is not None:
+            self.issue_more_button.clicked.connect(
+                self.navigate_secondary_issuance,
+            )
 
     def refresh_transaction(self):
         """Refresh the transaction of the assets"""
         self.render_timer.start()
-        self._view_model.cfa_view_model.on_refresh_click()
+        self._view_model.cfa_view_model.on_refresh_click(
+            self.asset_id_detail.toPlainText(),
+        )
+
+    def navigate_secondary_issuance(self):
+        """Navigate to the secondary issue page prefilled with current asset data."""
+        params = RgbAssetPageLoadModel(
+            asset_id=self.asset_id_detail.toPlainText(),
+            asset_name=self.widget_title_asset_name.text(),
+            image_path=self.image_path,
+            asset_type=self.asset_type,
+            is_secondary_issuance=True,
+        )
+        self._view_model.page_navigation.issue_ifa_secondary_page(params)
 
     def set_transaction_detail_frame(self, asset_id, asset_name, image_path, asset_type):
         """This method sets up the transaction detail frame in the UI.

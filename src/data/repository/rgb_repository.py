@@ -9,6 +9,7 @@ from rgb_lib import Balance
 from rgb_lib import Invoice
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
+from rgb_lib import RefreshedTransfer
 from rgb_lib import SendResult
 from rgb_lib import Transfer
 
@@ -24,7 +25,6 @@ from src.model.rgb_model import IssueAssetCfaRequestModel
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetUdaRequestModel
 from src.model.rgb_model import ListTransfersRequestModel
-from src.model.rgb_model import RefreshTransferResponseModel
 from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendBeginRequestModel
@@ -67,14 +67,16 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def refresh_transfer():
+    def refresh_transfer(asset_id=None) -> dict[int, RefreshedTransfer]:
         """Refresh transfers."""
         with repository_custom_context():
-            colored_wallet.wallet.refresh(
-                online=colored_wallet.online, asset_id=None,
-                filter=[], skip_sync=False,
+            result = colored_wallet.wallet.refresh(
+                online=colored_wallet.online,
+                asset_id=asset_id,
+                filter=[],
+                skip_sync=False,
             )
-            return RefreshTransferResponseModel(status=True)
+            return result
 
     @staticmethod
     @check_colorable_available()

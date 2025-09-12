@@ -12,6 +12,7 @@ from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
 from rgb_lib import Balance
 from rgb_lib import Outpoint
+from rgb_lib import RgbLibError
 from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
 from rgb_lib import TransferTransportEndpoint
@@ -278,6 +279,7 @@ class RgbAssetPageLoadModel(BaseModel):
     asset_name: str | None = None
     image_path: str | None = None
     asset_type: str
+    is_secondary_issuance: bool = False
 
 
 class FailTransferResponseModel(BaseModel):
@@ -296,3 +298,13 @@ class DraftAsset(BaseModel):
     asset_id: str
     name: str
     ticker: str
+
+
+class RefreshFailureItem(BaseModel):
+    """Failure entry to display in refresh dialog."""
+    asset_id: str
+    failure: RgbLibError
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True

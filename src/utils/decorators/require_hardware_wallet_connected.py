@@ -10,6 +10,7 @@ from typing import Callable
 from hwilib.commands import enumerate as hwi_enumerate
 from hwilib.common import Chain
 from hwilib.devices.ledger import LedgerClient
+from hwilib.devices.ledger_bitcoin.client import Client
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
@@ -57,7 +58,17 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                     NetworkEnumModel.REGTEST: Chain.REGTEST,
                 }.get(network)
 
-                client = LedgerClient(device_path, None, True, chain)
+                is_rgb_mode = hardware_client_store.get_rgb_mode()
+                client = LedgerClient(
+                    path=device_path,
+                    password=None,
+                    expert=True,
+                    chain=chain,
+                    is_rgb=is_rgb_mode,
+                )
+
+                base_client = Client(client.transport_client)
+                app_name, app_version, _ = base_client.get_version()
                 hardware_client_store.set_client(client)
 
                 return func(*args, **kwargs)
@@ -70,6 +81,7 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                 ) from e
 
             finally:
+                hardware_client_store.clear_rgb_mode()
                 if client:
                     client.close()
 

@@ -2088,5 +2088,37 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>sign_psbt_detection_label</source>
         <translation>{0} transaction detected waiting to be signed</translation>
     </message>
+    <message>
+        <source>refresh_transfer_title</source>
+        <translation>Refresh transfer failed</translation>
+    </message>
+    <message>
+        <source>failure</source>
+        <translation>Failure</translation>
+    </message>
+    <message>
+      <source>issue_new_ifa_asset</source>
+      <translation>Issue new inflatables asset</translation>
+    </message>
+    <message>
+        <source>issue_supply</source>
+        <translation>Issue supply</translation>
+    </message>
+    <message>
+        <source>inflatables</source>
+        <translation>Inflatables</translation>
+    </message>
+    <message>
+        <source>error_asset_id_invalid_tx</source>
+        <translation>Asset ID :</translation>
+    </message>
+    <message>
+        <source>reason</source>
+        <translation>Reason :</translation>
+    </message>
+    <message>
+        <source>replace_label</source>
+        <translation>Replace</translation>
+    </message>
 </context>
 </TS>

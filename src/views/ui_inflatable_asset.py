@@ -1,6 +1,6 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, unused-import
-"""This module contains the FungibleAssetWidget class,
-which represents the UI for fungible assets.
+"""This module contains the InflatableAssetWidget class,
+which represents the UI for inflatable assets.
 """
 from __future__ import annotations
 
@@ -42,7 +42,6 @@ from src.utils.common_utils import generate_identicon
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
-from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
 from src.viewmodels.main_view_model import MainViewModel
@@ -51,13 +50,13 @@ from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
 
 
-class FungibleAssetWidget(QWidget, ThreadManager):
-    """This class represents all the UI elements of the fungible page."""
+class InflatableAssetWidget(QWidget, ThreadManager):
+    """This class represents all the UI elements of the inflatable page."""
     _native_auth_finished: bool = False
 
     def __init__(self, view_model):
         self.render_timer = RenderTimer(
-            task_name='FungibleAssetWidget Rendering',
+            task_name='InflatableAssetWidget Rendering',
         )
         self.render_timer.start()
         super().__init__()
@@ -74,18 +73,18 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             ),
         )
         self.setObjectName('my_assets_page')
-        self.vertical_layout_fungible_1 = QVBoxLayout(self)
-        self.vertical_layout_fungible_1.setObjectName(
+        self.vertical_layout_inflatable_1 = QVBoxLayout(self)
+        self.vertical_layout_inflatable_1.setObjectName(
             'vertical_layout_fungible_1',
         )
-        self.vertical_layout_fungible_1.setContentsMargins(0, 0, 0, 0)
-        self.fungibles_widget = QWidget(self)
-        self.fungibles_widget.setObjectName('widget_2')
-        self.vertical_layout_fungible_2 = QVBoxLayout(self.fungibles_widget)
-        self.vertical_layout_fungible_2.setObjectName('vertical_layout_2')
-        self.vertical_layout_fungible_2.setContentsMargins(25, 12, 25, 0)
+        self.vertical_layout_inflatable_1.setContentsMargins(0, 0, 0, 0)
+        self.inflatable_widget = QWidget(self)
+        self.inflatable_widget.setObjectName('widget_2')
+        self.vertical_layout_inflatable_2 = QVBoxLayout(self.inflatable_widget)
+        self.vertical_layout_inflatable_2.setObjectName('vertical_layout_2')
+        self.vertical_layout_inflatable_2.setContentsMargins(25, 12, 25, 0)
         self.title_frame = HeaderFrame(
-            title_logo_path=':/assets/my_asset.png', title_name='fungibles',
+            title_logo_path=':/assets/my_asset.png', title_name='inflatables',
         )
         self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
         config = get_current_wallet_mode_config()
@@ -94,9 +93,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         ) == WalletAccessType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
-        self.fungible_frame = None
-        self.vertical_layout_fungible_frame = None
-        self.grid_layout_fungible_frame = None
+        self.vertical_layout_inflatable_frame = None
+        self.grid_layout_inflatable_frame = None
         self.asset_logo = None
         self.asset_name = None
         self.address = None
@@ -115,30 +113,30 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.symbol_header = None
         self.outbound_balance = None
 
-        self.vertical_layout_fungible_2.addWidget(self.title_frame)
+        self.vertical_layout_inflatable_2.addWidget(self.title_frame)
 
-        self.fungibles_label = QLabel(self.fungibles_widget)
-        self.fungibles_label.setObjectName('fungibles_label')
-        self.fungibles_label.setMinimumSize(QSize(1016, 57))
+        self.inflatable_label = QLabel(self.inflatable_widget)
+        self.inflatable_label.setObjectName('fungibles_label')
+        self.inflatable_label.setMinimumSize(QSize(1016, 57))
 
         self.usb_last_sync_horizontal_layout = QHBoxLayout()
         self.usb_last_sync_horizontal_layout.setContentsMargins(0, 0, 12, 0)
 
-        self.usb_last_sync_fungible_info_label = QLabel()
-        self.usb_last_sync_fungible_info_label.setObjectName(
+        self.usb_last_sync_inflatable_info_label = QLabel()
+        self.usb_last_sync_inflatable_info_label.setObjectName(
             'usb_last_sync_info_label',
         )
-        self.outdated_fungible_balance_label = QLabel()
-        self.outdated_fungible_balance_label.setObjectName(
+        self.outdated_inflatable_balance_label = QLabel()
+        self.outdated_inflatable_balance_label.setObjectName(
             'outdated_balance_label',
         )
 
         self.usb_last_sync_horizontal_layout.addWidget(
-            self.usb_last_sync_fungible_info_label,
+            self.usb_last_sync_inflatable_info_label,
         )
         if self.is_offline_wallet:
             self.usb_last_sync_horizontal_layout.addWidget(
-                self.outdated_fungible_balance_label,
+                self.outdated_inflatable_balance_label,
             )
 
         self.horizontal_spacer = QSpacerItem(
@@ -146,40 +144,40 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         )
 
         self.horizontal_layout = QHBoxLayout()
-        self.horizontal_layout.addWidget(self.fungibles_label)
+        self.horizontal_layout.addWidget(self.inflatable_label)
         self.horizontal_layout.addSpacerItem(self.horizontal_spacer)
         if self.is_offline_wallet or self.is_watch_only:
             self.horizontal_layout.addLayout(
                 self.usb_last_sync_horizontal_layout,
             )
 
-        self.vertical_layout_fungible_2.addLayout(self.horizontal_layout)
+        self.vertical_layout_inflatable_2.addLayout(self.horizontal_layout)
 
-        self.scroll_area_fungible = QScrollArea(self.fungibles_widget)
-        self.scroll_area_fungible.setObjectName('scroll_area_1')
-        self.scroll_area_fungible.setWidgetResizable(True)
-        self.scroll_area_fungible.setVerticalScrollBarPolicy(
+        self.scroll_area_inflatable = QScrollArea(self.inflatable_widget)
+        self.scroll_area_inflatable.setObjectName('scroll_area_1')
+        self.scroll_area_inflatable.setWidgetResizable(True)
+        self.scroll_area_inflatable.setVerticalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAsNeeded,
         )
-        self.scroll_area_fungible.setStyleSheet(
+        self.scroll_area_inflatable.setStyleSheet(
             load_stylesheet('views/qss/scrollbar.qss'),
         )
-        self.scroll_area_fungible.setMinimumHeight(320)
-        self.scroll_area_widget_fungible = QWidget()
-        self.scroll_area_widget_fungible.setObjectName(
+        self.scroll_area_inflatable.setMinimumHeight(320)
+        self.scroll_area_widget_inflatable = QWidget()
+        self.scroll_area_widget_inflatable.setObjectName(
             'scrollAreaWidgetContents_2',
         )
-        self.scroll_area_widget_fungible.setAccessibleName(
+        self.scroll_area_widget_inflatable.setAccessibleName(
             FUNGIBLES_SCROLL_WIDGETS,
         )
-        self.scroll_area_widget_fungible.setGeometry(QRect(0, 0, 1182, 2000))
-        self.scroll_area_widget_fungible.setContentsMargins(0, -1, 10, -1)
+        self.scroll_area_widget_inflatable.setGeometry(QRect(0, 0, 1182, 2000))
+        self.scroll_area_widget_inflatable.setContentsMargins(0, -1, 10, -1)
 
-        self.scroll_area_widget_fungible.setMaximumSize(
+        self.scroll_area_widget_inflatable.setMaximumSize(
             QSize(16777215, 2000),
         )
         self.vertical_layout_scroll_content = QVBoxLayout(
-            self.scroll_area_widget_fungible,
+            self.scroll_area_widget_inflatable,
         )
         self.vertical_layout_scroll_content.setObjectName('verticalLayout_2')
         self.vertical_layout_scroll_content.setContentsMargins(0, -1, 0, -1)
@@ -187,40 +185,44 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.vertical_layout_3.setSpacing(10)
         self.vertical_layout_3.setObjectName('verticalLayout_3')
 
-        self.fungible_frame = QFrame(self.scroll_area_widget_fungible)
+        self.inflatable_frame = QFrame(self.scroll_area_widget_inflatable)
 
         self.vertical_layout_scroll_content.addLayout(self.vertical_layout_3)
 
-        self.scroll_area_fungible.setWidget(self.scroll_area_widget_fungible)
+        self.scroll_area_inflatable.setWidget(
+            self.scroll_area_widget_inflatable,
+        )
 
-        self.vertical_layout_fungible_2.addWidget(self.scroll_area_fungible)
+        self.vertical_layout_inflatable_2.addWidget(
+            self.scroll_area_inflatable,
+        )
         self.horizontal_layout_2 = QHBoxLayout()
         self.horizontal_layout_2.setSpacing(6)
 
         self.horizontal_layout_2.setObjectName('horizontalLayout_2')
         self.horizontal_layout_2.setContentsMargins(1, -1, 1, -1)
 
-        self.vertical_layout_fungible_1.addWidget(self.fungibles_widget)
-        self.fungibles_frame_card = QFrame(self.fungibles_widget)
-        self.fungibles_frame_card.setObjectName('fungibles_frame_card')
+        self.vertical_layout_inflatable_1.addWidget(self.inflatable_widget)
+        self.inflatable_frame_card = QFrame(self.inflatable_widget)
+        self.inflatable_frame_card.setObjectName('fungibles_frame_card')
 
-        self.fungibles_frame_card.setFrameShape(QFrame.StyledPanel)
-        self.fungibles_frame_card.setFrameShadow(QFrame.Raised)
+        self.inflatable_frame_card.setFrameShape(QFrame.StyledPanel)
+        self.inflatable_frame_card.setFrameShadow(QFrame.Raised)
 
-        self.horizontal_layout_2.addWidget(self.fungibles_frame_card)
+        self.horizontal_layout_2.addWidget(self.inflatable_frame_card)
 
-        self.vertical_layout_fungible_2.addLayout(self.horizontal_layout_2)
+        self.vertical_layout_inflatable_2.addLayout(self.horizontal_layout_2)
         self.retranslate_ui()
         self.setup_ui_connection()
 
     def show_assets(self):
-        """This method creates all the fungible assets elements of the main asset page."""
+        """This method creates all the inflatable assets elements of the main asset page."""
         for i in reversed(range(self.vertical_layout_3.count())):
             widget = self.vertical_layout_3.itemAt(i).widget()
             if widget is not None:
                 widget.deleteLater()
 
-        self.header_frame = QFrame(self.scroll_area_widget_fungible)
+        self.header_frame = QFrame(self.scroll_area_widget_inflatable)
         self.header_frame.setObjectName('header_frame')
         self.header_frame.setMinimumSize(QSize(900, 70))
         self.header_frame.setMaximumSize(QSize(16777215, 70))
@@ -259,16 +261,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
         self.vertical_layout_3.addWidget(self.header_frame)
 
-        bitcoin = self._view_model.main_asset_view_model.assets.vanilla
-        bitcoin_img_path = {
-            NetworkEnumModel.MAINNET.value: ':/assets/bitcoin.png',
-            NetworkEnumModel.REGTEST.value: ':/assets/regtest_bitcoin.png',
-            NetworkEnumModel.TESTNET.value: ':/assets/testnet_bitcoin.png',
-        }
-        img_path = bitcoin_img_path.get(self.network.value)
-        if img_path:
-            self.create_fungible_card(bitcoin, img_path=img_path)
-
         wallet_service = WalletDataService.get_session()
         draft_assets = (
             wallet_service.list_draft_issue_assets() if wallet_service is not None else []
@@ -283,10 +275,10 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 ticker=d.get('ticker'),
             )
             if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-                self.create_fungible_card(draft_asset)
+                self.create_inflatable_card(draft_asset)
 
         for asset in self._view_model.main_asset_view_model.assets.nia:
-            self.create_fungible_card(asset)
+            self.create_inflatable_card(asset)
         self.vertical_spacer_scroll_area = QSpacerItem(
             20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
         )
@@ -314,32 +306,36 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             ),
         )
 
-    def create_fungible_card(self, asset, img_path=None):
-        """This method creates all the fungible assets elements of the main asset page."""
-        self.fungible_frame = ClickableFrame(
-            asset.asset_id, asset.name, self.fungibles_widget, asset_type=AssetSchema.NIA,
+    def create_inflatable_card(self, asset, img_path=None):
+        """This method creates all the inflatable assets elements of the main asset page."""
+        self.inflatable_frame = ClickableFrame(
+            asset.asset_id, asset.name, self.inflatable_widget, asset_type=AssetSchema.NIA,
         )
-        self.fungible_frame.setStyleSheet(
+        self.inflatable_frame.setStyleSheet(
             load_stylesheet('views/qss/fungible_asset_style.qss'),
         )
 
-        self.fungible_frame.setCursor(
+        self.inflatable_frame.setCursor(
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
-        self.fungible_frame.setObjectName('frame_4')
-        self.fungible_frame.setMinimumSize(QSize(900, 70))
-        self.fungible_frame.setMaximumSize(QSize(16777215, 70))
+        self.inflatable_frame.setObjectName('frame_4')
+        self.inflatable_frame.setMinimumSize(QSize(900, 70))
+        self.inflatable_frame.setMaximumSize(QSize(16777215, 70))
 
-        self.fungible_frame.setFrameShape(QFrame.StyledPanel)
-        self.fungible_frame.setFrameShadow(QFrame.Raised)
-        self.vertical_layout_fungible_frame = QVBoxLayout(self.fungible_frame)
-        self.vertical_layout_fungible_frame.setObjectName('vertical_layout_16')
-        self.grid_layout_fungible_frame = QGridLayout()
-        self.grid_layout_fungible_frame.setObjectName(
+        self.inflatable_frame.setFrameShape(QFrame.StyledPanel)
+        self.inflatable_frame.setFrameShadow(QFrame.Raised)
+        self.vertical_layout_inflatable_frame = QVBoxLayout(
+            self.inflatable_frame,
+        )
+        self.vertical_layout_inflatable_frame.setObjectName(
+            'vertical_layout_16',
+        )
+        self.grid_layout_inflatable_frame = QGridLayout()
+        self.grid_layout_inflatable_frame.setObjectName(
             'horizontal_layout_7',
         )
-        self.grid_layout_fungible_frame.setContentsMargins(6, 0, 6, 0)
-        self.asset_logo = QLabel(self.fungible_frame)
+        self.grid_layout_inflatable_frame.setContentsMargins(6, 0, 6, 0)
+        self.asset_logo = QLabel(self.inflatable_frame)
         self.asset_logo.setObjectName('asset_logo')
 
         self.asset_logo.setMinimumSize(QSize(40, 40))
@@ -354,9 +350,9 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             pixmap = QPixmap.fromImage(image)
             self.asset_logo.setPixmap(pixmap)
 
-        self.grid_layout_fungible_frame.addWidget(self.asset_logo, 0, 0)
+        self.grid_layout_inflatable_frame.addWidget(self.asset_logo, 0, 0)
 
-        self.asset_name = QLabel(self.fungible_frame)
+        self.asset_name = QLabel(self.inflatable_frame)
         self.asset_name.setObjectName('asset_name')
         self.asset_name.setMinimumSize(QSize(135, 40))
         self.asset_name.setStyleSheet(
@@ -365,9 +361,9 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             ),
         )
         self.asset_name.setText(asset.name)
-        self.grid_layout_fungible_frame.addWidget(self.asset_name, 0, 1)
+        self.grid_layout_inflatable_frame.addWidget(self.asset_name, 0, 1)
 
-        self.address = QLabel(self.fungible_frame)
+        self.address = QLabel(self.inflatable_frame)
         self.address.setObjectName('address')
         self.address.setMinimumSize(QSize(600, 0))
         self.address.setMaximumSize(QSize(16777215, 16777215))
@@ -375,22 +371,16 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             'padding-left:10px;',
         )
 
-        if asset.asset_id is None:
-            network = SettingRepository.get_wallet_network()
-            if network == NetworkEnumModel.REGTEST:
-                self.address.setText(TokenSymbol.REGTEST_BITCOIN)
-            elif network == NetworkEnumModel.TESTNET:
-                self.address.setText(TokenSymbol.TESTNET_BITCOIN)
-        elif asset.asset_id == 'draft_asset':
+        if asset.asset_id == 'draft_asset':
             self.address.setText('Click to continue issuance')
         else:
             self.address.setText(asset.asset_id)
 
-        self.grid_layout_fungible_frame.addWidget(
+        self.grid_layout_inflatable_frame.addWidget(
             self.address, 0, 2, Qt.AlignLeft,
         )
 
-        self.amount = QLabel(self.fungible_frame)
+        self.amount = QLabel(self.inflatable_frame)
         self.amount.setObjectName('amount')
         self.amount.setMinimumSize(QSize(100, 40))
 
@@ -398,66 +388,51 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             self.amount.setText('-')
         else:
             self.amount.setText(str(asset.balance.future))
-        self.grid_layout_fungible_frame.addWidget(
+        self.grid_layout_inflatable_frame.addWidget(
             self.amount, 0, 3, Qt.AlignLeft,
         )
 
-        self.token_symbol = QLabel(self.fungible_frame)
+        self.token_symbol = QLabel(self.inflatable_frame)
         self.token_symbol.setObjectName('token_symbol')
 
         self.token_symbol.setText(asset.ticker)
-        self.grid_layout_fungible_frame.addWidget(
+        self.grid_layout_inflatable_frame.addWidget(
             self.token_symbol, 0, 5, Qt.AlignLeft,
         )
 
-        self.vertical_layout_fungible_frame.addLayout(
-            self.grid_layout_fungible_frame,
+        self.vertical_layout_inflatable_frame.addLayout(
+            self.grid_layout_inflatable_frame,
         )
 
-        if 'BTC' in asset.ticker:
-            self.token_symbol.setText(TokenSymbol.SAT.value)
-            bitcoin_asset = AssetType.BITCOIN.value.lower()
-            if asset.ticker == TokenSymbol.BITCOIN.value:
-                self.asset_name.setText(bitcoin_asset)
-            if asset.ticker == TokenSymbol.TESTNET_BITCOIN.value:
-                self.asset_name.setText(
-                    f'{NetworkEnumModel.TESTNET.value} {bitcoin_asset}',
-                )
-            if asset.ticker == TokenSymbol.REGTEST_BITCOIN.value:
-                self.asset_name.setText(
-                    f'{NetworkEnumModel.REGTEST.value} {bitcoin_asset}',
-                )
-
-        self.vertical_layout_3.addWidget(self.fungible_frame)
+        self.vertical_layout_3.addWidget(self.inflatable_frame)
         if asset.asset_id == 'draft_asset':
             draft_id = asset.draft_id
-            self.fungible_frame.clicked.connect(
-                lambda: self._view_model.page_navigation.issue_nia_asset_page(
+            self.inflatable_frame.clicked.connect(
+                lambda: self._view_model.page_navigation.issue_ifa_page(
                     draft_id, from_draft=True,
                 ),
             )
         else:
-            self.fungible_frame.clicked.connect(self.handle_asset_frame_click)
+            self.inflatable_frame.clicked.connect(
+                self.handle_asset_frame_click,
+            )
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
-        self.update_sidebar()
-        if self.priv.can_use_faucet:
-            self.check_faucet_availability()
         self._view_model.main_asset_view_model.get_assets()
         self.title_frame.refresh_page_button.clicked.connect(
             self.refresh_asset,
         )
         self.title_frame.action_button.clicked.connect(
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_nia_asset_page,
+                self._view_model.page_navigation.issue_ifa_page,
             ),
         )
         self._view_model.main_asset_view_model.loading_started.connect(
-            self.show_fungible_loading_screen,
+            self.show_inflatable_loading_screen,
         )
         self._view_model.main_asset_view_model.loading_finished.connect(
-            self.stop_fungible_loading_screen,
+            self.stop_inflatable_loading_screen,
         )
         self._view_model.main_asset_view_model.message.connect(
             self.show_message,
@@ -465,58 +440,58 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
-        self.show_fungible_loading_screen()
-        self.fungibles_label.setText(
+        self.show_inflatable_loading_screen()
+        self.inflatable_label.setText(
             QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fungibles', None,
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflatables', None,
             ),
         )
 
         epoch_time = format_epoch_time()
         if epoch_time is not None:
-            self.usb_last_sync_fungible_info_label.setText(
+            self.usb_last_sync_inflatable_info_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
                 ).format(epoch_time),
             )
-            self.outdated_fungible_balance_label.setText(
+            self.outdated_inflatable_balance_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
                 ),
             )
 
     def refresh_asset(self):
-        """This method start the render timer and perform the fungible asset list refresh"""
+        """This method start the render timer and perform the inflatable asset list refresh"""
         self.render_timer.start()
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )
         epoch_time = format_epoch_time()
         if epoch_time is not None:
-            self.usb_last_sync_fungible_info_label.setText(
+            self.usb_last_sync_inflatable_info_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
                 ).format(epoch_time),
             )
-            self.outdated_fungible_balance_label.setText(
+            self.outdated_inflatable_balance_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
                 ),
             )
 
     def handle_asset_frame_click(self, asset_id, asset_name, image_path, asset_type):
-        """This method handles fungibles asset click of the main asset page."""
-        if asset_id == '':
-            self._view_model.page_navigation.bitcoin_page()
-        else:
-            self._view_model.cfa_view_model.asset_info.emit(
-                asset_id, asset_name, image_path, asset_type,
-            )
-            self._view_model.page_navigation.cfa_detail_page(
-                RgbAssetPageLoadModel(asset_type=asset_type),
-            )
+        """This method handles inflatable asset click of the main asset page."""
+        self._view_model.cfa_view_model.asset_info.emit(
+            asset_id, asset_name, image_path, asset_type,
+        )
+        self._view_model.page_navigation.cfa_detail_page(
+            RgbAssetPageLoadModel(
+                asset_type=asset_type,
+                is_secondary_issuance=True,
+            ),
+        )
 
-    def show_fungible_loading_screen(self):
+    def show_inflatable_loading_screen(self):
         """This method handled show loading screen on main asset page"""
         self.__loading_translucent_screen = LoadingTranslucentScreen(
             parent=self, description_text='Loading', dot_animation=True,
@@ -524,65 +499,19 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.__loading_translucent_screen.start()
         self.title_frame.refresh_page_button.setDisabled(True)
 
-    def stop_fungible_loading_screen(self):
+    def stop_inflatable_loading_screen(self):
         """This method handled stop loading screen on main asset page"""
         self.render_timer.stop()
         self.__loading_translucent_screen.stop()
         self.title_frame.refresh_page_button.setDisabled(False)
 
-    def show_message(self, fungible_asset_toast_preset, message):
+    def show_message(self, inflatable_asset_toast_preset, message):
         """This method handled showing message main asset page"""
-        if fungible_asset_toast_preset == ToastPreset.SUCCESS:
+        if inflatable_asset_toast_preset == ToastPreset.SUCCESS:
             ToastManager.success(description=message)
-        if fungible_asset_toast_preset == ToastPreset.ERROR:
+        if inflatable_asset_toast_preset == ToastPreset.ERROR:
             ToastManager.error(description=message)
-        if fungible_asset_toast_preset == ToastPreset.INFORMATION:
+        if inflatable_asset_toast_preset == ToastPreset.INFORMATION:
             ToastManager.info(description=message)
-        if fungible_asset_toast_preset == ToastPreset.WARNING:
+        if inflatable_asset_toast_preset == ToastPreset.WARNING:
             ToastManager.warning(description=message)
-
-    def update_sidebar(self):
-        """Updates the sidebar with current wallet mode configuration and visibility."""
-        self.sidebar = self._view_model.page_navigation.sidebar()
-        if self.sidebar:
-            self.sidebar.update_privileges(get_current_wallet_mode_config())
-
-    def check_faucet_availability(self):
-        """Check the availability of faucets and connect the signal to handle updates."""
-        self._view_model.faucets_view_model.get_faucet_list()
-        self._view_model.faucets_view_model.faucet_available.connect(
-            self.update_faucet_availability,
-        )
-
-    def update_faucet_availability(self, available: bool):
-        """Update the sidebar faucet status based on availability.
-
-        Args:
-            available (bool): Indicates whether the faucet is available.
-        """
-        self.sidebar = self._view_model.page_navigation.sidebar()
-        if available:
-            self.sidebar.faucet.setCheckable(True)
-        else:
-            self.sidebar.faucet.setCheckable(False)
-            self.sidebar.faucet.setStyleSheet(
-                'Text-align:left;'
-                'font: 15px "Inter";'
-                'color: rgb(120, 120, 120);'
-                'padding: 17.5px 16px;'
-                'background-image: url(:/assets/right_small.png);'
-                'background-repeat: no-repeat;'
-                'background-position: right center;'
-                'background-origin: content;',
-            )
-            # Disconnecting all previous click events
-            self.sidebar.faucet.clicked.disconnect()
-            self.sidebar.faucet.clicked.connect(
-                self.show_faucet_unavailability_message,
-            )
-
-    def show_faucet_unavailability_message(self):
-        """Display a message indicating that the faucet is not available."""
-        ToastManager.info(
-            description=INFO_FAUCET_NOT_AVAILABLE,
-        )

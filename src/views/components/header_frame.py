@@ -365,6 +365,10 @@ class HeaderFrame(QFrame, QObject):
         if self.title in refresh_button_list:
             self.refresh_page_button.setVisible(visible)
 
+        if (self.title not in refresh_and_action_button_list) and (self.title not in refresh_button_list):
+            if not visible:
+                self.action_button.setVisible(False)
+
     def set_wallet_backup_frame(self):
         """
         This method manages the wallet backup warning frame.

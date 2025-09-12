@@ -74,7 +74,6 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             )
             self.sign_and_finalize_psbt(unsigned_psbt)
         else:
-            print('emit')
             self.unsigned_psbt.emit(unsigned_psbt)
 
     def sign_and_finalize_psbt(self, unsigned_psbt):

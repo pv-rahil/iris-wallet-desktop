@@ -269,6 +269,7 @@ def test_create_unspent_clickable_frame(view_unspent_list_widget: ViewUnspentLis
     # Create mock unspent list item
     mock_list_item = MagicMock()
     mock_list_item.utxo.outpoint.txid = 'test_outpoint'
+    mock_list_item.utxo.outpoint.vout = 0
     mock_list_item.utxo.btc_amount = 1000
     mock_list_item.utxo.colorable = True
 
@@ -308,7 +309,7 @@ def test_create_unspent_clickable_frame(view_unspent_list_widget: ViewUnspentLis
     # Verify asset name and details
     asset_details = horizontal_layout.itemAt(1).layout()
     asset_name = asset_details.itemAt(0).widget()
-    assert asset_name.text() == 'test_outpoint'
+    assert asset_name.text() == 'test_outpoint:0'
     assert asset_name.toolTip() == QCoreApplication.translate(
         'iris_wallet', 'click_to_copy',
     )

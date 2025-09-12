@@ -25,7 +25,7 @@ pydenticon = "^0.3.0"
 
 # Development dependencies
 base58 = "^2.1.1"
-hwi = "^3.1.0"
+hwi = {git = "https://github.com/pv-nirav/HWI.git"}
 bip32 = "^4.0"
 [tool.poetry.dev-dependencies]
 pyqt-toast-notification = "^1.2.0"

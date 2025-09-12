@@ -33,7 +33,7 @@ class CommonOperationRepository:
             return response
 
     @staticmethod
-    def unlock(unlock: WalletRequestModel):
+    def unlock(unlock: WalletRequestModel) -> rgb_lib.Wallet:
         """Unlock operation."""
         with repository_custom_context():
             wallet_data = rgb_lib.WalletData(
@@ -75,7 +75,7 @@ class CommonOperationRepository:
 
     @staticmethod
     @require_hardware_wallet_connected()
-    def sign_and_finalize_psbt(unsigned_psbt: str):
+    def sign_and_finalize_psbt(unsigned_psbt: str) -> str:
         """Sign and finalize psbt"""
         with repository_custom_context():
             psbt = PSBT()

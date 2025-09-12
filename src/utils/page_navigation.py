@@ -13,6 +13,7 @@ from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.views.components.error_report_dialog_box import ErrorReportDialog
 from src.views.components.receive_asset import ReceiveAssetWidget
+from src.views.components.refresh_transfer_dialog import RefreshTransferDialog
 from src.views.main_window import MainWindow
 from src.views.ui_about import AboutWidget
 from src.views.ui_backup import Backup
@@ -25,7 +26,9 @@ from src.views.ui_faucets import FaucetsWidget
 from src.views.ui_fungible_asset import FungibleAssetWidget
 from src.views.ui_hardware_wallet_connect import HardwareWalletConnectWidget
 from src.views.ui_help import HelpWidget
+from src.views.ui_inflatable_asset import InflatableAssetWidget
 from src.views.ui_issue_cfa import IssueCFAWidget
+from src.views.ui_issue_ifa import IssueIFAWidget
 from src.views.ui_issue_nia import IssueNIAWidget
 from src.views.ui_receive_bitcoin import ReceiveBitcoinWidget
 from src.views.ui_receive_rgb_asset import ReceiveRGBAssetWidget
@@ -56,6 +59,7 @@ class PageNavigation:
             'HardwareWalletConnectPage': HardwareWalletConnectWidget,
             'TermCondition': TermConditionWidget,
             'FungibleAssetWidget': FungibleAssetWidget,
+            'InflatableAssetWidget': InflatableAssetWidget,
             'CollectiblesAssetWidget': CollectiblesAssetWidget,
             'SetWalletPassword': SetWalletPasswordWidget,
             'IssueNIA': IssueNIAWidget,
@@ -79,6 +83,7 @@ class PageNavigation:
             'HelpWidget': HelpWidget,
             'BroadcastTransactionWidget': BroadcastTransactionWidget,
             'ReceiveAssetWidget': ReceiveAssetWidget,
+            'IssueIFA': IssueIFAWidget,
         }
 
         self.event_based_navigation.navigate_to_page_signal.connect(
@@ -104,6 +109,9 @@ class PageNavigation:
         )
         self.event_based_navigation.fungibles_asset_page_signal.connect(
             self.fungibles_asset_page,
+        )
+        self.event_based_navigation.inflatable_asset_page_signal.connect(
+            self.inflatable_asset_page,
         )
         self.event_based_navigation.collectibles_asset_page_signal.connect(
             self.collectibles_asset_page,
@@ -169,6 +177,12 @@ class PageNavigation:
         )
         self.event_based_navigation.receive_asset_page_signal.connect(
             self.receive_asset_page,
+        )
+        self.event_based_navigation.refresh_transfer_result_dialog_signal.connect(
+            self.refresh_transfer_result_dialog,
+        )
+        self.event_based_navigation.issue_ifa_signal.connect(
+            self.issue_ifa_page,
         )
 
     def toggle_sidebar(self, show):
@@ -241,6 +255,10 @@ class PageNavigation:
     def fungibles_asset_page(self):
         """This method display the fungibles asset page."""
         self.navigate_to_page('FungibleAssetWidget', show_sidebar=True)
+
+    def inflatable_asset_page(self):
+        """This method display the inflatable asset page."""
+        self.navigate_to_page('InflatableAssetWidget', show_sidebar=True)
 
     def collectibles_asset_page(self):
         """This method display the collectibles asset page."""
@@ -376,5 +394,27 @@ class PageNavigation:
         self.current_stack = {
             'name': 'ReceiveAssetWidget',
             'widget': self.pages['ReceiveAssetWidget'](self._ui.view_model, params),
+        }
+        self.navigate_and_toggle(False)
+
+    def refresh_transfer_result_dialog(self, payload):
+        """Open the RefreshTransferDialog modally on the main window."""
+        parent_widget = self._ui.stacked_widget.currentWidget()
+        dialog = RefreshTransferDialog(parent_widget, payload)
+        dialog.show()
+
+    def issue_ifa_page(self, draft_id=None, from_draft: bool = False):
+        """Display the Issue IFA page (primary issue flow)."""
+        self.current_stack = {
+            'name': 'IssueIFA',
+            'widget': self.pages['IssueIFA'](self._ui.view_model, draft_id, from_draft),
+        }
+        self.navigate_and_toggle(False)
+
+    def issue_ifa_secondary_page(self, params: RgbAssetPageLoadModel):
+        """Open the Issue IFA page in secondary issue mode passing RgbAssetPageLoadModel."""
+        self.current_stack = {
+            'name': 'IssueIFA',
+            'widget': IssueIFAWidget(self._ui.view_model, params=params),
         }
         self.navigate_and_toggle(False)

@@ -322,3 +322,38 @@ def test_retranslate_ui_sets_texts(widget_broadcast: BroadcastTransactionWidget)
     assert widget_broadcast.broadcast_transaction_title_label.text()
     assert widget_broadcast.broadcast_transaction_label.text()
     assert widget_broadcast.broadcast_button.text()
+
+
+def test_sign_only_sets_rgb_mode_true_for_send_asset(widget_sign: BroadcastTransactionWidget, vm_mock):
+    """In sign-only mode, purpose 'send_asset' should set RGB mode True before signing."""
+    with patch('src.views.ui_broadcast_transaction.ConfirmationDialog') as dlg, \
+            patch('src.views.ui_broadcast_transaction.hardware_client_store') as store:
+        dlg.return_value.exec.return_value = QDialog.Accepted
+        # Simulate selected unsigned PSBT with purpose send_asset via selector
+        widget_sign._psbt_items = [
+            {'purpose': 'send_asset', 'psbt': 'UNSIGNED', 'id': 'id1'},
+        ]
+        widget_sign.method_selector.setVisible(False)
+        widget_sign.broadcast_transaction_input.setPlainText('psbt:UNSIGNED')
+        widget_sign.send_asset()
+        store.set_rgb_mode.assert_called_once_with(True)
+        vm_mock.broadcast_transaction_view_model.sign_and_finalize_psbt.assert_called_once_with(
+            'UNSIGNED',
+        )
+
+
+def test_sign_only_sets_rgb_mode_false_for_btc(widget_sign: BroadcastTransactionWidget, vm_mock):
+    """In sign-only mode, purpose not equal to 'send_asset' should set RGB mode False."""
+    with patch('src.views.ui_broadcast_transaction.ConfirmationDialog') as dlg, \
+            patch('src.views.ui_broadcast_transaction.hardware_client_store') as store:
+        dlg.return_value.exec.return_value = QDialog.Accepted
+        widget_sign._psbt_items = [
+            {'purpose': 'send_btc', 'psbt': 'U', 'id': 'id1'},
+        ]
+        widget_sign.method_selector.setVisible(False)
+        widget_sign.broadcast_transaction_input.setPlainText('psbt:U')
+        widget_sign.send_asset()
+        store.set_rgb_mode.assert_called_once_with(False)
+        vm_mock.broadcast_transaction_view_model.sign_and_finalize_psbt.assert_called_once_with(
+            'U',
+        )

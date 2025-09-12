@@ -21,6 +21,7 @@ class HardwareClientStore:
 
     def __init__(self):
         self._client = None
+        self._is_rgb_mode: bool | None = None
 
     @property
     def client(self) -> LedgerClient:
@@ -40,6 +41,19 @@ class HardwareClientStore:
         if self._client:
             self._client.close()
             self._client = None
+
+    # -------- Mode controls --------
+    def set_rgb_mode(self, enabled: bool) -> None:
+        """Enable or disable RGB signing mode for the next operation."""
+        self._is_rgb_mode = enabled
+
+    def get_rgb_mode(self) -> bool:
+        """Return the RGB signing mode flag; defaults to False if unset."""
+        return bool(self._is_rgb_mode)
+
+    def clear_rgb_mode(self) -> None:
+        """Clear the RGB signing mode flag back to unspecified (None)."""
+        self._is_rgb_mode = None
 
 
 hardware_client_store: HardwareClientStore = HardwareClientStore()

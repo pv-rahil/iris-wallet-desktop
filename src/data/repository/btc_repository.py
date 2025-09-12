@@ -87,7 +87,7 @@ class BtcRepository:
             return EstimateFeeResponse(fee_rate=data)
 
     @staticmethod
-    def send_btc_begin(param: SendBtcRequestModel):
+    def send_btc_begin(param: SendBtcRequestModel) -> str:
         """Creates psbt for bitcoin."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.send_btc_begin(
@@ -118,7 +118,7 @@ class BtcRepository:
             return SendBtcResponseModel(tx_id=data)
 
     @staticmethod
-    def create_utxos_begin(param: CreateUtxosRequestModel, purpose: str | None = None):
+    def create_utxos_begin(param: CreateUtxosRequestModel, purpose: str | None = None) -> str:
         """Creates colorable utxo psbt."""
         with repository_custom_context():
             psbt = colored_wallet.wallet.create_utxos_begin(

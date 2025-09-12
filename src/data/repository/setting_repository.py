@@ -305,7 +305,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def set_wallet_type(wallet_type: WalletType):
+    def set_wallet_type(wallet_type: WalletType) -> bool:
         """Set the wallet type."""
         try:
             local_store.set_value(
@@ -328,7 +328,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def set_wallet_access_type(access_type: WalletAccessType):
+    def set_wallet_access_type(access_type: WalletAccessType) -> bool:
         """Set the wallet access type."""
         try:
             local_store.set_value(
@@ -352,7 +352,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def set_wallet_entry_type(entry_type: WalletEntryType):
+    def set_wallet_entry_type(entry_type: WalletEntryType) -> bool:
         """Set the wallet entry type."""
         try:
             local_store.set_value(
@@ -376,7 +376,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def set_key_storage_type(storage_type: KeyStorageType):
+    def set_key_storage_type(storage_type: KeyStorageType) -> bool:
         """Set the key storage type."""
         try:
             local_store.set_value(
@@ -400,7 +400,7 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
-    def remove_setting(key):
+    def remove_setting(key) -> bool:
         """Clear all wallet-related settings."""
         try:
             local_store.remove_key(key)
@@ -616,3 +616,18 @@ class SettingRepository:
             local_store.set_value(RGB_LIB_VERSION_KEY, version)
         except Exception as exc:
             handle_exceptions(exc)
+
+    @staticmethod
+    def set_transaction_type(tx_type: str) -> bool:
+        """Set the transaction type."""
+        try:
+            local_store.set_value(
+                'transaction_type',
+                tx_type if tx_type else None,
+            )
+            # Verify the setting was applied
+            if local_store.get_value('transaction_type') == (tx_type if tx_type else None):
+                return True
+            return False
+        except Exception as exe:
+            return handle_exceptions(exe)

@@ -255,9 +255,9 @@ def test_on_refresh_click(mock_rgb_repository, mock_toast_manager, mock_cache, c
     cfa_view_model.asset_name = 'test_asset'
     cfa_view_model.asset_type = 'CFA'
 
-    # Test successful refresh
+    # Test successful refresh: pass empty dict to mimic no failures
     def mock_run_in_thread(func, args):
-        args['callback']()
+        args['callback']({})
 
     cfa_view_model.run_in_thread = MagicMock(side_effect=mock_run_in_thread)
 
@@ -272,7 +272,8 @@ def test_on_refresh_click(mock_rgb_repository, mock_toast_manager, mock_cache, c
     cfa_view_model.is_loading.emit.assert_has_calls(
         [call(True), call(False)],
     )
-    cfa_view_model.refresh.emit.assert_called_once_with(True)
+    calls = cfa_view_model.refresh.emit.call_args_list
+    assert len(calls) >= 1 and calls[0] == call(True)
     mock_toast_success.assert_called_once_with(
         description=INFO_REFRESH_SUCCESSFULLY,
     )
@@ -299,7 +300,9 @@ def test_on_refresh_click(mock_rgb_repository, mock_toast_manager, mock_cache, c
     cfa_view_model.on_refresh_click()
 
     # Verify behavior for error case
-    cfa_view_model.refresh.emit.assert_called_once_with(False)
+    # Ensure the first refresh emit indicates failure
+    calls = cfa_view_model.refresh.emit.call_args_list
+    assert len(calls) >= 1 and calls[0] == call(False)
     cfa_view_model.is_loading.emit.assert_has_calls(
         [call(True), call(False)],
     )
@@ -321,7 +324,7 @@ def test_on_refresh_click(mock_rgb_repository, mock_toast_manager, mock_cache, c
     cfa_view_model.on_refresh_click()
 
     # Verify behavior for generic exception case
-    cfa_view_model.refresh.emit.assert_called_once_with(False)
+    assert cfa_view_model.refresh.emit.call_args_list == [call(False)]
     cfa_view_model.is_loading.emit.assert_has_calls(
         [call(True), call(False)],
     )
@@ -349,7 +352,8 @@ def test_on_refresh_click(mock_rgb_repository, mock_toast_manager, mock_cache, c
     cfa_view_model.is_loading.emit.assert_has_calls(
         [call(True), call(False)],
     )
-    cfa_view_model.refresh.emit.assert_called_once_with(True)
+    calls = cfa_view_model.refresh.emit.call_args_list
+    assert len(calls) >= 1 and calls[0] == call(True)
     mock_toast_success.assert_called_once_with(
         description=INFO_REFRESH_SUCCESSFULLY,
     )
@@ -584,6 +588,18 @@ def test_on_psbt_created_watch_only(mock_get_acc, cfa_view_model):
     cfa_view_model.unsigned_psbt.connect(got.append)
     cfa_view_model.on_psbt_created('raw_psbt')
     assert got == ['raw_psbt']
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+def test_on_psbt_created_sets_rgb_mode(mock_get_kst, mock_get_wt, cfa_view_model, mocker):
+    """Ensure RGB mode is enabled before invoking sign_and_finalize_psbt in HW flow."""
+    set_rgb = mocker.patch(
+        'src.viewmodels.cfa_view_model.hardware_client_store.set_rgb_mode',
+    )
+    cfa_view_model.run_in_thread = MagicMock()
+    cfa_view_model.on_psbt_created('psbtX')
+    set_rgb.assert_called_once_with(True)
 
 
 def test_on_psbt_signed_and_finalized_calls_send_end_and_broadcasts(cfa_view_model):

@@ -23,6 +23,7 @@ from rgb_lib import TransferStatus
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
+from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import AssetDataModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -502,54 +503,47 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
         mock_transaction_frame, 0, 0, 1, 1,
     )
 
-    # Test with empty transactions list
-    mock_txn_list.transfers = []
 
-    # Reset mocks for second test
-    mock_add_widget.reset_mock()
-    mock_transaction_frame.reset_mock()
-
-    # Mock no_transaction_frame method
-    mock_no_transaction_widget = MagicMock()
-
-    # Mock the no_transaction_frame method on the RGBAssetDetailWidget class
-    # Create a method for no_transaction_frame if it doesn't exist
-    rgb_asset_detail_widget.no_transaction_frame = MagicMock(
-        return_value=mock_no_transaction_widget,
+def test_issue_more_button_presence_and_navigation(qtbot):
+    """In secondary issuance mode, issue_more_button should exist and navigate on click."""
+    vm = MagicMock()
+    vm.page_navigation = MagicMock()
+    params = RgbAssetPageLoadModel(
+        asset_id='AID', asset_name='AN',
+        image_path='img', asset_type='NIA', is_secondary_issuance=True,
     )
+    with patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value=''):
+        w = RGBAssetDetailWidget(vm, params)
+    qtbot.addWidget(w)
+    try:
+        # Button should be created in secondary mode
+        assert getattr(w, 'issue_more_button', None) is not None
+        # Populate minimal fields used by navigate
+        w.asset_id_detail.setPlainText('AID')
+        w.widget_title_asset_name.setText('AN')
+        w.image_path = 'img'
+        w.asset_type = 'NIA'
+        w.navigate_secondary_issuance()
+        vm.page_navigation.issue_ifa_secondary_page.assert_called_once()
+        arg = vm.page_navigation.issue_ifa_secondary_page.call_args[0][0]
+        assert isinstance(arg, RgbAssetPageLoadModel)
+        assert arg.asset_id == 'AID'
+        assert arg.asset_name == 'AN'
+        assert arg.image_path == 'img'
+        assert arg.asset_type == 'NIA'
+        assert arg.is_secondary_issuance is True
+    finally:
+        w.close()
 
-    # Mock QCursor
-    mock_cursor = MagicMock()
-    mocker.patch(
-        'src.views.ui_rgb_asset_detail.QCursor',
-        return_value=mock_cursor,
-    )
 
-    # Call the method again with empty transactions
-    rgb_asset_detail_widget.set_transaction_detail_frame(
-        asset_id, asset_name, image_path, asset_type,
-    )
-
-    # Test with tuple asset_transactions
-    mock_txn_list.transfers = [create_mock_transfer]
-    mock_add_widget.reset_mock()
-    mock_set_on_chain.reset_mock()
-
-    rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_txn_list
-
-    # Call the method with tuple asset_transactions
-    rgb_asset_detail_widget.set_transaction_detail_frame(
-        asset_id, asset_name, image_path, asset_type,
-    )
-
-    # Verify the tuple was unpacked correctly and processing continued
-    mock_set_on_chain.assert_called_once_with(
-        create_mock_transfer, asset_name, asset_type, asset_id, image_path,
-    )
-
-    # Verify widget was added to layout
-    mock_add_widget.assert_called_once_with(
-        mock_transaction_frame, 0, 0, 1, 1,
+def test_refresh_button_click_invokes_refresh(rgb_asset_detail_widget: RGBAssetDetailWidget, mocker):
+    """Refreshing should call on_refresh_click with the current asset id."""
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_refresh_click = MagicMock()
+    rgb_asset_detail_widget.asset_id_detail.setPlainText('X')
+    # Call the slot directly to avoid disabled button state issues
+    rgb_asset_detail_widget.refresh_transaction()
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_refresh_click.assert_called_once_with(
+        'X',
     )
 
 

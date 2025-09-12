@@ -113,11 +113,13 @@ def test_list_transfers(mock_wallet):
 
 def test_refresh_transfer(mock_wallet):
     """Test refresh_transfer method"""
+    # Setup
+    mock_wallet.refresh.return_value = {}
     # Execute
     result = RgbRepository.refresh_transfer()
 
     # Assert
-    assert result.status is True
+    assert result == {}
     mock_wallet.refresh.assert_called_once_with(
         online=True, asset_id=None, filter=[], skip_sync=False,
     )

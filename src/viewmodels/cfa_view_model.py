@@ -27,6 +27,7 @@ from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
+from src.model.rgb_model import RefreshFailureItem
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendAssetResponseModel
 from src.model.rgb_model import SendBeginRequestModel
@@ -41,6 +42,7 @@ from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
 from src.utils.info_message import INFO_REFRESH_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
+from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
@@ -186,7 +188,7 @@ class CFAViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_refresh_click(self) -> None:
+    def on_refresh_click(self, asset_id=None) -> None:
         """Executes the refresh operation in a separate thread."""
         cache = Cache.get_cache_session()
         if cache is not None:
@@ -194,14 +196,33 @@ class CFAViewModel(QObject, ThreadManager):
         self.send_cfa_button_clicked.emit(True)
         self.is_loading.emit(True)
 
-        def on_success_refresh() -> None:
-            """Handle success for refreshing transactions."""
+        def on_success_refresh(refresh_data=None) -> None:
+            """Handle success for refreshing transactions.
+            If there are failures for the current asset, show the refresh dialog filtered to this asset only.
+            """
             self.is_loading.emit(False)
             self.refresh.emit(True)
-            ToastManager.success(description=INFO_REFRESH_SUCCESSFULLY)
-            self.get_cfa_asset_detail(
-                self.asset_id, self.asset_name, None, self.asset_type,
-            )
+            failures_only = {
+                k: v for k, v in refresh_data.items(
+                ) if v is not None and v.failure is not None
+            }
+
+            if failures_only:
+                items = [
+                    RefreshFailureItem(
+                        asset_id=self.asset_id,
+                        failure=entry.failure,
+                    )
+                    for entry in failures_only.values()
+                ]
+                if items:
+                    PageNavigationEventManager.get_instance(
+                    ).refresh_transfer_result_dialog_signal.emit(items)
+            else:
+                ToastManager.success(description=INFO_REFRESH_SUCCESSFULLY)
+                self.get_cfa_asset_detail(
+                    self.asset_id, self.asset_name, None, self.asset_type,
+                )
 
         def on_error(error: CommonException) -> None:
             """Handle error for refreshing transactions."""
@@ -215,7 +236,7 @@ class CFAViewModel(QObject, ThreadManager):
             self.run_in_thread(
                 RgbRepository.refresh_transfer,
                 {
-                    'args': [],
+                    'args': [asset_id],
                     'callback': on_success_refresh,
                     'error_callback': on_error,
                 },
@@ -292,6 +313,7 @@ class CFAViewModel(QObject, ThreadManager):
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
             self.send_cfa_button_clicked.emit(True)
+            hardware_client_store.set_rgb_mode(True)
             self.run_in_thread(
                 CommonOperationRepository.sign_and_finalize_psbt,
                 {

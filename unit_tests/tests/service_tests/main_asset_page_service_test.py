@@ -6,16 +6,16 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 from rgb_lib import AssetSchema
+from rgb_lib import RgbLibError
 
 from src.data.service.main_asset_page_service import MainAssetPageDataService
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FilterAssetRequestModel
-from src.model.rgb_model import RefreshTransferResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
-from src.utils.custom_exception import CommonException
 from unit_tests.repository_fixture.btc_repository_mock import mock_get_btc_balance
 from unit_tests.repository_fixture.rgb_repository_mock import mock_get_asset
+from unit_tests.repository_fixture.rgb_repository_mock import mock_list_transfers
 from unit_tests.repository_fixture.rgb_repository_mock import mock_refresh_transfer
 from unit_tests.repository_fixture.setting_repository_mocked import mock_get_wallet_type
 from unit_tests.repository_fixture.setting_repository_mocked import mock_is_exhausted_asset_enabled
@@ -48,9 +48,7 @@ def test_get_assets(
     # Taking mocked object to check if the method is called once
     # Passing data for the return value of the mocked function
     get_btc_balance = mock_get_btc_balance(mock_balance_response_data)
-    refresh_asset = mock_refresh_transfer(
-        RefreshTransferResponseModel(status=True),
-    )
+    refresh_asset = mock_refresh_transfer({})
     get_asset = mock_get_asset(mock_get_asset_response_model)
     asset_name = mock_get_asset_name('rBitcoin')
     asset_ticker = mock_get_offline_asset_ticker('rBTC')
@@ -92,6 +90,53 @@ def test_get_assets(
     asset_ticker.assert_called_once()
     get_btc_balance.assert_called_once()
     is_exhausted_asset_enabled.assert_called_once()
+
+
+@patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
+@patch('src.utils.page_navigation_events.PageNavigationEventManager.get_instance')
+def test_refresh_transfer_failures_emit_dialog(
+    mock_get_mgr,
+    mock_get_wallet_type,
+    mock_get_btc_balance,
+    mock_get_asset,
+    mock_get_offline_asset_ticker,
+    mock_get_asset_name,
+    mock_refresh_transfer,
+    mock_is_exhausted_asset_enabled,
+    mock_list_transfers,
+):
+    """When refresh_transfer returns failures, the dialog signal should be emitted."""
+    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    # Provide assets and enable failure list to include an id present in transfers
+    get_asset = mock_get_asset(mock_get_asset_response_model)
+    mock_is_exhausted_asset_enabled(
+        IsHideExhaustedAssetEnabled(is_enabled=False),
+    )
+    mock_get_asset_name('rBitcoin')
+    mock_get_offline_asset_ticker('rBTC')
+    mock_get_btc_balance(mock_balance_response_data)
+
+    # Failures mapping: key '1' with .failure not None
+    failure_entry = MagicMock()
+    failure_entry.failure = RgbLibError.Internal(details='test')
+    mock_refresh_transfer({'1': failure_entry})
+    # list_transfers returns a transfer with idx == 1 to match failure id
+    mock_list_transfers([MagicMock(idx=1)])
+
+    # Capture emitted items
+    signal = MagicMock()
+    mgr = MagicMock()
+    mgr.refresh_transfer_result_dialog_signal = signal
+    mock_get_mgr.return_value = mgr
+
+    # Act
+    _ = MainAssetPageDataService.get_assets()
+
+    # Assert: dialog emitted with non-empty list
+    assert signal.emit.called
+    items = signal.emit.call_args[0][0]
+    assert isinstance(items, list) and items
+    get_asset.assert_called_once()
 
 
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
@@ -188,7 +233,7 @@ def test_none_asset_lists_return_path(
     mock_get_asset_name('rBitcoin')
     mock_get_offline_asset_ticker('rBTC')
     mock_get_btc_balance(mock_balance_response_data)
-    mock_refresh_transfer(RefreshTransferResponseModel(status=True))
+    mock_refresh_transfer({})
 
     result = MainAssetPageDataService.get_assets()
     assert not result.nia
@@ -209,9 +254,7 @@ def test_when_asset_exhausted(
 ):
     """Test case  for main asset page service when asset_exhausted"""
     get_btc_balance = mock_get_btc_balance(mock_balance_response_data)
-    refresh_asset = mock_refresh_transfer(
-        RefreshTransferResponseModel(status=True),
-    )
+    refresh_asset = mock_refresh_transfer({})
     asset_name = mock_get_asset_name('rBitcoin')
     asset_ticker = mock_get_offline_asset_ticker('rBTC')
     get_asset = mock_get_asset(

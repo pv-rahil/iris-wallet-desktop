@@ -160,6 +160,7 @@ def test_restore_keys(mock_rgb_lib):
 @patch('src.data.repository.common_operations_repository.WalletDataService.get_session')
 @patch('src.utils.decorators.require_hardware_wallet_connected.SettingRepository.get_wallet_network')
 @patch('src.utils.decorators.require_hardware_wallet_connected.LedgerClient')
+@patch('src.utils.decorators.require_hardware_wallet_connected.Client')
 @patch('src.utils.decorators.require_hardware_wallet_connected.hwi_enumerate')
 @patch('src.utils.decorators.require_hardware_wallet_connected.hardware_client_store')
 @patch('src.data.repository.common_operations_repository.hardware_client_store')
@@ -169,6 +170,7 @@ def test_sign_and_finalize_psbt_hardware(
     repo_hc_store,
     deco_hc_store,
     mock_hwi_enum,
+    mock_client_cls,
     mock_ledger_client,
     mock_get_wallet_network,
     mock_get_session,
@@ -187,6 +189,10 @@ def test_sign_and_finalize_psbt_hardware(
     mock_get_wallet_network.return_value = NetworkEnumModel.TESTNET
     client = MagicMock()
     mock_ledger_client.return_value = client
+    # Ensure version check in decorator does not fail due to MagicMock transport
+    mock_client_cls.return_value.get_version.return_value = (
+        'Ledger', '1.0.0', None,
+    )
 
     # Repository signing path: client.sign_tx returns obj with serialize
     signed_obj = MagicMock()

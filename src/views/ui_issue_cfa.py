@@ -504,6 +504,7 @@ class IssueCFAWidget(QWidget):
                 parent=self,
             )
             cfa_hw_dialog.update_dialog(message, dialog_type)
+            self.issue_cfa_button.stop_loading()
             if not cfa_hw_dialog.isVisible():
                 cfa_hw_dialog.show()
 
@@ -522,18 +523,19 @@ class IssueCFAWidget(QWidget):
         """Handle CFA issue start with PSBT reuse if available."""
         self._view_model.issue_cfa_asset_view_model.utxo_creation_started.disconnect()
         wallet_service = WalletDataService.get_session()
-        unsigned_psbts = wallet_service.list_psbt(signed=False)
-        existing_psbt = next(
-            (
-                p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
-            ), None,
-        )
-        if existing_psbt and existing_psbt.get('psbt'):
-            self.show_cfa_psbt_page(existing_psbt.get('psbt'))
-        else:
-            self._view_model.utxo_creation_view_model.create_utxos_begin(
-                'issue_asset',
+        if wallet_service:
+            unsigned_psbts = wallet_service.list_psbt(signed=False)
+            existing_psbt = next(
+                (
+                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
+                ), None,
             )
+            if existing_psbt and existing_psbt.get('psbt'):
+                self.show_cfa_psbt_page(existing_psbt.get('psbt'))
+                return
+        self._view_model.utxo_creation_view_model.create_utxos_begin(
+            'issue_asset',
+        )
 
     def create_issue_cfa_draft(self, name: str, description: str, total_supply: str, file_path: str | None) -> None:
         """Create and save a CFA draft using the shared draft_issue_asset table."""

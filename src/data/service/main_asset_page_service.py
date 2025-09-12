@@ -21,8 +21,11 @@ from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import GetAssetResponseModel
+from src.model.rgb_model import ListTransfersRequestModel
+from src.model.rgb_model import RefreshFailureItem
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.utils.handle_exception import handle_exceptions
+from src.utils.page_navigation_events import PageNavigationEventManager
 
 
 class MainAssetPageDataService:
@@ -62,7 +65,42 @@ class MainAssetPageDataService:
                 else:
                     btc_balance = BtcRepository.get_btc_balance()
             else:
-                RgbRepository.refresh_transfer()
+                refresh_data = RgbRepository.refresh_transfer()
+                if refresh_data:
+                    failures_only = {
+                        k: v for k, v in refresh_data.items() if v.failure is not None
+                    }
+                    if failures_only:
+                        items: list[RefreshFailureItem] = []
+                        all_assets: list[AssetNia | AssetCfa | AssetUda | None] = (
+                            (asset_detail.nia or []) +
+                            (asset_detail.cfa or []) + (asset_detail.uda or [])
+                        )
+                        for failed_id, failed_entry in failures_only.items():
+                            found_asset_id: str | None = None
+                            for a in all_assets:
+                                if a is None:
+                                    continue
+                                try:
+                                    transfers = RgbRepository.list_transfers(
+                                        ListTransfersRequestModel(
+                                            asset_id=a.asset_id,
+                                        ),
+                                    )
+                                    if any(int(t.idx) == int(failed_id) for t in transfers if t.idx is not None):
+                                        found_asset_id = a.asset_id
+                                        break
+                                except Exception:
+                                    continue
+                            if found_asset_id is not None and failed_entry.failure is not None:
+                                items.append(
+                                    RefreshFailureItem(
+                                        asset_id=found_asset_id, failure=failed_entry.failure,
+                                    ),
+                                )
+                        if items:
+                            PageNavigationEventManager.get_instance(
+                            ).refresh_transfer_result_dialog_signal.emit(items)
                 btc_balance = BtcRepository.get_btc_balance()
 
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()

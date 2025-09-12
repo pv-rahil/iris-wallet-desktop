@@ -93,7 +93,7 @@ def test_no_transaction(mock_list_transfers, mock_get_asset_balance):
 
 
 def test_transaction_type_send(mock_list_transfers, mock_get_asset_balance):
-    """case 2: When transaction type issuence"""
+    """case 2: When transaction type issuance"""
     list_transaction_mock_object = mock_list_transfers(
         mocked_data_list_when_transaction_type_send.transfers,
     )
@@ -167,7 +167,7 @@ def test_transaction_type_receive_witness(mock_list_transfers, mock_get_asset_ba
     assert result.asset_balance == mocked_data_list_transaction_type_receive_witness.asset_balance
 
 
-def test_transaction_type_receive_issuence(mock_list_transfers, mock_get_asset_balance):
+def test_transaction_type_receive_issuance(mock_list_transfers, mock_get_asset_balance):
     """case 2: When transaction type receive issuance"""
     list_transaction_mock_object = mock_list_transfers(
         mocked_data_list_when_transaction_type_issuance.transfers,

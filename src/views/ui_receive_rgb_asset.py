@@ -227,7 +227,6 @@ class ReceiveRGBAssetWidget(QWidget):
 
     def show_receive_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code for receive CFA."""
-        print(psbt)
         if psbt:
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(

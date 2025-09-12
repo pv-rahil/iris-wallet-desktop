@@ -30,6 +30,7 @@ from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
@@ -362,6 +363,15 @@ class BroadcastTransactionWidget(QWidget):
             handler(signed_psbt)
 
         else:
+            # Determine purpose similarly for sign-only mode to set RGB mode
+            if purpose is None and self._psbt_items:
+                idx = self.method_selector.currentIndex() if self.method_selector.isVisible() else 0
+                if 0 <= idx < len(self._psbt_items):
+                    purpose = self._psbt_items[idx].get('purpose')
+
+            # Enable RGB mode only for RGB asset signing; BTC/UTXO default to False
+            hardware_client_store.set_rgb_mode(purpose == 'send_asset')
+
             self._view_model.broadcast_transaction_view_model.sign_and_finalize_psbt(
                 signed_psbt,
             )

@@ -65,3 +65,25 @@ QFrame#line_3, QFrame#bottom_line_frame {
     border: none;
     border-bottom: 1px solid rgb(27, 35, 59);
 }
+
+/* Checkbox styling aligned with Send page */
+QCheckBox#replace_label_checkbox {
+    font: 14px "Inter";
+    color: rgba(102, 108, 129, 1);
+    border: none;
+}
+
+QCheckBox#replace_label_checkbox::indicator {
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(1, 167, 129, 1);
+    border-radius: 4px;
+}
+
+QCheckBox#replace_label_checkbox::indicator:unchecked {
+    background-color: transparent;
+}
+
+QCheckBox#replace_label_checkbox::indicator:checked {
+    background-color: green;
+}

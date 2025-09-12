@@ -147,10 +147,15 @@ def test_get_transaction_list_failure(mock_bitcoin_page_service, bitcoin_view_mo
 
     error = CommonException('API error')
     mock_bitcoin_page_service.side_effect = error
-    bitcoin_view_model.get_transaction_list(bitcoin_txn_hard_refresh=True)
+    # Invoke error callback synchronously instead of relying on Qt worker lifetime
 
-    # Simulate worker error
-    bitcoin_view_model.worker.error.emit(error)
+    def _run_in_thread(func, params):
+        params['error_callback'](error)
+    mocker.patch(
+        'src.viewmodels.bitcoin_view_model.ThreadManager.run_in_thread',
+        side_effect=_run_in_thread,
+    )
+    bitcoin_view_model.get_transaction_list(bitcoin_txn_hard_refresh=True)
 
     mock_cache_instance.invalidate_cache.assert_called_once()
     mock_loading_started.assert_called_once_with(True)

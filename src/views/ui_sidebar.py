@@ -109,7 +109,7 @@ class Sidebar(QWidget):
             ':/assets/view_unspent_list.png', translation_key='view_unspent_list',
         )
         self.view_unspent_list.setAccessibleName(VIEW_UNSPENT_LIST_BUTTON)
-        self.grid_layout_sidebar.addWidget(self.view_unspent_list, 3, 0, 1, 1)
+        self.grid_layout_sidebar.addWidget(self.view_unspent_list, 4, 0, 1, 1)
 
         self.faucet = SidebarButton(
             'Faucet', ':/assets/faucets.png', translation_key='faucets',
@@ -130,6 +130,11 @@ class Sidebar(QWidget):
         )
         self.my_collectibles.setAccessibleName(COLLECTIBLE_BUTTON)
         self.grid_layout_sidebar.addWidget(self.my_collectibles, 1, 0, 1, 1)
+
+        self.my_inflatable = SidebarButton(
+            'Issue IFA', ':/assets/my_asset.png', translation_key='inflatables',
+        )
+        self.grid_layout_sidebar.addWidget(self.my_inflatable, 2, 0, 1, 1)
 
         self.settings = SidebarButton(
             'Settings', ':/assets/settings.png', translation_key='settings',
@@ -224,6 +229,9 @@ class Sidebar(QWidget):
             lambda: self._view_model.page_navigation.broadcast_transaction_page(
                 from_sidebar=True,
             ),
+        )
+        self.my_inflatable.clicked.connect(
+            self._view_model.page_navigation.inflatable_asset_page,
         )
 
     def retranslate_ui(self):
