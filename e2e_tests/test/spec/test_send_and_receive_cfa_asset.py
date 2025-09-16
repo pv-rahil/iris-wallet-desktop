@@ -22,17 +22,17 @@ INVOICE = 'rgb:~/~/utxob:2msKeFq-uPjwpYxVY-jKS2ymYBq-SqmyP3ovg-AGvth8491-J7seMBm
 
 @allure.feature('Automation of send operation for CFA asset in iris wallet')
 @allure.story('Testing send CFA asset with expired invoice')
-def test_send_cfa_with_expired_invoice(wallets_and_operations: WalletTestSetup):
+def test_send_cfa_with_expired_invoice(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send CFA asset with expired invoice"""
 
     with allure.step('Create and fund first wallet for send and receive CFA'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION,
+            application=FIRST_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Create and fund second wallet for send and receive CFA'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION,
+            application=SECOND_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Issue CFA asset'):
@@ -96,6 +96,7 @@ def test_send_and_receive_cfa_asset_operation(wallets_and_operations: WalletTest
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
+        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(

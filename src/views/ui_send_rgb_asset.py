@@ -9,6 +9,7 @@ from enum import Enum
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QDialog
 from rgb_lib import AssetSchema
 from rgb_lib import Invoice
 from rgb_lib import InvoiceData
@@ -23,6 +24,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
@@ -30,6 +32,7 @@ from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SEND_ASSET
+from src.utils.error_message import ERROR_NOT_ENOUGH_UNCOLORED
 from src.utils.error_message import ERROR_UNEXPECTED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
@@ -37,6 +40,7 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.send_asset import SendAssetWidget
 from src.views.components.toast import ToastManager
+from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 
 
 class SendRGBAssetWidget(QWidget):
@@ -68,6 +72,7 @@ class SendRGBAssetWidget(QWidget):
         self.is_watch_only = SettingRepository.get_wallet_access_type(
         ) == WalletAccessType.WATCH_ONLY
         self._hw_operation_dialog = None
+        self._retry_after_utxo = False
 
         layout = QVBoxLayout()
         layout.addWidget(self.send_rgb_asset_page)
@@ -126,6 +131,8 @@ class SendRGBAssetWidget(QWidget):
         self._view_model.cfa_view_model.unsigned_psbt.connect(
             self.show_send_rgb_psbt_page,
         )
+        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(self.handle_send_rgb_hw_dialog_update)
+        self._view_model.utxo_creation_view_model.utxo_created.connect(self._on_utxo_created_and_retry)
 
     def refresh_asset(self):
         """This method handle the refresh asset on send asset page"""
@@ -364,6 +371,26 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
+        if dialog_type == PsbtStatus.ERROR and message:
+            if ('NoAvailableUtxos' in message) or (ERROR_NOT_ENOUGH_UNCOLORED in message):
+                # Ask user to open correct Bitcoin app before UTXO creation
+                network = SettingRepository.get_wallet_network()
+                expected_btc_app = 'Bitcoin' if network == NetworkEnumModel.MAINNET else 'Bitcoin Test'
+                guidance_msg = f"Please open '{expected_btc_app}' on your Ledger and click Continue."
+                # Configure dialog as a blocking confirmation
+                self.send_rgb_hw_dialog.set_loading(guidance_msg)
+                self.send_rgb_hw_dialog.done_button.setText('Continue')
+                self.send_rgb_hw_dialog.done_button.setVisible(True)
+                self.send_rgb_hw_dialog.cancel_button.setVisible(True)
+                if not self.send_rgb_hw_dialog.isVisible():
+                    self.send_rgb_hw_dialog.show()
+                result = self.send_rgb_hw_dialog.exec()
+                if result != QDialog.Accepted:
+                    return
+                self._retry_after_utxo = True
+                self._view_model.utxo_creation_view_model.create_utxos_begin(purpose='send_rgb')
+                return
+
         if dialog_type == PsbtStatus.SUCCESS:
             self.send_rgb_hw_dialog.accept()
             return
@@ -384,3 +411,26 @@ class SendRGBAssetWidget(QWidget):
                 address_info='psbt_info', psbt=psbt,
             ),
         )
+
+    def _on_utxo_created_and_retry(self, ok: bool):
+        """Retry sending after UTXO creation completes from UI flow."""
+        if not ok or not self._retry_after_utxo:
+            return
+        self._retry_after_utxo = False
+        # Before retrying the RGB send, confirm correct RGB app is open
+        if self.is_hardware_wallet and self.is_online_wallet:
+            network = SettingRepository.get_wallet_network()
+            expected_rgb_app = 'RGB' if network == NetworkEnumModel.MAINNET else 'RGB Test'
+            self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
+            self.send_rgb_hw_dialog.setMinimumWidth(500)
+            guidance_msg = f"Ready to send asset. Please open '{expected_rgb_app}' on your Ledger and click Continue."
+            self.send_rgb_hw_dialog.set_loading(guidance_msg)
+            self.send_rgb_hw_dialog.done_button.setText('Continue')
+            self.send_rgb_hw_dialog.done_button.setVisible(True)
+            self.send_rgb_hw_dialog.cancel_button.setVisible(True)
+            if not self.send_rgb_hw_dialog.isVisible():
+                self.send_rgb_hw_dialog.show()
+            result = self.send_rgb_hw_dialog.exec()
+            if result != QDialog.Accepted:
+                return
+        self.send_rgb_asset_button()

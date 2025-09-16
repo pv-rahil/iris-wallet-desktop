@@ -16,11 +16,11 @@ from e2e_tests.test.utilities.translation_utils import TranslationManager
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Help page test')
 @allure.story('Tests for elements in help page')
-def test_help_page(wallets_and_operations: WalletTestSetup):
+def test_help_page(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test help page"""
     with allure.step('Initialize the wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            FIRST_APPLICATION, fund=False,
+            FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Navigating to help page'):

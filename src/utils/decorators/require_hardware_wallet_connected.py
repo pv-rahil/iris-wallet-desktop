@@ -11,10 +11,13 @@ from hwilib.commands import enumerate as hwi_enumerate
 from hwilib.common import Chain
 from hwilib.devices.ledger import LedgerClient
 from hwilib.devices.ledger_bitcoin.client import Client
+from hwilib.devices.ledger_bitcoin.exception import NotSupportedError
+from hwilib.errors import DeviceConnectionError
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.custom_exception import CommonException
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.logging import logger
 

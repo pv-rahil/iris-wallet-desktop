@@ -22,12 +22,12 @@ FEE_RATE = '8'
 
 @allure.feature('Iris wallet send operation with zero balance')
 @allure.story('Wallet send operation with zero balance which will give error label')
-def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup, load_qm_translation):
+def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup, load_qm_translation, wallet_variant_name):
     """Test sending bitcoin with zero balance."""
 
     with allure.step('Create and fund first wallet for send and receive bitcoin'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Get bitcoin address'):
@@ -57,7 +57,7 @@ def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup,
 
 @allure.feature('Iris wallet receive and send operation automation for bitcoin')
 @allure.story('Wallet receive and send operation automation for bitcoin')
-def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup):
+def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test receiving and sending bitcoin."""
 
     with allure.step('Fund first wallet'):
@@ -67,7 +67,7 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup):
 
     with allure.step('Create and fund second wallet for send and receive bitcoin'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION, fund=False,
+            application=SECOND_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Get bitcoin address'):

@@ -28,6 +28,8 @@ BACKUP_FILE="./src/utils/constant_backup.py"
 TEST_FILE=""
 RUN_ALL=false
 FORCE_BUILD=false
+# Collect extra pytest args (e.g., --wallet-variant <name>)
+PYTEST_EXTRA_ARGS=()
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -40,8 +42,30 @@ while [[ $# -gt 0 ]]; do
             RUN_ALL=true
             shift
             ;;
+        --wallet-variant)
+            # forward to pytest with its value
+            shift
+            if [[ $# -eq 0 ]]; then
+                echo "Error: --wallet-variant requires a value";
+                exit 1
+            fi
+            PYTEST_EXTRA_ARGS+=("--wallet-variant" "$1")
+            shift
+            ;;
+        --*)
+            # Forward any other unknown long options to pytest as-is
+            PYTEST_EXTRA_ARGS+=("$1")
+            shift
+            ;;
         *)
-            TEST_FILE=$1
+            # First bare arg is treated as TEST_FILE; subsequent bare args
+            # are forwarded to pytest (to avoid overriding TEST_FILE when
+            # option values are passed positionally)
+            if [[ -z "$TEST_FILE" ]]; then
+                TEST_FILE=$1
+            else
+                PYTEST_EXTRA_ARGS+=("$1")
+            fi
             shift
             ;;
     esac
@@ -136,10 +160,10 @@ run_e2e_tests() {
 
     if [[ "$RUN_ALL" == true ]]; then
         echo "Running full test suite..."
-        pytest -s "$TESTS_DIR/" --alluredir="$results_dir"
+        pytest -s "$TESTS_DIR/" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}
     elif [[ -n "$TEST_FILE" ]]; then
         echo "Running single test file: $TEST_FILE"
-        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir"
+        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}
     else
         echo "No test file provided. Use --all to run all tests."
         exit 1

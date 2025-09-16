@@ -16,11 +16,11 @@ from src.utils.info_message import INFO_LOG_SAVE_DESCRIPTION
 
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.story('Tests for copy buttons for indexer info')
-def test_indexer_info(wallets_and_operations: WalletTestSetup):
+def test_indexer_info(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test asserting indexer info"""
     with allure.step('Create first wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
     with allure.step('Indexer URL'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()

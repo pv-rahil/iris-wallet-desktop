@@ -10,6 +10,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from hwilib.errors import DeviceConnectionError
 from rgb_lib import AssetSchema
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
@@ -126,8 +127,13 @@ class CFAViewModel(QObject, ThreadManager):
         elif self.asset_type == AssetSchema.NIA:
             self._page_navigation.fungibles_asset_page()
 
-    def on_error(self, error: CommonException) -> None:
+    def on_error(self, error) -> None:
         """Handle error for sending CFA asset."""
+        if isinstance(error, DeviceConnectionError):
+            print('<----------',error)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
+            return
+            
         self.is_loading.emit(False)
         self.send_cfa_button_clicked.emit(False)
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:

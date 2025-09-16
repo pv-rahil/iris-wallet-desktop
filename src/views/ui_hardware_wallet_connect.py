@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE, HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON, HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION, HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletEntryType
 from src.utils.clickable_frame import ClickableFrame
@@ -48,6 +49,7 @@ class HardwareWalletConnectWidget(QWidget):
         self._view_model: MainViewModel = view_model
         self._selected_wallet = None
         self.setObjectName('hardware_wallet_connect_page')
+        self.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE)
         self.setStyleSheet(
             load_stylesheet(
                 'views/qss/hardware_wallet_connect_style.qss',
@@ -114,6 +116,7 @@ class HardwareWalletConnectWidget(QWidget):
         # Ledger option
         self.ledger_btn = ClickableFrame()
         self.ledger_btn.setObjectName('hardware_wallet_option')
+        self.ledger_btn.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION)
         self.ledger_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.ledger_btn.setFixedSize(197, 115)
         self.ledger_btn.setProperty('selected', False)
@@ -148,6 +151,7 @@ class HardwareWalletConnectWidget(QWidget):
         # Trezor option
         self.trezor_btn = ClickableFrame()
         self.trezor_btn.setObjectName('hardware_wallet_option')
+        self.trezor_btn.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION)
         self.trezor_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.trezor_btn.setFixedSize(197, 115)
         self.trezor_btn.setProperty('selected', False)
@@ -189,6 +193,7 @@ class HardwareWalletConnectWidget(QWidget):
 
         # Continue button (centered, more padding)
         self.continue_btn = PrimaryButton()
+        self.continue_btn.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON)
         self.continue_btn.setObjectName('primary_button')
         self.continue_btn.setEnabled(False)
         self.card_layout.addWidget(

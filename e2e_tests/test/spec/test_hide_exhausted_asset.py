@@ -18,15 +18,15 @@ ISSUE_NIA_TOASTER_MESSAGE = 'You have insufficient funds'
 
 @allure.feature('Hide exhausted asset')
 @allure.story('Toggling on hide exhausted asset')
-def test_hide_exhausted_asset_on(wallets_and_operations: WalletTestSetup):
+def test_hide_exhausted_asset_on(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for hiding exhausted asset"""
     with allure.step('Initializing the wallets and funding them'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            FIRST_APPLICATION,
+            FIRST_APPLICATION, variant=wallet_variant_name,
         )
 
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            SECOND_APPLICATION,
+            SECOND_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Navigating to settings page'):

@@ -75,6 +75,7 @@ e2e-test = "e2e_tests.e2e_runner:e2e_test"
 allure-result = "e2e_tests.e2e_runner:serve_allure_result"
 regtest-start = "e2e_tests.e2e_runner:run_regtest"
 list-tests = "e2e_tests.e2e_runner:list_tests"
+list-variants = "e2e_tests.test.utilities.wallet_variants:list_variants"
 
 # Build system
 

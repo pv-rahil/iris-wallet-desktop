@@ -19,17 +19,17 @@ SEND_AMOUNT = '50'
 
 @allure.feature('Test for refresh transfer')
 @allure.story('Test for refresh transfer from home refresh and then check the status to success after mine the transaction')
-def test_refresh_transfer(wallets_and_operations: WalletTestSetup):
+def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for refresh transfer"""
 
     with allure.step('Create and fund first wallet for refresh transfer'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION,
+            application=FIRST_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Create and fund second wallet for refresh transfer'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION,
+            application=SECOND_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Issue NIA asset for refresh transfer'):

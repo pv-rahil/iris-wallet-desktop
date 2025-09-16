@@ -19,7 +19,7 @@ PASSWORD = None
 @allure.feature('Keyring')
 @allure.story('Keyring Dialog')
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
-def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetup):
+def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test the keyring dialog functionality by restarting the application within the same test.
 
@@ -28,7 +28,7 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
     """
     with allure.step('Create and fund first wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('toggle the keyring button and save the mnemonic and password'):

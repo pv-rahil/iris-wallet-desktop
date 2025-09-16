@@ -20,12 +20,12 @@ ASSET_AMOUNT = '2000'
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Fail transfer feature')
 @allure.story('Test for fail transfer')
-def test_fail_transfer(wallets_and_operations: WalletTestSetup):
+def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for fail transfer"""
 
     with allure.step('Creating and funding the wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION,
+            application=FIRST_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Issuing an RGB asset'):

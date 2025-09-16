@@ -330,13 +330,13 @@ class BaseOperations:
             return element.text
         return None
 
-    def wait_for_toaster_message(self, toaster_name=TOASTER_DESCRIPTION, timeout=120, interval=0.5):
+    def wait_for_toaster_message(self, toaster_name=TOASTER_DESCRIPTION, timeout=180, interval=0.5):
         """
         Waits until a toaster message appears on the screen.
 
         Args:
             toaster_name (str): The accessible name of the toaster message.
-            timeout (int): Maximum time to wait (in seconds). Default is 120 seconds.
+            timeout (int): Maximum time to wait (in seconds). Default is 180 seconds.
             interval (float): Time interval between checks. Default is 0.5 seconds.
 
         Raises:

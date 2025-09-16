@@ -12,11 +12,24 @@ FIRST_APPLICATION = f"Iris Wallet Regtest {APP1_NAME}"
 SECOND_APPLICATION = f"Iris Wallet Regtest {APP2_NAME}"
 FIRST_APPLICATION_PATH = f"{APP_NAME}_{APP1_NAME}"
 SECOND_APPLICATION_PATH = f"{APP_NAME}_{APP2_NAME}"
+BITCOIN_LEDGER_APP_NAME = 'bitcoin_test-2.4.0'
+RGB_LEDGER_APP_NAME = 'rgb_test-2.1.0'
+LEDGER_EMULATOR_APP_NAME = 'Ledger Nano SP Emulator'
 
 # Term and condition page
 ACCEPT_BUTTON = 'accept_button'
 DECLINE_BUTTON = 'decline_button'
 TNC_TXT_DESCRIPTION = 'tnc_txt_description'
+
+# Selection page
+OPTION_1_FRAME = 'option_1'
+OPTION_2_FRAME = 'option_2'
+WALLET_SELECTION_CONTINUE_BUTTON = 'wallet_selection_continue_button'
+
+# Wallet mode summary dialog
+WALLET_MODE_SUMMARY_DIALOG = 'wallet_mode_summary_dialog'
+WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON = 'wallet_mode_summary_dialog_cancel_button'
+WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON = 'wallet_mode_summary_dialog_continue_button'
 
 # Wallet password page
 CREATE_BUTTON = 'create_button'
@@ -192,15 +205,6 @@ HIDE_EXHAUSTED_ASSETS_TOGGLE = 'hide_exhausted_assets_toggle'
 ASK_AUTH_FOR_IMPORTANT_QUESTION_TOGGLE = 'ask_auth_for_important_question_toggle'
 ASK_AUTH_FOR_APP_LOGIN_TOGGLE = 'ask_auth_for_app_login_toggle'
 
-# Keyring dialog box
-KEYRING_DIALOG_BOX = 'keyring_dialog_box'
-KEYRING_MNEMONICS_FRAME = 'keyring_mnemonics_frame'
-KEYRING_COPY_BUTTON = 'keyring_copy_button'
-KEYRING_PASSWORD_FRAME = 'keyring_password_frame'
-KEYRING_PASSWORD_COPY_BUTTON = 'keyring_password_copy_button'
-KEYRING_PASSWORD_VALUE_LABEL = 'keyring_password_value_label'
-KEYRING_MNEMONIC_VALUE_LABEL = 'keyring_mnemonic_value_label'
-
 
 # Fungibles page
 FUNGIBLES_SCROLL_WIDGETS = 'fungibles_scroll_widget'
@@ -211,3 +215,15 @@ HELP_CARD_TITLE_ACCESSIBLE_DESCRIPTION = 'help_card_title'
 # Keyring password
 FIRST_SERVICE = 'iris-wallet-vault_test_app_1'
 NATIVE_AUTH_ENABLE = 'isNativeAuthenticationEnabled_test_app_1'
+
+# Hardware wallet selection dialog
+HW_DEVICE_SELECTION_DIALOG = 'hardware_wallet_device_dialog'
+HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON = 'hardware_wallet_device_dialog_connect_button'
+HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON = 'hardware_wallet_device_dialog_cancel_button'
+LEDGER_EMULATOR_RADIO_BUTTON = 'Ledger Nano S'
+
+# Hardware wallet connect page
+HARDWARE_WALLET_CONNECT_PAGE = 'hardware_wallet_connect_page'
+HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION = 'hardware_wallet_connect_page_ledger_option'
+HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION = 'hardware_wallet_connect_page_trezor_option'
+HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON = 'hardware_wallet_connect_page_continue_button'

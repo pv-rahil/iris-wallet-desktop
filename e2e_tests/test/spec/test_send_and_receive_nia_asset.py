@@ -22,17 +22,17 @@ INVOICE = 'rgb:~/~/utxob:2msKeFq-uPjwpYxVY-jKS2ymYBq-SqmyP3ovg-AGvth8491-J7seMBm
 
 @allure.feature('Automation of send operation for NIA asset in iris wallet')
 @allure.story('Testing send NIA asset with expired invoice')
-def test_send_nia_with_expired_invoice(wallets_and_operations: WalletTestSetup, load_qm_translation):
+def test_send_nia_with_expired_invoice(wallets_and_operations: WalletTestSetup, load_qm_translation, wallet_variant_name):
     """Test send NIA asset with expired invoice"""
     validation_label = None
 
     with allure.step('Create and fund first wallet for send and receive NIA'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION,
+            application=FIRST_APPLICATION, variant=wallet_variant_name,
         )
     with allure.step('Create and fund second wallet for send and receive NIA'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION,
+            application=SECOND_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Issue NIA asset'):
@@ -98,6 +98,7 @@ def test_send_and_receive_nia_asset_operation(wallets_and_operations: WalletTest
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             NIA_ASSET_NAME,

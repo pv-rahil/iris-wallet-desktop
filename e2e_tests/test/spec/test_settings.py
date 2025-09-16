@@ -33,7 +33,7 @@ pytestmark = pytest.mark.order(2)
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Set default fee rate')
 @allure.story('Sets default fee rate for sending assets')
-def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup):
+def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test setting a default fee rate
 
     Tests that a user can:
@@ -43,7 +43,7 @@ def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup):
     """
     with allure.step('Create and fund first wallet for setting'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Navigating to set default fee rate frame in settings'):

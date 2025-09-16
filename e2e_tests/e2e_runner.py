@@ -34,25 +34,40 @@ def serve_allure_result():
 def single_test():
     """Runs a single test with optional force build."""
     if len(sys.argv) < 2:
-        print('Usage: single-test <test-file> [force-build]')
+        print('Usage: single-test <test-file> [force-build] [--wallet-variant <mode-name-or-slug>]')
         sys.exit(1)
 
     test_file = sys.argv[1]
     force_build = False
+    wallet_variant = None
 
     # Parse optional arguments
-    for arg in sys.argv[2:]:
-        if arg.lower() == 'force-build':
+    args = sys.argv[2:]
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if isinstance(arg, str) and arg.lower() == 'force-build':
             force_build = True
-        else:
-            print(f"Error: Unrecognized argument '{arg}'")
-            sys.exit(1)
+            i += 1
+            continue
+        if arg == '--wallet-variant':
+            if i + 1 >= len(args):
+                print('Error: --wallet-variant requires a value')
+                sys.exit(1)
+            wallet_variant = args[i + 1]
+            i += 2
+            continue
+        print(f"Error: Unrecognized argument '{arg}'")
+        sys.exit(1)
 
     if force_build:
         print('Forcing application build before running tests...')
         run_e2e(['--force-build'])
 
-    run_e2e([test_file])
+    forward = [test_file]
+    if wallet_variant:
+        forward.extend(['--wallet-variant', wallet_variant])
+    run_e2e(forward)
 
 
 def e2e_test():
@@ -63,19 +78,36 @@ def e2e_test():
 
     extra_args = ['--all']
     force_build = False
+    wallet_variant = None
 
     # Parse optional arguments
-    for arg in sys.argv[1:]:
-        if arg.lower() == 'force-build':
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if isinstance(arg, str) and arg.lower() == 'all':
+            i += 1
+            continue
+        if isinstance(arg, str) and arg.lower() == 'force-build':
             force_build = True
-        elif arg.lower() != 'all':
-            print(f"Error: Unrecognized argument '{arg}'")
-            sys.exit(1)
+            i += 1
+            continue
+        if arg == '--wallet-variant':
+            if i + 1 >= len(args):
+                print('Error: --wallet-variant requires a value')
+                sys.exit(1)
+            wallet_variant = args[i + 1]
+            i += 2
+            continue
+        print(f"Error: Unrecognized argument '{arg}'")
+        sys.exit(1)
 
     if force_build:
         print('Forcing application build before running tests...')
         run_e2e(['--force-build'])
 
+    if wallet_variant:
+        extra_args.extend(['--wallet-variant', wallet_variant])
     run_e2e(extra_args)
 
 

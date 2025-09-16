@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QRadioButton
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QVBoxLayout
 
+from accessible_constant import HW_DEVICE_SELECTION_DIALOG, HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON, HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -51,6 +52,7 @@ class HWDeviceSelectionDialog(QDialog):
         self._loader_text = None
         self._device_selection_view_model = HWDeviceSelectionViewModel()
         self.setObjectName('hardware_wallet_device_dialog')
+        self.setAccessibleName(HW_DEVICE_SELECTION_DIALOG)
         self.setMinimumWidth(450)
         self.setMaximumHeight(400)
         self.setModal(True)
@@ -93,6 +95,7 @@ class HWDeviceSelectionDialog(QDialog):
         layout.addWidget(self.error_label)
 
         self.connect_button = PrimaryButton()
+        self.connect_button.setAccessibleName(HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON)
         self.connect_button.setEnabled(False)
         self.connect_button.setFixedSize(150, 50)
         self.connect_button.setSizePolicy(
@@ -100,6 +103,7 @@ class HWDeviceSelectionDialog(QDialog):
         )
 
         self.cancel_button = SecondaryButton()
+        self.cancel_button.setAccessibleName(HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON)
         self.cancel_button.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cancel',

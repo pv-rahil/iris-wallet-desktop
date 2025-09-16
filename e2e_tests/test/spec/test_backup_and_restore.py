@@ -2,8 +2,6 @@
 """Test module for the backup page functionality"""
 from __future__ import annotations
 
-import os
-
 import allure
 import pytest
 from dotenv import load_dotenv
@@ -13,12 +11,11 @@ from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
+from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.info_message import INFO_BACKUP_COMPLETED
 from src.utils.info_message import INFO_RESTORE_COMPLETED
 load_dotenv()
-BACKUP_EMAIL_ID = os.getenv('BACKUP_EMAIL_ID')
-BACKUP_EMAIL_PASSWORD = os.getenv('BACKUP_EMAIL_PASSWORD')
 MNEMONIC = None
 PASSWORD = None
 
@@ -28,7 +25,7 @@ pytestmark = pytest.mark.order(1)
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Mnemonic and backup configuration')
 @allure.story('Mnemonic and backup configuration functionality')
-def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, load_qm_translation):
+def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, load_qm_translation, wallet_variant_name):
     """
     Test the mnemonic and backup configuration functionality.
     This test case covers the following scenarios:
@@ -42,8 +39,8 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
     global MNEMONIC
     global PASSWORD
     with allure.step('Create a wallet'):
-        wallets_and_operations.first_page_features.wallet_features.create_wallet(
-            FIRST_APPLICATION,
+        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
     with allure.step('Check the backup configuration'):
         backup_tooltip = wallets_and_operations.first_page_objects.fungible_page_objects.get_backup_tooltip()
@@ -82,22 +79,7 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
     with allure.step('Configure backup'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
         wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_window()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_email(
-            BACKUP_EMAIL_ID,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_password(
-            BACKUP_EMAIL_PASSWORD,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_google_authenticator_button()
-        code = wallets_and_operations.first_page_objects.backup_page_objects.get_security_otp()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_security_code(
-            code,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
+        wallets_and_operations.first_page_features.wallet_features.google_auth()
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
     with allure.step('Take a backup of wallet'):
@@ -112,7 +94,7 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
 @allure.feature('Restore page')
 @allure.story('Restore page functionality')
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
-def test_restore(test_environment, wallets_and_operations: WalletTestSetup):
+def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     This test case is used to restore the wallet from the backup.
     """
@@ -120,30 +102,12 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup):
     with allure.step('Restore the wallet'):
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.scroll_to_end()
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.click_accept_button()
+        load_variant = map_to_load_variant(wallet_variant_name)
+        wallets_and_operations.first_page_features.wallet_features.drive_selection_flow(
+            application=FIRST_APPLICATION, variant=load_variant,
+        )
         wallets_and_operations.first_page_objects.welcome_page_objects.click_restore_button()
-        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
-            mnemonic=MNEMONIC,
-        )
-        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
-            password=PASSWORD,
-        )
-        wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_window()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_email(
-            BACKUP_EMAIL_ID,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_password(
-            BACKUP_EMAIL_PASSWORD,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_google_authenticator_button()
-        code = wallets_and_operations.first_page_objects.backup_page_objects.get_security_otp()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_security_code(
-            code,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
+        wallets_and_operations.first_page_features.wallet_features.google_auth(MNEMONIC, PASSWORD)
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
@@ -164,7 +128,7 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup):
 @allure.feature('Restore page')
 @allure.story('Restore page with keyring off')
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
-def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup):
+def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     This test case is used to restore the wallet from the backup.
     """
@@ -172,31 +136,12 @@ def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup):
     with allure.step('Restore the wallet with keyring off'):
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.scroll_to_end()
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.click_accept_button()
+        load_variant = map_to_load_variant(wallet_variant_name)
+        wallets_and_operations.first_page_features.wallet_features.drive_selection_flow(
+            application=FIRST_APPLICATION, variant=load_variant,
+        )
         wallets_and_operations.first_page_objects.welcome_page_objects.click_restore_button()
-        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
-            mnemonic=MNEMONIC,
-        )
-        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
-            password=PASSWORD,
-        )
-        wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
-    with allure.step('Enter Credentials'):
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_window()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_email(
-            BACKUP_EMAIL_ID,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_password(
-            BACKUP_EMAIL_PASSWORD,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_google_authenticator_button()
-        code = wallets_and_operations.first_page_objects.backup_page_objects.get_security_otp()
-        wallets_and_operations.first_page_objects.backup_page_objects.enter_security_code(
-            code,
-        )
-        wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
+        wallets_and_operations.first_page_features.wallet_features.google_auth(MNEMONIC, PASSWORD)
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()

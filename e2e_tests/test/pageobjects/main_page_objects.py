@@ -14,12 +14,16 @@ from e2e_tests.test.pageobjects.bitcoin_transaction_detail_page import BitcoinTr
 from e2e_tests.test.pageobjects.collectible_page import CollectiblePageObjects
 from e2e_tests.test.pageobjects.enter_wallet_password_page import EnterWalletPasswordPageObjects
 from e2e_tests.test.pageobjects.fungible_page import FungiblePageObjects
+from e2e_tests.test.pageobjects.hardware_wallet_connect_page import HardwareWalletConnectPageObjects
+from e2e_tests.test.pageobjects.hardware_wallet_emulator_page import HardwareWalletEmulatorPageObjects
 from e2e_tests.test.pageobjects.help_page import HelpPageObjects
+from e2e_tests.test.pageobjects.hw_device_selection_dialog_page import HWDeviceSelectionDialogPageObjects
 from e2e_tests.test.pageobjects.issue_cfa_page import IssueCfaPageObjects
 from e2e_tests.test.pageobjects.issue_nia_page import IssueNiaPageObjects
 from e2e_tests.test.pageobjects.keyring_dialog_page import KeyringDialogBoxPageObjects
 from e2e_tests.test.pageobjects.receive_asset_page import ReceiveAssetPageObjects
 from e2e_tests.test.pageobjects.restore_mnemonic_page import RestoreWalletPageObjects
+from e2e_tests.test.pageobjects.selection_page import SelectionPageObjects
 from e2e_tests.test.pageobjects.send_asset_page import SendAssetPageObjects
 from e2e_tests.test.pageobjects.set_password_page import SetPasswordPageObjects
 from e2e_tests.test.pageobjects.settings_page_object import SettingsPageObjects
@@ -28,6 +32,7 @@ from e2e_tests.test.pageobjects.success_page import SuccessPageObjects
 from e2e_tests.test.pageobjects.term_and_condition_page import TermAndConditionPageObjects
 from e2e_tests.test.pageobjects.toaster_page import ToasterPageObjects
 from e2e_tests.test.pageobjects.view_unspent_list_page import ViewUnspentListPageObjects
+from e2e_tests.test.pageobjects.wallet_mode_summary_dialog_page import WalletModeSummaryDialogPageObjects
 from e2e_tests.test.pageobjects.welcome_page import WelcomePageObjects
 
 
@@ -115,3 +120,13 @@ class MainPageObjects():
         )
 
         self.help_page_objects = HelpPageObjects(self.application)
+
+        self.selection_page_objects = SelectionPageObjects(self.application)
+
+        self.wallet_mode_summary_dialog_page_objects = WalletModeSummaryDialogPageObjects(self.application)
+
+        self.hw_device_selection_dialog_page_objects = HWDeviceSelectionDialogPageObjects(self.application)
+
+        self.hw_emulator_page_objects = HardwareWalletEmulatorPageObjects(self.application)
+
+        self.hw_connect_page_objects = HardwareWalletConnectPageObjects(application)

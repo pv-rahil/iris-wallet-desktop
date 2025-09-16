@@ -21,14 +21,14 @@ ISSUE_NIA_TOASTER_MESSAGE = 'You have insufficient funds'
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue NIA asset without sufficient sats')
 @allure.story('Issue NIA asset without sufficient sats which will produce error toaster')
-def test_issue_nia_without_sufficient_sats(wallets_and_operations: WalletTestSetup):
+def test_issue_nia_without_sufficient_sats(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test NIA asset issuance without sufficient sats.
     """
 
     with allure.step('Create and fund first wallet for issue NIA'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Issue NIA asset without sufficient sats'):

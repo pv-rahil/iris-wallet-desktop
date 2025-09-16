@@ -27,14 +27,14 @@ ASSET_NAME_2 = 'Test asset'
 
 @allure.feature('Ask authorization for important operations')
 @allure.story('Toggling on ask authorization for import operations')
-def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: WalletTestSetup):
+def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for hiding exhausted asset"""
     with allure.step('Initializing the wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            FIRST_APPLICATION,
+            FIRST_APPLICATION, variant=wallet_variant_name,
         )
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            SECOND_APPLICATION,
+            SECOND_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('Turning on ask authorization for import operations'):
@@ -132,6 +132,7 @@ def test_ask_auth_for_imp_question_send_nia_on(wallets_and_operations: WalletTes
             SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             ASSET_NAME_1,
         )
@@ -185,6 +186,7 @@ def test_ask_auth_for_imp_question_send_cfa_on(wallets_and_operations: WalletTes
             SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
             ASSET_NAME_1,
@@ -287,6 +289,7 @@ def test_ask_auth_for_imp_question_send_nia_off(wallets_and_operations: WalletTe
             SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             ASSET_NAME_2,
         )
@@ -341,6 +344,7 @@ def test_ask_auth_for_imp_question_send_cfa_off(wallets_and_operations: WalletTe
             SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
             ASSET_NAME_2,

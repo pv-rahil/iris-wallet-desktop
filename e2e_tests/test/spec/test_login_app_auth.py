@@ -16,7 +16,7 @@ from e2e_tests.test.utilities.app_setup import WalletTestSetup
 @allure.feature('Login app')
 @allure.story('Test login app toggle button')
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
-def test_login_app_toggle_button_on(test_environment, wallets_and_operations: WalletTestSetup):
+def test_login_app_toggle_button_on(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test the login app toggle button functionality.
 
@@ -32,7 +32,7 @@ def test_login_app_toggle_button_on(test_environment, wallets_and_operations: Wa
     """
     with allure.step('Create and fund first wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Toggle the login app auth button to on and restart the application'):

@@ -21,14 +21,14 @@ ISSUE_CFA_TOASTER_MESSAGE = 'You have insufficient funds'
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue CFA asset without sufficient sats')
 @allure.story('Issue CFA asset without sufficient sats which will produce error toaster')
-def test_issue_cfa_without_sufficient_sats(wallets_and_operations: WalletTestSetup):
+def test_issue_cfa_without_sufficient_sats(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test issuing CFA asset without sufficient sats.
     """
 
     with allure.step('Create and fund first wallet for issue CFA'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Issue CFA asset without sat'):

@@ -16,14 +16,14 @@ from e2e_tests.test.utilities.app_setup import WalletTestSetup
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('View unspent list')
 @allure.story('Verify outpoint in unspent list')
-def test_view_unspent_list(wallets_and_operations: WalletTestSetup):
+def test_view_unspent_list(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test view unspent list.
     """
 
     with allure.step('Create and fund first wallet for view unspent'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION,
+            application=FIRST_APPLICATION, variant=wallet_variant_name,
         )
 
     with allure.step('verifies the outpoint'):
