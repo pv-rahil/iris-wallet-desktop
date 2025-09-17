@@ -42,7 +42,7 @@ def test_issue_nia_without_sufficient_sats(wallets_and_operations: WalletTestSet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue NIA asset with sufficient sats and no utxo')
 @allure.story('Issue NIA asset with sufficient sats which will create utxo and create asset')
-def test_issue_nia_with_sufficient_sats_and_no_utxo(wallets_and_operations: WalletTestSetup):
+def test_issue_nia_with_sufficient_sats_and_no_utxo(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test NIA asset issuance with sufficient sats and no utxo.
     """
@@ -60,7 +60,7 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo(wallets_and_operations: Wall
 
     with allure.step('Issue NIA asset with sufficient sats and no utxo'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo(
-            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT, wallet_variant_name,
         )
 
     with allure.step('Verify asset name'):
@@ -70,10 +70,11 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo(wallets_and_operations: Wall
         assert asset_name == NIA_ASSET_NAME
 
 
+@pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue NIA asset with sufficient sats')
 @allure.story('Issue NIA asset with sufficient sats which will create asset')
-def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletTestSetup):
+def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletTestSetup,wallet_variant_name):
     """
     Test NIA asset issuance with sufficient sats and utxo.
     """
@@ -90,7 +91,7 @@ def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
 
     with allure.step('Issue NIA asset with sufficient sats and utxo'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT,variant_name=wallet_variant_name
         )
 
     with allure.step('Verify asset name'):

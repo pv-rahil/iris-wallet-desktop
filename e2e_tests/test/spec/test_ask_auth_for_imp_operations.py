@@ -6,6 +6,7 @@ import re
 
 import allure
 import keyring as kr
+import pytest
 
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_SERVICE
@@ -23,6 +24,8 @@ ASSET_NAME_1 = 'Tether'
 ASSET_AMOUNT = '2000'
 ASSET_DESCRIPTION = 'CFA asset'
 ASSET_NAME_2 = 'Test asset'
+
+pytestmark = pytest.mark.skip_for_hardware_wallet
 
 
 @allure.feature('Ask authorization for important operations')
@@ -92,14 +95,14 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
 
 
 @allure.story('Issuing and sending the RGB assets')
-def test_ask_auth_for_imp_question_issue_nia_on(wallets_and_operations: WalletTestSetup):
+def test_ask_auth_for_imp_question_issue_nia_on(wallets_and_operations: WalletTestSetup,wallet_variant_name):
     """Issuing NIA asset with ask auth for important operations on"""
     with allure.step('Issuing NIA asset'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_1, ASSET_AMOUNT, is_native_auth_enabled=True,
+            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_1, ASSET_AMOUNT, is_native_auth_enabled=True,variant_name=wallet_variant_name
         )
 
 
@@ -145,14 +148,14 @@ def test_ask_auth_for_imp_question_send_nia_on(wallets_and_operations: WalletTes
 
 
 @allure.story('Issuing CFA asset')
-def test_ask_auth_for_imp_question_issue_cfa_on(wallets_and_operations: WalletTestSetup):
+def test_ask_auth_for_imp_question_issue_cfa_on(wallets_and_operations: WalletTestSetup,wallet_variant_name):
     """Issuing CFA asset with ask auth for important operations on"""
     with allure.step('Issuing CFA asset'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_NAME_1, ASSET_DESCRIPTION, ASSET_AMOUNT, is_native_auth_enabled=True,
+            FIRST_APPLICATION, ASSET_NAME_1, ASSET_DESCRIPTION, ASSET_AMOUNT, is_native_auth_enabled=True,variant_name=wallet_variant_name
         )
 
 
@@ -248,14 +251,14 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
 
 
 @allure.story('Issuing NIA asset')
-def test_ask_auth_for_imp_question_issue_nia_off(wallets_and_operations: WalletTestSetup):
+def test_ask_auth_for_imp_question_issue_nia_off(wallets_and_operations: WalletTestSetup,wallet_variant_name):
     """Issuing NIA asset with ask auth for important operations off"""
     with allure.step('Issuing NIA asset'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_2, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_2, ASSET_AMOUNT,variant_name=wallet_variant_name
         )
 
 
@@ -302,7 +305,7 @@ def test_ask_auth_for_imp_question_send_nia_off(wallets_and_operations: WalletTe
 
 
 @allure.story('Issuing CFA asset')
-def test_ask_auth_for_imp_question_issue_cfa_off(wallets_and_operations: WalletTestSetup):
+def test_ask_auth_for_imp_question_issue_cfa_off(wallets_and_operations: WalletTestSetup,wallet_variant_name):
     """Issuing NIA asset with ask auth for important operations off"""
     with allure.step('Issuing CFA asset'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
@@ -310,7 +313,7 @@ def test_ask_auth_for_imp_question_issue_cfa_off(wallets_and_operations: WalletT
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_NAME_2, ASSET_DESCRIPTION, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_NAME_2, ASSET_DESCRIPTION, ASSET_AMOUNT,variant_name=wallet_variant_name
         )
 
 

@@ -20,12 +20,21 @@ from PySide6.QtWidgets import QVBoxLayout
 from accessible_constant import KEYRING_CANCEL_BUTTON
 from accessible_constant import KEYRING_CONTINUE_BUTTON
 from accessible_constant import KEYRING_DIALOG_BOX
+from accessible_constant import KEYRING_FINGERPRINT_COPY_BUTTON
+from accessible_constant import KEYRING_FINGERPRINT_FRAME
+from accessible_constant import KEYRING_FINGERPRINT_VALUE_LABEL
 from accessible_constant import KEYRING_MNEMONIC_COPY_BUTTON
 from accessible_constant import KEYRING_MNEMONIC_VALUE_LABEL
 from accessible_constant import KEYRING_MNEMONICS_FRAME
 from accessible_constant import KEYRING_PASSWORD_COPY_BUTTON
 from accessible_constant import KEYRING_PASSWORD_FRAME
 from accessible_constant import KEYRING_PASSWORD_VALUE_LABEL
+from accessible_constant import KEYRING_XPUB_COLORED_COPY_BUTTON
+from accessible_constant import KEYRING_XPUB_COLORED_FRAME
+from accessible_constant import KEYRING_XPUB_COLORED_VALUE_LABEL
+from accessible_constant import KEYRING_XPUB_VANILLA_COPY_BUTTON
+from accessible_constant import KEYRING_XPUB_VANILLA_FRAME
+from accessible_constant import KEYRING_XPUB_VANILLA_VALUE_LABEL
 from accessible_constant import SAVE_CREDENTIALS_CHECK_BOX
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import KeyringDialogModel
@@ -137,6 +146,7 @@ class KeyringErrorDialog(QDialog):
 
         self.xpub_vanilla_frame = QFrame(self)
         self.xpub_vanilla_frame.setObjectName('xpub_vanilla_frame')
+        self.xpub_vanilla_frame.setAccessibleName(KEYRING_XPUB_VANILLA_FRAME)
         self.xpub_vanilla_frame.setFrameShape(QFrame.StyledPanel)
         self.xpub_vanilla_frame.setFrameShadow(QFrame.Raised)
         self.xpub_vanilla_layout = QVBoxLayout(self.xpub_vanilla_frame)
@@ -148,6 +158,8 @@ class KeyringErrorDialog(QDialog):
         self.xpub_vanilla_label.setObjectName('xpub_vanilla_label')
         self.xpub_vanilla_copy = QPushButton()
         self.xpub_vanilla_copy.setObjectName('xpub_vanilla_copy_button')
+        self.xpub_vanilla_copy.setAccessibleName(
+            KEYRING_XPUB_VANILLA_COPY_BUTTON)
         self.xpub_vanilla_copy.setIcon(icon)
         self.xpub_vanilla_copy.setMinimumSize(QSize(16, 16))
         self.xpub_vanilla_copy.setMaximumSize(QSize(16, 16))
@@ -156,12 +168,16 @@ class KeyringErrorDialog(QDialog):
         self.xpub_vanilla_header.addWidget(self.xpub_vanilla_copy)
         self.xpub_vanilla_value = QLabel()
         self.xpub_vanilla_value.setObjectName('xpub_vanilla_value_label')
+        self.xpub_vanilla_value.setAccessibleDescription(
+            KEYRING_XPUB_VANILLA_VALUE_LABEL,
+        )
         self.xpub_vanilla_value.setWordWrap(True)
         self.xpub_vanilla_layout.addLayout(self.xpub_vanilla_header)
         self.xpub_vanilla_layout.addWidget(self.xpub_vanilla_value)
 
         self.xpub_colored_frame = QFrame(self)
         self.xpub_colored_frame.setObjectName('xpub_colored_frame')
+        self.xpub_colored_frame.setAccessibleName(KEYRING_XPUB_COLORED_FRAME)
         self.xpub_colored_frame.setFrameShape(QFrame.StyledPanel)
         self.xpub_colored_frame.setFrameShadow(QFrame.Raised)
         self.xpub_colored_layout = QVBoxLayout(self.xpub_colored_frame)
@@ -173,6 +189,8 @@ class KeyringErrorDialog(QDialog):
         self.xpub_colored_label.setObjectName('xpub_colored_label')
         self.xpub_colored_copy = QPushButton()
         self.xpub_colored_copy.setObjectName('xpub_colored_copy_button')
+        self.xpub_colored_copy.setAccessibleName(
+            KEYRING_XPUB_COLORED_COPY_BUTTON)
         self.xpub_colored_copy.setIcon(icon)
         self.xpub_colored_copy.setMinimumSize(QSize(16, 16))
         self.xpub_colored_copy.setMaximumSize(QSize(16, 16))
@@ -181,12 +199,16 @@ class KeyringErrorDialog(QDialog):
         self.xpub_colored_header.addWidget(self.xpub_colored_copy)
         self.xpub_colored_value = QLabel()
         self.xpub_colored_value.setObjectName('xpub_colored_value_label')
+        self.xpub_colored_value.setAccessibleDescription(
+            KEYRING_XPUB_COLORED_VALUE_LABEL,
+        )
         self.xpub_colored_value.setWordWrap(True)
         self.xpub_colored_layout.addLayout(self.xpub_colored_header)
         self.xpub_colored_layout.addWidget(self.xpub_colored_value)
 
         self.fingerprint_frame = QFrame(self)
         self.fingerprint_frame.setObjectName('fingerprint_frame')
+        self.fingerprint_frame.setAccessibleName(KEYRING_FINGERPRINT_FRAME)
         self.fingerprint_frame.setFrameShape(QFrame.StyledPanel)
         self.fingerprint_frame.setFrameShadow(QFrame.Raised)
         self.fingerprint_layout = QVBoxLayout(self.fingerprint_frame)
@@ -198,6 +220,8 @@ class KeyringErrorDialog(QDialog):
         self.fingerprint_label.setObjectName('fingerprint_title_label')
         self.fingerprint_copy = QPushButton()
         self.fingerprint_copy.setObjectName('fingerprint_copy_button')
+        self.fingerprint_copy.setAccessibleName(
+            KEYRING_FINGERPRINT_COPY_BUTTON)
         self.fingerprint_copy.setIcon(icon)
         self.fingerprint_copy.setMinimumSize(QSize(16, 16))
         self.fingerprint_copy.setMaximumSize(QSize(16, 16))
@@ -206,6 +230,9 @@ class KeyringErrorDialog(QDialog):
         self.fingerprint_header.addWidget(self.fingerprint_copy)
         self.fingerprint_value = QLabel()
         self.fingerprint_value.setObjectName('fingerprint_value_label')
+        self.fingerprint_value.setAccessibleDescription(
+            KEYRING_FINGERPRINT_VALUE_LABEL,
+        )
         self.fingerprint_value.setWordWrap(True)
         self.fingerprint_layout.addLayout(self.fingerprint_header)
         self.fingerprint_layout.addWidget(self.fingerprint_value)

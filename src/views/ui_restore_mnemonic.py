@@ -22,8 +22,11 @@ from rgb_lib import Keys
 
 from accessible_constant import RESTORE_CONTINUE_BUTTON
 from accessible_constant import RESTORE_DIALOG_BOX
+from accessible_constant import RESTORE_FINGERPRINT_INPUT
 from accessible_constant import RESTORE_MNEMONIC_INPUT
 from accessible_constant import RESTORE_PASSWORD_INPUT
+from accessible_constant import RESTORE_XPUB_COLORED_INPUT
+from accessible_constant import RESTORE_XPUB_VANILLA_INPUT
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
@@ -93,14 +96,17 @@ class RestoreMnemonicWidget(QDialog):
         # Add hardware wallet fields
         self.xpub_vanilla_input = QLineEdit(self.mnemonic_frame)
         self.xpub_vanilla_input.setObjectName('xpub_vanilla_input')
+        self.xpub_vanilla_input.setAccessibleName(RESTORE_XPUB_VANILLA_INPUT)
         self.xpub_vanilla_input.setMinimumSize(QSize(295, 56))
         self.vertical_layout_frame.addWidget(self.xpub_vanilla_input)
         self.xpub_colored_input = QLineEdit(self.mnemonic_frame)
         self.xpub_colored_input.setObjectName('xpub_colored_input')
+        self.xpub_colored_input.setAccessibleName(RESTORE_XPUB_COLORED_INPUT)
         self.xpub_colored_input.setMinimumSize(QSize(295, 56))
         self.vertical_layout_frame.addWidget(self.xpub_colored_input)
         self.fingerprint_input = QLineEdit(self.mnemonic_frame)
         self.fingerprint_input.setObjectName('fingerprint_input')
+        self.fingerprint_input.setAccessibleName(RESTORE_FINGERPRINT_INPUT)
         self.fingerprint_input.setMinimumSize(QSize(295, 56))
         self.vertical_layout_frame.addWidget(self.fingerprint_input)
 

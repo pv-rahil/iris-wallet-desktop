@@ -70,6 +70,14 @@ def mine(amount):
     return execute_shell_command(command)
 
 
+def reset_regtest():
+    """
+    Reset the regtest
+    """
+    command = 'bash e2e_tests/regtest.sh start'
+    return execute_shell_command(command)
+
+
 def get_working_directory():
     """gets the working directory"""
 

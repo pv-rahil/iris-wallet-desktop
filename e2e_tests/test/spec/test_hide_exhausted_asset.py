@@ -5,6 +5,7 @@ from __future__ import annotations
 import allure
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -39,7 +40,7 @@ def test_hide_exhausted_asset_on(wallets_and_operations: WalletTestSetup, wallet
     with allure.step('Issuing a asset'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME, ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Generating a RGB invoice'):
@@ -59,9 +60,14 @@ def test_hide_exhausted_asset_on(wallets_and_operations: WalletTestSetup, wallet
             ASSET_NAME,
         )
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
-        wallets_and_operations.first_page_features.send_features.send(
-            FIRST_APPLICATION, invoice, ASSET_AMOUNT,
-        )
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.send_features.send(
+                FIRST_APPLICATION, invoice, ASSET_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+            )
+        else:
+            wallets_and_operations.first_page_features.send_features.send(
+                FIRST_APPLICATION, invoice, ASSET_AMOUNT,
+            )
 
         child_count = wallets_and_operations.first_page_objects.fungible_page_objects.get_child_count()
 

@@ -7,17 +7,21 @@ import pytest
 from dotenv import load_dotenv
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
-from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from e2e_tests.test.utilities.translation_utils import TranslationManager
+from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from src.utils.info_message import INFO_BACKUP_COMPLETED
 from src.utils.info_message import INFO_RESTORE_COMPLETED
 load_dotenv()
 MNEMONIC = None
 PASSWORD = None
+XPUB_VANILLA = None
+XPUB_COLORED = None
+MASTER_FINGERPRINT = None
 
 pytestmark = pytest.mark.order(1)
 
@@ -36,8 +40,7 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
     :param wallets_and_operations: WalletTestSetup instance
     :return: None
     """
-    global MNEMONIC
-    global PASSWORD
+    global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
     with allure.step('Create a wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
             application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
@@ -50,18 +53,29 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
     with allure.step('Copy mnemonic from setting page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-        wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
-        MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_vanilla_copy_button()
+            XPUB_VANILLA = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_colored_copy_button()
+            XPUB_COLORED = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_fingerprint_copy_button()
+            MASTER_FINGERPRINT = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
+            PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+        else:
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
+            MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
         PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
-    with allure.step('assert copied mnemonic with backup page mnemonic'):
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_show_mnemonic_button()
-        mnemonic = wallets_and_operations.first_page_objects.backup_page_objects.get_mnemonic()
-        assert mnemonic == MNEMONIC
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_close_button()
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+    if wallet_variant_name not in HARDWARE_WALLET_VARIANTS:
+        with allure.step('assert copied mnemonic with backup page mnemonic'):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
+            wallets_and_operations.first_page_objects.backup_page_objects.click_show_mnemonic_button()
+            mnemonic = wallets_and_operations.first_page_objects.backup_page_objects.get_mnemonic()
+            assert mnemonic == MNEMONIC
+            wallets_and_operations.first_page_objects.backup_page_objects.click_backup_close_button()
+    wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
 @allure.feature('Backup page')
@@ -107,7 +121,16 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wall
             application=FIRST_APPLICATION, variant=load_variant,
         )
         wallets_and_operations.first_page_objects.welcome_page_objects.click_restore_button()
-        wallets_and_operations.first_page_features.wallet_features.google_auth(MNEMONIC, PASSWORD)
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.wallet_features.google_auth(
+                xpub_vanilla=XPUB_VANILLA,
+                xpub_colored=XPUB_COLORED,
+                fingerprint=MASTER_FINGERPRINT,
+                password=PASSWORD,
+            )
+        else:
+            wallets_and_operations.first_page_features.wallet_features.google_auth(
+                MNEMONIC, PASSWORD)
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
@@ -141,7 +164,16 @@ def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup, walle
             application=FIRST_APPLICATION, variant=load_variant,
         )
         wallets_and_operations.first_page_objects.welcome_page_objects.click_restore_button()
-        wallets_and_operations.first_page_features.wallet_features.google_auth(MNEMONIC, PASSWORD)
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.wallet_features.google_auth(
+                xpub_vanilla=XPUB_VANILLA,
+                xpub_colored=XPUB_COLORED,
+                fingerprint=MASTER_FINGERPRINT,
+                password=PASSWORD,
+            )
+        else:
+            wallets_and_operations.first_page_features.wallet_features.google_auth(
+                MNEMONIC, PASSWORD)
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
@@ -154,6 +186,20 @@ def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup, walle
         wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-        wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
-            password=PASSWORD,
-        )
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
+                XPUB_VANILLA,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_xpub_colored_value(
+                XPUB_COLORED,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_fingerprint_value(
+                MASTER_FINGERPRINT,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+                password=PASSWORD,
+            )
+        else:
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+                password=PASSWORD,
+            )

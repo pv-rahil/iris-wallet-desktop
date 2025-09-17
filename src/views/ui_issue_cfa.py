@@ -500,7 +500,7 @@ class IssueCFAWidget(QWidget):
         """Centralized hardware wallet dialog update handler."""
         if message and dialog_type:
             self._view_model.utxo_creation_view_model.hw_dialog_update.disconnect()
-            cfa_hw_dialog = HardwareWalletOperationDialog(
+            cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
                 parent=self,
             )
             cfa_hw_dialog.update_dialog(message, dialog_type)
@@ -512,7 +512,7 @@ class IssueCFAWidget(QWidget):
         """Close the hardware wallet dialog after UTXO creation."""
         if status:
             self._view_model.utxo_creation_view_model.utxo_created.disconnect()
-            cfa_hw_dialog = HardwareWalletOperationDialog(
+            cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
                 parent=self,
             )
             if cfa_hw_dialog.isVisible():

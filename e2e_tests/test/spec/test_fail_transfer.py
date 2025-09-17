@@ -2,13 +2,18 @@
 """E2E test for fail transfer"""
 from __future__ import annotations
 
+import time
+
 import allure
 import pytest
 
+from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
 
 
@@ -30,17 +35,32 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_n
 
     with allure.step('Issuing an RGB asset'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Generating an invoice'):
         wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
             asset_name=NIA_ASSET_NAME,
         )
+        hardware_wallet = handle_hardware_wallet(
+            app_name=BITCOIN_LEDGER_APP_NAME)
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION)
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_receive_button()
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            LEDGER_EMULATOR_APP_NAME)
+        time.sleep(2)
+        for _ in range(2):
+            wallets_and_operations.first_page_objects.hw_emulator_page_objects.click_right_arrow_key(
+                4)
+            wallets_and_operations.first_page_objects.hw_emulator_page_objects.press_left_and_right()
+        wallets_and_operations.first_page_objects.hw_emulator_page_objects.click_right_arrow_key(
+            1)
+        wallets_and_operations.first_page_objects.hw_emulator_page_objects.press_left_and_right()
         wallets_and_operations.first_page_features.receive_features.receive(
             application=FIRST_APPLICATION,
         )
+        hardware_wallet.terminate()
 
     with allure.step('Failing the transfer'):
         wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(

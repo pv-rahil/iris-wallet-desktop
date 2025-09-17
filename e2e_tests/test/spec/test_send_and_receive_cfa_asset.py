@@ -5,6 +5,7 @@ from __future__ import annotations
 import allure
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
@@ -37,7 +38,7 @@ def test_send_cfa_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
 
     with allure.step('Issue CFA asset'):
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(
-            application=FIRST_APPLICATION, asset_description=ASSET_DESCRIPTION, asset_name=ASSET_NAME, asset_amount=ASSET_AMOUNT,
+            application=FIRST_APPLICATION, asset_description=ASSET_DESCRIPTION, asset_name=ASSET_NAME, asset_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Send CFA asset with expired invoice'):
@@ -64,7 +65,7 @@ def test_send_cfa_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
 
 @allure.feature('Automation of receive, send, and transaction status for CFA asset in iris wallet')
 @allure.story('End-to-End testing of receiving, sending, and verifying transaction status for CFA asset')
-def test_send_and_receive_cfa_asset_operation(wallets_and_operations: WalletTestSetup):
+def test_send_and_receive_cfa_asset_operation(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send and receive operation for CFA asset"""
 
     with allure.step('Generate invoice'):
@@ -80,9 +81,14 @@ def test_send_and_receive_cfa_asset_operation(wallets_and_operations: WalletTest
             ASSET_NAME,
         )
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
-        wallets_and_operations.first_page_features.send_features.send(
-            application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
-        )
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+            )
+        else:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+            )
 
     with allure.step('Verify transfer status'):
         wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(

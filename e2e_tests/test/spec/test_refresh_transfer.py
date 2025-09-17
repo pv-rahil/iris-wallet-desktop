@@ -5,6 +5,7 @@ from __future__ import annotations
 import allure
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -34,7 +35,7 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_varian
 
     with allure.step('Issue NIA asset for refresh transfer'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=ASSET_NAME, asset_amount=ASSET_AMOUNT,
+            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=ASSET_NAME, asset_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Generate invoice'):
@@ -52,10 +53,14 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_varian
         )
 
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
-
-        wallets_and_operations.first_page_features.send_features.send(
-            application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
-        )
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+            )
+        else:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+            )
 
     with allure.step('Refresh transfer'):
         wallets_and_operations.first_page_operations.do_focus_on_application(

@@ -188,7 +188,6 @@ class ReceiveRGBAssetWidget(QWidget):
     def handle_receive_cfa_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler for receive CFA."""
         if message and dialog_type:
-            self._view_model.utxo_creation_view_model.hw_dialog_update.disconnect()
             receive_cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
                 parent=self,
             )

@@ -5,6 +5,7 @@ from __future__ import annotations
 import allure
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
@@ -37,7 +38,7 @@ def test_send_nia_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
 
     with allure.step('Issue NIA asset'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=NIA_ASSET_NAME, asset_amount=ASSET_AMOUNT,
+            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=NIA_ASSET_NAME, asset_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Send NIA asset with expired invoice'):
@@ -62,12 +63,12 @@ def test_send_nia_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
 
 @allure.feature('Automation of receive, send, and transaction status for NIA asset in iris wallet')
 @allure.story('End-to-End testing of receiving, sending, and verifying transaction status for NIA asset')
-def test_send_and_receive_nia_asset_operation(wallets_and_operations: WalletTestSetup):
+def test_send_and_receive_nia_asset_operation(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send and receive operation for NIA asset"""
 
     with allure.step('Issue NIA asset'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=NIA_ASSET_NAME, asset_amount=ASSET_AMOUNT,
+            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=NIA_ASSET_NAME, asset_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Generate invoice'):
@@ -83,9 +84,14 @@ def test_send_and_receive_nia_asset_operation(wallets_and_operations: WalletTest
             NIA_ASSET_NAME,
         )
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
-        wallets_and_operations.first_page_features.send_features.send(
-            application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
-        )
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+            )
+        else:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+            )
 
     with allure.step('Verify transaction status'):
         wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(

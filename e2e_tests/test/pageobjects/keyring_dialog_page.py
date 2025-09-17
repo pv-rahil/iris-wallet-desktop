@@ -9,12 +9,21 @@ from dogtail.tree import root
 from accessible_constant import KEYRING_CANCEL_BUTTON
 from accessible_constant import KEYRING_CONTINUE_BUTTON
 from accessible_constant import KEYRING_DIALOG_BOX
+from accessible_constant import KEYRING_FINGERPRINT_COPY_BUTTON
+from accessible_constant import KEYRING_FINGERPRINT_FRAME
+from accessible_constant import KEYRING_FINGERPRINT_VALUE_LABEL
 from accessible_constant import KEYRING_MNEMONIC_COPY_BUTTON
 from accessible_constant import KEYRING_MNEMONIC_VALUE_LABEL
 from accessible_constant import KEYRING_MNEMONICS_FRAME
 from accessible_constant import KEYRING_PASSWORD_COPY_BUTTON
 from accessible_constant import KEYRING_PASSWORD_FRAME
 from accessible_constant import KEYRING_PASSWORD_VALUE_LABEL
+from accessible_constant import KEYRING_XPUB_COLORED_COPY_BUTTON
+from accessible_constant import KEYRING_XPUB_COLORED_FRAME
+from accessible_constant import KEYRING_XPUB_COLORED_VALUE_LABEL
+from accessible_constant import KEYRING_XPUB_VANILLA_COPY_BUTTON
+from accessible_constant import KEYRING_XPUB_VANILLA_FRAME
+from accessible_constant import KEYRING_XPUB_VANILLA_VALUE_LABEL
 from accessible_constant import SAVE_CREDENTIALS_CHECK_BOX
 from e2e_tests.test.utilities.base_operation import BaseOperations
 
@@ -53,6 +62,33 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         )
         self.keyring_password_value_label = lambda: self.keyring_dialog().child(
             roleName='label', name=KEYRING_PASSWORD_VALUE_LABEL,
+        )
+        self.keyring_xpub_vanilla_frame = lambda: self.keyring_dialog().child(
+            roleName='frame', name=KEYRING_XPUB_VANILLA_FRAME,
+        )
+        self.keyring_xpub_vanilla_copy_button = lambda: self.keyring_dialog().child(
+            roleName='push button', name=KEYRING_XPUB_VANILLA_COPY_BUTTON,
+        )
+        self.keyring_xpub_vanilla_value_label = lambda: self.keyring_dialog().child(
+            roleName='label', name=KEYRING_XPUB_VANILLA_VALUE_LABEL,
+        )
+        self.keyring_xpub_colored_frame = lambda: self.keyring_dialog().child(
+            roleName='frame', name=KEYRING_XPUB_COLORED_FRAME,
+        )
+        self.keyring_xpub_colored_copy_button = lambda: self.keyring_dialog().child(
+            roleName='push button', name=KEYRING_XPUB_COLORED_COPY_BUTTON,
+        )
+        self.keyring_xpub_colored_value_label = lambda: self.keyring_dialog().child(
+            roleName='label', name=KEYRING_XPUB_COLORED_VALUE_LABEL,
+        )
+        self.keyring_fingerprint_frame = lambda: self.keyring_dialog().child(
+            roleName='frame', name=KEYRING_FINGERPRINT_FRAME,
+        )
+        self.keyring_fingerprint_copy_button = lambda: self.keyring_dialog().child(
+            roleName='push button', name=KEYRING_FINGERPRINT_COPY_BUTTON,
+        )
+        self.keyring_fingerprint_value_label = lambda: self.keyring_dialog().child(
+            roleName='label', name=KEYRING_FINGERPRINT_VALUE_LABEL,
         )
         self.keyring_check_box = lambda: self.keyring_dialog().child(
             roleName='check box', name=SAVE_CREDENTIALS_CHECK_BOX,
@@ -108,6 +144,30 @@ class KeyringDialogBoxPageObjects(BaseOperations):
             str: The keyring password Value if it exists, None otherwise.
         """
         return self.do_get_text(self.keyring_password_value_label()) if self.do_is_displayed(self.keyring_password_value_label()) else None
+
+    def click_keyring_xpub_vanilla_copy_button(self):
+        """Clicks the vanilla xpub copy button."""
+        return self.do_click(self.keyring_xpub_vanilla_copy_button()) if self.do_is_displayed(self.keyring_xpub_vanilla_copy_button()) else None
+
+    def get_keyring_xpub_vanilla_value(self):
+        """Gets the vanilla xpub value text (truncated in UI)."""
+        return self.do_get_text(self.keyring_xpub_vanilla_value_label()) if self.do_is_displayed(self.keyring_xpub_vanilla_value_label()) else None
+
+    def click_keyring_xpub_colored_copy_button(self):
+        """Clicks the colored xpub copy button."""
+        return self.do_click(self.keyring_xpub_colored_copy_button()) if self.do_is_displayed(self.keyring_xpub_colored_copy_button()) else None
+
+    def get_keyring_xpub_colored_value(self):
+        """Gets the colored xpub value text (truncated in UI)."""
+        return self.do_get_text(self.keyring_xpub_colored_value_label()) if self.do_is_displayed(self.keyring_xpub_colored_value_label()) else None
+
+    def click_keyring_fingerprint_copy_button(self):
+        """Clicks the master fingerprint copy button."""
+        return self.do_click(self.keyring_fingerprint_copy_button()) if self.do_is_displayed(self.keyring_fingerprint_copy_button()) else None
+
+    def get_keyring_fingerprint_value(self):
+        """Gets the master fingerprint value text."""
+        return self.do_get_text(self.keyring_fingerprint_value_label()) if self.do_is_displayed(self.keyring_fingerprint_value_label()) else None
 
     def click_check_box(self):
         """

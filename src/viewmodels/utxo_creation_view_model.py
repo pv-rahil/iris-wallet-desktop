@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
-from hwilib.errors import DeviceConnectionError
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.colored_wallet import colored_wallet
@@ -22,7 +21,7 @@ from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import NO_OF_UTXO
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED, ERROR_SOMETHING_WENT_WRONG
+from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.logging import logger

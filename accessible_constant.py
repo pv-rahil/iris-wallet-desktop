@@ -15,6 +15,8 @@ SECOND_APPLICATION_PATH = f"{APP_NAME}_{APP2_NAME}"
 BITCOIN_LEDGER_APP_NAME = 'bitcoin_test-2.4.0'
 RGB_LEDGER_APP_NAME = 'rgb_test-2.1.0'
 LEDGER_EMULATOR_APP_NAME = 'Ledger Nano SP Emulator'
+HARDWARE_WALLET_VARIANTS = ['online_create_hardware',
+                            'offline_create_hardware', 'online_load_hardware', 'offline_load_hardware']
 
 # Term and condition page
 ACCEPT_BUTTON = 'accept_button'
@@ -188,11 +190,26 @@ KEYRING_CONTINUE_BUTTON = 'keyring_continue_button'
 KEYRING_CANCEL_BUTTON = 'keyring_cancel_button'
 SAVE_CREDENTIALS_CHECK_BOX = 'save_credentials_check_box'
 
+# Watch-only wallet (xpubs and master fingerprint)
+KEYRING_XPUB_VANILLA_FRAME = 'keyring_xpub_vanilla_frame'
+KEYRING_XPUB_VANILLA_COPY_BUTTON = 'keyring_xpub_vanilla_copy_button'
+KEYRING_XPUB_VANILLA_VALUE_LABEL = 'keyring_xpub_vanilla_value_label'
+KEYRING_XPUB_COLORED_FRAME = 'keyring_xpub_colored_frame'
+KEYRING_XPUB_COLORED_COPY_BUTTON = 'keyring_xpub_colored_copy_button'
+KEYRING_XPUB_COLORED_VALUE_LABEL = 'keyring_xpub_colored_value_label'
+KEYRING_FINGERPRINT_FRAME = 'keyring_fingerprint_frame'
+KEYRING_FINGERPRINT_COPY_BUTTON = 'keyring_fingerprint_copy_button'
+KEYRING_FINGERPRINT_VALUE_LABEL = 'keyring_fingerprint_value_label'
+
 # Restore dialog box
 RESTORE_DIALOG_BOX = 'restore_dialog_box'
 RESTORE_MNEMONIC_INPUT = 'restore_mnemonic_input'
 RESTORE_PASSWORD_INPUT = 'restore_password_input'
 RESTORE_CONTINUE_BUTTON = 'restore_continue_button'
+# Restore dialog box (watch-only/hardware fields)
+RESTORE_XPUB_VANILLA_INPUT = 'restore_xpub_vanilla_input'
+RESTORE_XPUB_COLORED_INPUT = 'restore_xpub_colored_input'
+RESTORE_FINGERPRINT_INPUT = 'restore_fingerprint_input'
 
 # Enter wallet password
 ENTER_WALLET_PASSWORD = 'enter_wallet_password'

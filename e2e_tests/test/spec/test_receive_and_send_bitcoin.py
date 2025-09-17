@@ -8,6 +8,7 @@ import re
 import allure
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
@@ -89,9 +90,14 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, walle
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        wallets_and_operations.first_page_features.send_features.send(
-            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT,
-        )
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, is_hardware_wallet=True, purpose='send_btc',
+            )
+        else:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT,
+            )
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
     with allure.step('Refresh bitcoin page'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -110,7 +116,7 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, walle
 
 @allure.feature('Iris wallet send operation with custom fee rate')
 @allure.story('Wallet send operation with custom fee rate')
-def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSetup):
+def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test sending bitcoin with a custom fee rate."""
 
     with allure.step('Fund first wallet'):
@@ -137,9 +143,14 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        description = wallets_and_operations.first_page_features.send_features.send_with_custom_fee_rate(
-            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE,
-        )
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            description = wallets_and_operations.first_page_features.send_features.send_with_custom_fee_rate(
+                application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE, is_hardware_wallet=True,
+            )
+        else:
+            description = wallets_and_operations.first_page_features.send_features.send_with_custom_fee_rate(
+                application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE,
+            )
 
     with allure.step('Refresh bitcoin page'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
