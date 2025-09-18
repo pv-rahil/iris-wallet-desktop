@@ -56,7 +56,7 @@ class IssueNia(MainPageObjects, BaseOperations):
             time.sleep(2)
             for _ in range(2):
                 self.hw_emulator_page_objects.click_right_arrow_key(4)
-            self.hw_emulator_page_objects.press_left_and_right()
+                self.hw_emulator_page_objects.press_left_and_right()
             self.hw_emulator_page_objects.click_right_arrow_key(1)
             self.hw_emulator_page_objects.press_left_and_right()
 

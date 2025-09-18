@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-
+from dogtail import config as dogtail_config
 
 @pytest.hookimpl
 def pytest_addoption(parser: pytest.Parser) -> None:

@@ -161,6 +161,9 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.restore_wallet_page_objects.restore_continue_button()):
                 self.restore_wallet_page_objects.click_continue_button()
 
+        if self.do_is_displayed(self.backup_page_objects.backup_window()):
+            self.backup_page_objects.click_backup_window()
+
         if self.do_is_displayed(self.backup_page_objects.email_input()):
             self.backup_page_objects.enter_email(
                 BACKUP_EMAIL_ID,

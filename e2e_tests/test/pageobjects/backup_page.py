@@ -6,8 +6,10 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import time
 
+from dogtail.rawinput import keyCombo
 import pyotp
 from dogtail.tree import root
 from dotenv import load_dotenv
@@ -51,26 +53,26 @@ class BackupPageObjects(BaseOperations):
         self.backup_window = lambda: root.child(
             roleName='filler', name=BACKUP_WINDOW,
         )
-        self.email_input = lambda: self.backup_window().child(
-            roleName='text', name='Email or phone',
+        self.email_input = lambda: self.perform_action_on_element(
+            role_name='text', name='Email or phone', application=self.backup_window()
         )
-        self.next_button = lambda: self.backup_window().child(
-            roleName='push button', name='Next',
+        self.next_button = lambda: self.perform_action_on_element(
+            role_name='push button', name='Next', application=self.backup_window()
         )
-        self.password_input = lambda: self.backup_window().child(
-            roleName='password text', name='Enter your password',
+        self.password_input = lambda: self.perform_action_on_element(
+            role_name='password text', name='Enter your password', application=self.backup_window()
         )
-        self.try_another_way_button = lambda: self.backup_window().child(
-            roleName='push button', name='Try another way',
+        self.try_another_way_button = lambda: self.perform_action_on_element(
+            role_name='push button', name='Try another way', application=self.backup_window()
         )
-        self.google_authenticator = lambda: self.backup_window().child(
-            roleName='link', name='Get a verification code from the Google Authenticator app',
+        self.google_authenticator = lambda: self.perform_action_on_element(
+            role_name='link', name='Get a verification code from the Google Authenticator app', application=self.backup_window()
         )
-        self.enter_code = lambda: self.backup_window().child(
-            roleName='text', name='Enter code',
+        self.enter_code = lambda: self.perform_action_on_element(
+            role_name='text', name='Enter code', application=self.backup_window()
         )
-        self.continue_button = lambda: self.backup_window().child(
-            roleName='push button', name='Continue',
+        self.continue_button = lambda: self.perform_action_on_element(
+            role_name='push button', name='Continue', application=self.backup_window()
         )
         self.backup_wallet_data_button = lambda: self.perform_action_on_element(
             role_name='push button', name=BACKUP_WALLET_DATA_BUTTON,
@@ -108,7 +110,11 @@ class BackupPageObjects(BaseOperations):
         Returns:
             The result of the click action.
         """
-        return self.do_click(self.backup_window()) if self.do_is_displayed(self.backup_window()) else None
+        if self.do_is_displayed(self.backup_window()):
+            self.do_click(self.backup_window())
+            keyCombo('<Alt>F10')
+            return True
+        return False
 
     def enter_email(self, email):
         """
@@ -150,9 +156,10 @@ class BackupPageObjects(BaseOperations):
         Returns:
             The result of the click action.
         """
-        self.try_another_way_button().grabFocus()
-        self.try_another_way_button().grabFocus()
-        return self.do_click(self.try_another_way_button()) if self.do_is_displayed(self.try_another_way_button()) else None
+        if self.do_is_displayed(self.try_another_way_button()):
+            self.try_another_way_button().grabFocus()
+            return self.do_click(self.try_another_way_button())
+        return None
 
     def click_google_authenticator_button(self):
         """
@@ -161,8 +168,10 @@ class BackupPageObjects(BaseOperations):
         Returns:
             The result of the click action.
         """
-        self.google_authenticator().grabFocus()
-        return self.do_click(self.google_authenticator()) if self.do_is_displayed(self.google_authenticator()) else None
+        if self.do_is_displayed(self.google_authenticator()):
+            self.google_authenticator().grabFocus()
+            return self.do_click(self.google_authenticator())
+        return None
 
     def enter_security_code(self, code):
         """
@@ -206,9 +215,10 @@ class BackupPageObjects(BaseOperations):
         Returns:
             The result of the click action.
         """
-        self.continue_button().grabFocus()
-        self.continue_button().grabFocus()
-        return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
+        if self.do_is_displayed(self.continue_button()):
+            self.continue_button().grabFocus()
+            return self.do_click(self.continue_button())
+        return None
 
     def click_backup_wallet_data_button(self):
         """

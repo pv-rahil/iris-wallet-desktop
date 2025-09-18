@@ -138,8 +138,21 @@ class BaseOperations:
         Returns:
             bool: True if the element is displayed, False otherwise.
         """
-        element.grabFocus()
-        return element and element.showing
+        # Be defensive: callers may pass False/None when element lookup fails
+        if not element:
+            return False
+
+        # Attempt to focus; ignore focus errors
+        try:
+            element.grabFocus()
+        except Exception:
+            pass
+
+        # Safely check visibility
+        try:
+            return bool(element.showing)
+        except Exception:
+            return False
 
     def do_is_enabled(self, element):
         """
@@ -151,7 +164,12 @@ class BaseOperations:
         Returns:
             bool: True if the element is enabled, False otherwise.
         """
-        return element.enabled
+        if not element:
+            return False
+        try:
+            return bool(element.enabled)
+        except Exception:
+            return False
 
     def click_copy_button(self):
         """
@@ -218,7 +236,7 @@ class BaseOperations:
         """
         return self.activate_window_by_name(application)
 
-    def perform_action_on_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5):
+    def perform_action_on_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5, application=None):
         """
         Retrieves the specified element with the given role and name or description, with retries.
 
@@ -228,25 +246,30 @@ class BaseOperations:
             description (str, optional): The description of the element. Defaults to None.
             timeout (int): The maximum time to wait for the element in seconds. Defaults to 30.
             retry_interval (float): The time to wait between retries in seconds. Defaults to 0.5.
+            application (str, optional): The name of the application to focus on. Defaults to None.
 
         Returns:
             Node: The retrieved element, or False if no matching element is found within the timeout.
         """
         start_time = time.time()
         elements = []
+        if application:
+            application = application
+        else:
+            application = self.application
 
         while time.time() - start_time < timeout:
             try:
                 # Try to find elements by name or description
                 if name:
                     elements = list(
-                        self.application.findChildren(
+                        application.findChildren(
                             lambda n: n.roleName == role_name and n.name == name,
                         ),
                     )
                 elif description:
                     elements = list(
-                        self.application.findChildren(
+                        application.findChildren(
                             lambda n: n.roleName == role_name and n.description == description,
                         ),
                     )

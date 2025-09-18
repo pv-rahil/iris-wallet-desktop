@@ -6,7 +6,7 @@ import allure
 import pytest
 from dotenv import load_dotenv
 
-from accessible_constant import FIRST_APPLICATION
+from accessible_constant import FIRST_APPLICATION, KEYRING_DIALOG_BOX
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
@@ -130,7 +130,9 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wall
             )
         else:
             wallets_and_operations.first_page_features.wallet_features.google_auth(
-                MNEMONIC, PASSWORD)
+                mnemonic=MNEMONIC,
+                password=PASSWORD,
+            )
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
@@ -141,11 +143,12 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wall
                 password=PASSWORD,
             )
             wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
-            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
-            test_environment.restart()
+    wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+    wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+    wallets_and_operations.first_page_operations.do_focus_on_application(KEYRING_DIALOG_BOX)
+    wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
+    wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
+    test_environment.restart()
 
 
 @allure.feature('Restore page')
@@ -173,7 +176,9 @@ def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup, walle
             )
         else:
             wallets_and_operations.first_page_features.wallet_features.google_auth(
-                MNEMONIC, PASSWORD)
+                mnemonic=MNEMONIC,
+                password=PASSWORD,
+            )
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()

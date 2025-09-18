@@ -47,9 +47,9 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_n
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION)
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_receive_button()
+        time.sleep(2)
         wallets_and_operations.first_page_operations.do_focus_on_application(
             LEDGER_EMULATOR_APP_NAME)
-        time.sleep(2)
         for _ in range(2):
             wallets_and_operations.first_page_objects.hw_emulator_page_objects.click_right_arrow_key(
                 4)
@@ -60,6 +60,7 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_n
         wallets_and_operations.first_page_features.receive_features.receive(
             application=FIRST_APPLICATION,
         )
+        time.sleep(2)
         hardware_wallet.terminate()
 
     with allure.step('Failing the transfer'):
