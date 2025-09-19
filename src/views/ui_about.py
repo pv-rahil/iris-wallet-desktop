@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
-from accessible_constant import DOWNLOAD_DEBUG_LOG
+from accessible_constant import COLORED_XPUB_COPY_BUTTON, DOWNLOAD_DEBUG_LOG, MASTER_FINGERPRINT_COPY_BUTTON, VANILLA_XPUB_COPY_BUTTON
 from accessible_constant import INDEXER_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import INDEXER_URL_COPY_BUTTON
 from accessible_constant import RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION
@@ -138,16 +138,25 @@ class AboutWidget(QWidget):
                 v_layout=self.about_vertical_layout,
                 copy_value=vanilla_xpub,
             )
+            self.vanilla_xpub_widget.copy_button.setAccessibleName(
+                VANILLA_XPUB_COPY_BUTTON,
+            )
             self.colored_xpub_widget = WalletInfoWidget(
                 translation_key='account_xpub_colored',
                 value=truncate_xpub(colored_xpub),
                 v_layout=self.about_vertical_layout,
                 copy_value=colored_xpub,
             )
+            self.colored_xpub_widget.copy_button.setAccessibleName(
+                COLORED_XPUB_COPY_BUTTON,
+            )
             self.master_fingerprint_widget = WalletInfoWidget(
                 translation_key='master_fingerprint',
                 value=master_fingerprint,
                 v_layout=self.about_vertical_layout,
+            )
+            self.master_fingerprint_widget.copy_button.setAccessibleName(
+                MASTER_FINGERPRINT_COPY_BUTTON,
             )
 
         self.privacy_policy_label = QLabel(self.about_widget)

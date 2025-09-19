@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
-from accessible_constant import ABOUT_BUTTON
+from accessible_constant import ABOUT_BUTTON, BROADCAST_TRANSACTION_BUTTON, SIGN_PSBT_BUTTON
 from accessible_constant import BACKUP_BUTTON
 from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
@@ -151,6 +151,7 @@ class Sidebar(QWidget):
         self.broadcast_transaction = SidebarButton(
             'Broadcast Transaction', ':/assets/channel_management.png', translation_key='broadcast_transaction',
         )
+        self.broadcast_transaction.setAccessibleName(BROADCAST_TRANSACTION_BUTTON)
         self.broadcast_transaction.setVisible(priv.can_broadcast_psbt)
         self.broadcast_transaction.setCheckable(False)
         self.grid_layout_sidebar.addWidget(
@@ -180,6 +181,7 @@ class Sidebar(QWidget):
             self.receive_asset_button, 0, Qt.AlignCenter,
         )
         self.sign_psbt = PrimaryButton()
+        self.sign_psbt.setAccessibleName(SIGN_PSBT_BUTTON)
         self.sign_psbt.setMinimumSize(QSize(335, 40))
         self.sign_psbt.setMaximumSize(QSize(335, 40))
         self.sign_psbt.setVisible(priv.can_sign_psbt)

@@ -25,7 +25,10 @@ ASSET_AMOUNT = '2000'
 ASSET_DESCRIPTION = 'CFA asset'
 ASSET_NAME_2 = 'Test asset'
 
-pytestmark = pytest.mark.skip_for_hardware_wallet
+pytestmark = [
+    pytest.mark.skip_for_hardware_wallet,
+    pytest.mark.skip_for_offline_wallet,
+]
 
 
 @allure.feature('Ask authorization for important operations')

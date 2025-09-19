@@ -14,10 +14,10 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
-from accessible_constant import CONFIRMAION_DIALOG
+from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import CONFIRMATION_DIALOG_CANCEL_BUTTON
 from accessible_constant import CONFIRMATION_DIALOG_CONTINUE_BUTTON
-from accessible_constant import SAVE_CREDENTIALS_CHECK_BOX
+from accessible_constant import CONFIRMATION_DIALOG_CHECKBOX
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton
@@ -41,7 +41,7 @@ class ConfirmationDialog(QDialog):
         self.check_box = None
 
         self.setObjectName('confirmation_dialog')
-        self.setAccessibleName(CONFIRMAION_DIALOG)
+        self.setAccessibleName(CONFIRMATION_DIALOG)
         self.resize(300, 200)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setModal(True)
@@ -88,7 +88,7 @@ class ConfirmationDialog(QDialog):
             # Confirmation checkbox (enables Continue when checked)
             self.check_box = QCheckBox(self)
             self.check_box.setObjectName('check_box')
-            self.check_box.setAccessibleName(SAVE_CREDENTIALS_CHECK_BOX)
+            self.check_box.setAccessibleName(CONFIRMATION_DIALOG_CHECKBOX)
             dialog_layout.addWidget(self.check_box)
         else:
             self.message_label = QLabel(message, self)

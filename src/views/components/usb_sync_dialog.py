@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
+from accessible_constant import USB_SYNC_DIALOG, USB_SYNC_DIALOG_CANCEL_BUTTON, USB_SYNC_DIALOG_CONTINUE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletEntryType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -60,6 +61,7 @@ class USBSyncDialog(QDialog):
         self.blur_effect.setBlurRadius(10)
 
         self.setObjectName('usb_sync_dialog')
+        self.setAccessibleName(USB_SYNC_DIALOG)
         self.setMinimumSize(QSize(400, 100))
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setModal(True)
@@ -108,11 +110,13 @@ class USBSyncDialog(QDialog):
         self.button_layout.setContentsMargins(6, 6, 6, 12)
 
         self.cancel_button = SecondaryButton()
+        self.cancel_button.setAccessibleName(USB_SYNC_DIALOG_CANCEL_BUTTON)
         self.cancel_button.setMinimumSize(QSize(180, 35))
         self.cancel_button.setMaximumSize(QSize(200, 35))
         self.button_layout.addWidget(self.cancel_button)
 
         self.continue_button = PrimaryButton()
+        self.continue_button.setAccessibleName(USB_SYNC_DIALOG_CONTINUE_BUTTON)
         self.continue_button.setMinimumSize(QSize(180, 35))
         self.continue_button.setMaximumSize(QSize(200, 35))
         self.button_layout.addWidget(self.continue_button)

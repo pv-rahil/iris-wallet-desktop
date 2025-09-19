@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from dogtail import config as dogtail_config
+
 
 @pytest.hookimpl
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -36,3 +36,13 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     ):
         pytest.skip(
             'Skipping test because it is not applicable in hardware wallet mode.')
+    if wallet_mode in ['offline_create_hardware' ,'offline_create_on_device'] and any(
+        True for _ in item.iter_markers('skip_for_offline_wallet')
+    ):
+        pytest.skip(
+            'Skipping test because it is not applicable in offline wallet mode.')
+    if wallet_mode == 'online_create_on_device' and any(
+        True for _ in item.iter_markers('skip_for_online_wallet')
+    ):
+        pytest.skip(
+            'Skipping test because it is not applicable in online wallet mode.')

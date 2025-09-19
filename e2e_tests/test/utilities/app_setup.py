@@ -22,12 +22,14 @@ from accessible_constant import FIRST_SERVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import SECOND_APPLICATION_PATH
 from accessible_constant import SECOND_SERVICE
+from accessible_constant import REQUIRE_USB_VARIANTS
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.translation_utils import TranslationManager
+from e2e_tests.test.utilities.fake_usb import FakeUSB
 from src.utils.constant import APP_NAME
 from src.utils.constant import IS_NATIVE_AUTHENTICATION_ENABLED
 from src.utils.constant import NATIVE_LOGIN_ENABLED
@@ -40,7 +42,7 @@ class TestEnvironment:
     A class representing the test environment for the iris wallet application.
     """
 
-    def __init__(self, multi_instance=True):
+    def __init__(self, multi_instance=True, wallet_variant_name: str | None = None):
         """
         Initializes the test environment.
 
@@ -52,6 +54,11 @@ class TestEnvironment:
         self.first_process = None
         self.second_process = None
         self.rgb_processes = []
+
+        # Determine whether to enable Fake USB environment based on variant
+        self.wallet_variant_name = (wallet_variant_name or '').lower()
+        # Lazy-create FakeUSB only when needed during launch
+        self.fake_usb = None
 
         self.reset_app_data()
         self.remove_keyring_entries(service=FIRST_SERVICE, app_name=APP1_NAME)
@@ -71,10 +78,15 @@ class TestEnvironment:
 
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
+        env = None
+        if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
+            if not self.fake_usb:
+                self.fake_usb = FakeUSB()
+            env = self.fake_usb.setup()
+
         self.first_process = subprocess.Popen(
-            [f"e2e_tests/applications/iris-wallet-vault_{APP1_NAME}-{
-                __version__
-            }-x86_64.AppImage"],
+            [f"e2e_tests/applications/iris-wallet-vault_{APP1_NAME}-{__version__}-x86_64.AppImage"],
+            env=env,
         )
         self.wait_for_application(FIRST_APPLICATION)
 
@@ -94,9 +106,8 @@ class TestEnvironment:
         self.first_page_operations = BaseOperations(self.first_application)
         if self.multi_instance:
             self.second_process = subprocess.Popen(
-                [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{
-                    __version__
-                }-x86_64.AppImage"],
+                [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{__version__}-x86_64.AppImage"],
+                env=env,
             )
             self.wait_for_application(SECOND_APPLICATION)
 
@@ -150,6 +161,9 @@ class TestEnvironment:
         if self.multi_instance:
             self.terminate_process(self.second_process)
 
+        if self.fake_usb:
+            self.fake_usb.cleanup()
+
     def restart(self, reset_data=True):
         """Restarts the application by terminating, optionally resetting data, and relaunching."""
         self.terminate()
@@ -175,7 +189,7 @@ class TestEnvironment:
 
 
 @pytest.fixture(scope='module')
-def test_environment(request):
+def test_environment(request, wallet_variant_name: str):
     """
     A fixture that sets up and tears down the test environment.
 
@@ -184,6 +198,7 @@ def test_environment(request):
     multi_instance = getattr(request, 'param', True)
     env = TestEnvironment(
         multi_instance=multi_instance,
+        wallet_variant_name=wallet_variant_name,
     )
     yield env
     env.terminate()

@@ -68,7 +68,7 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_n
             asset_name=NIA_ASSET_NAME,
         )
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_fail_transfer_button()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_confirmation_continue_button()
+        wallets_and_operations.first_page_objects.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
     toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
 

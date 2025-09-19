@@ -3,7 +3,7 @@ Fungible page objects class for interacting with the application.
 """
 from __future__ import annotations
 
-from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
+from accessible_constant import FUNGIBLES_SCROLL_WIDGETS, HEADER_PSBT_INFO_FRAME, HEADER_USB_SYNC_FRAME
 from accessible_constant import ISSUE_NIA_ASSET
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -34,6 +34,12 @@ class FungiblePageObjects(BaseOperations):
         )
         self.fungibles_scroll_area = lambda: self.perform_action_on_element(
             role_name='filler', name=FUNGIBLES_SCROLL_WIDGETS,
+        )
+        self.usb_sync_frame = lambda: self.perform_action_on_element(
+            role_name='panel', name=HEADER_USB_SYNC_FRAME,
+        )
+        self.psbt_info_frame = lambda: self.perform_action_on_element(
+            role_name='panel', name=HEADER_PSBT_INFO_FRAME,
         )
 
     def get_child_count(self):
@@ -94,3 +100,16 @@ class FungiblePageObjects(BaseOperations):
         """
         self.backup_frame().point()
         return self.backup_frame().description if self.do_is_displayed(self.backup_frame()) else None
+
+    def click_usb_sync_frame(self):
+        """
+        Click the USB sync frame if it is displayed.
+        """
+        return self.do_click(self.usb_sync_frame()) if self.do_is_displayed(self.usb_sync_frame()) else None
+
+    def click_psbt_info_frame(self):
+        """
+        Click the PSBT info frame if it is displayed.
+        """
+        return self.do_click(self.psbt_info_frame()) if self.do_is_displayed(self.psbt_info_frame()) else None
+        

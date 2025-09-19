@@ -32,48 +32,53 @@ class SendOperation(MainPageObjects, BaseOperations):
         :param receiver_invoice: The recipient's invoice.
         :param amount: The amount to send.
         """
-        if is_hardware_wallet and purpose:
-            if purpose == 'send_btc':
-                self.hardware_wallet = handle_hardware_wallet(
-                    app_name=BITCOIN_LEDGER_APP_NAME,
+        try:
+            if is_hardware_wallet and purpose:
+                if purpose == 'send_btc':
+                    self.hardware_wallet = handle_hardware_wallet(
+                        app_name=BITCOIN_LEDGER_APP_NAME,
+                    )
+                elif purpose == 'send_asset':
+                    self.hardware_wallet = handle_hardware_wallet(
+                        app_name=RGB_LEDGER_APP_NAME,
+                    )
+            self.do_focus_on_application(application)
+
+            if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+                self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+            self.do_focus_on_application(application)
+
+            if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
+                self.send_asset_page_objects.enter_asset_amount(amount)
+
+            if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+                self.send_asset_page_objects.click_send_button()
+
+            if is_native_auth_enabled is True:
+                self.enter_native_password()
+
+            if is_hardware_wallet:
+                self.do_focus_on_application(
+                    LEDGER_EMULATOR_APP_NAME,
                 )
-            elif purpose == 'send_asset':
-                self.hardware_wallet = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
-        self.do_focus_on_application(application)
-
-        if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
-            self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
-        self.do_focus_on_application(application)
-
-        if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
-            self.send_asset_page_objects.enter_asset_amount(amount)
-
-        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
-            self.send_asset_page_objects.click_send_button()
-
-        if is_native_auth_enabled is True:
-            self.enter_native_password()
-
-        if is_hardware_wallet:
-            self.do_focus_on_application(
-                LEDGER_EMULATOR_APP_NAME,
-            )
-            if purpose == 'send_btc':
-                time.sleep(2)
-                for _ in range(2):
-                    self.hw_emulator_page_objects.click_right_arrow_key(4)
+                if purpose == 'send_btc':
+                    time.sleep(2)
+                    for _ in range(2):
+                        self.hw_emulator_page_objects.click_right_arrow_key(4)
+                        self.hw_emulator_page_objects.press_left_and_right()
+                    self.hw_emulator_page_objects.click_right_arrow_key(1)
                     self.hw_emulator_page_objects.press_left_and_right()
-                self.hw_emulator_page_objects.click_right_arrow_key(1)
-                self.hw_emulator_page_objects.press_left_and_right()
 
-            elif purpose == 'send_asset':
+                elif purpose == 'send_asset':
+                    time.sleep(2)
+                    self.hw_emulator_page_objects.click_right_arrow_key(5)
+                    self.hw_emulator_page_objects.press_left_and_right()
                 time.sleep(2)
-                self.hw_emulator_page_objects.click_right_arrow_key(5)
-                self.hw_emulator_page_objects.press_left_and_right()
-            time.sleep(2)
-            self.hardware_wallet.terminate()
+        except Exception as e:
+            raise e
+        finally:
+            if self.hardware_wallet:
+                self.hardware_wallet.terminate()
 
     def send_with_no_fund(self, application, receiver_invoice, amount):
         """
@@ -100,47 +105,50 @@ class SendOperation(MainPageObjects, BaseOperations):
         """
         Sends assets using bitcoin with a custom fee rate.
         """
+        try:
 
-        description = None
+            description = None
 
-        self.do_focus_on_application(application)
-        if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
-            self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+            self.do_focus_on_application(application)
+            if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+                self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
 
-        if self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
-            self.send_asset_page_objects.enter_asset_amount(amount)
+            if self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
+                self.send_asset_page_objects.enter_asset_amount(amount)
 
-        if self.do_is_displayed(self.send_asset_page_objects.fee_rate_input()):
-            self.send_asset_page_objects.enter_fee_rate(fee_rate)
+            if self.do_is_displayed(self.send_asset_page_objects.fee_rate_input()):
+                self.send_asset_page_objects.enter_fee_rate(fee_rate)
 
-        if is_hardware_wallet:
-            self.hardware_wallet = handle_hardware_wallet(
-                app_name=BITCOIN_LEDGER_APP_NAME,
-            )
+            if is_hardware_wallet:
+                self.hardware_wallet = handle_hardware_wallet(
+                    app_name=BITCOIN_LEDGER_APP_NAME,
+                )
 
-        self.do_focus_on_application(application)
+            self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
-            self.send_asset_page_objects.click_send_button()
+            if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+                self.send_asset_page_objects.click_send_button()
 
-        if is_hardware_wallet:
-            self.do_focus_on_application(
-                LEDGER_EMULATOR_APP_NAME,
-            )
-            time.sleep(2)
-            for _ in range(2):
-                self.hw_emulator_page_objects.click_right_arrow_key(4)
+            if is_hardware_wallet:
+                self.do_focus_on_application(
+                    LEDGER_EMULATOR_APP_NAME,
+                )
+                time.sleep(2)
+                for _ in range(2):
+                    self.hw_emulator_page_objects.click_right_arrow_key(4)
+                    self.hw_emulator_page_objects.press_left_and_right()
+                self.hw_emulator_page_objects.click_right_arrow_key(1)
                 self.hw_emulator_page_objects.press_left_and_right()
-            self.hw_emulator_page_objects.click_right_arrow_key(1)
-            self.hw_emulator_page_objects.press_left_and_right()
 
-        self.do_focus_on_application(application)
-        if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-            self.toaster_page_objects.click_toaster_frame()
+            self.do_focus_on_application(application)
+            if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
+                self.toaster_page_objects.click_toaster_frame()
 
-        if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
-            description = self.toaster_page_objects.get_toaster_description()
-
-        if self.hardware_wallet:
-            self.hardware_wallet.terminate()
+            if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
+                description = self.toaster_page_objects.get_toaster_description()
+        except Exception as e:
+            raise e
+        finally:
+            if self.hardware_wallet:
+                self.hardware_wallet.terminate()
         return description

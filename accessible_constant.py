@@ -17,6 +17,9 @@ RGB_LEDGER_APP_NAME = 'rgb_test-2.1.0'
 LEDGER_EMULATOR_APP_NAME = 'Ledger Nano SP Emulator'
 HARDWARE_WALLET_VARIANTS = ['online_create_hardware',
                             'offline_create_hardware', 'online_load_hardware', 'offline_load_hardware']
+REQUIRE_USB_VARIANTS = ['offline_load_hardware', 'offline_create_hardware','offline_create_on_device',
+                            'offline_load_on_device','online_watch_only']
+
 
 # Term and condition page
 ACCEPT_BUTTON = 'accept_button'
@@ -93,6 +96,8 @@ FAUCET_BUTTON = 'faucet_button'
 SIDEBAR_RECEIVE_ASSET_BUTTON = 'sidebar_receive_asset_button'
 VIEW_UNSPENT_LIST_BUTTON = 'view_unspent_list_button'
 SETTINGS_BUTTON = 'settings_button'
+BROADCAST_TRANSACTION_BUTTON = 'broadcast_transaction_button'
+SIGN_PSBT_BUTTON = 'sign_psbt_button'
 
 # Issue CFA asset page
 ISSUE_CFA_ASSET = 'issue_cfa_asset'
@@ -116,9 +121,12 @@ ASSET_RECEIVE_BUTTON = 'asset_receive_button'
 ASSET_AMOUNT_VALIDATION = 'asset_amount_validation'
 ASSET_ID_COPY_BUTTON = 'asset_id_copy_button'
 TRANSACTION_DETAIL_CLOSE_BUTTON = 'transaction_detail_close_button'
+
+# Confirmation dialog page
 CONFIRMATION_DIALOG_CONTINUE_BUTTON = 'confirmation_dialog_continue_button'
 CONFIRMATION_DIALOG_CANCEL_BUTTON = 'confirmation_dialog_cancel_button'
-CONFIRMAION_DIALOG = 'confirmation_dialog'
+CONFIRMATION_DIALOG = 'confirmation_dialog'
+CONFIRMATION_DIALOG_CHECKBOX = 'confirmation_dialog_checkbox'
 
 # Asset transaction details page
 AMOUNT_VALUE = 'amount_value'
@@ -147,7 +155,17 @@ INDEXER_URL_ACCESSIBLE_DESCRIPTION = 'indexer_url'
 RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION = 'rgb_proxy_url'
 INDEXER_URL_COPY_BUTTON = 'indexer_url_copy_button'
 RGB_PROXY_URL_COPY_BUTTON = 'rgb_proxy_url_copy_button'
+VANILLA_XPUB_COPY_BUTTON = 'vanilla_xpub_copy_button'
+COLORED_XPUB_COPY_BUTTON = 'colored_xpub_copy_button'
+MASTER_FINGERPRINT_COPY_BUTTON = 'master_fingerprint_copy_button'
 DOWNLOAD_DEBUG_LOG = 'download_debug_log'
+
+# Broadcast/Sign PSBT page
+BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON = 'broadcast_transaction_page_close_button'
+BROADCAST_TRANSACTION_PSBT_INPUT = 'broadcast_transaction_psbt_input'
+BROADCAST_TRANSACTION_METHOD_SELECTOR = 'broadcast_transaction_method_selector'
+BROADCAST_TRANSACTION_PAGE_BUTTON = 'broadcast_transaction_page_button'
+SIGN_PSBT_PAGE_BUTTON = 'sign_psbt_page_button'
 
 # Settings page
 ASK_AUTH_FOR_IMPORTANT_QUESTION = 'auth_for_imp_question'
@@ -161,8 +179,8 @@ SPECIFY_RGB_PROXY_URL = 'specify_rgb_proxy_url'
 INPUT_BOX_NAME = 'input_box'
 KEYRING_TOGGLE_BUTTON = 'keyring_toggle_button'
 ASK_AUTH_FOR_APP_LOGIN_TOGGLE = 'ask_auth_for_app_login_toggle'
-ASK_AUTH_FOR_IMPORTANT_QUESTION_TOGGLE = ''
-HIDE_EXHAUSTED_ASSETS_TOGGLE = ''
+HIDE_EXHAUSTED_ASSETS_TOGGLE = 'hide_exhausted_assets_toggle'
+ASK_AUTH_FOR_IMPORTANT_QUESTION_TOGGLE = 'ask_auth_for_important_question_toggle'
 
 # View unspent list page
 UNSPENT_UTXO_ASSET_ID = 'unspent_utxo_asset_id'
@@ -217,10 +235,8 @@ LOGIN_BUTTON = 'login_button'
 
 # Header frame
 NETWORK_AND_BACKUP_FRAME = 'network_and_backup_frame'
-KEYRING_TOGGLE_BUTTON = 'keyring_toggle_button'
-HIDE_EXHAUSTED_ASSETS_TOGGLE = 'hide_exhausted_assets_toggle'
-ASK_AUTH_FOR_IMPORTANT_QUESTION_TOGGLE = 'ask_auth_for_important_question_toggle'
-ASK_AUTH_FOR_APP_LOGIN_TOGGLE = 'ask_auth_for_app_login_toggle'
+HEADER_USB_SYNC_FRAME = 'header_usb_sync_frame'
+HEADER_PSBT_INFO_FRAME = 'header_psbt_info_frame'
 
 
 # Fungibles page
@@ -244,3 +260,17 @@ HARDWARE_WALLET_CONNECT_PAGE = 'hardware_wallet_connect_page'
 HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION = 'hardware_wallet_connect_page_ledger_option'
 HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION = 'hardware_wallet_connect_page_trezor_option'
 HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON = 'hardware_wallet_connect_page_continue_button'
+
+# Watch only dialog box
+WATCH_ONLY_DIALOG = 'watch_only_dialog'
+WATCH_ONLY_XPUB_VANILLA = 'watch_only_xpub_vanilla'
+WATCH_ONLY_XPUB_COLORED = 'watch_only_xpub_colored'
+WATCH_ONLY_MASTER_FINGERPRINT = 'watch_only_master_fingerprint'
+WATCH_ONLY_CHECKBOX = 'watch_only_checkbox'
+WATCH_ONLY_CANCEL_BUTTON = 'watch_only_cancel_button'
+WATCH_ONLY_CONTINUE_BUTTON = 'watch_only_continue_button'
+
+# USB sync dialog
+USB_SYNC_DIALOG = 'usb_sync_dialog'
+USB_SYNC_DIALOG_CANCEL_BUTTON = 'usb_sync_dialog_cancel_button'
+USB_SYNC_DIALOG_CONTINUE_BUTTON = 'usb_sync_dialog_continue_button'

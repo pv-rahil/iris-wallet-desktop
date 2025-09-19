@@ -30,57 +30,61 @@ class IssueCfa(MainPageObjects, BaseOperations):
         """
         Issue CFA asset with sufficient sats and utxo.
         """
-        if variant_name in HARDWARE_WALLET_VARIANTS:
-            self.hardware_wallet = handle_hardware_wallet(
-                app_name=BITCOIN_LEDGER_APP_NAME)
-        self.do_focus_on_application(application)
-        copy_cfa_image_to_home_directory(os.getcwd())
+        try:
+            if variant_name in HARDWARE_WALLET_VARIANTS:
+                self.hardware_wallet = handle_hardware_wallet(
+                    app_name=BITCOIN_LEDGER_APP_NAME)
+            self.do_focus_on_application(application)
+            copy_cfa_image_to_home_directory(os.getcwd())
 
-        if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
-            self.sidebar_page_objects.click_collectibles_button()
+            if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
+                self.sidebar_page_objects.click_collectibles_button()
 
-        if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
-            self.collectible_page_objects.click_issue_cfa_button()
+            if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
+                self.collectible_page_objects.click_issue_cfa_button()
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
-            self.issue_cfa_page_objects.enter_asset_name(asset_name)
+            if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
+                self.issue_cfa_page_objects.enter_asset_name(asset_name)
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
-            self.issue_cfa_page_objects.enter_asset_description(
-                asset_description,
-            )
+            if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
+                self.issue_cfa_page_objects.enter_asset_description(
+                    asset_description,
+                )
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
-            self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
+            if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
+                self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
-            self.issue_cfa_page_objects.click_upload_file_button()
+            if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
+                self.issue_cfa_page_objects.click_upload_file_button()
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
-            self.issue_cfa_page_objects.click_cfa_asset_media()
+            if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
+                self.issue_cfa_page_objects.click_cfa_asset_media()
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
-            self.issue_cfa_page_objects.click_issue_cfa_button()
+            if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
+                self.issue_cfa_page_objects.click_issue_cfa_button()
 
-        if self.hardware_wallet:
-            self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
-            time.sleep(2)
-            for _ in range(2):
-                self.hw_emulator_page_objects.click_right_arrow_key(4)
+            if self.hardware_wallet:
+                self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
+                time.sleep(2)
+                for _ in range(2):
+                    self.hw_emulator_page_objects.click_right_arrow_key(4)
+                    self.hw_emulator_page_objects.press_left_and_right()
+                self.hw_emulator_page_objects.click_right_arrow_key(1)
                 self.hw_emulator_page_objects.press_left_and_right()
-            self.hw_emulator_page_objects.click_right_arrow_key(1)
-            self.hw_emulator_page_objects.press_left_and_right()
 
-        self.do_focus_on_application(application)
+            self.do_focus_on_application(application)
 
-        if is_native_auth_enabled is True:
-            self.enter_native_password()
+            if is_native_auth_enabled is True:
+                self.enter_native_password()
 
-        if self.do_is_displayed(self.success_page_objects.home_button()):
-            self.success_page_objects.click_home_button()
+            if self.do_is_displayed(self.success_page_objects.home_button()):
+                self.success_page_objects.click_home_button()
 
-        if self.hardware_wallet:
-            self.hardware_wallet.terminate()
+        except Exception as e:
+            raise e
+        finally:
+            if self.hardware_wallet:
+                self.hardware_wallet.terminate()
 
     def issue_cfa_asset_without_sat(self, application, asset_name, asset_description, asset_amount):
         """
@@ -134,54 +138,57 @@ class IssueCfa(MainPageObjects, BaseOperations):
         """
         Issue CFA asset with sufficient sats and no utxo.
         """
-        if variant_name in HARDWARE_WALLET_VARIANTS:
-            self.hardware_wallet = handle_hardware_wallet(
-                app_name=BITCOIN_LEDGER_APP_NAME)
-        self.do_focus_on_application(application)
-        copy_cfa_image_to_home_directory(os.getcwd())
+        try:
+            if variant_name in HARDWARE_WALLET_VARIANTS:
+                self.hardware_wallet = handle_hardware_wallet(
+                    app_name=BITCOIN_LEDGER_APP_NAME)
+            self.do_focus_on_application(application)
+            copy_cfa_image_to_home_directory(os.getcwd())
 
-        if self.do_is_displayed(self.sidebar_page_objects.view_unspents_button()):
-            self.sidebar_page_objects.click_view_unspents_button()
+            if self.do_is_displayed(self.sidebar_page_objects.view_unspents_button()):
+                self.sidebar_page_objects.click_view_unspents_button()
 
-        if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
-            self.sidebar_page_objects.click_collectibles_button()
+            if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
+                self.sidebar_page_objects.click_collectibles_button()
 
-        if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
-            self.collectible_page_objects.click_issue_cfa_button()
+            if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
+                self.collectible_page_objects.click_issue_cfa_button()
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
-            self.issue_cfa_page_objects.enter_asset_name(asset_name)
+            if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
+                self.issue_cfa_page_objects.enter_asset_name(asset_name)
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
-            self.issue_cfa_page_objects.enter_asset_description(
-                asset_description,
-            )
+            if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
+                self.issue_cfa_page_objects.enter_asset_description(
+                    asset_description,
+                )
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
-            self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
+            if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
+                self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
-            self.issue_cfa_page_objects.click_upload_file_button()
+            if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
+                self.issue_cfa_page_objects.click_upload_file_button()
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
-            self.issue_cfa_page_objects.click_cfa_asset_media()
+            if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
+                self.issue_cfa_page_objects.click_cfa_asset_media()
 
-        if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
-            self.issue_cfa_page_objects.click_issue_cfa_button()
+            if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
+                self.issue_cfa_page_objects.click_issue_cfa_button()
 
-        if self.hardware_wallet:
-            self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
-            time.sleep(2)
-            for _ in range(2):
-                self.hw_emulator_page_objects.click_right_arrow_key(4)
+            if self.hardware_wallet:
+                self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
+                time.sleep(2)
+                for _ in range(2):
+                    self.hw_emulator_page_objects.click_right_arrow_key(4)
+                    self.hw_emulator_page_objects.press_left_and_right()
+                self.hw_emulator_page_objects.click_right_arrow_key(1)
                 self.hw_emulator_page_objects.press_left_and_right()
-            self.hw_emulator_page_objects.click_right_arrow_key(1)
-            self.hw_emulator_page_objects.press_left_and_right()
 
-        self.do_focus_on_application(application)
+            self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.success_page_objects.home_button()):
-            self.success_page_objects.click_home_button()
-
-        if self.hardware_wallet:
-            self.hardware_wallet.terminate()
+            if self.do_is_displayed(self.success_page_objects.home_button()):
+                self.success_page_objects.click_home_button()
+        except Exception as e:
+            raise e
+        finally:
+            if self.hardware_wallet:
+                self.hardware_wallet.terminate()

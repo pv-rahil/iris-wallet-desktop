@@ -25,6 +25,7 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
+from accessible_constant import BROADCAST_TRANSACTION_METHOD_SELECTOR, BROADCAST_TRANSACTION_PAGE_BUTTON, BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON, BROADCAST_TRANSACTION_PSBT_INPUT, SIGN_PSBT_PAGE_BUTTON
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import ToastPreset
@@ -108,6 +109,7 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_transaction_widget,
         )
         self.close_btn_broadcast_transaction_page.setObjectName('close_btn')
+        self.close_btn_broadcast_transaction_page.setAccessibleName(BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON)
         self.close_btn_broadcast_transaction_page.setMinimumSize(QSize(24, 24))
         self.close_btn_broadcast_transaction_page.setMaximumSize(QSize(50, 65))
         self.close_btn_broadcast_transaction_page.setAutoFillBackground(False)
@@ -159,6 +161,7 @@ class BroadcastTransactionWidget(QWidget):
         self.method_selector = QComboBox(self.broadcast_transaction_widget)
         # Start hidden; loaders manage visibility and contents
         self.method_selector.setVisible(False)
+        self.method_selector.setAccessibleName(BROADCAST_TRANSACTION_METHOD_SELECTOR)
         self.method_selector.setFixedWidth(300)
         self.method_selector.setFixedHeight(40)
         self.horizontal_layout_2.addWidget(self.method_selector_label)
@@ -173,6 +176,7 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_input.setObjectName(
             'broadcast_transaction_input',
         )
+        self.broadcast_transaction_input.setAccessibleName(BROADCAST_TRANSACTION_PSBT_INPUT)
         self.broadcast_transaction_input.setMinimumSize(QSize(550, 50))
         self.broadcast_transaction_input.setMaximumSize(QSize(550, 155))
         self.broadcast_transaction_input.setStyleSheet(
@@ -209,8 +213,10 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_button.setMinimumSize(QSize(0, 40))
         if self.priv.can_broadcast_psbt:
             self.broadcast_button.setMaximumSize(QSize(270, 16777215))
+            self.broadcast_button.setAccessibleName(BROADCAST_TRANSACTION_PAGE_BUTTON)
         else:
             self.broadcast_button.setMaximumSize(QSize(170, 16777215))
+            self.broadcast_button.setAccessibleName(SIGN_PSBT_PAGE_BUTTON)
         self.broadcast_button_horizontal_layout.addWidget(
             self.broadcast_button,
         )

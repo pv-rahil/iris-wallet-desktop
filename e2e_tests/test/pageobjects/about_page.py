@@ -5,7 +5,7 @@ from __future__ import annotations
 from dogtail.rawinput import keyCombo
 from dogtail.tree import root
 
-from accessible_constant import DOWNLOAD_DEBUG_LOG
+from accessible_constant import COLORED_XPUB_COPY_BUTTON, DOWNLOAD_DEBUG_LOG, MASTER_FINGERPRINT_COPY_BUTTON, VANILLA_XPUB_COPY_BUTTON
 from accessible_constant import FILE_CHOOSER
 from accessible_constant import INDEXER_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import INDEXER_URL_COPY_BUTTON
@@ -32,6 +32,15 @@ class AboutPageObjects(BaseOperations):
         self.rgb_proxy_url_copy_button = lambda: self.perform_action_on_element(
             role_name='push button', name=RGB_PROXY_URL_COPY_BUTTON,
         )
+        self.vanilla_xpub_copy_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=VANILLA_XPUB_COPY_BUTTON,
+        )
+        self.colored_xpub_copy_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=COLORED_XPUB_COPY_BUTTON,
+        )
+        self.master_fingerprint_copy_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=MASTER_FINGERPRINT_COPY_BUTTON,
+        )
         self.download_debug_log = lambda: self.perform_action_on_element(
             role_name='push button', name=DOWNLOAD_DEBUG_LOG,
         )
@@ -54,6 +63,18 @@ class AboutPageObjects(BaseOperations):
     def click_rgb_proxy_url_copy_button(self):
         """Clicks on RGB proxy url copy button"""
         return self.do_click(self.rgb_proxy_url_copy_button()) if self.do_is_displayed(self.rgb_proxy_url_copy_button()) else None
+
+    def click_vanilla_xpub_copy_button(self):
+        """Clicks on vanilla xpub copy button"""
+        return self.do_click(self.vanilla_xpub_copy_button()) if self.do_is_displayed(self.vanilla_xpub_copy_button()) else None
+
+    def click_colored_xpub_copy_button(self):
+        """Clicks on colored xpub copy button"""
+        return self.do_click(self.colored_xpub_copy_button()) if self.do_is_displayed(self.colored_xpub_copy_button()) else None
+
+    def click_master_fingerprint_copy_button(self):
+        """Clicks on master fingerprint copy button"""
+        return self.do_click(self.master_fingerprint_copy_button()) if self.do_is_displayed(self.master_fingerprint_copy_button()) else None
 
     def click_download_debug_log(self):
         """Clicks on the download debug log button"""

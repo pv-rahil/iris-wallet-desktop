@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 
-from accessible_constant import NETWORK_AND_BACKUP_FRAME
+from accessible_constant import HEADER_USB_SYNC_FRAME, NETWORK_AND_BACKUP_FRAME, HEADER_PSBT_INFO_FRAME
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import LoaderDisplayModel
@@ -159,7 +159,7 @@ class HeaderFrame(QFrame, QObject):
         # USB sync frame
         self.usb_sync_frame = QFrame(self)
         self.usb_sync_frame.setObjectName('usb_sync_frame')
-        self.usb_sync_frame.setAccessibleName('usb_sync_frame')
+        self.usb_sync_frame.setAccessibleName(HEADER_USB_SYNC_FRAME)
         self.usb_sync_frame.setMinimumSize(QSize(150, 42))
         self.usb_sync_frame.setFrameShape(QFrame.StyledPanel)
         self.usb_sync_frame.setFrameShadow(QFrame.Raised)
@@ -217,6 +217,7 @@ class HeaderFrame(QFrame, QObject):
 
         # PSBT notice frame (hidden by default). Shown after USB sync based on wallet type
         self.psbt_info_frame = QFrame(self)
+        self.psbt_info_frame.setAccessibleName(HEADER_PSBT_INFO_FRAME)
         self.psbt_info_frame.setObjectName('psbt_info_frame')
         self.psbt_info_frame.setMinimumSize(QSize(180, 42))
         self.psbt_info_frame.setFrameShape(QFrame.StyledPanel)

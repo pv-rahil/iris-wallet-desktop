@@ -3,7 +3,7 @@
 Contains methods for interacting with the sidebar page elements."""
 from __future__ import annotations
 
-from accessible_constant import ABOUT_BUTTON
+from accessible_constant import ABOUT_BUTTON, BROADCAST_TRANSACTION_BUTTON, SIGN_PSBT_BUTTON
 from accessible_constant import BACKUP_BUTTON
 from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
@@ -49,6 +49,12 @@ class SidebarPageObjects(BaseOperations):
         self.receive_asset_button = lambda: self.perform_action_on_element(
             role_name='push button', name=SIDEBAR_RECEIVE_ASSET_BUTTON,
         )
+        self.broadcast_transaction_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=BROADCAST_TRANSACTION_BUTTON,
+        )
+        self.sign_psbt_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=SIGN_PSBT_BUTTON,
+        )
 
     def click_fungibles_button(self):
         """Clicks the fungibles button if it is displayed."""
@@ -85,3 +91,11 @@ class SidebarPageObjects(BaseOperations):
     def click_receive_asset_button(self):
         """Clicks the receive asset button if it is displayed."""
         return self.do_click(self.receive_asset_button()) if self.do_is_displayed(self.receive_asset_button()) else None
+
+    def click_broadcast_transaction_button(self):
+        """Clicks the broadcast transaction button if it is displayed."""
+        return self.do_click(self.broadcast_transaction_button()) if self.do_is_displayed(self.broadcast_transaction_button()) else None
+
+    def click_sign_psbt_button(self):
+        """Clicks the sign psbt button if it is displayed."""
+        return self.do_click(self.sign_psbt_button()) if self.do_is_displayed(self.sign_psbt_button()) else None

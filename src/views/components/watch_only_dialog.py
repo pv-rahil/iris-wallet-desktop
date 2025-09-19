@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QLineEdit
 from PySide6.QtWidgets import QVBoxLayout
 
+from accessible_constant import WATCH_ONLY_CANCEL_BUTTON, WATCH_ONLY_CHECKBOX, WATCH_ONLY_CONTINUE_BUTTON, WATCH_ONLY_DIALOG, WATCH_ONLY_MASTER_FINGERPRINT, WATCH_ONLY_XPUB_COLORED, WATCH_ONLY_XPUB_VANILLA
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -39,6 +40,7 @@ class WatchOnlyDialog(QDialog):
         super().__init__(parent)
         self.setObjectName('watch_only_xpub_dialog')
         self.setModal(True)
+        self.setAccessibleName(WATCH_ONLY_DIALOG)
         self.setWindowFlags(
             Qt.WindowType.Dialog |
             Qt.WindowType.FramelessWindowHint,
@@ -72,6 +74,7 @@ class WatchOnlyDialog(QDialog):
         self.xpub_vanilla_label = QLabel()
         self.xpub_vanilla_label.setObjectName('xpub_vanilla_label')
         self.xpub_vanilla_input = QLineEdit()
+        self.xpub_vanilla_input.setAccessibleName(WATCH_ONLY_XPUB_VANILLA)
         self.input_layout.addWidget(self.xpub_vanilla_label)
         self.input_layout.addWidget(self.xpub_vanilla_input)
 
@@ -79,6 +82,7 @@ class WatchOnlyDialog(QDialog):
         self.xpub_colored_label = QLabel()
         self.xpub_colored_label.setObjectName('xpub_colored_label')
         self.xpub_colored_input = QLineEdit()
+        self.xpub_colored_input.setAccessibleName(WATCH_ONLY_XPUB_COLORED)
         self.input_layout.addWidget(self.xpub_colored_label)
         self.input_layout.addWidget(self.xpub_colored_input)
 
@@ -86,6 +90,7 @@ class WatchOnlyDialog(QDialog):
         self.fingerprint_label = QLabel()
         self.fingerprint_label.setObjectName('fingerprint_label')
         self.fingerprint_input = QLineEdit()
+        self.fingerprint_input.setAccessibleName(WATCH_ONLY_MASTER_FINGERPRINT)
         self.input_layout.addWidget(self.fingerprint_label)
         self.input_layout.addWidget(self.fingerprint_input)
 
@@ -100,17 +105,20 @@ class WatchOnlyDialog(QDialog):
         # Checkbox
         self.check_box = QCheckBox()
         self.check_box.setCursor(QCursor(Qt.PointingHandCursor))
+        self.check_box.setAccessibleName(WATCH_ONLY_CHECKBOX)
         self.dialog_box_vertical_layout.addWidget(self.check_box)
 
         # Buttons
         self.button_layout = QHBoxLayout()
         self.button_layout.setContentsMargins(0, 15, 0, 0)
         self.cancel_btn = SecondaryButton()
+        self.cancel_btn.setAccessibleName(WATCH_ONLY_CANCEL_BUTTON)
         self.cancel_btn.setMinimumSize(QSize(120, 35))
         self.cancel_btn.setMaximumSize(QSize(200, 35))
         self.cancel_btn.clicked.connect(self.reject)
         self.button_layout.addWidget(self.cancel_btn)
         self.continue_btn = PrimaryButton()
+        self.continue_btn.setAccessibleName(WATCH_ONLY_CONTINUE_BUTTON)
         self.continue_btn.setMinimumSize(QSize(120, 35))
         self.continue_btn.setMaximumSize(QSize(200, 35))
         self.continue_btn.setEnabled(False)

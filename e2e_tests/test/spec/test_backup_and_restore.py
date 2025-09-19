@@ -14,6 +14,7 @@ from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
+from src.data.repository.setting_repository import SettingRepository
 from src.utils.info_message import INFO_BACKUP_COMPLETED
 from src.utils.info_message import INFO_RESTORE_COMPLETED
 load_dotenv()
@@ -159,6 +160,7 @@ def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup, walle
     This test case is used to restore the wallet from the backup.
     """
     description = None
+    SettingRepository.set_keyring_status(True)
     with allure.step('Restore the wallet with keyring off'):
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.scroll_to_end()
         wallets_and_operations.first_page_objects.term_and_condition_page_objects.click_accept_button()

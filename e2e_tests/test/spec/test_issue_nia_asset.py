@@ -7,7 +7,7 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION
+from accessible_constant import CONFIRMATION_DIALOG, FIRST_APPLICATION, NIA_ASSET_TICKER, SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
@@ -18,6 +18,7 @@ ASSET_AMOUNT = '2000'
 ISSUE_NIA_TOASTER_MESSAGE = 'You have insufficient funds'
 
 
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue NIA asset without sufficient sats')
 @allure.story('Issue NIA asset without sufficient sats which will produce error toaster')
@@ -39,6 +40,7 @@ def test_issue_nia_without_sufficient_sats(wallets_and_operations: WalletTestSet
     assert description == ISSUE_NIA_TOASTER_MESSAGE
 
 
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue NIA asset with sufficient sats and no utxo')
 @allure.story('Issue NIA asset with sufficient sats which will create utxo and create asset')
@@ -70,6 +72,7 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo(wallets_and_operations: Wall
         assert asset_name == NIA_ASSET_NAME
 
 
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue NIA asset with sufficient sats')
@@ -96,6 +99,86 @@ def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
 
     with allure.step('Verify asset name'):
         asset_name = wallets_and_operations.first_page_objects.fungible_page_objects.get_nia_asset_name(
+            NIA_ASSET_NAME,
+        )
+        assert asset_name == NIA_ASSET_NAME
+
+
+@pytest.mark.skip_for_hardware_wallet
+@pytest.mark.skip_for_online_wallet
+@allure.feature('Issue NIA asset without sufficient sats for offline wallet')
+@allure.story('Issue NIA asset without sufficient sats which will produce error toaster for offline wallet')
+def test_issue_nia_without_sufficient_sats_offline_wallet(wallets_and_operations: WalletTestSetup,wallet_variant_name):
+    """
+    Test NIA asset issuance without sufficient sats for offline wallet.
+    """
+    with allure.step('Create first wallet for issue NIA'):
+        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
+        )
+
+    with allure.step('Create second wallet for issue NIA'):
+        wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
+            application=SECOND_APPLICATION, variant=wallet_variant_name, fund=False,
+        )
+
+    with allure.step('Issue NIA asset without sufficient sats'):
+        description = wallets_and_operations.second_page_features.issue_nia_features.issue_nia_asset_without_sat(
+            SECOND_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT,
+        )
+
+    assert description == ISSUE_NIA_TOASTER_MESSAGE
+
+
+@pytest.mark.skip_for_hardware_wallet
+@pytest.mark.skip_for_online_wallet
+@allure.feature('Issue NIA asset with sufficient sats and no utxo for offline wallet')
+@allure.story('Issue NIA asset with sufficient sats which will create utxo and create asset for offline wallet')
+def test_issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test NIA asset issuance with sufficient sats and no utxo for offline wallet.
+    """
+
+    with allure.step('Fund wallet for issue NIA asset'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+
+    with allure.step('Verifies there is no utxo for issue NIA asset'):
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_view_unspents_button()
+        count = wallets_and_operations.second_page_objects.view_unspent_list_page_objects.get_unspent_widget()
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        assert count == 1
+
+    with allure.step('Create a psbt for issue asset'):
+        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(
+            SECOND_APPLICATION, NIA_ASSET_NAME,
+        )
+
+    with allure.step('Sign the psbt'):
+        wallets_and_operations.first_page_features.issue_nia_features.sign_psbt_for_issue_nia(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Broadcast the psbt'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_usb_sync_frame()
+        wallets_and_operations.second_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_psbt_info_frame()
+        wallets_and_operations.second_page_objects.broadcast_transaction_page_objects.click_broadcast_button()
+        wallets_and_operations.second_page_operations.do_focus_on_application(CONFIRMATION_DIALOG)
+        wallets_and_operations.second_page_objects.confirmation_dialog_page_objects.click_confirmation_dialog()
+        wallets_and_operations.second_page_objects.confirmation_dialog_page_objects.click_confirmation_checkbox()
+        wallets_and_operations.second_page_objects.confirmation_dialog_page_objects.click_confirmation_continue_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Issuing NIA asset'):
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(NIA_ASSET_TICKER)
+        wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
+        wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
+
+    with allure.step('Verify asset name'):
+        asset_name = wallets_and_operations.second_page_objects.fungible_page_objects.get_nia_asset_name(
             NIA_ASSET_NAME,
         )
         assert asset_name == NIA_ASSET_NAME

@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import time
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME
+from accessible_constant import BITCOIN_LEDGER_APP_NAME, REQUIRE_USB_VARIANTS, WATCH_ONLY_DIALOG, FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import SECOND_APPLICATION
@@ -15,6 +15,9 @@ from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.executable_shell_script import send_to_address
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
+from e2e_tests.test.pageobjects.about_page import AboutPageObjects
+from e2e_tests.test.pageobjects.sidebar_page import SidebarPageObjects
+from dogtail.tree import root
 from e2e_tests.test.utilities.wallet_variants import resolve_steps as resolve_wallet_steps
 
 BACKUP_EMAIL_ID = os.getenv('BACKUP_EMAIL_ID')
@@ -37,9 +40,14 @@ class Wallet(MainPageObjects, BaseOperations):
         """
         self.do_focus_on_application(application)
 
-        effective_variant = (
-            'online_create_on_device' if application == SECOND_APPLICATION else variant
-        )
+        # Second app should be watch-only when primary variant is offline
+        if application == SECOND_APPLICATION:
+            if variant in REQUIRE_USB_VARIANTS:
+                effective_variant = 'online_watch_only'
+            else:
+                effective_variant = 'online_create_on_device'
+        else:
+            effective_variant = variant
 
         if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
             self.term_and_condition_page_objects.scroll_to_end()
@@ -48,14 +56,17 @@ class Wallet(MainPageObjects, BaseOperations):
             self.term_and_condition_page_objects.click_accept_button()
 
         self.drive_selection_flow(application, effective_variant)
-        if effective_variant == 'online_watch_only':
-            pass
 
         if effective_variant in HARDWARE_WALLET_VARIANTS:
             self.set_up_hardware_wallet(application)
 
         if self.do_is_displayed(self.welcome_page_objects.create_button()):
             self.welcome_page_objects.click_create_button()
+
+        if effective_variant == 'online_watch_only':
+            xpub_vanilla, xpub_colored, fingerprint = self._collect_keyring_values_from_first_app()
+            self.do_focus_on_application(application)
+            self.set_up_watch_only_wallet(xpub_vanilla, xpub_colored, fingerprint)
 
         if self.do_is_displayed(self.set_password_page_objects.password_input()):
             self.set_password_page_objects.enter_password('walletpassword')
@@ -195,20 +206,85 @@ class Wallet(MainPageObjects, BaseOperations):
         """
         Set up the hardware wallet.
         """
-        speculos_process = handle_hardware_wallet(
-            app_name=BITCOIN_LEDGER_APP_NAME, reset=True)
-        self.do_focus_on_application(application)
-        if self.do_is_displayed(self.hw_connect_page_objects.ledger_option()):
-            self.hw_connect_page_objects.click_ledger_option()
-        if self.do_is_displayed(self.hw_connect_page_objects.continue_button()):
-            self.hw_connect_page_objects.click_continue_button()
-        if self.do_is_displayed(self.hw_device_selection_dialog_page_objects.ledger_emulator_radio_button()):
-            self.hw_device_selection_dialog_page_objects.click_ledger_emulator_radio_button()
-        if self.do_is_displayed(self.hw_device_selection_dialog_page_objects.connect_button()):
-            self.hw_device_selection_dialog_page_objects.click_connect_button()
-        self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
-        self.hw_emulator_page_objects.click_right_arrow_key(7)
-        self.hw_emulator_page_objects.press_left_and_right()
-        self.do_focus_on_application(application)
-        time.sleep(2)
-        speculos_process.terminate()
+        try:
+            speculos_process = handle_hardware_wallet(
+                app_name=BITCOIN_LEDGER_APP_NAME, reset=True)
+            self.do_focus_on_application(application)
+            if self.do_is_displayed(self.hw_connect_page_objects.ledger_option()):
+                self.hw_connect_page_objects.click_ledger_option()
+            if self.do_is_displayed(self.hw_connect_page_objects.continue_button()):
+                self.hw_connect_page_objects.click_continue_button()
+            if self.do_is_displayed(self.hw_device_selection_dialog_page_objects.ledger_emulator_radio_button()):
+                self.hw_device_selection_dialog_page_objects.click_ledger_emulator_radio_button()
+            if self.do_is_displayed(self.hw_device_selection_dialog_page_objects.connect_button()):
+                self.hw_device_selection_dialog_page_objects.click_connect_button()
+            self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
+            self.hw_emulator_page_objects.click_right_arrow_key(7)
+            self.hw_emulator_page_objects.press_left_and_right()
+            self.do_focus_on_application(application)
+            time.sleep(2)
+        except Exception as e:
+            raise e
+        finally:
+            speculos_process.terminate()
+
+    def set_up_watch_only_wallet(self, xpub_vanilla: str | None, xpub_colored: str | None, fingerprint: str | None):
+        """Apply provided xpubs and fingerprint to watch-only dialog in second app."""
+        # Focus the watch-only dialog and populate
+        self.do_focus_on_application(WATCH_ONLY_DIALOG)
+        if self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_dialog()):
+            self.watch_only_dialog_page_objects.click_watch_only_dialog()
+
+        if xpub_vanilla and self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_xpub_vanilla()):
+            self.watch_only_dialog_page_objects.enter_xpub_vanilla_value(xpub_vanilla)
+
+        if xpub_colored and self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_xpub_colored()):
+            self.watch_only_dialog_page_objects.enter_xpub_colored_value(xpub_colored)
+
+        if fingerprint and self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_master_fingerprint()):
+            self.watch_only_dialog_page_objects.enter_fingerprint_value(fingerprint)
+
+        # Confirm checkbox and continue
+        self.do_focus_on_application(WATCH_ONLY_DIALOG)
+        if self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_checkbox()):
+            self.watch_only_dialog_page_objects.click_checkbox()
+
+        if self.do_is_displayed(self.watch_only_dialog_page_objects.continue_button()):
+            self.watch_only_dialog_page_objects.click_continue_button()
+
+    def _collect_keyring_values_from_first_app(self) -> tuple[str | None, str | None, str | None]:
+        """Focus the first application and read xpubs + fingerprint from About page copy buttons."""
+        self.do_focus_on_application(FIRST_APPLICATION)
+        try:
+            first_app = root.child(roleName='frame', name=FIRST_APPLICATION)
+        except Exception:
+            first_app = None
+
+        if not first_app:
+            return None, None, None
+
+        sidebar_page = SidebarPageObjects(first_app)
+        about_page = AboutPageObjects(first_app)
+
+        xpub_vanilla = None
+        xpub_colored = None
+        fingerprint = None
+
+        if sidebar_page.do_is_displayed(sidebar_page.about_button()):
+            sidebar_page.click_about_button()
+
+        if about_page.do_is_displayed(about_page.vanilla_xpub_copy_button()):
+            about_page.click_vanilla_xpub_copy_button()
+            xpub_vanilla = about_page.do_get_copied_address()
+
+        if about_page.do_is_displayed(about_page.colored_xpub_copy_button()):
+            about_page.click_colored_xpub_copy_button()
+            xpub_colored = about_page.do_get_copied_address()
+
+        if about_page.do_is_displayed(about_page.master_fingerprint_copy_button()):
+            about_page.click_master_fingerprint_copy_button()
+            fingerprint = about_page.do_get_copied_address()
+
+        if sidebar_page.do_is_displayed(sidebar_page.fungibles_button()):
+            sidebar_page.click_fungibles_button()
+        return xpub_vanilla, xpub_colored, fingerprint

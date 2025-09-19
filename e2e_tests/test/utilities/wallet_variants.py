@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import subprocess
-from typing import Dict
-from typing import Tuple
-
 from e2e_tests.test.utilities.executable_shell_script import reset_regtest
 
 NAME_TO_STEPS: dict[str, tuple[int, int, int, int]] = {

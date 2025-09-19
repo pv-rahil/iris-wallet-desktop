@@ -11,7 +11,9 @@ from e2e_tests.test.pageobjects.asset_transaction_detail_page import AssetTransa
 from e2e_tests.test.pageobjects.backup_page import BackupPageObjects
 from e2e_tests.test.pageobjects.bitcoin_detail_page import BitcoinDetailPageObjects
 from e2e_tests.test.pageobjects.bitcoin_transaction_detail_page import BitcoinTransactionDetailPageObjects
+from e2e_tests.test.pageobjects.broadcast_transaction_page import BroadcastTransactionPageObjects
 from e2e_tests.test.pageobjects.collectible_page import CollectiblePageObjects
+from e2e_tests.test.pageobjects.confirmation_dialog_page import ConfirmationDialogPageObjects
 from e2e_tests.test.pageobjects.enter_wallet_password_page import EnterWalletPasswordPageObjects
 from e2e_tests.test.pageobjects.fungible_page import FungiblePageObjects
 from e2e_tests.test.pageobjects.hardware_wallet_connect_page import HardwareWalletConnectPageObjects
@@ -31,8 +33,10 @@ from e2e_tests.test.pageobjects.sidebar_page import SidebarPageObjects
 from e2e_tests.test.pageobjects.success_page import SuccessPageObjects
 from e2e_tests.test.pageobjects.term_and_condition_page import TermAndConditionPageObjects
 from e2e_tests.test.pageobjects.toaster_page import ToasterPageObjects
+from e2e_tests.test.pageobjects.usb_sync_dialog_page import USBSyncDialogPageObjects
 from e2e_tests.test.pageobjects.view_unspent_list_page import ViewUnspentListPageObjects
 from e2e_tests.test.pageobjects.wallet_mode_summary_dialog_page import WalletModeSummaryDialogPageObjects
+from e2e_tests.test.pageobjects.watch_only_dialog_page import WatchOnlyDialogPageObjects
 from e2e_tests.test.pageobjects.welcome_page import WelcomePageObjects
 
 
@@ -130,3 +134,11 @@ class MainPageObjects():
         self.hw_emulator_page_objects = HardwareWalletEmulatorPageObjects(self.application)
 
         self.hw_connect_page_objects = HardwareWalletConnectPageObjects(application)
+
+        self.watch_only_dialog_page_objects = WatchOnlyDialogPageObjects(self.application)
+
+        self.usb_sync_dialog_page_objects = USBSyncDialogPageObjects(self.application)
+
+        self.broadcast_transaction_page_objects = BroadcastTransactionPageObjects(self.application)
+
+        self.confirmation_dialog_page_objects = ConfirmationDialogPageObjects(self.application)
