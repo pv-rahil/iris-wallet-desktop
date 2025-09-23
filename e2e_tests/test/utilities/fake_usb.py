@@ -3,6 +3,8 @@ import tempfile
 import stat
 import shutil
 
+from accessible_constant import FAKEUSB_MOUNT_PATH
+
 FAKE_LSBLK_OUTPUT = r"""
 {
   "blockdevices": [
@@ -37,8 +39,7 @@ class FakeUSB:
         os.chmod(fake_lsblk_path, st.st_mode | stat.S_IEXEC)
 
         # Ensure a fixed shared mount path for both app instances
-        mount_path = "/tmp/fakeusb_mount"
-        os.makedirs(mount_path, exist_ok=True)
+        os.makedirs(FAKEUSB_MOUNT_PATH, exist_ok=True)
 
         # Return environment override for subprocess
         env = os.environ.copy()

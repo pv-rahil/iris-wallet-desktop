@@ -401,6 +401,9 @@ class IssueCFAWidget(QWidget):
         self._view_model.issue_cfa_asset_view_model.utxo_creation_started.connect(
             self.handle_cfa_issue,
         )
+        self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
+            self.show_cfa_psbt_page,
+        )
 
     def show_file_preview(self, file_upload_message):
         """Preview the uploaded image"""

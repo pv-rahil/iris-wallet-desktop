@@ -27,7 +27,7 @@ TEST_FEE_RATE = '20'
 TEST_FEE_RATE_TOAST_DESC_SUCCESS = 'Fee rate set successfully'
 TEST_MIN_CONFIRMATION = '6'
 
-pytestmark = pytest.mark.order(2)
+pytestmark = [pytest.mark.order(2), pytest.mark.skip_for_offline_wallet]
 
 
 @pytest.mark.parametrize('test_environment', [False], indirect=True)

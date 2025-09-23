@@ -192,3 +192,73 @@ class IssueCfa(MainPageObjects, BaseOperations):
         finally:
             if self.hardware_wallet:
                 self.hardware_wallet.terminate()
+
+
+    def issue_cfa_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name):
+            """
+            Issues an CFA asset with sufficient sats and no UTXO.
+            """
+            self.do_focus_on_application(application)
+
+            self.collectible_page_objects.click_cfa_frame(f"{asset_name} (Draft)")
+
+            if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
+                self.issue_cfa_page_objects.click_issue_cfa_button()
+
+            self.do_focus_on_application(application)
+
+            if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+                self.receive_asset_page_objects.click_receive_asset_close_button()
+
+            if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
+                self.sidebar_page_objects.click_fungibles_button()
+            
+            if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+                self.fungible_page_objects.click_usb_sync_frame()
+
+            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                self.usb_sync_dialog_page_objects.click_continue_button()
+
+
+    def issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(self, application, asset_name,asset_description, asset_amount):
+        """
+        Issues an CFA asset with sufficient sats and no UTXO.
+        """
+        self.do_focus_on_application(application)
+        copy_cfa_image_to_home_directory(os.getcwd())
+
+        if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
+            self.fungible_page_objects.issue_nia_button()
+
+
+        if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
+            self.collectible_page_objects.click_issue_cfa_button()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
+            self.issue_cfa_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
+            self.issue_cfa_page_objects.enter_asset_description(
+                asset_description,
+            )
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
+            self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
+            self.issue_cfa_page_objects.click_upload_file_button()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
+            self.issue_cfa_page_objects.click_cfa_asset_media()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
+            self.issue_cfa_page_objects.click_issue_cfa_button()
+
+        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+            self.receive_asset_page_objects.click_receive_asset_close_button()
+        
+        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+            self.fungible_page_objects.click_usb_sync_frame()
+
+        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+            self.usb_sync_dialog_page_objects.click_continue_button()

@@ -11,10 +11,10 @@ NAME_TO_STEPS: dict[str, tuple[int, int, int, int]] = {
     'online_load_on_device': (1, 1, 2, 1),
     'online_load_hardware': (1, 1, 2, 2),
     # Offline
-    'offline_create_on_device': (2, 0, 1, 1),
-    'offline_create_hardware': (2, 0, 1, 2),
-    'offline_load_on_device': (2, 0, 2, 1),
-    'offline_load_hardware': (2, 0, 2, 2),
+    'offline_create_on_device': (2, 1, 1, 0),
+    'offline_create_hardware': (2, 1, 2, 0),
+    'offline_load_on_device': (2, 2, 1, 0),
+    'offline_load_hardware': (2, 2, 2, 0),
 }
 
 
@@ -65,7 +65,7 @@ def map_to_load_variant(variant_name: str) -> str:
     if s3 == 0:
         # e.g., online_watch_only has no create/load step
         return variant_name.strip().lower()
-    target_steps = (s1, s2, 2, s4)
+    target_steps = (s1, 2, s3, s4)
     mapped = _STEPS_TO_NAME.get(target_steps)
     if not mapped:
         raise ValueError(

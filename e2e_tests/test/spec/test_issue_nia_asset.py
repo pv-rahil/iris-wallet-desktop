@@ -7,7 +7,7 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import CONFIRMATION_DIALOG, FIRST_APPLICATION, NIA_ASSET_TICKER, SECOND_APPLICATION
+from accessible_constant import FIRST_APPLICATION, SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
@@ -152,28 +152,19 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
 
     with allure.step('Create a psbt for issue asset'):
         wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(
-            SECOND_APPLICATION, NIA_ASSET_NAME,
+            SECOND_APPLICATION, ASSET_TICKER,
         )
 
     with allure.step('Sign the psbt'):
-        wallets_and_operations.first_page_features.issue_nia_features.sign_psbt_for_issue_nia(
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Broadcast the psbt'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_usb_sync_frame()
-        wallets_and_operations.second_page_objects.usb_sync_dialog_page_objects.click_continue_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_psbt_info_frame()
-        wallets_and_operations.second_page_objects.broadcast_transaction_page_objects.click_broadcast_button()
-        wallets_and_operations.second_page_operations.do_focus_on_application(CONFIRMATION_DIALOG)
-        wallets_and_operations.second_page_objects.confirmation_dialog_page_objects.click_confirmation_dialog()
-        wallets_and_operations.second_page_objects.confirmation_dialog_page_objects.click_confirmation_checkbox()
-        wallets_and_operations.second_page_objects.confirmation_dialog_page_objects.click_confirmation_continue_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+       wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION)
 
     with allure.step('Issuing NIA asset'):
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(NIA_ASSET_TICKER)
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(ASSET_TICKER)
         wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 

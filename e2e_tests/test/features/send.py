@@ -152,3 +152,45 @@ class SendOperation(MainPageObjects, BaseOperations):
             if self.hardware_wallet:
                 self.hardware_wallet.terminate()
         return description
+
+    def create_psbt(self, application, receiver_invoice, amount=None, fee_rate=None):
+        """
+        Create psbt
+
+        :param receiver_invoice: The recipient's invoice.
+        :param amount: The amount to send.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+            self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+        self.do_focus_on_application(application)
+
+        if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
+            self.send_asset_page_objects.enter_asset_amount(amount)
+
+        if fee_rate:
+            if self.do_is_displayed(self.send_asset_page_objects.fee_rate_input()):
+                self.send_asset_page_objects.enter_fee_rate(fee_rate)
+
+        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+            self.send_asset_page_objects.click_send_button()
+
+        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+            self.receive_asset_page_objects.click_receive_asset_close_button()
+        
+        try:
+            if self.do_is_displayed(self.bitcoin_detail_page_objects.bitcoin_close_button()):
+                self.bitcoin_detail_page_objects.click_bitcoin_close_button()
+        except Exception as _:
+            pass
+
+        if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
+            self.sidebar_page_objects.click_fungibles_button()
+
+        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+            self.fungible_page_objects.click_usb_sync_frame()
+
+        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+            self.usb_sync_dialog_page_objects.click_continue_button()
+            

@@ -2,6 +2,7 @@
 Wallet selection page objects module.
 """
 from __future__ import annotations
+import time
 
 from accessible_constant import OPTION_1_FRAME
 from accessible_constant import OPTION_2_FRAME
@@ -62,7 +63,7 @@ class SelectionPageObjects(BaseOperations):
         """
         Select option by index: 1 or 2.
         """
-        print(f"Selecting option {which}")
+        time.sleep(1)
         if which == 1:
             return self.click_option_1_button()
         if which == 2:

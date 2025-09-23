@@ -21,3 +21,6 @@ class WalletTestSetup:
     second_page_objects: MainPageObjects
     first_page_operations: BaseOperations
     second_page_operations: BaseOperations
+    third_page_features: MainFeatures = None
+    third_page_objects: MainPageObjects = None
+    third_page_operations: BaseOperations = None

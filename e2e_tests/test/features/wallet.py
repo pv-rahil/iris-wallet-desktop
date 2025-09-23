@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import time
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME, REQUIRE_USB_VARIANTS, WATCH_ONLY_DIALOG, FIRST_APPLICATION
+from accessible_constant import BITCOIN_LEDGER_APP_NAME, CONFIRMATION_DIALOG, LOAD_WALLET_VARIANT, REQUIRE_USB_VARIANTS, RGB_LEDGER_APP_NAME, WATCH_ONLY_DIALOG, FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import SECOND_APPLICATION
@@ -33,6 +33,7 @@ class Wallet(MainPageObjects, BaseOperations):
         super().__init__(application)
 
         self.address = None
+        self.hardware_wallet = None
 
     def create_wallet(self, application, variant: str):
         """
@@ -42,7 +43,9 @@ class Wallet(MainPageObjects, BaseOperations):
 
         # Second app should be watch-only when primary variant is offline
         if application == SECOND_APPLICATION:
-            if variant in REQUIRE_USB_VARIANTS:
+            if variant in LOAD_WALLET_VARIANT:
+                effective_variant = variant
+            elif variant in REQUIRE_USB_VARIANTS:
                 effective_variant = 'online_watch_only'
             else:
                 effective_variant = 'online_create_on_device'
@@ -56,6 +59,12 @@ class Wallet(MainPageObjects, BaseOperations):
             self.term_and_condition_page_objects.click_accept_button()
 
         self.drive_selection_flow(application, effective_variant)
+
+        if effective_variant in LOAD_WALLET_VARIANT:
+            if self.do_is_displayed(self.welcome_page_objects.restore_button()):
+                self.welcome_page_objects.click_restore_button()
+            return
+            
 
         if effective_variant in HARDWARE_WALLET_VARIANTS:
             self.set_up_hardware_wallet(application)
@@ -288,3 +297,117 @@ class Wallet(MainPageObjects, BaseOperations):
         if sidebar_page.do_is_displayed(sidebar_page.fungibles_button()):
             sidebar_page.click_fungibles_button()
         return xpub_vanilla, xpub_colored, fingerprint
+
+    def sign_psbt(self, application, variant_name , is_rgb:bool=False):
+        """
+        Sign psbt.
+        """
+        try:
+            self.do_focus_on_application(application)
+
+            if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
+                self.sidebar_page_objects.click_fungibles_button()
+
+            if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+                self.fungible_page_objects.click_usb_sync_frame()
+
+            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                self.usb_sync_dialog_page_objects.click_continue_button()
+
+            if self.do_is_displayed(self.fungible_page_objects.psbt_info_frame()):
+                self.fungible_page_objects.click_psbt_info_frame()
+
+            if variant_name in HARDWARE_WALLET_VARIANTS:
+                if is_rgb:
+                    self.hardware_wallet = handle_hardware_wallet(
+                        app_name=RGB_LEDGER_APP_NAME)
+                else:
+                    self.hardware_wallet = handle_hardware_wallet(
+                        app_name=BITCOIN_LEDGER_APP_NAME)
+
+            self.do_focus_on_application(application)
+
+            if self.do_is_displayed(self.broadcast_transaction_page_objects.sign_psbt_button()):
+                self.broadcast_transaction_page_objects.click_sign_psbt_button()
+
+            self.do_focus_on_application(CONFIRMATION_DIALOG)
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+                self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_checkbox()):
+                self.confirmation_dialog_page_objects.click_confirmation_checkbox()
+
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+            if self.hardware_wallet:
+                self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
+                time.sleep(2)
+                if is_rgb :
+                    self.hw_emulator_page_objects.click_right_arrow_key(5)
+                    self.hw_emulator_page_objects.press_left_and_right()
+                else:
+                    for _ in range(2):
+                        self.hw_emulator_page_objects.click_right_arrow_key(4)
+                        self.hw_emulator_page_objects.press_left_and_right()
+                    self.hw_emulator_page_objects.click_right_arrow_key(1)
+                    self.hw_emulator_page_objects.press_left_and_right()
+
+            self.do_focus_on_application(application)
+
+            if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+                self.receive_asset_page_objects.click_receive_asset_close_button()
+
+            if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+                self.fungible_page_objects.click_usb_sync_frame()
+
+            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                self.usb_sync_dialog_page_objects.click_continue_button()
+
+
+        except Exception as e:
+            raise e
+        finally:
+            if self.hardware_wallet:
+                self.hardware_wallet.terminate()
+
+
+    def broadcast_psbt(self, application):
+        """
+        Broadcast psbt.
+        """
+        description = None
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+            self.fungible_page_objects.click_usb_sync_frame()
+
+        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+            self.usb_sync_dialog_page_objects.click_continue_button()
+
+        if self.do_is_displayed(self.fungible_page_objects.psbt_info_frame()):
+            self.fungible_page_objects.click_psbt_info_frame()
+
+        if self.do_is_displayed(self.broadcast_transaction_page_objects.broadcast_button()):
+            self.broadcast_transaction_page_objects.click_broadcast_button()
+
+        self.do_focus_on_application(CONFIRMATION_DIALOG)
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_checkbox()):
+            self.confirmation_dialog_page_objects.click_confirmation_checkbox()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+        if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
+            self.toaster_page_objects.click_toaster_frame()
+
+        if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
+            description = self.toaster_page_objects.get_toaster_description()
+
+        if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
+            self.fungible_page_objects.click_refresh_button()
+
+        return description

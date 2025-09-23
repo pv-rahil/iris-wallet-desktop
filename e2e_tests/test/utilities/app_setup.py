@@ -9,19 +9,17 @@ import os
 import signal
 import subprocess
 import time
+import shutil
 
 import keyring
 import pytest
 from dogtail.tree import root
 
-from accessible_constant import APP1_NAME
-from accessible_constant import APP2_NAME
-from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FIRST_APPLICATION_PATH
-from accessible_constant import FIRST_SERVICE
-from accessible_constant import SECOND_APPLICATION
-from accessible_constant import SECOND_APPLICATION_PATH
-from accessible_constant import SECOND_SERVICE
+from accessible_constant import APP1_NAME, FAKEUSB_MOUNT_PATH
+from accessible_constant import APP2_NAME, APP3_NAME
+from accessible_constant import FIRST_APPLICATION, SECOND_APPLICATION, THIRD_APPLICATION
+from accessible_constant import FIRST_APPLICATION_PATH, SECOND_APPLICATION_PATH, THIRD_APPLICATION_PATH
+from accessible_constant import FIRST_SERVICE, SECOND_SERVICE, THIRD_SERVICE
 from accessible_constant import REQUIRE_USB_VARIANTS
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -49,11 +47,18 @@ class TestEnvironment:
         Args:
             multi_instance (bool): If True, launches both applications. Otherwise, only launches one.
         """
-        self.multi_instance = multi_instance
+        # Backward-compatible: bool -> 1 or 2, int -> exact number of instances
+        if isinstance(multi_instance, bool):
+            self.num_instances = 2 if multi_instance else 1
+        elif isinstance(multi_instance, int):
+            self.num_instances = max(1, min(3, multi_instance))
+        else:
+            self.num_instances = 2
         # Initialize process attributes
         self.first_process = None
         self.second_process = None
         self.rgb_processes = []
+        self.third_process = None
 
         # Determine whether to enable Fake USB environment based on variant
         self.wallet_variant_name = (wallet_variant_name or '').lower()
@@ -63,6 +68,8 @@ class TestEnvironment:
         self.reset_app_data()
         self.remove_keyring_entries(service=FIRST_SERVICE, app_name=APP1_NAME)
         self.remove_keyring_entries(service=SECOND_SERVICE, app_name=APP2_NAME)
+        if self.num_instances >= 3:
+            self.remove_keyring_entries(service=THIRD_SERVICE, app_name=APP3_NAME)
 
         self.launch_applications()
 
@@ -71,17 +78,21 @@ class TestEnvironment:
         actual_path = os.path.dirname(local_store.get_path())
         app1_data = actual_path.replace(APP_NAME, FIRST_APPLICATION_PATH)
         app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
+        app3_data = actual_path.replace(APP_NAME, THIRD_APPLICATION_PATH)
 
         delete_app_data(app1_data)
-        if self.multi_instance:
+        if self.num_instances >= 2:
             delete_app_data(app2_data)
+        if self.num_instances >= 3:
+            delete_app_data(app3_data)
+
+        shutil.rmtree(FAKEUSB_MOUNT_PATH, ignore_errors=True)
 
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
         env = None
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
-            if not self.fake_usb:
-                self.fake_usb = FakeUSB()
+            self.fake_usb = FakeUSB()
             env = self.fake_usb.setup()
 
         self.first_process = subprocess.Popen(
@@ -104,7 +115,7 @@ class TestEnvironment:
         self.first_page_features = MainFeatures(self.first_application)
         self.first_page_objects = MainPageObjects(self.first_application)
         self.first_page_operations = BaseOperations(self.first_application)
-        if self.multi_instance:
+        if self.num_instances >= 2:
             self.second_process = subprocess.Popen(
                 [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{__version__}-x86_64.AppImage"],
                 env=env,
@@ -126,6 +137,29 @@ class TestEnvironment:
             self.second_page_objects = MainPageObjects(self.second_application)
             self.second_page_operations = BaseOperations(
                 self.second_application,
+            )
+
+        if self.num_instances >= 3:
+            self.third_process = subprocess.Popen(
+                [f"e2e_tests/applications/iris-wallet-vault_{APP3_NAME}-{__version__}-x86_64.AppImage"],
+                env=env,
+            )
+            self.wait_for_application(THIRD_APPLICATION)
+
+            subprocess.run(
+                [
+                    'wmctrl', '-r', THIRD_APPLICATION, '-b',
+                    'add,maximized_vert,maximized_horz',
+                ],
+                check=True,
+            )
+            self.third_application = root.child(
+                roleName='frame', name=THIRD_APPLICATION,
+            )
+            self.third_page_features = MainFeatures(self.third_application)
+            self.third_page_objects = MainPageObjects(self.third_application)
+            self.third_page_operations = BaseOperations(
+                self.third_application,
             )
 
     def wait_for_application(self, app_name, timeout=10):
@@ -158,8 +192,10 @@ class TestEnvironment:
     def terminate(self):
         """Cleans up the test environment by shutting down applications"""
         self.terminate_process(self.first_process)
-        if self.multi_instance:
+        if self.num_instances >= 2:
             self.terminate_process(self.second_process)
+        if self.num_instances >= 3:
+            self.terminate_process(self.third_process)
 
         if self.fake_usb:
             self.fake_usb.cleanup()
@@ -172,6 +208,79 @@ class TestEnvironment:
             self.reset_app_data()
 
         self.launch_applications()
+
+    def restart_application(self, which: str = 'second', reset_data: bool = False):
+        """Restart only a specific application window (first|second|third).
+
+        Args:
+            which: One of 'first', 'second', 'third'. Defaults to 'second'.
+            reset_data: If True, clears ONLY that app's data before relaunching.
+        """
+        # Compute paths for selective reset
+        actual_path = os.path.dirname(local_store.get_path())
+        app1_data = actual_path.replace(APP_NAME, FIRST_APPLICATION_PATH)
+        app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
+        app3_data = actual_path.replace(APP_NAME, THIRD_APPLICATION_PATH)
+
+        # Choose env if FakeUSB is enabled (for offline variants)
+        env = self.fake_usb.setup() if self.fake_usb else None
+
+        if which == 'first':
+            self.terminate_process(self.first_process)
+            if reset_data:
+                delete_app_data(app1_data)
+            # Relaunch first
+            self.first_process = subprocess.Popen(
+                [f"e2e_tests/applications/iris-wallet-vault_{APP1_NAME}-{__version__}-x86_64.AppImage"],
+                env=env,
+            )
+            self.wait_for_application(FIRST_APPLICATION)
+            subprocess.run(['wmctrl', '-r', FIRST_APPLICATION, '-b', 'add,maximized_vert,maximized_horz'], check=True)
+            self.first_application = root.child(roleName='frame', name=FIRST_APPLICATION)
+            self.first_page_features = MainFeatures(self.first_application)
+            self.first_page_objects = MainPageObjects(self.first_application)
+            self.first_page_operations = BaseOperations(self.first_application)
+            return
+
+        if which == 'second':
+            self.terminate_process(self.second_process)
+            if reset_data:
+                delete_app_data(app2_data)
+            # Relaunch second
+            self.second_process = subprocess.Popen(
+                [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{__version__}-x86_64.AppImage"],
+                env=env,
+            )
+            self.wait_for_application(SECOND_APPLICATION)
+            subprocess.run(['wmctrl', '-r', SECOND_APPLICATION, '-b', 'add,maximized_vert,maximized_horz'], check=True)
+            self.second_application = root.child(roleName='frame', name=SECOND_APPLICATION)
+            self.second_page_features = MainFeatures(self.second_application)
+            self.second_page_objects = MainPageObjects(self.second_application)
+            self.second_page_operations = BaseOperations(self.second_application)
+            return
+
+        if which == 'third':
+            self.terminate_process(self.third_process)
+            if reset_data:
+                delete_app_data(app3_data)
+            # Relaunch third
+            self.third_process = subprocess.Popen(
+                [f"e2e_tests/applications/iris-wallet-vault_{APP3_NAME}-{__version__}-x86_64.AppImage"],
+                env=env,
+            )
+            self.wait_for_application(THIRD_APPLICATION)
+            subprocess.run(['wmctrl', '-r', THIRD_APPLICATION, '-b', 'add,maximized_vert,maximized_horz'], check=True)
+            self.third_application = root.child(roleName='frame', name=THIRD_APPLICATION)
+            self.third_page_features = MainFeatures(self.third_application)
+            self.third_page_objects = MainPageObjects(self.third_application)
+            self.third_page_operations = BaseOperations(self.third_application)
+            return
+
+        raise ValueError("which must be one of: 'first', 'second', 'third'")
+
+    def restart_second(self, reset_data: bool = False):
+        """Convenience wrapper to restart only the second application."""
+        self.restart_application('second', reset_data=reset_data)
 
     def remove_keyring_entries(self, service, app_name):
         """Removes keyring entries for a given service and application name."""
@@ -212,15 +321,24 @@ def wallets_and_operations(test_environment: TestEnvironment) -> WalletTestSetup
     return WalletTestSetup(
         first_page_features=test_environment.first_page_features,
         second_page_features=test_environment.second_page_features
-        if test_environment.multi_instance
+        if test_environment.num_instances >= 2
         else None,
         first_page_objects=test_environment.first_page_objects,
         second_page_objects=test_environment.second_page_objects
-        if test_environment.multi_instance
+        if test_environment.num_instances >= 2
         else None,
         first_page_operations=test_environment.first_page_operations,
         second_page_operations=test_environment.second_page_operations
-        if test_environment.multi_instance
+        if test_environment.num_instances >= 2
+        else None,
+        third_page_features=test_environment.third_page_features
+        if test_environment.num_instances >= 3
+        else None,
+        third_page_objects=test_environment.third_page_objects
+        if test_environment.num_instances >= 3
+        else None,
+        third_page_operations=test_environment.third_page_operations
+        if test_environment.num_instances >= 3
         else None,
     )
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import time
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME, CONFIRMATION_DIALOG
+from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -23,8 +23,6 @@ class IssueNia(MainPageObjects, BaseOperations):
         Initializes the IssuenNa class.
         """
         super().__init__(application)
-
-        self.hardware_wallet = None
 
     def issue_nia_with_sufficient_sats_and_no_utxo(self, application, asset_ticker, asset_name, asset_amount, variant_name):
         """
@@ -152,13 +150,13 @@ class IssueNia(MainPageObjects, BaseOperations):
             if self.hardware_wallet:
                 self.hardware_wallet.terminate()
 
-    def issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name):
+    def issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_ticker):
         """
         Issues an NIA asset with sufficient sats and no UTXO.
         """
         self.do_focus_on_application(application)
 
-        self.fungible_page_objects.click_nia_frame(f"{asset_name} (Draft)")
+        self.fungible_page_objects.click_nia_frame(asset_ticker)
 
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
@@ -174,61 +172,36 @@ class IssueNia(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
             self.usb_sync_dialog_page_objects.click_continue_button()
 
-    def sign_psbt_for_issue_nia(self, application, variant_name):
+    def issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(self, application, asset_ticker, asset_name, asset_amount):
         """
-        Sign psbt for issue NIA asset.
+        Issues an NIA asset with sufficient sats and no UTXO.
         """
-        try:
-            if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet = handle_hardware_wallet(
-                    app_name=BITCOIN_LEDGER_APP_NAME)
-            self.do_focus_on_application(application)
+        self.do_focus_on_application(application)
 
-            if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-                self.fungible_page_objects.click_usb_sync_frame()
-
-            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                self.usb_sync_dialog_page_objects.click_continue_button()
-
-            if self.do_is_displayed(self.fungible_page_objects.psbt_info_frame()):
-                self.fungible_page_objects.click_psbt_info_frame()
-
-            if self.do_is_displayed(self.broadcast_transaction_page_objects.sign_psbt_button()):
-                self.broadcast_transaction_page_objects.click_sign_psbt_button()
-
-            self.do_focus_on_application(CONFIRMATION_DIALOG)
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_checkbox()):
-                self.confirmation_dialog_page_objects.click_confirmation_checkbox()
-
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
-
-            if self.hardware_wallet:
-                self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
-                time.sleep(2)
-                for _ in range(2):
-                    self.hw_emulator_page_objects.click_right_arrow_key(4)
-                    self.hw_emulator_page_objects.press_left_and_right()
-                self.hw_emulator_page_objects.click_right_arrow_key(1)
-                self.hw_emulator_page_objects.press_left_and_right()
-
-            self.do_focus_on_application(application)
-
-            if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
-                self.receive_asset_page_objects.click_receive_asset_close_button()
-
-            if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-                self.fungible_page_objects.click_usb_sync_frame()
-
-            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                self.usb_sync_dialog_page_objects.click_continue_button()
+        if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
+            self.fungible_page_objects.issue_nia_button()
 
 
-        except Exception as e:
-            raise e
-        finally:
-            if self.hardware_wallet:
-                self.hardware_wallet.terminate()
+        if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
+                self.fungible_page_objects.click_issue_nia_button()
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_ticker()):
+            self.issue_nia_page_objects.enter_asset_ticker(asset_ticker)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_name()):
+            self.issue_nia_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_amount()):
+            self.issue_nia_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
+            self.issue_nia_page_objects.click_issue_nia_button()
+
+        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+            self.receive_asset_page_objects.click_receive_asset_close_button()
+        
+        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+            self.fungible_page_objects.click_usb_sync_frame()
+
+        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+            self.usb_sync_dialog_page_objects.click_continue_button()

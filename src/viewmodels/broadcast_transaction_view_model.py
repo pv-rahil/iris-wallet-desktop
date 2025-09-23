@@ -17,8 +17,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.rgb_model import SendAssetResponseModel
 from src.utils.custom_exception import CommonException
-from src.utils.info_message import INFO_ASSET_SENT
-from src.utils.info_message import INFO_BTC_SENT
+from src.utils.info_message import INFO_ASSET_SENT, INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.logging import logger
@@ -109,7 +108,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
-        ToastManager.success(description=INFO_BTC_SENT.format(response.tx_id))
+        ToastManager.success(description=INFO_BITCOIN_SENT.format(response.tx_id))
 
     def sign_and_finalize_psbt(self, unsigned_psbt):
         """
