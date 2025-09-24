@@ -33,6 +33,19 @@ RUN_ALL=false
 FORCE_BUILD=false
 # Collect extra pytest args (e.g., --wallet-variant <name>)
 PYTEST_EXTRA_ARGS=()
+WALLET_VARIANT_SPECIFIED=false
+SPECIFIED_WALLET_VARIANT=""
+SERVE_ALLURE=false
+GENERATE_ALLURE=false
+
+# Default wallet variants (as documented in e2e test help)
+# These will be used when no --wallet-variant is explicitly provided.
+DEFAULT_WALLET_VARIANTS=(
+  "online_create_on_device"
+  "online_create_hardware"
+  "offline_create_on_device"
+  "offline_create_hardware"
+)
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -45,6 +58,14 @@ while [[ $# -gt 0 ]]; do
             RUN_ALL=true
             shift
             ;;
+        --serve-allure)
+            SERVE_ALLURE=true
+            shift
+            ;;
+        --generate-allure)
+            GENERATE_ALLURE=true
+            shift
+            ;;
         --wallet-variant)
             # forward to pytest with its value
             shift
@@ -53,6 +74,8 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             PYTEST_EXTRA_ARGS+=("--wallet-variant" "$1")
+            WALLET_VARIANT_SPECIFIED=true
+            SPECIFIED_WALLET_VARIANT="$1"
             shift
             ;;
         --*)
@@ -159,27 +182,91 @@ ensure_applications_exist() {
 }
 
 run_e2e_tests() {
-    local results_dir="allure-results"
+    local results_root_dir="allure-results"
+    local reports_root_dir="allure-reports"
 
     echo "Running E2E tests"
 
-    rm -rf "$results_dir"
-    mkdir -p "$results_dir"
+    # Clean previous aggregated results and recreate root
+    rm -rf "$results_root_dir"
+    mkdir -p "$results_root_dir"
+    # Prepare reports directory when generating
+    if [[ "$GENERATE_ALLURE" == true ]]; then
+        rm -rf "$reports_root_dir"
+        mkdir -p "$reports_root_dir"
+    fi
 
+    # Determine base target (all tests or a single file)
+    local base_target=""
     if [[ "$RUN_ALL" == true ]]; then
         echo "Running full test suite..."
-        pytest -s "$TESTS_DIR/" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}
+        base_target="$TESTS_DIR/"
     elif [[ -n "$TEST_FILE" ]]; then
         echo "Running single test file: $TEST_FILE"
-        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}
+        base_target="$TESTS_DIR/$TEST_FILE"
     else
         echo "No test file provided. Use --all to run all tests."
         exit 1
     fi
 
-    if [[ $? -ne 0 ]]; then
-        echo "E2E tests failed!"
-        exit 1
+    # If a wallet variant was provided, run once. Otherwise iterate through defaults.
+    if [[ "$WALLET_VARIANT_SPECIFIED" == true ]]; then
+        echo "Running tests with explicitly provided wallet variant: ${SPECIFIED_WALLET_VARIANT}"
+        local results_dir="$results_root_dir/${SPECIFIED_WALLET_VARIANT:-specified}"
+        mkdir -p "$results_dir"
+        if ! pytest -s "$base_target" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+            echo "E2E tests failed!"
+            exit 1
+        fi
+
+        # Optionally generate and/or serve the report for this variant
+        if [[ "$GENERATE_ALLURE" == true ]]; then
+            local report_out="$reports_root_dir/${SPECIFIED_WALLET_VARIANT:-specified}"
+            mkdir -p "$report_out"
+            echo "Generating Allure report: $report_out"
+            allure generate -c "$results_dir" -o "$report_out"
+            echo "Report generated at: $report_out (open index.html or run: allure open \"$report_out\")"
+        fi
+        if [[ "$SERVE_ALLURE" == true ]]; then
+            echo "Serving Allure report for variant: ${SPECIFIED_WALLET_VARIANT}"
+            allure serve "$results_dir"
+        fi
+    else
+        echo "No --wallet-variant provided. Running for all default variants: ${DEFAULT_WALLET_VARIANTS[*]}"
+        local failures=()
+        for variant in "${DEFAULT_WALLET_VARIANTS[@]}"; do
+            echo "\n===== Running with wallet variant: $variant ====="
+            # Build args by appending the variant
+            local results_dir="$results_root_dir/$variant"
+            # ensure per-variant directory exists and is clean for fresh run
+            rm -rf "$results_dir" && mkdir -p "$results_dir"
+            if ! pytest -s "$base_target" --wallet-variant "$variant" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                failures+=("$variant")
+                echo "---- Failed for variant: $variant ----"
+            else
+                echo "---- Passed for variant: $variant ----"
+            fi
+
+            # Optionally generate report per variant
+            if [[ "$GENERATE_ALLURE" == true ]]; then
+                local report_out="$reports_root_dir/$variant"
+                mkdir -p "$report_out"
+                echo "Generating Allure report: $report_out"
+                allure generate -c "$results_dir" -o "$report_out"
+                echo "Report generated at: $report_out (open index.html or run: allure open \"$report_out\")"
+            fi
+
+            # Optionally serve report sequentially per variant
+            if [[ "$SERVE_ALLURE" == true ]]; then
+                echo "Serving Allure report for variant: $variant"
+                allure serve "$results_dir"
+            fi
+        done
+
+        if [[ ${#failures[@]} -gt 0 ]]; then
+            echo "\nOne or more variants failed: ${failures[*]}"
+            exit 1
+        fi
     fi
 }
 

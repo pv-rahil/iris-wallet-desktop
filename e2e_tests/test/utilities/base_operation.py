@@ -1,4 +1,4 @@
-# pylint: disable=unused-import
+# pylint: disable=too-many-arguments
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -202,11 +202,11 @@ class BaseOperations:
             None
         """
         d = display.Display()
-        root = d.screen().root
-        root.change_attributes(event_mask=X.SubstructureNotifyMask)
+        root_screen = d.screen().root
+        root_screen.change_attributes(event_mask=X.SubstructureNotifyMask)
 
         # Get window list
-        raw_data = root.get_full_property(
+        raw_data = root_screen.get_full_property(
             d.intern_atom(
                 '_NET_CLIENT_LIST',
             ), X.AnyPropertyType,
@@ -236,7 +236,7 @@ class BaseOperations:
         """
         return self.activate_window_by_name(application)
 
-    def perform_action_on_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5, application=None):
+    def perform_action_on_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5, application_name=None):
         """
         Retrieves the specified element with the given role and name or description, with retries.
 
@@ -253,8 +253,8 @@ class BaseOperations:
         """
         start_time = time.time()
         elements = []
-        if application:
-            application = application
+        if application_name:
+            application = application_name
         else:
             application = self.application
 

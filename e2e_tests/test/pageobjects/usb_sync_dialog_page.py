@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from dogtail.tree import root
-from accessible_constant import USB_SYNC_DIALOG, USB_SYNC_DIALOG_CANCEL_BUTTON, USB_SYNC_DIALOG_CONTINUE_BUTTON
+
+from accessible_constant import USB_SYNC_DIALOG
+from accessible_constant import USB_SYNC_DIALOG_CANCEL_BUTTON
+from accessible_constant import USB_SYNC_DIALOG_CONTINUE_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
 
 
@@ -24,10 +27,12 @@ class USBSyncDialogPageObjects(BaseOperations):
         self.usb_sync_dialog = lambda: root.child(
             roleName='dialog', name=USB_SYNC_DIALOG,
         )
-        self.cancel_button = lambda: self.perform_action_on_element(application=self.usb_sync_dialog(),
+        self.cancel_button = lambda: self.perform_action_on_element(
+            application_name=self.usb_sync_dialog(),
             role_name='push button', name=USB_SYNC_DIALOG_CANCEL_BUTTON,
         )
-        self.continue_button = lambda: self.perform_action_on_element(application=self.usb_sync_dialog(),
+        self.continue_button = lambda: self.perform_action_on_element(
+            application_name=self.usb_sync_dialog(),
             role_name='push button', name=USB_SYNC_DIALOG_CONTINUE_BUTTON,
         )
 

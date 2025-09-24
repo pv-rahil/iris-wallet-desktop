@@ -20,10 +20,42 @@ def run_e2e(extra_args=None):
     subprocess.run(cmd, check=True)
 
 
-def serve_allure_result():
-    """Serves the Allure report for a specific results directory."""
+def serve_allure_result(variant: str | None = None):
+    """
+    Serve Allure report(s).
+
+    Behavior:
+    - If `variant` is provided and `allure-results/<variant>` exists, serve that directory.
+    - Else, if subdirectories exist under `allure-results/`, serve each sequentially.
+    - Else, fall back to serving the root `allure-results/` directory.
+    """
+    base_dir = 'allure-results'
     try:
-        with subprocess.Popen(['allure', 'serve', 'allure-results']) as process:
+        # If a specific variant is requested, try to serve that
+        if variant:
+            target = os.path.join(base_dir, variant)
+            if os.path.isdir(target):
+                with subprocess.Popen(['allure', 'serve', target]) as process:
+                    process.wait()
+                return
+
+        # Auto-detect per-variant subdirectories
+        if os.path.isdir(base_dir):
+            subdirs = [
+                os.path.join(base_dir, name)
+                for name in sorted(os.listdir(base_dir))
+                if os.path.isdir(os.path.join(base_dir, name))
+            ]
+
+            if subdirs:
+                for path in subdirs:
+                    print(f"Serving Allure results: {path}")
+                    with subprocess.Popen(['allure', 'serve', path]) as process:
+                        process.wait()
+                return
+
+        # Fallback: serve the root directory (legacy behavior)
+        with subprocess.Popen(['allure', 'serve', base_dir]) as process:
             process.wait()
     except KeyboardInterrupt:
         print('\nTerminating Allure server...')
@@ -34,7 +66,9 @@ def serve_allure_result():
 def single_test():
     """Runs a single test with optional force build."""
     if len(sys.argv) < 2:
-        print('Usage: single-test <test-file> [force-build] [--wallet-variant <mode-name-or-slug>]')
+        print(
+            'Usage: single-test <test-file> [force-build] [--wallet-variant <mode-name-or-slug>]',
+        )
         sys.exit(1)
 
     test_file = sys.argv[1]

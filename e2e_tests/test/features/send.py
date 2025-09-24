@@ -1,14 +1,14 @@
-# pylint : disable = possibly-used-before-assignment
+# pylint: disable=too-many-arguments,too-many-branches
 """
 SendOperation class provides methods for sending assets using bitcoin transfer.
 """
 from __future__ import annotations
 
-import time
 
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import RGB_LEDGER_APP_NAME
+from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
@@ -23,9 +23,11 @@ class SendOperation(MainPageObjects, BaseOperations):
         """
         Sends assets using bitcoin transfer.
         """
+        self.hardware_wallet = None
+        self.wallet_features = Wallet(application)
         super().__init__(application)
 
-    def send(self, application, receiver_invoice, amount=None, is_hardware_wallet: bool = False, purpose: str = None, is_native_auth_enabled: bool = False):
+    def send(self, application, receiver_invoice, amount=None, is_hardware_wallet: bool = False, purpose: str | None = None, is_native_auth_enabled: bool = False):
         """
         Send assets
 
@@ -45,7 +47,9 @@ class SendOperation(MainPageObjects, BaseOperations):
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
-                self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+                self.send_asset_page_objects.enter_asset_invoice(
+                    receiver_invoice,
+                )
             self.do_focus_on_application(application)
 
             if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
@@ -58,22 +62,15 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.enter_native_password()
 
             if is_hardware_wallet:
-                self.do_focus_on_application(
-                    LEDGER_EMULATOR_APP_NAME,
-                )
                 if purpose == 'send_btc':
-                    time.sleep(2)
-                    for _ in range(2):
-                        self.hw_emulator_page_objects.click_right_arrow_key(4)
-                        self.hw_emulator_page_objects.press_left_and_right()
-                    self.hw_emulator_page_objects.click_right_arrow_key(1)
-                    self.hw_emulator_page_objects.press_left_and_right()
+                    self.wallet_features.confirm_transaction_on_hardware_wallet(
+                        LEDGER_EMULATOR_APP_NAME,
+                    )
 
                 elif purpose == 'send_asset':
-                    time.sleep(2)
-                    self.hw_emulator_page_objects.click_right_arrow_key(5)
-                    self.hw_emulator_page_objects.press_left_and_right()
-                time.sleep(2)
+                    self.wallet_features.confirm_transaction_on_hardware_wallet(
+                        LEDGER_EMULATOR_APP_NAME, is_rgb=True,
+                    )
         except Exception as e:
             raise e
         finally:
@@ -111,7 +108,9 @@ class SendOperation(MainPageObjects, BaseOperations):
 
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
-                self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+                self.send_asset_page_objects.enter_asset_invoice(
+                    receiver_invoice,
+                )
 
             if self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
                 self.send_asset_page_objects.enter_asset_amount(amount)
@@ -130,15 +129,9 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.send_asset_page_objects.click_send_button()
 
             if is_hardware_wallet:
-                self.do_focus_on_application(
+                self.wallet_features.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME,
                 )
-                time.sleep(2)
-                for _ in range(2):
-                    self.hw_emulator_page_objects.click_right_arrow_key(4)
-                    self.hw_emulator_page_objects.press_left_and_right()
-                self.hw_emulator_page_objects.click_right_arrow_key(1)
-                self.hw_emulator_page_objects.press_left_and_right()
 
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
@@ -178,7 +171,7 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
             self.receive_asset_page_objects.click_receive_asset_close_button()
-        
+
         try:
             if self.do_is_displayed(self.bitcoin_detail_page_objects.bitcoin_close_button()):
                 self.bitcoin_detail_page_objects.click_bitcoin_close_button()
@@ -193,4 +186,3 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
             self.usb_sync_dialog_page_objects.click_continue_button()
-            

@@ -6,11 +6,10 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 import time
 
-from dogtail.rawinput import keyCombo
 import pyotp
+from dogtail.rawinput import keyCombo
 from dogtail.tree import root
 from dotenv import load_dotenv
 
@@ -54,25 +53,25 @@ class BackupPageObjects(BaseOperations):
             roleName='filler', name=BACKUP_WINDOW,
         )
         self.email_input = lambda: self.perform_action_on_element(
-            role_name='text', name='Email or phone', application=self.backup_window()
+            role_name='text', name='Email or phone', application_name=self.backup_window(),
         )
         self.next_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='Next', application=self.backup_window()
+            role_name='push button', name='Next', application_name=self.backup_window(),
         )
         self.password_input = lambda: self.perform_action_on_element(
-            role_name='password text', name='Enter your password', application=self.backup_window()
+            role_name='password text', name='Enter your password', application_name=self.backup_window(),
         )
         self.try_another_way_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='Try another way', application=self.backup_window()
+            role_name='push button', name='Try another way', application_name=self.backup_window(),
         )
         self.google_authenticator = lambda: self.perform_action_on_element(
-            role_name='link', name='Get a verification code from the Google Authenticator app', application=self.backup_window()
+            role_name='link', name='Get a verification code from the Google Authenticator app', application_name=self.backup_window(),
         )
         self.enter_code = lambda: self.perform_action_on_element(
-            role_name='text', name='Enter code', application=self.backup_window()
+            role_name='text', name='Enter code', application_name=self.backup_window(),
         )
         self.continue_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='Continue', application=self.backup_window()
+            role_name='push button', name='Continue', application_name=self.backup_window(),
         )
         self.backup_wallet_data_button = lambda: self.perform_action_on_element(
             role_name='push button', name=BACKUP_WALLET_DATA_BUTTON,

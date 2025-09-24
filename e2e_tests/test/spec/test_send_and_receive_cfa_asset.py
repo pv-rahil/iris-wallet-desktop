@@ -5,9 +5,11 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION, THIRD_APPLICATION
+from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -20,6 +22,7 @@ ASSET_DESCRIPTION = 'This is CFA asset'
 ASSET_AMOUNT = '2000'
 SEND_AMOUNT = '50'
 INVOICE = 'rgb:~/~/utxob:2msKeFq-uPjwpYxVY-jKS2ymYBq-SqmyP3ovg-AGvth8491-J7seMBm?expiry=1709616110&endpoints=rpc://10.0.2.2:3000/json-rpc'
+
 
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Automation of send operation for CFA asset in iris wallet')
@@ -118,6 +121,7 @@ def test_send_and_receive_cfa_asset_operation(wallets_and_operations: WalletTest
         assert received_amount == SEND_AMOUNT
         assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
 
+
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
@@ -128,7 +132,7 @@ def test_send_cfa_with_expired_invoice_for_offline_wallet(wallets_and_operations
 
     with allure.step('Create and fund first wallet for send and receive CFA (offline wallet)'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, variant=wallet_variant_name,fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Create and fund second wallet for send and receive CFA (offline wallet)'):
@@ -138,7 +142,7 @@ def test_send_cfa_with_expired_invoice_for_offline_wallet(wallets_and_operations
 
     with allure.step('Create and fund third wallet for send and receive CFA (offline wallet)'):
         wallets_and_operations.third_page_features.wallet_features.create_and_fund_wallet(
-            application=THIRD_APPLICATION, variant='online_create_on_device',
+            application=THIRD_APPLICATION, variant=ONLINE_CREATE_ON_DEVICE,
         )
 
     with allure.step('Create psbt for CFA asset (offline wallet)'):
@@ -146,14 +150,14 @@ def test_send_cfa_with_expired_invoice_for_offline_wallet(wallets_and_operations
             SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-        
+
         wallets_and_operations.second_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(
             application=SECOND_APPLICATION, asset_description=ASSET_DESCRIPTION, asset_name=ASSET_NAME, asset_amount=ASSET_AMOUNT,
         )
 
     with allure.step('Sign PSBT for CFA asset (offline wallet)'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION,variant_name=wallet_variant_name
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name,
         )
 
     with allure.step('Broadcast PSBT for CFA asset (offline wallet)'):
@@ -190,6 +194,7 @@ def test_send_cfa_with_expired_invoice_for_offline_wallet(wallets_and_operations
             'invalid_invoice',
         )
 
+
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
@@ -215,7 +220,7 @@ def test_send_and_receive_cfa_asset_operation_for_offline_wallet(wallets_and_ope
             application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
         )
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION,variant_name=wallet_variant_name,is_rgb=True
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
         )
         wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
             application=SECOND_APPLICATION,

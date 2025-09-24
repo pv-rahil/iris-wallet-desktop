@@ -7,6 +7,7 @@ import pytest
 
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
@@ -142,7 +143,7 @@ def test_send_nia_with_expired_invoice_for_offline_wallet(wallets_and_operations
 
     with allure.step('Create and fund third wallet for send and receive NIA (offline wallet)'):
         wallets_and_operations.third_page_features.wallet_features.create_and_fund_wallet(
-            application=THIRD_APPLICATION, variant='online_create_on_device',
+            application=THIRD_APPLICATION, variant=ONLINE_CREATE_ON_DEVICE,
         )
 
     with allure.step('Create psbt for NIA asset (offline wallet)'):
@@ -157,7 +158,7 @@ def test_send_nia_with_expired_invoice_for_offline_wallet(wallets_and_operations
 
     with allure.step('Sign PSBT for NIA asset (offline wallet)'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name,
         )
 
     with allure.step('Broadcast PSBT for NIA asset (offline wallet)'):
@@ -220,7 +221,7 @@ def test_send_and_receive_nia_asset_operation_for_offline_wallet(wallets_and_ope
             application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
         )
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
         )
         wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
             application=SECOND_APPLICATION,

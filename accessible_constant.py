@@ -19,12 +19,43 @@ THIRD_APPLICATION_PATH = f"{APP_NAME}_{APP3_NAME}"
 BITCOIN_LEDGER_APP_NAME = 'bitcoin_test-2.4.0'
 RGB_LEDGER_APP_NAME = 'rgb_test-2.1.0'
 LEDGER_EMULATOR_APP_NAME = 'Ledger Nano SP Emulator'
-HARDWARE_WALLET_VARIANTS = ['online_create_hardware',
-                            'offline_create_hardware', 'online_load_hardware', 'offline_load_hardware']
-REQUIRE_USB_VARIANTS = ['offline_create_hardware','offline_create_on_device',
-                        'online_watch_only']
-LOAD_WALLET_VARIANT = ['offline_load_hardware','offline_load_on_device']
-FAKEUSB_MOUNT_PATH = "/tmp/fakeusb_mount"
+HARDWARE_WALLET_VARIANTS = [
+    'online_create_hardware',
+    'offline_create_hardware', 'online_load_hardware', 'offline_load_hardware',
+]
+REQUIRE_USB_VARIANTS = [
+    'offline_create_hardware', 'offline_create_on_device',
+    'online_watch_only',
+]
+LOAD_WALLET_VARIANT = ['offline_load_hardware', 'offline_load_on_device']
+FAKEUSB_MOUNT_PATH = '/tmp/fakeusb_mount'
+
+
+# Wallet variant names (centralized)
+ONLINE_WATCH_ONLY = 'online_watch_only'
+ONLINE_CREATE_ON_DEVICE = 'online_create_on_device'
+ONLINE_CREATE_HARDWARE = 'online_create_hardware'
+ONLINE_LOAD_ON_DEVICE = 'online_load_on_device'
+ONLINE_LOAD_HARDWARE = 'online_load_hardware'
+
+OFFLINE_CREATE_ON_DEVICE = 'offline_create_on_device'
+OFFLINE_CREATE_HARDWARE = 'offline_create_hardware'
+OFFLINE_LOAD_ON_DEVICE = 'offline_load_on_device'
+OFFLINE_LOAD_HARDWARE = 'offline_load_hardware'
+
+NAME_TO_STEPS: dict[str, tuple[int, int, int, int]] = {
+    # Online
+    ONLINE_WATCH_ONLY: (1, 2, 0, 0),
+    ONLINE_CREATE_ON_DEVICE: (1, 1, 1, 1),
+    ONLINE_CREATE_HARDWARE: (1, 1, 1, 2),
+    ONLINE_LOAD_ON_DEVICE: (1, 1, 2, 1),
+    ONLINE_LOAD_HARDWARE: (1, 1, 2, 2),
+    # Offline
+    OFFLINE_CREATE_ON_DEVICE: (2, 1, 1, 0),
+    OFFLINE_CREATE_HARDWARE: (2, 1, 2, 0),
+    OFFLINE_LOAD_ON_DEVICE: (2, 2, 1, 0),
+    OFFLINE_LOAD_HARDWARE: (2, 2, 2, 0),
+}
 
 
 # Term and condition page

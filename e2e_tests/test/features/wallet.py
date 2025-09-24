@@ -1,3 +1,4 @@
+# pylint: disable=too-many-branches
 """
 Wallet class for creating and funding a wallet.
 """
@@ -6,18 +7,27 @@ from __future__ import annotations
 import os
 import time
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME, CONFIRMATION_DIALOG, LOAD_WALLET_VARIANT, REQUIRE_USB_VARIANTS, RGB_LEDGER_APP_NAME, WATCH_ONLY_DIALOG, FIRST_APPLICATION
+from dogtail.tree import root
+
+from accessible_constant import BITCOIN_LEDGER_APP_NAME
+from accessible_constant import CONFIRMATION_DIALOG
+from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import ONLINE_CREATE_ON_DEVICE
+from accessible_constant import ONLINE_WATCH_ONLY
+from accessible_constant import REQUIRE_USB_VARIANTS
+from accessible_constant import RGB_LEDGER_APP_NAME
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import WATCH_ONLY_DIALOG
+from e2e_tests.test.pageobjects.about_page import AboutPageObjects
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
+from e2e_tests.test.pageobjects.sidebar_page import SidebarPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.executable_shell_script import send_to_address
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
-from e2e_tests.test.pageobjects.about_page import AboutPageObjects
-from e2e_tests.test.pageobjects.sidebar_page import SidebarPageObjects
-from dogtail.tree import root
 from e2e_tests.test.utilities.wallet_variants import resolve_steps as resolve_wallet_steps
 
 BACKUP_EMAIL_ID = os.getenv('BACKUP_EMAIL_ID')
@@ -46,9 +56,9 @@ class Wallet(MainPageObjects, BaseOperations):
             if variant in LOAD_WALLET_VARIANT:
                 effective_variant = variant
             elif variant in REQUIRE_USB_VARIANTS:
-                effective_variant = 'online_watch_only'
+                effective_variant = ONLINE_WATCH_ONLY
             else:
-                effective_variant = 'online_create_on_device'
+                effective_variant = ONLINE_CREATE_ON_DEVICE
         else:
             effective_variant = variant
 
@@ -64,7 +74,6 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.welcome_page_objects.restore_button()):
                 self.welcome_page_objects.click_restore_button()
             return
-            
 
         if effective_variant in HARDWARE_WALLET_VARIANTS:
             self.set_up_hardware_wallet(application)
@@ -75,7 +84,9 @@ class Wallet(MainPageObjects, BaseOperations):
         if effective_variant == 'online_watch_only':
             xpub_vanilla, xpub_colored, fingerprint = self._collect_keyring_values_from_first_app()
             self.do_focus_on_application(application)
-            self.set_up_watch_only_wallet(xpub_vanilla, xpub_colored, fingerprint)
+            self.set_up_watch_only_wallet(
+                xpub_vanilla, xpub_colored, fingerprint,
+            )
 
         if self.do_is_displayed(self.set_password_page_objects.password_input()):
             self.set_password_page_objects.enter_password('walletpassword')
@@ -169,13 +180,16 @@ class Wallet(MainPageObjects, BaseOperations):
         if xpub_vanilla and xpub_colored and fingerprint and password:
             if self.do_is_displayed(self.restore_wallet_page_objects.restore_xpub_vanilla_input()):
                 self.restore_wallet_page_objects.enter_xpub_vanilla_value(
-                    xpub_vanilla)
+                    xpub_vanilla,
+                )
             if self.do_is_displayed(self.restore_wallet_page_objects.restore_xpub_colored_input()):
                 self.restore_wallet_page_objects.enter_xpub_colored_value(
-                    xpub_colored)
+                    xpub_colored,
+                )
             if self.do_is_displayed(self.restore_wallet_page_objects.restore_fingerprint_input()):
                 self.restore_wallet_page_objects.enter_fingerprint_value(
-                    fingerprint)
+                    fingerprint,
+                )
             if self.do_is_displayed(self.restore_wallet_page_objects.restore_password_input()):
                 self.restore_wallet_page_objects.enter_password_value(password)
             if self.do_is_displayed(self.restore_wallet_page_objects.restore_continue_button()):
@@ -217,7 +231,8 @@ class Wallet(MainPageObjects, BaseOperations):
         """
         try:
             speculos_process = handle_hardware_wallet(
-                app_name=BITCOIN_LEDGER_APP_NAME, reset=True)
+                app_name=BITCOIN_LEDGER_APP_NAME, reset=True,
+            )
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.hw_connect_page_objects.ledger_option()):
                 self.hw_connect_page_objects.click_ledger_option()
@@ -245,13 +260,19 @@ class Wallet(MainPageObjects, BaseOperations):
             self.watch_only_dialog_page_objects.click_watch_only_dialog()
 
         if xpub_vanilla and self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_xpub_vanilla()):
-            self.watch_only_dialog_page_objects.enter_xpub_vanilla_value(xpub_vanilla)
+            self.watch_only_dialog_page_objects.enter_xpub_vanilla_value(
+                xpub_vanilla,
+            )
 
         if xpub_colored and self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_xpub_colored()):
-            self.watch_only_dialog_page_objects.enter_xpub_colored_value(xpub_colored)
+            self.watch_only_dialog_page_objects.enter_xpub_colored_value(
+                xpub_colored,
+            )
 
         if fingerprint and self.do_is_displayed(self.watch_only_dialog_page_objects.watch_only_master_fingerprint()):
-            self.watch_only_dialog_page_objects.enter_fingerprint_value(fingerprint)
+            self.watch_only_dialog_page_objects.enter_fingerprint_value(
+                fingerprint,
+            )
 
         # Confirm checkbox and continue
         self.do_focus_on_application(WATCH_ONLY_DIALOG)
@@ -298,7 +319,7 @@ class Wallet(MainPageObjects, BaseOperations):
             sidebar_page.click_fungibles_button()
         return xpub_vanilla, xpub_colored, fingerprint
 
-    def sign_psbt(self, application, variant_name , is_rgb:bool=False):
+    def sign_psbt(self, application, variant_name, is_rgb: bool = False):
         """
         Sign psbt.
         """
@@ -320,10 +341,12 @@ class Wallet(MainPageObjects, BaseOperations):
             if variant_name in HARDWARE_WALLET_VARIANTS:
                 if is_rgb:
                     self.hardware_wallet = handle_hardware_wallet(
-                        app_name=RGB_LEDGER_APP_NAME)
+                        app_name=RGB_LEDGER_APP_NAME,
+                    )
                 else:
                     self.hardware_wallet = handle_hardware_wallet(
-                        app_name=BITCOIN_LEDGER_APP_NAME)
+                        app_name=BITCOIN_LEDGER_APP_NAME,
+                    )
 
             self.do_focus_on_application(application)
 
@@ -341,17 +364,8 @@ class Wallet(MainPageObjects, BaseOperations):
                 self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
             if self.hardware_wallet:
-                self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
-                time.sleep(2)
-                if is_rgb :
-                    self.hw_emulator_page_objects.click_right_arrow_key(5)
-                    self.hw_emulator_page_objects.press_left_and_right()
-                else:
-                    for _ in range(2):
-                        self.hw_emulator_page_objects.click_right_arrow_key(4)
-                        self.hw_emulator_page_objects.press_left_and_right()
-                    self.hw_emulator_page_objects.click_right_arrow_key(1)
-                    self.hw_emulator_page_objects.press_left_and_right()
+                self.confirm_transaction_on_hardware_wallet(
+                    LEDGER_EMULATOR_APP_NAME, is_rgb)
 
             self.do_focus_on_application(application)
 
@@ -364,13 +378,11 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
                 self.usb_sync_dialog_page_objects.click_continue_button()
 
-
         except Exception as e:
             raise e
         finally:
             if self.hardware_wallet:
                 self.hardware_wallet.terminate()
-
 
     def broadcast_psbt(self, application):
         """
@@ -411,3 +423,18 @@ class Wallet(MainPageObjects, BaseOperations):
             self.fungible_page_objects.click_refresh_button()
 
         return description
+
+    def confirm_transaction_on_hardware_wallet(self, application, is_rgb: bool = False):
+        """
+        Confirm transaction on hardware wallet.
+        """
+        self.do_focus_on_application(application)
+        if is_rgb:
+            self.hw_emulator_page_objects.click_right_arrow_key(5)
+            self.hw_emulator_page_objects.press_left_and_right()
+        else:
+            for _ in range(2):
+                self.hw_emulator_page_objects.click_right_arrow_key(4)
+                self.hw_emulator_page_objects.press_left_and_right()
+            self.hw_emulator_page_objects.click_right_arrow_key(1)
+            self.hw_emulator_page_objects.press_left_and_right()

@@ -6,8 +6,10 @@ import allure
 import pytest
 from dotenv import load_dotenv
 
-from accessible_constant import FIRST_APPLICATION, KEYRING_DIALOG_BOX, SECOND_APPLICATION
+from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import KEYRING_DIALOG_BOX
+from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -23,8 +25,8 @@ PASSWORD = None
 XPUB_VANILLA = None
 XPUB_COLORED = None
 MASTER_FINGERPRINT = None
-
 pytestmark = pytest.mark.order(1)
+
 
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -148,7 +150,9 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wall
             wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
     wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-    wallets_and_operations.first_page_operations.do_focus_on_application(KEYRING_DIALOG_BOX)
+    wallets_and_operations.first_page_operations.do_focus_on_application(
+        KEYRING_DIALOG_BOX,
+    )
     wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
     wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
     test_environment.restart()
@@ -214,6 +218,7 @@ def test_restore_with_keyring_off(wallets_and_operations: WalletTestSetup, walle
                 password=PASSWORD,
             )
 
+
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
 @allure.feature('load wallet for offline wallet')
@@ -225,9 +230,11 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
     global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
     with allure.step('Load the wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, variant=wallet_variant_name,fund=False,
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
-        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
@@ -245,26 +252,36 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
         PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
-        
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
         wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
-
     with allure.step('Create second app for load wallet'):
         load_variant = map_to_load_variant(wallet_variant_name)
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION, variant=load_variant,fund=False,
+            application=SECOND_APPLICATION, variant=load_variant, fund=False,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
         wallets_and_operations.second_page_objects.usb_sync_dialog_page_objects.click_continue_button()
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
-            wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.enter_xpub_vanilla_value(XPUB_VANILLA)
-            wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.enter_xpub_colored_value(XPUB_COLORED)
-            wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.enter_fingerprint_value(MASTER_FINGERPRINT)
+            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
+                XPUB_VANILLA,
+            )
+            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_xpub_colored_value(
+                XPUB_COLORED,
+            )
+            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_fingerprint_value(
+                MASTER_FINGERPRINT,
+            )
         else:
-            wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.(password=PASSWORD)
-        wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.click_checkbox()
-        wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.click_continue_button()
+            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
+                mnemonic=MNEMONIC,
+            )
+        wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_password_value(
+            password=PASSWORD,
+        )
+        wallets_and_operations.second_page_objects.restore_wallet_page_objects.click_continue_button()
         wallets_and_operations.second_page_operations.wait_for_toaster_message()
         wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.second_page_objects.toaster_page_objects.get_toaster_description()
@@ -276,59 +293,8 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
         wallets_and_operations.second_page_objects.enter_wallet_password_page_objects.click_login_button()
     wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
     wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
-    wallets_and_operations.second_page_operations.do_focus_on_application(KEYRING_DIALOG_BOX)
+    wallets_and_operations.second_page_operations.do_focus_on_application(
+        KEYRING_DIALOG_BOX,
+    )
     wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_check_box()
     wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_continue_button()
-    test_environment.restart_second()
-
-
-@pytest.mark.skip_for_online_wallet
-@pytest.mark.skip_for_hardware_wallet
-@allure.feature('Load wallet for offline wallet with keyring off')
-@allure.story('Load wallet for offline wallet with keyring off')
-def test_load_wallet_for_offline_wallet_with_keyring_off(wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """
-    This test case is used to load the wallet from the backup with keyring off.
-    """
-    description = None
-    SettingRepository.set_keyring_status(True)
-    load_variant = map_to_load_variant(wallet_variant_name)
-    wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-        application=SECOND_APPLICATION, variant=load_variant,fund=False,
-    )
-    wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-    wallets_and_operations.second_page_objects.usb_sync_dialog_page_objects.click_continue_button()
-    wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.enter_xpub_vanilla_value(XPUB_VANILLA)
-    wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.enter_xpub_colored_value(XPUB_COLORED)
-    wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.enter_fingerprint_value(MASTER_FINGERPRINT)
-    wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.click_checkbox()
-    wallets_and_operations.second_page_objects.watch_only_dialog_page_objects.click_continue_button()
-    with allure.step('Restore the wallet with keyring off'):
-        wallets_and_operations.second_page_operations.wait_for_toaster_message()
-        wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
-        description = wallets_and_operations.second_page_objects.toaster_page_objects.get_toaster_description()
-        assert description == INFO_RESTORE_COMPLETED
-    with allure.step('Enter password for validation'):
-        wallets_and_operations.second_page_objects.enter_wallet_password_page_objects.enter_password(
-            PASSWORD,
-        )
-        wallets_and_operations.second_page_objects.enter_wallet_password_page_objects.click_login_button()
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
-        wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
-        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
-            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
-                XPUB_VANILLA,
-            )
-            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_xpub_colored_value(
-                XPUB_COLORED,
-            )
-            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_fingerprint_value(
-                MASTER_FINGERPRINT,
-            )
-            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_password_value(
-                password=PASSWORD,
-            )
-        else:
-            wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_password_value(
-                password=PASSWORD,
-            )

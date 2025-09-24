@@ -2,7 +2,14 @@
 from __future__ import annotations
 
 from dogtail.tree import root
-from accessible_constant import WATCH_ONLY_CANCEL_BUTTON, WATCH_ONLY_CHECKBOX, WATCH_ONLY_CONTINUE_BUTTON, WATCH_ONLY_DIALOG, WATCH_ONLY_MASTER_FINGERPRINT, WATCH_ONLY_XPUB_COLORED, WATCH_ONLY_XPUB_VANILLA
+
+from accessible_constant import WATCH_ONLY_CANCEL_BUTTON
+from accessible_constant import WATCH_ONLY_CHECKBOX
+from accessible_constant import WATCH_ONLY_CONTINUE_BUTTON
+from accessible_constant import WATCH_ONLY_DIALOG
+from accessible_constant import WATCH_ONLY_MASTER_FINGERPRINT
+from accessible_constant import WATCH_ONLY_XPUB_COLORED
+from accessible_constant import WATCH_ONLY_XPUB_VANILLA
 from e2e_tests.test.utilities.base_operation import BaseOperations
 
 
@@ -24,22 +31,28 @@ class WatchOnlyDialogPageObjects(BaseOperations):
         self.watch_only_dialog = lambda: root.child(
             roleName='dialog', name=WATCH_ONLY_DIALOG,
         )
-        self.watch_only_xpub_vanilla = lambda: self.perform_action_on_element(application=self.watch_only_dialog(),
+        self.watch_only_xpub_vanilla = lambda: self.perform_action_on_element(
+            application_name=self.watch_only_dialog(),
             role_name='text', name=WATCH_ONLY_XPUB_VANILLA,
         )
-        self.watch_only_xpub_colored = lambda: self.perform_action_on_element(application=self.watch_only_dialog(),
+        self.watch_only_xpub_colored = lambda: self.perform_action_on_element(
+            application_name=self.watch_only_dialog(),
             role_name='text', name=WATCH_ONLY_XPUB_COLORED,
         )
-        self.watch_only_master_fingerprint = lambda: self.perform_action_on_element(application=self.watch_only_dialog(),
+        self.watch_only_master_fingerprint = lambda: self.perform_action_on_element(
+            application_name=self.watch_only_dialog(),
             role_name='text', name=WATCH_ONLY_MASTER_FINGERPRINT,
         )
-        self.watch_only_checkbox = lambda: self.perform_action_on_element(application=self.watch_only_dialog(),
+        self.watch_only_checkbox = lambda: self.perform_action_on_element(
+            application_name=self.watch_only_dialog(),
             role_name='check box', name=WATCH_ONLY_CHECKBOX,
         )
-        self.cancel_button = lambda: self.perform_action_on_element(application=self.watch_only_dialog(),
+        self.cancel_button = lambda: self.perform_action_on_element(
+            application_name=self.watch_only_dialog(),
             role_name='push button', name=WATCH_ONLY_CANCEL_BUTTON,
         )
-        self.continue_button = lambda: self.perform_action_on_element(application=self.watch_only_dialog(),
+        self.continue_button = lambda: self.perform_action_on_element(
+            application_name=self.watch_only_dialog(),
             role_name='push button', name=WATCH_ONLY_CONTINUE_BUTTON,
         )
 
@@ -78,7 +91,7 @@ class WatchOnlyDialogPageObjects(BaseOperations):
             bool: True if the value is entered successfully, False otherwise.
         """
         return self.do_set_value(self.watch_only_xpub_vanilla(), xpub_vanilla) if self.do_is_displayed(self.watch_only_xpub_vanilla()) else None
-        
+
     def enter_xpub_colored_value(self, xpub_colored):
         """
         Enters the colored xpub in the watch only colored xpub input field.
@@ -111,4 +124,3 @@ class WatchOnlyDialogPageObjects(BaseOperations):
             The result of the click action or None if the checkbox is not displayed.
         """
         return self.do_click(self.watch_only_checkbox()) if self.do_is_displayed(self.watch_only_checkbox()) else None
-        

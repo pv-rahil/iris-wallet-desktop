@@ -5,9 +5,11 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION, THIRD_APPLICATION
+from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -106,14 +108,14 @@ def test_hide_exhausted_asset_on_offline(wallets_and_operations: WalletTestSetup
     """Test for hiding exhausted asset for offline wallet"""
     with allure.step('Initializing the wallets and funding them'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            FIRST_APPLICATION, variant=wallet_variant_name,fund=False,
+            FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
             SECOND_APPLICATION, variant=wallet_variant_name,
         )
         wallets_and_operations.third_page_features.wallet_features.create_and_fund_wallet(
-            THIRD_APPLICATION, variant='online_create_on_device',
+            THIRD_APPLICATION, variant=ONLINE_CREATE_ON_DEVICE,
         )
 
     with allure.step('Navigating to settings page for offline wallet'):
@@ -131,12 +133,12 @@ def test_hide_exhausted_asset_on_offline(wallets_and_operations: WalletTestSetup
 
     with allure.step('Sign psbt for offline wallet'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION,wallet_variant_name
+            FIRST_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Broadcasting psbt for offline wallet'):
         wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
-            SECOND_APPLICATION
+            SECOND_APPLICATION,
         )
 
     with allure.step('Issue asset for offline wallet'):
@@ -169,7 +171,7 @@ def test_hide_exhausted_asset_on_offline(wallets_and_operations: WalletTestSetup
         )
 
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION,wallet_variant_name,is_rgb=True,
+            FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
         )
 
         wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(

@@ -3,9 +3,13 @@ Confirmation Dialog page objects for interacting with the confirmation dialog pa
 """
 from __future__ import annotations
 
-from accessible_constant import CONFIRMATION_DIALOG, CONFIRMATION_DIALOG_CONTINUE_BUTTON,CONFIRMATION_DIALOG_CHECKBOX,CONFIRMATION_DIALOG_CANCEL_BUTTON
-from e2e_tests.test.utilities.base_operation import BaseOperations
 from dogtail.tree import root
+
+from accessible_constant import CONFIRMATION_DIALOG
+from accessible_constant import CONFIRMATION_DIALOG_CANCEL_BUTTON
+from accessible_constant import CONFIRMATION_DIALOG_CHECKBOX
+from accessible_constant import CONFIRMATION_DIALOG_CONTINUE_BUTTON
+from e2e_tests.test.utilities.base_operation import BaseOperations
 
 
 class ConfirmationDialogPageObjects(BaseOperations):
@@ -18,34 +22,34 @@ class ConfirmationDialogPageObjects(BaseOperations):
             roleName='dialog', name=CONFIRMATION_DIALOG,
         )
         self.confirmation_continue_button = lambda: self.perform_action_on_element(
-            role_name='push button', name=CONFIRMATION_DIALOG_CONTINUE_BUTTON,application=self.confirmation_dialog(),
+            role_name='push button', name=CONFIRMATION_DIALOG_CONTINUE_BUTTON, application_name=self.confirmation_dialog(),
         )
         self.confirmation_checkbox = lambda: self.perform_action_on_element(
-            role_name='check box', name=CONFIRMATION_DIALOG_CHECKBOX,application=self.confirmation_dialog(),
+            role_name='check box', name=CONFIRMATION_DIALOG_CHECKBOX, application_name=self.confirmation_dialog(),
         )
         self.confirmation_cancel_button = lambda: self.perform_action_on_element(
-            role_name='push button', name=CONFIRMATION_DIALOG_CANCEL_BUTTON,application=self.confirmation_dialog(),
+            role_name='push button', name=CONFIRMATION_DIALOG_CANCEL_BUTTON, application_name=self.confirmation_dialog(),
         )
 
     def click_confirmation_dialog(self):
         """
         Clicks the confirmation dialog on the confirmation dialog page.
         """
-        print('called',self.confirmation_dialog())
+        print('called', self.confirmation_dialog())
         return self.do_click(self.confirmation_dialog()) if self.do_is_displayed(self.confirmation_dialog()) else None
 
     def click_confirmation_continue_button(self):
         """
         Clicks the confirmation continue button on the confirmation dialog page.
         """
-        print('called',self.confirmation_continue_button())
+        print('called', self.confirmation_continue_button())
         return self.do_click(self.confirmation_continue_button()) if self.do_is_displayed(self.confirmation_continue_button()) else None
 
     def click_confirmation_checkbox(self):
         """
         Clicks the confirmation checkbox on the confirmation dialog page.
         """
-        print('called',self.confirmation_checkbox())
+        print('called', self.confirmation_checkbox())
         if self.do_is_displayed(self.confirmation_checkbox()):
             return self.do_click(self.confirmation_checkbox())
         return None
