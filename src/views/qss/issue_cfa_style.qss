@@ -4,10 +4,6 @@ QWidget#issue_cfa_card {
     background-color: rgb(3, 11, 37);
     border: 1px solid rgb(102, 108, 129);
     border-radius: 8px;
-    min-width: 499px;
-    min-height: 608px;
-    max-width: 499px;
-    max-height: 608px;
 }
 
 /* Styles for line edit elements within the issue CFA card */

@@ -41,13 +41,14 @@ class USBSyncDialog(QDialog):
     for synchronization. It uses a frameless window design with a blur effect.
     """
 
-    def __init__(self, usb_drives: list[USBDrive], parent: QWidget):
+    def __init__(self, usb_drives: list[USBDrive], parent: QWidget, is_from_header: bool = False):
         """
         Initialize the USB sync dialog.
 
         Args:
             usb_drives: List of detected USB drives.
             parent: Parent widget for this dialog.
+            is_from_header: Boolean indicating if the dialog is opened from the header.
         """
         super().__init__(parent)
         self.parent_widget = parent if parent else QWidget()
@@ -56,6 +57,7 @@ class USBSyncDialog(QDialog):
         self.usb_detector = USBDetector()
         self.usb_row_layout = None
         self.fingerprint_row_layout = None
+        self.is_from_header = is_from_header
 
         self.blur_effect = QGraphicsBlurEffect()
         self.blur_effect.setBlurRadius(10)
@@ -98,7 +100,7 @@ class USBSyncDialog(QDialog):
         dialog_layout.addWidget(self.message_label)
 
         if self.usb_drives:
-            if SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD:
+            if SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD and not self.is_from_header:
                 self.fingerprint_row_layout = self._create_fingerprint_row()
                 dialog_layout.addLayout(self.fingerprint_row_layout)
             self.usb_row_layout = self._create_usb_selection_row()

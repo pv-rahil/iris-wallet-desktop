@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from accessible_constant import OFFLINE_CREATE_HARDWARE
+from accessible_constant import LOAD_WALLET_VARIANT, OFFLINE_CREATE_HARDWARE, REQUIRE_USB_VARIANTS
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_HARDWARE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
@@ -22,7 +22,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         action='store',
         help=(
             'Wallet mode key used by tests (e.g., online_create_on_device, '
-            'online_create_hardware, offline_create_on_device, offline_create_hardware).'
+            'online_create_hardware, offline_create_on_device, offline_create_hardware, '
+            'online_load_on_device, offline_load_on_device, online_load_hardware, '
+            'offline_load_hardware, online_watch_only).'
         ),
     )
 
@@ -46,7 +48,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         pytest.skip(
             'Skipping test because it is not applicable in hardware wallet mode.',
         )
-    if wallet_mode in [OFFLINE_CREATE_HARDWARE, OFFLINE_CREATE_ON_DEVICE] and any(
+    if wallet_mode in REQUIRE_USB_VARIANTS and any(
         True for _ in item.iter_markers('skip_for_offline_wallet')
     ):
         pytest.skip(
@@ -57,4 +59,16 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     ):
         pytest.skip(
             'Skipping test because it is not applicable in online wallet mode.',
+        )
+    if wallet_mode in [ONLINE_CREATE_HARDWARE, ONLINE_CREATE_ON_DEVICE, OFFLINE_CREATE_HARDWARE, OFFLINE_CREATE_ON_DEVICE] and any(
+        True for _ in item.iter_markers('skip_for_create_wallet_variants')
+    ):
+        pytest.skip(
+            'Skipping test because it is not applicable in create wallet variant mode.',
+        )
+    if wallet_mode in LOAD_WALLET_VARIANT and any(
+        True for _ in item.iter_markers('skip_for_load_wallet_variants')
+    ):
+        pytest.skip(
+            'Skipping test because it is not applicable in load wallet variant mode.',
         )

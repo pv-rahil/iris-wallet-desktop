@@ -17,6 +17,7 @@ from Xlib import display
 from Xlib import X
 
 from accessible_constant import TOASTER_DESCRIPTION
+from src.data.repository.setting_repository import SettingRepository
 
 load_dotenv()
 NATIVE_AUTHENTICATION_PASSWORD = os.getenv('NATIVE_AUTHENTICATION_PASSWORD')
@@ -397,3 +398,7 @@ class BaseOperations:
         """Enter the password when the native auth dialog is show"""
         typeText(NATIVE_AUTHENTICATION_PASSWORD)
         keyCombo('enter')
+
+    def disable_keyring(self):
+        """Disable the keyring"""
+        SettingRepository.set_keyring_status(True)

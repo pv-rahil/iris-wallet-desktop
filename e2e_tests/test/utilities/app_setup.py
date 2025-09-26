@@ -225,6 +225,56 @@ class TestEnvironment:
 
         self.launch_applications()
 
+    def reset_second_instance(self, reset_data: bool = True):
+        """Reset and relaunch only the second application instance.
+
+        This is useful when a test uses the second app to prepare credentials/backup
+        for a load/restore flow in the first app, and needs the second app to be
+        re-initialized immediately after the load completes for the remainder of the suite.
+
+        Args:
+            reset_data (bool): If True, clears the second app's data directory before relaunching.
+        """
+        # If only one instance is active, nothing to do
+        if self.num_instances < 2:
+            return
+
+        # Kill only the second process
+        self.terminate_process(self.second_process)
+        self.second_process = None
+
+        # Optionally clear only the second app's data
+        if reset_data:
+            actual_path = os.path.dirname(local_store.get_path())
+            app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
+            delete_app_data(app2_data)
+
+        # Recreate Fake USB environment if required by variant
+        env = None
+        if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
+            # Ensure fake_usb exists (create if not yet created)
+            if not self.fake_usb:
+                self.fake_usb = FakeUSB()
+            env = self.fake_usb.setup()
+
+        # Relaunch second application and reinitialize its page abstractions
+        self.second_process = subprocess.Popen(
+            [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{__version__}-x86_64.AppImage"],
+            env=env,
+        )
+        self.wait_for_application(SECOND_APPLICATION)
+
+        subprocess.run(
+            ['wmctrl', '-r', SECOND_APPLICATION, '-b', 'add,maximized_vert,maximized_horz'],
+            check=True,
+        )
+
+        self.second_application = root.child(roleName='frame', name=SECOND_APPLICATION)
+        self.second_page_features = MainFeatures(self.second_application)
+        self.second_page_objects = MainPageObjects(self.second_application)
+        self.second_page_operations = BaseOperations(self.second_application)
+        print('-'*100)
+
     def remove_keyring_entries(self, service, app_name):
         """Removes keyring entries for a given service and application name."""
         keys = [
@@ -240,6 +290,20 @@ class TestEnvironment:
                 print(f"No entry found for {key}_{app_name}.")
 
 
+_CURRENT_ENV: TestEnvironment | None = None
+
+
+def register_current_environment(env: TestEnvironment) -> None:
+    """Register the active TestEnvironment for cross-feature access."""
+    global _CURRENT_ENV
+    _CURRENT_ENV = env
+
+
+def get_current_environment() -> TestEnvironment | None:
+    """Retrieve the active TestEnvironment if registered."""
+    return _CURRENT_ENV
+
+
 @pytest.fixture(scope='module')
 def test_environment(request, wallet_variant_name: str):
     """
@@ -252,38 +316,65 @@ def test_environment(request, wallet_variant_name: str):
         multi_instance=multi_instance,
         wallet_variant_name=wallet_variant_name,
     )
+    # Register the environment so features can trigger environment-level resets
+    register_current_environment(env)
     yield env
     env.terminate()
 
 
 @pytest.fixture
-def wallets_and_operations(test_environment: TestEnvironment) -> WalletTestSetup:
+def wallets_and_operations(test_environment: TestEnvironment):
     """
-    A fixture that initializes the wallets and operations objects.
+    Expose dynamic references to the current TestEnvironment handles.
+
+    This avoids stale references after `reset_second_instance()` by resolving
+    attributes at access time.
     """
-    return WalletTestSetup(
-        first_page_features=test_environment.first_page_features,
-        second_page_features=test_environment.second_page_features
-        if test_environment.num_instances >= 2
-        else None,
-        first_page_objects=test_environment.first_page_objects,
-        second_page_objects=test_environment.second_page_objects
-        if test_environment.num_instances >= 2
-        else None,
-        first_page_operations=test_environment.first_page_operations,
-        second_page_operations=test_environment.second_page_operations
-        if test_environment.num_instances >= 2
-        else None,
-        third_page_features=test_environment.third_page_features
-        if test_environment.num_instances >= 3
-        else None,
-        third_page_objects=test_environment.third_page_objects
-        if test_environment.num_instances >= 3
-        else None,
-        third_page_operations=test_environment.third_page_operations
-        if test_environment.num_instances >= 3
-        else None,
-    )
+
+    class _HandlesProxy:
+        def __init__(self, env: TestEnvironment):
+            self._env = env
+
+        # Features
+        @property
+        def first_page_features(self):
+            return self._env.first_page_features
+
+        @property
+        def second_page_features(self):
+            return self._env.second_page_features if self._env.num_instances >= 2 else None
+
+        @property
+        def third_page_features(self):
+            return self._env.third_page_features if self._env.num_instances >= 3 else None
+
+        # Objects
+        @property
+        def first_page_objects(self):
+            return self._env.first_page_objects
+
+        @property
+        def second_page_objects(self):
+            return self._env.second_page_objects if self._env.num_instances >= 2 else None
+
+        @property
+        def third_page_objects(self):
+            return self._env.third_page_objects if self._env.num_instances >= 3 else None
+
+        # Operations
+        @property
+        def first_page_operations(self):
+            return self._env.first_page_operations
+
+        @property
+        def second_page_operations(self):
+            return self._env.second_page_operations if self._env.num_instances >= 2 else None
+
+        @property
+        def third_page_operations(self):
+            return self._env.third_page_operations if self._env.num_instances >= 3 else None
+
+    return _HandlesProxy(test_environment)
 
 
 @pytest.fixture(scope='session', autouse=True)

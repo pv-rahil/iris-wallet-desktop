@@ -45,7 +45,7 @@ class WelcomeViewModel(QObject, ThreadManager):
         self.run_in_thread(
             self.usb_sync_manager.sync_from_usb,
             {
-                'args': [usb_drive, master_fingerprint],
+                'args': [usb_drive, master_fingerprint, True],
                 'callback': lambda: self.handle_sync_completed(data),
                 'error_callback': self.handle_sync_error,
             },

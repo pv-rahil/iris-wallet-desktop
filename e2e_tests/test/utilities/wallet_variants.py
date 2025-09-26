@@ -63,6 +63,34 @@ def map_to_load_variant(variant_name: str) -> str:
     return mapped
 
 
+def map_load_to_create(variant_name: str) -> str:
+    """Map a 'load' variant name to its corresponding 'create' variant name.
+
+    Strategy:
+    - Convert variant to steps using resolve_steps.
+    - For online (s1 == 1), set step3 to 1 (create) and keep step2 the same.
+    - For offline (s1 == 2), set step2 to 1 (create) and keep step3 the same.
+    - Look up the variant name from the adjusted steps.
+    """
+    s1, s2, s3, s4 = resolve_steps(variant_name)
+
+    # If already a create variant (s3 == 1 for on-device; hardware create uses s3 == 2),
+    # just return normalized name.
+    # We still normalize via steps_to_name below to ensure canonical naming.
+    if s1 == 1:
+        target = (s1, s2, 1, s4)
+    else:
+        target = (s1, 1, s3, s4)
+
+    mapped = steps_to_name.get(target)
+    if not mapped:
+        expected = ', '.join(sorted(NAME_TO_STEPS.keys()))
+        raise ValueError(
+            f"No matching 'create' variant found for steps {target}. Known: {expected}",
+        )
+    return mapped
+
+
 def handle_hardware_wallet(app_name: str, reset: bool = False) -> subprocess.Popen:
     """Launch the Speculos emulator for a given hardware wallet app."""
     if reset:

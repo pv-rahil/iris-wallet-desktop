@@ -481,7 +481,7 @@ class HeaderFrame(QFrame, QObject):
             return
         password = self._check_keyring_state()
         usb_drives = self.usb_detector.detect_usb_drives()
-        dialog = USBSyncDialog(usb_drives, self.window())
+        dialog = USBSyncDialog(usb_drives, self.window(),is_from_header = True)
         if dialog.exec() == QDialog.Accepted:
             selected_drive = dialog.get_selected_drive()
             if selected_drive:

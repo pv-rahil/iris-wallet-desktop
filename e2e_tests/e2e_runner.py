@@ -24,13 +24,33 @@ def serve_allure_result(variant: str | None = None):
     """
     Serve Allure report(s).
 
+    How to use via CLI (pyproject `allure-result`):
+    - `allure-result`                    -> auto-detect and serve each variant under allure-results/
+    - `allure-result online_create_on_device` -> serve allure-results/online_create_on_device
+    - `allure-result list`               -> list available variant result folders
+
     Behavior:
-    - If `variant` is provided and `allure-results/<variant>` exists, serve that directory.
+    - If `variant` is provided (or a positional arg is passed) and `allure-results/<variant>` exists, serve that directory.
     - Else, if subdirectories exist under `allure-results/`, serve each sequentially.
     - Else, fall back to serving the root `allure-results/` directory.
     """
     base_dir = 'allure-results'
     try:
+        # Accept variant from positional CLI arg when invoked as console script
+        if variant is None and len(sys.argv) > 1:
+            candidate = sys.argv[1].strip()
+            if candidate:
+                if candidate.lower() in {'list', '--list', '-l'}:
+                    if not os.path.isdir(base_dir):
+                        print('No allure-results directory found.')
+                        return
+                    print('Available allure result variants:')
+                    for name in sorted(os.listdir(base_dir)):
+                        if os.path.isdir(os.path.join(base_dir, name)):
+                            print(f"- {name}")
+                    return
+                variant = candidate
+
         # If a specific variant is requested, try to serve that
         if variant:
             target = os.path.join(base_dir, variant)

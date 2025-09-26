@@ -330,7 +330,7 @@ class USBSyncManager:
             logger.error('Sync to USB failed: %s', exc)
             raise exc
 
-    def sync_from_usb(self, usb_drive=None, master_fingerprint=None):
+    def sync_from_usb(self, usb_drive=None, master_fingerprint=None, is_load: bool = False):
         """Restore local wallet state from the selected USB drive wallet ZIP."""
         try:
             if usb_drive and master_fingerprint:
@@ -370,7 +370,10 @@ class USBSyncManager:
                     )
 
                 self._restore_wallet_data(data, only_folder=True)
-                local_store.set_value(SYNC_INDEX, usb_index+1)
+                if is_load:
+                    local_store.set_value(SYNC_INDEX, usb_index)
+                else:
+                    local_store.set_value(SYNC_INDEX, usb_index+1)
                 local_store.set_value(LAST_SYNC_DIRECTION, 'usb_to_wallet')
 
                 # --- NEW: extract epoch_time from USB ini ---

@@ -48,3 +48,22 @@ class FakeUSB:
 
     def cleanup(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+
+def clear_fake_usb_mount_all():
+    """
+    Remove all files from the fake USB mount directory (shared between instances).
+    """
+    try:
+        if os.path.isdir(FAKEUSB_MOUNT_PATH):
+            for name in os.listdir(FAKEUSB_MOUNT_PATH):
+                path = os.path.join(FAKEUSB_MOUNT_PATH, name)
+                try:
+                    if os.path.isfile(path) or os.path.islink(path):
+                        os.remove(path)
+                    elif os.path.isdir(path):
+                        shutil.rmtree(path, ignore_errors=True)
+                except Exception:
+                    pass
+    except Exception:
+        pass
