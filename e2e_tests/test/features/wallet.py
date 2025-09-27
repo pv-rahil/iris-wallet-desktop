@@ -8,19 +8,26 @@ import os
 import time
 
 from dogtail.tree import root
+import subprocess
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME
+from accessible_constant import BITCOIN_LEDGER_APP_NAME, SECOND_APPLICATION_PATH
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
+from accessible_constant import OFFLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import WATCH_ONLY_DIALOG
+from accessible_constant import APP2_NAME
+from e2e_tests.test.utilities.reset_app import delete_app_data
+from src.utils.constant import APP_NAME
+from src.utils.local_store import local_store
+from src.version import __version__
 from e2e_tests.test.pageobjects.about_page import AboutPageObjects
 from e2e_tests.test.pageobjects.keyring_dialog_page import KeyringDialogBoxPageObjects
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -55,17 +62,36 @@ class Wallet(MainPageObjects, BaseOperations):
         """
         self.do_focus_on_application(application)
 
-        # Second app should be watch-only when primary variant is offline
-        if application == SECOND_APPLICATION:
-            if is_load_wallet:
-                effective_variant = variant
-            else:
-                if variant in REQUIRE_USB_VARIANTS:
+        # Decide effective variant based on instance mode and app role
+        env = self.get_current_environment()
+        original_watch_only = (variant == ONLINE_WATCH_ONLY)
+        multi_instance = bool(env and getattr(env, 'num_instances', 1) >= 2)
+
+        if original_watch_only:
+            if multi_instance:
+                # Multi-instance: first -> offline_create_on_device, second -> watch_only
+                if application == FIRST_APPLICATION:
+                    effective_variant = OFFLINE_CREATE_ON_DEVICE
+                elif application == SECOND_APPLICATION:
                     effective_variant = ONLINE_WATCH_ONLY
                 else:
-                    effective_variant = ONLINE_CREATE_ON_DEVICE
+                    effective_variant = variant
+            else:
+                # Single-instance: run helper flow that spawns temp second app, then return
+                self.setup_watch_only_single_instance()
+                return
         else:
-            effective_variant = variant
+            # Non watch-only: keep existing rules
+            if application == SECOND_APPLICATION:
+                if is_load_wallet:
+                    effective_variant = variant
+                else:
+                    if variant in REQUIRE_USB_VARIANTS:
+                        effective_variant = ONLINE_WATCH_ONLY
+                    else:
+                        effective_variant = ONLINE_CREATE_ON_DEVICE
+            else:
+                effective_variant = variant
 
         if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
             self.term_and_condition_page_objects.scroll_to_end()
@@ -136,6 +162,67 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
             self.fungible_page_objects.click_refresh_button()
+
+    def setup_watch_only_single_instance(self):
+        """Single-instance watch-only flow: spawn a temp second app, create offline wallet,
+        collect xpubs/fingerprint, and configure the first app as watch-only.
+        """
+        env = self.get_current_environment()
+        if not env:
+            return
+        # Prepare FIRST app to the watch-only dialog
+        self.do_focus_on_application(FIRST_APPLICATION)
+        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
+            self.term_and_condition_page_objects.scroll_to_end()
+        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
+            self.term_and_condition_page_objects.click_accept_button()
+        self.drive_selection_flow(FIRST_APPLICATION, ONLINE_WATCH_ONLY)
+        if self.do_is_displayed(self.welcome_page_objects.create_button()):
+            self.welcome_page_objects.click_create_button()
+        proc = None
+        try:
+            actual_path = os.path.dirname(local_store.get_path())
+            app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
+            delete_app_data(app2_data)
+            # Launch temp second instance with default environment (not TestEnvironment)
+            proc = subprocess.Popen(
+                [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{__version__}-x86_64.AppImage"],
+                env=None,
+            )
+            # Wait for the second application window
+            if hasattr(env, 'wait_for_application'):
+                env.wait_for_application(SECOND_APPLICATION)
+            # Maximize the second window for stability
+            subprocess.run(
+                ['wmctrl', '-r', SECOND_APPLICATION, '-b', 'add,maximized_vert,maximized_horz'],
+                check=True,
+            )
+            second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+            second_wallet = Wallet(second_app)
+            second_wallet.create_wallet(SECOND_APPLICATION, OFFLINE_CREATE_ON_DEVICE, is_load_wallet=True)
+
+            xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app(SECOND_APPLICATION)
+
+            self.do_focus_on_application(FIRST_APPLICATION)
+            self.set_up_watch_only_wallet(xpub_vanilla, xpub_colored, fingerprint)
+
+            if self.do_is_displayed(self.set_password_page_objects.password_input()):
+                self.set_password_page_objects.enter_password('walletpassword')
+            if self.do_is_displayed(self.set_password_page_objects.confirm_password_input()):
+                self.set_password_page_objects.enter_confirm_password('walletpassword')
+            if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
+                self.set_password_page_objects.click_proceed_button()
+        except Exception as e:
+            print(f"Error in setup_watch_only_single_instance: {e}")
+        finally:
+            # Safely terminate the temp second process
+            try:
+                if proc and hasattr(env, 'terminate_process'):
+                    env.terminate_process(proc)
+                elif proc:
+                    proc.terminate()
+            except Exception:
+                pass
 
     def create_and_fund_wallet(self, application, variant: str, fund=True):
         """
@@ -254,8 +341,7 @@ class Wallet(MainPageObjects, BaseOperations):
         
         clear_fake_usb_mount_all()
 
-        from e2e_tests.test.utilities.app_setup import get_current_environment
-        env = get_current_environment()
+        env = self.get_current_environment()
         if env:
             # If running single-instance tests, kill the temporary second instance we spawned
             if getattr(env, 'num_instances', 2) < 2:

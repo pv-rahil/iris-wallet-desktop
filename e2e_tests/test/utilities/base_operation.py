@@ -21,6 +21,7 @@ from src.data.repository.setting_repository import SettingRepository
 
 load_dotenv()
 NATIVE_AUTHENTICATION_PASSWORD = os.getenv('NATIVE_AUTHENTICATION_PASSWORD')
+_CURRENT_ENV = None
 
 
 class BaseOperations:
@@ -31,7 +32,7 @@ class BaseOperations:
         application (Node): The root node of the GUI application.
     """
 
-    def __init__(self, application):
+    def __init__(self, application=None):
         """
         Initializes the BaseOperations class.
 
@@ -402,3 +403,14 @@ class BaseOperations:
     def disable_keyring(self):
         """Disable the keyring"""
         SettingRepository.set_keyring_status(True)
+
+
+    def register_current_environment(self,env) -> None:
+        """Register the active TestEnvironment for cross-feature access."""
+        global _CURRENT_ENV
+        _CURRENT_ENV = env
+
+
+    def get_current_environment(self):
+        """Retrieve the active TestEnvironment if registered."""
+        return _CURRENT_ENV

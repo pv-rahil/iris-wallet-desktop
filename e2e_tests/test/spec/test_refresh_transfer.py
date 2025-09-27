@@ -12,7 +12,7 @@ from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
-from e2e_tests.test.utilities.app_setup import WalletTestSetup
+from e2e_tests.test.utilities.model import WalletTestSetup
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
 ASSET_TICKER = 'TTK'

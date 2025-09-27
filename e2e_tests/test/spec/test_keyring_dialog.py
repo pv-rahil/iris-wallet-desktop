@@ -11,7 +11,7 @@ from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
-from e2e_tests.test.utilities.app_setup import WalletTestSetup
+from e2e_tests.test.utilities.model import WalletTestSetup
 
 MNEMONIC = None
 PASSWORD = None

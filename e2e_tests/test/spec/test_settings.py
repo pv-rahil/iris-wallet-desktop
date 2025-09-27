@@ -9,7 +9,7 @@ from accessible_constant import FIRST_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
-from e2e_tests.test.utilities.app_setup import WalletTestSetup
+from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.error_message import ERROR_UNABLE_TO_SET_INDEXER_URL
 from src.utils.error_message import ERROR_UNABLE_TO_SET_PROXY_ENDPOINT

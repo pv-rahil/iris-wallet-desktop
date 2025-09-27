@@ -23,6 +23,7 @@ from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_APPLICATION_PATH
 from accessible_constant import FIRST_SERVICE
 from accessible_constant import REQUIRE_USB_VARIANTS
+from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import SECOND_APPLICATION_PATH
 from accessible_constant import SECOND_SERVICE
@@ -33,7 +34,6 @@ from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.fake_usb import FakeUSB
-from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.constant import APP_NAME
@@ -62,6 +62,8 @@ class TestEnvironment:
             self.num_instances = max(1, min(3, multi_instance))
         else:
             self.num_instances = 2
+        # Track originally requested count before we possibly bump due to variant
+        self._requested_instances = self.num_instances
         # Initialize process attributes
         self.first_process = None
         self.second_process = None
@@ -70,6 +72,9 @@ class TestEnvironment:
 
         # Determine whether to enable Fake USB environment based on variant
         self.wallet_variant_name = (wallet_variant_name or '').lower()
+        # Force-enable second instance ONLY for load flows when single instance requested
+        if self.wallet_variant_name in LOAD_WALLET_VARIANT and self.num_instances < 2:
+            self.num_instances = 2
         # Lazy-create FakeUSB only when needed during launch
         self.fake_usb = None
 
@@ -273,7 +278,6 @@ class TestEnvironment:
         self.second_page_features = MainFeatures(self.second_application)
         self.second_page_objects = MainPageObjects(self.second_application)
         self.second_page_operations = BaseOperations(self.second_application)
-        print('-'*100)
 
     def remove_keyring_entries(self, service, app_name):
         """Removes keyring entries for a given service and application name."""
@@ -290,20 +294,6 @@ class TestEnvironment:
                 print(f"No entry found for {key}_{app_name}.")
 
 
-_CURRENT_ENV: TestEnvironment | None = None
-
-
-def register_current_environment(env: TestEnvironment) -> None:
-    """Register the active TestEnvironment for cross-feature access."""
-    global _CURRENT_ENV
-    _CURRENT_ENV = env
-
-
-def get_current_environment() -> TestEnvironment | None:
-    """Retrieve the active TestEnvironment if registered."""
-    return _CURRENT_ENV
-
-
 @pytest.fixture(scope='module')
 def test_environment(request, wallet_variant_name: str):
     """
@@ -317,7 +307,8 @@ def test_environment(request, wallet_variant_name: str):
         wallet_variant_name=wallet_variant_name,
     )
     # Register the environment so features can trigger environment-level resets
-    register_current_environment(env)
+    base_operation = BaseOperations()
+    base_operation.register_current_environment(env)
     yield env
     env.terminate()
 
@@ -325,53 +316,80 @@ def test_environment(request, wallet_variant_name: str):
 @pytest.fixture
 def wallets_and_operations(test_environment: TestEnvironment):
     """
-    Expose dynamic references to the current TestEnvironment handles.
-
-    This avoids stale references after `reset_second_instance()` by resolving
-    attributes at access time.
+    A fixture that provides dynamic access to the TestEnvironment handles.
     """
 
     class _HandlesProxy:
+        """
+        A proxy class that provides dynamic access to the TestEnvironment handles.
+        """
         def __init__(self, env: TestEnvironment):
             self._env = env
 
         # Features
         @property
         def first_page_features(self):
+            """
+            Returns the first page features.
+            """
             return self._env.first_page_features
 
         @property
         def second_page_features(self):
+            """
+            Returns the second page features.
+            """
             return self._env.second_page_features if self._env.num_instances >= 2 else None
 
         @property
         def third_page_features(self):
+            """
+            Returns the third page features.
+            """
             return self._env.third_page_features if self._env.num_instances >= 3 else None
 
         # Objects
         @property
         def first_page_objects(self):
+            """
+            Returns the first page objects.
+            """
             return self._env.first_page_objects
 
         @property
         def second_page_objects(self):
+            """
+            Returns the second page objects.
+            """
             return self._env.second_page_objects if self._env.num_instances >= 2 else None
 
         @property
         def third_page_objects(self):
+            """
+            Returns the third page objects.
+            """
             return self._env.third_page_objects if self._env.num_instances >= 3 else None
 
         # Operations
         @property
         def first_page_operations(self):
+            """
+            Returns the first page operations.
+            """
             return self._env.first_page_operations
 
         @property
         def second_page_operations(self):
+            """
+            Returns the second page operations.
+            """
             return self._env.second_page_operations if self._env.num_instances >= 2 else None
 
         @property
         def third_page_operations(self):
+            """
+            Returns the third page operations.
+            """
             return self._env.third_page_operations if self._env.num_instances >= 3 else None
 
     return _HandlesProxy(test_environment)
