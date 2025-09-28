@@ -3,6 +3,7 @@
 SendOperation class provides methods for sending assets using bitcoin transfer.
 """
 from __future__ import annotations
+import time
 
 
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
@@ -75,6 +76,7 @@ class SendOperation(MainPageObjects, BaseOperations):
             raise e
         finally:
             if self.hardware_wallet:
+                time.sleep(2)
                 self.hardware_wallet.terminate()
 
     def send_with_no_fund(self, application, receiver_invoice, amount):

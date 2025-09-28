@@ -39,7 +39,7 @@ def test_login_app_toggle_button_on(test_environment, wallets_and_operations: Wa
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
 
-        test_environment.restart(reset_data=False)
+        test_environment.restart_single_instance(reset_data=False)
 
 
 @allure.feature('Login app')

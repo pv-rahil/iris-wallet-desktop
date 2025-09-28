@@ -230,6 +230,25 @@ class TestEnvironment:
 
         self.launch_applications()
 
+    def restart_single_instance(self, reset_data: bool = True):
+        """Restart only the first application instance and ensure environment runs single-instance.
+
+        This is useful for flows where we initially needed multiple instances (e.g. load/on-device),
+        but subsequent tests should continue with a single app instance only.
+        """
+        # Terminate any running processes (first/second/third if present)
+        self.terminate()
+
+        # Force the environment to single-instance going forward
+        self.num_instances = 1
+
+        # Optionally clear app data (first app only is strictly necessary here)
+        if reset_data:
+            self.reset_app_data()
+
+        # Relaunch only the first application
+        self.launch_applications()
+
     def reset_second_instance(self, reset_data: bool = True):
         """Reset and relaunch only the second application instance.
 

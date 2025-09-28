@@ -86,7 +86,9 @@ class Wallet(MainPageObjects, BaseOperations):
                 if is_load_wallet:
                     effective_variant = variant
                 else:
-                    if variant in REQUIRE_USB_VARIANTS:
+                    if variant in LOAD_WALLET_VARIANT:
+                        effective_variant = variant
+                    elif variant in REQUIRE_USB_VARIANTS:
                         effective_variant = ONLINE_WATCH_ONLY
                     else:
                         effective_variant = ONLINE_CREATE_ON_DEVICE
@@ -136,7 +138,6 @@ class Wallet(MainPageObjects, BaseOperations):
         """
 
         self.do_focus_on_application(application)
-        print('wrong call')
 
         if self.do_is_displayed(self.fungible_page_objects.bitcoin_frame()):
             self.fungible_page_objects.click_bitcoin_frame()
@@ -229,13 +230,13 @@ class Wallet(MainPageObjects, BaseOperations):
         Create a new wallet and fund it.
         """
         if application == FIRST_APPLICATION and variant in LOAD_WALLET_VARIANT:
-            self.load_wallet(application, variant)
+            self.load_wallet(application, variant,fund)
             return
         self.create_wallet(application, variant)
         if fund:
             self.fund_wallet(application)
 
-    def load_wallet(self, application, variant: str):
+    def load_wallet(self, application, variant: str, fund:bool):
         """
         Drive the wallet "load/restore" flow for the given variant.
 
@@ -301,6 +302,8 @@ class Wallet(MainPageObjects, BaseOperations):
                 second_wallet.toaster_page_objects.click_toaster_close_button()
             if second_wallet.do_is_displayed(second_wallet.backup_page_objects.backup_wallet_data_button()):
                 second_wallet.backup_page_objects.click_backup_wallet_data_button()
+            if second_wallet.do_is_displayed(second_wallet.toaster_page_objects.toaster_frame()):
+                second_wallet.toaster_page_objects.click_toaster_close_button()
 
         # Now focus back to the first app and complete the restore with collected credentials
         self.do_focus_on_application(application)
@@ -338,16 +341,21 @@ class Wallet(MainPageObjects, BaseOperations):
             self.enter_wallet_password_page_objects.enter_password(password)
         if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
             self.enter_wallet_password_page_objects.click_login_button()
+        if variant not in REQUIRE_USB_VARIANTS and fund :
+            self.fund_wallet(application)
         
         clear_fake_usb_mount_all()
 
         env = self.get_current_environment()
         if env:
-            # If running single-instance tests, kill the temporary second instance we spawned
-            if getattr(env, 'num_instances', 2) < 2:
+            requested_instances = getattr(env, '_requested_instances', getattr(env, 'num_instances', 1))
+            originally_single = requested_instances < 2
+            if originally_single:
                 try:
-                    env.terminate_process(getattr(env, 'second_process', None))
-                    env.second_process = None
+                    proc = getattr(env, 'second_process', None)
+                    if proc:
+                        env.terminate_process(proc)
+                        env.second_process = None
                 except Exception:
                     pass
             else:
@@ -463,6 +471,19 @@ class Wallet(MainPageObjects, BaseOperations):
             self.restore_wallet_page_objects.enter_password_value(password)
         if self.do_is_displayed(self.restore_wallet_page_objects.restore_continue_button()):
             self.restore_wallet_page_objects.click_continue_button()
+
+    def navigate_to_watch_only_restore(self, application):
+        """Drive selection to Watch-Only and open the Restore flow on the welcome page."""
+        self.do_focus_on_application(application)
+        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
+            self.term_and_condition_page_objects.scroll_to_end()
+        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
+            self.term_and_condition_page_objects.click_accept_button()
+        # Drive to watch-only selection
+        self.drive_selection_flow(application, ONLINE_WATCH_ONLY)
+        # Open Restore on welcome (do not click Create for this flow)
+        if self.do_is_displayed(self.welcome_page_objects.restore_button()):
+            self.welcome_page_objects.click_restore_button()
 
     def set_up_hardware_wallet(self, application):
         """
@@ -706,7 +727,9 @@ class Wallet(MainPageObjects, BaseOperations):
             self.hw_emulator_page_objects.press_left_and_right()
         else:
             for _ in range(2):
+                time.sleep(1)
                 self.hw_emulator_page_objects.click_right_arrow_key(4)
                 self.hw_emulator_page_objects.press_left_and_right()
+            time.sleep(2)
             self.hw_emulator_page_objects.click_right_arrow_key(1)
             self.hw_emulator_page_objects.press_left_and_right()

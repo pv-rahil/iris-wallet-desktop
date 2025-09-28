@@ -104,7 +104,7 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
         assert description == INFO_BACKUP_COMPLETED
-        test_environment.restart()
+        test_environment.restart_single_instance()
 
 
 @pytest.mark.skip_for_offline_wallet
@@ -157,6 +157,7 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wall
 
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
+@pytest.mark.skip_for_watch_only
 @allure.feature('load wallet for offline wallet')
 @allure.story('load wallet functionality for offline wallet')
 def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -194,14 +195,14 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
         )
         wallets_and_operations.second_page_objects.usb_sync_dialog_page_objects.click_continue_button()
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
-            wallets_and_operations.second_page_features.wallet_features.usb_sync_then_restore_with_xpubs(
+            wallets_and_operations.second_page_features.wallet_features.restore_with_xpubs(
                 xpub_vanilla=XPUB_VANILLA,
                 xpub_colored=XPUB_COLORED,
                 fingerprint=MASTER_FINGERPRINT,
                 password=PASSWORD,
             )
         else:
-            wallets_and_operations.second_page_features.wallet_features.usb_sync_then_restore_with_mnemonic(
+            wallets_and_operations.second_page_features.wallet_features.restore_with_mnemonic(
                 mnemonic=MNEMONIC,
                 password=PASSWORD,
             )
@@ -216,8 +217,48 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
         wallets_and_operations.second_page_objects.enter_wallet_password_page_objects.click_login_button()
     wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
     wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
-    wallets_and_operations.second_page_operations.do_focus_on_application(
-        KEYRING_DIALOG_BOX,
-    )
-    wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_check_box()
-    wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_continue_button()
+
+@pytest.mark.skip_for_create_wallet_variants
+@pytest.mark.skip_for_load_wallet_variants
+@allure.feature('Watch-only wallet')
+@allure.story('Watch-only backup and restore flow')
+@pytest.mark.parametrize('test_environment', [False], indirect=True)
+def test_watch_only_backup_and_restore(test_environment, wallets_and_operations: WalletTestSetup):
+    """
+    Configure watch-only, backup, restart clean, restore watch-only via xpubs, assert success.
+    """
+    # Configure watch-only in single-instance mode
+    with allure.step('Configure watch-only wallet'):
+        wallets_and_operations.first_page_features.wallet_features.setup_watch_only_single_instance()
+
+    # Optionally configure backup provider (Google) before taking backup
+    with allure.step('Configure backup provider (Google)'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
+        wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
+        wallets_and_operations.first_page_features.wallet_features.google_auth()
+        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
+
+    # Take backup and assert
+    with allure.step('Backup watch-only wallet'):
+        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
+        wallets_and_operations.first_page_operations.wait_for_toaster_message()
+        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        assert description == INFO_BACKUP_COMPLETED
+        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_close_button()
+
+    # Collect xpubs/fingerprint prior to restart
+    with allure.step('Collect xpubs/fingerprint for watch-only before restart'):
+        xpub_vanilla, xpub_colored, fingerprint, password = (
+            wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(is_load_wallet=True)
+        )
+
+    # Restart with clean data and restore via xpubs (Google backup path)
+    with allure.step('Restart app with clean data and restore watch-only via xpubs'):
+        test_environment.restart_single_instance(reset_data=True)
+        wallets_and_operations.first_page_features.wallet_features.navigate_to_watch_only_restore(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.google_auth(password=password,xpub_vanilla=xpub_vanilla,xpub_colored=xpub_colored, fingerprint=fingerprint)
+        wallets_and_operations.first_page_operations.wait_for_toaster_message()
+        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        assert description == INFO_RESTORE_COMPLETED

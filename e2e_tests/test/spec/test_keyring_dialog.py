@@ -54,7 +54,7 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
         PASSWORD = wallets_and_operations.first_page_operations.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
-        test_environment.restart(reset_data=False)
+        test_environment.restart_single_instance(reset_data=False)
 
 
 @allure.feature('Keyring')

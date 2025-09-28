@@ -7,7 +7,7 @@ import time
 import allure
 import pytest
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME, SECOND_APPLICATION
+from accessible_constant import BITCOIN_LEDGER_APP_NAME, HARDWARE_WALLET_VARIANTS, SECOND_APPLICATION
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from e2e_tests.test.utilities.app_setup import test_environment
@@ -27,6 +27,7 @@ ASSET_AMOUNT = '2000'
 @allure.story('Test for fail transfer')
 def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for fail transfer"""
+    hardware_wallet = None
 
     with allure.step('Creating and funding the wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
@@ -42,26 +43,25 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_n
         wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
             asset_name=NIA_ASSET_NAME,
         )
-        hardware_wallet = handle_hardware_wallet(
-            app_name=BITCOIN_LEDGER_APP_NAME)
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            hardware_wallet = handle_hardware_wallet(
+                app_name=BITCOIN_LEDGER_APP_NAME)
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION)
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_receive_button()
-        time.sleep(2)
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            LEDGER_EMULATOR_APP_NAME)
-        for _ in range(2):
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            time.sleep(2)
+            wallets_and_operations.first_page_operations.do_focus_on_application(
+                LEDGER_EMULATOR_APP_NAME)
+            for _ in range(2):
+                wallets_and_operations.first_page_objects.hw_emulator_page_objects.click_right_arrow_key(
+                    4)
+                wallets_and_operations.first_page_objects.hw_emulator_page_objects.press_left_and_right()
             wallets_and_operations.first_page_objects.hw_emulator_page_objects.click_right_arrow_key(
-                4)
+                1)
             wallets_and_operations.first_page_objects.hw_emulator_page_objects.press_left_and_right()
-        wallets_and_operations.first_page_objects.hw_emulator_page_objects.click_right_arrow_key(
-            1)
-        wallets_and_operations.first_page_objects.hw_emulator_page_objects.press_left_and_right()
-        wallets_and_operations.first_page_features.receive_features.receive(
-            application=FIRST_APPLICATION,
-        )
-        time.sleep(2)
-        hardware_wallet.terminate()
+            time.sleep(2)
+        wallets_and_operations.first_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
 
     with allure.step('Failing the transfer'):
         wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
@@ -73,6 +73,8 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_n
     toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
 
     assert toaster_description == INFO_FAIL_TRANSFER_SUCCESSFULLY
+    if hardware_wallet:
+        hardware_wallet.terminate()
 
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
