@@ -25,6 +25,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.selection_page_model import SelectionPageModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -60,8 +61,8 @@ class SelectionPage(QWidget):
 
         self.widget_page = QWidget(self)
         self.widget_page.setObjectName('widget_page')
-        self.widget_page.setMinimumSize(QSize(780, 400))
-        self.widget_page.setMaximumSize(QSize(780, 600))
+        self.widget_page.setMinimumSize(QSize(980, 460))
+        self.widget_page.setMaximumSize(QSize(980, 640))
 
         self.vertical_layout = QVBoxLayout(self.widget_page)
         self.vertical_layout.setSpacing(4)
@@ -97,16 +98,18 @@ class SelectionPage(QWidget):
 
         self.select_option_layout = QHBoxLayout()
         self.select_option_layout.setObjectName('select_option_layout')
-        self.select_option_layout.setContentsMargins(50, 0, 0, 0)
-        self.select_option_layout.setSpacing(50)
+        self.select_option_layout.setContentsMargins(40, 0, 40, 0)
+        self.select_option_layout.setSpacing(60)
+        # Add initial stretch to help center-align the two option cards
+        self.select_option_layout.addStretch()
         self.option_1_frame = ClickableFrame(
             self.params.logo_1_title,
         )
         self.option_1_frame.setObjectName('option_1_frame')
         self.option_1_frame.setAccessibleName(OPTION_1_FRAME)
         self.option_1_frame.setCursor(QCursor(Qt.PointingHandCursor))
-        self.option_1_frame.setMinimumSize(QSize(315, 200))
-        self.option_1_frame.setMaximumSize(QSize(315, 200))
+        self.option_1_frame.setMinimumSize(QSize(400, 240))
+        self.option_1_frame.setMaximumSize(QSize(400, 240))
 
         self.option_1_frame.setFrameShape(QFrame.StyledPanel)
         self.option_1_frame.setFrameShadow(QFrame.Raised)
@@ -151,8 +154,8 @@ class SelectionPage(QWidget):
         self.option_2_frame.setObjectName('option_2_frame')
         self.option_2_frame.setAccessibleName(OPTION_2_FRAME)
         self.option_2_frame.setCursor(QCursor(Qt.PointingHandCursor))
-        self.option_2_frame.setMinimumSize(QSize(315, 200))
-        self.option_2_frame.setMaximumSize(QSize(315, 200))
+        self.option_2_frame.setMinimumSize(QSize(400, 240))
+        self.option_2_frame.setMaximumSize(QSize(400, 240))
 
         self.option_2_frame.setFrameShape(QFrame.StyledPanel)
         self.option_2_frame.setFrameShadow(QFrame.Raised)
@@ -189,6 +192,8 @@ class SelectionPage(QWidget):
         )
 
         self.select_option_layout.addWidget(self.option_2_frame, Qt.AlignLeft)
+        # Add trailing stretch to help center-align
+        self.select_option_layout.addStretch()
 
         self.vertical_layout.addLayout(self.select_option_layout)
 
@@ -196,16 +201,11 @@ class SelectionPage(QWidget):
             20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
         )
 
-        self.horizontal_spacer_3 = QSpacerItem(
-            265, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
-        )
-
-        self.select_option_layout.addSpacerItem(self.horizontal_spacer_3)
 
         self.info_frame = QFrame(self.widget_page)
         self.info_frame.setObjectName('info_frame')
-        self.info_frame.setMinimumSize(QSize(680, 80))
-        self.info_frame.setMaximumSize(QSize(680, 80))
+        self.info_frame.setMinimumSize(QSize(880, 110))
+        self.info_frame.setMaximumSize(QSize(880, 130))
         self.info_frame.hide()
 
         self.info_frame_layout = QHBoxLayout(self.info_frame)
@@ -224,7 +224,7 @@ class SelectionPage(QWidget):
 
         self.info_frame_layout.addWidget(self.continue_button)
         self.info_frame_wrapper = QHBoxLayout()
-        self.info_frame_wrapper.setContentsMargins(50, 0, 0, 0)
+        self.info_frame_wrapper.setContentsMargins(40, 0, 40, 0)
         self.info_frame_wrapper.addStretch()
         self.info_frame_wrapper.addWidget(self.info_frame)
         self.horizontal_spacer_4 = QSpacerItem(
@@ -387,12 +387,12 @@ class SelectionPage(QWidget):
 
     def adjust_size(self):
         """This method adjusts the size of the card"""
-        self.widget_page.setMinimumSize(QSize(580, 450))
-        self.widget_page.setMaximumSize(QSize(580, 560))
-        self.option_1_frame.setMinimumSize(QSize(224, 204))
-        self.option_1_frame.setMaximumSize(QSize(224, 204))
-        self.option_2_frame.setMinimumSize(QSize(224, 204))
-        self.option_2_frame.setMaximumSize(QSize(224, 204))
+        self.widget_page.setMinimumSize(QSize(900, 420))
+        self.widget_page.setMaximumSize(QSize(900, 620))
+        self.option_1_frame.setMinimumSize(QSize(360, 220))
+        self.option_1_frame.setMaximumSize(QSize(360, 220))
+        self.option_2_frame.setMinimumSize(QSize(360, 220))
+        self.option_2_frame.setMaximumSize(QSize(360, 220))
 
     def reset_selection(self):
         """This method reset the selection"""

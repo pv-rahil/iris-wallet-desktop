@@ -400,6 +400,37 @@ class SettingRepository:
             return handle_exceptions(exe)
 
     @staticmethod
+    def set_multisig_config(required_signers: int | None, total_signers: int | None) -> bool:
+        """
+        Persist multisig configuration.
+
+        Args:
+            required_signers: M in M-of-N multisig (can be None to clear)
+            total_signers: N in M-of-N multisig (can be None to clear)
+
+        Returns:
+            bool: True if values stored successfully.
+        """
+        try:
+            local_store.set_value('multisig_required_signers', required_signers)
+            local_store.set_value('multisig_total_signers', total_signers)
+            ok_req = local_store.get_value('multisig_required_signers') == required_signers
+            ok_tot = local_store.get_value('multisig_total_signers') == total_signers
+            return bool(ok_req and ok_tot)
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_multisig_config() -> tuple[int | None, int | None]:
+        """Retrieve stored multisig configuration as (required_signers, total_signers)."""
+        try:
+            required = local_store.get_value('multisig_required_signers', value_type=int)
+            total = local_store.get_value('multisig_total_signers', value_type=int)
+            return required, total
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
     def remove_setting(key) -> bool:
         """Clear all wallet-related settings."""
         try:

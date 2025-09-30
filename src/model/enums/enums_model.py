@@ -55,6 +55,12 @@ class WalletType(str, Enum):
     OFFLINE_TYPE_WALLET = 'Offline'
 
 
+class WalletSignatureType(str, Enum):
+    """Enum for wallet signature configuration"""
+    SINGLE_SIG = 'Single-sig'
+    MULTI_SIG = 'Multi-sig'
+
+
 class WalletAccessType(str, Enum):
     """Enum for wallet access level"""
     WITH_PRIVATE_KEY = 'With Private Key'

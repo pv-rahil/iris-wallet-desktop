@@ -16,7 +16,7 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import KeyStorageType, WalletSignatureType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletType
@@ -25,6 +25,7 @@ from src.views.components.selection_breadcrumb_widget import BreadcrumbBar
 from src.views.components.selection_page import SelectionPage
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.views.components.wallet_mode_summary_dialog import WalletModeSummaryDialog
+from src.views.components.multisig_setup_page import MultisigSetupPage
 
 
 class SelectionBreadcrumbWidget(QWidget):
@@ -47,6 +48,22 @@ class SelectionBreadcrumbWidget(QWidget):
         )
         self.current_index = getattr(self._view_model, 'current_index', 0)
         self.steps = [
+            {
+                'logo': ':/assets/online.png',
+                'title': 'single_sig',
+                'widget': SelectionPage(
+                    view_model=self._view_model,
+                    params=SelectionPageModel(
+                        title='select_wallet_signature_type',
+                        logo_1_path=':/assets/online.png',
+                        logo_1_title=WalletSignatureType.SINGLE_SIG.value,
+                        logo_1_info='online_wallet_info',
+                        logo_2_path=':/assets/offline.png',
+                        logo_2_title=WalletSignatureType.MULTI_SIG.value,
+                        logo_2_info='offline_wallet_info',
+                    ),
+                ),
+            },
             {
                 'logo': ':/assets/online.png',
                 'title': 'online',
@@ -188,6 +205,9 @@ class SelectionBreadcrumbWidget(QWidget):
         self.steps[3]['widget'].continue_button.clicked.connect(
             lambda: self.handle_continue(3),
         )
+        self.steps[4]['widget'].continue_button.clicked.connect(
+            lambda: self.handle_continue(4),
+        )
 
         self.update_breadcrumbs()
 
@@ -195,9 +215,27 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         Returns the list of step indices for the current flow (offline or online).
         """
-        if self.selected_titles and self.selected_titles[0] == WalletType.OFFLINE_TYPE_WALLET.value:
-            return [0, 2, 3]
-        return [0, 1, 2, 3]
+        wallet_mode = self._get_selected_title_for_step(1)
+        if wallet_mode == WalletType.OFFLINE_TYPE_WALLET.value:
+            flow = [0, 1, 3, 4]
+        else:
+            flow = [0, 1, 2, 3, 4]
+        return flow
+
+    def _get_selected_title_for_step(self, step_index: int) -> str | None:
+        """
+        Helper to fetch the selected title corresponding to a specific step index
+        from `selected_step_indices`.
+        """
+        if not self.selected_step_indices:
+            return None
+        try:
+            idx_in_breadcrumbs = self.selected_step_indices.index(step_index)
+        except ValueError:
+            return None
+        if idx_in_breadcrumbs < len(self.selected_titles):
+            return self.selected_titles[idx_in_breadcrumbs]
+        return None
 
     def update_breadcrumbs(self):
         """
@@ -285,13 +323,17 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         Get the breadcrumb index for the given step index, accounting for offline mode mapping.
         """
-        if self.selected_titles and self.selected_titles[0] == WalletType.OFFLINE_TYPE_WALLET.value:
+        wallet_mode = self._get_selected_title_for_step(1)
+        if wallet_mode == WalletType.OFFLINE_TYPE_WALLET.value:
+            # Breadcrumbs order in offline: [0, 1, 3, 4]
             if step_idx == 0:
                 return 0
-            if step_idx == 2:
+            if step_idx == 1:
                 return 1
             if step_idx == 3:
                 return 2
+            if step_idx == 4:
+                return 3
         return step_idx
 
     def handle_continue(self, idx):
@@ -309,15 +351,23 @@ class SelectionBreadcrumbWidget(QWidget):
             title = page.params.logo_2_title
         self._reset_state_after_selection_change(idx, title, logo)
         if idx == 0:
-            if title == WalletType.OFFLINE_TYPE_WALLET.value:
-                self.current_index = 2
-                SettingRepository.set_wallet_access_type(None)
-                SettingRepository.remove_setting('wallet_access_type')
-            else:
-                self.current_index = idx + 1
+            # Signature type chosen; proceed to wallet mode (index 1)
+            self.current_index = idx + 1
             self.steps[self.current_index]['widget'].reset_selection()
             self.update_breadcrumbs()
         elif idx == 1:
+            # Wallet mode chosen
+            if title == WalletType.OFFLINE_TYPE_WALLET.value:
+                # Skip security type (index 2) in offline mode
+                self.current_index = 3
+                SettingRepository.set_wallet_access_type(None)
+                SettingRepository.remove_setting('wallet_access_type')
+            else:
+                self.current_index = 2
+            self.steps[self.current_index]['widget'].reset_selection()
+            self.update_breadcrumbs()
+        elif idx == 2:
+            # Security type chosen
             if title == WalletAccessType.WATCH_ONLY.value:
                 self._show_watch_only_flow()
             else:
@@ -325,10 +375,14 @@ class SelectionBreadcrumbWidget(QWidget):
                 self.steps[self.current_index]['widget'].reset_selection()
                 self.update_breadcrumbs()
         else:
-            if idx + 1 < len(self.steps):
-                self.current_index = 3 if self.selected_titles[
-                    0
-                ] == WalletType.OFFLINE_TYPE_WALLET.value and idx == 2 else idx + 1
+            # Advance using the active flow order to avoid mismatched titles/logos
+            flow_indices = self.get_flow_step_indices()
+            try:
+                pos_in_flow = flow_indices.index(idx)
+            except ValueError:
+                pos_in_flow = -1
+            if 0 <= pos_in_flow < len(flow_indices) - 1:
+                self.current_index = flow_indices[pos_in_flow + 1]
                 self.steps[self.current_index]['widget'].reset_selection()
                 self.update_breadcrumbs()
             else:
@@ -345,6 +399,32 @@ class SelectionBreadcrumbWidget(QWidget):
         Show the final wallet mode summary dialog and handle navigation after summary.
         Applies blur effect and navigates to the appropriate page based on user input and wallet configuration.
         """
+        # If Multi-sig was selected at the first step, navigate to a dedicated page
+        is_multisig = self._get_selected_title_for_step(0) == WalletSignatureType.MULTI_SIG.value
+        if is_multisig:
+            # Standalone Multisig setup page (UI-only). Not part of breadcrumb steps.
+            ms_page = MultisigSetupPage(self)
+            # Insert as a transient page in the stack and navigate to it
+            self.stack.addWidget(ms_page)
+            self.stack.setCurrentWidget(ms_page)
+
+            def _proceed_after_ms():
+                key_storage = SettingRepository.get_key_storage_type()
+                entry_type = SettingRepository.get_wallet_entry_type()
+                if entry_type == WalletEntryType.CREATE:
+                    if key_storage == KeyStorageType.HARDWARE_WALLET:
+                        self._view_model.page_navigation.hardware_wallet_connect_page()
+                    else:
+                        self._view_model.page_navigation.welcome_page()
+                else:
+                    self._view_model.page_navigation.welcome_page()
+
+            # Continue button routes to the next high-level page; no summary dialog
+            if hasattr(ms_page, 'continue_button'):
+                ms_page.continue_button.clicked.connect(_proceed_after_ms)
+            return
+
+        # Default flow (Single-sig): show wallet summary dialog
         self.update_breadcrumbs()
 
         # Apply initial blur for the summary dialog
@@ -418,12 +498,13 @@ class SelectionBreadcrumbWidget(QWidget):
             widget.selected_frame = None
             widget.on_click_frame(widget.params.logo_1_title, False)
             widget.on_click_frame(widget.params.logo_2_title, False)
-            if i == 1:
+            if i == 2:
                 SettingRepository.set_wallet_access_type(None)
                 SettingRepository.remove_setting('wallet_access_type')
-            elif i == 2:
+            elif i == 3:
                 SettingRepository.set_wallet_entry_type(None)
                 SettingRepository.remove_setting('wallet_entry_type')
-            elif i == 3:
+            elif i == 4:
                 SettingRepository.set_key_storage_type(None)
                 SettingRepository.remove_setting('key_storage_type')
+
