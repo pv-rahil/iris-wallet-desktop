@@ -100,16 +100,15 @@ class SelectionPage(QWidget):
         self.select_option_layout.setObjectName('select_option_layout')
         self.select_option_layout.setContentsMargins(40, 0, 40, 0)
         self.select_option_layout.setSpacing(60)
-        # Add initial stretch to help center-align the two option cards
-        self.select_option_layout.addStretch()
+
         self.option_1_frame = ClickableFrame(
             self.params.logo_1_title,
         )
         self.option_1_frame.setObjectName('option_1_frame')
         self.option_1_frame.setAccessibleName(OPTION_1_FRAME)
         self.option_1_frame.setCursor(QCursor(Qt.PointingHandCursor))
-        self.option_1_frame.setMinimumSize(QSize(400, 240))
-        self.option_1_frame.setMaximumSize(QSize(400, 240))
+        self.option_1_frame.setMinimumSize(QSize(410, 240))
+        self.option_1_frame.setMaximumSize(QSize(410, 240))
 
         self.option_1_frame.setFrameShape(QFrame.StyledPanel)
         self.option_1_frame.setFrameShadow(QFrame.Raised)
@@ -154,8 +153,8 @@ class SelectionPage(QWidget):
         self.option_2_frame.setObjectName('option_2_frame')
         self.option_2_frame.setAccessibleName(OPTION_2_FRAME)
         self.option_2_frame.setCursor(QCursor(Qt.PointingHandCursor))
-        self.option_2_frame.setMinimumSize(QSize(400, 240))
-        self.option_2_frame.setMaximumSize(QSize(400, 240))
+        self.option_2_frame.setMinimumSize(QSize(410, 240))
+        self.option_2_frame.setMaximumSize(QSize(410, 240))
 
         self.option_2_frame.setFrameShape(QFrame.StyledPanel)
         self.option_2_frame.setFrameShadow(QFrame.Raised)

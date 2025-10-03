@@ -95,3 +95,32 @@ class CommonOperationRepository:
             if wallet_service is not None:
                 wallet_service.mark_psbt_signed(unsigned_psbt, finalized_psbt)
             return finalized_psbt
+
+    # @staticmethod
+    # def combine_psbts(psbts: list[str]) -> str:
+    #     """Combine multiple PSBTs into one by merging partial signatures and data."""
+    #     with repository_custom_context():
+    #         if not psbts:
+    #             return ''
+    #         base = PSBT()
+    #         base.deserialize(psbts[0])
+    #         for p in psbts[1:]:
+    #             other = PSBT()
+    #             other.deserialize(p)
+    #             base.combine(other)
+    #         return base.serialize()
+
+    # @staticmethod
+    # def count_partial_signatures(psbt_str: str) -> int:
+    #     """Count total partial signatures across all inputs of a PSBT."""
+    #     with repository_custom_context():
+    #         if not psbt_str:
+    #             return 0
+    #         psbt = PSBT()
+    #         psbt.deserialize(psbt_str)
+    #         count = 0
+    #         for inp in psbt.inputs:
+    #             # partial_sigs is a dict of pubkey->sig
+    #             if hasattr(inp, 'partial_sigs') and inp.partial_sigs is not None:
+    #                 count += len(inp.partial_sigs)
+    #         return count

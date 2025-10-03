@@ -41,7 +41,7 @@ class HardwareWalletConnectWidget(QWidget):
     Widget for connecting to a hardware wallet in the application.
     """
 
-    def __init__(self, view_model):
+    def __init__(self, view_model,is_multisig=False):
         """
         Initialize the HardwareWalletConnectWidget.
         """
@@ -95,7 +95,7 @@ class HardwareWalletConnectWidget(QWidget):
         close_icon = QIcon(':/assets/x_circle.png')
         self.close_btn.setIcon(close_icon)
         self.close_btn.setIconSize(QSize(24, 24))
-        self.close_btn.clicked.connect(self.handle_close)
+        self.close_btn.clicked.connect(lambda: self.handle_close(is_multisig))
         title_close_layout.addWidget(self.close_btn)
         self.card_layout.addLayout(title_close_layout)
 
@@ -307,12 +307,15 @@ class HardwareWalletConnectWidget(QWidget):
             else:
                 self._view_model.page_navigation.welcome_page()
 
-    def handle_close(self):
+    def handle_close(self,is_multisig=False):
         """
-        Navigate back to selection page (not welcome page).
+        Navigate back to selection page if not multisig setup page.
         """
         # Navigate back to selection page (not welcome page)
-        self._view_model.page_navigation.selection_page()
+        if is_multisig:
+            self._view_model.page_navigation.multisig_setup_page()
+        else:
+            self._view_model.page_navigation.selection_page()
 
     def retranslate_ui(self):
         """

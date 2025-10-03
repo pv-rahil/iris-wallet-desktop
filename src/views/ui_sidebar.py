@@ -28,6 +28,7 @@ from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
 from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.selection_page_model import AssetDataModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -44,6 +45,10 @@ class Sidebar(QWidget):
         self._view_model: MainViewModel = view_model
         config = get_current_wallet_mode_config()
         priv = config.privileges
+        # Determine signature type to arrange buttons accordingly
+        is_multisig = (
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        )
         self.setObjectName('sidebar')
         self.setMinimumSize(QSize(360, 720))
         self.setStyleSheet(
@@ -152,7 +157,10 @@ class Sidebar(QWidget):
             'Broadcast Transaction', ':/assets/channel_management.png', translation_key='broadcast_transaction',
         )
         self.broadcast_transaction.setAccessibleName(BROADCAST_TRANSACTION_BUTTON)
-        self.broadcast_transaction.setVisible(priv.can_broadcast_psbt)
+        # In multisig, use this grid slot for Sign PSBT instead of Broadcast
+        self.broadcast_transaction.setVisible(
+            priv.can_sign_psbt if is_multisig else priv.can_broadcast_psbt,
+        )
         self.broadcast_transaction.setCheckable(False)
         self.grid_layout_sidebar.addWidget(
             self.broadcast_transaction, 10, 0, 1, 1,
@@ -184,7 +192,8 @@ class Sidebar(QWidget):
         self.sign_psbt.setAccessibleName(SIGN_PSBT_BUTTON)
         self.sign_psbt.setMinimumSize(QSize(335, 40))
         self.sign_psbt.setMaximumSize(QSize(335, 40))
-        self.sign_psbt.setVisible(priv.can_sign_psbt)
+        # Hide the bottom Sign PSBT button when multisig, since the grid button becomes Sign
+        self.sign_psbt.setVisible(priv.can_sign_psbt and not is_multisig)
         self.vertical_layout.addWidget(
             self.sign_psbt, 0, Qt.AlignCenter,
         )
@@ -239,6 +248,9 @@ class Sidebar(QWidget):
     def retranslate_ui(self):
         """Retranslate the UI elements."""
         self.network = SettingRepository.get_wallet_network().value
+        is_multisig = (
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        )
         if self.network == NetworkEnumModel.MAINNET.value:
             self.iris_wallet_text.setText(
                 QCoreApplication.translate(
@@ -247,17 +259,25 @@ class Sidebar(QWidget):
             )
         else:
             self.iris_wallet_text.setText(
-                f'{QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, "iris_wallet", None)} {
-                    self.network.capitalize()
-                }',
+                f"{QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'iris_wallet', None)} {self.network.capitalize()}",
             )
-        self.broadcast_transaction.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'broadcast_transaction',
-                None,
-            ),
-        )
+        # In multisig we show Sign PSBT in the grid slot instead of Broadcast
+        if is_multisig:
+            self.broadcast_transaction.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'sign_psbt',
+                    None,
+                ),
+            )
+        else:
+            self.broadcast_transaction.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'broadcast_transaction',
+                    None,
+                ),
+            )
         self.receive_asset_button.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -299,9 +319,15 @@ class Sidebar(QWidget):
         Update the sidebar UI based on the new privileges/config.
         """
         priv = config.privileges
+        is_multisig = (
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        )
         self.backup.setVisible(priv.can_backup_wallet)
-        self.broadcast_transaction.setVisible(priv.can_broadcast_psbt)
+        # In multisig, grid slot becomes Sign PSBT; bottom sign button hidden
+        self.broadcast_transaction.setVisible(
+            priv.can_sign_psbt if is_multisig else priv.can_broadcast_psbt,
+        )
         self.receive_asset_button.setVisible(priv.can_receive_asset)
         self.faucet.setVisible(priv.can_use_faucet)
-        self.sign_psbt.setVisible(priv.can_sign_psbt)
+        self.sign_psbt.setVisible(priv.can_sign_psbt and not is_multisig)
         self.retranslate_ui()

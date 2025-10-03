@@ -2120,5 +2120,17 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>replace_label</source>
         <translation>Replace</translation>
     </message>
+    <message>
+        <source>select_wallet_signature_type</source>
+        <translation>Select wallet signature type</translation>
+    </message>
+    <message>
+        <source>single_sig_info</source>
+        <translation>Single-key wallet. Easiest setup and fastest to use. Best for individual control.</translation>
+    </message>
+    <message>
+        <source>multi_sig_info</source>
+        <translation>Multi‑signature wallet (e.g., 2 of 3). Requires multiple keys to spend for stronger security or shared control.</translation>
+    </message>
 </context>
 </TS>

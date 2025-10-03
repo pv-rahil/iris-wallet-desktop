@@ -115,3 +115,14 @@ QLabel#broadcast_method_label{
     font-weight: 600;
     padding-left: 17px;
 }
+
+/* Multisig status chip — pill with subtle border on dark palette */
+QLabel#status_chip {
+    font: 12px "Inter";
+    font-weight: 600;
+    color: rgb(208, 211, 221);
+    background-color: rgb(36, 44, 70);
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 12px;
+    padding: 4px 12px;
+}

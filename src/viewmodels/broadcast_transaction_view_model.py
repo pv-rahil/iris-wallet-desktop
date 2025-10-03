@@ -34,6 +34,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     tx_broadcasted = Signal(bool)
     hw_dialog_update = Signal(str, object)
     finalized_psbt = Signal(str)
+    signature_count_ready = Signal(int)
+    combined_psbt_ready = Signal(str)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
@@ -147,3 +149,30 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
                 'Exception occurred: %s, Message: %s',
                 type(error).__name__, str(error),
             )
+
+    # def analyze_signature_count(self, psbt: str):
+    #     """Count signatures in psbt in a worker thread and emit a signal when ready."""
+    #     self.run_in_thread(
+    #         CommonOperationRepository.count_partial_signatures,
+    #         {
+    #             'args': [psbt],
+    #             'callback': lambda count: self.signature_count_ready.emit(count),
+    #             'error_callback': self.on_error,
+    #         },
+    #     )
+
+    # def combine_psbts(self, psbts: list[str]):
+    #     """Combine multiple PSBTs and emit the combined PSBT when ready."""
+    #     self.is_loading.emit(True)
+    #     self.run_in_thread(
+    #         CommonOperationRepository.combine_psbts,
+    #         {
+    #             'args': [psbts],
+    #             'callback': self.on_combine_success,
+    #             'error_callback': self.on_error,
+    #         },
+    #     )
+
+    # def on_combine_success(self, combined: str):
+    #     self.is_loading.emit(False)
+    #     self.combined_psbt_ready.emit(combined)

@@ -47,6 +47,7 @@ class PageNavigationEventManager(QObject):
     detect_usb_dialog_box = Signal(bool)
     refresh_transfer_result_dialog_signal = Signal(object)
     issue_ifa_signal = Signal()
+    multisig_setup_page_signal = Signal()
 
     def __init__(self):
         super().__init__()

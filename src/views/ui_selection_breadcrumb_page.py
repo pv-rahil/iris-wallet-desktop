@@ -57,10 +57,10 @@ class SelectionBreadcrumbWidget(QWidget):
                         title='select_wallet_signature_type',
                         logo_1_path=':/assets/online.png',
                         logo_1_title=WalletSignatureType.SINGLE_SIG.value,
-                        logo_1_info='online_wallet_info',
+                        logo_1_info='single_sig_info',
                         logo_2_path=':/assets/offline.png',
                         logo_2_title=WalletSignatureType.MULTI_SIG.value,
-                        logo_2_info='offline_wallet_info',
+                        logo_2_info='multi_sig_info',
                     ),
                 ),
             },
@@ -350,6 +350,13 @@ class SelectionBreadcrumbWidget(QWidget):
             logo = page.params.logo_2_path
             title = page.params.logo_2_title
         self._reset_state_after_selection_change(idx, title, logo)
+        # Persist selection into settings where applicable
+        if idx == 0:
+            # Step 0: signature type
+            if title == WalletSignatureType.SINGLE_SIG.value:
+                SettingRepository.set_wallet_signature_type(WalletSignatureType.SINGLE_SIG)
+            else:
+                SettingRepository.set_wallet_signature_type(WalletSignatureType.MULTI_SIG)
         if idx == 0:
             # Signature type chosen; proceed to wallet mode (index 1)
             self.current_index = idx + 1
@@ -399,29 +406,12 @@ class SelectionBreadcrumbWidget(QWidget):
         Show the final wallet mode summary dialog and handle navigation after summary.
         Applies blur effect and navigates to the appropriate page based on user input and wallet configuration.
         """
+        key_storage = SettingRepository.get_key_storage_type()
+        entry_type = SettingRepository.get_wallet_entry_type()
         # If Multi-sig was selected at the first step, navigate to a dedicated page
-        is_multisig = self._get_selected_title_for_step(0) == WalletSignatureType.MULTI_SIG.value
-        if is_multisig:
-            # Standalone Multisig setup page (UI-only). Not part of breadcrumb steps.
-            ms_page = MultisigSetupPage(self)
-            # Insert as a transient page in the stack and navigate to it
-            self.stack.addWidget(ms_page)
-            self.stack.setCurrentWidget(ms_page)
-
-            def _proceed_after_ms():
-                key_storage = SettingRepository.get_key_storage_type()
-                entry_type = SettingRepository.get_wallet_entry_type()
-                if entry_type == WalletEntryType.CREATE:
-                    if key_storage == KeyStorageType.HARDWARE_WALLET:
-                        self._view_model.page_navigation.hardware_wallet_connect_page()
-                    else:
-                        self._view_model.page_navigation.welcome_page()
-                else:
-                    self._view_model.page_navigation.welcome_page()
-
-            # Continue button routes to the next high-level page; no summary dialog
-            if hasattr(ms_page, 'continue_button'):
-                ms_page.continue_button.clicked.connect(_proceed_after_ms)
+        is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        if is_multisig and entry_type == WalletEntryType.CREATE:
+            self._view_model.page_navigation.multisig_setup_page()
             return
 
         # Default flow (Single-sig): show wallet summary dialog
@@ -457,6 +447,10 @@ class SelectionBreadcrumbWidget(QWidget):
         Show the watch-only wallet dialog flow, including xpub/fingerprint input and summary.
         Handles blur effect and navigation to welcome page if completed.
         """
+        is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        if is_multisig:
+            self._view_model.page_navigation.multisig_setup_page()
+            return
         self.update_breadcrumbs()
         blur = QGraphicsBlurEffect()
         blur.setBlurRadius(10)
@@ -498,7 +492,10 @@ class SelectionBreadcrumbWidget(QWidget):
             widget.selected_frame = None
             widget.on_click_frame(widget.params.logo_1_title, False)
             widget.on_click_frame(widget.params.logo_2_title, False)
-            if i == 2:
+            if i == 0:
+                SettingRepository.set_wallet_signature_type(None)
+                SettingRepository.remove_setting('wallet_signature_type')
+            elif i == 2:
                 SettingRepository.set_wallet_access_type(None)
                 SettingRepository.remove_setting('wallet_access_type')
             elif i == 3:

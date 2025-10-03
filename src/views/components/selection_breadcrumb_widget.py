@@ -90,7 +90,7 @@ class BreadcrumbBar(QWidget):
         self.crumbs = []
         self._active_index = 0
         self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(38, 15, 15, 15)
+        self.layout.setContentsMargins(38, 15, 35, 15)
         self.layout.setSpacing(4)
 
         self.cls_button = QPushButton(self)

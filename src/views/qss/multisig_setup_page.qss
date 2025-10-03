@@ -36,37 +36,19 @@ QLabel#ms_helper {
     font-weight: 400;
 }
 
-/* Input fields styled similar to issue CFA inputs */
 QLineEdit#ms_input {
-    padding: 10px 12px;
+    padding-left: 10px;
     font: 15px "Inter";
-    background: none;
-    color: #D0D3DD;
+    color: rgb(102, 108, 129);
     background-color: rgb(36, 44, 70);
-    border: 1px solid rgba(88, 104, 113, 0.5);
-    border-radius: 6px;
-    min-height: 36px;
+    border: transparent;
+    border-radius: 4px;
 }
+
 
 QLineEdit#ms_input:focus {
     border: 1px solid rgb(102, 160, 255);
     outline: none;
-}
-
-/* SpinBoxes: mimic the darker input background */
-QSpinBox#ms_spin {
-    font: 15px "Inter";
-    color: #D0D3DD;
-    background-color: rgb(36, 44, 70);
-    border: 1px solid rgb(88, 104, 113);
-    border-radius: 6px;
-    padding: 4px 8px;
-}
-
-/* Thin separators like issue_cfa */
-QFrame#ms_divider {
-    border: none;
-    border-bottom: 1px solid rgb(27, 35, 59);
 }
 
 /* Scrollable area for cosigners */
@@ -77,24 +59,6 @@ QScrollArea#ms_scroll {
 
 QScrollArea#ms_scroll > QWidget > QWidget {
     background: transparent;
-}
-
-/* Small inline remove button matching the theme */
-QPushButton#ms_remove_btn {
-    font: 13px "Inter";
-    color: #D0D3DD;
-    background-color: rgb(36, 44, 70);
-    border: 1px solid rgba(88, 104, 113, 0.6);
-    border-radius: 6px;
-    padding: 4px 10px;
-}
-
-QPushButton#ms_remove_btn:hover {
-    border-color: rgb(102, 160, 255);
-}
-
-QPushButton#ms_remove_btn:pressed {
-    background-color: rgb(28, 36, 58);
 }
 
 /* Small neutral action button (e.g., Paste) */
@@ -116,16 +80,40 @@ QPushButton#ms_small_btn:pressed {
     background-color: rgb(28, 36, 58);
 }
 
-/* Per-row divider */
-QFrame#ms_row_divider {
-    border: none;
-    border-bottom: 1px solid rgb(27, 35, 59);
-    margin-top: 10px;
-}
-
 /* Error labels */
 QLabel#ms_error {
     font: 12px "Inter";
     color: rgb(220, 120, 120);
     padding-top: 2px;
+}
+
+QFrame#above_line_frame, QFrame#below_line_frame {
+    border: none;
+    border-bottom: 1px solid rgb(27, 35, 59);
+}
+
+QPushButton#secondary_button {
+    font: 15px "Inter";
+    background: transparent;
+    border: 1px solid #586871;
+    color: #586871;
+    border-radius: 4px;
+    font-weight: 700;
+}
+QPushButton#secondary_button:hover {
+    color: white;
+    background-color: rgb(22, 88, 73);
+    border: 1px solid rgb(1, 167, 129);
+}
+QPushButton#secondary_button:pressed {
+    background-color: #3575a0;
+}
+QPushButton#secondary_button:disabled {
+    font-weight: 600;
+    border: 1px solid  #3e4d57;
+    color: #3e4d57;
+}
+QPushButton#close_button {
+    background: transparent;
+    border: none;
 }

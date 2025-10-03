@@ -44,6 +44,7 @@ from src.views.ui_success import SuccessWidget
 from src.views.ui_term_condition import TermConditionWidget
 from src.views.ui_view_unspent_list import ViewUnspentList
 from src.views.ui_welcome import WelcomeWidget
+from src.views.components.multisig_setup_page import MultisigSetupPage
 
 
 class PageNavigation:
@@ -58,6 +59,7 @@ class PageNavigation:
             'SelectionPage': SelectionBreadcrumbWidget,
             'HardwareWalletConnectPage': HardwareWalletConnectWidget,
             'TermCondition': TermConditionWidget,
+            'MultisigSetupPage': MultisigSetupPage,
             'FungibleAssetWidget': FungibleAssetWidget,
             'InflatableAssetWidget': InflatableAssetWidget,
             'CollectiblesAssetWidget': CollectiblesAssetWidget,
@@ -184,6 +186,9 @@ class PageNavigation:
         self.event_based_navigation.issue_ifa_signal.connect(
             self.issue_ifa_page,
         )
+        self.event_based_navigation.multisig_setup_page_signal.connect(
+            self.multisig_setup_page,
+        )
 
     def toggle_sidebar(self, show):
         """This method represents toggle the sidebar."""
@@ -240,9 +245,22 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def hardware_wallet_connect_page(self):
+    def hardware_wallet_connect_page(self,is_multisig=False):
         """This method display wallet mode summary page"""
-        self.navigate_to_page('HardwareWalletConnectPage')
+        self.current_stack = {
+            'name': 'HardwareWalletConnectPage',
+            'widget': self.pages['HardwareWalletConnectPage'](self._ui.view_model,is_multisig),
+        }
+        self.navigate_and_toggle(False)
+
+    def multisig_setup_page(self):
+        """Navigate to the Multisig setup page (two-step flow)."""
+        # MultisigSetupPage expects a QWidget parent, not the ViewModel
+        self.current_stack = {
+            'name': 'MultisigSetupPage',
+            'widget': MultisigSetupPage(self._ui.view_model),
+        }
+        self.navigate_and_toggle(False)
 
     def welcome_page(self):
         """This method display the welcome page."""

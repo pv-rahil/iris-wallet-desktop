@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from src.model.common_operation_model import WalletModeConfig
 from src.model.common_operation_model import WalletModePrivilege
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
@@ -27,6 +29,11 @@ class WalletModeConfiguration:
         Get configuration for the selected wallet mode combination.
         Returns a WalletModeConfig object describing the mode.
         """
+        # Determine if current flow is multisig to tweak capabilities
+        try:
+            is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        except Exception:
+            is_multisig = False
 
         # Online Watch Only
         if (
@@ -78,7 +85,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_broadcast_psbt=False,
                     can_use_faucet=True,
-                    can_sign_psbt=False,
+                    can_sign_psbt=True if is_multisig else False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Generate new wallet & keys'},
@@ -113,7 +120,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_broadcast_psbt=False,
                     can_use_faucet=True,
-                    can_sign_psbt=False,
+                    can_sign_psbt=True if is_multisig else False,
                 ),
                 capabilities=[
                     {'emoji': '🆕', 'text': 'Initialize new wallet with hardware device'},
@@ -149,7 +156,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_broadcast_psbt=False,
                     can_use_faucet=True,
-                    can_sign_psbt=False,
+                    can_sign_psbt=True if is_multisig else False,
                 ),
                 capabilities=[
                     {'emoji': '📥', 'text': 'Import existing wallet'},
@@ -186,7 +193,7 @@ class WalletModeConfiguration:
                     can_backup_wallet=True,
                     can_broadcast_psbt=False,
                     can_use_faucet=True,
-                    can_sign_psbt=False,
+                    can_sign_psbt=True if is_multisig else False,
                 ),
                 capabilities=[
                     {'emoji': '🔌', 'text': 'Connect hardware wallet'},

@@ -14,6 +14,7 @@ from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.model.setting_model import IsNativeLoginIntoAppEnabled
@@ -396,6 +397,29 @@ class SettingRepository:
         try:
             value = local_store.get_value('key_storage_type')
             return KeyStorageType(value) if value else None
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def set_wallet_signature_type(signature_type: WalletSignatureType) -> bool:
+        """Set the wallet signature type (single-sig or multi-sig)."""
+        try:
+            local_store.set_value(
+                'wallet_signature_type',
+                signature_type.value if signature_type else None,
+            )
+            if local_store.get_value('wallet_signature_type') == (signature_type.value if signature_type else None):
+                return True
+            return False
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_wallet_signature_type() -> WalletSignatureType | None:
+        """Get the wallet signature type (single-sig or multi-sig)."""
+        try:
+            value = local_store.get_value('wallet_signature_type')
+            return WalletSignatureType(value) if value else None
         except Exception as exe:
             return handle_exceptions(exe)
 
