@@ -127,18 +127,34 @@ class MainPageObjects():
 
         self.selection_page_objects = SelectionPageObjects(self.application)
 
-        self.wallet_mode_summary_dialog_page_objects = WalletModeSummaryDialogPageObjects(self.application)
+        self.wallet_mode_summary_dialog_page_objects = WalletModeSummaryDialogPageObjects(
+            self.application,
+        )
 
-        self.hw_device_selection_dialog_page_objects = HWDeviceSelectionDialogPageObjects(self.application)
+        self.hw_device_selection_dialog_page_objects = HWDeviceSelectionDialogPageObjects(
+            self.application,
+        )
 
-        self.hw_emulator_page_objects = HardwareWalletEmulatorPageObjects(self.application)
+        self.hw_emulator_page_objects = HardwareWalletEmulatorPageObjects(
+            self.application,
+        )
 
-        self.hw_connect_page_objects = HardwareWalletConnectPageObjects(application)
+        self.hw_connect_page_objects = HardwareWalletConnectPageObjects(
+            application,
+        )
 
-        self.watch_only_dialog_page_objects = WatchOnlyDialogPageObjects(self.application)
+        self.watch_only_dialog_page_objects = WatchOnlyDialogPageObjects(
+            self.application,
+        )
 
-        self.usb_sync_dialog_page_objects = USBSyncDialogPageObjects(self.application)
+        self.usb_sync_dialog_page_objects = USBSyncDialogPageObjects(
+            self.application,
+        )
 
-        self.broadcast_transaction_page_objects = BroadcastTransactionPageObjects(self.application)
+        self.broadcast_transaction_page_objects = BroadcastTransactionPageObjects(
+            self.application,
+        )
 
-        self.confirmation_dialog_page_objects = ConfirmationDialogPageObjects(self.application)
+        self.confirmation_dialog_page_objects = ConfirmationDialogPageObjects(
+            self.application,
+        )

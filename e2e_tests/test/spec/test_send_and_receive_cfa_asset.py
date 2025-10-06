@@ -53,6 +53,7 @@ def test_send_cfa_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
         wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
             ASSET_NAME,
         )
+    with allure.step('Send CFA asset with expired invoice'):
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
         wallets_and_operations.first_page_objects.send_asset_page_objects.enter_asset_invoice(
             INVOICE,
@@ -186,11 +187,11 @@ def test_send_cfa_with_expired_invoice_for_offline_wallet(wallets_and_operations
             INVOICE,
         )
     with allure.step('get the asset invoice validation label (offline wallet)'):
-        validation_label = wallets_and_operations.second_page_objects.send_asset_page_objects.get_asset_address_validation_label()
+        validation_lbl = wallets_and_operations.second_page_objects.send_asset_page_objects.get_asset_address_validation_label()
         wallets_and_operations.second_page_objects.send_asset_page_objects.click_send_asset_close_button()
 
     with allure.step('Verify error message for CFA asset (offline wallet)'):
-        assert validation_label == TranslationManager.translate(
+        assert validation_lbl == TranslationManager.translate(
             'invalid_invoice',
         )
 

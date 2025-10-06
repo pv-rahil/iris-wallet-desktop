@@ -1,27 +1,33 @@
+# pylint: disable=too-many-instance-attributes, too-many-statements, too-few-public-methods
+"""
+Multisig setup page.
+"""
 from __future__ import annotations
 
-from PySide6.QtCore import QCoreApplication, QSize, Qt
-from PySide6.QtGui import QCursor, QGuiApplication, QIntValidator, QIcon
-from PySide6.QtWidgets import (
-    QFrame,
-    QGridLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QScrollArea,
-    QSizePolicy,
-    QSpacerItem,
-    QVBoxLayout,
-    QWidget,
-)
 import re
 
+from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QSize
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QCursor
+from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIntValidator
+from PySide6.QtWidgets import QFrame
+from PySide6.QtWidgets import QGridLayout
+from PySide6.QtWidgets import QHBoxLayout
+from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLineEdit
+from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QScrollArea
+from PySide6.QtWidgets import QSizePolicy
+from PySide6.QtWidgets import QSpacerItem
+from PySide6.QtWidgets import QVBoxLayout
+from PySide6.QtWidgets import QWidget
+
+from src.data.repository.setting_repository import SettingRepository
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
-from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import WalletAccessType, KeyStorageType
-from src.views.components.buttons import PrimaryButton, SecondaryButton
+from src.views.components.buttons import PrimaryButton
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -35,7 +41,11 @@ class MultisigSetupPage(QWidget):
     def __init__(self, view_model):
         super().__init__()
         self._view_model = view_model
-        self.setStyleSheet(load_stylesheet('views/qss/multisig_setup_page.qss'))
+        self.setStyleSheet(
+            load_stylesheet(
+                'views/qss/multisig_setup_page.qss',
+            ),
+        )
         # Initialize state early so any helper calls can safely reference it
         self._threshold_locked = False
         self._current_step = 1  # 1: threshold, 2: cosigners
@@ -49,10 +59,12 @@ class MultisigSetupPage(QWidget):
         # Wallet logo top
         self.logo = WalletLogoFrame(self)
         # Grid: place logo spanning center column
-        self.grid.addWidget(self.logo, 0, 0,1,2)
+        self.grid.addWidget(self.logo, 0, 0, 1, 2)
 
         # Left spacer
-        self.left_spacer = QSpacerItem(268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.left_spacer = QSpacerItem(
+            268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum,
+        )
         self.grid.addItem(self.left_spacer, 1, 0)
 
         # Card container (larger on Step 1 for better spacing; grows/shrinks per step)
@@ -100,7 +112,6 @@ class MultisigSetupPage(QWidget):
         self.above_line.setFrameShape(QFrame.HLine)
         self.above_line.setFrameShadow(QFrame.Sunken)
         self.v.addWidget(self.above_line)
-        
 
         # Threshold card (Step 1)
         self.threshold_frame = QFrame(self.card)
@@ -189,9 +200,11 @@ class MultisigSetupPage(QWidget):
 
         self.v.addWidget(self.threshold_frame)
 
-
         # Creator setup (Step 2) — choose how to get the creator's keys
-        self.creator = { 'mode': None, 'xpub': '', 'fingerprint': '', 'derivation': '' }
+        self.creator = {
+            'mode': None, 'xpub': '',
+            'fingerprint': '', 'derivation': '',
+        }
         self.creator_ready = False
         self.creator_frame = QFrame(self.card)
         self.creator_frame.setObjectName('capabilities_frame')
@@ -208,18 +221,18 @@ class MultisigSetupPage(QWidget):
         self.creator_v.addLayout(self.creator_actions)
         self.v.addWidget(self.creator_frame)
 
-
         # Cosigners card (Step 3; initially hidden)
         self.cos_frame = QFrame(self.card)
         self.cos_frame.setObjectName('capabilities_frame')
         self.cos_frame.hide()  # Hide until threshold confirmed
         # Keep hidden frame from expanding vertical space
-        self.cos_frame.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        self.cos_frame.setSizePolicy(
+            QSizePolicy.Preferred, QSizePolicy.Minimum,
+        )
         self.c_v = QVBoxLayout(self.cos_frame)
         # Align with 700px content area and add generous paddings for Step 2
         self.c_v.setContentsMargins(34, 14, 34, 16)
         self.c_v.setSpacing(16)
-
 
         # Scrollable area for cosigner rows
         scroll = QScrollArea()
@@ -235,7 +248,7 @@ class MultisigSetupPage(QWidget):
         scroll.setFrameShape(QFrame.NoFrame)
         # Start with no gutter; we'll toggle based on scrollbar visibility
         scroll.setViewportMargins(0, 0, 0, 0)
-        
+
         # Build scroll content AFTER setting margins
         scroll_content = QWidget()
         self.cosigners_v = QVBoxLayout(scroll_content)
@@ -247,9 +260,13 @@ class MultisigSetupPage(QWidget):
         scroll.setWidget(scroll_content)
         self.c_v.addWidget(scroll)
         # React to scrollbar changes to adjust widths and right gutter
-        scroll.verticalScrollBar().rangeChanged.connect(lambda _min, _max: self._adjust_cosigner_input_widths())
-        scroll.verticalScrollBar().valueChanged.connect(lambda _v: self._adjust_cosigner_input_widths())
-        
+        scroll.verticalScrollBar().rangeChanged.connect(
+            lambda _min, _max: self._adjust_cosigner_input_widths(),
+        )
+        scroll.verticalScrollBar().valueChanged.connect(
+            lambda _v: self._adjust_cosigner_input_widths(),
+        )
+
         self.cosigner_rows = []
         self.v.addWidget(self.cos_frame)
 
@@ -272,9 +289,15 @@ class MultisigSetupPage(QWidget):
         self.v.addLayout(self.footer)
 
         # Center the card vertically with top/bottom spacers (tighter)
-        self.top_spacer = QSpacerItem(20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        self.bottom_spacer = QSpacerItem(20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        self.right_spacer = QSpacerItem(268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.top_spacer = QSpacerItem(
+            20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding,
+        )
+        self.bottom_spacer = QSpacerItem(
+            20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding,
+        )
+        self.right_spacer = QSpacerItem(
+            268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum,
+        )
         self.grid.addItem(self.top_spacer, 0, 1)
         self.grid.addWidget(self.card, 1, 1)
         self.grid.addItem(self.bottom_spacer, 2, 1)
@@ -295,27 +318,41 @@ class MultisigSetupPage(QWidget):
     def retranslate_ui(self):
         """Set or refresh all translatable UI strings."""
         # Title
-        self.title.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title'
-            ))
-        self.back_button.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'back'
-            ))
-        self.n_help.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_help'
-            ))
-        self.req_lbl.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'required_signatures_label'
-            ))
-        self.info_title.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configure_signature_requirements'
-            ))
-        self.info_sub.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures'
-            ))
-        self.continue_button.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'
-            ))
+        self.title.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title',
+            ),
+        )
+        self.back_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'back',
+            ),
+        )
+        self.n_help.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_help',
+            ),
+        )
+        self.req_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'required_signatures_label',
+            ),
+        )
+        self.info_title.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configure_signature_requirements',
+            ),
+        )
+        self.info_sub.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures',
+            ),
+        )
+        self.continue_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+            ),
+        )
 
     def _on_confirm_threshold(self):
         """Lock threshold and create exact N cosigner fields."""
@@ -323,12 +360,12 @@ class MultisigSetupPage(QWidget):
         m = self._get_m()
         if m > n or m < 1 or n < 2:
             return
-        
+
         # Lock threshold inputs
         self.m_input.setEnabled(False)
         self.n_input.setEnabled(False)
         self._threshold_locked = True
-        
+
         SettingRepository.set_multisig_config(m, n)
 
         # Clear any existing rows
@@ -337,7 +374,7 @@ class MultisigSetupPage(QWidget):
             row_w.setParent(None)
             row_w.deleteLater()
         self.cosigner_rows.clear()
-        
+
         # Create exactly N rows
         for i in range(n):
             self._add_cosigner_row(i + 1)
@@ -353,7 +390,9 @@ class MultisigSetupPage(QWidget):
             if self.creator.get('mode') == 'hardware':
                 self.threshold_frame.hide()
                 self.close_btn.hide()
-                self._view_model.page_navigation.hardware_wallet_connect_page(True)
+                self._view_model.page_navigation.hardware_wallet_connect_page(
+                    True,
+                )
                 self._current_step = 2
                 return
             self.threshold_frame.hide()
@@ -368,9 +407,11 @@ class MultisigSetupPage(QWidget):
             self.close_btn.hide()
             # Re-evaluate widths once visible
             self._adjust_cosigner_input_widths()
-            self.continue_button.setText(QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue'
-                ))
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                ),
+            )
         elif self._current_step == 2:
             self._view_model.page_navigation.welcome_page()
 
@@ -391,9 +432,11 @@ class MultisigSetupPage(QWidget):
             self._update_continue_enabled()
             self.close_btn.show()
             SettingRepository.set_multisig_config(None, None)
-            self.continue_button.setText(QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'
-                ))
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                ),
+            )
 
     def _get_m(self) -> int:
         try:
@@ -476,7 +519,9 @@ class MultisigSetupPage(QWidget):
         row_v.addLayout(xpub_block)
 
         xpub.textChanged.connect(self._on_xpub_changed)
-        xpub.editingFinished.connect(lambda le=xpub: le.setText(le.text().strip()))
+        xpub.editingFinished.connect(
+            lambda le=xpub: le.setText(le.text().strip()),
+        )
 
         # Error label (kept for future validation)
         # err = QLabel('Please include [fingerprint/derivation_path] and xpub')
@@ -491,7 +536,7 @@ class MultisigSetupPage(QWidget):
         row_w.path_input = path_input
         row_w.xpub_input = xpub
         self.cosigner_rows.append((row_w, cos_label, xpub))
-        
+
         if index == 1:
             fp_input.setFocus()
         # Adjust widths after adding the row
@@ -501,37 +546,37 @@ class MultisigSetupPage(QWidget):
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'extended_public_key',
-            )
+            ),
         )
         path_lbl.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'derivation_path',
-            )
+            ),
         )
         fp_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'fingerprint_example',
-            )
+            ),
         )
         path_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'derivation_path_example',
-            )
+            ),
         )
         fp_lbl.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'master_fingerprint',
-            )
+            ),
         )
         cos_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'cosigner_index',
-            ).format(index)
+            ).format(index),
         )
 
     def _adjust_cosigner_input_widths(self):
@@ -566,7 +611,6 @@ class MultisigSetupPage(QWidget):
                         xpub.setFixedWidth(700)
         except Exception:
             pass
-
 
     def _update_continue_enabled(self):
         # # Step 1: Enable Next if M/N are valid
@@ -636,7 +680,7 @@ class MultisigSetupPage(QWidget):
             return False
         # Very relaxed: must contain bracketed section and end token containing 'pub'
         has_brackets = '[' in s and ']' in s
-        has_pub = bool(re.search(r"[a-zA-Z]pub", s))
+        has_pub = bool(re.search(r'[a-zA-Z]pub', s))
         return has_brackets and has_pub
 
     def _update_summary(self):
@@ -646,16 +690,19 @@ class MultisigSetupPage(QWidget):
         max_m = n if n >= 1 else 1
         self.m_input.setValidator(QIntValidator(1, max_m, self))
         # Update helper text to reflect range
-        self.m_help.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT,
-            'minimum_signatures_needed',
-        ).format(max_m))
+        self.m_help.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'minimum_signatures_needed',
+            ).format(max_m),
+        )
         # Update summary label
         m_disp = m if m >= 1 else 0
         n_disp = n if n >= 1 else 0
         if self.summary_text is not None:
-            self.summary_text.setText(QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'configuration_note',
-            ).format(m_disp, n_disp))
-
+            self.summary_text.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'configuration_note',
+                ).format(m_disp, n_disp),
+            )

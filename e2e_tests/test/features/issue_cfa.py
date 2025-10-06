@@ -25,17 +25,17 @@ class IssueCfa(MainPageObjects, BaseOperations):
         """
         Initialize the IssueCfa class.
         """
-        self.hardware_wallet = None
+        self.speculos_emu = None
         self.wallet_features = Wallet(application)
         super().__init__(application)
 
-    def issue_cfa_with_sufficient_sats_and_utxo(self, application, asset_name, asset_description, asset_amount, variant_name: str, is_native_auth_enabled: bool = False):
+    def issue_cfa_with_sufficient_sats_and_utxo(self, application, asset_name, asset_description, asset_amount, variant_name: str, is_native_auth: bool = False):
         """
         Issue CFA asset with sufficient sats and utxo.
         """
         try:
             if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet = handle_hardware_wallet(
+                self.speculos_emu = handle_hardware_wallet(
                     app_name=BITCOIN_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
@@ -67,12 +67,12 @@ class IssueCfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
                 self.issue_cfa_page_objects.click_issue_cfa_button()
 
-            if self.hardware_wallet:
+            if self.speculos_emu:
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME,
                 )
 
-            if is_native_auth_enabled is True:
+            if is_native_auth is True:
                 self.enter_native_password()
 
             self.do_focus_on_application(application)
@@ -80,11 +80,11 @@ class IssueCfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()
 
-        except Exception as e:
-            raise e
+        except Exception as err:
+            raise err
         finally:
-            if self.hardware_wallet:
-                self.hardware_wallet.terminate()
+            if self.speculos_emu:
+                self.speculos_emu.terminate()
 
     def issue_cfa_asset_without_sat(self, application, asset_name, asset_description, asset_amount):
         """
@@ -140,7 +140,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
         """
         try:
             if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet = handle_hardware_wallet(
+                self.speculos_emu = handle_hardware_wallet(
                     app_name=BITCOIN_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
@@ -175,7 +175,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
                 self.issue_cfa_page_objects.click_issue_cfa_button()
 
-            if self.hardware_wallet:
+            if self.speculos_emu:
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME,
                 )
@@ -184,11 +184,11 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()
-        except Exception as e:
-            raise e
+        except Exception as err:
+            raise err
         finally:
-            if self.hardware_wallet:
-                self.hardware_wallet.terminate()
+            if self.speculos_emu:
+                self.speculos_emu.terminate()
 
     def issue_cfa_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name):
         """
@@ -203,17 +203,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
         self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
-            self.receive_asset_page_objects.click_receive_asset_close_button()
-
-        if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
-            self.sidebar_page_objects.click_fungibles_button()
-
-        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-            self.fungible_page_objects.click_usb_sync_frame()
-
-        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-            self.usb_sync_dialog_page_objects.click_continue_button()
+        self.wallet_features.usb_sync(is_receive=True)
 
     def issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(self, application, asset_name, asset_description, asset_amount):
         """
@@ -248,11 +238,4 @@ class IssueCfa(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
 
-        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
-            self.receive_asset_page_objects.click_receive_asset_close_button()
-
-        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-            self.fungible_page_objects.click_usb_sync_frame()
-
-        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-            self.usb_sync_dialog_page_objects.click_continue_button()
+        self.wallet_features.usb_sync(is_receive=True)

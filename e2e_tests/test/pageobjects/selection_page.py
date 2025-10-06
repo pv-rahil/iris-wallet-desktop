@@ -2,6 +2,7 @@
 Wallet selection page objects module.
 """
 from __future__ import annotations
+
 import time
 
 from accessible_constant import OPTION_1_FRAME
@@ -68,3 +69,4 @@ class SelectionPageObjects(BaseOperations):
             return self.click_option_1_button()
         if which == 2:
             return self.click_option_2_button()
+        return None

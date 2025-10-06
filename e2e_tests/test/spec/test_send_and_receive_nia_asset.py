@@ -52,6 +52,7 @@ def test_send_nia_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
         wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
             NIA_ASSET_NAME,
         )
+    with allure.step('Send NIA asset with expired invoice'):
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
         wallets_and_operations.first_page_objects.send_asset_page_objects.enter_asset_invoice(
             INVOICE,
@@ -110,8 +111,10 @@ def test_send_and_receive_nia_asset_operation(wallets_and_operations: WalletTest
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
+    with allure.step('Click on refresh button'):
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+    with allure.step('Click on nia frame'):
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             NIA_ASSET_NAME,
         )

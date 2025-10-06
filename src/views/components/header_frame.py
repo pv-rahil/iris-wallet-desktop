@@ -23,7 +23,9 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 
-from accessible_constant import HEADER_USB_SYNC_FRAME, NETWORK_AND_BACKUP_FRAME, HEADER_PSBT_INFO_FRAME
+from accessible_constant import HEADER_PSBT_INFO_FRAME
+from accessible_constant import HEADER_USB_SYNC_FRAME
+from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import LoaderDisplayModel
@@ -481,7 +483,7 @@ class HeaderFrame(QFrame, QObject):
             return
         password = self._check_keyring_state()
         usb_drives = self.usb_detector.detect_usb_drives()
-        dialog = USBSyncDialog(usb_drives, self.window(),is_from_header = True)
+        dialog = USBSyncDialog(usb_drives, self.window(), is_from_header=True)
         if dialog.exec() == QDialog.Accepted:
             selected_drive = dialog.get_selected_drive()
             if selected_drive:

@@ -16,16 +16,16 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import KeyStorageType, WalletSignatureType
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.selection_page_model import SelectionPageModel
 from src.views.components.selection_breadcrumb_widget import BreadcrumbBar
 from src.views.components.selection_page import SelectionPage
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.views.components.wallet_mode_summary_dialog import WalletModeSummaryDialog
-from src.views.components.multisig_setup_page import MultisigSetupPage
 
 
 class SelectionBreadcrumbWidget(QWidget):
@@ -343,63 +343,89 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         page = self.steps[idx]['widget']
         selected = page.selected_frame
-        if selected == page.params.logo_1_title:
-            logo = page.params.logo_1_path
-            title = page.params.logo_1_title
-        else:
-            logo = page.params.logo_2_path
-            title = page.params.logo_2_title
+
+        # Determine selected logo and title
+        logo, title = (
+            (page.params.logo_1_path, page.params.logo_1_title)
+            if selected == page.params.logo_1_title
+            else (page.params.logo_2_path, page.params.logo_2_title)
+        )
+
+        # Update selection state
         self._reset_state_after_selection_change(idx, title, logo)
-        # Persist selection into settings where applicable
-        if idx == 0:
-            # Step 0: signature type
-            if title == WalletSignatureType.SINGLE_SIG.value:
-                SettingRepository.set_wallet_signature_type(WalletSignatureType.SINGLE_SIG)
-            else:
-                SettingRepository.set_wallet_signature_type(WalletSignatureType.MULTI_SIG)
-        if idx == 0:
-            # Signature type chosen; proceed to wallet mode (index 1)
-            self.current_index = idx + 1
-            self.steps[self.current_index]['widget'].reset_selection()
-            self.update_breadcrumbs()
-        elif idx == 1:
-            # Wallet mode chosen
-            if title == WalletType.OFFLINE_TYPE_WALLET.value:
-                # Skip security type (index 2) in offline mode
-                self.current_index = 3
-                SettingRepository.set_wallet_access_type(None)
-                SettingRepository.remove_setting('wallet_access_type')
-            else:
-                self.current_index = 2
-            self.steps[self.current_index]['widget'].reset_selection()
-            self.update_breadcrumbs()
-        elif idx == 2:
-            # Security type chosen
-            if title == WalletAccessType.WATCH_ONLY.value:
-                self._show_watch_only_flow()
-            else:
-                self.current_index = idx + 1
-                self.steps[self.current_index]['widget'].reset_selection()
-                self.update_breadcrumbs()
-        else:
-            # Advance using the active flow order to avoid mismatched titles/logos
-            flow_indices = self.get_flow_step_indices()
-            try:
-                pos_in_flow = flow_indices.index(idx)
-            except ValueError:
-                pos_in_flow = -1
-            if 0 <= pos_in_flow < len(flow_indices) - 1:
-                self.current_index = flow_indices[pos_in_flow + 1]
-                self.steps[self.current_index]['widget'].reset_selection()
-                self.update_breadcrumbs()
-            else:
-                self._show_final_summary_flow()
+
+        # Step handlers
+        step_handlers = {
+            0: self._handle_step_0_signature_type,
+            1: self._handle_step_1_wallet_mode,
+            2: self._handle_step_2_security_type,
+        }
+
+        handler = step_handlers.get(idx, self._handle_remaining_flow)
+        handler(title, idx)
+
+        # Persist breadcrumbs and view model state
         if (idx != 1 or title != WalletAccessType.WATCH_ONLY.value) and idx != len(self.steps) - 1:
             self.update_breadcrumbs()
+
         self._view_model.selected_logos = self.selected_logos
         self._view_model.selected_titles = self.selected_titles
         self._view_model.selected_step_indices = self.selected_step_indices
         self._view_model.current_index = self.current_index
+
+    # --- Helper methods ---
+
+    def _handle_step_0_signature_type(self, title, idx):
+        """Handle signature type selection (step 0)."""
+        if title == WalletSignatureType.SINGLE_SIG.value:
+            SettingRepository.set_wallet_signature_type(
+                WalletSignatureType.SINGLE_SIG,
+            )
+        else:
+            SettingRepository.set_wallet_signature_type(
+                WalletSignatureType.MULTI_SIG,
+            )
+
+        self.current_index = idx + 1
+        self.steps[self.current_index]['widget'].reset_selection()
+        self.update_breadcrumbs()
+
+    def _handle_step_1_wallet_mode(self, title, _):
+        """Handle wallet mode selection (step 1)."""
+        if title == WalletType.OFFLINE_TYPE_WALLET.value:
+            # Skip security type in offline mode
+            self.current_index = 3
+            SettingRepository.set_wallet_access_type(None)
+            SettingRepository.remove_setting('wallet_access_type')
+        else:
+            self.current_index = 2
+
+        self.steps[self.current_index]['widget'].reset_selection()
+        self.update_breadcrumbs()
+
+    def _handle_step_2_security_type(self, title, idx):
+        """Handle security type selection (step 2)."""
+        if title == WalletAccessType.WATCH_ONLY.value:
+            self._show_watch_only_flow()
+        else:
+            self.current_index = idx + 1
+            self.steps[self.current_index]['widget'].reset_selection()
+            self.update_breadcrumbs()
+
+    def _handle_remaining_flow(self, _, idx):
+        """Handle steps beyond the standard flow."""
+        flow_indices = self.get_flow_step_indices()
+        try:
+            pos_in_flow = flow_indices.index(idx)
+        except ValueError:
+            pos_in_flow = -1
+
+        if 0 <= pos_in_flow < len(flow_indices) - 1:
+            self.current_index = flow_indices[pos_in_flow + 1]
+            self.steps[self.current_index]['widget'].reset_selection()
+            self.update_breadcrumbs()
+        else:
+            self._show_final_summary_flow()
 
     def _show_final_summary_flow(self):
         """
@@ -409,7 +435,8 @@ class SelectionBreadcrumbWidget(QWidget):
         key_storage = SettingRepository.get_key_storage_type()
         entry_type = SettingRepository.get_wallet_entry_type()
         # If Multi-sig was selected at the first step, navigate to a dedicated page
-        is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG
         if is_multisig and entry_type == WalletEntryType.CREATE:
             self._view_model.page_navigation.multisig_setup_page()
             return
@@ -447,7 +474,8 @@ class SelectionBreadcrumbWidget(QWidget):
         Show the watch-only wallet dialog flow, including xpub/fingerprint input and summary.
         Handles blur effect and navigation to welcome page if completed.
         """
-        is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG
         if is_multisig:
             self._view_model.page_navigation.multisig_setup_page()
             return
@@ -504,4 +532,3 @@ class SelectionBreadcrumbWidget(QWidget):
             elif i == 4:
                 SettingRepository.set_key_storage_type(None)
                 SettingRepository.remove_setting('key_storage_type')
-

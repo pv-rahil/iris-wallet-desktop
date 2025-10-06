@@ -4,7 +4,6 @@ End-to-End testing script.
 from __future__ import annotations
 
 import os
-import signal
 import subprocess
 import sys
 
@@ -35,52 +34,51 @@ def serve_allure_result(variant: str | None = None):
     - Else, fall back to serving the root `allure-results/` directory.
     """
     base_dir = 'allure-results'
+
+    def list_variants():
+        if not os.path.isdir(base_dir):
+            print('No allure-results directory found.')
+            return
+        print('Available allure result variants:')
+        for name in sorted(os.listdir(base_dir)):
+            if os.path.isdir(os.path.join(base_dir, name)):
+                print(f"- {name}")
+
     try:
-        # Accept variant from positional CLI arg when invoked as console script
+        # Handle CLI positional arg
         if variant is None and len(sys.argv) > 1:
             candidate = sys.argv[1].strip()
-            if candidate:
-                if candidate.lower() in {'list', '--list', '-l'}:
-                    if not os.path.isdir(base_dir):
-                        print('No allure-results directory found.')
-                        return
-                    print('Available allure result variants:')
-                    for name in sorted(os.listdir(base_dir)):
-                        if os.path.isdir(os.path.join(base_dir, name)):
-                            print(f"- {name}")
-                    return
-                variant = candidate
+            if candidate.lower() in {'list', '--list', '-l'}:
+                list_variants()
+                return
+            variant = candidate
 
-        # If a specific variant is requested, try to serve that
+        # Serve specific variant if exists
         if variant:
             target = os.path.join(base_dir, variant)
             if os.path.isdir(target):
-                with subprocess.Popen(['allure', 'serve', target]) as process:
-                    process.wait()
+                subprocess.run(['allure', 'serve', target], check=True)
                 return
+            print(f"Variant '{variant}' not found. Falling back...")
 
-        # Auto-detect per-variant subdirectories
+        # Auto-detect subdirectories
         if os.path.isdir(base_dir):
             subdirs = [
                 os.path.join(base_dir, name)
                 for name in sorted(os.listdir(base_dir))
                 if os.path.isdir(os.path.join(base_dir, name))
             ]
-
             if subdirs:
                 for path in subdirs:
                     print(f"Serving Allure results: {path}")
-                    with subprocess.Popen(['allure', 'serve', path]) as process:
-                        process.wait()
+                    subprocess.run(['allure', 'serve', path], check=True)
                 return
 
-        # Fallback: serve the root directory (legacy behavior)
-        with subprocess.Popen(['allure', 'serve', base_dir]) as process:
-            process.wait()
+        # Fallback to root directory
+        subprocess.run(['allure', 'serve', base_dir], check=True)
+
     except KeyboardInterrupt:
         print('\nTerminating Allure server...')
-        process.send_signal(signal.SIGINT)
-        process.wait()
 
 
 def single_test():

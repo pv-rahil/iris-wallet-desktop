@@ -3,14 +3,11 @@ Broadcast/Sign PSBT page objects for interacting with the broadcast transaction 
 """
 from __future__ import annotations
 
-
-from accessible_constant import (
-    BROADCAST_TRANSACTION_METHOD_SELECTOR,
-    BROADCAST_TRANSACTION_PAGE_BUTTON,
-    BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON,
-    BROADCAST_TRANSACTION_PSBT_INPUT,
-    SIGN_PSBT_PAGE_BUTTON,
-)
+from accessible_constant import BROADCAST_TRANSACTION_METHOD_SELECTOR
+from accessible_constant import BROADCAST_TRANSACTION_PAGE_BUTTON
+from accessible_constant import BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON
+from accessible_constant import BROADCAST_TRANSACTION_PSBT_INPUT
+from accessible_constant import SIGN_PSBT_PAGE_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
 
 
@@ -52,4 +49,3 @@ class BroadcastTransactionPageObjects(BaseOperations):
     def click_sign_psbt_button(self):
         """Click the sign psbt button."""
         return self.do_click(self.sign_psbt_button()) if self.do_is_displayed(self.sign_psbt_button()) else None
-        

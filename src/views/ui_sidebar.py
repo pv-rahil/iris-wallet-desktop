@@ -17,14 +17,16 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
-from accessible_constant import ABOUT_BUTTON, BROADCAST_TRANSACTION_BUTTON, SIGN_PSBT_BUTTON
+from accessible_constant import ABOUT_BUTTON
 from accessible_constant import BACKUP_BUTTON
+from accessible_constant import BROADCAST_TRANSACTION_BUTTON
 from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
 from accessible_constant import FUNGIBLE_BUTTON
 from accessible_constant import HELP_BUTTON
 from accessible_constant import SETTINGS_BUTTON
 from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
+from accessible_constant import SIGN_PSBT_BUTTON
 from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
@@ -156,7 +158,9 @@ class Sidebar(QWidget):
         self.broadcast_transaction = SidebarButton(
             'Broadcast Transaction', ':/assets/channel_management.png', translation_key='broadcast_transaction',
         )
-        self.broadcast_transaction.setAccessibleName(BROADCAST_TRANSACTION_BUTTON)
+        self.broadcast_transaction.setAccessibleName(
+            BROADCAST_TRANSACTION_BUTTON,
+        )
         # In multisig, use this grid slot for Sign PSBT instead of Broadcast
         self.broadcast_transaction.setVisible(
             priv.can_sign_psbt if is_multisig else priv.can_broadcast_psbt,
@@ -259,7 +263,9 @@ class Sidebar(QWidget):
             )
         else:
             self.iris_wallet_text.setText(
-                f"{QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'iris_wallet', None)} {self.network.capitalize()}",
+                f"{QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'iris_wallet', None)} {
+                    self.network.capitalize()
+                }",
             )
         # In multisig we show Sign PSBT in the grid slot instead of Broadcast
         if is_multisig:

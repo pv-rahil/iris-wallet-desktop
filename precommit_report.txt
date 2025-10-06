@@ -1,0 +1,798 @@
+trim trailing whitespace.................................................Failed
+- hook id: trailing-whitespace
+- duration: 0.09s
+- files were modified by this hook
+fix end of files.........................................................Failed
+- hook id: end-of-file-fixer
+- duration: 0.09s
+- exit code: 1
+- files were modified by this hook
+
+Fixing precommit_report.txt
+Fixing src/utils/common_utils.py
+
+check yaml...............................................................Failed
+- hook id: check-yaml
+- duration: 0.11s
+- files were modified by this hook
+debug statements (python)................................................Failed
+- hook id: debug-statements
+- duration: 0.55s
+- files were modified by this hook
+fix double quoted strings................................................Failed
+- hook id: double-quote-string-fixer
+- duration: 0.36s
+- files were modified by this hook
+python tests naming......................................................Failed
+- hook id: name-tests-test
+- duration: 0.07s
+- files were modified by this hook
+fix requirements.txt.................................(no files to check)Skipped
+- hook id: requirements-txt-fixer
+check xml................................................................Failed
+- hook id: check-xml
+- duration: 0.08s
+- files were modified by this hook
+setup-cfg-fmt........................................(no files to check)Skipped
+- hook id: setup-cfg-fmt
+Reorder python imports...................................................Failed
+- hook id: reorder-python-imports
+- duration: 0.15s
+- exit code: 1
+- files were modified by this hook
+
+Reordering imports in src/utils/common_utils.py
+Reordering imports in src/views/ui_broadcast_transaction.py
+Reordering imports in e2e_tests/test/pageobjects/asset_detail_page.py
+
+Add trailing commas......................................................Failed
+- hook id: add-trailing-comma
+- duration: 1.07s
+- exit code: 1
+- files were modified by this hook
+
+Rewriting src/utils/common_utils.py
+Rewriting src/data/service/main_asset_page_service.py
+
+pyupgrade................................................................Failed
+- hook id: pyupgrade
+- duration: 1.21s
+- files were modified by this hook
+autopep8.................................................................Failed
+- hook id: autopep8
+- duration: 2.82s
+- files were modified by this hook
+mypy.....................................................................Failed
+- hook id: mypy
+- duration: 3.73s
+- files were modified by this hook
+
+unit_tests/tests/conftest.py:62: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+unit_tests/tests/conftest.py:108: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+unit_tests/tests/conftest.py:109: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/hardware_client_store.py:24: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/native_windows_auth.py:41: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+unit_tests/tests/utils_test/handle_exception_test.py:107: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+unit_tests/tests/utils_test/handle_exception_test.py:122: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/worker.py:37: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/worker.py:168: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/common_utils.py:405: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/common_utils.py:504: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/common_utils.py:505: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/data/repository/colored_wallet.py:33: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/data/repository/colored_wallet.py:34: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/components/keyring_error_dialog.py:521: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/usb_sync_manager.py:49: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/usb_sync_manager.py:50: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/utxo_creation_view_model.py:47: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/splash_view_model.py:136: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/splash_view_model.py:137: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+unit_tests/tests/service_tests/faucet_service_test/list_available_faucet_asset_test.py:26: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+unit_tests/tests/service_tests/faucet_service_test/list_available_faucet_asset_test.py:41: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:69: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:70: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:230: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:233: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:236: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:239: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:242: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:243: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:244: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/setting_view_model.py:245: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/restore_view_model.py:69: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/restore_view_model.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/viewmodels/restore_view_model.py:187: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_term_condition.py:38: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_splash_screen.py:37: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_sidebar.py:47: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_set_wallet_password.py:47: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_rgb_asset_detail.py:481: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_restore_mnemonic.py:339: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_issue_nia.py:52: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_enter_wallet_password.py:40: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_bitcoin.py:58: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_bitcoin.py:427: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/components/selection_page.py:51: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/components/selection_page.py:52: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_welcome.py:53: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_send_rgb_asset.py:52: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_send_rgb_asset.py:61: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_send_rgb_asset.py:180: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_send_rgb_asset.py:298: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_send_bitcoin.py:41: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_send_bitcoin.py:46: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_receive_rgb_asset.py:73: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_receive_bitcoin.py:28: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_hardware_wallet_connect.py:52: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_backup.py:54: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_backup.py:478: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_backup.py:479: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:31: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:32: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:33: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:34: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:35: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:36: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:37: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:39: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/main_window.py:109: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/components/header_frame.py:380: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/components/header_frame.py:520: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/components/header_frame.py:521: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_view_unspent_list.py:51: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_view_unspent_list.py:55: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_settings.py:73: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_settings.py:658: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_settings.py:659: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_settings.py:685: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_settings.py:744: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_inflatable_asset.py:63: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_inflatable_asset.py:67: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_help.py:37: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_fungible_asset.py:64: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_fungible_asset.py:68: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_faucets.py:37: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_collectible_asset.py:52: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_about.py:64: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_about.py:65: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/views/ui_about.py:101: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/utils/page_navigation.py:54: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/main.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/main.py:110: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 387 source files
+
+pylint...................................................................Failed
+- hook id: pylint
+- duration: 78.78s
+- exit code: 28
+- files were modified by this hook
+
+************* Module e2e_tests.e2e_runner
+e2e_tests/e2e_runner.py:61:16: W1510: 'subprocess.run' used without explicitly defining the value for 'check'. (subprocess-run-check)
+e2e_tests/e2e_runner.py:75:20: W1510: 'subprocess.run' used without explicitly defining the value for 'check'. (subprocess-run-check)
+e2e_tests/e2e_runner.py:79:8: W1510: 'subprocess.run' used without explicitly defining the value for 'check'. (subprocess-run-check)
+e2e_tests/e2e_runner.py:7:0: W0611: Unused import signal (unused-import)
+************* Module service.main_asset_page_service
+src/data/service/main_asset_page_service.py:37:4: C0116: Missing function or method docstring (missing-function-docstring)
+src/data/service/main_asset_page_service.py:41:26: W0212: Access to a protected member _get_btc_balance of a client class (protected-access)
+src/data/service/main_asset_page_service.py:50:27: W0212: Access to a protected member _filter_exhausted_assets of a client class (protected-access)
+src/data/service/main_asset_page_service.py:26:0: W0611: Unused IsHideExhaustedAssetEnabled imported from src.model.setting_model (unused-import)
+************* Module src.model.selection_page_model
+src/model/selection_page_model.py:8:0: W0611: Unused Callable imported from typing (unused-import)
+************* Module src.utils.common_utils
+src/utils/common_utils.py:611:14: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:617:21: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:618:15: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:619:15: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:620:24: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:621:19: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:622:29: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:623:16: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:624:20: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:625:18: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:626:17: W0212: Access to a protected member _view_model of a client class (protected-access)
+src/utils/common_utils.py:627:33: W0212: Access to a protected member _view_model of a client class (protected-access)
+************* Module require_hardware_wallet_connected
+src/utils/decorators/require_hardware_wallet_connected.py:13:0: W0611: Unused Client imported from hwilib.devices.ledger_bitcoin.client (unused-import)
+************* Module src.utils.usb_sync_manager
+src/utils/usb_sync_manager.py:674:4: R0912: Too many branches (17/12) (too-many-branches)
+************* Module src.viewmodels.hw_device_selection_view_model
+src/viewmodels/hw_device_selection_view_model.py:45:4: R1710: Either all return statements in a function should return an expression, or none of them should. (inconsistent-return-statements)
+************* Module src.views.ui_collectible_asset
+src/views/ui_collectible_asset.py:183:4: R0914: Too many local variables (21/18) (too-many-locals)
+************* Module src.views.ui_fungible_asset
+src/views/ui_fungible_asset.py:317:4: R0912: Too many branches (15/12) (too-many-branches)
+************* Module request_fixures
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[223:261]
+==src.views.ui_inflatable_asset:[225:263]
+        self.header_frame.setObjectName('header_frame')
+        self.header_frame.setMinimumSize(QSize(900, 70))
+        self.header_frame.setMaximumSize(QSize(16777215, 70))
+        self.header_layout = QGridLayout(self.header_frame)
+        self.header_layout.setContentsMargins(20, 6, 20, 6)
+
+        self.logo_header = QLabel(self.header_frame)
+        self.logo_header.setObjectName('logo_header')
+        self.logo_header.setMinimumSize(QSize(40, 40))
+        self.logo_header.setMaximumSize(QSize(40, 40))
+        self.header_layout.addWidget(self.logo_header, 0, 1)
+
+        self.name_header = QLabel(self.header_frame)
+        self.name_header.setObjectName('name_header')
+        self.name_header.setMinimumSize(QSize(130, 40))
+        self.header_layout.addWidget(self.name_header, 0, 0, Qt.AlignLeft)
+
+        self.address_header = QLabel(self.header_frame)
+        self.address_header.setObjectName('address_header')
+        self.address_header.setMinimumSize(QSize(600, 0))
+        self.address_header.setMaximumSize(QSize(16777215, 16777215))
+        self.header_layout.addWidget(self.address_header, 0, 2, Qt.AlignLeft)
+        self.address_header.setStyleSheet(
+            'padding-left: 10px;',
+        )
+
+        self.amount_header = QLabel(self.header_frame)
+        self.amount_header.setObjectName('amount_header')
+        self.amount_header.setWordWrap(True)
+        self.amount_header.setMinimumSize(QSize(98, 40))
+        self.header_layout.addWidget(self.amount_header, 0, 3, Qt.AlignLeft)
+
+        self.symbol_header = QLabel(self.header_frame)
+        self.symbol_header.setObjectName('symbol_header')
+        self.header_layout.addWidget(self.symbol_header, 0, 5, Qt.AlignLeft)
+
+        self.vertical_layout_3.addWidget(self.header_frame)
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[433:461]
+==src.views.ui_issue_nia:[368:396]
+        self.asset_ticker_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'asset_ticker',
+                None,
+            ),
+        )
+        self.short_identifier_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'short_identifier',
+                None,
+            ),
+        )
+        self.asset_name_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'asset_name',
+                None,
+            ),
+        )
+        self.asset_name_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'name_of_the_asset',
+                None,
+            ),
+        ) (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[289:318]
+==src.views.ui_inflatable_asset:[281:310]
+        self.vertical_spacer_scroll_area = QSpacerItem(
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
+        )
+        self.vertical_layout_scroll_content.addItem(
+            self.vertical_spacer_scroll_area,
+        )
+        self.name_header.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_name', None,
+            ),
+        )
+        self.address_header.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_id', None,
+            ),
+        )
+        self.amount_header.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'on_chain_balance', None,
+            ),
+        )
+        self.symbol_header.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'symbol_header', None,
+            ),
+        )
+
+    def create_fungible_card(self, asset, img_path=None):
+        """This method creates all the fungible assets elements of the main asset page.""" (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[612:640]
+==src.views.ui_issue_nia:[527:555]
+                    address_info='psbt_info', psbt=psbt, is_signed=False,
+                ),
+            )
+
+    def create_issue_asset_draft(self, ticker, name, amount):
+        """Create and save an Issue Asset draft when UTXOs are not available.
+        It stores minimal metadata so the draft can be shown on the fungible page.
+        """
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is not None:
+            wallet_service.upsert_draft_issue_asset(
+                name=name,
+                ticker=ticker,
+                issued_amount=int(amount),
+            )
+
+    def _load_draft_data(self):
+        """Load draft data using the draft ID"""
+        wallet_service = WalletDataService.get_session()
+
+        drafts = wallet_service.list_draft_issue_assets()
+        draft = next((d for d in drafts if d.get('id') == self.draft_id), None)
+        if draft:
+            if 'name' in draft:
+                self.asset_name_input.setText(draft['name'])
+            if 'ticker' in draft:
+                self.short_identifier_input.setText(draft['ticker'])
+            if 'issued_amount' in draft: (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[99:117]
+==src.views.ui_inflatable_asset:[97:115]
+        self.asset_logo = None
+        self.asset_name = None
+        self.address = None
+        self.amount = None
+        self.token_symbol = None
+        self.vertical_layout_4 = None
+        self.image_label = None
+        self.horizontal_spacer = None
+        self.vertical_spacer_scroll_area = None
+        self.header_frame = None
+        self.header_layout = None
+        self.logo_header = None
+        self.name_header = None
+        self.address_header = None
+        self.amount_header = None
+        self.symbol_header = None
+        self.outbound_balance = None
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[60:76]
+==src.views.ui_inflatable_asset:[59:75]
+        )
+        self.render_timer.start()
+        super().__init__()
+        self._view_model: MainViewModel = view_model
+        self._view_model.main_asset_view_model.asset_loaded.connect(
+            self.show_assets,
+        )
+        self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
+        self.sidebar = None
+        self.__loading_translucent_screen = None
+        self.setStyleSheet(
+            load_stylesheet(
+                'views/qss/fungible_asset_style.qss',
+            ),
+        )
+        self.setObjectName('my_assets_page') (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[271:285]
+==src.views.ui_inflatable_asset:[263:277]
+        wallet_service = WalletDataService.get_session()
+        draft_assets = (
+            wallet_service.list_draft_issue_assets() if wallet_service is not None else []
+        )
+        for d in draft_assets:
+            if d.get('file_path'):
+                continue
+            draft_asset = DraftAsset(
+                draft_id=d.get('id'),
+                asset_id='draft_asset',
+                name=f"{d.get('name')} (Draft)",
+                ticker=d.get('ticker'),
+            )
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY: (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[544:557]
+==src.views.ui_issue_nia:[459:472]
+        if self.from_draft and self.draft_id:
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_draft_issue_asset(self.draft_id)
+        header = 'Issue new ticker'
+        title = 'You’re all set!'
+        description = f"Asset '{asset_name}' has been issued successfully."
+        button_text = 'Home'
+        params = SuccessPageModel(
+            header=header,
+            title=title,
+            description=description,
+            button_text=button_text, (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[587:599]
+==src.views.ui_issue_nia:[502:514]
+        self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
+        wallet_service = WalletDataService.get_session()
+        if wallet_service:
+            unsigned_psbts = wallet_service.list_psbt(
+                signed=False,
+            )
+            existing_psbt = next(
+                (
+                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
+                ), None,
+            )
+            if existing_psbt and existing_psbt.get('psbt'): (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==e2e_tests.test.spec.test_send_and_receive_cfa_asset:[217:230]
+==e2e_tests.test.spec.test_send_and_receive_nia_asset:[220:233]
+        )
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+        wallets_and_operations.second_page_features.send_features.create_psbt(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Verify transfer status for offline wallet'): (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==e2e_tests.test.spec.test_refresh_transfer:[160:174]
+==e2e_tests.test.spec.test_send_and_receive_cfa_asset:[216:229]
+            ASSET_NAME,
+        )
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+        wallets_and_operations.second_page_features.send_features.create_psbt(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            application=SECOND_APPLICATION,
+        )
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==e2e_tests.test.spec.test_refresh_transfer:[161:174]
+==e2e_tests.test.spec.test_send_and_receive_nia_asset:[220:232]
+        )
+
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+        wallets_and_operations.second_page_features.send_features.create_psbt(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            application=SECOND_APPLICATION,
+        )
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[472:482]
+==src.views.ui_issue_nia:[393:403]
+                None,
+            ),
+        )
+        self.total_supply_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'total_supply',
+                None,
+            ),
+        ) (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[482:495]
+==src.views.ui_inflatable_asset:[457:470]
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                ),
+            )
+
+    def refresh_asset(self):
+        """This method start the render timer and perform the inflatable asset list refresh"""
+        self.render_timer.start()
+        self._view_model.main_asset_view_model.get_assets(
+            rgb_asset_hard_refresh=True,
+        )
+        epoch_time = format_epoch_time()
+        if epoch_time is not None: (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[342:356]
+==src.views.ui_inflatable_asset:[338:352]
+        self.asset_logo.setObjectName('asset_logo')
+
+        self.asset_logo.setMinimumSize(QSize(40, 40))
+        self.asset_logo.setMaximumSize(QSize(40, 40))
+
+        if img_path:
+            self.asset_logo.setPixmap(QPixmap(img_path))
+
+        else:
+            img_str = generate_identicon(asset.asset_id)
+            image = QImage.fromData(QByteArray.fromBase64(img_str.encode()))
+            pixmap = QPixmap.fromImage(image)
+            self.asset_logo.setPixmap(pixmap)
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==e2e_tests.test.spec.test_send_and_receive_cfa_asset:[87:98]
+==e2e_tests.test.spec.test_send_and_receive_nia_asset:[91:102]
+        )
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+            )
+        else:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+            )
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[522:536]
+==src.views.ui_issue_nia:[437:451]
+        if not self.from_draft:
+            self.create_issue_asset_draft(
+                short_identifier, asset_name, amount_to_issue,
+            )
+
+        # Call the view model method and pass the text values as arguments
+        self._view_model.issue_nia_asset_view_model.on_issue_click(
+            short_identifier,
+            asset_name,
+            amount_to_issue,
+        )
+
+    def handle_button_enabled(self):
+        """Updates the enabled state of the send button.""" (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[516:534]
+==src.views.ui_inflatable_asset:[491:509]
+        )
+
+    def show_inflatable_loading_screen(self):
+        """This method handled show loading screen on main asset page"""
+        self.__loading_translucent_screen = LoadingTranslucentScreen(
+            parent=self, description_text='Loading', dot_animation=True,
+        )
+        self.__loading_translucent_screen.start()
+        self.title_frame.refresh_page_button.setDisabled(True)
+
+    def stop_inflatable_loading_screen(self):
+        """This method handled stop loading screen on main asset page"""
+        self.render_timer.stop()
+        self.__loading_translucent_screen.stop()
+        self.title_frame.refresh_page_button.setDisabled(False)
+
+    def show_message(self, inflatable_asset_toast_preset, message):
+        """This method handled showing message main asset page""" (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==e2e_tests.test.spec.test_refresh_transfer:[59:69]
+==e2e_tests.test.spec.test_send_and_receive_cfa_asset:[88:98]
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+            )
+        else:
+            wallets_and_operations.first_page_features.send_features.send(
+                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+            )
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[600:611]
+==src.views.ui_issue_nia:[515:526]
+                return
+        self._view_model.utxo_creation_view_model.create_utxos_begin(
+            'issue_asset',
+        )
+
+    def show_nia_psbt_page(self, psbt):
+        """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if psbt:
+            self._view_model.utxo_creation_view_model.unsigned_psbt.disconnect()
+            self._view_model.page_navigation.receive_asset_page(
+                ReceiveAssetModel( (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[225:236]
+==src.views.ui_issue_nia:[218:229]
+        )
+        self.asset_name_input.setObjectName('asset_name_input')
+        self.asset_name_input.setAccessibleName(NIA_ASSET_NAME)
+        self.asset_name_input.setMinimumSize(QSize(0, 40))
+        self.asset_name_input.setMaximumSize(QSize(370, 40))
+
+        self.asset_name_input.setFrame(False)
+        self.asset_name_input.setClearButtonEnabled(False)
+
+        self.asset_name_layout.addWidget(self.asset_name_input)
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[197:208]
+==src.views.ui_issue_nia:[190:201]
+        )
+        self.short_identifier_input.setObjectName('issue_nia_input')
+        self.short_identifier_input.setAccessibleName(NIA_ASSET_TICKER)
+        self.short_identifier_input.setMinimumSize(QSize(0, 40))
+        self.short_identifier_input.setMaximumSize(QSize(370, 40))
+
+        self.short_identifier_input.setFrame(False)
+        self.short_identifier_input.setClearButtonEnabled(False)
+
+        self.asset_ticker_layout.addWidget(self.short_identifier_input)
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[186:196]
+==src.views.ui_issue_nia:[179:189]
+        self.asset_ticker_label.setObjectName('asset_ticker_label')
+        self.asset_ticker_label.setMinimumSize(QSize(0, 35))
+        self.asset_ticker_label.setBaseSize(QSize(0, 0))
+        self.asset_ticker_label.setAutoFillBackground(False)
+        self.asset_ticker_label.setFrameShadow(QFrame.Plain)
+        self.asset_ticker_label.setLineWidth(1)
+
+        self.asset_ticker_layout.addWidget(self.asset_ticker_label)
+
+        self.short_identifier_input = QLineEdit( (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[88:96]
+==src.views.ui_inflatable_asset:[87:95]
+        )
+        self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
+        config = get_current_wallet_mode_config()
+        self.priv = config.privileges
+        self.is_watch_only = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[347:355]
+==src.views.ui_issue_nia:[308:315]
+            1,
+            1,
+            2,
+            2,
+        )
+        self.setup_ui_connection()
+        self.retranslate_ui()
+        # Apply prefill rules for secondary issuance (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[90:99]
+==src.views.ui_issue_nia:[83:92]
+        )
+
+        self.horizontal_spacer_2 = QSpacerItem(
+            266,
+            20,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum,
+        )
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[359:367]
+==src.views.ui_inflatable_asset:[355:363]
+        self.asset_name.setObjectName('asset_name')
+        self.asset_name.setMinimumSize(QSize(135, 40))
+        self.asset_name.setStyleSheet(
+            load_stylesheet(
+                'views/qss/fungible_asset_style.qss',
+            ),
+        )
+        self.asset_name.setText(asset.name) (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==e2e_tests.test.spec.test_send_and_receive_cfa_asset:[56:64]
+==e2e_tests.test.spec.test_send_and_receive_nia_asset:[55:63]
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
+        wallets_and_operations.first_page_objects.send_asset_page_objects.enter_asset_invoice(
+            INVOICE,
+        )
+    with allure.step('get the asset invoice validation label'):
+        validation_label = wallets_and_operations.first_page_objects.send_asset_page_objects.get_asset_address_validation_label()
+        wallets_and_operations.first_page_objects.send_asset_page_objects.click_send_asset_close_button()
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==e2e_tests.test.spec.test_hide_exhausted_asset:[144:151]
+==e2e_tests.test.spec.test_refresh_transfer:[142:149]
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+            ASSET_TICKER,
+        )
+        wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
+        wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[237:244]
+==src.views.ui_issue_nia:[230:237]
+            self.asset_name_layout,
+        )
+        self.asset_supply_layout = QVBoxLayout()
+        self.asset_supply_layout.setSpacing(0)
+        self.asset_supply_layout.setObjectName('vertical_layout_3')
+        self.asset_supply_layout.setContentsMargins(60, -1, 0, -1)
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[209:217]
+==src.views.ui_issue_nia:[202:210]
+            self.asset_ticker_layout,
+        )
+
+        self.asset_name_layout = QVBoxLayout()
+        self.asset_name_layout.setSpacing(0)
+        self.asset_name_layout.setObjectName('vertical_layout_2')
+        self.asset_name_layout.setContentsMargins(60, -1, 0, -1)
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[446:452]
+==src.views.ui_inflatable_asset:[421:427]
+        self._view_model.main_asset_view_model.get_assets()
+        self.title_frame.refresh_page_button.clicked.connect(
+            self.refresh_asset,
+        )
+        self.title_frame.action_button.clicked.connect(
+            lambda: self._view_model.main_asset_view_model.navigate_issue_asset( (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[393:400]
+==src.views.ui_inflatable_asset:[383:390]
+        self.amount.setObjectName('amount')
+        self.amount.setMinimumSize(QSize(100, 40))
+
+        if asset.asset_id == 'draft_asset':
+            self.amount.setText('-')
+        else:
+            self.amount.setText(str(asset.balance.future)) (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[370:377]
+==src.views.ui_inflatable_asset:[366:373]
+        self.address.setObjectName('address')
+        self.address.setMinimumSize(QSize(600, 0))
+        self.address.setMaximumSize(QSize(16777215, 16777215))
+        self.address.setStyleSheet(
+            'padding-left:10px;',
+        )
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[212:222]
+==src.views.ui_inflatable_asset:[214:224]
+        self.retranslate_ui()
+        self.setup_ui_connection()
+
+    def show_assets(self):
+        """This method creates all the inflatable assets elements of the main asset page."""
+        for i in reversed(range(self.vertical_layout_3.count())):
+            widget = self.vertical_layout_3.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_fungible_asset:[182:189]
+==src.views.ui_inflatable_asset:[180:187]
+        )
+        self.vertical_layout_scroll_content.setObjectName('verticalLayout_2')
+        self.vertical_layout_scroll_content.setContentsMargins(0, -1, 0, -1)
+        self.vertical_layout_3 = QVBoxLayout()
+        self.vertical_layout_3.setSpacing(10)
+        self.vertical_layout_3.setObjectName('verticalLayout_3')
+ (duplicate-code)
+unit_tests/utils_fixures/request_fixures.py:1:0: R0801: Similar lines in 2 files
+==src.views.ui_issue_ifa:[218:224]
+==src.views.ui_issue_nia:[211:217]
+        self.asset_name_label.setObjectName('asset_name_label')
+        self.asset_name_label.setMinimumSize(QSize(0, 40))
+        self.asset_name_label.setMaximumSize(QSize(370, 40))
+        self.asset_name_layout.addWidget(self.asset_name_label)
+
+        self.asset_name_input = QLineEdit( (duplicate-code)
+
+------------------------------------------------------------------
+Your code has been rated at 9.98/10 (previous run: 9.98/10, +0.00)
+
+Spell Checker............................................................Failed
+- hook id: codespell
+- duration: 0.44s
+- files were modified by this hook

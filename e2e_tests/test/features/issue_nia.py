@@ -4,7 +4,6 @@ This module contains the IssueNia class, which provides methods for issuing NIA 
 """
 from __future__ import annotations
 
-
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
@@ -23,8 +22,8 @@ class IssueNia(MainPageObjects, BaseOperations):
         """
         Initializes the IssuenNa class.
         """
-        self.hardware_wallet = None
-        self.wallet_features = Wallet(application)
+        self.hardware_wallet_emulator = None
+        self.wallet_feature = Wallet(application)
         super().__init__(application)
 
     def issue_nia_with_sufficient_sats_and_no_utxo(self, application, asset_ticker, asset_name, asset_amount, variant_name):
@@ -33,7 +32,7 @@ class IssueNia(MainPageObjects, BaseOperations):
         """
         try:
             if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet = handle_hardware_wallet(
+                self.hardware_wallet_emulator = handle_hardware_wallet(
                     app_name=BITCOIN_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
@@ -56,8 +55,8 @@ class IssueNia(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
                 self.issue_nia_page_objects.click_issue_nia_button()
 
-            if self.hardware_wallet:
-                self.wallet_features.confirm_transaction_on_hardware_wallet(
+            if self.hardware_wallet_emulator:
+                self.wallet_feature.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME,
                 )
 
@@ -68,8 +67,8 @@ class IssueNia(MainPageObjects, BaseOperations):
         except Exception as e:
             raise e
         finally:
-            if self.hardware_wallet:
-                self.hardware_wallet.terminate()
+            if self.hardware_wallet_emulator:
+                self.hardware_wallet_emulator.terminate()
 
     def issue_nia_asset_without_sat(self, application, asset_ticker, asset_name, asset_amount):
         """
@@ -109,7 +108,7 @@ class IssueNia(MainPageObjects, BaseOperations):
         """
         try:
             if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet = handle_hardware_wallet(
+                self.hardware_wallet_emulator = handle_hardware_wallet(
                     app_name=BITCOIN_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
@@ -129,8 +128,8 @@ class IssueNia(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
                 self.issue_nia_page_objects.click_issue_nia_button()
 
-            if self.hardware_wallet:
-                self.wallet_features.confirm_transaction_on_hardware_wallet(
+            if self.hardware_wallet_emulator:
+                self.wallet_feature.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME,
                 )
 
@@ -144,8 +143,8 @@ class IssueNia(MainPageObjects, BaseOperations):
         except Exception as e:
             raise e
         finally:
-            if self.hardware_wallet:
-                self.hardware_wallet.terminate()
+            if self.hardware_wallet_emulator:
+                self.hardware_wallet_emulator.terminate()
 
     def issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_ticker):
         """
@@ -160,14 +159,7 @@ class IssueNia(MainPageObjects, BaseOperations):
 
         self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
-            self.receive_asset_page_objects.click_receive_asset_close_button()
-
-        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-            self.fungible_page_objects.click_usb_sync_frame()
-
-        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-            self.usb_sync_dialog_page_objects.click_continue_button()
+        self.wallet_feature.usb_sync(is_receive=True)
 
     def issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(self, application, asset_ticker, asset_name, asset_amount):
         """
@@ -193,11 +185,4 @@ class IssueNia(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
 
-        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
-            self.receive_asset_page_objects.click_receive_asset_close_button()
-
-        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-            self.fungible_page_objects.click_usb_sync_frame()
-
-        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-            self.usb_sync_dialog_page_objects.click_continue_button()
+        self.wallet_feature.usb_sync(is_receive=True)

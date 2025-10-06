@@ -3,8 +3,8 @@
 SendOperation class provides methods for sending assets using bitcoin transfer.
 """
 from __future__ import annotations
-import time
 
+import time
 
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
@@ -180,11 +180,4 @@ class SendOperation(MainPageObjects, BaseOperations):
         except Exception as _:
             pass
 
-        if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
-            self.sidebar_page_objects.click_fungibles_button()
-
-        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-            self.fungible_page_objects.click_usb_sync_frame()
-
-        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-            self.usb_sync_dialog_page_objects.click_continue_button()
+        self.wallet_features.usb_sync()

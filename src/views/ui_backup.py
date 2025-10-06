@@ -31,6 +31,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
+from src.utils.common_utils import close_button_navigation
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.error_message import ERROR_G_DRIVE_CONFIG_FAILED
 from src.utils.gauth import authenticate
@@ -50,7 +51,7 @@ class Backup(QWidget):
 
     def __init__(self, view_model):
         super().__init__()
-        self._view_model: MainViewModel = view_model
+        self.view_model: MainViewModel = view_model
         self.setStyleSheet(load_stylesheet('views/qss/backup_style.qss'))
         self.grid_layout_backup_page = QGridLayout(self)
         self.sidebar = None
@@ -459,44 +460,12 @@ class Backup(QWidget):
             self.handle_mnemonic_visibility,
         )
         self.configure_backup_button.clicked.connect(self.configure_backup)
-        self.backup_close_btn.clicked.connect(self.close_button_navigation)
+        self.backup_close_btn.clicked.connect(
+            lambda: close_button_navigation(self))
         self.backup_wallet_data_button.clicked.connect(self.backup_data)
-        self._view_model.backup_view_model.is_loading.connect(
+        self.view_model.backup_view_model.is_loading.connect(
             self.update_loading_state,
         )
-
-    def close_button_navigation(self):
-        """
-        Navigate to the specified page when the close button is clicked.
-        """
-        self.sidebar = self._view_model.page_navigation.sidebar()
-        originating_page = self.get_checked_button_translation_key(
-            self.sidebar,
-        )
-
-        navigation_map = {
-            'fungibles': self._view_model.page_navigation.fungibles_asset_page,
-            'NIA': self._view_model.page_navigation.fungibles_asset_page,
-            'CFA': self._view_model.page_navigation.collectibles_asset_page,
-            'collectibles': self._view_model.page_navigation.collectibles_asset_page,
-            'faucets': self._view_model.page_navigation.faucets_page,
-            'view_unspent_list': self._view_model.page_navigation.view_unspent_list_page,
-            'help': self._view_model.page_navigation.help_page,
-            'settings': self._view_model.page_navigation.settings_page,
-            'backup': self._view_model.page_navigation.backup_page,
-            'about': self._view_model.page_navigation.about_page,
-        }
-        backup_navigate = navigation_map.get(originating_page)
-        if backup_navigate:
-            backup_navigate()
-        else:
-            ToastManager.show_toast(
-                parent=self,
-                preset=ToastPreset.ERROR,
-                description=f'No navigation defined for {
-                    originating_page
-                }',
-            )
 
     def handle_mnemonic_visibility(self):
         """
@@ -589,11 +558,11 @@ class Backup(QWidget):
         if keyring_status:
             # when keyring disable it open dialog to take mnemonic and password from user
             mnemonic_dialog = RestoreMnemonicWidget(
-                view_model=self._view_model, origin_page='backup_page',
+                view_model=self.view_model, origin_page='backup_page',
             )
             mnemonic_dialog.exec()
         else:
-            self._view_model.backup_view_model.backup()
+            self.view_model.backup_view_model.backup()
 
     def update_loading_state(self, is_loading: bool):
         """
@@ -621,22 +590,3 @@ class Backup(QWidget):
                     None,
                 ),
             )
-
-    def get_checked_button_translation_key(self, sidebar):
-        """
-        Get the translation key of the checked sidebar button.
-        """
-        buttons = [
-            sidebar.backup,
-            sidebar.help,
-            sidebar.view_unspent_list,
-            sidebar.faucet,
-            sidebar.my_fungibles,
-            sidebar.my_collectibles,
-            sidebar.settings,
-            sidebar.about,
-        ]
-        for button in buttons:
-            if button.isChecked():
-                return button.get_translation_key()
-        return None

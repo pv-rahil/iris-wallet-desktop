@@ -18,11 +18,14 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
-from accessible_constant import COLORED_XPUB_COPY_BUTTON, DOWNLOAD_DEBUG_LOG, MASTER_FINGERPRINT_COPY_BUTTON, VANILLA_XPUB_COPY_BUTTON
+from accessible_constant import COLORED_XPUB_COPY_BUTTON
+from accessible_constant import DOWNLOAD_DEBUG_LOG
 from accessible_constant import INDEXER_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import INDEXER_URL_COPY_BUTTON
+from accessible_constant import MASTER_FINGERPRINT_COPY_BUTTON
 from accessible_constant import RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import RGB_PROXY_URL_COPY_BUTTON
+from accessible_constant import VANILLA_XPUB_COPY_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import ToastPreset

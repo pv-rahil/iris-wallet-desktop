@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from dogtail.tree import root
-from accessible_constant import WALLET_MODE_SUMMARY_DIALOG, WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON, WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON
+
+from accessible_constant import WALLET_MODE_SUMMARY_DIALOG
+from accessible_constant import WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON
+from accessible_constant import WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
 
 

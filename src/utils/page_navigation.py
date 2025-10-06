@@ -12,6 +12,7 @@ from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.views.components.error_report_dialog_box import ErrorReportDialog
+from src.views.components.multisig_setup_page import MultisigSetupPage
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.refresh_transfer_dialog import RefreshTransferDialog
 from src.views.main_window import MainWindow
@@ -44,7 +45,6 @@ from src.views.ui_success import SuccessWidget
 from src.views.ui_term_condition import TermConditionWidget
 from src.views.ui_view_unspent_list import ViewUnspentList
 from src.views.ui_welcome import WelcomeWidget
-from src.views.components.multisig_setup_page import MultisigSetupPage
 
 
 class PageNavigation:
@@ -245,11 +245,11 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def hardware_wallet_connect_page(self,is_multisig=False):
+    def hardware_wallet_connect_page(self, is_multisig=False):
         """This method display wallet mode summary page"""
         self.current_stack = {
             'name': 'HardwareWalletConnectPage',
-            'widget': self.pages['HardwareWalletConnectPage'](self._ui.view_model,is_multisig),
+            'widget': self.pages['HardwareWalletConnectPage'](self._ui.view_model, is_multisig),
         }
         self.navigate_and_toggle(False)
 

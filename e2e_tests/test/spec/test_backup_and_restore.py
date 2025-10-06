@@ -20,10 +20,10 @@ from src.utils.info_message import INFO_BACKUP_COMPLETED
 from src.utils.info_message import INFO_RESTORE_COMPLETED
 load_dotenv()
 MNEMONIC = None
-PASSWORD = None
 XPUB_VANILLA = None
-XPUB_COLORED = None
+PASSWORD = None
 MASTER_FINGERPRINT = None
+XPUB_COLORED = None
 pytestmark = pytest.mark.order(1)
 
 
@@ -154,7 +154,6 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wall
     wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
 
 
-
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_watch_only
@@ -175,7 +174,9 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
-            XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(is_load_wallet=True)
+            XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
+                is_load_wallet=True,
+            )
         else:
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
             MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
@@ -218,6 +219,7 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
     wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
     wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
 
+
 @pytest.mark.skip_for_create_wallet_variants
 @pytest.mark.skip_for_load_wallet_variants
 @allure.feature('Watch-only wallet')
@@ -250,14 +252,20 @@ def test_watch_only_backup_and_restore(test_environment, wallets_and_operations:
     # Collect xpubs/fingerprint prior to restart
     with allure.step('Collect xpubs/fingerprint for watch-only before restart'):
         xpub_vanilla, xpub_colored, fingerprint, password = (
-            wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(is_load_wallet=True)
+            wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
+                is_load_wallet=True,
+            )
         )
 
     # Restart with clean data and restore via xpubs (Google backup path)
     with allure.step('Restart app with clean data and restore watch-only via xpubs'):
         test_environment.restart_single_instance(reset_data=True)
-        wallets_and_operations.first_page_features.wallet_features.navigate_to_watch_only_restore(FIRST_APPLICATION)
-        wallets_and_operations.first_page_features.wallet_features.google_auth(password=password,xpub_vanilla=xpub_vanilla,xpub_colored=xpub_colored, fingerprint=fingerprint)
+        wallets_and_operations.first_page_features.wallet_features.navigate_to_watch_only_restore(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.wallet_features.google_auth(
+            password=password, xpub_vanilla=xpub_vanilla, xpub_colored=xpub_colored, fingerprint=fingerprint,
+        )
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()

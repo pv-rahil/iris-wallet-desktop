@@ -56,6 +56,7 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_varian
             ASSET_NAME,
         )
 
+    with allure.step('Click on send button'):
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
             wallets_and_operations.first_page_features.send_features.send(

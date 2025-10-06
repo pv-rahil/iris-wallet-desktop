@@ -4,11 +4,12 @@ Hardware wallet connect page objects class for interacting with the hardware wal
 """
 from __future__ import annotations
 
-
-from dogtail.tree import root
-
-from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE,HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON,HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION,HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION
 from e2e_tests.test.utilities.base_operation import BaseOperations
+
 
 class HardwareWalletConnectPageObjects(BaseOperations):
     """
@@ -36,8 +37,6 @@ class HardwareWalletConnectPageObjects(BaseOperations):
         self.trezor_option = lambda: self.get_first_element(
             role_name='panel', name=HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION,
         )
-
-      
 
     def click_continue_button(self):
         """Clicks the continue button."""

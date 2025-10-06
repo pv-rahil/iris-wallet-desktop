@@ -22,8 +22,8 @@ from accessible_constant import FAKEUSB_MOUNT_PATH
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_APPLICATION_PATH
 from accessible_constant import FIRST_SERVICE
-from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import SECOND_APPLICATION_PATH
 from accessible_constant import SECOND_SERVICE
@@ -33,7 +33,7 @@ from accessible_constant import THIRD_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.fake_usb import FakeUSB
+from e2e_tests.test.utilities.fake_usb import setup_fake_usb
 from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.constant import APP_NAME
@@ -65,10 +65,27 @@ class TestEnvironment:
         # Track originally requested count before we possibly bump due to variant
         self._requested_instances = self.num_instances
         # Initialize process attributes
-        self.first_process = None
-        self.second_process = None
         self.rgb_processes: list = []
-        self.third_process = None
+        # Subprocess handles initialized here to satisfy linters
+        self.first_process: subprocess.Popen | None = None
+        self.second_process: subprocess.Popen | None = None
+        self.third_process: subprocess.Popen | None = None
+
+        self.first_application = None
+        self.second_application = None
+        self.third_application = None
+
+        self.first_page_features: MainFeatures | None = None
+        self.second_page_features: MainFeatures | None = None
+        self.third_page_features: MainFeatures | None = None
+
+        self.first_page_objects: MainPageObjects | None = None
+        self.second_page_objects: MainPageObjects | None = None
+        self.third_page_objects: MainPageObjects | None = None
+
+        self.first_page_operations: BaseOperations | None = None
+        self.second_page_operations: BaseOperations | None = None
+        self.third_page_operations: BaseOperations | None = None
 
         # Determine whether to enable Fake USB environment based on variant
         self.wallet_variant_name = (wallet_variant_name or '').lower()
@@ -107,8 +124,7 @@ class TestEnvironment:
         """Launches the required iris wallet applications and maximizes the windows."""
         env = None
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
-            self.fake_usb = FakeUSB()
-            env = self.fake_usb.setup()
+            env, _ = setup_fake_usb()
 
         self.first_process = subprocess.Popen(
             [f"e2e_tests/applications/iris-wallet-vault_{
@@ -276,24 +292,28 @@ class TestEnvironment:
         # Recreate Fake USB environment if required by variant
         env = None
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
-            # Ensure fake_usb exists (create if not yet created)
-            if not self.fake_usb:
-                self.fake_usb = FakeUSB()
-            env = self.fake_usb.setup()
+            env, _ = setup_fake_usb()
 
         # Relaunch second application and reinitialize its page abstractions
         self.second_process = subprocess.Popen(
-            [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{__version__}-x86_64.AppImage"],
+            [f"e2e_tests/applications/iris-wallet-vault_{
+                APP2_NAME
+            }-{__version__}-x86_64.AppImage"],
             env=env,
         )
         self.wait_for_application(SECOND_APPLICATION)
 
         subprocess.run(
-            ['wmctrl', '-r', SECOND_APPLICATION, '-b', 'add,maximized_vert,maximized_horz'],
+            [
+                'wmctrl', '-r', SECOND_APPLICATION, '-b',
+                'add,maximized_vert,maximized_horz',
+            ],
             check=True,
         )
 
-        self.second_application = root.child(roleName='frame', name=SECOND_APPLICATION)
+        self.second_application = root.child(
+            roleName='frame', name=SECOND_APPLICATION,
+        )
         self.second_page_features = MainFeatures(self.second_application)
         self.second_page_objects = MainPageObjects(self.second_application)
         self.second_page_operations = BaseOperations(self.second_application)
@@ -342,6 +362,7 @@ def wallets_and_operations(test_environment: TestEnvironment):
         """
         A proxy class that provides dynamic access to the TestEnvironment handles.
         """
+
         def __init__(self, env: TestEnvironment):
             self._env = env
 

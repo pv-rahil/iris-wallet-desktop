@@ -4,9 +4,9 @@ Test suite for iris wallet's send and receive operations with bitcoin."""
 from __future__ import annotations
 
 import re
-import pytest
 
 import allure
+import pytest
 
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
@@ -21,6 +21,7 @@ from src.utils.info_message import INFO_BITCOIN_SENT
 AMOUNT = '50000000'
 FEE_RATE = '8'
 INVOICE = 'rgb:~/~/utxob:2msKeFq-uPjwpYxVY-jKS2ymYBq-SqmyP3ovg-AGvth8491-J7seMBm?expiry=1709616110&endpoints=rpc://10.0.2.2:3000/json-rpc'
+
 
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Iris wallet send operation with zero balance')
@@ -56,6 +57,7 @@ def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup,
 
     with allure.step('Close bitcoin detail page'):
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
 
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Iris wallet receive and send operation automation for bitcoin')
@@ -114,6 +116,7 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, walle
 
     with allure.step('Close bitcoin detail page'):
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
 
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Iris wallet send operation with custom fee rate')
@@ -178,6 +181,7 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
         )
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
+
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Iris wallet send operation with invalid invoice')
 @allure.story('Wallet send operation with invalid invoice')
@@ -204,6 +208,7 @@ def test_send_bitcoin_with_invalid_invoice(wallets_and_operations: WalletTestSet
         assert validation_label == TranslationManager.translate(
             'invalid_address',
         )
+
 
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
@@ -243,6 +248,7 @@ def test_send_bitcoin_with_zero_balance_for_offline(wallets_and_operations: Wall
 
     with allure.step('Close bitcoin detail page'):
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
 
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
@@ -351,10 +357,11 @@ def test_send_bitcoin_with_custom_fee_rate_for_offline(wallets_and_operations: W
 
     with allure.step('Close bitcoin detail page for custom fee rate'):
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
-    
+
     with allure.step('Verify transaction id for custom fee rate'):
         tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert description == INFO_BITCOIN_SENT.format(tx_id)
+
 
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet

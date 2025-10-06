@@ -16,8 +16,8 @@ from PySide6.QtWidgets import QWidget
 
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import CONFIRMATION_DIALOG_CANCEL_BUTTON
-from accessible_constant import CONFIRMATION_DIALOG_CONTINUE_BUTTON
 from accessible_constant import CONFIRMATION_DIALOG_CHECKBOX
+from accessible_constant import CONFIRMATION_DIALOG_CONTINUE_BUTTON
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton

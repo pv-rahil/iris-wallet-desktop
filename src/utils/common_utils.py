@@ -39,6 +39,7 @@ from src.data.service.helpers.main_asset_page_helper import get_offline_asset_ti
 from src.model.common_operation_model import WalletModeConfig
 from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
 from src.utils.build_app_path import app_paths
 from src.utils.constant import APP_NAME
@@ -601,3 +602,59 @@ def format_epoch_time() -> str | None:
         return dt.strftime('%d/%m/%Y %I:%M %p')
     except Exception:
         return 'Invalid epoch'
+
+
+def close_button_navigation(widget):
+    """
+    Navigate to the specified page when the close button is clicked.
+    """
+    sidebar = widget._view_model.page_navigation.sidebar()
+    originating_page = get_checked_button_translation_key(
+        sidebar,
+    )
+
+    navigation_map = {
+        'fungibles': widget._view_model.page_navigation.fungibles_asset_page,
+        'NIA': widget._view_model.page_navigation.fungibles_asset_page,
+        'CFA': widget._view_model.page_navigation.collectibles_asset_page,
+        'collectibles': widget._view_model.page_navigation.collectibles_asset_page,
+        'faucets': widget._view_model.page_navigation.faucets_page,
+        'view_unspent_list': widget._view_model.page_navigation.view_unspent_list_page,
+        'help': widget._view_model.page_navigation.help_page,
+        'settings': widget._view_model.page_navigation.settings_page,
+        'backup': widget._view_model.page_navigation.backup_page,
+        'about': widget._view_model.page_navigation.about_page,
+        'broadcast_transaction': widget._view_model.page_navigation.broadcast_transaction_page,
+    }
+    navigate = navigation_map.get(originating_page)
+    if navigate:
+        navigate()
+    else:
+        ToastManager.show_toast(
+            parent=widget,
+            preset=ToastPreset.ERROR,
+            description=f'No navigation defined for {
+                originating_page
+            }',
+        )
+
+
+def get_checked_button_translation_key(sidebar):
+    """
+    Get the translation key of the checked sidebar button.
+    """
+    buttons = [
+        sidebar.backup,
+        sidebar.help,
+        sidebar.view_unspent_list,
+        sidebar.faucet,
+        sidebar.my_fungibles,
+        sidebar.my_collectibles,
+        sidebar.settings,
+        sidebar.about,
+        sidebar.broadcast_transaction,
+    ]
+    for button in buttons:
+        if button.isChecked():
+            return button.get_translation_key()
+    return None

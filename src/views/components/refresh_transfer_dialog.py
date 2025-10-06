@@ -270,8 +270,8 @@ class RefreshTransferDialog(QDialog):
     def _clear_layout(self, layout):
         """Clear a layout and delete all its widgets."""
         while layout.count():
-            child = layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
-            elif child.layout():
-                self._clear_layout(child.layout())
+            _child = layout.takeAt(0)
+            if _child.widget():
+                _child.widget().deleteLater()
+            elif _child.layout():
+                self._clear_layout(_child.layout())

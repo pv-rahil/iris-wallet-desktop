@@ -7,7 +7,8 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION, SECOND_APPLICATION
+from accessible_constant import FIRST_APPLICATION
+from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -77,7 +78,7 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo(wallets_and_operations: Wall
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue NIA asset with sufficient sats')
 @allure.story('Issue NIA asset with sufficient sats which will create asset')
-def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletTestSetup,wallet_variant_name):
+def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test NIA asset issuance with sufficient sats and utxo.
     """
@@ -94,7 +95,7 @@ def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
 
     with allure.step('Issue NIA asset with sufficient sats and utxo'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT,variant_name=wallet_variant_name
+            FIRST_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Verify asset name'):
@@ -108,7 +109,7 @@ def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
 @pytest.mark.skip_for_online_wallet
 @allure.feature('Issue NIA asset without sufficient sats for offline wallet')
 @allure.story('Issue NIA asset without sufficient sats which will produce error toaster for offline wallet')
-def test_issue_nia_without_sufficient_sats_offline_wallet(wallets_and_operations: WalletTestSetup,wallet_variant_name):
+def test_issue_nia_without_sufficient_sats_offline_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test NIA asset issuance without sufficient sats for offline wallet.
     """
@@ -155,16 +156,20 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
             SECOND_APPLICATION, ASSET_TICKER,
         )
 
-    with allure.step('Sign the psbt'):
+    with allure.step('Sign the nia psbt'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
 
-    with allure.step('Broadcast the psbt'):
-       wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION)
+    with allure.step('Broadcast the nia psbt'):
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION,
+        )
 
     with allure.step('Issuing NIA asset'):
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(ASSET_TICKER)
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+            ASSET_TICKER,
+        )
         wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 

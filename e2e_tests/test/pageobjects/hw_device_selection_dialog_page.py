@@ -4,11 +4,14 @@ Hardware device selection dialog page objects class for interacting with the har
 """
 from __future__ import annotations
 
-
 from dogtail.tree import root
 
-from accessible_constant import HW_DEVICE_SELECTION_DIALOG, HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON, HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON, LEDGER_EMULATOR_RADIO_BUTTON
+from accessible_constant import HW_DEVICE_SELECTION_DIALOG
+from accessible_constant import HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON
+from accessible_constant import HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON
+from accessible_constant import LEDGER_EMULATOR_RADIO_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
+
 
 class HWDeviceSelectionDialogPageObjects(BaseOperations):
     """

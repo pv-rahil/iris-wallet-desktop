@@ -216,26 +216,6 @@ def test_on_click_close_button_unknown_shows_toast(widget_broadcast: BroadcastTr
         st.assert_called()
 
 
-def test_get_checked_button_translation_key_returns_expected(widget_broadcast: BroadcastTransactionWidget):
-    """Returns translation key of the first checked sidebar button."""
-    btn_on = MagicMock(isChecked=lambda: True)
-    btn_on.get_translation_key.return_value = 'collectibles'
-    sidebar = MagicMock(
-        backup=MagicMock(isChecked=lambda: False),
-        help=MagicMock(isChecked=lambda: False),
-        view_unspent_list=MagicMock(isChecked=lambda: False),
-        faucet=MagicMock(isChecked=lambda: False),
-        my_fungibles=MagicMock(isChecked=lambda: False),
-        my_collectibles=btn_on,
-        settings=MagicMock(isChecked=lambda: False),
-        about=MagicMock(isChecked=lambda: False),
-        broadcast_transaction=MagicMock(isChecked=lambda: False),
-    )
-    assert widget_broadcast.get_checked_button_translation_key(
-        sidebar,
-    ) == 'collectibles'
-
-
 def test_load_psbts_for_broadcast_zero_one_many(widget_broadcast: BroadcastTransactionWidget):
     """PSBT loader (broadcast) hides selector for 0/1, shows for many and updates input."""
     # zero
