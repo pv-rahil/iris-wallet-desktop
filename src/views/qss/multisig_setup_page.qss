@@ -117,3 +117,19 @@ QPushButton#close_button {
     background: transparent;
     border: none;
 }
+QFrame#ms_info_box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(208,211,221,0.15);
+    border-radius: 10px;
+}
+QLabel#ms_info_badge {
+    border-radius:11px; 
+    background: rgba(208,211,221,0.18);
+    color:#D0D3DD; 
+    font-weight:700;
+}
+QFrame#ms_summary_box {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(208,211,221,0.15);
+    border-radius: 10px;
+}

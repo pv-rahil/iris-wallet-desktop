@@ -2132,5 +2132,77 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>multi_sig_info</source>
         <translation>Multi‑signature wallet (e.g., 2 of 3). Requires multiple keys to spend for stronger security or shared control.</translation>
     </message>
+    <message>
+        <source>import</source>
+        <translation>Import</translation>
+    </message>
+    <message>
+        <source>export</source>
+        <translation>Export</translation>
+    </message>
+    <message>
+        <source>combine</source>
+        <translation>Combine</translation>
+    </message>
+    <message>
+        <source>paste_or_import_psbt</source>
+        <translation>Paste or import your Partially Signed Bitcoin Transaction</translation>
+    </message>
+    <message>
+        <source>signature_count</source>
+        <translation>Signatures collected: {0} of {1}</translation>
+    </message>
+    <message>
+        <source>back</source>
+        <translation>Back</translation>
+    </message>
+    <message>
+        <source>multisig_setup_title</source>
+        <translation>Multisig setup</translation>
+    </message>
+    <message>
+        <source>minimum_signatures_needed</source>
+        <translation>Minimum signatures needed to authorize transactions (1-{0})</translation>
+    </message>
+    <message>
+        <source>configuration_note</source>
+        <translation>Configuration: {0} - of - {1} multisig wallet</translation>
+    </message>
+    <message>
+        <source>extended_public_key</source>
+        <translation>Extended Public Key</translation>
+    </message>
+    <message>
+        <source>derivation_path</source>
+        <translation>Derivation Path</translation>
+    </message>
+    <message>
+        <source>derivation_path_example</source>
+        <translation>e.g., m/48'/0'/0'/2'</translation>
+    </message>
+    <message>
+        <source>fingerprint_example</source>
+        <translation>e.g., a1b2c3d4</translation>
+    </message>
+    <message>
+        <source>cosigner_index</source>
+        <translation>Cosigner {0}</translation>
+    </message>
+    <message>
+        <source>total_cosigners_help</source>
+        <translation>Total number of participants in the multisig wallet (2-15)</translation>
+    </message>
+    <message>
+        <source>required_signatures_label</source>
+        <translation>Required Signatures</translation>
+    </message>
+    <message>
+        <source>configure_signature_requirements</source>
+        <translation>Configure Signature Requirements</translation>
+    </message>
+    <message>
+        <source>choose_number_of_signatures</source>
+        <translation>Choose the number of signatures needed to unlock funds in your wallet</translation>
+    </message>
 </context>
 </TS>

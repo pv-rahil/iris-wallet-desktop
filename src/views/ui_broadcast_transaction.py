@@ -5,6 +5,7 @@ Widget for broadcasting signed transactions (PSBTs) in the application.
 from __future__ import annotations
 
 from enum import Enum
+import base64
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
@@ -68,9 +69,9 @@ class BroadcastTransactionWidget(QWidget):
         )
         config = get_current_wallet_mode_config()
         self.priv = config.privileges
-        self._is_multisig = (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
-        )
+        self.is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+        # Minimum characters to consider PSBT input valid for enabling Sign button
+        self.min_psbt_len = 80
 
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
@@ -89,7 +90,7 @@ class BroadcastTransactionWidget(QWidget):
             'broadcast_transaction_widget',
         )
         # Wider card for multisig to match reference
-        if self._is_multisig:
+        if self.is_multisig:
             self.broadcast_transaction_widget.setMinimumSize(QSize(800, 520))
             self.broadcast_transaction_widget.setMaximumSize(QSize(800, 520))
         else:
@@ -98,7 +99,7 @@ class BroadcastTransactionWidget(QWidget):
         self.vertical_layout = QVBoxLayout(self.broadcast_transaction_widget)
         self.vertical_layout.setObjectName('verticalLayout')
         # Multisig: tighten and equalize inner paddings similar to reference
-        if self._is_multisig:
+        if self.is_multisig:
             self.vertical_layout.setContentsMargins(22, 12, 22, 16)
         self.vertical_layout.addSpacing(10)
 
@@ -148,7 +149,7 @@ class BroadcastTransactionWidget(QWidget):
             self.close_btn_broadcast_transaction_page,
         )
         # Multisig: ensure close button is vertically centered next to the title
-        if self._is_multisig:
+        if self.is_multisig:
             self.broadcast_transaction_title_layout.setContentsMargins(
                 0,0,0,0
             )
@@ -174,28 +175,27 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_label.setAutoFillBackground(False)
         self.broadcast_transaction_label.setFrameShadow(QFrame.Plain)
         self.broadcast_transaction_label.setLineWidth(1)
-        self.vertical_layout.addWidget(self.broadcast_transaction_label)
+        # For multisig, this label will be placed inside a compact row later
+        if not self.is_multisig:
+            self.vertical_layout.addWidget(self.broadcast_transaction_label)
         # Multisig-only: add a small subtitle line below the section title
-        if self._is_multisig:
+        if self.is_multisig:
             self.broadcast_subtitle_label = QLabel(self.broadcast_transaction_widget)
             self.broadcast_subtitle_label.setObjectName('broadcast_sub_label')
-            self.broadcast_subtitle_label.setText(
-                'Paste or import your Partially Signed Bitcoin Transaction'
-            )
+            self.broadcast_subtitle_label.setMinimumSize(QSize(500, 24))
+            self.broadcast_subtitle_label.setMaximumSize(QSize(16777215, 28))
             self.broadcast_subtitle_label.setWordWrap(True)
-            # Align with card edge (override QSS padding-left for multisig)
             self.broadcast_transaction_label.setStyleSheet('padding-left: 0px;')
             self.broadcast_subtitle_label.setStyleSheet('padding-left: 0px;')
-            self.vertical_layout.addWidget(self.broadcast_subtitle_label)
+           
         # Add a label for the method selector
         self.method_selector_label = QLabel(self.broadcast_transaction_widget)
         self.method_selector_label.setObjectName('broadcast_method_label')
-        self.method_selector_label.setVisible(False)
+        self.method_selector_label.hide()
         self.horizontal_layout_2 = QHBoxLayout()
-        self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
         self.method_selector = QComboBox(self.broadcast_transaction_widget)
         # Start hidden; loaders manage visibility and contents
-        self.method_selector.setVisible(False)
+        self.method_selector.hide()
         self.method_selector.setAccessibleName(BROADCAST_TRANSACTION_METHOD_SELECTOR)
         self.method_selector.setFixedWidth(300)
         self.method_selector.setFixedHeight(40)
@@ -203,20 +203,24 @@ class BroadcastTransactionWidget(QWidget):
         self.horizontal_layout_2.addWidget(self.method_selector)
         self.horizontal_layout_2.addStretch(1)  # Keep combobox left-aligned
         # For multisig, selector stays hidden and shouldn't add extra gaps
-        if self._is_multisig:
+        if self.is_multisig:
+            # In multisig, completely skip adding this hidden selector row
+            # to prevent it from reserving vertical space.
             self.horizontal_layout_2.setContentsMargins(0, 0, 0, 0)
-        self.vertical_layout.addLayout(self.horizontal_layout_2)
+        else:
+            self.vertical_layout.addLayout(self.horizontal_layout_2)
 
         # No toolbar under title in this design
 
         # Multisig: description + subtitle + status chip in a single horizontal row
-        if self._is_multisig:
+        if self.is_multisig:
             self.desc_status_row = QHBoxLayout()
             self.desc_status_row.setContentsMargins(5, 4, 5, 6)
             self.desc_status_row.setSpacing(8)
 
             self.desc_col = QVBoxLayout()
             self.desc_col.setContentsMargins(0, 0, 0, 0)
+            self.desc_col.setSpacing(0)
             # Ensure description and subtitle line up neatly
             # reuse existing labels created above
             self.desc_col.addWidget(self.broadcast_transaction_label)
@@ -232,7 +236,7 @@ class BroadcastTransactionWidget(QWidget):
 
         self.horizontal_layout_1 = QHBoxLayout()
         # Ensure input aligns to card margins exactly
-        if self._is_multisig:
+        if self.is_multisig:
             self.horizontal_layout_1.setContentsMargins(0, 0, 0, 0)
         self.broadcast_transaction_input = QPlainTextEdit(
             self.broadcast_transaction_widget,
@@ -241,7 +245,7 @@ class BroadcastTransactionWidget(QWidget):
             'broadcast_transaction_input',
         )
         self.broadcast_transaction_input.setAccessibleName(BROADCAST_TRANSACTION_PSBT_INPUT)
-        if self._is_multisig:
+        if self.is_multisig:
             # Wider/taller input matching layout proportion and expand horizontally
             self.broadcast_transaction_input.setFixedWidth(747)
             self.broadcast_transaction_input.setMaximumHeight(200)
@@ -260,75 +264,62 @@ class BroadcastTransactionWidget(QWidget):
         self.vertical_layout.addLayout(
             self.horizontal_layout_1,
         )
-        # Centered actions row (multisig only)
-        if self._is_multisig:
-            self.actions_center_row = QHBoxLayout()
-            # Align buttons with input field edges and equal side space
-            self.actions_center_row.setContentsMargins(5, 14, 0, 8)
-            self.actions_center_row.setSpacing(16)
-            self.btn_import = PrimaryButton()
-            self.btn_import.setText('Import')
-            self.btn_import.setFixedWidth(112)
-            self.btn_import.setMinimumHeight(40)
-            self.btn_import.setToolTip('Load a PSBT file from disk')
-            
-            self.btn_export = PrimaryButton()
-            self.btn_export.setText('Export')
-            self.btn_export.setFixedWidth(112)
-            self.btn_export.setMinimumHeight(40)
-            self.btn_export.setToolTip('Save the current PSBT to disk')
-            
-            self.btn_combine = PrimaryButton()
-            self.btn_combine.setText('Combine')
-            self.btn_combine.setFixedWidth(112)
-            self.btn_combine.setMinimumHeight(40)
-            self.btn_combine.setToolTip('Merge multiple partially signed PSBTs')
-            
-            self.broadcast_button = PrimaryButton()
-            self.broadcast_button.setText('Sign PSBT')
-            self.broadcast_button.setFixedWidth(112)
-            self.broadcast_button.setMinimumHeight(40)
-            self.broadcast_button.setToolTip('Sign the current PSBT')
-            
-            self.actions_center_row.addWidget(self.btn_import)
-            self.actions_center_row.addWidget(self.btn_export)
-            self.actions_center_row.addWidget(self.btn_combine)
-            self.actions_center_row.addWidget(self.broadcast_button)
-            # trailing stretch keeps left alignment while reserving right gap
-            self.actions_center_row.addStretch(1)
-            self.vertical_layout.addLayout(self.actions_center_row)
-
-        self.vertical_spacer = QSpacerItem(20, 18, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        self.vertical_layout.addItem(self.vertical_spacer)
-
-        # Prepare PSBT storage for optional signing flow
-        if self._is_multisig:
-            self._psbt_items: list[dict] = []
-        # Prepare PSBT storage for broadcast flow
-        if self.priv.can_broadcast_psbt:
-            self._psbt_signed_items: list[dict] = []
 
         self.broadcast_button_horizontal_layout = QHBoxLayout()
         self.broadcast_button_horizontal_layout.setObjectName(
             'broadcast_button_horizontal_layout',
         )
         self.broadcast_button_horizontal_layout.setContentsMargins(
-            -1, 0, -1, 25,
+            -1, 10, -1, 25,
         )
-        # Bottom primary button (footer):
-        # - broadcast mode (any wallet)
-        # - single-sig sign-only (original behavior)
-        if self.priv.can_broadcast_psbt or (not self._is_multisig):
-            self.broadcast_button = PrimaryButton()
-            self.broadcast_button.setMinimumSize(QSize(0, 40))
-            if self.priv.can_broadcast_psbt:
-                self.broadcast_button.setMaximumSize(QSize(270, 16777215))
-                self.broadcast_button.setAccessibleName(BROADCAST_TRANSACTION_PAGE_BUTTON)
-            else:
-                self.broadcast_button.setMaximumSize(QSize(270, 16777215))
-                self.broadcast_button.setAccessibleName(SIGN_PSBT_PAGE_BUTTON)
+        self.broadcast_button = PrimaryButton()
+        self.broadcast_button.setMinimumSize(QSize(0, 40))
+        if self.priv.can_broadcast_psbt:
+            self.broadcast_button.setMaximumSize(QSize(270, 16777215))
+            self.broadcast_button.setAccessibleName(BROADCAST_TRANSACTION_PAGE_BUTTON)
+        else:
+            self.broadcast_button.setMaximumSize(QSize(270, 16777215))
+            self.broadcast_button.setAccessibleName(SIGN_PSBT_PAGE_BUTTON)
+        if not self.is_multisig:
             self.broadcast_button_horizontal_layout.addWidget(self.broadcast_button)
             self.vertical_layout.addLayout(self.broadcast_button_horizontal_layout)
+
+        # Centered actions row (multisig only)
+        if self.is_multisig:
+            self.actions_center_row = QHBoxLayout()
+            self.actions_center_row.setContentsMargins(0, 14, 5, 8)
+            self.actions_center_row.setSpacing(16)
+            self.actions_center_row.addStretch(1)
+            self.btn_import = PrimaryButton()
+            self.btn_import.setFixedWidth(175)
+            self.btn_import.setMinimumHeight(40)
+            
+            self.btn_export = PrimaryButton()
+            self.btn_export.setFixedWidth(175)
+            self.btn_export.setMinimumHeight(40)
+            self.btn_export.setVisible(False)
+            
+            self.btn_combine = PrimaryButton()
+            self.btn_combine.setFixedWidth(175)
+            self.btn_combine.setMinimumHeight(40)
+            self.btn_combine.setVisible(False)
+            
+            self.broadcast_button.setFixedWidth(175)
+            self.broadcast_button.setMinimumHeight(40)
+            
+            self.actions_center_row.addWidget(self.btn_import)
+            self.actions_center_row.addWidget(self.btn_export)
+            self.actions_center_row.addWidget(self.btn_combine)
+            self.actions_center_row.addWidget(self.broadcast_button)
+            self.vertical_layout.addLayout(self.actions_center_row)
+
+
+        # Prepare PSBT storage for optional signing flow
+        if self.is_multisig:
+            self._psbt_items: list[dict] = []
+        # Prepare PSBT storage for broadcast flow
+        if self.priv.can_broadcast_psbt:
+            self._psbt_signed_items: list[dict] = []
 
         self.grid_layout.addWidget(
             self.broadcast_transaction_widget, 1, 1, 2, 2,
@@ -364,13 +355,14 @@ class BroadcastTransactionWidget(QWidget):
         # Evaluate initial button state once the UI is ready
         self.handle_button_enable()
         # Initialize multisig progress if applicable
-        if self._is_multisig:
-            # hide export/combine until sig count >= 1
-            # self.btn_export.setVisible(False)
-            # self.btn_combine.setVisible(False)
+        if self.is_multisig:
             _, total = SettingRepository.get_multisig_config()
             total_disp = total if total is not None else '?'
-            self.sign_status_label.setText(f'Signatures collected: 0 of {total_disp}')
+            self.sign_status_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'signature_count',).format(0, total_disp)
+            )
 
         # Load PSBTs for broadcast AFTER widgets exist
         if self.priv.can_broadcast_psbt and not self.from_sidebar:
@@ -383,9 +375,10 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_input.textChanged.connect(
             self.handle_button_enable,
         )
-        if self._is_multisig:
+        if self.is_multisig:
             self.broadcast_transaction_input.textChanged.connect(self._update_signature_progress)
-        self.broadcast_button.clicked.connect(self.send_asset)
+        if not self.is_multisig:
+            self.broadcast_button.clicked.connect(self.send_asset)
         self.close_btn_broadcast_transaction_page.clicked.connect(
             self.on_click_close_button,
         )
@@ -401,12 +394,17 @@ class BroadcastTransactionWidget(QWidget):
         self._view_model.broadcast_transaction_view_model.hw_dialog_update.connect(
             self.handle_nia_hw_dialog,
         )
-        if self._is_multisig:
-            # self._view_model.broadcast_transaction_view_model.signature_count_ready.connect(self._on_signature_count_ready)
-            # self._view_model.broadcast_transaction_view_model.combined_psbt_ready.connect(self._on_combined_psbt_ready)
+        if self.is_multisig:
+        # self._view_model.broadcast_transaction_view_model.signature_count_ready.connect(self._on_signature_count_ready)
+        # self._view_model.broadcast_transaction_view_model.combined_psbt_ready.connect(self._on_combined_psbt_ready)
             self.btn_import.clicked.connect(self._on_import_psbt)
             self.btn_export.clicked.connect(self._on_export_psbt)
             self.btn_combine.clicked.connect(self._on_combine_psbts)
+            self.broadcast_button.clicked.connect(self._on_finalized_psbt_ready)
+            # Show Export after our wallet signs successfully
+            self._view_model.broadcast_transaction_view_model.finalized_psbt.connect(
+                self._on_finalized_psbt_ready
+            )
 
     def retranslate_ui(self):
         """
@@ -444,6 +442,28 @@ class BroadcastTransactionWidget(QWidget):
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt',
                 ),
+            )
+
+        # Multisig: set subtitle and actions row texts/tooltips via i18n
+        if self.is_multisig:
+            self.broadcast_subtitle_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'paste_or_import_psbt',
+                )
+            )
+            # Buttons
+            self.btn_import.setText(
+                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'import')
+            )
+            self.btn_export.setText(
+                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'export')
+            )
+            self.btn_combine.setText(
+                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'combine')
+            )
+            self.broadcast_button.setText(
+                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt')
             )
 
     def send_asset(self):
@@ -512,7 +532,8 @@ class BroadcastTransactionWidget(QWidget):
         """
         Enable or disable the broadcast button based on input and method selection.
         """
-        has_input = bool(self.broadcast_transaction_input.toPlainText())
+        text = self.broadcast_transaction_input.toPlainText()
+        has_input = bool(text) and (len(text.strip()) >= self.min_psbt_len)
         if self.priv.can_broadcast_psbt:
             selector_visible = self.method_selector.isVisible()
             method_ok = (not selector_visible) or (
@@ -522,38 +543,61 @@ class BroadcastTransactionWidget(QWidget):
         else:
             self.broadcast_button.setEnabled(has_input)
 
+    def _on_finalized_psbt_ready(self):
+        """Our wallet has signed successfully; allow exporting the signed PSBT."""
+        if self.is_multisig:
+            self.btn_export.setVisible(True)
+            self.btn_import.setVisible(False)
+            self.broadcast_button.setEnabled(False)
+       
     # ----- Multisig helpers -----
     def _update_signature_progress(self):
         """Update the signature progress label for multisig (e.g., 1 of 3)."""
-        required, total = SettingRepository.get_multisig_config()
+        _, total = SettingRepository.get_multisig_config()
         current_psbt = self.broadcast_transaction_input.toPlainText().strip()
         if not current_psbt:
             total_disp = total if total is not None else '?'
             self.sign_status_label.setText(
-                f'Signatures collected: 0 of {total_disp}' + (
-                    '' if not required else f'  (Required: {required})'
-                ),
-            )
-            if self._is_multisig:
-                self.btn_export.setVisible(False)
-                self.btn_combine.setVisible(False)
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'signature_count',).format(0, total_disp)
+                )
+            self.btn_export.setVisible(False)
+            self.btn_combine.setVisible(False)
             return
         # self._view_model.broadcast_transaction_view_model.analyze_signature_count(current_psbt)
         self._on_signature_count_ready(0)
 
     def _on_signature_count_ready(self, count: int):
-        required, total = SettingRepository.get_multisig_config()
+        _, total = SettingRepository.get_multisig_config()
         total_disp = total if total is not None else '?'
         self.sign_status_label.setText(
-            f'Signatures collected: {count} of {total_disp}' + (
-                '' if not required else f'  (Required: {required})'
-            ),
-        )
-        # show export/combine only when at least 1 signature exists
-        if self._is_multisig:
-            has_one = isinstance(count, int) and count >= 1
-            self.btn_export.setVisible(has_one)
-            self.btn_combine.setVisible(has_one)
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'signature_count',).format(count, total_disp)
+            )
+        # show combine only when at least 1 signature exists
+        if self.is_multisig:
+            self.btn_combine.setVisible(True if count > 0 else False)
+            # When collected signatures reach required threshold, flip button text to Broadcast
+            required, _ = SettingRepository.get_multisig_config()
+            needed = int(required) if required is not None else None
+            if needed is not None and count >= needed:
+                # Show Broadcast text
+                self.broadcast_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                        'broadcast_transaction',
+                    )
+                )
+            else:
+                # Keep Sign PSBT text
+                self.broadcast_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                        'sign_psbt',
+                    )
+                )
 
     def _on_import_psbt(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -562,45 +606,72 @@ class BroadcastTransactionWidget(QWidget):
         if not file_path:
             return
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-            self.broadcast_transaction_input.setPlainText(content)
-        except Exception:
-            pass
+            with open(file_path, 'rb') as f:
+                raw = f.read()
+            text = base64.b64encode(raw).decode('ascii').strip()
+            self.broadcast_transaction_input.setPlainText(text)
+            # Refresh UI state
+            if self.is_multisig:
+                self._update_signature_progress()
+            self.handle_button_enable()
+        except Exception as e:
+            ToastManager.show_toast(
+                parent=self,
+                preset=ToastPreset.ERROR,
+                description=f'Failed to read PSBT file: {e}',
+            )
 
     def _on_export_psbt(self):
         current_psbt = self.broadcast_transaction_input.toPlainText().strip()
-        # if not current_psbt:
-        #     return
+        if not current_psbt:
+            return
         file_path, _ = QFileDialog.getSaveFileName(
             self, 'Export PSBT', 'transaction.psbt', 'PSBT Files (*.psbt *.txt);;All Files (*)',
         )
         if not file_path:
             return
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(current_psbt)
-        except Exception:
-            pass
+            psbt_bytes = base64.b64decode(current_psbt, validate=True)
+            with open(file_path, 'wb') as f:
+                f.write(psbt_bytes)
+        except Exception as e:
+            ToastManager.show_toast(
+                parent=self,
+                preset=ToastPreset.ERROR,
+                description=f'Failed to write PSBT file: {e}',
+            )
 
     def _on_combine_psbts(self):
-        # Ask user for an additional PSBT to combine with the current one
+        # Get the base PSBT from the text area
         base_psbt = self.broadcast_transaction_input.toPlainText().strip()
-        # if not base_psbt:
-        #     return
+        if not base_psbt:
+            return
+
         file_path, _ = QFileDialog.getOpenFileName(
-            self, 'Select PSBT to Combine', '', 'PSBT Files (*.psbt *.txt);;All Files (*)',
+            self,
+            'Select PSBT to Combine',
+            '',
+            'PSBT Files (*.psbt *.txt);;All Files (*)',
         )
         if not file_path:
             return
+
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                other = f.read().strip()
-        except Exception:
-            return
-        # self._view_model.broadcast_transaction_view_model.combine_psbts(
-        #     [base_psbt, other],
-        # )
+            # Read file in binary mode
+            with open(file_path, 'rb') as f:
+                raw = f.read()
+                other = base64.b64encode(raw).decode('ascii').strip()
+
+            # Combine base and other PSBTs (uncomment when view_model is ready)
+            # self._view_model.broadcast_transaction_view_model.combine_psbts([base_psbt, other])
+
+        except Exception as e:
+            ToastManager.show_toast(
+                parent=self,
+                preset=ToastPreset.ERROR,
+                description=f'Failed to read PSBT file: {e}',
+            )
+
 
     def _on_combined_psbt_ready(self, combined: str):
         if combined:
@@ -691,16 +762,16 @@ class BroadcastTransactionWidget(QWidget):
 
         # 0 PSBTs: hide selector, clear input, disable button
         if count == 0:
-            self.method_selector_label.setVisible(False)
-            self.method_selector.setVisible(False)
+            self.method_selector_label.hide()
+            self.method_selector.hide()
             self.broadcast_transaction_input.clear()
             self.broadcast_button.setEnabled(False)
             return
 
         # 1 PSBT: hide selector, set text, enable button
         if count == 1:
-            self.method_selector_label.setVisible(False)
-            self.method_selector.setVisible(False)
+            self.method_selector_label.hide()
+            self.method_selector.hide()
             self.broadcast_transaction_input.setPlainText(
                 self._psbt_items[0].get('psbt', ''),
             )
@@ -709,8 +780,9 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         # >1 PSBTs: show and populate selector
-        self.method_selector_label.setVisible(True)
-        self.method_selector.setVisible(True)
+        self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
+        self.method_selector_label.show()
+        self.method_selector.show()
         self.method_selector_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -775,15 +847,15 @@ class BroadcastTransactionWidget(QWidget):
 
         # 0 PSBTs: hide selector, clear input, disable button
         if count == 0:
-            self.method_selector_label.setVisible(False)
-            self.method_selector.setVisible(False)
+            self.method_selector_label.hide()
+            self.method_selector.hide()
             self.handle_button_enable()
             return
 
         # 1 PSBT: hide selector, set text, enable button
         if count == 1:
-            self.method_selector_label.setVisible(False)
-            self.method_selector.setVisible(False)
+            self.method_selector_label.hide()
+            self.method_selector.hide()
             self.broadcast_transaction_input.setPlainText(
                 self._psbt_signed_items[0].get('psbt', ''),
             )
@@ -792,8 +864,9 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         # >1 PSBTs: show and populate selector
-        self.method_selector_label.setVisible(True)
-        self.method_selector.setVisible(True)
+        self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
+        self.method_selector_label.show()
+        self.method_selector.show()
         self.method_selector_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,

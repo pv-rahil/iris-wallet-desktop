@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QCoreApplication, QSize, Qt
 from PySide6.QtGui import QCursor, QGuiApplication, QIntValidator, QIcon
 from PySide6.QtWidgets import (
     QFrame,
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 import re
 
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletAccessType, KeyStorageType
@@ -54,29 +55,28 @@ class MultisigSetupPage(QWidget):
         self.left_spacer = QSpacerItem(268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.grid.addItem(self.left_spacer, 1, 0)
 
-        # Card container (smaller like Broadcast page; grows on step 2)
+        # Card container (larger on Step 1 for better spacing; grows/shrinks per step)
         self.card = QWidget(self)
         self.card.setObjectName('ms_page_card')
-        self.card.setMinimumSize(QSize(595, 350))
-        self.card.setMaximumSize(QSize(595, 350))
+        self.card.setMinimumSize(QSize(770, 530))
+        self.card.setMaximumSize(QSize(770, 530))
         self.v = QVBoxLayout(self.card)
         # No horizontal margins so header/footer lines touch both edges
-        self.v.setContentsMargins(0, 16, 0, 20)
-        self.v.setSpacing(12)
+        self.v.setContentsMargins(0, 12, 0, 20)
+        self.v.setSpacing(10)
         # Expose a SelectionPage-like attribute so breadcrumb bar can attach
         self.vertical_layout = self.v
         self.breadcrumb_widget = None
 
         # Prepare footer button early so validation can reference it safely
         self.continue_button = PrimaryButton()
-        self.continue_button.setText('Continue')
         self.continue_button.setFixedSize(QSize(100, 40))
         self.continue_button.setCursor(QCursor(Qt.PointingHandCursor))
 
         # Title with left margin
         title_layout = QHBoxLayout()
         title_layout.setContentsMargins(30, 9, 30, 0)
-        self.title = QLabel('Multisig Setup')
+        self.title = QLabel()
         self.title.setObjectName('ms_title')
         self.title.setMinimumSize(QSize(415, 63))
         self.title.setMaximumSize(QSize(415, 63))
@@ -102,61 +102,91 @@ class MultisigSetupPage(QWidget):
         self.v.addWidget(self.above_line)
         
 
-        # Threshold card
+        # Threshold card (Step 1)
         self.threshold_frame = QFrame(self.card)
         self.threshold_frame.setObjectName('capabilities_frame')
         self.t_v = QVBoxLayout(self.threshold_frame)
-        self.t_v.setContentsMargins(35, 8, 20, 8)
-        self.t_v.setSpacing(8)
+        self.t_v.setContentsMargins(34, 14, 34, 6)
+        self.t_v.setSpacing(10)
 
-        self.th_title = QLabel('Choose the number of signatures needed to unlock funds in your wallet:')
-        # Smaller subtitle style to avoid competing with the page title
-        self.th_title.setObjectName('ms_label')
-        self.th_title.setWordWrap(True)
-        self.th_title.setStyleSheet('font-size: 16px; font-weight: 500;')
-        self.t_v.addWidget(self.th_title)
+        # Info box
+        self.info_box = QFrame(self.threshold_frame)
+        self.info_box.setObjectName('ms_info_box')
+        self.info_box.setFixedWidth(700)
+        info_h = QHBoxLayout(self.info_box)
+        info_h.setContentsMargins(14, 10, 14, 10)
+        info_h.setSpacing(12)
+        info_badge = QLabel('i')
+        info_badge.setObjectName('ms_info_badge')
+        info_badge.setFixedSize(22, 22)
+        info_badge.setAlignment(Qt.AlignCenter)
+        info_h.addWidget(info_badge)
+        info_v = QVBoxLayout()
+        info_v.setContentsMargins(0, 0, 0, 0)
+        info_v.setSpacing(4)
+        self.info_title = QLabel()
+        self.info_title.setObjectName('ms_label')
+        self.info_sub = QLabel()
+        self.info_sub.setObjectName('ms_helper')
+        self.info_sub.setWordWrap(True)
+        info_v.addWidget(self.info_title)
+        info_v.addWidget(self.info_sub)
+        info_h.addLayout(info_v)
+        self.t_v.addWidget(self.info_box)
 
-        mn_v = QHBoxLayout()
-        mn_v.setContentsMargins(0, 0, 0, 0)
-        mn_v.setSpacing(12)
-
-        row_n = QHBoxLayout()
-        row_n.setContentsMargins(0, 0, 0, 0)
-        row_n.setSpacing(12)
-        tot_lbl = QLabel('Total cosigners')
+        # Total Cosigners block
+        n_block = QVBoxLayout()
+        n_block.setContentsMargins(0, 0, 0, 0)
+        n_block.setSpacing(10)
+        tot_lbl = QLabel('Total Cosigners')
         tot_lbl.setObjectName('ms_label')
-        row_n.addWidget(tot_lbl)
+        n_block.addWidget(tot_lbl)
         self.n_input = QLineEdit()
         self.n_input.setObjectName('ms_input')
         self.n_input.setText('2')
-        self.n_input.setFixedWidth(50)
-        self.n_input.setMinimumHeight(36)
+        self.n_input.setFixedWidth(700)
+        self.n_input.setFixedHeight(40)
         self.n_input.setFrame(False)
-        self.n_input.setToolTip('Total number of cosigners')
-        row_n.addWidget(self.n_input)
-        row_n.addStretch()
-        mn_v.addLayout(row_n)
+        self.n_input.setValidator(QIntValidator(2, 15, self))
+        n_block.addWidget(self.n_input)
+        self.n_help = QLabel()
+        self.n_help.setObjectName('ms_helper')
+        # Add a little top padding so it doesn't touch the input field
+        n_block.addWidget(self.n_help)
+        self.t_v.addLayout(n_block)
 
-        row_m = QHBoxLayout()
-        row_m.setContentsMargins(0, 0, 0, 0)
-        row_m.setSpacing(12)
-        req_lbl = QLabel('Required signatures')
-        req_lbl.setObjectName('ms_label')
-        row_m.addWidget(req_lbl)
+        # Required Signatures block
+        m_block = QVBoxLayout()
+        m_block.setContentsMargins(0, 0, 0, 0)
+        m_block.setSpacing(10)
+        self.req_lbl = QLabel()
+        self.req_lbl.setObjectName('ms_label')
+        m_block.addWidget(self.req_lbl)
         self.m_input = QLineEdit()
         self.m_input.setObjectName('ms_input')
         self.m_input.setText('2')
-        self.m_input.setFixedWidth(50)
-        self.m_input.setMinimumHeight(36)
+        self.m_input.setFixedWidth(700)
+        self.m_input.setFixedHeight(40)
         self.m_input.setFrame(False)
-        row_m.addWidget(self.m_input)
-        row_m.addStretch()
-        mn_v.addLayout(row_m)
-        mn_v.addStretch()
+        self.m_input.setValidator(QIntValidator(2, 15, self))
+        m_block.addWidget(self.m_input)
+        self.m_help = QLabel()
+        self.m_help.setObjectName('ms_helper')
+        m_block.addWidget(self.m_help)
+        self.t_v.addLayout(m_block)
 
-        self.t_v.addLayout(mn_v)
-        
-        
+        # Configuration summary box
+        self.summary_box = QFrame(self.threshold_frame)
+        self.summary_box.setFixedWidth(700)
+        self.summary_box.setObjectName('ms_summary_box')
+        sum_h = QHBoxLayout(self.summary_box)
+        sum_h.setContentsMargins(14, 12, 14, 12)
+        self.summary_text = QLabel()
+        self.summary_text.setObjectName('ms_label')
+        sum_h.addWidget(self.summary_text)
+        sum_h.addStretch()
+        self.t_v.addWidget(self.summary_box)
+
         self.v.addWidget(self.threshold_frame)
 
 
@@ -169,77 +199,12 @@ class MultisigSetupPage(QWidget):
         self.creator_v = QVBoxLayout(self.creator_frame)
         self.creator_v.setContentsMargins(35, 0, 20, 0)
 
-        c_title = QLabel('Set up the wallet (first cosigner)')
-        c_title.setMinimumSize(QSize(440, 40))
-        c_title.setMaximumSize(QSize(440, 40))
-        c_title.setObjectName('ms_label')
-        self.creator_v.addWidget(c_title)
-
         # Action row for selected mode
         self.creator_actions = QHBoxLayout()
         # Left gutter to align with labels
         self.creator_actions.setContentsMargins(35, 0, 0, 0)
         self.creator_actions.setSpacing(12)
 
-        self.seed_row_widget = QWidget()
-        self.seed_row_widget.hide()
-        self.seed_row = QHBoxLayout(self.seed_row_widget)
-        self.seed_row.setContentsMargins(0, 0, 20, 0)
-        self.seed_row.setSpacing(8)
-        self.seed_input = QLineEdit()
-        self.seed_input.setObjectName('ms_input')
-        self.seed_input.setPlaceholderText('Enter 12 word seed phrase')
-        self.seed_input.setMinimumHeight(36)
-        self.seed_input.setFixedWidth(460)
-        self.seed_row.addWidget(self.seed_input)
-        self.seed_row.addStretch()
-        self.seed_input.textChanged.connect(self._update_continue_enabled)
-        self.note_row_widget = QWidget()
-        self.note_row_widget.hide()
-        self.note_row = QHBoxLayout(self.note_row_widget)
-        self.note_row.setContentsMargins(0, 6, 20, 0)
-        self.note_row.setSpacing(8)
-        self.seed_note_lbl = QLabel('Already have a seed? Paste or type it above.')
-        self.seed_note_lbl.setObjectName('ms_label')
-        self.note_row.addWidget(self.seed_note_lbl)
-        self.note_row.addStretch()
-
-        # Generate button on its own row, left-aligned with content
-        self.gen_row_widget = QWidget()
-        self.gen_row_widget.hide()
-        self.gen_row = QHBoxLayout(self.gen_row_widget)
-        self.gen_row.setContentsMargins(0, 6, 20, 0)
-        self.gen_row.setSpacing(8)
-        self.btn_gen_seed = QPushButton()
-        self.btn_gen_seed.setText('Generate new seed')
-        self.btn_gen_seed.setObjectName('secondary_button')
-        self.btn_gen_seed.setMinimumSize(QSize(200, 40))
-        self.gen_row.addWidget(self.btn_gen_seed)
-        self.gen_row.addStretch()
-
-        # Default: do not skip creator unless explicitly watch-only
-        self._skip_creator = False
-        try:
-            access_type = SettingRepository.get_wallet_access_type()
-            storage_type = SettingRepository.get_key_storage_type()
-            if access_type == WalletAccessType.WATCH_ONLY:
-                initial_mode = 'device'  # default UI mode, but we'll skip the step
-                self._skip_creator = True
-            elif storage_type == KeyStorageType.HARDWARE_WALLET:
-                initial_mode = 'hardware'
-            else:
-                initial_mode = 'device'
-        except Exception:
-            initial_mode = 'device'
-        self._set_creator_mode(initial_mode)
-
-        # Connect signals for actions
-        self.btn_gen_seed.clicked.connect(lambda: self._mark_creator_ready('device', 'seed:new'))
-
-        # Order: seed field, note row, generate row, then action row (used for hw/watch)
-        self.creator_v.addWidget(self.seed_row_widget)
-        self.creator_v.addWidget(self.note_row_widget)
-        self.creator_v.addWidget(self.gen_row_widget)
         self.creator_v.addLayout(self.creator_actions)
         self.v.addWidget(self.creator_frame)
 
@@ -248,14 +213,18 @@ class MultisigSetupPage(QWidget):
         self.cos_frame = QFrame(self.card)
         self.cos_frame.setObjectName('capabilities_frame')
         self.cos_frame.hide()  # Hide until threshold confirmed
+        # Keep hidden frame from expanding vertical space
+        self.cos_frame.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         self.c_v = QVBoxLayout(self.cos_frame)
-        self.c_v.setContentsMargins(35, 20, 20, 20)
-        self.c_v.setSpacing(12)
+        # Align with 700px content area and add generous paddings for Step 2
+        self.c_v.setContentsMargins(34, 14, 34, 16)
+        self.c_v.setSpacing(16)
 
 
         # Scrollable area for cosigner rows
         scroll = QScrollArea()
         scroll.setObjectName('ms_scroll')
+        self.cos_scroll = scroll
         scroll.setStyleSheet(load_stylesheet('views/qss/scrollbar.qss'))
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -264,25 +233,32 @@ class MultisigSetupPage(QWidget):
         # Allow the scroll area to expand naturally with the layout
         scroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         scroll.setFrameShape(QFrame.NoFrame)
+        # Start with no gutter; we'll toggle based on scrollbar visibility
+        scroll.setViewportMargins(0, 0, 0, 0)
         
+        # Build scroll content AFTER setting margins
         scroll_content = QWidget()
         self.cosigners_v = QVBoxLayout(scroll_content)
+        # Start with no right margin; we'll toggle with scrollbar visibility
         self.cosigners_v.setContentsMargins(0, 0, 0, 0)
-        self.cosigners_v.setSpacing(12)
+        # More space between cosigner rows
+        self.cosigners_v.setSpacing(16)
         self.cosigners_v.addStretch()
         scroll.setWidget(scroll_content)
         self.c_v.addWidget(scroll)
+        # React to scrollbar changes to adjust widths and right gutter
+        scroll.verticalScrollBar().rangeChanged.connect(lambda _min, _max: self._adjust_cosigner_input_widths())
+        scroll.verticalScrollBar().valueChanged.connect(lambda _v: self._adjust_cosigner_input_widths())
         
-        self._cosigner_rows = []  # track (row_widget, label_widget, line_edit, error_label)
-
+        self.cosigner_rows = []
         self.v.addWidget(self.cos_frame)
 
         # Footer with Back and Next/Continue
         self.footer = QHBoxLayout()
-        self.footer.setContentsMargins(0, 20, 35, 10)
+        # Reduce top margin so button sits closer to content
+        self.footer.setContentsMargins(0, 4, 35, 12)
         # Back button (hidden on step 1) — match PrimaryButton styling
         self.back_button = PrimaryButton()
-        self.back_button.setText('Back')
         self.back_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.back_button.setFixedSize(QSize(100, 40))
         self.back_button.clicked.connect(self._go_back)
@@ -291,7 +267,6 @@ class MultisigSetupPage(QWidget):
         self.footer.addWidget(self.back_button)
         self.footer.addSpacing(12)
         # Continue functions as Next on step 1 and Continue on step 2
-        self.continue_button.setText('Next')
         self.continue_button.clicked.connect(self._go_next)
         self.footer.addWidget(self.continue_button)
         self.v.addLayout(self.footer)
@@ -311,10 +286,36 @@ class MultisigSetupPage(QWidget):
         self.back_button.hide()
         self._update_summary()
         self._update_continue_enabled()
+        self.retranslate_ui()
 
         # React to threshold changes
         self.m_input.textChanged.connect(self._update_summary)
         self.n_input.textChanged.connect(self._update_summary)
+
+    def retranslate_ui(self):
+        """Set or refresh all translatable UI strings."""
+        # Title
+        self.title.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title'
+            ))
+        self.back_button.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'back'
+            ))
+        self.n_help.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_help'
+            ))
+        self.req_lbl.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'required_signatures_label'
+            ))
+        self.info_title.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configure_signature_requirements'
+            ))
+        self.info_sub.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures'
+            ))
+        self.continue_button.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'
+            ))
 
     def _on_confirm_threshold(self):
         """Lock threshold and create exact N cosigner fields."""
@@ -331,11 +332,11 @@ class MultisigSetupPage(QWidget):
         SettingRepository.set_multisig_config(m, n)
 
         # Clear any existing rows
-        for (row_w, _l, _le, _err) in self._cosigner_rows:
+        for (row_w, _l, _le, _err) in self.cosigner_rows:
             self.cosigners_v.removeWidget(row_w)
             row_w.setParent(None)
             row_w.deleteLater()
-        self._cosigner_rows.clear()
+        self.cosigner_rows.clear()
         
         # Create exactly N rows
         for i in range(n):
@@ -359,13 +360,17 @@ class MultisigSetupPage(QWidget):
             self.creator_frame.hide()
             self.cos_frame.show()
             self.back_button.show()
-            self.continue_button.setText('Continue')
             self._current_step = 2
             # Grow card for cosigner input step
-            self.card.setMinimumSize(QSize(530, 520))
-            self.card.setMaximumSize(QSize(530, 520))
+            self.card.setMinimumSize(QSize(770, 640))
+            self.card.setMaximumSize(QSize(770, 640))
             self._update_continue_enabled()
             self.close_btn.hide()
+            # Re-evaluate widths once visible
+            self._adjust_cosigner_input_widths()
+            self.continue_button.setText(QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue'
+                ))
         elif self._current_step == 2:
             self._view_model.page_navigation.welcome_page()
 
@@ -378,15 +383,17 @@ class MultisigSetupPage(QWidget):
             self.threshold_frame.show()
             self.creator_frame.hide()
             self.back_button.hide()
-            self.continue_button.setText('Next')
             self._current_step = 1
-            # Shrink card back for compact threshold step
-            self.card.setMinimumSize(QSize(595, 350))
-            self.card.setMaximumSize(QSize(595, 350))
+            # Restore Step 1 card size (fits 700px inner content + margins)
+            self.card.setMinimumSize(QSize(770, 520))
+            self.card.setMaximumSize(QSize(770, 520))
             self._update_summary()
             self._update_continue_enabled()
             self.close_btn.show()
             SettingRepository.set_multisig_config(None, None)
+            self.continue_button.setText(QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'
+                ))
 
     def _get_m(self) -> int:
         try:
@@ -404,57 +411,161 @@ class MultisigSetupPage(QWidget):
         """Add a single cosigner row with the given index."""
         row_w = QWidget()
         row_v = QVBoxLayout(row_w)
-        row_v.setContentsMargins(0, 0, 0, 0)
-        row_v.setSpacing(8)
+        row_v.setContentsMargins(0, 10, 0, 14)
+        row_v.setSpacing(12)
 
+        # Header: Cosigner N
         header_h = QHBoxLayout()
-        header_h.setContentsMargins(0, 0, 10, 0)
+        header_h.setContentsMargins(0, 0, 0, 0)
         header_h.setSpacing(8)
-
-        label = QLabel(f'Cosigner {index} Extended xpub')
-        label.setObjectName('ms_label')
-        label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        header_h.addWidget(label)
+        cos_label = QLabel()
+        cos_label.setObjectName('ms_label')
+        header_h.addWidget(cos_label)
         header_h.addStretch()
-
-        paste_btn = QPushButton('Paste')
-        paste_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        paste_btn.setFixedHeight(28)
-        paste_btn.setToolTip('Paste from clipboard')
-        # header_h.addWidget(paste_btn)
-
         row_v.addLayout(header_h)
 
+        # Fingerprint and Derivation Path in one row
+        fp_path_h = QHBoxLayout()
+        fp_path_h.setContentsMargins(0, 0, 0, 0)
+        fp_path_h.setSpacing(12)
+
+        # Fingerprint block
+        fp_block = QVBoxLayout()
+        fp_block.setContentsMargins(0, 0, 0, 0)
+        fp_block.setSpacing(6)
+        fp_lbl = QLabel()
+        fp_lbl.setObjectName('ms_label')
+        fp_block.addWidget(fp_lbl)
+        fp_input = QLineEdit()
+        fp_input.setObjectName('ms_input')
+        fp_input.setFixedHeight(40)
+        fp_input.setFixedWidth(344)
+        fp_block.addWidget(fp_input)
+
+        # Derivation Path block
+        path_block = QVBoxLayout()
+        path_block.setContentsMargins(0, 0, 0, 0)
+        path_block.setSpacing(6)
+        path_lbl = QLabel()
+        path_lbl.setObjectName('ms_label')
+        path_block.addWidget(path_lbl)
+        path_input = QLineEdit()
+        path_input.setObjectName('ms_input')
+        path_input.setFixedHeight(40)
+        path_input.setFixedWidth(344)
+        path_block.addWidget(path_input)
+
+        fp_path_h.addLayout(fp_block)
+        fp_path_h.addLayout(path_block)
+        fp_path_h.addStretch()
+        row_v.addLayout(fp_path_h)
+
+        # Xpub block (full width)
+        xpub_block = QVBoxLayout()
+        xpub_block.setContentsMargins(0, 4, 0, 0)
+        xpub_block.setSpacing(6)
+        xpub_lbl = QLabel()
+        xpub_lbl.setObjectName('ms_label')
+        xpub_block.addWidget(xpub_lbl)
         xpub = QLineEdit()
-        xpub.setPlaceholderText('[fingerprint/derivation_path]xpub')
+        xpub.setPlaceholderText('xpub...')
         xpub.setObjectName('ms_input')
-        # Fix width and left-align so it doesn't stretch to full card width
-        xpub.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        xpub.setFixedWidth(460)
-        xpub.setMinimumHeight(42)
-        input_row = QHBoxLayout()
-        input_row.setContentsMargins(0, 0, 0, 0)
-        input_row.setSpacing(0)
-        input_row.addWidget(xpub)
-        input_row.addStretch()
-        row_v.addLayout(input_row)
+        xpub.setFixedWidth(700)
+        xpub.setFixedHeight(40)
+        xpub_block.addWidget(xpub)
+        row_v.addLayout(xpub_block)
+
         xpub.textChanged.connect(self._on_xpub_changed)
         xpub.editingFinished.connect(lambda le=xpub: le.setText(le.text().strip()))
 
-        # Error label
-        err = QLabel('Please include [fingerprint/derivation_path] and xpub')
-        err.setObjectName('ms_error')
-        err.hide()
-        row_v.addWidget(err)
-
-        paste_btn.clicked.connect(lambda: self._paste_into(xpub))
+        # Error label (kept for future validation)
+        # err = QLabel('Please include [fingerprint/derivation_path] and xpub')
+        # err.setObjectName('ms_error')
+        # err.hide()
+        # row_v.addWidget(err)
 
         # Insert before the stretch at the end
         self.cosigners_v.insertWidget(self.cosigners_v.count() - 1, row_w)
-        self._cosigner_rows.append((row_w, label, xpub, err))
+        # Store references on the row for later width adjustments
+        row_w.fp_input = fp_input
+        row_w.path_input = path_input
+        row_w.xpub_input = xpub
+        self.cosigner_rows.append((row_w, cos_label, xpub))
         
         if index == 1:
-            xpub.setFocus()
+            fp_input.setFocus()
+        # Adjust widths after adding the row
+        self._adjust_cosigner_input_widths()
+
+        xpub_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'extended_public_key',
+            )
+        )
+        path_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'derivation_path',
+            )
+        )
+        fp_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'fingerprint_example',
+            )
+        )
+        path_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'derivation_path_example',
+            )
+        )
+        fp_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'master_fingerprint',
+            )
+        )
+        cos_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'cosigner_index',
+            ).format(index)
+        )
+
+    def _adjust_cosigner_input_widths(self):
+        """Toggle right gutter and input widths depending on scrollbar visibility."""
+        try:
+            if self.cos_scroll is None:
+                return
+            vsb = self.cos_scroll.verticalScrollBar()
+            visible = vsb.isVisible() and (vsb.maximum() > 0)
+            # Toggle viewport gutter and inner right margin
+            if visible:
+                self.cos_scroll.setViewportMargins(0, 0, 16, 0)
+                if self.cosigners_v is not None:
+                    self.cosigners_v.setContentsMargins(0, 0, 12, 0)
+            else:
+                self.cos_scroll.setViewportMargins(0, 0, 0, 0)
+                if self.cosigners_v is not None:
+                    self.cosigners_v.setContentsMargins(0, 0, 0, 0)
+            # Adjust each row's widths
+            for row_w, _label, _xpub, _err in self.cosigner_rows:
+                fp = getattr(row_w, 'fp_input', None)
+                path = getattr(row_w, 'path_input', None)
+                xpub = getattr(row_w, 'xpub_input', None)
+                if fp and path and xpub:
+                    if visible:
+                        fp.setFixedWidth(330)
+                        path.setFixedWidth(330)
+                        xpub.setFixedWidth(670)
+                    else:
+                        fp.setFixedWidth(344)
+                        path.setFixedWidth(344)
+                        xpub.setFixedWidth(700)
+        except Exception:
+            pass
 
 
     def _update_continue_enabled(self):
@@ -509,55 +620,9 @@ class MultisigSetupPage(QWidget):
         # self.continue_button.setToolTip(reason)
         self.continue_button.setEnabled(True)
 
-    def _set_creator_mode(self, mode: str):
-        # Clear actions and add relevant controls
-        while self.creator_actions.count():
-            item = self.creator_actions.takeAt(0)
-            w = item.widget()
-            if w:
-                w.setParent(None)
-        if mode == 'device':
-            self.creator['mode'] = 'device'
-            # Show seed input and note; show generate button on its own row
-            self.seed_row_widget.show()
-            self.note_row_widget.show()
-            self.gen_row_widget.show()
-        elif mode == 'hardware':
-            self.creator['mode'] = 'hardware'
-            # Hide seed-based UI when hardware is used
-            self.seed_row_widget.hide()
-            self.note_row_widget.hide()
-            self.gen_row_widget.hide()
-        else:
-            # watch-only path removed; default to device/hardware paths
-            self.creator['mode'] = 'device'
-            self.seed_row_widget.show()
-            self.note_row_widget.show()
-            self.gen_row_widget.show()
-        # Mode changed resets ready state
-        self.creator_ready = False
-        self._update_continue_enabled()
-
-    def _mark_creator_ready(self, mode: str, note: str):
-        # For now, just mark ready and set placeholder xpub; integrate with real flows later
-        self.creator['mode'] = mode
-        self.creator['xpub'] = f'{note}'
-        self.creator_ready = True
-        self._update_continue_enabled()
-
-    def _is_creator_ready(self) -> bool:
-        if self.creator.get('mode') == 'device' and self.seed_row_widget.isVisible():
-            # Ready if a seed is provided OR user chose to generate a new one
-            return bool(self.seed_input.text().strip()) or self.creator_ready
-        return self.creator_ready
-
     def _on_xpub_changed(self):
         self._update_continue_enabled()
         self._update_summary()
-
-    def _paste_into(self, line_edit: QLineEdit):
-        txt = QGuiApplication.clipboard().text() or ''
-        line_edit.setText(txt.strip())
 
     def _handle_close(self):
         # Return to breadcrumb/selection page
@@ -577,12 +642,20 @@ class MultisigSetupPage(QWidget):
     def _update_summary(self):
         n = self._get_n()
         m = self._get_m()
-        if self._threshold_locked:
-            n_rows = len(self._cosigner_rows)
-            filled = sum(1 for (_w, _l, le, _err) in self._cosigner_rows if le.text().strip())
-            # No summary label; keep logic for potential future use
-            _ = (m, n, filled, n_rows)
-        else:
-            _ = (m, n)
-
+        # Clamp and update M validator range based on N (min 1, max N)
+        max_m = n if n >= 1 else 1
+        self.m_input.setValidator(QIntValidator(1, max_m, self))
+        # Update helper text to reflect range
+        self.m_help.setText(QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'minimum_signatures_needed',
+        ).format(max_m))
+        # Update summary label
+        m_disp = m if m >= 1 else 0
+        n_disp = n if n >= 1 else 0
+        if self.summary_text is not None:
+            self.summary_text.setText(QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'configuration_note',
+            ).format(m_disp, n_disp))
 
