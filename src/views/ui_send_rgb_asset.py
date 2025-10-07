@@ -7,9 +7,9 @@ from __future__ import annotations
 from enum import Enum
 
 from PySide6.QtCore import QCoreApplication
+from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
-from PySide6.QtWidgets import QDialog
 from rgb_lib import AssetSchema
 from rgb_lib import Invoice
 from rgb_lib import InvoiceData
@@ -21,26 +21,26 @@ from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_SEND_ASSET
 from src.utils.error_message import ERROR_NOT_ENOUGH_UNCOLORED
+from src.utils.error_message import ERROR_SEND_ASSET
 from src.utils.error_message import ERROR_UNEXPECTED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
+from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.send_asset import SendAssetWidget
 from src.views.components.toast import ToastManager
-from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 
 
 class SendRGBAssetWidget(QWidget):
@@ -131,8 +131,12 @@ class SendRGBAssetWidget(QWidget):
         self._view_model.cfa_view_model.unsigned_psbt.connect(
             self.show_send_rgb_psbt_page,
         )
-        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(self.handle_send_rgb_hw_dialog_update)
-        self._view_model.utxo_creation_view_model.utxo_created.connect(self._on_utxo_created_and_retry)
+        self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
+            self.handle_send_rgb_hw_dialog_update,
+        )
+        self._view_model.utxo_creation_view_model.utxo_created.connect(
+            self._on_utxo_created_and_retry,
+        )
 
     def refresh_asset(self):
         """This method handle the refresh asset on send asset page"""
@@ -376,7 +380,9 @@ class SendRGBAssetWidget(QWidget):
                 # Ask user to open correct Bitcoin app before UTXO creation
                 network = SettingRepository.get_wallet_network()
                 expected_btc_app = 'Bitcoin' if network == NetworkEnumModel.MAINNET else 'Bitcoin Test'
-                guidance_msg = f"Please open '{expected_btc_app}' on your Ledger and click Continue."
+                guidance_msg = f"Please open '{
+                    expected_btc_app
+                }' on your Ledger and click Continue."
                 # Configure dialog as a blocking confirmation
                 self.send_rgb_hw_dialog.set_loading(guidance_msg)
                 self.send_rgb_hw_dialog.done_button.setText('Continue')
@@ -388,7 +394,9 @@ class SendRGBAssetWidget(QWidget):
                 if result != QDialog.Accepted:
                     return
                 self._retry_after_utxo = True
-                self._view_model.utxo_creation_view_model.create_utxos_begin(purpose='send_rgb')
+                self._view_model.utxo_creation_view_model.create_utxos_begin(
+                    purpose='send_rgb',
+                )
                 return
 
         if dialog_type == PsbtStatus.SUCCESS:
@@ -421,9 +429,13 @@ class SendRGBAssetWidget(QWidget):
         if self.is_hardware_wallet and self.is_online_wallet:
             network = SettingRepository.get_wallet_network()
             expected_rgb_app = 'RGB' if network == NetworkEnumModel.MAINNET else 'RGB Test'
-            self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
+            self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
+                parent=self,
+            )
             self.send_rgb_hw_dialog.setMinimumWidth(500)
-            guidance_msg = f"Ready to send asset. Please open '{expected_rgb_app}' on your Ledger and click Continue."
+            guidance_msg = f"Ready to send asset. Please open '{
+                expected_rgb_app
+            }' on your Ledger and click Continue."
             self.send_rgb_hw_dialog.set_loading(guidance_msg)
             self.send_rgb_hw_dialog.done_button.setText('Continue')
             self.send_rgb_hw_dialog.done_button.setVisible(True)

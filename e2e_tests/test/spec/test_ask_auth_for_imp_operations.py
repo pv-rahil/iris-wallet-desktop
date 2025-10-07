@@ -160,7 +160,7 @@ def test_ask_auth_for_imp_question_issue_cfa_on(wallets_and_operations: WalletTe
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, ASSET_NAME_1, ASSET_DESCRIPTION, ASSET_AMOUNT, is_native_auth_enabled=True, variant_name=wallet_variant_name,
+            FIRST_APPLICATION, ASSET_NAME_1, ASSET_DESCRIPTION, ASSET_AMOUNT, is_native_auth=True, variant_name=wallet_variant_name,
         )
 
 

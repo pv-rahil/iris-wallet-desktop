@@ -21,7 +21,9 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
-from accessible_constant import USB_SYNC_DIALOG, USB_SYNC_DIALOG_CANCEL_BUTTON, USB_SYNC_DIALOG_CONTINUE_BUTTON
+from accessible_constant import USB_SYNC_DIALOG
+from accessible_constant import USB_SYNC_DIALOG_CANCEL_BUTTON
+from accessible_constant import USB_SYNC_DIALOG_CONTINUE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletEntryType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT

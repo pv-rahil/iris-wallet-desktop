@@ -42,7 +42,7 @@ def test_asset_issued_success_and_draft_cleanup(issue_nia_widget: IssueNIAWidget
 
     svc = MagicMock()
     mocker.patch(
-        'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
     widget._view_model.page_navigation.show_success_page = MagicMock()
     widget._view_model.page_navigation.fungibles_asset_page = MagicMock()
@@ -100,7 +100,7 @@ def test_handle_nia_issue_reuse_existing_psbt(issue_nia_widget: IssueNIAWidget, 
     ]
     with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()) as mock_show:
         mocker.patch(
-            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
 
         widget.handle_nia_issue()
@@ -114,7 +114,7 @@ def test_handle_nia_issue_create_utxos_when_no_psbt(issue_nia_widget: IssueNIAWi
     svc.list_psbt.return_value = []
     with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
         mocker.patch(
-            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 
@@ -129,7 +129,7 @@ def test_handle_nia_issue_wallet_service_none(issue_nia_widget: IssueNIAWidget, 
     widget = issue_nia_widget
     with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
         mocker.patch(
-            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=None,
+            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=None,
         )
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 
@@ -153,7 +153,7 @@ def test_create_issue_asset_draft_calls_upsert(issue_nia_widget: IssueNIAWidget,
     svc = MagicMock()
     with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
         mocker.patch(
-            'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
 
     widget.create_issue_asset_draft('TICK', 'Name', '25')
@@ -171,7 +171,7 @@ def test_load_draft_data_populates_fields(issue_nia_widget: IssueNIAWidget, mock
         'id': 9, 'name': 'nm', 'ticker': 'tk', 'issued_amount': 3,
     }]
     mocker.patch(
-        'src.views.ui_issue_nia.WalletDataService.get_session', return_value=svc,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
 
     widget.asset_name_input = MagicMock()

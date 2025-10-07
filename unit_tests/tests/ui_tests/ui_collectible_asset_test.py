@@ -544,7 +544,7 @@ def test_update_grid_layout_covers_drafts_and_remove_item(collectible_asset_widg
             return [{'id': 7, 'name': 'Draft A', 'file_path': '/tmp/a.png'}]
 
     mocker.patch(
-        'src.views.ui_collectible_asset.WalletDataService.get_session', return_value=_Session(),
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=_Session(),
     )
     # Empty CFA list to focus on drafts
     collectible_asset_widget._view_model.main_asset_view_model.assets.cfa = []
@@ -615,7 +615,7 @@ def test_update_grid_layout_skips_draft_without_file_path(collectible_asset_widg
             return [{'id': 9, 'name': 'NoPath Draft', 'file_path': ''}]
 
     mocker.patch(
-        'src.views.ui_collectible_asset.WalletDataService.get_session', return_value=_Session(),
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=_Session(),
     )
 
     with patch.object(collectible_asset_widget, 'create_collectible_frame', wraps=collectible_asset_widget.create_collectible_frame) as spy_create:

@@ -123,9 +123,9 @@ QFrame#ms_info_box {
     border-radius: 10px;
 }
 QLabel#ms_info_badge {
-    border-radius:11px; 
+    border-radius:11px;
     background: rgba(208,211,221,0.18);
-    color:#D0D3DD; 
+    color:#D0D3DD;
     font-weight:700;
 }
 QFrame#ms_summary_box {

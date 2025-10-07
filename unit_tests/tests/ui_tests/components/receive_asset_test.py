@@ -149,7 +149,7 @@ def test_update_qr_and_address_psbt_with_match_prefixes_text(qtbot, monkeypatch)
             return [{'psbt': 'psbt_payload', 'purpose': 'receive'}]
 
     monkeypatch.setattr(
-        'src.views.components.receive_asset.WalletDataService.get_session',
+        'src.data.service.wallet_data_service.WalletDataService.get_session',
         staticmethod(FakeService),
     )
 
@@ -165,7 +165,7 @@ def test_update_qr_and_address_psbt_no_service_uses_raw_text(qtbot, monkeypatch)
     qtbot.addWidget(widget)
 
     monkeypatch.setattr(
-        'src.views.components.receive_asset.WalletDataService.get_session',
+        'src.data.service.wallet_data_service.WalletDataService.get_session',
         staticmethod(lambda: None),
     )
     monkeypatch.setattr(
@@ -193,7 +193,7 @@ def test_update_qr_and_address_psbt_with_no_match_keeps_raw(qtbot, monkeypatch):
             return [{'psbt': 'other', 'purpose': 'spend'}]
 
     monkeypatch.setattr(
-        'src.views.components.receive_asset.WalletDataService.get_session',
+        'src.data.service.wallet_data_service.WalletDataService.get_session',
         staticmethod(FakeService),
     )
     monkeypatch.setattr(

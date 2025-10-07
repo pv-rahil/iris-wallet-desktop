@@ -14,7 +14,9 @@ from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QVBoxLayout
 
-from accessible_constant import WALLET_MODE_SUMMARY_DIALOG, WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON, WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON
+from accessible_constant import WALLET_MODE_SUMMARY_DIALOG
+from accessible_constant import WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON
+from accessible_constant import WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -124,12 +126,16 @@ class WalletModeSummaryDialog(QDialog):
         self.button_layout.setContentsMargins(0, 20, 0, 20)
         self.button_layout.setSpacing(10)
         self.cancel_button = SecondaryButton()
-        self.cancel_button.setAccessibleName(WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON)
+        self.cancel_button.setAccessibleName(
+            WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON,
+        )
         self.cancel_button.setMinimumSize(QSize(180, 35))
         self.cancel_button.setMaximumSize(QSize(300, 35))
         self.button_layout.addWidget(self.cancel_button)
         self.continue_button = PrimaryButton()
-        self.continue_button.setAccessibleName(WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON)
+        self.continue_button.setAccessibleName(
+            WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON,
+        )
         self.continue_button.setMinimumSize(QSize(180, 35))
         self.continue_button.setMaximumSize(QSize(300, 35))
         self.button_layout.addWidget(self.continue_button)

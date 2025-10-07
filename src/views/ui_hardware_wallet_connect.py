@@ -23,7 +23,10 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
-from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE, HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON, HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION, HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION
+from accessible_constant import HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletEntryType
 from src.utils.clickable_frame import ClickableFrame
@@ -41,7 +44,7 @@ class HardwareWalletConnectWidget(QWidget):
     Widget for connecting to a hardware wallet in the application.
     """
 
-    def __init__(self, view_model,is_multisig=False):
+    def __init__(self, view_model, is_multisig=False):
         """
         Initialize the HardwareWalletConnectWidget.
         """
@@ -106,8 +109,8 @@ class HardwareWalletConnectWidget(QWidget):
         self.card_layout.addWidget(self.subtitle)
 
         # Wallet options (centered grid, more spacing)
-        grid_frame = QFrame()
-        horizontal_layout = QHBoxLayout(grid_frame)
+        self.grid_frame = QFrame()
+        horizontal_layout = QHBoxLayout(self.grid_frame)
         horizontal_layout.setSpacing(15)
         horizontal_layout.setContentsMargins(12, 0, 0, 0)
         horizontal_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -116,7 +119,9 @@ class HardwareWalletConnectWidget(QWidget):
         # Ledger option
         self.ledger_btn = ClickableFrame()
         self.ledger_btn.setObjectName('hardware_wallet_option')
-        self.ledger_btn.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION)
+        self.ledger_btn.setAccessibleName(
+            HARDWARE_WALLET_CONNECT_PAGE_LEDGER_OPTION,
+        )
         self.ledger_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.ledger_btn.setFixedSize(197, 115)
         self.ledger_btn.setProperty('selected', False)
@@ -151,7 +156,9 @@ class HardwareWalletConnectWidget(QWidget):
         # Trezor option
         self.trezor_btn = ClickableFrame()
         self.trezor_btn.setObjectName('hardware_wallet_option')
-        self.trezor_btn.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION)
+        self.trezor_btn.setAccessibleName(
+            HARDWARE_WALLET_CONNECT_PAGE_TREZOR_OPTION,
+        )
         self.trezor_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.trezor_btn.setFixedSize(197, 115)
         self.trezor_btn.setProperty('selected', False)
@@ -185,7 +192,7 @@ class HardwareWalletConnectWidget(QWidget):
         horizontal_layout.addWidget(self.trezor_btn)
 
         self.card_layout.addWidget(
-            grid_frame, alignment=Qt.AlignmentFlag.AlignLeft,
+            self.grid_frame, alignment=Qt.AlignmentFlag.AlignLeft,
         )
 
         # Spacer above Continue button
@@ -193,7 +200,9 @@ class HardwareWalletConnectWidget(QWidget):
 
         # Continue button (centered, more padding)
         self.continue_btn = PrimaryButton()
-        self.continue_btn.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON)
+        self.continue_btn.setAccessibleName(
+            HARDWARE_WALLET_CONNECT_PAGE_CONTINUE_BUTTON,
+        )
         self.continue_btn.setObjectName('primary_button')
         self.continue_btn.setEnabled(False)
         self.card_layout.addWidget(
@@ -307,7 +316,7 @@ class HardwareWalletConnectWidget(QWidget):
             else:
                 self._view_model.page_navigation.welcome_page()
 
-    def handle_close(self,is_multisig=False):
+    def handle_close(self, is_multisig=False):
         """
         Navigate back to selection page if not multisig setup page.
         """

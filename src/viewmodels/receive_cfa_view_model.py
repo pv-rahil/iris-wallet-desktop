@@ -29,7 +29,6 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
         self._page_navigation = page_navigation
         self.sidebar = None
 
-
     def get_rgb_invoice(self, minimum_confirmations: int, transport_endpoints: list[str], asset_id: str | None = None):
         """
         Retrieve the RGB invoice.

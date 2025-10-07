@@ -1,33 +1,30 @@
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, consider-using-with
 """
 Wallet class for creating and funding a wallet.
 """
 from __future__ import annotations
 
 import os
+import subprocess
 import time
 
 from dogtail.tree import root
-import subprocess
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME, SECOND_APPLICATION_PATH
+from accessible_constant import APP2_NAME
+from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import LOAD_WALLET_VARIANT
-from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
+from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import SECOND_APPLICATION_PATH
 from accessible_constant import WATCH_ONLY_DIALOG
-from accessible_constant import APP2_NAME
-from e2e_tests.test.utilities.reset_app import delete_app_data
-from src.utils.constant import APP_NAME
-from src.utils.local_store import local_store
-from src.version import __version__
 from e2e_tests.test.pageobjects.about_page import AboutPageObjects
 from e2e_tests.test.pageobjects.keyring_dialog_page import KeyringDialogBoxPageObjects
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -37,9 +34,13 @@ from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.executable_shell_script import send_to_address
 from e2e_tests.test.utilities.fake_usb import clear_fake_usb_mount_all
+from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import map_load_to_create
 from e2e_tests.test.utilities.wallet_variants import resolve_steps as resolve_wallet_steps
+from src.utils.constant import APP_NAME
+from src.utils.local_store import local_store
+from src.version import __version__
 
 BACKUP_EMAIL_ID = os.getenv('BACKUP_EMAIL_ID')
 BACKUP_EMAIL_PASSWORD = os.getenv('BACKUP_EMAIL_PASSWORD')
@@ -54,7 +55,7 @@ class Wallet(MainPageObjects, BaseOperations):
         super().__init__(application)
 
         self.address = None
-        self.hardware_wallet = None
+        self.hardware_wallet_emu = None
 
     def create_wallet(self, application, variant: str, is_load_wallet: bool = False):
         """
@@ -64,7 +65,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
         # Decide effective variant based on instance mode and app role
         env = self.get_current_environment()
-        original_watch_only = (variant == ONLINE_WATCH_ONLY)
+        original_watch_only = variant == ONLINE_WATCH_ONLY
         multi_instance = bool(env and getattr(env, 'num_instances', 1) >= 2)
 
         if original_watch_only:
@@ -115,7 +116,7 @@ class Wallet(MainPageObjects, BaseOperations):
             self.welcome_page_objects.click_create_button()
 
         if effective_variant == ONLINE_WATCH_ONLY:
-            xpub_vanilla, xpub_colored, fingerprint,_ = self.collect_keyring_values_from_app()
+            xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app()
             self.do_focus_on_application(application)
             self.set_up_watch_only_wallet(
                 xpub_vanilla, xpub_colored, fingerprint,
@@ -187,7 +188,9 @@ class Wallet(MainPageObjects, BaseOperations):
             delete_app_data(app2_data)
             # Launch temp second instance with default environment (not TestEnvironment)
             proc = subprocess.Popen(
-                [f"e2e_tests/applications/iris-wallet-vault_{APP2_NAME}-{__version__}-x86_64.AppImage"],
+                [f"e2e_tests/applications/iris-wallet-vault_{
+                    APP2_NAME
+                }-{__version__}-x86_64.AppImage"],
                 env=None,
             )
             # Wait for the second application window
@@ -195,22 +198,33 @@ class Wallet(MainPageObjects, BaseOperations):
                 env.wait_for_application(SECOND_APPLICATION)
             # Maximize the second window for stability
             subprocess.run(
-                ['wmctrl', '-r', SECOND_APPLICATION, '-b', 'add,maximized_vert,maximized_horz'],
+                [
+                    'wmctrl', '-r', SECOND_APPLICATION, '-b',
+                    'add,maximized_vert,maximized_horz',
+                ],
                 check=True,
             )
             second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
             second_wallet = Wallet(second_app)
-            second_wallet.create_wallet(SECOND_APPLICATION, OFFLINE_CREATE_ON_DEVICE, is_load_wallet=True)
+            second_wallet.create_wallet(
+                SECOND_APPLICATION, OFFLINE_CREATE_ON_DEVICE, is_load_wallet=True,
+            )
 
-            xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app(SECOND_APPLICATION)
+            xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app(
+                SECOND_APPLICATION,
+            )
 
             self.do_focus_on_application(FIRST_APPLICATION)
-            self.set_up_watch_only_wallet(xpub_vanilla, xpub_colored, fingerprint)
+            self.set_up_watch_only_wallet(
+                xpub_vanilla, xpub_colored, fingerprint,
+            )
 
             if self.do_is_displayed(self.set_password_page_objects.password_input()):
                 self.set_password_page_objects.enter_password('walletpassword')
             if self.do_is_displayed(self.set_password_page_objects.confirm_password_input()):
-                self.set_password_page_objects.enter_confirm_password('walletpassword')
+                self.set_password_page_objects.enter_confirm_password(
+                    'walletpassword',
+                )
             if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
                 self.set_password_page_objects.click_proceed_button()
         except Exception as e:
@@ -230,137 +244,140 @@ class Wallet(MainPageObjects, BaseOperations):
         Create a new wallet and fund it.
         """
         if application == FIRST_APPLICATION and variant in LOAD_WALLET_VARIANT:
-            self.load_wallet(application, variant,fund)
+            self.load_wallet(application, variant, fund)
             return
         self.create_wallet(application, variant)
         if fund:
             self.fund_wallet(application)
 
-    def load_wallet(self, application, variant: str, fund:bool):
+    def load_wallet(self, application, variant: str, fund: bool):
         """
-        Drive the wallet "load/restore" flow for the given variant.
-
-        This will navigate the selection steps and open the Restore flow on the
-        welcome page. The caller/test is responsible for providing credentials
-        (via google_auth or USB sync flows) and any subsequent steps.
+        Load a wallet.
         """
         self.do_focus_on_application(application)
-
         self.create_wallet(application, variant)
-        
-        second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
 
-        if not second_app:
-            return
+        mnemonic, password, xpub_vanilla, xpub_colored, fingerprint = self.setup_second_wallet(
+            variant,
+        )
 
-        second_wallet = Wallet(second_app)
-
-        create_variant = map_load_to_create(variant)
-
-        second_wallet.create_wallet(SECOND_APPLICATION, create_variant, is_load_wallet=True)
-
-        mnemonic = None
-        password = None
-        xpub_vanilla = None
-        xpub_colored = None
-        fingerprint = None
-
-        second_wallet.do_focus_on_application(SECOND_APPLICATION)
-        
-        if variant in HARDWARE_WALLET_VARIANTS:
-            xpub_vanilla, xpub_colored, fingerprint, password = second_wallet.collect_keyring_values_from_app(SECOND_APPLICATION, is_load_wallet=True)
-        else:
-            if second_wallet.do_is_displayed(second_wallet.sidebar_page_objects.settings_button()):
-                second_wallet.sidebar_page_objects.click_settings_button()
-            if second_wallet.do_is_displayed(second_wallet.settings_page_objects.keyring_toggle_button()):
-                second_wallet.settings_page_objects.click_keyring_toggle_button()
-            if second_wallet.do_is_displayed(second_wallet.keyring_dialog_page_objects.keyring_mnemonic_copy_button()):
-                second_wallet.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
-                mnemonic = second_wallet.keyring_dialog_page_objects.do_get_copied_address()
-            if second_wallet.do_is_displayed(second_wallet.keyring_dialog_page_objects.keyring_password_copy_button()):
-                second_wallet.keyring_dialog_page_objects.click_keyring_password_copy_button()
-                password = second_wallet.keyring_dialog_page_objects.do_get_copied_address()
-            if second_wallet.do_is_displayed(second_wallet.keyring_dialog_page_objects.cancel_button()):
-                second_wallet.keyring_dialog_page_objects.click_cancel_button()
-
-        # For online flows, perform Google auth and trigger backup on second app
-        if variant in REQUIRE_USB_VARIANTS:
-            # Trigger USB sync on second app
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
-            if second_wallet.do_is_displayed(second_wallet.fungible_page_objects.usb_sync_frame()):
-                second_wallet.fungible_page_objects.click_usb_sync_frame()
-            if second_wallet.do_is_displayed(second_wallet.usb_sync_dialog_page_objects.continue_button()):
-                second_wallet.usb_sync_dialog_page_objects.click_continue_button()
-
-        else:
-            if second_wallet.do_is_displayed(second_wallet.sidebar_page_objects.backup_button()):
-                second_wallet.sidebar_page_objects.click_backup_button()
-            if second_wallet.do_is_displayed(second_wallet.backup_page_objects.configure_button()):
-                second_wallet.backup_page_objects.click_configurable_button()
-            second_wallet.google_auth()
-            if second_wallet.do_is_displayed(second_wallet.toaster_page_objects.toaster_close_button()):
-                second_wallet.toaster_page_objects.click_toaster_close_button()
-            if second_wallet.do_is_displayed(second_wallet.backup_page_objects.backup_wallet_data_button()):
-                second_wallet.backup_page_objects.click_backup_wallet_data_button()
-            if second_wallet.do_is_displayed(second_wallet.toaster_page_objects.toaster_frame()):
-                second_wallet.toaster_page_objects.click_toaster_close_button()
-
-        # Now focus back to the first app and complete the restore with collected credentials
         self.do_focus_on_application(application)
 
         if variant in REQUIRE_USB_VARIANTS:
-            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                self.usb_sync_dialog_page_objects.click_continue_button()
             if variant in HARDWARE_WALLET_VARIANTS:
                 self.restore_with_xpubs(
-                    xpub_vanilla=xpub_vanilla,
-                    xpub_colored=xpub_colored,
-                    fingerprint=fingerprint,
-                    password=password,
+                    xpub_vanilla, xpub_colored, fingerprint, password,
                 )
             else:
-                self.restore_with_mnemonic(
-                    mnemonic=mnemonic,
-                    password=password,
-                )
+                self.restore_with_mnemonic(mnemonic, password)
         else:
-            # Online path: use Google auth flow
-            if variant in HARDWARE_WALLET_VARIANTS:
-                self.google_auth(
-                    xpub_vanilla=xpub_vanilla,
-                    xpub_colored=xpub_colored,
-                    fingerprint=fingerprint,
-                    password=password,
-                )
-            else:
-                self.google_auth(
-                    mnemonic=mnemonic,
-                    password=password,
-                )
+            self.google_auth(
+                mnemonic=mnemonic, password=password, xpub_vanilla=xpub_vanilla,
+                xpub_colored=xpub_colored, fingerprint=fingerprint,
+            )
+
         if self.do_is_displayed(self.enter_wallet_password_page_objects.password_input()):
             self.enter_wallet_password_page_objects.enter_password(password)
         if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
             self.enter_wallet_password_page_objects.click_login_button()
-        if variant not in REQUIRE_USB_VARIANTS and fund :
-            self.fund_wallet(application)
-        
-        clear_fake_usb_mount_all()
 
+        if variant not in REQUIRE_USB_VARIANTS and fund:
+            self.fund_wallet(application)
+
+        clear_fake_usb_mount_all()
+        self.handle_second_instance_reset()
+
+    def setup_second_wallet(self, variant: str) -> tuple:
+        """Handles key retrieval and wallet setup for the second application."""
+        second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+        if not second_app:
+            # mnemonic, password, xpub_vanilla, xpub_colored, fingerprint
+            return None, None, None, None, None
+
+        second_wallet = Wallet(second_app)
+        create_variant = map_load_to_create(variant)
+        second_wallet.create_wallet(
+            SECOND_APPLICATION, create_variant, is_load_wallet=True,
+        )
+        second_wallet.do_focus_on_application(SECOND_APPLICATION)
+
+        mnemonic = password = xpub_vanilla = xpub_colored = fingerprint = None
+
+        if variant in HARDWARE_WALLET_VARIANTS:
+            xpub_vanilla, xpub_colored, fingerprint, password = second_wallet.collect_keyring_values_from_app(
+                SECOND_APPLICATION, is_load_wallet=True,
+            )
+        else:
+            mnemonic, password = self.collect_mnemonic_password(second_wallet)
+
+        if variant in REQUIRE_USB_VARIANTS:
+            self.trigger_usb_sync(second_wallet)
+        else:
+            self.perform_online_backup(second_wallet)
+
+        return mnemonic, password, xpub_vanilla, xpub_colored, fingerprint
+
+    def collect_mnemonic_password(self, wallet: Wallet) -> tuple:
+        """Collects mnemonic and password from the wallet."""
+        mnemonic = password = None
+        if wallet.do_is_displayed(wallet.sidebar_page_objects.settings_button()):
+            wallet.sidebar_page_objects.click_settings_button()
+        if wallet.do_is_displayed(wallet.settings_page_objects.keyring_toggle_button()):
+            wallet.settings_page_objects.click_keyring_toggle_button()
+        if wallet.do_is_displayed(wallet.keyring_dialog_page_objects.keyring_mnemonic_copy_button()):
+            wallet.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
+            mnemonic = wallet.keyring_dialog_page_objects.do_get_copied_address()
+        if wallet.do_is_displayed(wallet.keyring_dialog_page_objects.keyring_password_copy_button()):
+            wallet.keyring_dialog_page_objects.click_keyring_password_copy_button()
+            password = wallet.keyring_dialog_page_objects.do_get_copied_address()
+        if wallet.do_is_displayed(wallet.keyring_dialog_page_objects.cancel_button()):
+            wallet.keyring_dialog_page_objects.click_cancel_button()
+        return mnemonic, password
+
+    def trigger_usb_sync(self, wallet: Wallet):
+        """Triggers USB sync on the wallet."""
+        wallet.do_focus_on_application(SECOND_APPLICATION)
+        if wallet.do_is_displayed(wallet.fungible_page_objects.usb_sync_frame()):
+            wallet.fungible_page_objects.click_usb_sync_frame()
+        if wallet.do_is_displayed(wallet.usb_sync_dialog_page_objects.continue_button()):
+            wallet.usb_sync_dialog_page_objects.click_continue_button()
+
+    def perform_online_backup(self, wallet: Wallet):
+        """Performs online backup on the wallet."""
+        if wallet.do_is_displayed(wallet.sidebar_page_objects.backup_button()):
+            wallet.sidebar_page_objects.click_backup_button()
+        if wallet.do_is_displayed(wallet.backup_page_objects.configure_button()):
+            wallet.backup_page_objects.click_configurable_button()
+        wallet.google_auth()
+        if wallet.do_is_displayed(wallet.toaster_page_objects.toaster_close_button()):
+            wallet.toaster_page_objects.click_toaster_close_button()
+        if wallet.do_is_displayed(wallet.backup_page_objects.backup_wallet_data_button()):
+            wallet.backup_page_objects.click_backup_wallet_data_button()
+        if wallet.do_is_displayed(wallet.toaster_page_objects.toaster_frame()):
+            wallet.toaster_page_objects.click_toaster_close_button()
+
+    def handle_second_instance_reset(self):
+        """Handle cleanup or reset of the second application instance after wallet load."""
         env = self.get_current_environment()
-        if env:
-            requested_instances = getattr(env, '_requested_instances', getattr(env, 'num_instances', 1))
-            originally_single = requested_instances < 2
-            if originally_single:
-                try:
-                    proc = getattr(env, 'second_process', None)
-                    if proc:
-                        env.terminate_process(proc)
-                        env.second_process = None
-                except Exception:
-                    pass
-            else:
-                # In multi-instance mode, simply reset the second instance to refresh state
-                env.reset_second_instance()
+        if not env:
+            return
+
+        requested_instances = getattr(
+            env, '_requested_instances', getattr(env, 'num_instances', 1),
+        )
+        originally_single = requested_instances < 2
+
+        if originally_single:
+            try:
+                proc = getattr(env, 'second_process', None)
+                if proc:
+                    env.terminate_process(proc)
+                    env.second_process = None
+            except Exception:
+                pass
+        else:
+            # Multi-instance mode: reset second instance
+            env.reset_second_instance()
 
     def drive_selection_flow(self, application, variant: str):
         """
@@ -446,7 +463,7 @@ class Wallet(MainPageObjects, BaseOperations):
             )
         if self.do_is_displayed(self.backup_page_objects.next_button()):
             self.backup_page_objects.click_next_button()
-        
+
         if self.do_is_displayed(self.backup_page_objects.continue_button()):
             self.backup_page_objects.click_continue_button()
 
@@ -462,11 +479,17 @@ class Wallet(MainPageObjects, BaseOperations):
     def restore_with_xpubs(self, xpub_vanilla: str | None, xpub_colored: str | None, fingerprint: str | None, password: str | None):
         """Restore using xpubs/fingerprint/password via restore dialog without triggering any online backup UI."""
         if self.do_is_displayed(self.restore_wallet_page_objects.restore_xpub_vanilla_input()) and xpub_vanilla:
-            self.restore_wallet_page_objects.enter_xpub_vanilla_value(xpub_vanilla)
+            self.restore_wallet_page_objects.enter_xpub_vanilla_value(
+                xpub_vanilla,
+            )
         if self.do_is_displayed(self.restore_wallet_page_objects.restore_xpub_colored_input()) and xpub_colored:
-            self.restore_wallet_page_objects.enter_xpub_colored_value(xpub_colored)
+            self.restore_wallet_page_objects.enter_xpub_colored_value(
+                xpub_colored,
+            )
         if self.do_is_displayed(self.restore_wallet_page_objects.restore_fingerprint_input()) and fingerprint:
-            self.restore_wallet_page_objects.enter_fingerprint_value(fingerprint)
+            self.restore_wallet_page_objects.enter_fingerprint_value(
+                fingerprint,
+            )
         if self.do_is_displayed(self.restore_wallet_page_objects.restore_password_input()) and password:
             self.restore_wallet_page_objects.enter_password_value(password)
         if self.do_is_displayed(self.restore_wallet_page_objects.restore_continue_button()):
@@ -542,7 +565,7 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.watch_only_dialog_page_objects.continue_button()):
             self.watch_only_dialog_page_objects.click_continue_button()
 
-    def collect_keyring_values_from_app(self,app_name:str = FIRST_APPLICATION, is_load_wallet:bool = False) -> tuple[str | None, str | None, str | None]:
+    def collect_keyring_values_from_app(self, app_name: str = FIRST_APPLICATION, is_load_wallet: bool = False) -> tuple[str | None, str | None, str | None, str | None]:
         """Focus the first application and read xpubs + fingerprint from About page copy buttons."""
         self.do_focus_on_application(app_name)
         try:
@@ -551,7 +574,7 @@ class Wallet(MainPageObjects, BaseOperations):
             first_app = None
 
         if not first_app:
-            return None, None, None
+            return None, None, None, None
 
         sidebar_page = SidebarPageObjects(first_app)
         about_page = AboutPageObjects(first_app)
@@ -588,7 +611,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
             if keyring_dialog_page.do_is_displayed(keyring_dialog_page.cancel_button()):
                 keyring_dialog_page.click_cancel_button()
-        
+
         else:
             if sidebar_page.do_is_displayed(sidebar_page.about_button()):
                 sidebar_page.click_about_button()
@@ -604,8 +627,6 @@ class Wallet(MainPageObjects, BaseOperations):
             if about_page.do_is_displayed(about_page.master_fingerprint_copy_button()):
                 about_page.click_master_fingerprint_copy_button()
                 fingerprint = about_page.do_get_copied_address()
-        
-            
 
         if sidebar_page.do_is_displayed(sidebar_page.fungibles_button()):
             sidebar_page.click_fungibles_button()
@@ -632,11 +653,11 @@ class Wallet(MainPageObjects, BaseOperations):
 
             if variant_name in HARDWARE_WALLET_VARIANTS:
                 if is_rgb:
-                    self.hardware_wallet = handle_hardware_wallet(
+                    self.hardware_wallet_emu = handle_hardware_wallet(
                         app_name=RGB_LEDGER_APP_NAME,
                     )
                 else:
-                    self.hardware_wallet = handle_hardware_wallet(
+                    self.hardware_wallet_emu = handle_hardware_wallet(
                         app_name=BITCOIN_LEDGER_APP_NAME,
                     )
 
@@ -655,26 +676,20 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
                 self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
-            if self.hardware_wallet:
+            if self.hardware_wallet_emu:
                 self.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_rgb)
+                    LEDGER_EMULATOR_APP_NAME, is_rgb,
+                )
 
             self.do_focus_on_application(application)
 
-            if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
-                self.receive_asset_page_objects.click_receive_asset_close_button()
-
-            if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-                self.fungible_page_objects.click_usb_sync_frame()
-
-            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                self.usb_sync_dialog_page_objects.click_continue_button()
+            self.usb_sync(is_receive=True)
 
         except Exception as e:
             raise e
         finally:
-            if self.hardware_wallet:
-                self.hardware_wallet.terminate()
+            if self.hardware_wallet_emu:
+                self.hardware_wallet_emu.terminate()
 
     def broadcast_psbt(self, application):
         """
@@ -733,3 +748,20 @@ class Wallet(MainPageObjects, BaseOperations):
             time.sleep(2)
             self.hw_emulator_page_objects.click_right_arrow_key(1)
             self.hw_emulator_page_objects.press_left_and_right()
+
+    def usb_sync(self, is_receive=False):
+        """
+        Sync wallet.
+        """
+        if is_receive:
+            if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+                self.receive_asset_page_objects.click_receive_asset_close_button()
+        else:
+            if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
+                self.sidebar_page_objects.click_fungibles_button()
+
+        if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+            self.fungible_page_objects.click_usb_sync_frame()
+
+        if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+            self.usb_sync_dialog_page_objects.click_continue_button()

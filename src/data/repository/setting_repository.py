@@ -13,8 +13,8 @@ from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
-from src.model.enums.enums_model import WalletType
 from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.model.setting_model import IsNativeLoginIntoAppEnabled
@@ -436,10 +436,16 @@ class SettingRepository:
             bool: True if values stored successfully.
         """
         try:
-            local_store.set_value('multisig_required_signers', required_signers)
+            local_store.set_value(
+                'multisig_required_signers', required_signers,
+            )
             local_store.set_value('multisig_total_signers', total_signers)
-            ok_req = local_store.get_value('multisig_required_signers') == required_signers
-            ok_tot = local_store.get_value('multisig_total_signers') == total_signers
+            ok_req = local_store.get_value(
+                'multisig_required_signers',
+            ) == required_signers
+            ok_tot = local_store.get_value(
+                'multisig_total_signers',
+            ) == total_signers
             return bool(ok_req and ok_tot)
         except Exception as exe:
             return handle_exceptions(exe)
@@ -448,8 +454,12 @@ class SettingRepository:
     def get_multisig_config() -> tuple[int | None, int | None]:
         """Retrieve stored multisig configuration as (required_signers, total_signers)."""
         try:
-            required = local_store.get_value('multisig_required_signers', value_type=int)
-            total = local_store.get_value('multisig_total_signers', value_type=int)
+            required = local_store.get_value(
+                'multisig_required_signers', value_type=int,
+            )
+            total = local_store.get_value(
+                'multisig_total_signers', value_type=int,
+            )
             return required, total
         except Exception as exe:
             return handle_exceptions(exe)

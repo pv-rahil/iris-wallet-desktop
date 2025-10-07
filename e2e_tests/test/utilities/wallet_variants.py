@@ -28,9 +28,9 @@ def resolve_steps(variant_name: str) -> Steps:
         return name_to_steps[key]
 
     expected = ', '.join(sorted(NAME_TO_STEPS.keys()))
-    raise ValueError(f"Unknown wallet variant '{
-                     variant_name
-                     }'. Expected one of: {expected}")
+    raise ValueError(f"""Unknown wallet variant
+    '{variant_name}'
+                     . Expected one of: {expected}""")
 
 
 def list_variants() -> None:
@@ -86,7 +86,9 @@ def map_load_to_create(variant_name: str) -> str:
     if not mapped:
         expected = ', '.join(sorted(NAME_TO_STEPS.keys()))
         raise ValueError(
-            f"No matching 'create' variant found for steps {target}. Known: {expected}",
+            f"No matching 'create' variant found for steps {
+                target
+            }. Known: {expected}",
         )
     return mapped
 

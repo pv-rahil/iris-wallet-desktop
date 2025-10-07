@@ -125,15 +125,15 @@ class IssueCFAViewModel(QObject, ThreadManager):
         self.success_page_message.emit(response.name)
         self.is_loading.emit(False)
 
-    def on_error(self, error: CommonException):
+    def on_error(self, err: CommonException):
         """on error callback of issue CFA """
         self.is_loading.emit(False)
-        if isinstance(error, CommonException):
-            if getattr(error, 'message', '') == 'NoAvailableUtxos':
+        if isinstance(err, CommonException):
+            if getattr(err, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)
                 return
         ToastManager.error(
-            description=error.message,
+            description=err.message,
         )
 
     def issue_cfa_asset(

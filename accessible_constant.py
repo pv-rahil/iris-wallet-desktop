@@ -26,9 +26,12 @@ HARDWARE_WALLET_VARIANTS = [
 
 REQUIRE_USB_VARIANTS = [
     'offline_create_hardware', 'offline_create_on_device',
-    'online_watch_only','offline_load_on_device','offline_load_hardware'
+    'online_watch_only', 'offline_load_on_device', 'offline_load_hardware',
 ]
-LOAD_WALLET_VARIANT = ['offline_load_hardware', 'offline_load_on_device','online_load_hardware', 'online_load_on_device']
+LOAD_WALLET_VARIANT = [
+    'offline_load_hardware', 'offline_load_on_device',
+    'online_load_hardware', 'online_load_on_device',
+]
 FAKEUSB_MOUNT_PATH = '/tmp/fakeusb_mount'
 
 

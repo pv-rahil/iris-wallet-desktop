@@ -7,7 +7,8 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION, SECOND_APPLICATION
+from accessible_constant import FIRST_APPLICATION
+from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -40,7 +41,7 @@ def test_view_unspent_list(wallets_and_operations: WalletTestSetup, wallet_varia
 @pytest.mark.skip_for_hardware_wallet
 @allure.feature('View unspent list for offline wallet')
 @allure.story('Verify outpoint in unspent list for offline wallet')
-def test_view_unspent_list(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_view_unspent_list_for_offline_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test view unspent list.
     """

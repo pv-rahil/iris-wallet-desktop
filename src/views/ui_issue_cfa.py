@@ -481,15 +481,23 @@ class IssueCFAWidget(QWidget):
 
     def show_asset_issued(self, asset_name):
         """This method handled after the asset issue"""
-        header = 'Issue new ticker'
-        title = 'You’re all set!'
-        description = f"Asset '{asset_name}' has been issued successfully."
-        home_button = 'Home'
+        cfa_header = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_new_ticker',
+        )
+        cfa_title = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'you_are_all_set',
+        )
+        cfa_description = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_issued',
+        ).format(asset_name)
+        cfa_home_button = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'home',
+        )
         params = SuccessPageModel(
-            header=header,
-            title=title,
-            description=description,
-            button_text=home_button,
+            header=cfa_header,
+            title=cfa_title,
+            description=cfa_description,
+            button_text=cfa_home_button,
             callback=self._view_model.page_navigation.collectibles_asset_page,
         )
         if self.from_draft and self.draft_id:

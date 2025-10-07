@@ -62,11 +62,11 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         super().__init__()
         self._view_model: MainViewModel = view_model
         self._view_model.main_asset_view_model.asset_loaded.connect(
-            self.show_assets,
+            self.show_inflatables_assets,
         )
         self.network: NetworkEnumModel = SettingRepository.get_wallet_network()
-        self.sidebar = None
         self.__loading_translucent_screen = None
+        self.sidebar = None
         self.setStyleSheet(
             load_stylesheet(
                 'views/qss/fungible_asset_style.qss',
@@ -83,37 +83,41 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.vertical_layout_inflatable_2 = QVBoxLayout(self.inflatable_widget)
         self.vertical_layout_inflatable_2.setObjectName('vertical_layout_2')
         self.vertical_layout_inflatable_2.setContentsMargins(25, 12, 25, 0)
-        self.title_frame = HeaderFrame(
+        self.inflatables_header_title_frame = HeaderFrame(
             title_logo_path=':/assets/my_asset.png', title_name='inflatables',
         )
-        self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
+        self.inflatables_header_title_frame.action_button.setAccessibleName(
+            ISSUE_NIA_ASSET,
+        )
         config = get_current_wallet_mode_config()
-        self.priv = config.privileges
         self.is_watch_only = SettingRepository.get_wallet_access_type(
         ) == WalletAccessType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
+        self.priv = config.privileges
         self.vertical_layout_inflatable_frame = None
         self.grid_layout_inflatable_frame = None
-        self.asset_logo = None
-        self.asset_name = None
-        self.address = None
-        self.amount = None
-        self.token_symbol = None
-        self.vertical_layout_4 = None
-        self.image_label = None
-        self.horizontal_spacer = None
-        self.vertical_spacer_scroll_area = None
-        self.header_frame = None
-        self.header_layout = None
-        self.logo_header = None
-        self.name_header = None
-        self.address_header = None
-        self.amount_header = None
-        self.symbol_header = None
-        self.outbound_balance = None
+        self.inflatables_asset_logo = None
+        self.inflatables_asset_name = None
+        self.inflatables_address = None
+        self.inflatables_amount = None
+        self.inflatables_token_symbol = None
+        self.inflatables_vertical_layout_4 = None
+        self.inflatables_image_label = None
+        self.inflatables_horizontal_spacer = None
+        self.inflatables_vertical_spacer_scroll_area = None
+        self.inflatables_header_frame = None
+        self.inflatables_header_layout = None
+        self.inflatables_logo_header = None
+        self.inflatables_name_header = None
+        self.inflatables_address_header = None
+        self.inflatables_amount_header = None
+        self.inflatables_symbol_header = None
+        self.inflatables_outbound_balance = None
 
-        self.vertical_layout_inflatable_2.addWidget(self.title_frame)
+        self.vertical_layout_inflatable_2.addWidget(
+            self.inflatables_header_title_frame,
+        )
 
         self.inflatable_label = QLabel(self.inflatable_widget)
         self.inflatable_label.setObjectName('fungibles_label')
@@ -139,13 +143,15 @@ class InflatableAssetWidget(QWidget, ThreadManager):
                 self.outdated_inflatable_balance_label,
             )
 
-        self.horizontal_spacer = QSpacerItem(
+        self.inflatables_horizontal_spacer = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
 
         self.horizontal_layout = QHBoxLayout()
         self.horizontal_layout.addWidget(self.inflatable_label)
-        self.horizontal_layout.addSpacerItem(self.horizontal_spacer)
+        self.horizontal_layout.addSpacerItem(
+            self.inflatables_horizontal_spacer,
+        )
         if self.is_offline_wallet or self.is_watch_only:
             self.horizontal_layout.addLayout(
                 self.usb_last_sync_horizontal_layout,
@@ -176,18 +182,24 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.scroll_area_widget_inflatable.setMaximumSize(
             QSize(16777215, 2000),
         )
-        self.vertical_layout_scroll_content = QVBoxLayout(
+        self.inflatables_vertical_layout_scroll_content = QVBoxLayout(
             self.scroll_area_widget_inflatable,
         )
-        self.vertical_layout_scroll_content.setObjectName('verticalLayout_2')
-        self.vertical_layout_scroll_content.setContentsMargins(0, -1, 0, -1)
-        self.vertical_layout_3 = QVBoxLayout()
-        self.vertical_layout_3.setSpacing(10)
-        self.vertical_layout_3.setObjectName('verticalLayout_3')
+        self.inflatables_vertical_layout_scroll_content.setObjectName(
+            'verticalLayout_2',
+        )
+        self.inflatables_vertical_layout_scroll_content.setContentsMargins(
+            0, -1, 0, -1,
+        )
+        self.inflatables_vertical_layout_3 = QVBoxLayout()
+        self.inflatables_vertical_layout_3.setSpacing(10)
+        self.inflatables_vertical_layout_3.setObjectName('verticalLayout_3')
 
         self.inflatable_frame = QFrame(self.scroll_area_widget_inflatable)
 
-        self.vertical_layout_scroll_content.addLayout(self.vertical_layout_3)
+        self.inflatables_vertical_layout_scroll_content.addLayout(
+            self.inflatables_vertical_layout_3,
+        )
 
         self.scroll_area_inflatable.setWidget(
             self.scroll_area_widget_inflatable,
@@ -196,11 +208,13 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.vertical_layout_inflatable_2.addWidget(
             self.scroll_area_inflatable,
         )
-        self.horizontal_layout_2 = QHBoxLayout()
-        self.horizontal_layout_2.setSpacing(6)
+        self.inflatables_horizontal_layout_2 = QHBoxLayout()
+        self.inflatables_horizontal_layout_2.setSpacing(6)
 
-        self.horizontal_layout_2.setObjectName('horizontalLayout_2')
-        self.horizontal_layout_2.setContentsMargins(1, -1, 1, -1)
+        self.inflatables_horizontal_layout_2.setObjectName(
+            'horizontalLayout_2',
+        )
+        self.inflatables_horizontal_layout_2.setContentsMargins(1, -1, 1, -1)
 
         self.vertical_layout_inflatable_1.addWidget(self.inflatable_widget)
         self.inflatable_frame_card = QFrame(self.inflatable_widget)
@@ -209,98 +223,121 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.inflatable_frame_card.setFrameShape(QFrame.StyledPanel)
         self.inflatable_frame_card.setFrameShadow(QFrame.Raised)
 
-        self.horizontal_layout_2.addWidget(self.inflatable_frame_card)
+        self.inflatables_horizontal_layout_2.addWidget(
+            self.inflatable_frame_card,
+        )
 
-        self.vertical_layout_inflatable_2.addLayout(self.horizontal_layout_2)
+        self.vertical_layout_inflatable_2.addLayout(
+            self.inflatables_horizontal_layout_2,
+        )
         self.retranslate_ui()
         self.setup_ui_connection()
 
-    def show_assets(self):
+    def show_inflatables_assets(self):
         """This method creates all the inflatable assets elements of the main asset page."""
-        for i in reversed(range(self.vertical_layout_3.count())):
-            widget = self.vertical_layout_3.itemAt(i).widget()
+        for i in reversed(range(self.inflatables_vertical_layout_3.count())):
+            widget = self.inflatables_vertical_layout_3.itemAt(i).widget()
             if widget is not None:
                 widget.deleteLater()
 
-        self.header_frame = QFrame(self.scroll_area_widget_inflatable)
-        self.header_frame.setObjectName('header_frame')
-        self.header_frame.setMinimumSize(QSize(900, 70))
-        self.header_frame.setMaximumSize(QSize(16777215, 70))
-        self.header_layout = QGridLayout(self.header_frame)
-        self.header_layout.setContentsMargins(20, 6, 20, 6)
+        self.inflatables_header_frame = QFrame(
+            self.scroll_area_widget_inflatable,
+        )
+        self.inflatables_header_frame.setObjectName('header_frame')
+        self.inflatables_header_frame.setMinimumSize(QSize(900, 70))
+        self.inflatables_header_frame.setMaximumSize(QSize(16777215, 70))
+        self.inflatables_header_layout = QGridLayout(
+            self.inflatables_header_frame,
+        )
+        self.inflatables_header_layout.setContentsMargins(20, 6, 20, 6)
 
-        self.logo_header = QLabel(self.header_frame)
-        self.logo_header.setObjectName('logo_header')
-        self.logo_header.setMinimumSize(QSize(40, 40))
-        self.logo_header.setMaximumSize(QSize(40, 40))
-        self.header_layout.addWidget(self.logo_header, 0, 1)
+        self.inflatables_logo_header = QLabel(self.inflatables_header_frame)
+        self.inflatables_logo_header.setObjectName('logo_header')
+        self.inflatables_logo_header.setMinimumSize(QSize(40, 40))
+        self.inflatables_logo_header.setMaximumSize(QSize(40, 40))
+        self.inflatables_header_layout.addWidget(
+            self.inflatables_logo_header, 0, 1,
+        )
 
-        self.name_header = QLabel(self.header_frame)
-        self.name_header.setObjectName('name_header')
-        self.name_header.setMinimumSize(QSize(130, 40))
-        self.header_layout.addWidget(self.name_header, 0, 0, Qt.AlignLeft)
+        self.inflatables_name_header = QLabel(self.inflatables_header_frame)
+        self.inflatables_name_header.setObjectName('name_header')
+        self.inflatables_name_header.setMinimumSize(QSize(130, 40))
+        self.inflatables_header_layout.addWidget(
+            self.inflatables_name_header, 0, 0, Qt.AlignLeft,
+        )
 
-        self.address_header = QLabel(self.header_frame)
-        self.address_header.setObjectName('address_header')
-        self.address_header.setMinimumSize(QSize(600, 0))
-        self.address_header.setMaximumSize(QSize(16777215, 16777215))
-        self.header_layout.addWidget(self.address_header, 0, 2, Qt.AlignLeft)
-        self.address_header.setStyleSheet(
+        self.inflatables_address_header = QLabel(self.inflatables_header_frame)
+        self.inflatables_address_header.setObjectName('address_header')
+        self.inflatables_address_header.setMinimumSize(QSize(600, 0))
+        self.inflatables_address_header.setMaximumSize(
+            QSize(16777215, 16777215),
+        )
+        self.inflatables_header_layout.addWidget(
+            self.inflatables_address_header, 0, 2, Qt.AlignLeft,
+        )
+        self.inflatables_address_header.setStyleSheet(
             'padding-left: 10px;',
         )
 
-        self.amount_header = QLabel(self.header_frame)
-        self.amount_header.setObjectName('amount_header')
-        self.amount_header.setWordWrap(True)
-        self.amount_header.setMinimumSize(QSize(98, 40))
-        self.header_layout.addWidget(self.amount_header, 0, 3, Qt.AlignLeft)
-
-        self.symbol_header = QLabel(self.header_frame)
-        self.symbol_header.setObjectName('symbol_header')
-        self.header_layout.addWidget(self.symbol_header, 0, 5, Qt.AlignLeft)
-
-        self.vertical_layout_3.addWidget(self.header_frame)
-
-        wallet_service = WalletDataService.get_session()
-        draft_assets = (
-            wallet_service.list_draft_issue_assets() if wallet_service is not None else []
+        self.inflatables_amount_header = QLabel(self.inflatables_header_frame)
+        self.inflatables_amount_header.setObjectName('amount_header')
+        self.inflatables_amount_header.setWordWrap(True)
+        self.inflatables_amount_header.setMinimumSize(QSize(98, 40))
+        self.inflatables_header_layout.addWidget(
+            self.inflatables_amount_header, 0, 3, Qt.AlignLeft,
         )
-        for d in draft_assets:
+
+        self.inflatables_symbol_header = QLabel(self.inflatables_header_frame)
+        self.inflatables_symbol_header.setObjectName('symbol_header')
+        self.inflatables_header_layout.addWidget(
+            self.inflatables_symbol_header, 0, 5, Qt.AlignLeft,
+        )
+
+        self.inflatables_vertical_layout_3.addWidget(
+            self.inflatables_header_frame,
+        )
+
+        inflatables_wallet_service = WalletDataService.get_session()
+        inflatables_draft_assets = (
+            inflatables_wallet_service.list_draft_issue_assets(
+            ) if inflatables_wallet_service is not None else []
+        )
+        for d in inflatables_draft_assets:
             if d.get('file_path'):
                 continue
-            draft_asset = DraftAsset(
+            inflatables_draft_asset = DraftAsset(
                 draft_id=d.get('id'),
                 asset_id='draft_asset',
                 name=f"{d.get('name')} (Draft)",
                 ticker=d.get('ticker'),
             )
-            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-                self.create_inflatable_card(draft_asset)
+            if self.is_watch_only:
+                self.create_inflatable_card(inflatables_draft_asset)
 
         for asset in self._view_model.main_asset_view_model.assets.nia:
             self.create_inflatable_card(asset)
-        self.vertical_spacer_scroll_area = QSpacerItem(
+        self.inflatables_vertical_spacer_scroll_area = QSpacerItem(
             20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
         )
-        self.vertical_layout_scroll_content.addItem(
-            self.vertical_spacer_scroll_area,
+        self.inflatables_vertical_layout_scroll_content.addItem(
+            self.inflatables_vertical_spacer_scroll_area,
         )
-        self.name_header.setText(
+        self.inflatables_name_header.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_name', None,
             ),
         )
-        self.address_header.setText(
+        self.inflatables_address_header.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_id', None,
             ),
         )
-        self.amount_header.setText(
+        self.inflatables_amount_header.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'on_chain_balance', None,
             ),
         )
-        self.symbol_header.setText(
+        self.inflatables_symbol_header.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'symbol_header', None,
             ),
@@ -335,76 +372,80 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             'horizontal_layout_7',
         )
         self.grid_layout_inflatable_frame.setContentsMargins(6, 0, 6, 0)
-        self.asset_logo = QLabel(self.inflatable_frame)
-        self.asset_logo.setObjectName('asset_logo')
+        self.inflatables_asset_logo = QLabel(self.inflatable_frame)
+        self.inflatables_asset_logo.setObjectName('asset_logo')
 
-        self.asset_logo.setMinimumSize(QSize(40, 40))
-        self.asset_logo.setMaximumSize(QSize(40, 40))
+        self.inflatables_asset_logo.setMinimumSize(QSize(40, 40))
+        self.inflatables_asset_logo.setMaximumSize(QSize(40, 40))
 
         if img_path:
-            self.asset_logo.setPixmap(QPixmap(img_path))
+            self.inflatables_asset_logo.setPixmap(QPixmap(img_path))
 
         else:
             img_str = generate_identicon(asset.asset_id)
             image = QImage.fromData(QByteArray.fromBase64(img_str.encode()))
             pixmap = QPixmap.fromImage(image)
-            self.asset_logo.setPixmap(pixmap)
+            self.inflatables_asset_logo.setPixmap(pixmap)
 
-        self.grid_layout_inflatable_frame.addWidget(self.asset_logo, 0, 0)
+        self.grid_layout_inflatable_frame.addWidget(
+            self.inflatables_asset_logo, 0, 0,
+        )
 
-        self.asset_name = QLabel(self.inflatable_frame)
-        self.asset_name.setObjectName('asset_name')
-        self.asset_name.setMinimumSize(QSize(135, 40))
-        self.asset_name.setStyleSheet(
+        self.inflatables_asset_name = QLabel(self.inflatable_frame)
+        self.inflatables_asset_name.setObjectName('asset_name')
+        self.inflatables_asset_name.setMinimumSize(QSize(135, 40))
+        self.inflatables_asset_name.setStyleSheet(
             load_stylesheet(
                 'views/qss/fungible_asset_style.qss',
             ),
         )
-        self.asset_name.setText(asset.name)
-        self.grid_layout_inflatable_frame.addWidget(self.asset_name, 0, 1)
+        self.inflatables_asset_name.setText(asset.name)
+        self.grid_layout_inflatable_frame.addWidget(
+            self.inflatables_asset_name, 0, 1,
+        )
 
-        self.address = QLabel(self.inflatable_frame)
-        self.address.setObjectName('address')
-        self.address.setMinimumSize(QSize(600, 0))
-        self.address.setMaximumSize(QSize(16777215, 16777215))
-        self.address.setStyleSheet(
+        self.inflatables_address = QLabel(self.inflatable_frame)
+        self.inflatables_address.setObjectName('address')
+        self.inflatables_address.setMinimumSize(QSize(600, 0))
+        self.inflatables_address.setMaximumSize(QSize(16777215, 16777215))
+        self.inflatables_address.setStyleSheet(
             'padding-left:10px;',
         )
 
         if asset.asset_id == 'draft_asset':
-            self.address.setText('Click to continue issuance')
+            self.inflatables_address.setText('Click to continue issuance')
         else:
-            self.address.setText(asset.asset_id)
+            self.inflatables_address.setText(asset.asset_id)
 
         self.grid_layout_inflatable_frame.addWidget(
-            self.address, 0, 2, Qt.AlignLeft,
+            self.inflatables_address, 0, 2, Qt.AlignLeft,
         )
 
-        self.amount = QLabel(self.inflatable_frame)
-        self.amount.setObjectName('amount')
-        self.amount.setMinimumSize(QSize(100, 40))
+        self.inflatables_amount = QLabel(self.inflatable_frame)
+        self.inflatables_amount.setObjectName('amount')
+        self.inflatables_amount.setMinimumSize(QSize(100, 40))
 
         if asset.asset_id == 'draft_asset':
-            self.amount.setText('-')
+            self.inflatables_amount.setText('-')
         else:
-            self.amount.setText(str(asset.balance.future))
+            self.inflatables_amount.setText(str(asset.balance.future))
         self.grid_layout_inflatable_frame.addWidget(
-            self.amount, 0, 3, Qt.AlignLeft,
+            self.inflatables_amount, 0, 3, Qt.AlignLeft,
         )
 
-        self.token_symbol = QLabel(self.inflatable_frame)
-        self.token_symbol.setObjectName('token_symbol')
+        self.inflatables_token_symbol = QLabel(self.inflatable_frame)
+        self.inflatables_token_symbol.setObjectName('token_symbol')
 
-        self.token_symbol.setText(asset.ticker)
+        self.inflatables_token_symbol.setText(asset.ticker)
         self.grid_layout_inflatable_frame.addWidget(
-            self.token_symbol, 0, 5, Qt.AlignLeft,
+            self.inflatables_token_symbol, 0, 5, Qt.AlignLeft,
         )
 
         self.vertical_layout_inflatable_frame.addLayout(
             self.grid_layout_inflatable_frame,
         )
 
-        self.vertical_layout_3.addWidget(self.inflatable_frame)
+        self.inflatables_vertical_layout_3.addWidget(self.inflatable_frame)
         if asset.asset_id == 'draft_asset':
             draft_id = asset.draft_id
             self.inflatable_frame.clicked.connect(
@@ -420,10 +461,10 @@ class InflatableAssetWidget(QWidget, ThreadManager):
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
         self._view_model.main_asset_view_model.get_assets()
-        self.title_frame.refresh_page_button.clicked.connect(
-            self.refresh_asset,
+        self.inflatables_header_title_frame.refresh_page_button.clicked.connect(
+            self.refresh_inflatables_asset,
         )
-        self.title_frame.action_button.clicked.connect(
+        self.inflatables_header_title_frame.action_button.clicked.connect(
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_ifa_page,
             ),
@@ -451,27 +492,27 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         if epoch_time is not None:
             self.usb_last_sync_inflatable_info_label.setText(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label',
                 ).format(epoch_time),
             )
             self.outdated_inflatable_balance_label.setText(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label', None,
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'outdated_balance_label',
                 ),
             )
 
-    def refresh_asset(self):
+    def refresh_inflatables_asset(self):
         """This method start the render timer and perform the inflatable asset list refresh"""
         self.render_timer.start()
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )
-        epoch_time = format_epoch_time()
-        if epoch_time is not None:
+        inflatables_epoch_time = format_epoch_time()
+        if inflatables_epoch_time is not None:
             self.usb_last_sync_inflatable_info_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'usb_sync_info_label', None,
-                ).format(epoch_time),
+                ).format(inflatables_epoch_time),
             )
             self.outdated_inflatable_balance_label.setText(
                 QCoreApplication.translate(
@@ -497,13 +538,17 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             parent=self, description_text='Loading', dot_animation=True,
         )
         self.__loading_translucent_screen.start()
-        self.title_frame.refresh_page_button.setDisabled(True)
+        self.inflatables_header_title_frame.refresh_page_button.setDisabled(
+            True,
+        )
 
     def stop_inflatable_loading_screen(self):
         """This method handled stop loading screen on main asset page"""
         self.render_timer.stop()
         self.__loading_translucent_screen.stop()
-        self.title_frame.refresh_page_button.setDisabled(False)
+        self.inflatables_header_title_frame.refresh_page_button.setDisabled(
+            False,
+        )
 
     def show_message(self, inflatable_asset_toast_preset, message):
         """This method handled showing message main asset page"""

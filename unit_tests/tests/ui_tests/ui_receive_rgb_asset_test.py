@@ -68,7 +68,7 @@ def test_handle_receive_asset_reuse_existing_psbt(receive_rgb_asset_widget: Rece
         {'purpose': 'receive_asset', 'psbt': 'psbt123'},
     ]
     mocker.patch(
-        'src.views.ui_receive_rgb_asset.WalletDataService.get_session', return_value=svc,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
     with patch.object(widget, 'show_receive_cfa_psbt_page', new=MagicMock()) as mock_show:
         widget.handle_receive_asset()
@@ -81,7 +81,7 @@ def test_handle_receive_asset_create_utxos_when_no_psbt(receive_rgb_asset_widget
     svc = MagicMock()
     svc.list_psbt.return_value = []
     mocker.patch(
-        'src.views.ui_receive_rgb_asset.WalletDataService.get_session', return_value=svc,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 
@@ -95,7 +95,7 @@ def test_handle_receive_asset_wallet_service_none(receive_rgb_asset_widget: Rece
     """When wallet service None, behaves like no PSBT and starts UTXO creation."""
     widget = receive_rgb_asset_widget
     mocker.patch(
-        'src.views.ui_receive_rgb_asset.WalletDataService.get_session', return_value=None,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=None,
     )
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 

@@ -22,11 +22,11 @@ def widget(qt_app):
     params = SelectionPageModel(
         title='select_wallet_mode',
         logo_1_path=':/assets/online.png',
-        logo_1_title=WalletType.ONLINE_TYPE_WALLET.value,
         logo_1_info='online_wallet_info',
+        logo_1_title=WalletType.ONLINE_TYPE_WALLET.value,
         logo_2_path=':/assets/offline.png',
-        logo_2_title=WalletType.OFFLINE_TYPE_WALLET.value,
         logo_2_info='offline_wallet_info',
+        logo_2_title=WalletType.OFFLINE_TYPE_WALLET.value,
     )
     w = SelectionPage(vm, params)
     yield w

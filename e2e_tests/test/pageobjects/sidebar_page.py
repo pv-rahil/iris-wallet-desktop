@@ -3,14 +3,16 @@
 Contains methods for interacting with the sidebar page elements."""
 from __future__ import annotations
 
-from accessible_constant import ABOUT_BUTTON, BROADCAST_TRANSACTION_BUTTON, SIGN_PSBT_BUTTON
+from accessible_constant import ABOUT_BUTTON
 from accessible_constant import BACKUP_BUTTON
+from accessible_constant import BROADCAST_TRANSACTION_BUTTON
 from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
 from accessible_constant import FUNGIBLE_BUTTON
 from accessible_constant import HELP_BUTTON
 from accessible_constant import SETTINGS_BUTTON
 from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
+from accessible_constant import SIGN_PSBT_BUTTON
 from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
 

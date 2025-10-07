@@ -386,7 +386,7 @@ def test_update_psbt_info_watch_only(header_frame, mocker, qtbot):
     sess = MagicMock()
     sess.list_psbt.return_value = [1, 2]
     mocker.patch(
-        'src.views.components.header_frame.WalletDataService.get_session', return_value=sess,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=sess,
     )
     header_frame.update_psbt_info()
     assert header_frame.psbt_info_frame.isVisible()
@@ -408,7 +408,7 @@ def test_update_psbt_info_offline(header_frame, mocker, qtbot):
     sess = MagicMock()
     sess.list_psbt.return_value = [1]
     mocker.patch(
-        'src.views.components.header_frame.WalletDataService.get_session', return_value=sess,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=sess,
     )
     header_frame.update_psbt_info()
     assert header_frame.psbt_info_frame.isVisible()
@@ -427,7 +427,7 @@ def test_update_psbt_info_none(header_frame, mocker, qtbot):
         return_value=WalletType.ONLINE_TYPE_WALLET,
     )
     mocker.patch(
-        'src.views.components.header_frame.WalletDataService.get_session', return_value=None,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=None,
     )
     header_frame.update_psbt_info()
     assert not header_frame.psbt_info_frame.isVisible()

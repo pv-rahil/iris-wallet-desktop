@@ -146,6 +146,7 @@ def test_hide_exhausted_asset_on_offline(wallets_and_operations: WalletTestSetup
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             ASSET_TICKER,
         )
+    with allure.step('Issue NIA asset for offline wallet'):
         wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 

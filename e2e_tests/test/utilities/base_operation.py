@@ -404,12 +404,10 @@ class BaseOperations:
         """Disable the keyring"""
         SettingRepository.set_keyring_status(True)
 
-
-    def register_current_environment(self,env) -> None:
+    def register_current_environment(self, env) -> None:
         """Register the active TestEnvironment for cross-feature access."""
         global _CURRENT_ENV
         _CURRENT_ENV = env
-
 
     def get_current_environment(self):
         """Retrieve the active TestEnvironment if registered."""

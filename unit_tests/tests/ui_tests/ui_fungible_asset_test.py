@@ -413,7 +413,7 @@ def test_show_assets_creates_draft_card_for_watch_only(create_fungible_asset_wid
             return [{'id': 3, 'name': 'NFT', 'ticker': 'N', 'file_path': ''}]
 
     mocker.patch(
-        'src.views.ui_fungible_asset.WalletDataService.get_session', return_value=_Session(),
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=_Session(),
     )
     mocker.patch(
         'src.views.ui_fungible_asset.SettingRepository.get_wallet_access_type',

@@ -23,7 +23,6 @@ from src.model.rgb_model import FilterAssetRequestModel
 from src.model.rgb_model import GetAssetResponseModel
 from src.model.rgb_model import ListTransfersRequestModel
 from src.model.rgb_model import RefreshFailureItem
-from src.model.setting_model import IsHideExhaustedAssetEnabled
 from src.utils.handle_exception import handle_exceptions
 from src.utils.page_navigation_events import PageNavigationEventManager
 
@@ -36,104 +35,34 @@ class MainAssetPageDataService:
     @staticmethod
     def get_assets() -> MainPageDataResponseModel:
         """
-        Fetch and return main page data including asset details and BTC balance.
+        Get assets for the main asset page.
 
         Returns:
-            MainPageDataResponseModel: The main page data containing asset details and BTC balance.
+            MainPageDataResponseModel: The assets for the main asset page.
         """
         try:
-            request_model = FilterAssetRequestModel(
-                filter_asset_schemas=[
-                    AssetSchema.NIA,
-                    AssetSchema.CFA,
-                    AssetSchema.UDA,
-                ],
-            )
-
-            filtered_assets: list[AssetNia | AssetCfa | AssetUda | None] = []
-            asset_detail: GetAssetResponseModel = RgbRepository.get_assets(
-                request_model,
-            )
             is_offline_wallet = SettingRepository.get_wallet_type(
             ) == WalletType.OFFLINE_TYPE_WALLET
+            btc_balance = MainAssetPageDataService().get_btc_balance(is_offline_wallet)
 
-            btc_balance: BalanceResponseModel
-            if is_offline_wallet:
-                wallet_service = WalletDataService.get_session()
-                if wallet_service is not None:
-                    btc_balance = wallet_service.get_btc_balance()
-                else:
-                    btc_balance = BtcRepository.get_btc_balance()
-            else:
-                refresh_data = RgbRepository.refresh_transfer()
-                if refresh_data:
-                    failures_only = {
-                        k: v for k, v in refresh_data.items() if v.failure is not None
-                    }
-                    if failures_only:
-                        items: list[RefreshFailureItem] = []
-                        all_assets: list[AssetNia | AssetCfa | AssetUda | None] = (
-                            (asset_detail.nia or []) +
-                            (asset_detail.cfa or []) + (asset_detail.uda or [])
-                        )
-                        for failed_id, failed_entry in failures_only.items():
-                            found_asset_id: str | None = None
-                            for a in all_assets:
-                                if a is None:
-                                    continue
-                                try:
-                                    transfers = RgbRepository.list_transfers(
-                                        ListTransfersRequestModel(
-                                            asset_id=a.asset_id,
-                                        ),
-                                    )
-                                    if any(int(t.idx) == int(failed_id) for t in transfers if t.idx is not None):
-                                        found_asset_id = a.asset_id
-                                        break
-                                except Exception:
-                                    continue
-                            if found_asset_id is not None and failed_entry.failure is not None:
-                                items.append(
-                                    RefreshFailureItem(
-                                        asset_id=found_asset_id, failure=failed_entry.failure,
-                                    ),
-                                )
-                        if items:
-                            PageNavigationEventManager.get_instance(
-                            ).refresh_transfer_result_dialog_signal.emit(items)
-                btc_balance = BtcRepository.get_btc_balance()
+            asset_detail: GetAssetResponseModel = RgbRepository.get_assets(
+                FilterAssetRequestModel(
+                    filter_asset_schemas=[
+                        AssetSchema.NIA,
+                        AssetSchema.CFA, AssetSchema.UDA,
+                    ],
+                ),
+            )
+
+            asset_detail = MainAssetPageDataService().filter_exhausted_assets(asset_detail)
 
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
-            btc_ticker: str = main_asset_page_helper.get_offline_asset_ticker(
+            btc_ticker = main_asset_page_helper.get_offline_asset_ticker(
                 network=stored_network,
             )
-            btc_name: str = main_asset_page_helper.get_asset_name(
+            btc_name = main_asset_page_helper.get_asset_name(
                 network=stored_network,
             )
-            is_exhausted_asset_enabled: IsHideExhaustedAssetEnabled = SettingRepository.is_exhausted_asset_enabled()
-
-            def has_non_zero_balance(asset: AssetNia | AssetCfa | AssetUda | None) -> bool:
-                if asset is None:
-                    return False
-                balance = asset.balance
-                return not balance.future == 0
-
-            if is_exhausted_asset_enabled.is_enabled:
-                if asset_detail.nia:
-                    asset_detail.nia = [
-                        asset for asset in asset_detail.nia if has_non_zero_balance(asset)
-                    ]
-                if asset_detail.uda:
-                    asset_detail.uda = [
-                        asset for asset in asset_detail.uda if has_non_zero_balance(asset)
-                    ]
-                if asset_detail.cfa:
-                    asset_detail.cfa = [
-                        asset for asset in asset_detail.cfa if has_non_zero_balance(asset)
-                    ]
-
-            if len(filtered_assets) > 0:
-                asset_detail.cfa = filtered_assets
 
             return MainPageDataResponseModel(
                 nia=asset_detail.nia or [],
@@ -145,5 +74,134 @@ class MainAssetPageDataService:
                     name=btc_name,
                 ),
             )
+
         except Exception as exc:
             return handle_exceptions(exc)
+
+    def get_btc_balance(self, is_offline_wallet: bool) -> BalanceResponseModel:
+        """
+        Fetch and return BTC balance.
+
+        Args:
+            is_offline_wallet (bool): Whether the wallet is offline.
+
+        Returns:
+            BalanceResponseModel: The BTC balance.
+        """
+        if is_offline_wallet:
+            wallet_service = WalletDataService.get_session()
+            return wallet_service.get_btc_balance() if wallet_service else BtcRepository.get_btc_balance()
+
+        # Online wallet
+        refresh_data = RgbRepository.refresh_transfer()
+        if refresh_data:
+            self.handle_refresh_failures(refresh_data)
+        return BtcRepository.get_btc_balance()
+
+    def handle_refresh_failures(self, refresh_data: dict):
+        """
+        Handle refresh failures.
+
+        Args:
+            refresh_data (dict): The refresh data.
+        """
+        failures_only = {
+            k: v for k, v in refresh_data.items()
+            if v.failure is not None
+        }
+        if not failures_only:
+            return
+
+        all_assets = self.get_all_assets()
+        items: list[RefreshFailureItem] = []
+
+        for failed_id, failed_entry in failures_only.items():
+            found_asset_id = self.find_asset_for_failed_transfer(
+                failed_id, all_assets,
+            )
+            if found_asset_id and failed_entry.failure:
+                items.append(
+                    RefreshFailureItem(
+                        asset_id=found_asset_id, failure=failed_entry.failure,
+                    ),
+                )
+
+        if items:
+            PageNavigationEventManager.get_instance(
+            ).refresh_transfer_result_dialog_signal.emit(items)
+
+    def get_all_assets(self) -> list[AssetNia | AssetCfa | AssetUda | None]:
+        """
+        Get all assets.
+
+        Returns:
+            list[AssetNia | AssetCfa | AssetUda | None]: The list of assets.
+        """
+        asset_detail = RgbRepository.get_assets(
+            FilterAssetRequestModel(
+                filter_asset_schemas=[
+                    AssetSchema.NIA,
+                    AssetSchema.CFA, AssetSchema.UDA,
+                ],
+            ),
+        )
+        return (asset_detail.nia or []) + (asset_detail.cfa or []) + (asset_detail.uda or [])
+
+    def find_asset_for_failed_transfer(self, failed_id: str, assets: list) -> str | None:
+        """
+        Find the asset for the failed transfer.
+
+        Args:
+            failed_id (str): The failed transfer ID.
+            assets (list): The list of assets.
+
+        Returns:
+            str | None: The asset ID for the failed transfer.
+        """
+        for a in assets:
+            if a is None:
+                continue
+            try:
+                transfers = RgbRepository.list_transfers(
+                    ListTransfersRequestModel(asset_id=a.asset_id),
+                )
+                if any(int(t.idx) == int(failed_id) for t in transfers if t.idx is not None):
+                    return a.asset_id
+            except Exception:
+                continue
+        return None
+
+    def filter_exhausted_assets(self, asset_detail: GetAssetResponseModel) -> GetAssetResponseModel:
+        """
+        Filter out exhausted assets.
+
+        Args:
+            asset_detail (GetAssetResponseModel): The asset detail.
+
+        Returns:
+            GetAssetResponseModel: The filtered asset detail.
+        """
+        is_exhausted_enabled = SettingRepository.is_exhausted_asset_enabled().is_enabled
+
+        if not is_exhausted_enabled:
+            return asset_detail
+
+        def has_non_zero(asset):
+            return asset is not None and not asset.balance.future == 0
+
+        asset_detail.nia = [
+            a for a in (
+                asset_detail.nia or []
+            ) if has_non_zero(a)
+        ]
+        asset_detail.cfa = [
+            a for a in (
+                asset_detail.cfa or []
+            ) if has_non_zero(a)
+        ]
+        asset_detail.uda = [
+            a for a in (
+                asset_detail.uda or []
+            ) if has_non_zero(a)
+        ]
+        return asset_detail

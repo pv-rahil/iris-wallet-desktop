@@ -159,7 +159,8 @@ class KeyringErrorDialog(QDialog):
         self.xpub_vanilla_copy = QPushButton()
         self.xpub_vanilla_copy.setObjectName('xpub_vanilla_copy_button')
         self.xpub_vanilla_copy.setAccessibleName(
-            KEYRING_XPUB_VANILLA_COPY_BUTTON)
+            KEYRING_XPUB_VANILLA_COPY_BUTTON,
+        )
         self.xpub_vanilla_copy.setIcon(icon)
         self.xpub_vanilla_copy.setMinimumSize(QSize(16, 16))
         self.xpub_vanilla_copy.setMaximumSize(QSize(16, 16))
@@ -190,7 +191,8 @@ class KeyringErrorDialog(QDialog):
         self.xpub_colored_copy = QPushButton()
         self.xpub_colored_copy.setObjectName('xpub_colored_copy_button')
         self.xpub_colored_copy.setAccessibleName(
-            KEYRING_XPUB_COLORED_COPY_BUTTON)
+            KEYRING_XPUB_COLORED_COPY_BUTTON,
+        )
         self.xpub_colored_copy.setIcon(icon)
         self.xpub_colored_copy.setMinimumSize(QSize(16, 16))
         self.xpub_colored_copy.setMaximumSize(QSize(16, 16))
@@ -221,7 +223,8 @@ class KeyringErrorDialog(QDialog):
         self.fingerprint_copy = QPushButton()
         self.fingerprint_copy.setObjectName('fingerprint_copy_button')
         self.fingerprint_copy.setAccessibleName(
-            KEYRING_FINGERPRINT_COPY_BUTTON)
+            KEYRING_FINGERPRINT_COPY_BUTTON,
+        )
         self.fingerprint_copy.setIcon(icon)
         self.fingerprint_copy.setMinimumSize(QSize(16, 16))
         self.fingerprint_copy.setMaximumSize(QSize(16, 16))

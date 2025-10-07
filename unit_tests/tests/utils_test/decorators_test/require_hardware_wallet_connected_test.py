@@ -8,9 +8,7 @@ import pytest
 
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
-from src.utils.decorators.require_hardware_wallet_connected import (
-    require_hardware_wallet_connected,
-)
+from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 from src.utils.hardware_client_store import hardware_client_store
 
 
@@ -37,18 +35,13 @@ def test_decorator_no_hw_wallet_calls_function():
 
 @patch('src.utils.decorators.require_hardware_wallet_connected.hwi_enumerate')
 @patch('src.utils.decorators.require_hardware_wallet_connected.LedgerClient')
-@patch('src.utils.decorators.require_hardware_wallet_connected.Client')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network')
 @patch('src.data.repository.setting_repository.SettingRepository.get_key_storage_type')
-def test_decorator_hw_wallet_success(mock_get_kst, mock_get_net, mock_client_cls, mock_ledger, mock_enum):
+def test_decorator_hw_wallet_success(mock_get_kst, mock_get_net, mock_ledger, mock_enum):
     """With HW wallet available, decorated function should execute successfully."""
     mock_get_kst.return_value = KeyStorageType.HARDWARE_WALLET
     mock_get_net.return_value = NetworkEnumModel.TESTNET
     mock_enum.return_value = [{'path': '/dev/hw', 'fingerprint': 'abcd'}]
-    # Make Client.get_version behave like real API: return a 3-tuple
-    mock_client_cls.return_value.get_version.return_value = (
-        'Ledger', '1.0.0', None,
-    )
 
     @require_hardware_wallet_connected()
     def mock():
@@ -56,8 +49,6 @@ def test_decorator_hw_wallet_success(mock_get_kst, mock_get_net, mock_client_cls
 
     assert mock() == 'ok'
     mock_ledger.assert_called_once()
-    # Ensure Client was invoked but did not error due to transport mocking
-    assert mock_client_cls.called
 
 
 @patch('src.utils.decorators.require_hardware_wallet_connected.hwi_enumerate', return_value=[])

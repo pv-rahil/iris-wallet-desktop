@@ -20,19 +20,21 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
+from accessible_constant import OPTION_1_FRAME
+from accessible_constant import OPTION_2_FRAME
+from accessible_constant import WALLET_SELECTION_CONTINUE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
 from src.model.enums.enums_model import WalletType
-from src.model.enums.enums_model import WalletSignatureType
 from src.model.selection_page_model import SelectionPageModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
-from accessible_constant import OPTION_1_FRAME, OPTION_2_FRAME, WALLET_SELECTION_CONTINUE_BUTTON
+
 
 class SelectionPage(QWidget):
     """This class represents all the UI elements of the selection page."""
@@ -200,7 +202,6 @@ class SelectionPage(QWidget):
             20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
         )
 
-
         self.info_frame = QFrame(self.widget_page)
         self.info_frame.setObjectName('info_frame')
         self.info_frame.setMinimumSize(QSize(880, 110))
@@ -218,7 +219,9 @@ class SelectionPage(QWidget):
         self.info_frame_layout.addWidget(self.wallet_connection_info_label)
 
         self.continue_button = PrimaryButton()
-        self.continue_button.setAccessibleName(WALLET_SELECTION_CONTINUE_BUTTON)
+        self.continue_button.setAccessibleName(
+            WALLET_SELECTION_CONTINUE_BUTTON,
+        )
         self.continue_button.setCursor(QCursor(Qt.PointingHandCursor))
 
         self.info_frame_layout.addWidget(self.continue_button)

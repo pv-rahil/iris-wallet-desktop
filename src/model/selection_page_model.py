@@ -5,7 +5,6 @@ Module containing models related to the wallet method and transfer type widget.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Callable
 
 from pydantic import BaseModel
 

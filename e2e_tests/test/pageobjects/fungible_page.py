@@ -3,7 +3,9 @@ Fungible page objects class for interacting with the application.
 """
 from __future__ import annotations
 
-from accessible_constant import FUNGIBLES_SCROLL_WIDGETS, HEADER_PSBT_INFO_FRAME, HEADER_USB_SYNC_FRAME
+from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
+from accessible_constant import HEADER_PSBT_INFO_FRAME
+from accessible_constant import HEADER_USB_SYNC_FRAME
 from accessible_constant import ISSUE_NIA_ASSET
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -112,4 +114,3 @@ class FungiblePageObjects(BaseOperations):
         Click the PSBT info frame if it is displayed.
         """
         return self.do_click(self.psbt_info_frame()) if self.do_is_displayed(self.psbt_info_frame()) else None
-        

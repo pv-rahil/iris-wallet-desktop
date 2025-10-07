@@ -7,7 +7,8 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION, SECOND_APPLICATION
+from accessible_constant import FIRST_APPLICATION
+from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -16,6 +17,7 @@ CFA_ASSET_NAME = 'CFA'
 ASSET_DESCRIPTION = 'This is CFA asset'
 ASSET_AMOUNT = '2000'
 ISSUE_CFA_TOASTER_MESSAGE = 'You have insufficient funds'
+
 
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -38,6 +40,7 @@ def test_issue_cfa_without_sufficient_sats(wallets_and_operations: WalletTestSet
 
     with allure.step('Verify toaster title and message'):
         assert description == ISSUE_CFA_TOASTER_MESSAGE
+
 
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -70,12 +73,13 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo(wallets_and_operations: Wall
         )
         assert asset_name == CFA_ASSET_NAME
 
+
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue CFA asset with sufficient sats and utxo')
 @allure.story('Issue CFA asset with sufficient sats and utxo which will create asset')
-def test_issue_cfa_with_sufficient_sats_and_utxo(wallets_and_operations: WalletTestSetup,wallet_variant_name):
+def test_issue_cfa_with_sufficient_sats_and_utxo(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test issuing CFA asset with sufficient sats and utxo.
     """
@@ -95,7 +99,7 @@ def test_issue_cfa_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
 
     with allure.step('Issue CFA with sufficient sats and utxo'):
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(
-            FIRST_APPLICATION, CFA_ASSET_NAME, ASSET_DESCRIPTION, ASSET_AMOUNT,variant_name=wallet_variant_name
+            FIRST_APPLICATION, CFA_ASSET_NAME, ASSET_DESCRIPTION, ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
 
     with allure.step('Verify asset name'):
@@ -109,7 +113,7 @@ def test_issue_cfa_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
 @pytest.mark.skip_for_online_wallet
 @allure.feature('Issue CFA asset without sufficient sats for offline wallet')
 @allure.story('Issue CFA asset without sufficient sats which will produce error toaster for offline wallet')
-def test_issue_cfa_without_sufficient_sats_offline_wallet(wallets_and_operations: WalletTestSetup,wallet_variant_name):
+def test_issue_cfa_without_sufficient_sats_offline_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test CFA asset issuance without sufficient sats for offline wallet.
     """
@@ -149,7 +153,6 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_view_unspents_button()
         count = wallets_and_operations.second_page_objects.view_unspent_list_page_objects.get_unspent_widget()
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-        assert count == 1
 
     with allure.step('Create a psbt for issue asset'):
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
@@ -157,17 +160,21 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
             SECOND_APPLICATION, CFA_ASSET_NAME,
         )
 
-    with allure.step('Sign the psbt'):
+    with allure.step('Sign the cfa psbt'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
 
-    with allure.step('Broadcast the psbt'):
-       wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION)
+    with allure.step('Broadcast the cfa psbt'):
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION,
+        )
 
     with allure.step('Issuing CFA asset'):
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(f'{CFA_ASSET_NAME} (Draft)')
+        wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
+            f'{CFA_ASSET_NAME} (Draft)',
+        )
         wallets_and_operations.second_page_objects.issue_cfa_page_objects.click_issue_cfa_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
@@ -175,4 +182,5 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
         asset_name = wallets_and_operations.second_page_objects.collectible_page_objects.get_cfa_asset_name(
             CFA_ASSET_NAME,
         )
-        assert asset_name == CFA_ASSET_NAME
+    assert count == 1
+    assert asset_name == CFA_ASSET_NAME

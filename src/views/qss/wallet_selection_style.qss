@@ -70,4 +70,3 @@ QLabel#regtest_note_label {
     background: transparent;
     border: none;
 }
-

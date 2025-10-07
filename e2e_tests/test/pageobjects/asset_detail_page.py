@@ -4,8 +4,6 @@ This file contains the AssetDetailPageObjects class, which provides methods for 
 """
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import ASSET_CLOSE_BUTTON
 from accessible_constant import ASSET_ID_COPY_BUTTON
 from accessible_constant import ASSET_RECEIVE_BUTTON
@@ -13,8 +11,6 @@ from accessible_constant import ASSET_REFRESH_BUTTON
 from accessible_constant import ASSET_SEND_BUTTON
 from accessible_constant import ASSET_SPENDABLE_BALANCE
 from accessible_constant import ASSET_TOTAL_BALANCE
-from accessible_constant import CONFIRMATION_DIALOG
-from accessible_constant import CONFIRMATION_DIALOG_CONTINUE_BUTTON
 from accessible_constant import RGB_TRANSACTION_DETAIL_FRAME
 from accessible_constant import TRANSACTION_DETAIL_CLOSE_BUTTON
 from accessible_constant import TRANSFER_STATUS

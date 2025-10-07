@@ -92,36 +92,23 @@ def test_get_assets(
     is_exhausted_asset_enabled.assert_called_once()
 
 
-@patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.utils.page_navigation_events.PageNavigationEventManager.get_instance')
+@patch('src.data.service.main_asset_page_service.MainAssetPageDataService.find_asset_for_failed_transfer')
+@patch('src.data.service.main_asset_page_service.MainAssetPageDataService.get_all_assets')
 def test_refresh_transfer_failures_emit_dialog(
+    mock_get_all_assets,
+    mock_find_asset,
     mock_get_mgr,
-    mock_get_wallet_type,
-    mock_get_btc_balance,
-    mock_get_asset,
-    mock_get_offline_asset_ticker,
-    mock_get_asset_name,
-    mock_refresh_transfer,
-    mock_is_exhausted_asset_enabled,
-    mock_list_transfers,
 ):
-    """When refresh_transfer returns failures, the dialog signal should be emitted."""
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
-    # Provide assets and enable failure list to include an id present in transfers
-    get_asset = mock_get_asset(mock_get_asset_response_model)
-    mock_is_exhausted_asset_enabled(
-        IsHideExhaustedAssetEnabled(is_enabled=False),
-    )
-    mock_get_asset_name('rBitcoin')
-    mock_get_offline_asset_ticker('rBTC')
-    mock_get_btc_balance(mock_balance_response_data)
-
-    # Failures mapping: key '1' with .failure not None
+    """handle_refresh_failures should emit dialog items when failures exist (new separated method design)."""
+    # Arrange: one failure with id '1'
     failure_entry = MagicMock()
     failure_entry.failure = RgbLibError.Internal(details='test')
-    mock_refresh_transfer({'1': failure_entry})
-    # list_transfers returns a transfer with idx == 1 to match failure id
-    mock_list_transfers([MagicMock(idx=1)])
+    failures = {'1': failure_entry}
+
+    # Mock assets and mapping
+    mock_get_all_assets.return_value = [MagicMock(asset_id='asset-1')]
+    mock_find_asset.return_value = 'asset-1'
 
     # Capture emitted items
     signal = MagicMock()
@@ -129,14 +116,15 @@ def test_refresh_transfer_failures_emit_dialog(
     mgr.refresh_transfer_result_dialog_signal = signal
     mock_get_mgr.return_value = mgr
 
-    # Act
-    _ = MainAssetPageDataService.get_assets()
+    # Act: call the separated method directly
+    MainAssetPageDataService().handle_refresh_failures(failures)
 
-    # Assert: dialog emitted with non-empty list
+    # Assert: dialog emitted with non-empty items list
     assert signal.emit.called
     items = signal.emit.call_args[0][0]
-    assert isinstance(items, list) and items
-    get_asset.assert_called_once()
+    assert isinstance(items, list) and len(items) == 1
+    mock_get_all_assets.assert_called_once()
+    mock_find_asset.assert_called_once()
 
 
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')

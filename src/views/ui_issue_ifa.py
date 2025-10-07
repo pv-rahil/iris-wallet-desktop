@@ -9,6 +9,7 @@ from enum import Enum
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
+from PySide6.QtCore import QTranslator
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QCheckBox
@@ -90,7 +91,7 @@ class IssueIFAWidget(QWidget):
             self.vertical_spacer_ifa_widget, 3, 1, 1, 1,
         )
 
-        self.horizontal_spacer_2 = QSpacerItem(
+        self.inflatables_horizontal_spacer_2 = QSpacerItem(
             266,
             20,
             QSizePolicy.Policy.Expanding,
@@ -98,7 +99,7 @@ class IssueIFAWidget(QWidget):
         )
 
         self.issue_ifa_grid_layout.addItem(
-            self.horizontal_spacer_2, 2, 0, 1, 1,
+            self.inflatables_horizontal_spacer_2, 2, 0, 1, 1,
         )
 
         self.issue_ifa_vertical_spacer_1 = QSpacerItem(
@@ -178,110 +179,130 @@ class IssueIFAWidget(QWidget):
 
         self.vertical_layout_issue_ifa.addWidget(self.header_line)
 
-        self.asset_ticker_layout = QVBoxLayout()
-        self.asset_ticker_layout.setSpacing(0)
-        self.asset_ticker_layout.setObjectName('vertical_layout_1')
-        self.asset_ticker_layout.setContentsMargins(60, -1, 0, -1)
+        self.inflatables_asset_ticker_layout = QVBoxLayout()
+        self.inflatables_asset_ticker_layout.setSpacing(0)
+        self.inflatables_asset_ticker_layout.setObjectName('vertical_layout_1')
+        self.inflatables_asset_ticker_layout.setContentsMargins(60, -1, 0, -1)
 
-        self.asset_ticker_label = QLabel(self.issue_ifa_widget)
-        self.asset_ticker_label.setObjectName('asset_ticker_label')
-        self.asset_ticker_label.setMinimumSize(QSize(0, 35))
-        self.asset_ticker_label.setBaseSize(QSize(0, 0))
-        self.asset_ticker_label.setAutoFillBackground(False)
-        self.asset_ticker_label.setFrameShadow(QFrame.Plain)
-        self.asset_ticker_label.setLineWidth(1)
+        self.inflatables_asset_ticker_label = QLabel(self.issue_ifa_widget)
+        self.inflatables_asset_ticker_label.setObjectName('asset_ticker_label')
+        self.inflatables_asset_ticker_label.setMinimumSize(QSize(0, 35))
+        self.inflatables_asset_ticker_label.setBaseSize(QSize(0, 0))
+        self.inflatables_asset_ticker_label.setAutoFillBackground(False)
+        self.inflatables_asset_ticker_label.setFrameShadow(QFrame.Plain)
+        self.inflatables_asset_ticker_label.setLineWidth(1)
 
-        self.asset_ticker_layout.addWidget(self.asset_ticker_label)
+        self.inflatables_asset_ticker_layout.addWidget(
+            self.inflatables_asset_ticker_label,
+        )
 
-        self.short_identifier_input = QLineEdit(
+        self.inflatables_short_identifier_input = QLineEdit(
             self.issue_ifa_widget,
         )
-        self.short_identifier_input.setObjectName('issue_nia_input')
-        self.short_identifier_input.setAccessibleName(NIA_ASSET_TICKER)
-        self.short_identifier_input.setMinimumSize(QSize(0, 40))
-        self.short_identifier_input.setMaximumSize(QSize(370, 40))
+        self.inflatables_short_identifier_input.setObjectName(
+            'issue_nia_input',
+        )
+        self.inflatables_short_identifier_input.setAccessibleName(
+            NIA_ASSET_TICKER,
+        )
+        self.inflatables_short_identifier_input.setMinimumSize(QSize(0, 40))
+        self.inflatables_short_identifier_input.setMaximumSize(QSize(370, 40))
 
-        self.short_identifier_input.setFrame(False)
-        self.short_identifier_input.setClearButtonEnabled(False)
+        self.inflatables_short_identifier_input.setFrame(False)
+        self.inflatables_short_identifier_input.setClearButtonEnabled(False)
 
-        self.asset_ticker_layout.addWidget(self.short_identifier_input)
+        self.inflatables_asset_ticker_layout.addWidget(
+            self.inflatables_short_identifier_input,
+        )
 
         self.vertical_layout_issue_ifa.addLayout(
-            self.asset_ticker_layout,
+            self.inflatables_asset_ticker_layout,
         )
 
-        self.asset_name_layout = QVBoxLayout()
-        self.asset_name_layout.setSpacing(0)
-        self.asset_name_layout.setObjectName('vertical_layout_2')
-        self.asset_name_layout.setContentsMargins(60, -1, 0, -1)
+        self.inflatables_asset_name_layout = QVBoxLayout()
+        self.inflatables_asset_name_layout.setSpacing(0)
+        self.inflatables_asset_name_layout.setObjectName('vertical_layout_2')
+        self.inflatables_asset_name_layout.setContentsMargins(60, -1, 0, -1)
 
-        self.asset_name_label = QLabel(self.issue_ifa_widget)
-        self.asset_name_label.setObjectName('asset_name_label')
-        self.asset_name_label.setMinimumSize(QSize(0, 40))
-        self.asset_name_label.setMaximumSize(QSize(370, 40))
-        self.asset_name_layout.addWidget(self.asset_name_label)
+        self.inflatables_asset_name_label = QLabel(self.issue_ifa_widget)
+        self.inflatables_asset_name_label.setObjectName('asset_name_label')
+        self.inflatables_asset_name_label.setMinimumSize(QSize(0, 40))
+        self.inflatables_asset_name_label.setMaximumSize(QSize(370, 40))
+        self.inflatables_asset_name_layout.addWidget(
+            self.inflatables_asset_name_label,
+        )
 
-        self.asset_name_input = QLineEdit(
+        self.inflatables_asset_name_input = QLineEdit(
             self.issue_ifa_widget,
         )
-        self.asset_name_input.setObjectName('asset_name_input')
-        self.asset_name_input.setAccessibleName(NIA_ASSET_NAME)
-        self.asset_name_input.setMinimumSize(QSize(0, 40))
-        self.asset_name_input.setMaximumSize(QSize(370, 40))
+        self.inflatables_asset_name_input.setObjectName('asset_name_input')
+        self.inflatables_asset_name_input.setAccessibleName(NIA_ASSET_NAME)
+        self.inflatables_asset_name_input.setMinimumSize(QSize(0, 40))
+        self.inflatables_asset_name_input.setMaximumSize(QSize(370, 40))
 
-        self.asset_name_input.setFrame(False)
-        self.asset_name_input.setClearButtonEnabled(False)
+        self.inflatables_asset_name_input.setFrame(False)
+        self.inflatables_asset_name_input.setClearButtonEnabled(False)
 
-        self.asset_name_layout.addWidget(self.asset_name_input)
+        self.inflatables_asset_name_layout.addWidget(
+            self.inflatables_asset_name_input,
+        )
 
         self.vertical_layout_issue_ifa.addLayout(
-            self.asset_name_layout,
+            self.inflatables_asset_name_layout,
         )
-        self.asset_supply_layout = QVBoxLayout()
-        self.asset_supply_layout.setSpacing(0)
-        self.asset_supply_layout.setObjectName('vertical_layout_3')
-        self.asset_supply_layout.setContentsMargins(60, -1, 0, -1)
+        self.inflatables_asset_supply_layout = QVBoxLayout()
+        self.inflatables_asset_supply_layout.setSpacing(0)
+        self.inflatables_asset_supply_layout.setObjectName('vertical_layout_3')
+        self.inflatables_asset_supply_layout.setContentsMargins(60, -1, 0, -1)
 
-        self.issue_supply_label = QLabel(self.issue_ifa_widget)
-        self.issue_supply_label.setObjectName('total_supply_label')
-        self.issue_supply_label.setMinimumSize(QSize(0, 40))
-        self.issue_supply_label.setMaximumSize(QSize(370, 40))
-        self.asset_supply_layout.addWidget(self.issue_supply_label)
+        self.inflatables_issue_supply_label = QLabel(self.issue_ifa_widget)
+        self.inflatables_issue_supply_label.setObjectName('total_supply_label')
+        self.inflatables_issue_supply_label.setMinimumSize(QSize(0, 40))
+        self.inflatables_issue_supply_label.setMaximumSize(QSize(370, 40))
+        self.inflatables_asset_supply_layout.addWidget(
+            self.inflatables_issue_supply_label,
+        )
 
-        self.issue_amount_input = QLineEdit(
+        self.inflatables_issue_amount_input = QLineEdit(
             self.issue_ifa_widget,
         )
-        self.issue_amount_input.setObjectName('amount_input')
-        self.issue_amount_input.setAccessibleName(NIA_ASSET_AMOUNT)
-        self.issue_amount_input.setMinimumSize(QSize(0, 40))
-        self.issue_amount_input.setMaximumSize(QSize(370, 40))
-        set_number_validator(self.issue_amount_input)
-        self.issue_amount_input.setFrame(False)
-        self.issue_amount_input.setClearButtonEnabled(False)
+        self.inflatables_issue_amount_input.setObjectName('amount_input')
+        self.inflatables_issue_amount_input.setAccessibleName(NIA_ASSET_AMOUNT)
+        self.inflatables_issue_amount_input.setMinimumSize(QSize(0, 40))
+        self.inflatables_issue_amount_input.setMaximumSize(QSize(370, 40))
+        set_number_validator(self.inflatables_issue_amount_input)
+        self.inflatables_issue_amount_input.setFrame(False)
+        self.inflatables_issue_amount_input.setClearButtonEnabled(False)
 
-        self.asset_supply_layout.addWidget(self.issue_amount_input)
+        self.inflatables_asset_supply_layout.addWidget(
+            self.inflatables_issue_amount_input,
+        )
 
-        self.total_supply_label = QLabel(self.issue_ifa_widget)
-        self.total_supply_label.setObjectName('total_supply_label')
-        self.total_supply_label.setMinimumSize(QSize(0, 40))
-        self.total_supply_label.setMaximumSize(QSize(370, 40))
-        self.asset_supply_layout.addWidget(self.total_supply_label)
+        self.inflatables_total_supply_label = QLabel(self.issue_ifa_widget)
+        self.inflatables_total_supply_label.setObjectName('total_supply_label')
+        self.inflatables_total_supply_label.setMinimumSize(QSize(0, 40))
+        self.inflatables_total_supply_label.setMaximumSize(QSize(370, 40))
+        self.inflatables_asset_supply_layout.addWidget(
+            self.inflatables_total_supply_label,
+        )
 
-        self.total_supply_input = QLineEdit(
+        self.inflatables_total_supply_input = QLineEdit(
             self.issue_ifa_widget,
         )
-        self.total_supply_input.setObjectName('amount_input')
-        self.total_supply_input.setAccessibleName(NIA_ASSET_AMOUNT)
-        self.total_supply_input.setMinimumSize(QSize(0, 40))
-        self.total_supply_input.setMaximumSize(QSize(370, 40))
-        set_number_validator(self.total_supply_input)
-        self.total_supply_input.setFrame(False)
-        self.total_supply_input.setClearButtonEnabled(False)
+        self.inflatables_total_supply_input.setObjectName('amount_input')
+        self.inflatables_total_supply_input.setAccessibleName(NIA_ASSET_AMOUNT)
+        self.inflatables_total_supply_input.setMinimumSize(QSize(0, 40))
+        self.inflatables_total_supply_input.setMaximumSize(QSize(370, 40))
+        set_number_validator(self.inflatables_total_supply_input)
+        self.inflatables_total_supply_input.setFrame(False)
+        self.inflatables_total_supply_input.setClearButtonEnabled(False)
 
-        self.asset_supply_layout.addWidget(self.total_supply_input)
+        self.inflatables_asset_supply_layout.addWidget(
+            self.inflatables_total_supply_input,
+        )
 
         self.vertical_layout_issue_ifa.addLayout(
-            self.asset_supply_layout,
+            self.inflatables_asset_supply_layout,
         )
 
         # Secondary issuance-only: option to replace label (shown only in secondary mode)
@@ -290,10 +311,10 @@ class IssueIFAWidget(QWidget):
         self.replace_label_checkbox.hide()  # shown only in secondary mode
         self.replace_checkbox_horizontal_layout = QHBoxLayout()
         self.replace_checkbox_horizontal_layout.setContentsMargins(0, 20, 0, 0)
-        self.replace_checkbox_horizontal_layout.addWidget(
-            self.replace_label_checkbox,
-        )
-        self.asset_supply_layout.addLayout(
+        # self.replace_checkbox_horizontal_layout.addWidget(
+        #     self.replace_label_checkbox,
+        # )
+        self.inflatables_asset_supply_layout.addLayout(
             self.replace_checkbox_horizontal_layout,
         )
 
@@ -308,18 +329,20 @@ class IssueIFAWidget(QWidget):
             self.vertical_spacer_issue_ifa,
         )
 
-        self.footer_line = QFrame(self.issue_ifa_widget)
-        self.footer_line.setObjectName('bottom_line_frame')
+        self.inflatables_footer_line = QFrame(self.issue_ifa_widget)
+        self.inflatables_footer_line.setObjectName('bottom_line_frame')
 
-        self.footer_line.setFrameShape(QFrame.HLine)
-        self.footer_line.setFrameShadow(QFrame.Sunken)
+        self.inflatables_footer_line.setFrameShape(QFrame.HLine)
+        self.inflatables_footer_line.setFrameShadow(QFrame.Sunken)
 
-        self.vertical_layout_issue_ifa.addWidget(self.footer_line)
+        self.vertical_layout_issue_ifa.addWidget(self.inflatables_footer_line)
 
-        self.issue_button_spacer = QSpacerItem(
+        self.inflatables_issue_button_spacer = QSpacerItem(
             20, 22, QSizePolicy.Preferred, QSizePolicy.Preferred,
         )
-        self.vertical_layout_issue_ifa.addItem(self.issue_button_spacer)
+        self.vertical_layout_issue_ifa.addItem(
+            self.inflatables_issue_button_spacer,
+        )
         self.issue_ifa_btn = PrimaryButton()
         self.issue_ifa_btn.setAccessibleName(ISSUE_NIA_BUTTON)
         self.issue_ifa_btn.setCursor(
@@ -345,10 +368,7 @@ class IssueIFAWidget(QWidget):
 
         self.issue_ifa_grid_layout.addWidget(
             self.issue_ifa_widget,
-            1,
-            1,
-            2,
-            2,
+            1, 1, 2, 2,
         )
         self.setup_ui_connection()
         self.retranslate_ui()
@@ -356,33 +376,41 @@ class IssueIFAWidget(QWidget):
         if self.params is not None and self.secondary_issuance:
             self.issue_ifa_title.setText('Secondary Issuance')
             if self.params.asset_name:
-                self.asset_name_input.setText(self.params.asset_name)
+                self.inflatables_asset_name_input.setText(
+                    self.params.asset_name,
+                )
             if self.params.asset_id:
-                self.short_identifier_input.setText(self.params.asset_id)
-                self.short_identifier_input.setCursorPosition(0)
-                self.short_identifier_input.setReadOnly(True)
+                self.inflatables_short_identifier_input.setText(
+                    self.params.asset_id,
+                )
+                self.inflatables_short_identifier_input.setCursorPosition(0)
+                self.inflatables_short_identifier_input.setReadOnly(True)
             # Hide total supply fields and lock name in secondary issuance
-            self.total_supply_label.hide()
-            self.total_supply_input.hide()
-            self.asset_name_input.setReadOnly(True)
+            self.inflatables_total_supply_label.hide()
+            self.inflatables_total_supply_input.hide()
+            self.inflatables_asset_name_input.setReadOnly(True)
             self.replace_label_checkbox.show()
             self.issue_ifa_widget.setFixedHeight(500)
 
         if self.from_draft and self.draft_id:
-            self._load_draft_data()
+            self._load_inflatables_draft_data()
         else:
             if not self.secondary_issuance:
-                self.short_identifier_input.setText('')
-                self.asset_name_input.setText('')
-                self.issue_amount_input.setText('')
+                self.inflatables_short_identifier_input.setText('')
+                self.inflatables_asset_name_input.setText('')
+                self.inflatables_issue_amount_input.setText('')
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
-        self.asset_name_input.textChanged.connect(self.handle_button_enabled)
-        self.short_identifier_input.textChanged.connect(
+        self.inflatables_asset_name_input.textChanged.connect(
             self.handle_button_enabled,
         )
-        self.issue_amount_input.textChanged.connect(self.handle_button_enabled)
+        self.inflatables_short_identifier_input.textChanged.connect(
+            self.handle_button_enabled,
+        )
+        self.inflatables_issue_amount_input.textChanged.connect(
+            self.handle_button_enabled,
+        )
         self.ifa_close_btn.clicked.connect(
             self._view_model.page_navigation.inflatable_asset_page,
         )
@@ -391,13 +419,15 @@ class IssueIFAWidget(QWidget):
         )
         self.issue_ifa_btn.clicked.connect(self.on_issue_ifa_click)
         self._view_model.issue_nia_asset_view_model.is_issued.connect(
-            self.asset_issued,
+            self.inflatables_asset_issued,
         )
-        self.issue_amount_input.textChanged.connect(
-            lambda: set_placeholder_value(self.issue_amount_input),
+        self.inflatables_issue_amount_input.textChanged.connect(
+            lambda: set_placeholder_value(self.inflatables_issue_amount_input),
         )
-        self.issue_amount_input.textChanged.connect(
-            lambda text: enforce_u64_max_input(self.issue_amount_input, text),
+        self.inflatables_issue_amount_input.textChanged.connect(
+            lambda text: enforce_u64_max_input(
+                self.inflatables_issue_amount_input, text,
+            ),
         )
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
             self.handle_ifa_hw_dialog,
@@ -423,7 +453,7 @@ class IssueIFAWidget(QWidget):
             ),
         )
         if self.secondary_issuance:
-            self.asset_ticker_label.setText(
+            self.inflatables_asset_ticker_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT,
                     'asset_id',
@@ -431,56 +461,56 @@ class IssueIFAWidget(QWidget):
                 ),
             )
         else:
-            self.asset_ticker_label.setText(
+            self.inflatables_asset_ticker_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT,
                     'asset_ticker',
                     None,
                 ),
             )
-        self.short_identifier_input.setPlaceholderText(
+        self.inflatables_short_identifier_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'short_identifier',
                 None,
             ),
         )
-        self.asset_name_label.setText(
+        self.inflatables_asset_name_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'asset_name',
                 None,
             ),
         )
-        self.asset_name_input.setPlaceholderText(
+        self.inflatables_asset_name_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'name_of_the_asset',
                 None,
             ),
         )
-        self.issue_supply_label.setText(
+        self.inflatables_issue_supply_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'issue_supply',
                 None,
             ),
         )
-        self.issue_amount_input.setPlaceholderText(
+        self.inflatables_issue_amount_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'amount_to_issue',
                 None,
             ),
         )
-        self.total_supply_label.setText(
+        self.inflatables_total_supply_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'total_supply',
                 None,
             ),
         )
-        self.total_supply_input.setPlaceholderText(
+        self.inflatables_total_supply_input.setPlaceholderText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'total_supply',
@@ -517,44 +547,58 @@ class IssueIFAWidget(QWidget):
     def on_issue_ifa_click(self):
         """Handle the click event for issuing a new IFA asset."""
         # Retrieve text values from input fields
-        short_identifier = self.short_identifier_input.text().upper()
-        asset_name = self.asset_name_input.text()
-        amount_to_issue = self.issue_amount_input.text()
+        short_identifier = self.inflatables_short_identifier_input.text().upper()
+        asset_name = self.inflatables_asset_name_input.text()
+        amount_to_issue = self.inflatables_issue_amount_input.text()
         if not self.from_draft:
-            self.create_issue_asset_draft(
+            self.create_issue_inflatables_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
             )
 
         # Call the view model method and pass the text values as arguments
         self._view_model.issue_nia_asset_view_model.on_issue_click(
-            short_identifier,
-            asset_name,
+            short_identifier, asset_name,
             amount_to_issue,
         )
 
     def handle_button_enabled(self):
         """Updates the enabled state of the send button."""
-        if (self.short_identifier_input.text() and self.issue_amount_input.text() and self.asset_name_input.text() and self.issue_amount_input.text() != '0'):
+        if (
+            self.inflatables_short_identifier_input.text() and
+            self.inflatables_issue_amount_input.text(
+            ) and self.inflatables_asset_name_input.text()
+            and self.inflatables_issue_amount_input.text() != '0'
+        ):
             self.issue_ifa_btn.setDisabled(False)
         else:
             self.issue_ifa_btn.setDisabled(True)
 
-    def asset_issued(self, asset_name):
+    def inflatables_asset_issued(self, asset_name):
         """This method handled after asset issued"""
         # Clean up draft if issuance was started from a draft
         if self.from_draft and self.draft_id:
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.delete_draft_issue_asset(self.draft_id)
-        header = 'Issue new ticker'
-        title = 'You’re all set!'
-        description = f"Asset '{asset_name}' has been issued successfully."
-        button_text = 'Home'
+            inflatables_wallet_service = WalletDataService.get_session()
+            if inflatables_wallet_service is not None:
+                inflatables_wallet_service.delete_draft_issue_asset(
+                    self.draft_id,
+                )
+        inflatables_header = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_new_ticker',
+        )
+        inflatables_title = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'you_are_all_set',
+        )
+        inflatables_description = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_issued',
+        ).format(asset_name)
+        inflatables_button_text = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'home',
+        )
         params = SuccessPageModel(
-            header=header,
-            title=title,
-            description=description,
-            button_text=button_text,
+            header=inflatables_header,
+            title=inflatables_title,
+            description=inflatables_description,
+            button_text=inflatables_button_text,
             callback=self._view_model.page_navigation.inflatable_asset_page,
         )
         self.render_timer.stop()
@@ -586,57 +630,67 @@ class IssueIFAWidget(QWidget):
     def handle_ifa_issue(self):
         """handle ifa issue"""
         self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
-        wallet_service = WalletDataService.get_session()
-        if wallet_service:
-            unsigned_psbts = wallet_service.list_psbt(
+        inflatables_wallet_service = WalletDataService.get_session()
+        if inflatables_wallet_service:
+            unsigned_psbts = inflatables_wallet_service.list_psbt(
                 signed=False,
             )
-            existing_psbt = next(
+            existing_inflatables_psbt = next(
                 (
                     p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
                 ), None,
             )
-            if existing_psbt and existing_psbt.get('psbt'):
-                self.show_ifa_psbt_page(existing_psbt.get('psbt'))
+            if existing_inflatables_psbt and existing_inflatables_psbt.get('psbt'):
+                self.show_ifa_psbt_page(existing_inflatables_psbt.get('psbt'))
                 return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
             'issue_asset',
         )
 
-    def show_ifa_psbt_page(self, psbt):
+    def show_ifa_psbt_page(self, inflatables_psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
-        if psbt:
+        if inflatables_psbt:
             self._view_model.utxo_creation_view_model.unsigned_psbt.disconnect()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='IFA page',
-                    address_info='psbt_info', psbt=psbt, is_signed=False,
+                    address_info='psbt_info', psbt=inflatables_psbt, is_signed=False,
                 ),
             )
 
-    def create_issue_asset_draft(self, ticker, name, amount):
+    def create_issue_inflatables_asset_draft(self, ticker, name, amount):
         """Create and save an Issue Asset draft when UTXOs are not available.
         It stores minimal metadata so the draft can be shown on the fungible page.
         """
-        wallet_service = WalletDataService.get_session()
-        if wallet_service is not None:
-            wallet_service.upsert_draft_issue_asset(
+        inflatables_wallet_service = WalletDataService.get_session()
+        if inflatables_wallet_service is not None:
+            inflatables_wallet_service.upsert_draft_issue_asset(
                 name=name,
                 ticker=ticker,
                 issued_amount=int(amount),
             )
 
-    def _load_draft_data(self):
+    def _load_inflatables_draft_data(self):
         """Load draft data using the draft ID"""
-        wallet_service = WalletDataService.get_session()
+        inflatables_wallet_service = WalletDataService.get_session()
 
-        drafts = wallet_service.list_draft_issue_assets()
-        draft = next((d for d in drafts if d.get('id') == self.draft_id), None)
+        inflatables_drafts = inflatables_wallet_service.list_draft_issue_assets()
+        draft = next(
+            (
+                d for d in inflatables_drafts if d.get(
+                    'id',
+                ) == self.draft_id
+            ), None,
+        )
         if draft:
             if 'name' in draft:
-                self.asset_name_input.setText(draft['name'])
+                self.inflatables_asset_name_input.setText(draft['name'])
             if 'ticker' in draft:
-                self.short_identifier_input.setText(draft['ticker'])
+                self.inflatables_short_identifier_input.setText(
+                    draft['ticker'],
+                )
             if 'issued_amount' in draft:
-                self.issue_amount_input.setText(str(draft['issued_amount']))
+                self.inflatables_issue_amount_input.setText(
+                    str(draft['issued_amount']),
+                )
             self.handle_button_enabled()

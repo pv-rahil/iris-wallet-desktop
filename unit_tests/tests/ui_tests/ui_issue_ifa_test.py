@@ -48,24 +48,24 @@ def widget(qt_app, vm_mock):
 
 def test_handle_button_enabled_enables_only_when_all_present(widget: IssueIFAWidget):
     """Test that the issue button is enabled only when all required fields are present."""
-    widget.short_identifier_input.setText('TCK')
-    widget.asset_name_input.setText('Name')
-    widget.issue_amount_input.setText('0')
+    widget.inflatables_short_identifier_input.setText('TCK')
+    widget.inflatables_asset_name_input.setText('Name')
+    widget.inflatables_issue_amount_input.setText('0')
     widget.handle_button_enabled()
     assert widget.issue_ifa_btn.isEnabled() is False
 
-    widget.issue_amount_input.setText('10')
+    widget.inflatables_issue_amount_input.setText('10')
     widget.handle_button_enabled()
     assert widget.issue_ifa_btn.isEnabled() is True
 
 
 def test_on_issue_ifa_click_calls_vm_and_draft(widget: IssueIFAWidget, vm_mock):
     """Test that on_issue_ifa_click calls create_issue_asset_draft."""
-    widget.short_identifier_input.setText('abc')
-    widget.asset_name_input.setText('MyAsset')
-    widget.issue_amount_input.setText('25')
+    widget.inflatables_short_identifier_input.setText('abc')
+    widget.inflatables_asset_name_input.setText('MyAsset')
+    widget.inflatables_issue_amount_input.setText('25')
 
-    with patch.object(widget, 'create_issue_asset_draft') as draft:
+    with patch.object(widget, 'create_issue_inflatables_asset_draft') as draft:
         widget.on_issue_ifa_click()
         draft.assert_called_once()
         vm_mock.issue_nia_asset_view_model.on_issue_click.assert_called_once_with(
@@ -85,9 +85,9 @@ def test_secondary_issuance_prefill_and_locks(qt_app, vm_mock):
             w.show()
             assert w.secondary_issuance is True
             # Name locked, total supply hidden, replace checkbox shown
-            assert w.asset_name_input.isReadOnly()
-            assert w.total_supply_label.isHidden()
-            assert w.total_supply_input.isHidden()
+            assert w.inflatables_asset_name_input.isReadOnly()
+            assert w.inflatables_total_supply_label.isHidden()
+            assert w.inflatables_total_supply_input.isHidden()
             assert not w.replace_label_checkbox.isHidden()
         finally:
             w.close()
@@ -96,7 +96,7 @@ def test_secondary_issuance_prefill_and_locks(qt_app, vm_mock):
 def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
     """Test that handle_ifa_issue uses existing PSBT or creates a new one."""
     with patch('src.views.ui_issue_ifa.load_stylesheet', return_value=''), \
-            patch('src.views.ui_issue_ifa.WalletDataService.get_session') as get_sess:
+            patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         w = IssueIFAWidget(vm_mock)
         try:
             # Case 1: existing draft PSBT present
