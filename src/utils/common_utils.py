@@ -604,27 +604,27 @@ def format_epoch_time() -> str | None:
         return 'Invalid epoch'
 
 
-def close_button_navigation(widget):
+def close_button_navigation(widget: QWidget):
     """
     Navigate to the specified page when the close button is clicked.
     """
-    sidebar = widget._view_model.page_navigation.sidebar()
+    sidebar = widget.view_model.page_navigation.sidebar()
     originating_page = get_checked_button_translation_key(
         sidebar,
     )
 
     navigation_map = {
-        'fungibles': widget._view_model.page_navigation.fungibles_asset_page,
-        'NIA': widget._view_model.page_navigation.fungibles_asset_page,
-        'CFA': widget._view_model.page_navigation.collectibles_asset_page,
-        'collectibles': widget._view_model.page_navigation.collectibles_asset_page,
-        'faucets': widget._view_model.page_navigation.faucets_page,
-        'view_unspent_list': widget._view_model.page_navigation.view_unspent_list_page,
-        'help': widget._view_model.page_navigation.help_page,
-        'settings': widget._view_model.page_navigation.settings_page,
-        'backup': widget._view_model.page_navigation.backup_page,
-        'about': widget._view_model.page_navigation.about_page,
-        'broadcast_transaction': widget._view_model.page_navigation.broadcast_transaction_page,
+        'fungibles': widget.view_model.page_navigation.fungibles_asset_page,
+        'NIA': widget.view_model.page_navigation.fungibles_asset_page,
+        'CFA': widget.view_model.page_navigation.collectibles_asset_page,
+        'collectibles': widget.view_model.page_navigation.collectibles_asset_page,
+        'faucets': widget.view_model.page_navigation.faucets_page,
+        'view_unspent_list': widget.view_model.page_navigation.view_unspent_list_page,
+        'help': widget.view_model.page_navigation.help_page,
+        'settings': widget.view_model.page_navigation.settings_page,
+        'backup': widget.view_model.page_navigation.backup_page,
+        'about': widget.view_model.page_navigation.about_page,
+        'broadcast_transaction': widget.view_model.page_navigation.broadcast_transaction_page,
     }
     navigate = navigation_map.get(originating_page)
     if navigate:

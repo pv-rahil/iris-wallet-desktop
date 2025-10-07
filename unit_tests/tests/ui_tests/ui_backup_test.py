@@ -4,7 +4,6 @@
 # pylint: disable=redefined-outer-name,unused-argument,protected-access
 from __future__ import annotations
 
-from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
@@ -113,7 +112,7 @@ def test_backup_data_with_keyring_enabled(backup_widget, qtbot):
 def test_backup_data_with_keyring_disabled(backup_widget, qtbot):
     """Test the backup_data method when keyring is disabled."""
     with patch.object(SettingRepository, 'get_keyring_status', return_value=False), \
-            patch.object(backup_widget._view_model.backup_view_model, 'backup') as mock_backup:
+            patch.object(backup_widget.view_model.backup_view_model, 'backup') as mock_backup:
 
         backup_widget.backup_data()
 
@@ -137,21 +136,6 @@ def test_update_loading_state_not_loading(backup_widget, qtbot):
 
         # Verify that the loading stops
         assert mock_stop_loading.called
-
-
-def test_close_button_navigation(backup_widget):
-    """Test the close button navigation."""
-    with patch.object(backup_widget._view_model, 'page_navigation') as mock_navigation:
-        # Mock the originating page
-        backup_widget.get_checked_button_translation_key = Mock(
-            return_value='fungibles',
-        )
-
-        # Trigger the close button action
-        backup_widget.close_button_navigation()
-
-        # Assert the correct navigation method is called
-        mock_navigation.fungibles_asset_page.assert_called_once()
 
 
 def test_set_mnemonic_visibility_with_keyring(backup_widget):

@@ -461,7 +461,8 @@ class Backup(QWidget):
         )
         self.configure_backup_button.clicked.connect(self.configure_backup)
         self.backup_close_btn.clicked.connect(
-            lambda: close_button_navigation(self))
+            lambda: close_button_navigation(self),
+        )
         self.backup_wallet_data_button.clicked.connect(self.backup_data)
         self.view_model.backup_view_model.is_loading.connect(
             self.update_loading_state,

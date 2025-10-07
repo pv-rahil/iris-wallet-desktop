@@ -58,6 +58,7 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_varian
 
     with allure.step('Click on send button'):
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
+    with allure.step('Send NIA asset to correct invoice'):
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
             wallets_and_operations.first_page_features.send_features.send(
                 application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
@@ -162,9 +163,11 @@ def test_refresh_transfer_for_offline_wallet(wallets_and_operations: WalletTestS
         )
 
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+    with allure.step('Create psbt for offline wallet'):
         wallets_and_operations.second_page_features.send_features.create_psbt(
             application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
         )
+    with allure.step('Sign psbt for offline wallet'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
         )

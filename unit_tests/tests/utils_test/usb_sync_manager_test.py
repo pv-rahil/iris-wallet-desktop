@@ -347,7 +347,7 @@ def test_sync_to_usb_refresh_exception_path(manager: USBSyncManager, tmp_path, f
     manager.master_fingerprint = 'abcd'
     fake_local_store.set_value(SYNC_INDEX, None)
     with patch('src.utils.usb_sync_manager.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET), \
-            patch('src.utils.usb_sync_manager.WalletDataService.get_session', return_value=object()), \
+            patch('src.data.service.wallet_data_service.WalletDataService.get_session', return_value=object()), \
             patch('src.utils.usb_sync_manager.WalletDataService.refresh_wallet_data', side_effect=Exception('fail')):
         # Should not raise; initial backup continues
         manager.sync_to_usb()

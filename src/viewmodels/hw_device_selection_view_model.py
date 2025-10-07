@@ -61,6 +61,7 @@ class HWDeviceSelectionViewModel(QObject, ThreadManager):
             return vanilla, colored, fingerprint
         except Exception as e:
             self.connect_failed.emit(str(e))
+            return None, None, None
 
     def on_ledger_success(self, result):
         """

@@ -19,6 +19,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import network_info
 from src.utils.custom_exception import CommonException
@@ -74,6 +75,10 @@ def about_widget(mock_about_view_model, qtbot, mocker):
         mocker.patch(
             'src.data.repository.setting_repository.SettingRepository.get_wallet_entry_type',
             return_value=WalletEntryType.CREATE,
+        )
+        mocker.patch(
+            'src.data.repository.setting_repository.SettingRepository.get_wallet_signature_type',
+            return_value=WalletSignatureType.SINGLE_SIG,
         )
         mocker.patch(
             'src.data.repository.setting_repository.SettingRepository.get_key_storage_type',

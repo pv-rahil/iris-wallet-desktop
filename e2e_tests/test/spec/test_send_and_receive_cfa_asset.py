@@ -58,7 +58,7 @@ def test_send_cfa_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
         wallets_and_operations.first_page_objects.send_asset_page_objects.enter_asset_invoice(
             INVOICE,
         )
-    with allure.step('get the asset invoice validation label'):
+    with allure.step('get the cfa asset invoice validation label'):
         validation_label = wallets_and_operations.first_page_objects.send_asset_page_objects.get_asset_address_validation_label()
         wallets_and_operations.first_page_objects.send_asset_page_objects.click_send_asset_close_button()
 
@@ -87,9 +87,12 @@ def test_send_and_receive_cfa_asset_operation(wallets_and_operations: WalletTest
             ASSET_NAME,
         )
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
+    with allure.step('Send CFA asset'):
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
             wallets_and_operations.first_page_features.send_features.send(
-                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+                application=FIRST_APPLICATION, receiver_invoice=invoice,
+                amount=SEND_AMOUNT,
+                is_hardware_wallet=True, purpose='send_asset',
             )
         else:
             wallets_and_operations.first_page_features.send_features.send(
@@ -217,9 +220,11 @@ def test_send_and_receive_cfa_asset_operation_for_offline_wallet(wallets_and_ope
             ASSET_NAME,
         )
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+    with allure.step('Create cfa psbt for offline wallet'):
         wallets_and_operations.second_page_features.send_features.create_psbt(
             application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
         )
+    with allure.step('Sign cfa psbt for offline wallet'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
         )

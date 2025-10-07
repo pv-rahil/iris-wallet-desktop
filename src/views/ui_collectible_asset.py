@@ -63,6 +63,8 @@ class CollectiblesAssetWidget(QWidget):
         self.setObjectName('collectibles_page')
         self.loading_screen = None
         self.grid_layout_widget = None
+        self.frames = None
+        self.total_items = None
         self.vertical_layout_collectibles = QVBoxLayout(self)
         self.vertical_layout_collectibles.setObjectName(
             'vertical_layout_collectibles',
@@ -183,9 +185,8 @@ class CollectiblesAssetWidget(QWidget):
     def update_grid_layout(self):
         """Update the grid layout with new number of columns"""
         num_columns = self.calculate_columns()
-        collectibles_list = self._view_model.main_asset_view_model.assets.cfa
         # Build frames list including CFA drafts (identified by file_path in shared drafts table)
-        frames = []
+        self.frames = []
         wallet_service = WalletDataService.get_session()
         if wallet_service is not None:
             drafts = wallet_service.list_draft_issue_assets()
@@ -193,11 +194,13 @@ class CollectiblesAssetWidget(QWidget):
                 fp = d.get('file_path')
                 if not fp:
                     continue
-                frames.append(self.create_collectible_frame(draft=d))
+                self.frames.append(self.create_collectible_frame(draft=d))
         # Then append actual issued CFA assets
-        for coll_asset in collectibles_list:
-            frames.append(self.create_collectible_frame(coll_asset=coll_asset))
-        total_items = len(frames)
+        for coll_asset in self._view_model.main_asset_view_model.assets.cfa:
+            self.frames.append(
+                self.create_collectible_frame(coll_asset=coll_asset),
+            )
+        self.total_items = len(self.frames)
 
         if hasattr(self, 'scroll_area'):
             grid_widget = self.scroll_area.widget()
@@ -214,14 +217,15 @@ class CollectiblesAssetWidget(QWidget):
                     grid_layout.removeItem(item)
 
             # Add widgets to the grid layout
-            for index, frame in enumerate(frames):
+            for index, frame in enumerate(self.frames):
                 row = index // num_columns
                 col = index % num_columns
                 grid_layout.addWidget(frame, row, col)
             # Add spacers if the last row is not full
-            if total_items < 5:
-                remaining_columns = num_columns - (total_items % num_columns)
-                row = total_items // num_columns
+            if self.total_items < 5:
+                remaining_columns = num_columns - \
+                    (self.total_items % num_columns)
+                row = self.total_items // num_columns
                 for col in range(num_columns - remaining_columns, num_columns):
                     horizontal_spacer = QSpacerItem(
                         242, 242, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,

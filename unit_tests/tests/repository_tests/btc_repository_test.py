@@ -193,7 +193,7 @@ def test_estimate_fee(mock_wallet):
     )
 
 
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_send_btc_begin_with_session(mock_get_session, mock_wallet):
     """send_btc_begin should call wallet.send_btc_begin and add_psbt on session with purpose 'send_btc'."""
     mock_wallet.send_btc_begin.return_value = 'psbt_base64'
@@ -210,7 +210,7 @@ def test_send_btc_begin_with_session(mock_get_session, mock_wallet):
     svc.add_psbt.assert_called_once_with('psbt_base64', purpose='send_btc')
 
 
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_send_btc_begin_without_session(mock_get_session, mock_wallet):
     """send_btc_begin should not fail when no session; returns psbt and no add_psbt calls."""
     mock_wallet.send_btc_begin.return_value = 'psbt_base64'
@@ -224,7 +224,7 @@ def test_send_btc_begin_without_session(mock_get_session, mock_wallet):
 
 
 @patch('src.data.repository.btc_repository.Cache')
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_send_btc_end_with_session_and_cache(mock_get_session, mock_cache, mock_wallet):
     """send_btc_end should delete psbt from session and invalidate cache, returning tx id model."""
     mock_wallet.send_btc_end.return_value = 'txid999'
@@ -242,7 +242,7 @@ def test_send_btc_end_with_session_and_cache(mock_get_session, mock_cache, mock_
 
 
 @patch('src.data.repository.btc_repository.Cache')
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_send_btc_end_without_session_no_cache(mock_get_session, mock_cache, mock_wallet):
     """send_btc_end should work without session and without cache."""
     mock_wallet.send_btc_end.return_value = 'txid777'
@@ -255,7 +255,7 @@ def test_send_btc_end_without_session_no_cache(mock_get_session, mock_cache, moc
     mock_wallet.send_btc_end.assert_called_once()
 
 
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_create_utxos_begin_with_session(mock_get_session, mock_wallet):
     """create_utxos_begin should add psbt with provided purpose when session exists."""
     mock_wallet.create_utxos_begin.return_value = 'psbt_colorable'
@@ -274,7 +274,7 @@ def test_create_utxos_begin_with_session(mock_get_session, mock_wallet):
     )
 
 
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_create_utxos_begin_without_session(mock_get_session, mock_wallet):
     """create_utxos_begin should not call add_psbt when session is None."""
     mock_wallet.create_utxos_begin.return_value = 'psbt_colorable'
@@ -287,7 +287,7 @@ def test_create_utxos_begin_without_session(mock_get_session, mock_wallet):
 
 
 @patch('src.data.repository.btc_repository.Cache')
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_create_utxos_end_with_session_and_cache(mock_get_session, mock_cache, mock_wallet):
     """create_utxos_end should delete psbt and invalidate cache, returning count."""
     mock_wallet.create_utxos_end.return_value = 3
@@ -304,7 +304,7 @@ def test_create_utxos_end_with_session_and_cache(mock_get_session, mock_cache, m
 
 
 @patch('src.data.repository.btc_repository.Cache')
-@patch('src.data.repository.btc_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_create_utxos_end_without_session_no_cache(mock_get_session, mock_cache, mock_wallet):
     """create_utxos_end should still return value without session and without cache."""
     mock_wallet.create_utxos_end.return_value = 1

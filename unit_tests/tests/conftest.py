@@ -152,7 +152,7 @@ def _mock_wallet_session(monkeypatch):
 
     monkeypatch.setattr(
         'src.data.service.wallet_data_service.WalletDataService.get_session',
-        _Session(),
+        _Session,
         raising=False,
     )
 

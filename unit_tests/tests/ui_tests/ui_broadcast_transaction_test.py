@@ -89,6 +89,8 @@ def widget_sign(qt_app, vm_mock, privileges_sign):
 
 def test_handle_button_enable_broadcast_requires_input_and_method(widget_broadcast: BroadcastTransactionWidget):
     """Broadcast button enables only when input exists (and selector ok)."""
+    # Accept short inputs for the test
+    widget_broadcast.min_psbt_len = 1
     # Initially no input
     widget_broadcast.method_selector.setVisible(True)
     widget_broadcast.method_selector.addItem('opt')
@@ -101,8 +103,111 @@ def test_handle_button_enable_broadcast_requires_input_and_method(widget_broadca
     assert widget_broadcast.broadcast_button.isEnabled()
 
 
+def test_send_asset_routes_by_purpose(widget_broadcast: BroadcastTransactionWidget, vm_mock):
+    """send_asset should route to specific handlers based on purpose in payload or selector data."""
+    vm = vm_mock.broadcast_transaction_view_model
+    # Accept confirmation
+    with patch('src.views.ui_broadcast_transaction.ConfirmationDialog') as dlg:
+        dlg.return_value.exec.return_value = QDialog.Accepted
+
+        # Explicit purpose: BTC
+        widget_broadcast.broadcast_transaction_input.setPlainText(
+            'psbt:send_btc:abc',
+        )
+        widget_broadcast.send_asset()
+        vm.send_btc_end.assert_called_once_with('abc')
+
+        # Explicit purpose: RGB asset
+        widget_broadcast.broadcast_transaction_input.setPlainText(
+            'psbt:send_asset:def',
+        )
+        widget_broadcast.send_asset()
+        vm.send_end.assert_called_once_with('def')
+
+        # No purpose provided: fall back to create_utxos_end when selector not populated
+        widget_broadcast.broadcast_transaction_input.setPlainText('psbt:ghi')
+        widget_broadcast.method_selector.hide()
+        widget_broadcast._psbt_signed_items = []  # ensure no derived purpose
+        widget_broadcast.send_asset()
+        vm.create_utxos_end.assert_called_once_with('ghi')
+
+
+def test_method_selector_visible_empty_allows_enable(widget_broadcast: BroadcastTransactionWidget):
+    """With current logic, a visible empty selector does not block enabling when input is valid."""
+    widget_broadcast.min_psbt_len = 1
+    widget_broadcast.broadcast_transaction_input.setPlainText('x')
+    widget_broadcast.method_selector.show()
+    widget_broadcast.method_selector.clear()
+    widget_broadcast.handle_button_enable()
+    assert widget_broadcast.broadcast_button.isEnabled()
+
+    # Adding an option remains enabled
+    widget_broadcast.method_selector.addItem('opt')
+    widget_broadcast.handle_button_enable()
+    assert widget_broadcast.broadcast_button.isEnabled()
+
+
+def test_update_loading_state_calls_button_loading(widget_broadcast: BroadcastTransactionWidget, mocker):
+    """update_loading_state should call start/stop loading on the button and re-evaluate enablement."""
+    widget_broadcast.min_psbt_len = 1
+    widget_broadcast.broadcast_transaction_input.setPlainText('x')
+    start = mocker.patch.object(
+        widget_broadcast.broadcast_button, 'start_loading',
+    )
+    stop = mocker.patch.object(
+        widget_broadcast.broadcast_button, 'stop_loading',
+    )
+
+    widget_broadcast.update_loading_state(True)
+    start.assert_called_once()
+    assert not widget_broadcast.broadcast_button.isEnabled()
+
+    widget_broadcast.update_loading_state(False)
+    stop.assert_called_once()
+    assert widget_broadcast.broadcast_button.isEnabled()
+
+
+def test_sign_only_sets_rgb_mode_and_finalize(widget_sign: BroadcastTransactionWidget, vm_mock):
+    """In sign-only mode, RGB mode depends on purpose and sign_and_finalize_psbt is called."""
+    vm = vm_mock.broadcast_transaction_view_model
+    with patch('src.views.ui_broadcast_transaction.hardware_client_store') as hc, \
+            patch('src.views.ui_broadcast_transaction.ConfirmationDialog') as dlg:
+        dlg.return_value.exec.return_value = QDialog.Accepted
+
+        # RGB purpose -> set_rgb_mode(True)
+        widget_sign.broadcast_transaction_input.setPlainText(
+            'psbt:send_asset:AAA',
+        )
+        widget_sign.send_asset()
+        hc.set_rgb_mode.assert_called_with(True)
+        vm.sign_and_finalize_psbt.assert_called_with('AAA')
+
+        # BTC purpose -> set_rgb_mode(False)
+        widget_sign.broadcast_transaction_input.setPlainText(
+            'psbt:send_btc:BBB',
+        )
+        widget_sign.send_asset()
+        hc.set_rgb_mode.assert_called_with(False)
+
+
+def test_min_psbt_len_enforced(widget_broadcast: BroadcastTransactionWidget):
+    """Button stays disabled below threshold and enables at/over threshold."""
+    widget_broadcast.method_selector.hide()
+    widget_broadcast.min_psbt_len = 5
+
+    widget_broadcast.broadcast_transaction_input.setPlainText('1234')
+    widget_broadcast.handle_button_enable()
+    assert not widget_broadcast.broadcast_button.isEnabled()
+
+    widget_broadcast.broadcast_transaction_input.setPlainText('12345')
+    widget_broadcast.handle_button_enable()
+    assert widget_broadcast.broadcast_button.isEnabled()
+
+
 def test_update_loading_state_toggles_button(widget_broadcast: BroadcastTransactionWidget):
     """Loading state disables button; clearing loading re-evaluates enablement."""
+    # Accept short inputs for the test
+    widget_broadcast.min_psbt_len = 1
     widget_broadcast.broadcast_transaction_input.setPlainText('x')
     widget_broadcast.handle_button_enable()
     assert widget_broadcast.broadcast_button.isEnabled()
@@ -128,25 +233,6 @@ def test_send_asset_cancel_does_nothing(widget_broadcast: BroadcastTransactionWi
     assert not vm.create_utxos_end.called
 
 
-@pytest.mark.parametrize(
-    'payload,expected',
-    [
-        ('psbt:send_btc:abc', 'send_btc_end'),
-        ('psbt:send_asset:def', 'send_end'),
-        # Unknown purpose falls back to create_utxos_end
-        ('psbt:other:ghi', 'create_utxos_end'),
-    ],
-)
-def test_send_asset_routes_by_purpose(widget_broadcast: BroadcastTransactionWidget, vm_mock, payload, expected):
-    """Routes to correct VM method based on encoded `psbt:<purpose>:<psbt>`."""
-    vm = vm_mock.broadcast_transaction_view_model
-    with patch('src.views.ui_broadcast_transaction.ConfirmationDialog') as dlg:
-        dlg.return_value.exec.return_value = QDialog.Accepted
-        widget_broadcast.broadcast_transaction_input.setPlainText(payload)
-        widget_broadcast.send_asset()
-    getattr(vm, expected).assert_called_once()
-
-
 def test_send_asset_uses_selector_purpose_when_missing(widget_broadcast: BroadcastTransactionWidget, vm_mock):
     """If purpose is missing, derive it from selected signed PSBT item."""
     # When input is like `psbt:<psbt>` and there are signed items, use selected purpose
@@ -170,63 +256,17 @@ def test_send_asset_uses_selector_purpose_when_missing(widget_broadcast: Broadca
     vm.send_end.assert_called_once_with('XYZ')
 
 
-def test_on_click_close_button_navigates(widget_broadcast: BroadcastTransactionWidget, vm_mock):
-    """Navigates to the page mapped by the checked sidebar button."""
-    # Sidebar mock with a checked fungibles button
-    btn = MagicMock()
-    btn.isChecked.return_value = True
-    btn.get_translation_key.return_value = 'fungibles'
-
-    sidebar = MagicMock(
-        backup=MagicMock(isChecked=lambda: False),
-        help=MagicMock(isChecked=lambda: False),
-        view_unspent_list=MagicMock(isChecked=lambda: False),
-        faucet=MagicMock(isChecked=lambda: False),
-        my_fungibles=btn,
-        my_collectibles=MagicMock(isChecked=lambda: False),
-        settings=MagicMock(isChecked=lambda: False),
-        about=MagicMock(isChecked=lambda: False),
-        broadcast_transaction=MagicMock(isChecked=lambda: False),
-    )
-    vm_mock.page_navigation.sidebar.return_value = sidebar
-
-    widget_broadcast.on_click_close_button()
-    vm_mock.page_navigation.fungibles_asset_page.assert_called_once()
-
-
-def test_on_click_close_button_unknown_shows_toast(widget_broadcast: BroadcastTransactionWidget, vm_mock):
-    """If no sidebar button is checked, an error toast is shown."""
-    # No button checked => show toast error
-    off = MagicMock(isChecked=lambda: False)
-    sidebar = MagicMock(
-        backup=off,
-        help=off,
-        view_unspent_list=off,
-        faucet=off,
-        my_fungibles=off,
-        my_collectibles=off,
-        settings=off,
-        about=off,
-        broadcast_transaction=off,
-    )
-    vm_mock.page_navigation.sidebar.return_value = sidebar
-
-    with patch('src.views.ui_broadcast_transaction.ToastManager.show_toast') as st:
-        widget_broadcast.on_click_close_button()
-        st.assert_called()
-
-
 def test_load_psbts_for_broadcast_zero_one_many(widget_broadcast: BroadcastTransactionWidget):
     """PSBT loader (broadcast) hides selector for 0/1, shows for many and updates input."""
     # zero
-    with patch('src.views.ui_broadcast_transaction.WalletDataService.get_session') as get_sess:
+    with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_psbt=lambda _signed: [])
         widget_broadcast._load_psbts_for_broadcast()
         assert not widget_broadcast.method_selector.isVisible()
 
     # one
     one = [{'psbt': 'SIGNED1', 'purpose': 'send_btc', 'id': 'abc'}]
-    with patch('src.views.ui_broadcast_transaction.WalletDataService.get_session') as get_sess:
+    with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_psbt=lambda _signed: one)
         widget_broadcast._load_psbts_for_broadcast()
         assert not widget_broadcast.method_selector.isVisible()
@@ -237,7 +277,7 @@ def test_load_psbts_for_broadcast_zero_one_many(widget_broadcast: BroadcastTrans
         {'psbt': 'S1', 'purpose': 'send_btc', 'id': 'id1'},
         {'psbt': 'S2', 'purpose': 'send_asset', 'id': 'id2'},
     ]
-    with patch('src.views.ui_broadcast_transaction.WalletDataService.get_session') as get_sess:
+    with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_psbt=lambda _signed: many)
         widget_broadcast._load_psbts_for_broadcast()
         # Parent widget is not shown in tests, so use isHidden() which ignores parent visibility
@@ -250,14 +290,14 @@ def test_load_psbts_for_broadcast_zero_one_many(widget_broadcast: BroadcastTrans
 def test_load_psbts_for_signing_zero_one_many(widget_sign: BroadcastTransactionWidget):
     """PSBT loader (signing) hides selector for 0/1, shows for many and updates input."""
     # zero
-    with patch('src.views.ui_broadcast_transaction.WalletDataService.get_session') as get_sess:
+    with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_psbt=lambda _signed: [])
         widget_sign._load_psbts_for_signing()
         assert not widget_sign.method_selector.isVisible()
 
     # one
     one = [{'psbt': 'UNSIGNED1', 'purpose': 'psbt', 'id': 'xyz'}]
-    with patch('src.views.ui_broadcast_transaction.WalletDataService.get_session') as get_sess:
+    with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_psbt=lambda _signed: one)
         widget_sign._load_psbts_for_signing()
         assert not widget_sign.method_selector.isVisible()
@@ -268,7 +308,7 @@ def test_load_psbts_for_signing_zero_one_many(widget_sign: BroadcastTransactionW
         {'psbt': 'U1', 'purpose': 'psbt', 'id': 'id1'},
         {'psbt': 'U2', 'purpose': 'psbt', 'id': 'id2'},
     ]
-    with patch('src.views.ui_broadcast_transaction.WalletDataService.get_session') as get_sess:
+    with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_psbt=lambda _signed: many)
         widget_sign._load_psbts_for_signing()
         # Parent widget is not shown in tests, so use isHidden() which ignores parent visibility

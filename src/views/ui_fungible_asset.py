@@ -315,120 +315,35 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         )
 
     def create_fungible_card(self, asset, img_path=None):
-        """This method creates all the fungible assets elements of the main asset page."""
+        """Creates UI elements for a fungible asset card."""
         self.fungible_frame = ClickableFrame(
             asset.asset_id, asset.name, self.fungibles_widget, asset_type=AssetSchema.NIA,
         )
         self.fungible_frame.setStyleSheet(
             load_stylesheet('views/qss/fungible_asset_style.qss'),
         )
-
-        self.fungible_frame.setCursor(
-            QCursor(Qt.CursorShape.PointingHandCursor),
-        )
+        self.fungible_frame.setCursor(QCursor(Qt.PointingHandCursor))
         self.fungible_frame.setObjectName('frame_4')
         self.fungible_frame.setMinimumSize(QSize(900, 70))
         self.fungible_frame.setMaximumSize(QSize(16777215, 70))
-
         self.fungible_frame.setFrameShape(QFrame.StyledPanel)
         self.fungible_frame.setFrameShadow(QFrame.Raised)
+
         self.vertical_layout_fungible_frame = QVBoxLayout(self.fungible_frame)
-        self.vertical_layout_fungible_frame.setObjectName('vertical_layout_16')
         self.grid_layout_fungible_frame = QGridLayout()
-        self.grid_layout_fungible_frame.setObjectName(
-            'horizontal_layout_7',
-        )
         self.grid_layout_fungible_frame.setContentsMargins(6, 0, 6, 0)
-        self.asset_logo = QLabel(self.fungible_frame)
-        self.asset_logo.setObjectName('asset_logo')
 
-        self.asset_logo.setMinimumSize(QSize(40, 40))
-        self.asset_logo.setMaximumSize(QSize(40, 40))
-
-        if img_path:
-            self.asset_logo.setPixmap(QPixmap(img_path))
-
-        else:
-            img_str = generate_identicon(asset.asset_id)
-            image = QImage.fromData(QByteArray.fromBase64(img_str.encode()))
-            pixmap = QPixmap.fromImage(image)
-            self.asset_logo.setPixmap(pixmap)
-
-        self.grid_layout_fungible_frame.addWidget(self.asset_logo, 0, 0)
-
-        self.asset_name = QLabel(self.fungible_frame)
-        self.asset_name.setObjectName('asset_name')
-        self.asset_name.setMinimumSize(QSize(135, 40))
-        self.asset_name.setStyleSheet(
-            load_stylesheet(
-                'views/qss/fungible_asset_style.qss',
-            ),
-        )
-        self.asset_name.setText(asset.name)
-        self.grid_layout_fungible_frame.addWidget(self.asset_name, 0, 1)
-
-        self.address = QLabel(self.fungible_frame)
-        self.address.setObjectName('address')
-        self.address.setMinimumSize(QSize(600, 0))
-        self.address.setMaximumSize(QSize(16777215, 16777215))
-        self.address.setStyleSheet(
-            'padding-left:10px;',
-        )
-
-        if asset.asset_id is None:
-            network = SettingRepository.get_wallet_network()
-            if network == NetworkEnumModel.REGTEST:
-                self.address.setText(TokenSymbol.REGTEST_BITCOIN)
-            elif network == NetworkEnumModel.TESTNET:
-                self.address.setText(TokenSymbol.TESTNET_BITCOIN)
-        elif asset.asset_id == 'draft_asset':
-            self.address.setText('Click to continue issuance')
-        else:
-            self.address.setText(asset.asset_id)
-
-        self.grid_layout_fungible_frame.addWidget(
-            self.address, 0, 2, Qt.AlignLeft,
-        )
-
-        self.amount = QLabel(self.fungible_frame)
-        self.amount.setObjectName('amount')
-        self.amount.setMinimumSize(QSize(100, 40))
-
-        if asset.asset_id == 'draft_asset':
-            self.amount.setText('-')
-        else:
-            self.amount.setText(str(asset.balance.future))
-        self.grid_layout_fungible_frame.addWidget(
-            self.amount, 0, 3, Qt.AlignLeft,
-        )
-
-        self.token_symbol = QLabel(self.fungible_frame)
-        self.token_symbol.setObjectName('token_symbol')
-
-        self.token_symbol.setText(asset.ticker)
-        self.grid_layout_fungible_frame.addWidget(
-            self.token_symbol, 0, 5, Qt.AlignLeft,
-        )
+        self._set_asset_logo(asset, img_path)
+        self._set_asset_name(asset)
+        self._set_address(asset)
+        self._set_amount_and_symbol(asset)
 
         self.vertical_layout_fungible_frame.addLayout(
             self.grid_layout_fungible_frame,
         )
-
-        if 'BTC' in asset.ticker:
-            self.token_symbol.setText(TokenSymbol.SAT.value)
-            bitcoin_asset = AssetType.BITCOIN.value.lower()
-            if asset.ticker == TokenSymbol.BITCOIN.value:
-                self.asset_name.setText(bitcoin_asset)
-            if asset.ticker == TokenSymbol.TESTNET_BITCOIN.value:
-                self.asset_name.setText(
-                    f'{NetworkEnumModel.TESTNET.value} {bitcoin_asset}',
-                )
-            if asset.ticker == TokenSymbol.REGTEST_BITCOIN.value:
-                self.asset_name.setText(
-                    f'{NetworkEnumModel.REGTEST.value} {bitcoin_asset}',
-                )
-
         self.vertical_layout_3.addWidget(self.fungible_frame)
+
+        # Connect click handlers
         if asset.asset_id == 'draft_asset':
             draft_id = asset.draft_id
             self.fungible_frame.clicked.connect(
@@ -438,6 +353,89 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             )
         else:
             self.fungible_frame.clicked.connect(self.handle_asset_frame_click)
+
+    def _set_asset_logo(self, asset, img_path):
+        """Set the asset logo in the fungible card."""
+        self.asset_logo = QLabel(self.fungible_frame)
+        self.asset_logo.setObjectName('asset_logo')
+        self.asset_logo.setFixedSize(QSize(40, 40))
+
+        if img_path:
+            self.asset_logo.setPixmap(QPixmap(img_path))
+        else:
+            img_str = generate_identicon(asset.asset_id)
+            image = QImage.fromData(QByteArray.fromBase64(img_str.encode()))
+            self.asset_logo.setPixmap(QPixmap.fromImage(image))
+
+        self.grid_layout_fungible_frame.addWidget(self.asset_logo, 0, 0)
+
+    def _set_asset_name(self, asset):
+        """Set the asset name in the fungible card."""
+        self.asset_name = QLabel(self.fungible_frame)
+        self.asset_name.setObjectName('asset_name')
+        self.asset_name.setMinimumSize(QSize(135, 40))
+        self.asset_name.setStyleSheet(
+            load_stylesheet(
+                'views/qss/fungible_asset_style.qss',
+            ),
+        )
+
+        name = asset.name
+        if 'BTC' in asset.ticker:
+            bitcoin_asset = AssetType.BITCOIN.value.lower()
+            network_prefix = {
+                TokenSymbol.BITCOIN.value: '',
+                TokenSymbol.TESTNET_BITCOIN.value: f'{NetworkEnumModel.TESTNET.value} ',
+                TokenSymbol.REGTEST_BITCOIN.value: f'{NetworkEnumModel.REGTEST.value} ',
+            }.get(asset.ticker, '')
+            name = f'{network_prefix}{bitcoin_asset}'
+
+        self.asset_name.setText(name)
+        self.grid_layout_fungible_frame.addWidget(self.asset_name, 0, 1)
+
+    def _set_address(self, asset):
+        """Set the asset address in the fungible card."""
+        self.address = QLabel(self.fungible_frame)
+        self.address.setObjectName('address')
+        self.address.setMinimumSize(QSize(600, 0))
+        self.address.setStyleSheet('padding-left:10px;')
+
+        if asset.asset_id is None:
+            network = SettingRepository.get_wallet_network()
+            self.address.setText({
+                NetworkEnumModel.REGTEST: TokenSymbol.REGTEST_BITCOIN,
+                NetworkEnumModel.TESTNET: TokenSymbol.TESTNET_BITCOIN,
+            }.get(network, ''))
+        elif asset.asset_id == 'draft_asset':
+            self.address.setText('Click to continue issuance')
+        else:
+            self.address.setText(asset.asset_id)
+
+        self.grid_layout_fungible_frame.addWidget(
+            self.address, 0, 2, Qt.AlignLeft,
+        )
+
+    def _set_amount_and_symbol(self, asset):
+        """Set the asset amount and symbol in the fungible card."""
+        self.amount = QLabel(self.fungible_frame)
+        self.amount.setObjectName('amount')
+        self.amount.setMinimumSize(QSize(100, 40))
+        self.amount.setText(
+            '-' if asset.asset_id ==
+            'draft_asset' else str(asset.balance.future),
+        )
+        self.grid_layout_fungible_frame.addWidget(
+            self.amount, 0, 3, Qt.AlignLeft,
+        )
+
+        self.token_symbol = QLabel(self.fungible_frame)
+        self.token_symbol.setObjectName('token_symbol')
+        self.token_symbol.setText(
+            TokenSymbol.SAT.value if 'BTC' in asset.ticker else asset.ticker,
+        )
+        self.grid_layout_fungible_frame.addWidget(
+            self.token_symbol, 0, 5, Qt.AlignLeft,
+        )
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""

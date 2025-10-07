@@ -673,63 +673,43 @@ class USBSyncManager:
 
     def _calculate_wallet_checksum(self) -> str:
         """Calculate SHA256 checksum of all files in the wallet folder (excluding logs)."""
-        try:
-            folder = os.path.join(
-                app_paths.app_path, self.master_fingerprint,
-            )
-            if not os.path.exists(folder):
-                return hashlib.sha256(b'').hexdigest()
-
+        def update_hash_from_dir(base_dir: str, hasher) -> None:
+            """Update hash from directory."""
+            if not os.path.isdir(base_dir):
+                return
             files = []
-            for root, _, fs in os.walk(folder):
+            for root, _, fs in os.walk(base_dir):
                 for filename in fs:
-                    rel = os.path.relpath(os.path.join(root, filename), folder)
+                    rel = os.path.relpath(
+                        os.path.join(root, filename), base_dir,
+                    )
                     if not rel.startswith('log'):
                         files.append(rel)
-
             files.sort()
-            h = hashlib.sha256()
-
             for rel in files:
+                file_path = os.path.join(base_dir, rel)
                 try:
-                    with open(os.path.join(folder, rel), 'rb') as fh:
-                        while True:
-                            chunk = fh.read(4096)
-                            if not chunk:
-                                break
-                            h.update(chunk)
+                    with open(file_path, 'rb') as fh:
+                        while chunk := fh.read(4096):
+                            hasher.update(chunk)
                 except Exception as exc:
                     logger.warning(
                         'Could not read file for checksum: %s (%s)', rel, exc,
                     )
-                    h.update(rel.encode())
+                    hasher.update(rel.encode())
 
-            # Also include wallet-data folder under app path (excluding logs)
+        try:
+            h = hashlib.sha256()
+
+            # Wallet folder
+            wallet_dir = os.path.join(
+                app_paths.app_path, self.master_fingerprint,
+            )
+            update_hash_from_dir(wallet_dir, h)
+
+            # wallet-data folder
             wallet_data_dir = os.path.join(app_paths.app_path, 'wallet-data')
-            if os.path.isdir(wallet_data_dir):
-                wallet_files = []
-                for root, _, fs in os.walk(wallet_data_dir):
-                    for filename in fs:
-                        rel = os.path.relpath(
-                            os.path.join(
-                                root, filename,
-                            ), wallet_data_dir,
-                        )
-                        if not rel.startswith('log'):
-                            wallet_files.append(rel)
-                for rel in sorted(wallet_files):
-                    try:
-                        with open(os.path.join(wallet_data_dir, rel), 'rb') as fh:
-                            while True:
-                                chunk = fh.read(4096)
-                                if not chunk:
-                                    break
-                                h.update(chunk)
-                    except Exception as exc:
-                        logger.warning(
-                            'Could not read wallet-data file for checksum: %s (%s)', rel, exc,
-                        )
-                        h.update(rel.encode())
+            update_hash_from_dir(wallet_data_dir, h)
 
             return h.hexdigest()
         except Exception as exc:

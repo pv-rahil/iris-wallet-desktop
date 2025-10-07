@@ -2204,5 +2204,21 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>choose_number_of_signatures</source>
         <translation>Choose the number of signatures needed to unlock funds in your wallet</translation>
     </message>
+    <message>
+        <source>issue_new_ticker</source>
+        <translation>Issue new ticker</translation>
+    </message>
+    <message>
+        <source>you_are_all_set</source>
+        <translation>You’re all set!</translation>
+    </message>
+    <message>
+        <source>asset_issued</source>
+        <translation>Asset '{0}' has been issued successfully.</translation>
+    </message>
+    <message>
+        <source>home</source>
+        <translation>Home</translation>
+    </message>
 </context>
 </TS>

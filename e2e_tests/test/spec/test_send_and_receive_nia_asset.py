@@ -91,9 +91,12 @@ def test_send_and_receive_nia_asset_operation(wallets_and_operations: WalletTest
             NIA_ASSET_NAME,
         )
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
+    with allure.step('Send NIA asset'):
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
             wallets_and_operations.first_page_features.send_features.send(
-                application=FIRST_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, is_hardware_wallet=True, purpose='send_asset',
+                application=FIRST_APPLICATION,
+                receiver_invoice=invoice, amount=SEND_AMOUNT,
+                is_hardware_wallet=True, purpose='send_asset',
             )
         else:
             wallets_and_operations.first_page_features.send_features.send(
@@ -220,12 +223,15 @@ def test_send_and_receive_nia_asset_operation_for_offline_wallet(wallets_and_ope
             NIA_ASSET_NAME,
         )
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+    with allure.step('Create nia psbt for offline wallet'):
         wallets_and_operations.second_page_features.send_features.create_psbt(
             application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
         )
+    with allure.step('Sign nia psbt for offline wallet'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
         )
+    with allure.step('Broadcast nia psbt for offline wallet'):
         wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
             application=SECOND_APPLICATION,
         )

@@ -152,7 +152,7 @@ def test_rgb_invoice(mock_wallet, mock_cache):
     mock_cache.invalidate_cache.assert_called_once()
 
 
-@patch('src.data.repository.rgb_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 @patch('src.data.repository.rgb_repository.Recipient')
 def test_send_begin_with_session(mock_recipient_cls, mock_get_session, mock_wallet):
     """Test send_begin adds psbt to session with purpose and returns psbt."""
@@ -181,7 +181,7 @@ def test_send_begin_with_session(mock_recipient_cls, mock_get_session, mock_wall
     svc.add_psbt.assert_called_once_with(psbt, purpose='send_asset')
 
 
-@patch('src.data.repository.rgb_repository.WalletDataService.get_session')
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_send_end_with_session_and_cache(mock_get_session, mock_wallet, mock_cache):
     """Test send_end invalidates cache and deletes psbt in session."""
     send_result = MagicMock(spec=SendResult)

@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.selection_page_model import SelectionPageModel
 from src.views.components.selection_page import SelectionPage
@@ -27,13 +28,13 @@ def selection_page_widget(qtbot, monkeypatch):
     view_model = MagicMock()  # not used by widget logic
     widget = SelectionPage(
         view_model, SelectionPageModel(
-            title='Select Wallet',
-            logo_1_title=WalletType.ONLINE_TYPE_WALLET.value,
-            logo_1_path=':/icons/logo1.png',
-            logo_1_info='Info for option 1',
-            logo_2_title=WalletType.OFFLINE_TYPE_WALLET.value,
-            logo_2_path=':/icons/logo2.png',
-            logo_2_info='Info for option 2',
+            title='select_wallet_signature_type',
+            logo_1_title=WalletSignatureType.SINGLE_SIG.value,
+            logo_1_path=':/assets/online.png',
+            logo_1_info='single_sig_info',
+            logo_2_title=WalletSignatureType.MULTI_SIG.value,
+            logo_2_path=':/assets/offline.png',
+            logo_2_info='multi_sig_info',
             step_index=0,
         ),
     )
@@ -116,6 +117,9 @@ def test_on_click_frame_applies_stylesheet(selection_page_widget, mocker):
 def test_on_click_continue_sets_repository(selection_page_widget, mocker, sel, setter_name):
     """on_click_continue should invoke appropriate SettingRepository setter based on selection."""
     w = selection_page_widget
+    m_set_wallet_signature_type = mocker.patch(
+        'src.views.components.selection_page.SettingRepository.set_wallet_signature_type',
+    )
     m_set_wallet_type = mocker.patch(
         'src.views.components.selection_page.SettingRepository.set_wallet_type',
     )
@@ -133,6 +137,7 @@ def test_on_click_continue_sets_repository(selection_page_widget, mocker, sel, s
     w.on_click_continue()
 
     called_map = {
+        'set_wallet_signature_type': m_set_wallet_signature_type,
         'set_wallet_type': m_set_wallet_type,
         'set_wallet_access_type': m_set_wallet_access_type,
         'set_wallet_entry_type': m_set_wallet_entry_type,
@@ -150,12 +155,12 @@ def test_adjust_size_updates_dimensions(selection_page_widget):
     """adjust_size sets expected min/max sizes for key frames."""
     w = selection_page_widget
     w.adjust_size()
-    assert w.widget_page.minimumSize() == QSize(580, 450)
-    assert w.widget_page.maximumSize() == QSize(580, 560)
-    assert w.option_1_frame.minimumSize() == QSize(224, 204)
-    assert w.option_1_frame.maximumSize() == QSize(224, 204)
-    assert w.option_2_frame.minimumSize() == QSize(224, 204)
-    assert w.option_2_frame.maximumSize() == QSize(224, 204)
+    assert w.widget_page.minimumSize() == QSize(900, 420)
+    assert w.widget_page.maximumSize() == QSize(900, 620)
+    assert w.option_1_frame.minimumSize() == QSize(360, 220)
+    assert w.option_1_frame.maximumSize() == QSize(360, 220)
+    assert w.option_2_frame.minimumSize() == QSize(360, 220)
+    assert w.option_2_frame.maximumSize() == QSize(360, 220)
 
 
 def test_reset_selection_restores_default(selection_page_widget, qtbot):

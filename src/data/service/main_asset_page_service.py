@@ -47,8 +47,10 @@ class MainAssetPageDataService:
 
             asset_detail: GetAssetResponseModel = RgbRepository.get_assets(
                 FilterAssetRequestModel(
-                    filter_asset_schemas=[AssetSchema.NIA,
-                                          AssetSchema.CFA, AssetSchema.UDA],
+                    filter_asset_schemas=[
+                        AssetSchema.NIA,
+                        AssetSchema.CFA, AssetSchema.UDA,
+                    ],
                 ),
             )
 
@@ -56,9 +58,11 @@ class MainAssetPageDataService:
 
             stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
             btc_ticker = main_asset_page_helper.get_offline_asset_ticker(
-                network=stored_network)
+                network=stored_network,
+            )
             btc_name = main_asset_page_helper.get_asset_name(
-                network=stored_network)
+                network=stored_network,
+            )
 
             return MainPageDataResponseModel(
                 nia=asset_detail.nia or [],
@@ -101,8 +105,10 @@ class MainAssetPageDataService:
         Args:
             refresh_data (dict): The refresh data.
         """
-        failures_only = {k: v for k, v in refresh_data.items()
-                         if v.failure is not None}
+        failures_only = {
+            k: v for k, v in refresh_data.items()
+            if v.failure is not None
+        }
         if not failures_only:
             return
 
@@ -111,10 +117,14 @@ class MainAssetPageDataService:
 
         for failed_id, failed_entry in failures_only.items():
             found_asset_id = self.find_asset_for_failed_transfer(
-                failed_id, all_assets)
+                failed_id, all_assets,
+            )
             if found_asset_id and failed_entry.failure:
-                items.append(RefreshFailureItem(
-                    asset_id=found_asset_id, failure=failed_entry.failure))
+                items.append(
+                    RefreshFailureItem(
+                        asset_id=found_asset_id, failure=failed_entry.failure,
+                    ),
+                )
 
         if items:
             PageNavigationEventManager.get_instance(
@@ -129,8 +139,10 @@ class MainAssetPageDataService:
         """
         asset_detail = RgbRepository.get_assets(
             FilterAssetRequestModel(
-                filter_asset_schemas=[AssetSchema.NIA,
-                                      AssetSchema.CFA, AssetSchema.UDA],
+                filter_asset_schemas=[
+                    AssetSchema.NIA,
+                    AssetSchema.CFA, AssetSchema.UDA,
+                ],
             ),
         )
         return (asset_detail.nia or []) + (asset_detail.cfa or []) + (asset_detail.uda or [])
@@ -151,7 +163,8 @@ class MainAssetPageDataService:
                 continue
             try:
                 transfers = RgbRepository.list_transfers(
-                    ListTransfersRequestModel(asset_id=a.asset_id))
+                    ListTransfersRequestModel(asset_id=a.asset_id),
+                )
                 if any(int(t.idx) == int(failed_id) for t in transfers if t.idx is not None):
                     return a.asset_id
             except Exception:
@@ -176,10 +189,19 @@ class MainAssetPageDataService:
         def has_non_zero(asset):
             return asset is not None and not asset.balance.future == 0
 
-        asset_detail.nia = [a for a in (
-            asset_detail.nia or []) if has_non_zero(a)]
-        asset_detail.cfa = [a for a in (
-            asset_detail.cfa or []) if has_non_zero(a)]
-        asset_detail.uda = [a for a in (
-            asset_detail.uda or []) if has_non_zero(a)]
+        asset_detail.nia = [
+            a for a in (
+                asset_detail.nia or []
+            ) if has_non_zero(a)
+        ]
+        asset_detail.cfa = [
+            a for a in (
+                asset_detail.cfa or []
+            ) if has_non_zero(a)
+        ]
+        asset_detail.uda = [
+            a for a in (
+                asset_detail.uda or []
+            ) if has_non_zero(a)
+        ]
         return asset_detail

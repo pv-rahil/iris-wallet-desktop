@@ -184,7 +184,7 @@ def test_show_asset_issued_deletes_draft_when_from_draft(issue_cfa_widget: Issue
     with patch.object(widget.render_timer, 'stop', new=MagicMock()) as mock_stop:
         svc = MagicMock()
         mocker.patch(
-            'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
         widget._view_model.page_navigation.show_success_page = MagicMock()
 
@@ -201,7 +201,7 @@ def test_handle_cfa_hw_dialog_update_shows_dialog(issue_cfa_widget: IssueCFAWidg
     dlg = MagicMock()
     dlg.isVisible.return_value = False
     mocker.patch(
-        'src.views.ui_issue_cfa.HardwareWalletOperationDialog', return_value=dlg,
+        'src.views.ui_issue_cfa.HardwareWalletOperationDialog.get_instance', return_value=dlg,
     )
 
     widget.handle_cfa_hw_dialog_update('msg', MagicMock())
@@ -217,10 +217,10 @@ def test_handle_cfa_utxo_created_accepts_and_calls_issue(issue_cfa_widget: Issue
     dlg.isVisible.return_value = True
     with patch.object(widget, 'on_issue_cfa', new=MagicMock()):
         mocker.patch(
-            'src.views.ui_issue_cfa.HardwareWalletOperationDialog', return_value=dlg,
+            'src.views.ui_issue_cfa.HardwareWalletOperationDialog.get_instance', return_value=dlg,
         )
 
-    widget.handle_cfa_utxo_created(True)
+        widget.handle_cfa_utxo_created(True)
 
     dlg.accept.assert_called_once()
 
@@ -231,7 +231,7 @@ def test_handle_cfa_issue_reuse_existing_psbt(issue_cfa_widget: IssueCFAWidget, 
     svc = MagicMock()
     svc.list_psbt.return_value = [{'purpose': 'issue_asset', 'psbt': 'abc'}]
     mocker.patch(
-        'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
     with patch.object(widget, 'show_cfa_psbt_page', new=MagicMock()) as mock_show:
         widget.handle_cfa_issue()
@@ -245,7 +245,7 @@ def test_handle_cfa_issue_create_utxos_when_no_psbt(issue_cfa_widget: IssueCFAWi
     svc.list_psbt.return_value = []
     with patch.object(widget._view_model.utxo_creation_view_model, 'create_utxos_begin', new=MagicMock()):
         mocker.patch(
-            'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
 
         widget.handle_cfa_issue()
@@ -260,7 +260,7 @@ def test_create_issue_cfa_draft_success_and_exception(issue_cfa_widget: IssueCFA
     svc = MagicMock()
     with patch.object(widget._view_model.utxo_creation_view_model, 'create_utxos_begin', new=MagicMock()):
         mocker.patch(
-            'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
 
     widget.create_issue_cfa_draft('N', 'TICK', '10', '/tmp/x')
@@ -279,7 +279,7 @@ def test_load_cfa_draft_data_paths(issue_cfa_widget: IssueCFAWidget, mocker):
 
     # wallet_service is None branch
     mocker.patch(
-        'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=None,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=None,
     )
     widget._load_cfa_draft_data()  # should early return without error
 
@@ -288,7 +288,7 @@ def test_load_cfa_draft_data_paths(issue_cfa_widget: IssueCFAWidget, mocker):
     svc = MagicMock()
     svc.list_draft_issue_assets.return_value = [{'id': 1}]
     mocker.patch(
-        'src.views.ui_issue_cfa.WalletDataService.get_session', return_value=svc,
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
     widget._load_cfa_draft_data()  # early return
 

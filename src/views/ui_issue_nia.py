@@ -461,15 +461,23 @@ class IssueNIAWidget(QWidget):
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.delete_draft_issue_asset(self.draft_id)
-        header = 'Issue new ticker'
-        title = 'You’re all set!'
-        description = f"Asset '{asset_name}' has been issued successfully."
-        button_text = 'Home'
+        nia_header = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_new_ticker',
+        )
+        nia_title = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'you_are_all_set',
+        )
+        nia_description = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_issued',
+        ).format(asset_name)
+        nia_button_text = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'home',
+        )
         params = SuccessPageModel(
-            header=header,
-            title=title,
-            description=description,
-            button_text=button_text,
+            header=nia_header,
+            title=nia_title,
+            description=nia_description,
+            button_text=nia_button_text,
             callback=self._view_model.page_navigation.fungibles_asset_page,
         )
         self.render_timer.stop()
