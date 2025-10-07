@@ -89,7 +89,7 @@ class MultisigSetupPage(QWidget):
         self.close_btn.setFixedSize(32, 32)
         self.close_btn.setIcon(QIcon(':/assets/x_circle.png'))
         self.close_btn.setIconSize(QSize(24, 24))
-        self.close_btn.clicked.connect(self._handle_close)
+        self.close_btn.clicked.connect(self._view_model.page_navigation.selection_page)
         title_layout.addWidget(self.close_btn)
         self.v.addLayout(title_layout)
         # Close button is visible on Step 1 only (hide it on other steps)
@@ -138,9 +138,9 @@ class MultisigSetupPage(QWidget):
         n_block = QVBoxLayout()
         n_block.setContentsMargins(0, 0, 0, 0)
         n_block.setSpacing(10)
-        tot_lbl = QLabel('Total Cosigners')
-        tot_lbl.setObjectName('ms_label')
-        n_block.addWidget(tot_lbl)
+        self.tot_lbl = QLabel()
+        self.tot_lbl.setObjectName('ms_label')
+        n_block.addWidget(self.tot_lbl)
         self.n_input = QLineEdit()
         self.n_input.setObjectName('ms_input')
         self.n_input.setText('2')
@@ -258,12 +258,19 @@ class MultisigSetupPage(QWidget):
         # Reduce top margin so button sits closer to content
         self.footer.setContentsMargins(0, 4, 35, 12)
         # Back button (hidden on step 1) — match PrimaryButton styling
+        # Validation error label (shown to the left of buttons)
+        self.validation_error = QLabel()
+        self.validation_error.setObjectName('ms_error')
+        self.validation_error.setWordWrap(True)
+        self.validation_error.hide()
         self.back_button = PrimaryButton()
         self.back_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.back_button.setFixedSize(QSize(100, 40))
         self.back_button.clicked.connect(self._go_back)
         # Place buttons on the right with Back to the left of Continue
         self.footer.addStretch()
+        self.footer.addWidget(self.validation_error)
+        self.footer.addSpacing(12)
         self.footer.addWidget(self.back_button)
         self.footer.addSpacing(12)
         # Continue functions as Next on step 1 and Continue on step 2
@@ -291,31 +298,53 @@ class MultisigSetupPage(QWidget):
         # React to threshold changes
         self.m_input.textChanged.connect(self._update_summary)
         self.n_input.textChanged.connect(self._update_summary)
+        # Also update validation state live on edits
+        self.m_input.textChanged.connect(self._update_continue_enabled)
+        self.n_input.textChanged.connect(self._update_continue_enabled)
 
     def retranslate_ui(self):
         """Set or refresh all translatable UI strings."""
         # Title
-        self.title.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title'
-            ))
-        self.back_button.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'back'
-            ))
-        self.n_help.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_help'
-            ))
-        self.req_lbl.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'required_signatures_label'
-            ))
-        self.info_title.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configure_signature_requirements'
-            ))
-        self.info_sub.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures'
-            ))
-        self.continue_button.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'
-            ))
+        self.title.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title',
+            ),
+        )
+        self.back_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'back',
+            ),
+        )
+        self.n_help.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_help',
+            ),
+        )
+        self.req_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'required_signatures_label',
+            ),
+        )
+        self.info_title.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configure_signature_requirements',
+            ),
+        )
+        self.info_sub.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures',
+            ),
+        )
+        self.continue_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+            ),
+        )
+        self.tot_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_label',
+            ),
+        )
 
     def _on_confirm_threshold(self):
         """Lock threshold and create exact N cosigner fields."""
@@ -569,69 +598,77 @@ class MultisigSetupPage(QWidget):
 
 
     def _update_continue_enabled(self):
-        # # Step 1: Enable Next if M/N are valid
-        # if self._current_step == 1:
-        #     n = self._get_n()
-        #     m = self._get_m()
-        #     valid = (1 <= m <= n) and (n >= 2)
-        #     self.continue_button.setEnabled(valid)
-        #     self.continue_button.setToolTip('' if valid else 'Enter valid M and N (M ≤ N, N ≥ 2)')
-        #     return
+        """
+        Enable continue button if M/N are valid
+        """
+        # Step 1: Enable Next if M/N are valid
+        if self._current_step == 1:
+            n = self._get_n()
+            m = self._get_m()
+            # Enforce 2 ≤ M ≤ N ≤ 15
+            valid = (2 <= n <= 15) and (2 <= m <= n)
+            self.continue_button.setEnabled(valid)
+            # Update error label instead of tooltip
+            if valid:
+                self.validation_error.clear()
+                self.validation_error.hide()
+            else:
+                self.validation_error.setText('Enter valid M and N (2 ≤ M ≤ N ≤ 15)')
+                self.validation_error.show()
+            return
 
-        # # Step 2: Enable Continue only when all cosigner rows are valid
-        # n = self._get_n()
-        # n_rows = len(self._cosigner_rows)
-        # all_filled = True
-        # all_valid = True
-        # any_duplicates = False
-        # seen = set()
-        # for (_w, _l, le, err) in self._cosigner_rows:
-        #     txt = le.text().strip()
-        #     ok = self._is_valid_xpub(txt)
-        #     all_filled &= (txt != '')
-        #     all_valid &= ok
-        #     dup = False
-        #     if txt:
-        #         if txt in seen:
-        #             any_duplicates = True
-        #             dup = True
-        #         else:
-        #             seen.add(txt)
-        #     if err:
-        #         # Prefer duplicate message if applicable
-        #         if (txt != '') and dup:
-        #             err.setText('Duplicate cosigner detected')
-        #             err.show()
-        #         else:
-        #             err.setText('Please include [fingerprint/derivation_path] and xpub')
-        #             err.setVisible((txt != '') and not ok)
+        # Step 2: Enable Continue only when all cosigner rows are valid
+        n = self._get_n()
+        n_rows = len(self.cosigner_rows)
+        all_filled = True
+        all_valid = True
+        any_duplicates = False
+        seen = set()
+        # Stored rows are tuples: (row_widget, cos_label, xpub_input)
+        for (_row_w, _cos_label, xpub_input) in self.cosigner_rows:
+            txt = xpub_input.text().strip()
+            ok = self._is_valid_xpub(txt)
+            all_filled &= (txt != '')
+            all_valid &= ok
+            dup = False
+            if txt:
+                if txt in seen:
+                    any_duplicates = True
+                    dup = True
+                else:
+                    seen.add(txt)
 
-        # enable = all_filled and all_valid and not any_duplicates and (n_rows == n)
-        # self.continue_button.setEnabled(enable)
-        # # Give quick reason if disabled
-        # reason = ''
-        # if not enable:
-        #     if any_duplicates:
-        #         reason = 'Remove duplicate cosigner entries'
-        #     elif not all_filled:
-        #         reason = 'Fill all cosigner xpubs'
-        #     elif not all_valid:
-        #         reason = 'One or more xpubs look invalid'
-        # self.continue_button.setToolTip(reason)
-        self.continue_button.setEnabled(True)
+        enable = all_filled and all_valid and not any_duplicates and (n_rows == n)
+        self.continue_button.setEnabled(enable)
+        # Give quick reason if disabled
+        reason = ''
+        if not enable:
+            if any_duplicates:
+                reason = 'Remove duplicate cosigner entries'
+            elif not all_filled:
+                reason = 'Fill all cosigner xpubs'
+            elif not all_valid:
+                reason = 'One or more xpubs look invalid'
+        # Show or hide the error label accordingly
+        if reason:
+            self.validation_error.setText(reason)
+            self.validation_error.show()
+        else:
+            self.validation_error.clear()
+            self.validation_error.hide()
+        # self.continue_button.setEnabled(True)
 
     def _on_xpub_changed(self):
+        """
+        Update continue button and summary on xpub change
+        """
         self._update_continue_enabled()
         self._update_summary()
 
-    def _handle_close(self):
-        # Return to breadcrumb/selection page
-        try:
-            self._view_model.page_navigation.selection_page()
-        except Exception:
-            pass
-
     def _is_valid_xpub(self, s: str) -> bool:
+        """
+        Check if xpub is valid
+        """
         if not s:
             return False
         # Very relaxed: must contain bracketed section and end token containing 'pub'
@@ -640,22 +677,32 @@ class MultisigSetupPage(QWidget):
         return has_brackets and has_pub
 
     def _update_summary(self):
+        """
+        Update summary text and validators
+        """
         n = self._get_n()
         m = self._get_m()
-        # Clamp and update M validator range based on N (min 1, max N)
-        max_m = n if n >= 1 else 1
-        self.m_input.setValidator(QIntValidator(1, max_m, self))
-        # Update helper text to reflect range
-        self.m_help.setText(QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT,
-            'minimum_signatures_needed',
-        ).format(max_m))
-        # Update summary label
+        # Keep N clamped to 2–15
+        self.n_input.setValidator(QIntValidator(2, 15, self))
+        # Clamp M to 2–min(N,15)
+        max_m = max(2, min(n, 15))
+        self.m_input.setValidator(QIntValidator(2, max_m, self))
+        
+        # Update helper text and summary as before
+        self.m_help.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'minimum_signatures_needed',
+            ).format(max_m),
+        )
+
         m_disp = m if m >= 1 else 0
         n_disp = n if n >= 1 else 0
         if self.summary_text is not None:
-            self.summary_text.setText(QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'configuration_note',
-            ).format(m_disp, n_disp))
+            self.summary_text.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'configuration_note',
+                ).format(m_disp, n_disp),
+            )
 

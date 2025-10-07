@@ -2204,5 +2204,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>choose_number_of_signatures</source>
         <translation>Choose the number of signatures needed to unlock funds in your wallet</translation>
     </message>
+    <message>
+        <source>total_cosigners_label</source>
+        <translation>Total Cosigners</translation>
+    </message>
 </context>
 </TS>
