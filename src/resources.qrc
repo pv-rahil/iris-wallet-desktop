@@ -80,5 +80,9 @@
     <file>assets/success.png</file>
     <file>assets/sync.png</file>
     <file>assets/channel_management.png</file>
+    <file>assets/white_single_sig_wallet.png</file>
+    <file>assets/white_multi_sig_wallet.png</file>
+    <file>assets/single_sig_wallet.png</file>
+    <file>assets/multi_sig_wallet.png</file>
   </qresource>
 </RCC>

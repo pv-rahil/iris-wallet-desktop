@@ -30,10 +30,10 @@ def selection_page_widget(qtbot, monkeypatch):
         view_model, SelectionPageModel(
             title='select_wallet_signature_type',
             logo_1_title=WalletSignatureType.SINGLE_SIG.value,
-            logo_1_path=':/assets/online.png',
+            logo_1_path=':/assets/single_sig_wallet.png',
             logo_1_info='single_sig_info',
             logo_2_title=WalletSignatureType.MULTI_SIG.value,
-            logo_2_path=':/assets/offline.png',
+            logo_2_path=':/assets/multi_sig_wallet.png',
             logo_2_info='multi_sig_info',
             step_index=0,
         ),
