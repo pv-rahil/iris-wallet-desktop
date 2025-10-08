@@ -49,7 +49,8 @@ class Sidebar(QWidget):
         priv = config.privileges
         # Determine signature type to arrange buttons accordingly
         is_multisig = (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
         )
         self.setObjectName('sidebar')
         self.setMinimumSize(QSize(360, 720))
@@ -253,7 +254,8 @@ class Sidebar(QWidget):
         """Retranslate the UI elements."""
         self.network = SettingRepository.get_wallet_network().value
         is_multisig = (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
         )
         if self.network == NetworkEnumModel.MAINNET.value:
             self.iris_wallet_text.setText(
@@ -326,7 +328,8 @@ class Sidebar(QWidget):
         """
         priv = config.privileges
         is_multisig = (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
         )
         self.backup.setVisible(priv.can_backup_wallet)
         # In multisig, grid slot becomes Sign PSBT; bottom sign button hidden

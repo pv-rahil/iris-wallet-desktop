@@ -402,7 +402,7 @@ class SettingRepository:
 
     @staticmethod
     def set_wallet_signature_type(signature_type: WalletSignatureType) -> bool:
-        """Set the wallet signature type (single-sig or multi-sig)."""
+        """Set the wallet signature type (standard or multi-sig)."""
         try:
             local_store.set_value(
                 'wallet_signature_type',
@@ -416,7 +416,7 @@ class SettingRepository:
 
     @staticmethod
     def get_wallet_signature_type() -> WalletSignatureType | None:
-        """Get the wallet signature type (single-sig or multi-sig)."""
+        """Get the wallet signature type (standard or multi-sig)."""
         try:
             value = local_store.get_value('wallet_signature_type')
             return WalletSignatureType(value) if value else None

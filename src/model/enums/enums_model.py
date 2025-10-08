@@ -57,8 +57,8 @@ class WalletType(str, Enum):
 
 class WalletSignatureType(str, Enum):
     """Enum for wallet signature configuration"""
-    SINGLE_SIG = 'Single-sig'
-    MULTI_SIG = 'Multi-sig'
+    STANDARD_TYPE_WALLET = 'Standard'
+    MULTI_SIG_WALLET = 'Multi-sig'
 
 
 class WalletAccessType(str, Enum):

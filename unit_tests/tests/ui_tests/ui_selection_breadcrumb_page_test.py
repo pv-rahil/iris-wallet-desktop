@@ -39,8 +39,8 @@ def widget(qt_app, vm):
 
 def test_offline_flow_skips_security_step(widget: SelectionBreadcrumbWidget):
     """Offline wallet type should skip security step and jump to entry type."""
-    # Step 0: select signature type (default to single-sig)
-    widget.steps[0]['widget'].selected_frame = WalletSignatureType.SINGLE_SIG.value
+    # Step 0: select signature type (default to standard)
+    widget.steps[0]['widget'].selected_frame = WalletSignatureType.STANDARD_TYPE_WALLET.value
     widget.handle_continue(0)
     # Step 1: choose offline wallet mode -> should jump to entry type (index 3)
     widget.steps[1]['widget'].selected_frame = WalletType.OFFLINE_TYPE_WALLET.value
@@ -53,8 +53,8 @@ def test_offline_flow_skips_security_step(widget: SelectionBreadcrumbWidget):
 @patch('src.views.ui_selection_breadcrumb_page.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
 def test_online_flow_final_navigates_hw_connect(_gk, _ge, _dlg, widget: SelectionBreadcrumbWidget, vm):
     """Online + with private key + create + hardware wallet should navigate to HW connect."""
-    # Step 0: choose single-sig
-    widget.steps[0]['widget'].selected_frame = WalletSignatureType.SINGLE_SIG.value
+    # Step 0: choose standard
+    widget.steps[0]['widget'].selected_frame = WalletSignatureType.STANDARD_TYPE_WALLET.value
     widget.handle_continue(0)
     # Step 1: online
     widget.steps[1]['widget'].selected_frame = WalletType.ONLINE_TYPE_WALLET.value
@@ -74,8 +74,8 @@ def test_online_flow_final_navigates_hw_connect(_gk, _ge, _dlg, widget: Selectio
 @patch('src.views.ui_selection_breadcrumb_page.WalletModeSummaryDialog.exec', return_value=1)
 def test_watch_only_flow_routes_to_welcome(_dlg, widget: SelectionBreadcrumbWidget, vm):
     """Watch-only selection should route to welcome page after dialog."""
-    # Step 0: single-sig
-    widget.steps[0]['widget'].selected_frame = WalletSignatureType.SINGLE_SIG.value
+    # Step 0: standard
+    widget.steps[0]['widget'].selected_frame = WalletSignatureType.STANDARD_TYPE_WALLET.value
     widget.handle_continue(0)
     # Step 1: online
     widget.steps[1]['widget'].selected_frame = WalletType.ONLINE_TYPE_WALLET.value

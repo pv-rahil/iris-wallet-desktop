@@ -2125,8 +2125,8 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Select wallet signature type</translation>
     </message>
     <message>
-        <source>single_sig_info</source>
-        <translation>Single-key wallet. Easiest setup and fastest to use. Best for individual control.</translation>
+        <source>standard_wallet_info</source>
+        <translation>Standard wallet. Easiest setup and fastest to use. Best for individual control.</translation>
     </message>
     <message>
         <source>multi_sig_info</source>

@@ -31,7 +31,7 @@ class WalletModeConfiguration:
         """
         # Determine if current flow is multisig to tweak capabilities
         is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         # Online Watch Only
         if (
             wallet_type == WalletType.ONLINE_TYPE_WALLET and

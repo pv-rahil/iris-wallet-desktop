@@ -78,7 +78,7 @@ def about_widget(mock_about_view_model, qtbot, mocker):
         )
         mocker.patch(
             'src.data.repository.setting_repository.SettingRepository.get_wallet_signature_type',
-            return_value=WalletSignatureType.SINGLE_SIG,
+            return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
         )
         mocker.patch(
             'src.data.repository.setting_repository.SettingRepository.get_key_storage_type',

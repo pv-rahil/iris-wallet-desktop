@@ -50,16 +50,16 @@ class SelectionBreadcrumbWidget(QWidget):
         self.steps = [
             {
                 'logo': ':/assets/online.png',
-                'title': 'single_sig',
+                'title': 'standard_type_wallet',
                 'widget': SelectionPage(
                     view_model=self._view_model,
                     params=SelectionPageModel(
                         title='select_wallet_signature_type',
-                        logo_1_path=':/assets/single_sig_wallet.png',
-                        logo_1_title=WalletSignatureType.SINGLE_SIG.value,
-                        logo_1_info='single_sig_info',
+                        logo_1_path=':/assets/standard_wallet.png',
+                        logo_1_title=WalletSignatureType.STANDARD_TYPE_WALLET.value,
+                        logo_1_info='standard_wallet_info',
                         logo_2_path=':/assets/multi_sig_wallet.png',
-                        logo_2_title=WalletSignatureType.MULTI_SIG.value,
+                        logo_2_title=WalletSignatureType.MULTI_SIG_WALLET.value,
                         logo_2_info='multi_sig_info',
                     ),
                 ),
@@ -377,13 +377,13 @@ class SelectionBreadcrumbWidget(QWidget):
 
     def _handle_step_0_signature_type(self, title, idx):
         """Handle signature type selection (step 0)."""
-        if title == WalletSignatureType.SINGLE_SIG.value:
+        if title == WalletSignatureType.STANDARD_TYPE_WALLET.value:
             SettingRepository.set_wallet_signature_type(
-                WalletSignatureType.SINGLE_SIG,
+                WalletSignatureType.STANDARD_TYPE_WALLET,
             )
         else:
             SettingRepository.set_wallet_signature_type(
-                WalletSignatureType.MULTI_SIG,
+                WalletSignatureType.MULTI_SIG_WALLET,
             )
 
         self.current_index = idx + 1
@@ -436,12 +436,12 @@ class SelectionBreadcrumbWidget(QWidget):
         entry_type = SettingRepository.get_wallet_entry_type()
         # If Multi-sig was selected at the first step, navigate to a dedicated page
         is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         if is_multisig and entry_type == WalletEntryType.CREATE:
             self._view_model.page_navigation.multisig_setup_page()
             return
 
-        # Default flow (Single-sig): show wallet summary dialog
+        # Default flow (standard): show wallet summary dialog
         self.update_breadcrumbs()
 
         # Apply initial blur for the summary dialog
@@ -475,7 +475,7 @@ class SelectionBreadcrumbWidget(QWidget):
         Handles blur effect and navigation to welcome page if completed.
         """
         is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         if is_multisig:
             self._view_model.page_navigation.multisig_setup_page()
             return

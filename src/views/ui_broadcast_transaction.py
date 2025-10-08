@@ -74,7 +74,7 @@ class BroadcastTransactionWidget(QWidget):
         config = get_current_wallet_mode_config()
         self.priv = config.privileges
         self.is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         # Minimum characters to consider PSBT input valid for enabling Sign button
         self.min_psbt_len = 80
 
