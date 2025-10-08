@@ -419,8 +419,6 @@ class BroadcastTransactionWidget(QWidget):
             self.handle_nia_hw_dialog,
         )
         if self.is_multisig:
-            # self._view_model.broadcast_transaction_view_model.signature_count_ready.connect(self._on_signature_count_ready)
-            # self._view_model.broadcast_transaction_view_model.combined_psbt_ready.connect(self._on_combined_psbt_ready)
             self.btn_import.clicked.connect(self._on_import_psbt)
             self.btn_export.clicked.connect(self._on_export_psbt)
             self.btn_combine.clicked.connect(self._on_combine_psbts)
@@ -600,8 +598,7 @@ class BroadcastTransactionWidget(QWidget):
             self.btn_export.setVisible(False)
             self.btn_combine.setVisible(False)
             return
-        # self._view_model.broadcast_transaction_view_model.analyze_signature_count(current_psbt)
-        self._on_signature_count_ready(0)
+        self._on_signature_count_ready(1)
 
     def _on_signature_count_ready(self, count: int):
         _, total = SettingRepository.get_multisig_config()
@@ -697,9 +694,6 @@ class BroadcastTransactionWidget(QWidget):
             with open(file_path, 'rb') as f:
                 raw = f.read()
                 _ = base64.b64encode(raw).decode('ascii').strip()
-
-            # Combine base and other PSBTs (uncomment when view_model is ready)
-            # self._view_model.broadcast_transaction_view_model.combine_psbts([base_psbt, other])
 
         except Exception as e:
             ToastManager.show_toast(

@@ -28,10 +28,8 @@ from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
 from accessible_constant import ISSUE_NIA_ASSET
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
-from src.model.enums.enums_model import AssetType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import TokenSymbol
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DraftAsset

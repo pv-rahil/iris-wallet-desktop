@@ -101,7 +101,9 @@ class MultisigSetupPage(QWidget):
         self.close_btn.setFixedSize(32, 32)
         self.close_btn.setIcon(QIcon(':/assets/x_circle.png'))
         self.close_btn.setIconSize(QSize(24, 24))
-        self.close_btn.clicked.connect(self._view_model.page_navigation.selection_page)
+        self.close_btn.clicked.connect(
+            self._view_model.page_navigation.selection_page,
+        )
         title_layout.addWidget(self.close_btn)
         self.v.addLayout(title_layout)
         # Close button is visible on Step 1 only (hide it on other steps)
@@ -538,12 +540,6 @@ class MultisigSetupPage(QWidget):
             lambda le=xpub: le.setText(le.text().strip()),
         )
 
-        # Error label (kept for future validation)
-        # err = QLabel('Please include [fingerprint/derivation_path] and xpub')
-        # err.setObjectName('ms_error')
-        # err.hide()
-        # row_v.addWidget(err)
-
         # Insert before the stretch at the end
         self.cosigners_v.insertWidget(self.cosigners_v.count() - 1, row_w)
         # Store references on the row for later width adjustments
@@ -631,62 +627,7 @@ class MultisigSetupPage(QWidget):
         """
         Enable continue button if M/N are valid
         """
-        # Step 1: Enable Next if M/N are valid
-        if self._current_step == 1:
-            n = self._get_n()
-            m = self._get_m()
-            # Enforce 2 ≤ M ≤ N ≤ 15
-            valid = (2 <= n <= 15) and (2 <= m <= n)
-            self.continue_button.setEnabled(valid)
-            # Update error label instead of tooltip
-            if valid:
-                self.validation_error.clear()
-                self.validation_error.hide()
-            else:
-                self.validation_error.setText('Enter valid M and N (2 ≤ M ≤ N ≤ 15)')
-                self.validation_error.show()
-            return
-
-        # Step 2: Enable Continue only when all cosigner rows are valid
-        n = self._get_n()
-        n_rows = len(self.cosigner_rows)
-        all_filled = True
-        all_valid = True
-        any_duplicates = False
-        seen = set()
-        # Stored rows are tuples: (row_widget, cos_label, xpub_input)
-        for (_row_w, _cos_label, xpub_input) in self.cosigner_rows:
-            txt = xpub_input.text().strip()
-            ok = self._is_valid_xpub(txt)
-            all_filled &= (txt != '')
-            all_valid &= ok
-            dup = False
-            if txt:
-                if txt in seen:
-                    any_duplicates = True
-                    dup = True
-                else:
-                    seen.add(txt)
-
-        enable = all_filled and all_valid and not any_duplicates and (n_rows == n)
-        self.continue_button.setEnabled(enable)
-        # Give quick reason if disabled
-        reason = ''
-        if not enable:
-            if any_duplicates:
-                reason = 'Remove duplicate cosigner entries'
-            elif not all_filled:
-                reason = 'Fill all cosigner xpubs'
-            elif not all_valid:
-                reason = 'One or more xpubs look invalid'
-        # Show or hide the error label accordingly
-        if reason:
-            self.validation_error.setText(reason)
-            self.validation_error.show()
-        else:
-            self.validation_error.clear()
-            self.validation_error.hide()
-        # self.continue_button.setEnabled(True)
+        self.continue_button.setEnabled(True)
 
     def _on_xpub_changed(self):
         """
@@ -717,7 +658,7 @@ class MultisigSetupPage(QWidget):
         # Clamp M to 2–min(N,15)
         max_m = max(2, min(n, 15))
         self.m_input.setValidator(QIntValidator(2, max_m, self))
-        
+
         # Update helper text and summary as before
         self.m_help.setText(
             QCoreApplication.translate(
@@ -735,4 +676,3 @@ class MultisigSetupPage(QWidget):
                     'configuration_note',
                 ).format(m_disp, n_disp),
             )
-
