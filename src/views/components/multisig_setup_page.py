@@ -29,6 +29,8 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.model.enums.enums_model import WalletAccessType
+from src.utils.common_utils import copy_text
 
 
 class MultisigSetupPage(QWidget):
@@ -48,7 +50,7 @@ class MultisigSetupPage(QWidget):
         )
         # Initialize state early so any helper calls can safely reference it
         self._threshold_locked = False
-        self._current_step = 1  # 1: threshold, 2: cosigners
+        self._current_step = 1  # dynamic steps; 1: threshold, 2: review or cosigners
 
         # Root grid
         self.grid = QGridLayout(self)
@@ -202,7 +204,56 @@ class MultisigSetupPage(QWidget):
 
         self.v.addWidget(self.threshold_frame)
 
-        # Creator setup (Step 2) — choose how to get the creator's keys
+        # Review info card (Step 2 when not Watch-Only): Master FP, Keychain, Path, XPUB
+        self.review_frame = QFrame(self.card)
+        self.review_frame.setObjectName('capabilities_frame')
+        self.review_frame.hide()
+        self.r_v = QVBoxLayout(self.review_frame)
+        self.r_v.setContentsMargins(34, 0, 34, 6)
+        self.r_v.setSpacing(14)
+        self.review_frame_title_label = QLabel()
+        self.review_frame_title_label.setObjectName('ms_label')
+        self.review_frame_title_label.setContentsMargins(0, 4, 0, 10)
+        self.review_frame_title_label.setText(
+           'Review your wallet info and copy fields as needed.'
+        )
+        self.r_v.addWidget(self.review_frame_title_label)
+        self.row1 = QHBoxLayout()
+        self.row1.setContentsMargins(0, 0, 0, 0)
+        self.row1.setSpacing(12)
+        self.row2 = QHBoxLayout()
+        self.row2.setContentsMargins(0, 0, 0, 0)
+        self.row2.setSpacing(12)
+
+        self.fp_display, _ = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
+            'f23a7c1d'
+        )
+        self.keychain_display, _ = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'),
+            'xpub keychain (demo)'
+        )
+        self.row1.addLayout(self.fp_display)
+        self.row1.addLayout(self.keychain_display)
+        self.r_v.addLayout(self.row1)
+
+        # Row 2: Derivation path | Extended public key (xpub)
+        self.path_display, _ = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
+            'm/48\'/0\'/0\'/2\''
+        )
+        self.xpub_display, _ = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'extended_public_key'),
+            'xpub6CUGRUonZS...'
+        )
+        self.row2.addLayout(self.path_display)
+        self.row2.addLayout(self.xpub_display)
+        self.r_v.addLayout(self.row2)
+        self.r_v.addStretch()
+
+        self.v.addWidget(self.review_frame)
+
+        # Creator setup (legacy holder - kept for compatibility, hidden)
         self.creator = {
             'mode': None, 'xpub': '',
             'fingerprint': '', 'derivation': '',
@@ -314,7 +365,11 @@ class MultisigSetupPage(QWidget):
 
         # Initial state
         self._threshold_locked = False
-        self._current_step = 1  # 1: threshold, 2: cosigners
+        self._current_step = 1
+        self._is_watch_only = (
+            SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+        )
+        self._steps_total = 2 if self._is_watch_only else 3
         self.back_button.hide()
         self._update_summary()
         self._update_continue_enabled()
@@ -392,9 +447,9 @@ class MultisigSetupPage(QWidget):
             row_w.deleteLater()
         self.cosigner_rows.clear()
 
-        # Create exactly N rows
-        for i in range(n):
-            self._add_cosigner_row(i + 1)
+        # Create rows starting from Cosigner 2 (Cosigner 1 shown previously)
+        for i in range(2, n + 1):
+            self._add_cosigner_row(i)
         # Do NOT show cosigner section yet in the 3-step flow
         self.cos_frame.hide()
         self._update_summary()
@@ -403,46 +458,73 @@ class MultisigSetupPage(QWidget):
     def _go_next(self):
         if self._current_step == 1:
             self._on_confirm_threshold()
-            # If hardware wallet mode, go directly to hardware connect page
-            if self.creator.get('mode') == 'hardware':
-                self.threshold_frame.hide()
-                self.close_btn.hide()
-                self._view_model.page_navigation.hardware_wallet_connect_page(
-                    True,
-                )
-                self._current_step = 2
-                return
             self.threshold_frame.hide()
             self.creator_frame.hide()
-            self.cos_frame.show()
             self.back_button.show()
-            self._current_step = 2
-            # Grow card for cosigner input step
-            self.card.setMinimumSize(QSize(770, 640))
-            self.card.setMaximumSize(QSize(770, 640))
-            self._update_continue_enabled()
             self.close_btn.hide()
-            # Re-evaluate widths once visible
-            self._adjust_cosigner_input_widths()
-            self.continue_button.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
-                ),
-            )
+
+            if self._is_watch_only:
+                # Skip review; go directly to cosigners
+                self.cos_frame.show()
+                self._current_step = 2
+                self.card.setMinimumSize(QSize(770, 640))
+                self.card.setMaximumSize(QSize(770, 640))
+                self._update_continue_enabled()
+                self._adjust_cosigner_input_widths()
+                self.continue_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                    ),
+                )
+            else:
+                # Show review page as Step 2 of 3
+                self.review_frame.show()
+                self.cos_frame.hide()
+                self._current_step = 2
+                self.card.setMinimumSize(QSize(770, 400))
+                self.card.setMaximumSize(QSize(770, 400))
+                self.continue_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                    ),
+                )
         elif self._current_step == 2:
+            if self._is_watch_only:
+                # In 2-step flow, continue finishes
+                self._view_model.page_navigation.welcome_page()
+            else:
+                # Move to cosigners (Step 3)
+                self.review_frame.hide()
+                self.cos_frame.show()
+                self._current_step = 3
+                total_singer = self._get_n()
+                if total_singer > 2:
+                    self.card.setMinimumSize(QSize(770, 640))
+                    self.card.setMaximumSize(QSize(770, 640))
+                else:
+                    self.card.setMinimumSize(QSize(770, 400))
+                    self.card.setMaximumSize(QSize(770, 400))
+                self._adjust_cosigner_input_widths()
+                self.continue_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                    ),
+                )
+        elif self._current_step == 3:
             self._view_model.page_navigation.welcome_page()
 
     def _go_back(self):
         if self._current_step == 2:
-            # Return to step 1: unlock and show threshold
+            # Back to step 1 from review/cosigners depending on mode
             self.m_input.setEnabled(True)
             self.n_input.setEnabled(True)
             self.cos_frame.hide()
+            self.review_frame.hide()
             self.threshold_frame.show()
             self.creator_frame.hide()
             self.back_button.hide()
             self._current_step = 1
-            # Restore Step 1 card size (fits 700px inner content + margins)
+            # Restore Step 1 card size
             self.card.setMinimumSize(QSize(770, 520))
             self.card.setMaximumSize(QSize(770, 520))
             self._update_summary()
@@ -454,6 +536,13 @@ class MultisigSetupPage(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
                 ),
             )
+        elif self._current_step == 3:
+            # From cosigners back to review
+            self.cos_frame.hide()
+            self.review_frame.show()
+            self._current_step = 2
+            self.card.setMinimumSize(QSize(770, 400))
+            self.card.setMaximumSize(QSize(770, 400))
 
     def _get_m(self) -> int:
         try:
@@ -485,59 +574,43 @@ class MultisigSetupPage(QWidget):
         row_v.addLayout(header_h)
 
         # Fingerprint and Derivation Path in one row
-        fp_path_h = QHBoxLayout()
-        fp_path_h.setContentsMargins(0, 0, 0, 0)
-        fp_path_h.setSpacing(12)
+        row1 = QHBoxLayout()
+        row1.setContentsMargins(0, 0, 0, 0)
+        row1.setSpacing(12)
+        row2 = QHBoxLayout()
+        row2.setContentsMargins(0, 0, 0, 0)
+        row2.setSpacing(12)
+        fp_field, fp_input = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fingerprint_example'),
+            editable=True,
+        )
+        keychain_field, keychain_input = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'),
+            'xpub keychain (demo)',
+            editable=True,
+        )
+        path_field, path_input = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path_example'),
+            editable=True,
+        )
+        xpub_field, xpub_input = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'extended_public_key'),
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_example'),
+            editable=True,
+        )
+        row1.addLayout(fp_field)
+        row1.addLayout(keychain_field)
+        row_v.addLayout(row1)
 
-        # Fingerprint block
-        fp_block = QVBoxLayout()
-        fp_block.setContentsMargins(0, 0, 0, 0)
-        fp_block.setSpacing(6)
-        fp_lbl = QLabel()
-        fp_lbl.setObjectName('ms_label')
-        fp_block.addWidget(fp_lbl)
-        fp_input = QLineEdit()
-        fp_input.setObjectName('ms_input')
-        fp_input.setFixedHeight(40)
-        fp_input.setFixedWidth(344)
-        fp_block.addWidget(fp_input)
+        row2.addLayout(path_field)
+        row2.addLayout(xpub_field)
+        row_v.addLayout(row2)
 
-        # Derivation Path block
-        path_block = QVBoxLayout()
-        path_block.setContentsMargins(0, 0, 0, 0)
-        path_block.setSpacing(6)
-        path_lbl = QLabel()
-        path_lbl.setObjectName('ms_label')
-        path_block.addWidget(path_lbl)
-        path_input = QLineEdit()
-        path_input.setObjectName('ms_input')
-        path_input.setFixedHeight(40)
-        path_input.setFixedWidth(344)
-        path_block.addWidget(path_input)
-
-        fp_path_h.addLayout(fp_block)
-        fp_path_h.addLayout(path_block)
-        fp_path_h.addStretch()
-        row_v.addLayout(fp_path_h)
-
-        # Xpub block (full width)
-        xpub_block = QVBoxLayout()
-        xpub_block.setContentsMargins(0, 4, 0, 0)
-        xpub_block.setSpacing(6)
-        xpub_lbl = QLabel()
-        xpub_lbl.setObjectName('ms_label')
-        xpub_block.addWidget(xpub_lbl)
-        xpub = QLineEdit()
-        xpub.setPlaceholderText('xpub...')
-        xpub.setObjectName('ms_input')
-        xpub.setFixedWidth(700)
-        xpub.setFixedHeight(40)
-        xpub_block.addWidget(xpub)
-        row_v.addLayout(xpub_block)
-
-        xpub.textChanged.connect(self._on_xpub_changed)
-        xpub.editingFinished.connect(
-            lambda le=xpub: le.setText(le.text().strip()),
+        xpub_input.textChanged.connect(self._on_xpub_changed)
+        xpub_input.editingFinished.connect(
+            lambda le=xpub_input: le.setText(le.text().strip()),
         )
 
         # Insert before the stretch at the end
@@ -545,44 +618,15 @@ class MultisigSetupPage(QWidget):
         # Store references on the row for later width adjustments
         row_w.fp_input = fp_input
         row_w.path_input = path_input
-        row_w.xpub_input = xpub
-        self.cosigner_rows.append((row_w, cos_label, xpub))
+        row_w.xpub_input = xpub_input
+        row_w.keychain_input = keychain_input
+        self.cosigner_rows.append((row_w, cos_label, xpub_field, None))
 
-        if index == 1:
+        if index == 2:
             fp_input.setFocus()
         # Adjust widths after adding the row
         self._adjust_cosigner_input_widths()
 
-        xpub_lbl.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'extended_public_key',
-            ),
-        )
-        path_lbl.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'derivation_path',
-            ),
-        )
-        fp_input.setPlaceholderText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'fingerprint_example',
-            ),
-        )
-        path_input.setPlaceholderText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'derivation_path_example',
-            ),
-        )
-        fp_lbl.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'master_fingerprint',
-            ),
-        )
         cos_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -611,15 +655,18 @@ class MultisigSetupPage(QWidget):
                 fp = getattr(row_w, 'fp_input', None)
                 path = getattr(row_w, 'path_input', None)
                 xpub = getattr(row_w, 'xpub_input', None)
-                if fp and path and xpub:
+                keychain = getattr(row_w, 'keychain_input', None)
+                if fp and path and xpub and keychain:
                     if visible:
                         fp.setFixedWidth(330)
                         path.setFixedWidth(330)
-                        xpub.setFixedWidth(670)
+                        xpub.setFixedWidth(330)
+                        keychain.setFixedWidth(330)
                     else:
                         fp.setFixedWidth(344)
                         path.setFixedWidth(344)
-                        xpub.setFixedWidth(700)
+                        xpub.setFixedWidth(344)
+                        keychain.setFixedWidth(344)
         except Exception:
             pass
 
@@ -627,6 +674,61 @@ class MultisigSetupPage(QWidget):
         """
         Enable continue button if M/N are valid
         """
+                # Step 1: Enable Next if M/N are valid
+        if self._current_step == 1:
+            n = self._get_n()
+            m = self._get_m()
+            # Enforce 2 ≤ M ≤ N ≤ 15
+            valid = (2 <= n <= 15) and (2 <= m <= n)
+            self.continue_button.setEnabled(valid)
+            # Update error label instead of tooltip
+            if valid:
+                self.validation_error.clear()
+                self.validation_error.hide()
+            else:
+                self.validation_error.setText('Enter valid M and N (2 ≤ M ≤ N ≤ 15)')
+                self.validation_error.show()
+            return
+
+        # Step 2: Enable Continue only when all cosigner rows are valid
+        n = self._get_n()
+        n_rows = len(self.cosigner_rows)
+        all_filled = True
+        all_valid = True
+        any_duplicates = False
+        seen = set()
+        # Stored rows are tuples: (row_widget, cos_label, xpub_input)
+        for (_row_w, _cos_label, xpub_input) in self.cosigner_rows:
+            txt = xpub_input.text().strip()
+            ok = self._is_valid_xpub(txt)
+            all_filled &= (txt != '')
+            all_valid &= ok
+            dup = False
+            if txt:
+                if txt in seen:
+                    any_duplicates = True
+                    dup = True
+                else:
+                    seen.add(txt)
+
+        enable = all_filled and all_valid and not any_duplicates and (n_rows == n)
+        self.continue_button.setEnabled(enable)
+        # Give quick reason if disabled
+        reason = ''
+        if not enable:
+            if any_duplicates:
+                reason = 'Remove duplicate cosigner entries'
+            elif not all_filled:
+                reason = 'Fill all cosigner xpubs'
+            elif not all_valid:
+                reason = 'One or more xpubs look invalid'
+        # Show or hide the error label accordingly
+        if reason:
+            self.validation_error.setText(reason)
+            self.validation_error.show()
+        else:
+            self.validation_error.clear()
+            self.validation_error.hide()
         self.continue_button.setEnabled(True)
 
     def _on_xpub_changed(self):
@@ -676,3 +778,37 @@ class MultisigSetupPage(QWidget):
                     'configuration_note',
                 ).format(m_disp, n_disp),
             )
+
+    def _create_wallet_detail_field(self, title: str,placeholder: str,editable: bool = False) -> tuple[QGridLayout, QLineEdit]:
+            """Create a wallet detail field with copy button."""
+            wallet_detail_grid_layout = QGridLayout()
+            wallet_detail_grid_layout.setContentsMargins(0, 0, 0, 0)
+            wallet_detail_grid_layout.setSpacing(10)
+            wallet_detail_label = QLabel(title)
+            wallet_detail_label.setObjectName('ms_label')
+            wallet_detail_grid_layout.addWidget(wallet_detail_label, 0, 0)
+            wallet_detail_horizontal_layout = QHBoxLayout()
+            wallet_detail_horizontal_layout.setContentsMargins(0, 0, 0, 0)
+            wallet_detail_horizontal_layout.setSpacing(0)
+            wallet_detail_input = QLineEdit()
+            wallet_detail_input.setObjectName('wallet_detail_input')
+            wallet_detail_input.setFixedHeight(40)
+            wallet_detail_input.setReadOnly(not editable)
+            wallet_detail_input.setFrame(False)
+            wallet_detail_input.setClearButtonEnabled(False)
+            wallet_detail_input.setPlaceholderText(placeholder)
+            wallet_detail_horizontal_layout.addWidget(wallet_detail_input)
+            if not editable:
+                wallet_detail_input.setCursor(QCursor(Qt.CursorShape.ForbiddenCursor))
+                copy_btn = QPushButton()
+                copy_btn.setObjectName('copy_button')
+                copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+                copy_btn.setMinimumSize(QSize(50, 0))
+                copy_btn.setMaximumSize(QSize(50, 40))
+                ic = QIcon()
+                ic.addFile(':/assets/copy.png', QSize(), QIcon.Normal, QIcon.Off)
+                copy_btn.setIcon(ic)
+                copy_btn.clicked.connect(lambda: copy_text(wallet_detail_input))
+                wallet_detail_horizontal_layout.addWidget(copy_btn)
+            wallet_detail_grid_layout.addLayout(wallet_detail_horizontal_layout, 1, 0)
+            return wallet_detail_grid_layout, wallet_detail_input

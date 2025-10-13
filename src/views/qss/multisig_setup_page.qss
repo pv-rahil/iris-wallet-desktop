@@ -45,12 +45,6 @@ QLineEdit#ms_input {
     border-radius: 4px;
 }
 
-
-QLineEdit#ms_input:focus {
-    border: 1px solid rgb(102, 160, 255);
-    outline: none;
-}
-
 /* Scrollable area for cosigners */
 QScrollArea#ms_scroll {
     background: transparent;
@@ -132,4 +126,28 @@ QFrame#ms_summary_box {
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(208,211,221,0.15);
     border-radius: 10px;
+}
+QPushButton#copy_button {
+    color: rgb(102, 108, 129);
+    background-color: rgb(36, 44, 70);
+    border: transparent;
+    border-radius: 4px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+
+QPushButton#copy_button:hover {
+    color: rgb(149, 155, 174);
+    background-color: rgb(27, 35, 59);
+}
+
+QLineEdit#wallet_detail_input {
+    padding-left: 10px;
+    font: 15px "Inter";
+    color: rgb(102, 108, 129);
+    background-color: rgb(36, 44, 70);
+    border: transparent;
+    border-radius: 4px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
 }

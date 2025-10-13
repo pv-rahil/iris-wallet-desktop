@@ -319,12 +319,12 @@ class BroadcastTransactionWidget(QWidget):
             self.btn_export = PrimaryButton()
             self.btn_export.setFixedWidth(175)
             self.btn_export.setMinimumHeight(40)
-            self.btn_export.setVisible(False)
+            self.btn_export.setEnabled(False)
 
             self.btn_combine = PrimaryButton()
             self.btn_combine.setFixedWidth(175)
             self.btn_combine.setMinimumHeight(40)
-            self.btn_combine.setVisible(False)
+            self.btn_combine.setEnabled(False)
 
             self.broadcast_button.setFixedWidth(175)
             self.broadcast_button.setMinimumHeight(40)
@@ -578,8 +578,8 @@ class BroadcastTransactionWidget(QWidget):
     def _on_finalized_psbt_ready(self):
         """Our wallet has signed successfully; allow exporting the signed PSBT."""
         if self.is_multisig:
-            self.btn_export.setVisible(True)
-            self.btn_import.setVisible(False)
+            self.btn_export.setEnabled(True)
+            self.btn_import.setEnabled(False)
             self.broadcast_button.setEnabled(False)
 
     # ----- Multisig helpers -----
@@ -595,8 +595,8 @@ class BroadcastTransactionWidget(QWidget):
                     'signature_count',
                 ).format(0, total_disp),
             )
-            self.btn_export.setVisible(False)
-            self.btn_combine.setVisible(False)
+            self.btn_export.setEnabled(False)
+            self.btn_combine.setEnabled(False)
             return
         self._on_signature_count_ready(1)
 
@@ -611,7 +611,7 @@ class BroadcastTransactionWidget(QWidget):
         )
         # show combine only when at least 1 signature exists
         if self.is_multisig:
-            self.btn_combine.setVisible(count > 0)
+            self.btn_combine.setEnabled(count > 0)
             # When collected signatures reach required threshold, flip button text to Broadcast
             required, _ = SettingRepository.get_multisig_config()
             needed = int(required) if required is not None else None
