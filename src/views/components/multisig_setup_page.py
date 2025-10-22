@@ -237,18 +237,29 @@ class MultisigSetupPage(QWidget):
         self.row1.addLayout(self.keychain_display)
         self.r_v.addLayout(self.row1)
 
-        # Row 2: Derivation path | Extended public key (xpub)
+        # Row 2: Derivation path | Account XPUB (vanilla)
         self.path_display, _ = self._create_wallet_detail_field(
             QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
             'm/48\'/0\'/0\'/2\''
         )
-        self.xpub_display, _ = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'extended_public_key'),
+        self.xpub_vanilla_display, _ = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'),
             'xpub6CUGRUonZS...'
         )
         self.row2.addLayout(self.path_display)
-        self.row2.addLayout(self.xpub_display)
+        self.row2.addLayout(self.xpub_vanilla_display)
         self.r_v.addLayout(self.row2)
+
+        # Row 3: Account XPUB (colored)
+        self.row3 = QHBoxLayout()
+        self.row3.setContentsMargins(0, 0, 0, 0)
+        self.row3.setSpacing(12)
+        self.xpub_colored_display, _ = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'),
+            'xpub6CUGRUonZS...'
+        )
+        self.row3.addLayout(self.xpub_colored_display)
+        self.r_v.addLayout(self.row3)
         self.r_v.addStretch()
 
         self.v.addWidget(self.review_frame)
@@ -481,8 +492,8 @@ class MultisigSetupPage(QWidget):
                 self.review_frame.show()
                 self.cos_frame.hide()
                 self._current_step = 2
-                self.card.setMinimumSize(QSize(770, 400))
-                self.card.setMaximumSize(QSize(770, 400))
+                self.card.setMinimumSize(QSize(770, 470))
+                self.card.setMaximumSize(QSize(770, 470))
                 self.continue_button.setText(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
@@ -502,8 +513,8 @@ class MultisigSetupPage(QWidget):
                     self.card.setMinimumSize(QSize(770, 640))
                     self.card.setMaximumSize(QSize(770, 640))
                 else:
-                    self.card.setMinimumSize(QSize(770, 400))
-                    self.card.setMaximumSize(QSize(770, 400))
+                    self.card.setMinimumSize(QSize(770, 520))
+                    self.card.setMaximumSize(QSize(770, 520))
                 self._adjust_cosigner_input_widths()
                 self.continue_button.setText(
                     QCoreApplication.translate(
@@ -541,8 +552,8 @@ class MultisigSetupPage(QWidget):
             self.cos_frame.hide()
             self.review_frame.show()
             self._current_step = 2
-            self.card.setMinimumSize(QSize(770, 400))
-            self.card.setMaximumSize(QSize(770, 400))
+            self.card.setMinimumSize(QSize(770, 470))
+            self.card.setMaximumSize(QSize(770, 470))
 
     def _get_m(self) -> int:
         try:
@@ -580,6 +591,9 @@ class MultisigSetupPage(QWidget):
         row2 = QHBoxLayout()
         row2.setContentsMargins(0, 0, 0, 0)
         row2.setSpacing(12)
+        row3 = QHBoxLayout()
+        row3.setContentsMargins(0, 0, 0, 0)
+        row3.setSpacing(12)
         fp_field, fp_input = self._create_wallet_detail_field(
             QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
             QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fingerprint_example'),
@@ -595,8 +609,13 @@ class MultisigSetupPage(QWidget):
             QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path_example'),
             editable=True,
         )
-        xpub_field, xpub_input = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'extended_public_key'),
+        xpub_vanilla_field, xpub_vanilla_input = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'),
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_example'),
+            editable=True,
+        )
+        xpub_colored_field, xpub_colored_input = self._create_wallet_detail_field(
+            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'),
             QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_example'),
             editable=True,
         )
@@ -605,12 +624,20 @@ class MultisigSetupPage(QWidget):
         row_v.addLayout(row1)
 
         row2.addLayout(path_field)
-        row2.addLayout(xpub_field)
+        row2.addLayout(xpub_vanilla_field)
         row_v.addLayout(row2)
 
-        xpub_input.textChanged.connect(self._on_xpub_changed)
-        xpub_input.editingFinished.connect(
-            lambda le=xpub_input: le.setText(le.text().strip()),
+        # Third row for colored xpub (full width)
+        row3.addLayout(xpub_colored_field)
+        row_v.addLayout(row3)
+
+        xpub_vanilla_input.textChanged.connect(self._on_xpub_changed)
+        xpub_vanilla_input.editingFinished.connect(
+            lambda le=xpub_vanilla_input: le.setText(le.text().strip()),
+        )
+        xpub_colored_input.textChanged.connect(self._on_xpub_changed)
+        xpub_colored_input.editingFinished.connect(
+            lambda le=xpub_colored_input: le.setText(le.text().strip()),
         )
 
         # Insert before the stretch at the end
@@ -618,9 +645,11 @@ class MultisigSetupPage(QWidget):
         # Store references on the row for later width adjustments
         row_w.fp_input = fp_input
         row_w.path_input = path_input
-        row_w.xpub_input = xpub_input
+        row_w.vanilla_xpub_input = xpub_vanilla_input
+        row_w.colored_xpub_input = xpub_colored_input
         row_w.keychain_input = keychain_input
-        self.cosigner_rows.append((row_w, cos_label, xpub_field, None))
+
+        self.cosigner_rows.append((row_w, cos_label, xpub_vanilla_field, None))
 
         if index == 2:
             fp_input.setFocus()
@@ -654,18 +683,21 @@ class MultisigSetupPage(QWidget):
             for row_w, _label, _xpub, _err in self.cosigner_rows:
                 fp = getattr(row_w, 'fp_input', None)
                 path = getattr(row_w, 'path_input', None)
-                xpub = getattr(row_w, 'xpub_input', None)
+                vanilla_xpub = getattr(row_w, 'vanilla_xpub_input', None)
+                colored_xpub = getattr(row_w, 'colored_xpub_input', None)
                 keychain = getattr(row_w, 'keychain_input', None)
-                if fp and path and xpub and keychain:
+                if fp and path and vanilla_xpub and keychain:
                     if visible:
                         fp.setFixedWidth(330)
                         path.setFixedWidth(330)
-                        xpub.setFixedWidth(330)
+                        vanilla_xpub.setFixedWidth(330)
+                        colored_xpub.setFixedWidth(670)
                         keychain.setFixedWidth(330)
                     else:
                         fp.setFixedWidth(344)
                         path.setFixedWidth(344)
-                        xpub.setFixedWidth(344)
+                        vanilla_xpub.setFixedWidth(344)
+                        colored_xpub.setFixedWidth(700)
                         keychain.setFixedWidth(344)
         except Exception:
             pass
@@ -675,60 +707,60 @@ class MultisigSetupPage(QWidget):
         Enable continue button if M/N are valid
         """
                 # Step 1: Enable Next if M/N are valid
-        if self._current_step == 1:
-            n = self._get_n()
-            m = self._get_m()
-            # Enforce 2 ≤ M ≤ N ≤ 15
-            valid = (2 <= n <= 15) and (2 <= m <= n)
-            self.continue_button.setEnabled(valid)
-            # Update error label instead of tooltip
-            if valid:
-                self.validation_error.clear()
-                self.validation_error.hide()
-            else:
-                self.validation_error.setText('Enter valid M and N (2 ≤ M ≤ N ≤ 15)')
-                self.validation_error.show()
-            return
+        # if self._current_step == 1:
+        #     n = self._get_n()
+        #     m = self._get_m()
+        #     # Enforce 2 ≤ M ≤ N ≤ 15
+        #     valid = (2 <= n <= 15) and (2 <= m <= n)
+        #     self.continue_button.setEnabled(valid)
+        #     # Update error label instead of tooltip
+        #     if valid:
+        #         self.validation_error.clear()
+        #         self.validation_error.hide()
+        #     else:
+        #         self.validation_error.setText('Enter valid M and N (2 ≤ M ≤ N ≤ 15)')
+        #         self.validation_error.show()
+        #     return
 
-        # Step 2: Enable Continue only when all cosigner rows are valid
-        n = self._get_n()
-        n_rows = len(self.cosigner_rows)
-        all_filled = True
-        all_valid = True
-        any_duplicates = False
-        seen = set()
-        # Stored rows are tuples: (row_widget, cos_label, xpub_input)
-        for (_row_w, _cos_label, xpub_input) in self.cosigner_rows:
-            txt = xpub_input.text().strip()
-            ok = self._is_valid_xpub(txt)
-            all_filled &= (txt != '')
-            all_valid &= ok
-            dup = False
-            if txt:
-                if txt in seen:
-                    any_duplicates = True
-                    dup = True
-                else:
-                    seen.add(txt)
+        # # Step 2: Enable Continue only when all cosigner rows are valid
+        # n = self._get_n()
+        # n_rows = len(self.cosigner_rows)
+        # all_filled = True
+        # all_valid = True
+        # any_duplicates = False
+        # seen = set()
+        # # Stored rows are tuples: (row_widget, cos_label, xpub_input)
+        # for (_row_w, _cos_label, xpub_input) in self.cosigner_rows:
+        #     txt = xpub_input.text().strip()
+        #     ok = self._is_valid_xpub(txt)
+        #     all_filled &= (txt != '')
+        #     all_valid &= ok
+        #     dup = False
+        #     if txt:
+        #         if txt in seen:
+        #             any_duplicates = True
+        #             dup = True
+        #         else:
+        #             seen.add(txt)
 
-        enable = all_filled and all_valid and not any_duplicates and (n_rows == n)
-        self.continue_button.setEnabled(enable)
-        # Give quick reason if disabled
-        reason = ''
-        if not enable:
-            if any_duplicates:
-                reason = 'Remove duplicate cosigner entries'
-            elif not all_filled:
-                reason = 'Fill all cosigner xpubs'
-            elif not all_valid:
-                reason = 'One or more xpubs look invalid'
-        # Show or hide the error label accordingly
-        if reason:
-            self.validation_error.setText(reason)
-            self.validation_error.show()
-        else:
-            self.validation_error.clear()
-            self.validation_error.hide()
+        # enable = all_filled and all_valid and not any_duplicates and (n_rows == n)
+        # self.continue_button.setEnabled(enable)
+        # # Give quick reason if disabled
+        # reason = ''
+        # if not enable:
+        #     if any_duplicates:
+        #         reason = 'Remove duplicate cosigner entries'
+        #     elif not all_filled:
+        #         reason = 'Fill all cosigner xpubs'
+        #     elif not all_valid:
+        #         reason = 'One or more xpubs look invalid'
+        # # Show or hide the error label accordingly
+        # if reason:
+        #     self.validation_error.setText(reason)
+        #     self.validation_error.show()
+        # else:
+        #     self.validation_error.clear()
+        #     self.validation_error.hide()
         self.continue_button.setEnabled(True)
 
     def _on_xpub_changed(self):
@@ -799,6 +831,16 @@ class MultisigSetupPage(QWidget):
             wallet_detail_input.setPlaceholderText(placeholder)
             wallet_detail_horizontal_layout.addWidget(wallet_detail_input)
             if not editable:
+                wallet_detail_input.setStyleSheet("""
+                    padding-left: 10px;
+                    font: 15px "Inter";
+                    color: rgb(102, 108, 129);
+                    background-color: rgb(36, 44, 70);
+                    border: none;
+                    border-radius: 4px;
+                    border-top-right-radius: 0px;
+                    border-bottom-right-radius: 0px;
+                """)
                 wallet_detail_input.setCursor(QCursor(Qt.CursorShape.ForbiddenCursor))
                 copy_btn = QPushButton()
                 copy_btn.setObjectName('copy_button')

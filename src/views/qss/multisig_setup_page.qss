@@ -148,6 +148,4 @@ QLineEdit#wallet_detail_input {
     background-color: rgb(36, 44, 70);
     border: transparent;
     border-radius: 4px;
-    border-top-right-radius: 0px;
-    border-bottom-right-radius: 0px;
 }

@@ -219,6 +219,8 @@ class WatchOnlyDialog(QDialog):
             self.setMinimumSize(480, 490)
             self.continue_btn.setEnabled(False)
             self.check_box.setChecked(False)
+            # Prevent user from checking the box while error is visible
+            self.check_box.setEnabled(False)
 
         if not vanilla or not colored or not fingerprint:
             show_error('all_fields_required')
@@ -235,6 +237,8 @@ class WatchOnlyDialog(QDialog):
         # All validations passed
         self.error_label.setVisible(False)
         self.setMinimumSize(480, 420)
+        # Re-enable checkbox when inputs are valid
+        self.check_box.setEnabled(True)
         self.continue_btn.setEnabled(
             self.check_box.isChecked() and not self.error_label.isVisible(),
         )
