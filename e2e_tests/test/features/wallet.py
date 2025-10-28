@@ -87,9 +87,7 @@ class Wallet(MainPageObjects, BaseOperations):
                 if is_load_wallet:
                     effective_variant = variant
                 else:
-                    if variant in LOAD_WALLET_VARIANT:
-                        effective_variant = variant
-                    elif variant in REQUIRE_USB_VARIANTS:
+                    if variant in REQUIRE_USB_VARIANTS:
                         effective_variant = ONLINE_WATCH_ONLY
                     else:
                         effective_variant = ONLINE_CREATE_ON_DEVICE
@@ -239,16 +237,20 @@ class Wallet(MainPageObjects, BaseOperations):
             except Exception:
                 pass
 
-    def create_and_fund_wallet(self, application, variant: str, fund=True):
+    def create_and_fund_wallet(self, application, variant: str, fund=True, is_restore_wallet: bool = False):
         """
         Create a new wallet and fund it.
         """
-        if application == FIRST_APPLICATION and variant in LOAD_WALLET_VARIANT:
+        if is_restore_wallet:
+            self.create_wallet(application, variant)
+
+        elif application == FIRST_APPLICATION and variant in LOAD_WALLET_VARIANT:
             self.load_wallet(application, variant, fund)
             return
-        self.create_wallet(application, variant)
-        if fund:
-            self.fund_wallet(application)
+        else:
+            self.create_wallet(application, variant)
+            if fund:
+                self.fund_wallet(application)
 
     def load_wallet(self, application, variant: str, fund: bool):
         """

@@ -29,7 +29,10 @@ class IssueCfa(MainPageObjects, BaseOperations):
         self.wallet_features = Wallet(application)
         super().__init__(application)
 
-    def issue_cfa_with_sufficient_sats_and_utxo(self, application, asset_name, asset_description, asset_amount, variant_name: str, is_native_auth: bool = False):
+    def issue_cfa_with_sufficient_sats_and_utxo(
+        self, application, asset_name, asset_description,
+        asset_amount, variant_name: str | None = None, is_native_auth: bool = False,
+    ):
         """
         Issue CFA asset with sufficient sats and utxo.
         """
