@@ -482,6 +482,7 @@ class IssueNIAWidget(QWidget):
         )
         self.render_timer.stop()
         self._view_model.page_navigation.show_success_page(params)
+        self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
 
     def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
@@ -496,8 +497,6 @@ class IssueNIAWidget(QWidget):
     def handle_nia_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
         if status:
-            self._view_model.utxo_creation_view_model.utxo_created.disconnect()
-
             nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
                 parent=self,
             )
@@ -508,7 +507,6 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_issue(self):
         """handle nia issue"""
-        self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
         wallet_service = WalletDataService.get_session()
         if wallet_service:
             unsigned_psbts = wallet_service.list_psbt(
