@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from rgb_lib import AssetCfa
+from rgb_lib import AssetIfa
 from rgb_lib import AssetNia
 from rgb_lib import Assets
 from rgb_lib import AssetUda
@@ -10,8 +11,8 @@ from rgb_lib import Invoice
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import RefreshedTransfer
-from rgb_lib import SendResult
 from rgb_lib import Transfer
+from rgb_lib import TransferResult
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.service.wallet_data_service import WalletDataService
@@ -21,7 +22,9 @@ from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
 from src.model.rgb_model import FilterAssetRequestModel
+from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetCfaRequestModel
+from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetUdaRequestModel
 from src.model.rgb_model import ListTransfersRequestModel
@@ -84,7 +87,7 @@ class RgbRepository:
         """Get RGB invoice."""
         with repository_custom_context():
             data: ReceiveData = colored_wallet.wallet.blind_receive(
-                asset_id=invoice.asset_id, amount=None, duration_seconds=invoice.duration_seconds,
+                asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
                 transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
             )
             cache = Cache.get_cache_session()
@@ -94,19 +97,19 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
-    def send_asset(asset_detail: SendAssetRequestModel) -> SendResult:
+    def send_asset(asset_detail: SendAssetRequestModel) -> TransferResult:
         """Send asset."""
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=asset_detail.recipient_id,
                 witness_data=None,
-                amount=asset_detail.amount,
+                assignment=asset_detail.assignment,
                 transport_endpoints=asset_detail.transport_endpoints,
             )
 
             recipient_map = {asset_detail.asset_id: [recipient]}
 
-            data: SendResult = colored_wallet.wallet.send(
+            data: TransferResult = colored_wallet.wallet.send(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=asset_detail.donation,
                 fee_rate=asset_detail.fee_rate, min_confirmations=asset_detail.min_confirmations, skip_sync=asset_detail.skip_sync,
             )
@@ -169,6 +172,20 @@ class RgbRepository:
             return data
 
     @staticmethod
+    @check_colorable_available()
+    def issue_asset_ifa(asset: IssueAssetIfaRequestModel) -> AssetIfa:
+        """Issue asset."""
+        with repository_custom_context():
+            data: AssetIfa = colored_wallet.wallet.issue_asset_ifa(
+                ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
+                inflation_amounts=asset.inflation_amounts, replace_rights_num=asset.replace_rights_num,
+            )
+            cache = Cache.get_cache_session()
+            if cache is not None:
+                cache.invalidate_cache()
+            return data
+
+    @staticmethod
     def fail_transfer(transfer: FailTransferRequestModel) -> FailTransferResponseModel:
         """Mark the specified transfer as failed."""
         with repository_custom_context():
@@ -203,10 +220,10 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
-    def send_end(detail: BroadcastPsbtRequestModel) -> SendResult:
+    def send_end(detail: BroadcastPsbtRequestModel) -> TransferResult:
         """broadcast signed psbt of send rgb asset"""
         with repository_custom_context():
-            data: SendResult = colored_wallet.wallet.send_end(
+            data: TransferResult = colored_wallet.wallet.send_end(
                 online=colored_wallet.online, signed_psbt=detail.signed_psbt, skip_sync=detail.skip_sync,
             )
             cache = Cache.get_cache_session()
@@ -215,4 +232,18 @@ class RgbRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.delete_psbt(detail.signed_psbt)
+            return data
+
+    @staticmethod
+    @check_colorable_available()
+    def inflate(detail: InflateRequestModel) -> TransferResult:
+        """Inflate asset."""
+        with repository_custom_context():
+            data: TransferResult = colored_wallet.wallet.inflate(
+                online=colored_wallet.online, asset_id=detail.asset_id, inflation_amounts=detail.inflation_amounts,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
+            )
+            cache = Cache.get_cache_session()
+            if cache is not None:
+                cache.invalidate_cache()
             return data

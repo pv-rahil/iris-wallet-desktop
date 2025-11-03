@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import Assignment
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.enums.enums_model import ToastPreset
@@ -44,7 +45,14 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
         self.run_in_thread(
             RgbRepository.rgb_invoice,
             {
-                'args': [RgbInvoiceRequestModel(asset_id=asset_id, min_confirmations=minimum_confirmations, transport_endpoints=transport_endpoints)],
+                'args': [
+                    RgbInvoiceRequestModel(
+                        asset_id=asset_id,
+                        min_confirmations=minimum_confirmations,
+                        transport_endpoints=transport_endpoints,
+                        assignment=Assignment.FUNGIBLE(amount=0),
+                    ),
+                ],
                 'callback': self.on_success,
                 'error_callback': self.on_error,
             },
@@ -69,3 +77,4 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
         self.sidebar = self._page_navigation.sidebar()
         if self.sidebar is not None:
             self.sidebar.my_fungibles.setChecked(True)
+        print(error)

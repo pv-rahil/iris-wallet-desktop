@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from hwilib.psbt import PSBT
+from rgb_lib import AssetSchema
 from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
 from rgb_lib import Keys
@@ -40,7 +41,8 @@ class CommonOperationRepository:
                 data_dir=unlock.data_dir, bitcoin_network=unlock.bitcoin_network, database_type=DatabaseType.SQLITE,
                 max_allocations_per_utxo=unlock.max_allocations_per_utxo, account_xpub_vanilla=unlock.account_xpub_vanilla,
                 account_xpub_colored=unlock.account_xpub_colored, mnemonic=unlock.mnemonic,
-                master_fingerprint=unlock.master_fingerprint, vanilla_keychain=unlock.vanilla_keychain,
+                master_fingerprint=unlock.master_fingerprint,
+                vanilla_keychain=unlock.vanilla_keychain, supported_schemas=AssetSchema,
             )
             # Initialize the wallet
             recv_wallet = rgb_lib.Wallet(wallet_data)

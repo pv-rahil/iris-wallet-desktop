@@ -9,7 +9,6 @@ from enum import Enum
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
-from PySide6.QtCore import QTranslator
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QCheckBox
@@ -30,13 +29,18 @@ from accessible_constant import ISSUE_NIA_BUTTON
 from accessible_constant import NIA_ASSET_AMOUNT
 from accessible_constant import NIA_ASSET_NAME
 from accessible_constant import NIA_ASSET_TICKER
+from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
+from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
+from src.model.setting_model import DefaultFeeRate
+from src.model.setting_model import DefaultMinConfirmation
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
+from src.utils.constant import FEE_RATE
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
@@ -60,6 +64,8 @@ class IssueIFAWidget(QWidget):
         self.secondary_issuance: bool = bool(
             self.params and self.params.is_secondary_issuance,
         )
+        self.asset_transactions: ListTransferAssetWithBalanceResponseModel | None = None
+        self.value_of_default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         self.issue_ifa_grid_layout = QGridLayout(self)
         self.issue_ifa_grid_layout.setObjectName('issue_nia_grid_layout')
         self.issue_ifa_wallet_logo = WalletLogoFrame(self)
@@ -301,6 +307,48 @@ class IssueIFAWidget(QWidget):
             self.inflatables_total_supply_input,
         )
 
+        self.inflatables_error_label = QLabel(self.issue_ifa_widget)
+        self.inflatables_error_label.setObjectName('error_label')
+        self.inflatables_error_label.setMinimumSize(QSize(0, 40))
+        self.inflatables_error_label.setMaximumSize(QSize(370, 40))
+        self.inflatables_error_label.setWordWrap(True)
+        self.inflatables_error_label.setAlignment(
+            Qt.AlignLeft | Qt.AlignVCenter,
+        )
+        self.inflatables_error_label.setStyleSheet('color: #D32F2F;')
+        self.inflatables_error_label.hide()
+        self.inflatables_asset_supply_layout.addWidget(
+            self.inflatables_error_label,
+        )
+
+        self.inflatables_fee_rate_label = QLabel(self.issue_ifa_widget)
+        self.inflatables_fee_rate_label.setObjectName('fee_rate_label')
+        self.inflatables_fee_rate_label.setMinimumSize(QSize(0, 40))
+        self.inflatables_fee_rate_label.setMaximumSize(QSize(370, 40))
+        self.inflatables_asset_supply_layout.addWidget(
+            self.inflatables_fee_rate_label,
+        )
+
+        self.inflatables_fee_rate_input = QLineEdit(
+            self.issue_ifa_widget,
+        )
+        self.inflatables_fee_rate_input.setObjectName('amount_input')
+        self.inflatables_fee_rate_input.setMinimumSize(QSize(0, 40))
+        self.inflatables_fee_rate_input.setMaximumSize(QSize(370, 40))
+        set_number_validator(self.inflatables_fee_rate_input)
+        self.inflatables_fee_rate_input.setFrame(False)
+        self.inflatables_fee_rate_input.setClearButtonEnabled(False)
+        self.inflatables_fee_rate_input.setText(
+            str(self.value_of_default_fee_rate.fee_rate),
+        )
+        self.inflatables_fee_rate_input.setPlaceholderText(
+            str(self.value_of_default_fee_rate.fee_rate),
+        )
+
+        self.inflatables_asset_supply_layout.addWidget(
+            self.inflatables_fee_rate_input,
+        )
+
         self.vertical_layout_issue_ifa.addLayout(
             self.inflatables_asset_supply_layout,
         )
@@ -314,9 +362,9 @@ class IssueIFAWidget(QWidget):
         # self.replace_checkbox_horizontal_layout.addWidget(
         #     self.replace_label_checkbox,
         # )
-        self.inflatables_asset_supply_layout.addLayout(
-            self.replace_checkbox_horizontal_layout,
-        )
+        # self.inflatables_asset_supply_layout.addLayout(
+        #     self.replace_checkbox_horizontal_layout,
+        # )
 
         self.vertical_spacer_issue_ifa = QSpacerItem(
             20,
@@ -374,7 +422,6 @@ class IssueIFAWidget(QWidget):
         self.retranslate_ui()
         # Apply prefill rules for secondary issuance
         if self.params is not None and self.secondary_issuance:
-            self.issue_ifa_title.setText('Secondary Issuance')
             if self.params.asset_name:
                 self.inflatables_asset_name_input.setText(
                     self.params.asset_name,
@@ -389,8 +436,8 @@ class IssueIFAWidget(QWidget):
             self.inflatables_total_supply_label.hide()
             self.inflatables_total_supply_input.hide()
             self.inflatables_asset_name_input.setReadOnly(True)
-            self.replace_label_checkbox.show()
-            self.issue_ifa_widget.setFixedHeight(500)
+            # self.replace_label_checkbox.show()
+            self.issue_ifa_widget.setFixedHeight(608)
 
         if self.from_draft and self.draft_id:
             self._load_inflatables_draft_data()
@@ -399,6 +446,8 @@ class IssueIFAWidget(QWidget):
                 self.inflatables_short_identifier_input.setText('')
                 self.inflatables_asset_name_input.setText('')
                 self.inflatables_issue_amount_input.setText('')
+                self.inflatables_fee_rate_label.hide()
+                self.inflatables_fee_rate_input.hide()
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
@@ -414,11 +463,22 @@ class IssueIFAWidget(QWidget):
         self.ifa_close_btn.clicked.connect(
             self._view_model.page_navigation.inflatable_asset_page,
         )
-        self._view_model.issue_nia_asset_view_model.issue_button_clicked.connect(
+        self._view_model.issue_ifa_asset_view_model.is_loading.connect(
             self.update_loading_state,
         )
-        self.issue_ifa_btn.clicked.connect(self.on_issue_ifa_click)
-        self._view_model.issue_nia_asset_view_model.is_issued.connect(
+        if self.secondary_issuance:
+            self.issue_ifa_btn.clicked.connect(
+                self.on_secondary_issuance_click,
+            )
+            self.inflatables_issue_amount_input.textChanged.connect(
+                self.validate_issuance_amount,
+            )
+            view_model = self._view_model.cfa_view_model
+            self.asset_transactions: ListTransferAssetWithBalanceResponseModel = view_model.txn_list
+            self.spendable_balance_validation()
+        else:
+            self.issue_ifa_btn.clicked.connect(self.on_issue_ifa_click)
+        self._view_model.issue_ifa_asset_view_model.success_page_message.connect(
             self.inflatables_asset_issued,
         )
         self.inflatables_issue_amount_input.textChanged.connect(
@@ -438,8 +498,11 @@ class IssueIFAWidget(QWidget):
         self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
             self.show_ifa_psbt_page,
         )
-        self._view_model.issue_nia_asset_view_model.utxo_creation_started.connect(
+        self._view_model.issue_ifa_asset_view_model.utxo_creation_started.connect(
             self.handle_ifa_issue,
+        )
+        self._view_model.issue_ifa_asset_view_model.secondary_issuance_success.connect(
+            self._view_model.page_navigation.inflatable_asset_page,
         )
 
     def retranslate_ui(self):
@@ -460,6 +523,14 @@ class IssueIFAWidget(QWidget):
                     None,
                 ),
             )
+            self.issue_ifa_title.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'secondary_issuance',
+                    None,
+                ),
+            )
+
         else:
             self.inflatables_asset_ticker_label.setText(
                 QCoreApplication.translate(
@@ -517,6 +588,20 @@ class IssueIFAWidget(QWidget):
                 None,
             ),
         )
+        self.inflatables_fee_rate_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'fee_rate',
+                None,
+            ),
+        )
+        self.inflatables_fee_rate_input.setPlaceholderText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'fee_rate',
+                None,
+            ),
+        )
         self.issue_ifa_btn.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset', None,
@@ -550,25 +635,51 @@ class IssueIFAWidget(QWidget):
         short_identifier = self.inflatables_short_identifier_input.text().upper()
         asset_name = self.inflatables_asset_name_input.text()
         amount_to_issue = self.inflatables_issue_amount_input.text()
+        inflation_amounts = self.inflatables_total_supply_input.text()
+        replace_rights_num = self.replace_label_checkbox.isChecked()
         if not self.from_draft:
             self.create_issue_inflatables_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
+                inflation_amounts, replace_rights_num,
             )
 
-        # Call the view model method and pass the text values as arguments
-        self._view_model.issue_nia_asset_view_model.on_issue_click(
-            short_identifier, asset_name,
-            amount_to_issue,
+        # Call the IFA view model method and pass the text values as arguments
+        self._view_model.issue_ifa_asset_view_model.issue_ifa_asset(
+            short_identifier,
+            asset_name,
+            int(amount_to_issue),
+            int(inflation_amounts),
+            replace_rights_num,
+        )
+
+    def on_secondary_issuance_click(self):
+        """Handle the click event for secondary issuance."""
+        value_of_default_min_confirmation: DefaultMinConfirmation = SettingCardRepository.get_default_min_confirmation()
+        amount_to_issue = self.inflatables_issue_amount_input.text()
+        fee_text = self.inflatables_fee_rate_input.text() or FEE_RATE
+        self._view_model.issue_ifa_asset_view_model.secondary_issuance(
+            asset_id=self.params.asset_id,
+            amount=int(amount_to_issue),
+            fee_rate=int(fee_text),
+            min_confirmation=value_of_default_min_confirmation.min_confirmation,
         )
 
     def handle_button_enabled(self):
         """Updates the enabled state of the send button."""
-        if (
-            self.inflatables_short_identifier_input.text() and
-            self.inflatables_issue_amount_input.text(
-            ) and self.inflatables_asset_name_input.text()
-            and self.inflatables_issue_amount_input.text() != '0'
-        ):
+        inputs_filled = all([
+            self.inflatables_short_identifier_input.text(),
+            self.inflatables_issue_amount_input.text(),
+            self.inflatables_asset_name_input.text(),
+        ])
+
+        valid_amounts = (
+            self.inflatables_issue_amount_input.text() != '0' and
+            self.inflatables_total_supply_input.text() != '0'
+        )
+
+        no_errors = not self.inflatables_error_label.isVisible()
+
+        if inputs_filled and valid_amounts and no_errors:
             self.issue_ifa_btn.setDisabled(False)
         else:
             self.issue_ifa_btn.setDisabled(True)
@@ -629,7 +740,7 @@ class IssueIFAWidget(QWidget):
 
     def handle_ifa_issue(self):
         """handle ifa issue"""
-        self._view_model.issue_nia_asset_view_model.utxo_creation_started.disconnect()
+        self._view_model.issue_ifa_asset_view_model.utxo_creation_started.disconnect()
         inflatables_wallet_service = WalletDataService.get_session()
         if inflatables_wallet_service:
             unsigned_psbts = inflatables_wallet_service.list_psbt(
@@ -658,7 +769,7 @@ class IssueIFAWidget(QWidget):
                 ),
             )
 
-    def create_issue_inflatables_asset_draft(self, ticker, name, amount):
+    def create_issue_inflatables_asset_draft(self, ticker, name, amount, inflation_amounts, replace_rights_num):
         """Create and save an Issue Asset draft when UTXOs are not available.
         It stores minimal metadata so the draft can be shown on the fungible page.
         """
@@ -668,6 +779,8 @@ class IssueIFAWidget(QWidget):
                 name=name,
                 ticker=ticker,
                 issued_amount=int(amount),
+                inflation_amounts=int(inflation_amounts),
+                replace_rights_num=int(replace_rights_num),
             )
 
     def _load_inflatables_draft_data(self):
@@ -693,4 +806,54 @@ class IssueIFAWidget(QWidget):
                 self.inflatables_issue_amount_input.setText(
                     str(draft['issued_amount']),
                 )
+            if 'inflation_amounts' in draft:
+                self.inflatables_total_supply_input.setText(
+                    str(draft['inflation_amounts']),
+                )
+            if 'replace_rights_num' in draft:
+                self.replace_label_checkbox.setChecked(
+                    bool(draft['replace_rights_num']),
+                )
             self.handle_button_enabled()
+
+    def validate_issuance_amount(self, amount):
+        """Validate the issuance amount."""
+        self.spendable_balance_validation()
+        if self.inflatables_error_label.isVisible():
+            return
+        max_amount_for_issuance = self.params.max_amount
+        if not amount.strip().isdigit():
+            self.inflatables_error_label.hide()
+            self.issue_ifa_btn.setDisabled(True)
+            self.handle_button_enabled()
+            return
+        if int(amount) > max_amount_for_issuance:
+            self.inflatables_error_label.setText(
+                f"Amount exceeds maximum issuance amount of {
+                    max_amount_for_issuance
+                }",
+            )
+            self.inflatables_error_label.show()
+            self.issue_ifa_btn.setDisabled(True)
+        else:
+            self.inflatables_error_label.hide()
+        self.handle_button_enabled()
+
+    def spendable_balance_validation(self):
+        """Validate the spendable balance."""
+        if self.asset_transactions.asset_balance.spendable == 0:
+            self.inflatables_error_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'spendable_balance_validation',
+                ),
+            )
+            self.inflatables_error_label.show()
+            self.issue_ifa_btn.setDisabled(True)
+            self.inflatables_issue_amount_input.setReadOnly(True)
+            self.inflatables_fee_rate_input.setReadOnly(True)
+        else:
+            self.inflatables_error_label.hide()
+            self.inflatables_issue_amount_input.setReadOnly(False)
+            self.inflatables_fee_rate_input.setReadOnly(False)
+        self.handle_button_enabled()

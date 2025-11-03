@@ -11,6 +11,7 @@ from typing import Any
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import AssetSchema
+from rgb_lib import Assignment
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
@@ -135,6 +136,7 @@ class CFAViewModel(QObject, ThreadManager):
                 str(error), PsbtStatus.ERROR,
             )
         else:
+            print(error)
             ToastManager.error(description=error.message)
 
     def on_success_send_rgb_asset(self, success: bool) -> None:
@@ -149,11 +151,13 @@ class CFAViewModel(QObject, ThreadManager):
                         'args': [
                             SendAssetRequestModel(
                                 asset_id=self.asset_id,
-                                amount=self.amount,
+                                assignment=Assignment.FUNGIBLE(
+                                    amount=int(self.amount),
+                                ),
                                 recipient_id=self.blinded_utxo,
                                 transport_endpoints=self.transport_endpoints,
-                                fee_rate=self.fee_rate,
-                                min_confirmations=self.min_confirmation,
+                                fee_rate=int(self.fee_rate),
+                                min_confirmations=int(self.min_confirmation),
                             ),
                         ],
                         'callback': self.on_success_cfa,

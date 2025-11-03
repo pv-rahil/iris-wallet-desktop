@@ -46,6 +46,8 @@ class MainAssetViewModel(QObject, ThreadManager):
                     response.uda.reverse()
                 if response.cfa is not None:
                     response.cfa.reverse()
+                if response.ifa is not None:
+                    response.ifa.reverse()
 
             if response is not None:
                 self.assets = response

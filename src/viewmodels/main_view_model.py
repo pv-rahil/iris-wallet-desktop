@@ -15,6 +15,7 @@ from src.viewmodels.faucets_view_model import FaucetsViewModel
 from src.viewmodels.fee_rate_view_model import EstimateFeeViewModel
 from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
 from src.viewmodels.issue_cfa_view_model import IssueCFAViewModel
+from src.viewmodels.issue_ifa_view_model import IssueIFAViewModel
 from src.viewmodels.issue_nia_view_model import IssueNIAViewModel
 from src.viewmodels.main_asset_view_model import MainAssetViewModel
 from src.viewmodels.receive_bitcoin_view_model import ReceiveBitcoinViewModel
@@ -60,6 +61,9 @@ class MainViewModel(QObject):
         self.unspent_view_model = UnspentListViewModel(self.page_navigation)
 
         self.issue_cfa_asset_view_model = IssueCFAViewModel(
+            self.page_navigation,
+        )
+        self.issue_ifa_asset_view_model = IssueIFAViewModel(
             self.page_navigation,
         )
         self.cfa_view_model = CFAViewModel(

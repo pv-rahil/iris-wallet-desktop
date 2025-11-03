@@ -312,7 +312,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             if self.is_watch_only:
                 self.create_inflatable_card(inflatables_draft_asset)
 
-        for asset in self._view_model.main_asset_view_model.assets.nia:
+        for asset in self._view_model.main_asset_view_model.assets.ifa:
             self.create_inflatable_card(asset)
         self.inflatables_vertical_spacer_scroll_area = QSpacerItem(
             20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
@@ -344,7 +344,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
     def create_inflatable_card(self, asset, img_path=None):
         """This method creates all the inflatable assets elements of the main asset page."""
         self.inflatable_frame = ClickableFrame(
-            asset.asset_id, asset.name, self.inflatable_widget, asset_type=AssetSchema.NIA,
+            asset.asset_id, asset.name, self.inflatable_widget, asset_type=AssetSchema.IFA,
         )
         self.inflatable_frame.setStyleSheet(
             load_stylesheet('views/qss/fungible_asset_style.qss'),

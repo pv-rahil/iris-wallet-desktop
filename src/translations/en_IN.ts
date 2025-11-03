@@ -2224,5 +2224,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>home</source>
         <translation>Home</translation>
     </message>
+    <message>
+        <source>secondary_issuance</source>
+        <translation>Secondary Issuance</translation>
+    </message>
 </context>
 </TS>

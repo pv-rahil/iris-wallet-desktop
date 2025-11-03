@@ -450,6 +450,7 @@ class RGBAssetTransactionDetail(QWidget):
             self.params.image_path,
             self.params.asset_type,
         )
+        print(self.params.asset_type, 'detail')
         self._view_model.page_navigation.cfa_detail_page(
             RgbAssetPageLoadModel(asset_type=self.params.asset_type),
         )

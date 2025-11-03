@@ -96,7 +96,8 @@ class RGBAssetDetailWidget(QWidget):
         self.__loading_translucent_screen = LoadingTranslucentScreen(self)
         self.asset_type = params.asset_type
         self.image_path = params.image_path
-        self.is_secondary_issuance = params.is_secondary_issuance
+        self.max_amount = None
+        self.circulation = None
         self._view_model: MainViewModel = view_model
         self.config = get_current_wallet_mode_config()
         self.grid_layout_2 = QGridLayout(self)
@@ -154,21 +155,23 @@ class RGBAssetDetailWidget(QWidget):
         )
         self.send_receive_button_layout.addWidget(self.send_asset)
         # Secondary issuance entry point within the action row (compact sizing)
-        if self.is_secondary_issuance:
-            self.issue_more_button = AssetTransferButton('Secondary\nIssuance')
-            self.issue_more_button.setCursor(
+        if self.asset_type == str(AssetSchema.IFA.value):
+            self.secondary_issuance = AssetTransferButton(
+                'Secondary\nIssuance',
+            )
+            self.secondary_issuance.setCursor(
                 QCursor(Qt.CursorShape.PointingHandCursor),
             )
             self.receive_rgb_asset.setFixedSize(QSize(104, 50))
             self.send_asset.setFixedSize(QSize(104, 50))
-            self.issue_more_button.setFixedSize(QSize(104, 50))
+            self.secondary_issuance.setFixedSize(QSize(104, 50))
             self.receive_rgb_asset.setText(
                 self.receive_rgb_asset.text().replace(' ', '\n', 1),
             )
             self.send_asset.setText(
                 self.send_asset.text().replace(' ', '\n', 1),
             )
-            self.send_receive_button_layout.addWidget(self.issue_more_button)
+            self.send_receive_button_layout.addWidget(self.secondary_issuance)
         self.horizontal_spacer_2 = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
@@ -446,10 +449,11 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_refresh_button.clicked.connect(
             self.refresh_transaction,
         )
-        if getattr(self, 'issue_more_button', None) is not None:
-            self.issue_more_button.clicked.connect(
+        if self.asset_type == str(AssetSchema.IFA.value):
+            self.secondary_issuance.clicked.connect(
                 self.navigate_secondary_issuance,
             )
+            self._view_model.main_asset_view_model.get_assets()
 
     def refresh_transaction(self):
         """Refresh the transaction of the assets"""
@@ -460,14 +464,26 @@ class RGBAssetDetailWidget(QWidget):
 
     def navigate_secondary_issuance(self):
         """Navigate to the secondary issue page prefilled with current asset data."""
+        asset_id = self.asset_id_detail.toPlainText()
+        if self.asset_type == AssetSchema.IFA and not self.max_amount:
+            self._fetch_ifa_supply(asset_id)
         params = RgbAssetPageLoadModel(
-            asset_id=self.asset_id_detail.toPlainText(),
+            asset_id=asset_id,
             asset_name=self.widget_title_asset_name.text(),
             image_path=self.image_path,
             asset_type=self.asset_type,
             is_secondary_issuance=True,
+            max_amount=self.max_amount,
         )
         self._view_model.page_navigation.issue_ifa_secondary_page(params)
+
+    def _fetch_ifa_supply(self, asset_id: str):
+        """Fetch max supply and circulation for an IFA asset and cache on the widget."""
+        if self._view_model.main_asset_view_model.assets and self._view_model.main_asset_view_model.assets.ifa:
+            for a in self._view_model.main_asset_view_model.assets.ifa:
+                if a.asset_id == asset_id:
+                    self.max_amount = a.max_supply - a.known_circulating_supply
+                    self.circulation = a.known_circulating_supply
 
     def set_transaction_detail_frame(self, asset_id, asset_name, image_path, asset_type):
         """This method sets up the transaction detail frame in the UI.
@@ -510,7 +526,7 @@ class RGBAssetDetailWidget(QWidget):
                 no_transaction_widget, 0, 0, 1, 1,
             )
             return
-        if asset_type == AssetSchema.NIA:
+        if asset_type in (AssetSchema.NIA, AssetSchema.IFA):
             self.rgb_asset_detail_widget.setMinimumSize(QSize(499, 730))
             self.rgb_asset_detail_widget.setMaximumSize(QSize(499, 730))
             self.scroll_area.setMaximumSize(QSize(335, 225))
@@ -549,9 +565,14 @@ class RGBAssetDetailWidget(QWidget):
         """It handled to hide and show transaction details frame"""
         if self.transfer_status == TransferStatusEnumModel.INTERNAL.value:
             if self.transaction_type == TransferKind.ISSUANCE:
-                transaction_detail_frame.transaction_type.setText(
-                    'ISSUANCE',
+                transaction_detail_frame.transaction_type.setText('ISSUANCE')
+                transaction_detail_frame.transaction_amount.setStyleSheet(
+                    'color:#01A781;font-weight: 600',
                 )
+                transaction_detail_frame.transaction_type.show()
+                transaction_detail_frame.transfer_type.hide()
+            elif self.transaction_type == TransferKind.INFLATION:
+                transaction_detail_frame.transaction_type.setText('INFLATION')
                 transaction_detail_frame.transaction_amount.setStyleSheet(
                     'color:#01A781;font-weight: 600',
                 )
@@ -560,6 +581,9 @@ class RGBAssetDetailWidget(QWidget):
             else:
                 transaction_detail_frame.transfer_type.show()
                 transaction_detail_frame.transaction_type.hide()
+        else:
+            transaction_detail_frame.transfer_type.show()
+            transaction_detail_frame.transaction_type.hide()
 
     def show_loading_screen(self, loading: bool):
         """This method handled show loading screen on main asset page"""
@@ -574,6 +598,8 @@ class RGBAssetDetailWidget(QWidget):
             self.asset_refresh_button.setDisabled(True)
             self.send_asset.setDisabled(True)
             self.receive_rgb_asset.setDisabled(True)
+            if self.asset_type == AssetSchema.IFA or self.asset_type == str(AssetSchema.IFA.value):
+                self.secondary_issuance.setDisabled(True)
         else:
             self.render_timer.stop()
             self.__loading_translucent_screen.stop()
@@ -589,11 +615,17 @@ class RGBAssetDetailWidget(QWidget):
             self.receive_rgb_asset.setDisabled(
                 not self.config.privileges.can_receive_asset,
             )
+            if self.asset_type == AssetSchema.IFA:
+                self.secondary_issuance.setDisabled(
+                    not self.config.privileges.can_send_transactions,
+                )
 
     def handle_page_navigation(self):
         """Handle the page navigation according the NIA or CFA page"""
         if self.asset_type == AssetSchema.NIA:
             self._view_model.page_navigation.fungibles_asset_page()
+        if self.asset_type == AssetSchema.IFA:
+            self._view_model.page_navigation.inflatable_asset_page()
         else:
             self._view_model.page_navigation.collectibles_asset_page()
 

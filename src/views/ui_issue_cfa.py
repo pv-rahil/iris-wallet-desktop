@@ -431,7 +431,7 @@ class IssueCFAWidget(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'change_uploaded_file', 'CHANGE UPLOADED FILE',
                 ),
             )
-            self.handle_button_enabled()
+            self.issue_cfa_button.setDisabled(False)
 
     def on_issue_cfa(self):
         """Issue CFA while issue CFA button clicked"""
@@ -460,7 +460,7 @@ class IssueCFAWidget(QWidget):
 
     def handle_button_enabled(self):
         """Updates the enabled state of the send button."""
-        if (self.amount_input.text() and self.asset_description_input.text() and self.name_of_the_asset_input.text() and self.amount_input.text() != '0' and self.selected_file_path):
+        if (self.amount_input.text() and self.asset_description_input.text() and self.name_of_the_asset_input.text() and self.amount_input.text() != '0'):
             self.issue_cfa_button.setDisabled(False)
         else:
             self.issue_cfa_button.setDisabled(True)
@@ -507,7 +507,6 @@ class IssueCFAWidget(QWidget):
                 wallet_service.delete_draft_issue_asset(self.draft_id)
         self.render_timer.stop()
         self._view_model.page_navigation.show_success_page(params)
-        self._view_model.issue_cfa_asset_view_model.utxo_creation_started.disconnect()
 
     def handle_cfa_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
@@ -523,6 +522,7 @@ class IssueCFAWidget(QWidget):
     def handle_cfa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation."""
         if status:
+            self._view_model.utxo_creation_view_model.utxo_created.disconnect()
             cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
                 parent=self,
             )
@@ -532,6 +532,7 @@ class IssueCFAWidget(QWidget):
 
     def handle_cfa_issue(self):
         """Handle CFA issue start with PSBT reuse if available."""
+        self._view_model.issue_cfa_asset_view_model.utxo_creation_started.disconnect()
         wallet_service = WalletDataService.get_session()
         if wallet_service:
             unsigned_psbts = wallet_service.list_psbt(signed=False)

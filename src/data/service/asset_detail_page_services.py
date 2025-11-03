@@ -108,7 +108,7 @@ class AssetDetailPageService:
 
         Parameters:
         - asset_id (ListTransfersRequestModel): The model containing the ID of the asset whose transactions are to be retrieved.
-        - transaction_tx (TrasactionTxModel): The model containing the transaction ID (`tx_id`) and/or the transaction index (`idx`)
+        - transaction_tx (TransactionTxModel): The model containing the transaction ID (`tx_id`) and/or the transaction index (`idx`)
 
         Returns:
         - TransferAsset | None: Returns the matching transaction if found; otherwise, returns None if no match is found or if there are no transactions.
@@ -142,29 +142,51 @@ class AssetDetailPageService:
             return handle_exceptions(exc)
 
     @staticmethod
-    def assign_transfer_status(transaction):
+    def assign_transfer_status(transaction: TransferAsset):
         """
         Assign transfer statuses and amount status based on transaction kind.
         """
         # Assign transfer statuses based on the transaction kind
         if transaction.kind == TransferKind.ISSUANCE:
             transaction.transfer_Status = TransferStatusEnumModel.INTERNAL
-            transaction.amount_status = f'+{
-                str(transaction.amount)
-            }'
+            if transaction.assignments and len(transaction.assignments) > 0:
+                transaction.amount_status = f'+{
+                    str(transaction.assignments[0].amount)
+                }'
         elif transaction.kind in (
             TransferKind.RECEIVE_BLIND,
             TransferKind.RECEIVE_WITNESS,
         ):
-            transaction.transfer_Status = TransferStatusEnumModel.RECEIVED.value
-            transaction.amount_status = f'+{
-                str(transaction.amount)
-            }'
+            transaction.transfer_Status = TransferStatusEnumModel.RECEIVED
+            amount_val = None
+            if (
+                transaction.assignments
+                and len(transaction.assignments) > 0
+                and transaction.assignments[0].amount is not None
+            ):
+                amount_val = transaction.assignments[0].amount
+            elif (
+                transaction.requested_assignment
+                and transaction.requested_assignment.amount is not None
+            ):
+                amount_val = transaction.requested_assignment.amount
+
+            transaction.amount_status = f"+{
+                str(amount_val)
+                if amount_val is not None else '0'
+            }"
         elif transaction.kind == TransferKind.SEND:
-            transaction.amount_status = f'-{
-                str(transaction.amount)
-            }'
+            if transaction.requested_assignment and transaction.requested_assignment.amount is not None:
+                transaction.amount_status = f'-{
+                    str(transaction.requested_assignment.amount)
+                }'
             transaction.transfer_Status = TransferStatusEnumModel.SENT
+        elif transaction.kind == TransferKind.INFLATION:
+            transaction.transfer_Status = TransferStatusEnumModel.INTERNAL
+            if transaction.requested_assignment and transaction.requested_assignment.amount is not None:
+                transaction.amount_status = f'+{
+                    str(transaction.requested_assignment.amount)
+                }'
         else:
             raise ServiceOperationException(
                 'Unknown transaction type',

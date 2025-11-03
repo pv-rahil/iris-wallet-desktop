@@ -5,6 +5,7 @@ This module provides the service for the main asset page.
 from __future__ import annotations
 
 from rgb_lib import AssetCfa
+from rgb_lib import AssetIfa
 from rgb_lib import AssetNia
 from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
@@ -49,7 +50,7 @@ class MainAssetPageDataService:
                 FilterAssetRequestModel(
                     filter_asset_schemas=[
                         AssetSchema.NIA,
-                        AssetSchema.CFA, AssetSchema.UDA,
+                        AssetSchema.CFA, AssetSchema.UDA, AssetSchema.IFA,
                     ],
                 ),
             )
@@ -68,6 +69,7 @@ class MainAssetPageDataService:
                 nia=asset_detail.nia or [],
                 cfa=asset_detail.cfa or [],
                 uda=asset_detail.uda or [],
+                ifa=asset_detail.ifa or [],
                 vanilla=OfflineAsset(
                     ticker=btc_ticker,
                     balance=btc_balance.vanilla,
@@ -130,22 +132,22 @@ class MainAssetPageDataService:
             PageNavigationEventManager.get_instance(
             ).refresh_transfer_result_dialog_signal.emit(items)
 
-    def get_all_assets(self) -> list[AssetNia | AssetCfa | AssetUda | None]:
+    def get_all_assets(self) -> list[AssetNia | AssetCfa | AssetUda | AssetIfa | None]:
         """
         Get all assets.
 
         Returns:
-            list[AssetNia | AssetCfa | AssetUda | None]: The list of assets.
+            list[AssetNia | AssetCfa | AssetUda | AssetIfa | None]: The list of assets.
         """
         asset_detail = RgbRepository.get_assets(
             FilterAssetRequestModel(
                 filter_asset_schemas=[
                     AssetSchema.NIA,
-                    AssetSchema.CFA, AssetSchema.UDA,
+                    AssetSchema.CFA, AssetSchema.UDA, AssetSchema.IFA,
                 ],
             ),
         )
-        return (asset_detail.nia or []) + (asset_detail.cfa or []) + (asset_detail.uda or [])
+        return (asset_detail.nia or []) + (asset_detail.cfa or []) + (asset_detail.uda or []) + (asset_detail.ifa or [])
 
     def find_asset_for_failed_transfer(self, failed_id: str, assets: list) -> str | None:
         """
@@ -202,6 +204,11 @@ class MainAssetPageDataService:
         asset_detail.uda = [
             a for a in (
                 asset_detail.uda or []
+            ) if has_non_zero(a)
+        ]
+        asset_detail.ifa = [
+            a for a in (
+                asset_detail.ifa or []
             ) if has_non_zero(a)
         ]
         return asset_detail

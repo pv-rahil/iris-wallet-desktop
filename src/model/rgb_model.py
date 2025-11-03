@@ -7,9 +7,11 @@ from datetime import datetime
 from pydantic import BaseModel
 from pydantic import model_validator
 from rgb_lib import AssetCfa
+from rgb_lib import AssetIfa
 from rgb_lib import AssetNia
 from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
+from rgb_lib import Assignment
 from rgb_lib import Balance
 from rgb_lib import Outpoint
 from rgb_lib import RgbLibError
@@ -105,7 +107,8 @@ class TransferAsset(BaseModel):
 
     idx: int
     status: TransferStatus
-    amount: int
+    assignments: list[Assignment] | None = None
+    requested_assignment: Assignment | None = None
     amount_status: str | None = None  # this for ui purpose
     kind: str | TransferKind
     transfer_Status: str | TransferStatus | None = None
@@ -170,26 +173,49 @@ class IssueAssetUdaRequestModel(IssueAssetCfaRequestModel):
     attachments_file_paths: list[list[str]]
 
 
+class IssueAssetIfaRequestModel(IssueAssetNiaRequestModel):
+    """Request model for issuing assets."""
+    inflation_amounts: list[int]
+    replace_rights_num: int
+
+
 class RgbInvoiceRequestModel(BaseModel):
     """Request model for RGB invoices."""
 
     min_confirmations: int
     asset_id: str | None = None
+    assignment: Assignment
     duration_seconds: int = RGB_INVOICE_DURATION_SECONDS
     transport_endpoints: list[str]
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 
 
 class SendAssetRequestModel(BaseModel):
     """Request model for sending assets."""
 
     asset_id: str
-    amount: int
+    assignment: Assignment
     recipient_id: str
     donation: bool | None = False
     fee_rate: int
     min_confirmations: int
     transport_endpoints: list[str]
     skip_sync: bool = False
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
+
+
+class InflateRequestModel(BaseModel):
+    """Request model for inflating assets."""
+    asset_id: str
+    inflation_amounts: list[int]
+    fee_rate: int
+    min_confirmations: int
 
 
 class ListTransfersRequestModel(AssetIdModel):
@@ -229,6 +255,7 @@ class GetAssetResponseModel(BaseModel):
     nia: list[AssetNia | None] | None = []
     uda: list[AssetUda | None] | None = []
     cfa: list[AssetCfa | None] | None = []
+    ifa: list[AssetIfa | None] | None = []
 
     class Config:
         """Pydantic configuration class allowing arbitrary types."""
@@ -280,6 +307,7 @@ class RgbAssetPageLoadModel(BaseModel):
     image_path: str | None = None
     asset_type: str
     is_secondary_issuance: bool = False
+    max_amount: int | None = None
 
 
 class FailTransferResponseModel(BaseModel):

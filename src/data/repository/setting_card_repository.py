@@ -164,10 +164,10 @@ class SettingCardRepository:
     @staticmethod
     def get_default_min_confirmation() -> DefaultMinConfirmation:
         """
-        Gets the default fee rate.
+        Gets the default min confirmation.
 
         Returns:
-            DefaultFeeRate: A model indicating the default fee rate.
+            DefaultMinConfirmation: A model indicating the default min confirmation.
         """
         try:
             min_confirmation = local_store.get_value('defaultMinConfirmation')

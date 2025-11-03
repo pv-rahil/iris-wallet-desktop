@@ -142,7 +142,7 @@ class Sidebar(QWidget):
         self.my_inflatable = SidebarButton(
             'Issue IFA', ':/assets/my_asset.png', translation_key='inflatables',
         )
-        # self.grid_layout_sidebar.addWidget(self.my_inflatable, 2, 0, 1, 1)
+        self.grid_layout_sidebar.addWidget(self.my_inflatable, 2, 0, 1, 1)
 
         self.settings = SidebarButton(
             'Settings', ':/assets/settings.png', translation_key='settings',
