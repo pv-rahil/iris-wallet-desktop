@@ -20,7 +20,9 @@ from e2e_tests.test.pageobjects.hardware_wallet_connect_page import HardwareWall
 from e2e_tests.test.pageobjects.hardware_wallet_emulator_page import HardwareWalletEmulatorPageObjects
 from e2e_tests.test.pageobjects.help_page import HelpPageObjects
 from e2e_tests.test.pageobjects.hw_device_selection_dialog_page import HWDeviceSelectionDialogPageObjects
+from e2e_tests.test.pageobjects.inflatable_page import InflatablePageObjects
 from e2e_tests.test.pageobjects.issue_cfa_page import IssueCfaPageObjects
+from e2e_tests.test.pageobjects.issue_ifa_page import IssueIfaPageObjects
 from e2e_tests.test.pageobjects.issue_nia_page import IssueNiaPageObjects
 from e2e_tests.test.pageobjects.keyring_dialog_page import KeyringDialogBoxPageObjects
 from e2e_tests.test.pageobjects.receive_asset_page import ReceiveAssetPageObjects
@@ -82,11 +84,15 @@ class MainPageObjects():
 
         self.issue_nia_page_objects = IssueNiaPageObjects(self.application)
 
+        self.issue_ifa_page_objects = IssueIfaPageObjects(self.application)
+
         self.success_page_objects = SuccessPageObjects(self.application)
 
         self.toaster_page_objects = ToasterPageObjects(self.application)
 
         self.sidebar_page_objects = SidebarPageObjects(self.application)
+
+        self.inflatable_page_objects = InflatablePageObjects(self.application)
 
         self.issue_cfa_page_objects = IssueCfaPageObjects(self.application)
 

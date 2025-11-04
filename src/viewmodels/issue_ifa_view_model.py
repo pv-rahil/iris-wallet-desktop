@@ -4,15 +4,21 @@ for the Issue IFA Asset page activities.
 """
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import TransferResult
 
+from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
+from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
@@ -21,7 +27,10 @@ from src.utils.error_message import ERROR_AUTHENTICATION
 from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_ISSUED
+from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
 
@@ -33,6 +42,8 @@ class IssueIFAViewModel(QObject, ThreadManager):
     utxo_creation_started = Signal(bool)
     success_page_message = Signal(str)
     secondary_issuance_success = Signal()
+    unsigned_psbt = Signal(str)
+    hw_dialog_update = Signal(object, Enum)
 
     def __init__(self, page_navigation: Any) -> None:
         super().__init__()
@@ -101,6 +112,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
         replace_rights_num: bool,
     ) -> None:
         """Issue an IFA asset with provided details."""
+        print('Issue IFA asset')
         self.is_loading.emit(True)
         self.asset_ticker = asset_ticker
         self.asset_name = asset_name
@@ -182,3 +194,68 @@ class IssueIFAViewModel(QObject, ThreadManager):
         )
         self.secondary_issuance_success.emit()
         self.is_loading.emit(False)
+
+    def secondary_issuance_begin(self, asset_id: str, amount: int, fee_rate: int, min_confirmation: int) -> None:
+        """Secondary issuance of IFA asset."""
+        self.asset_id = asset_id
+        self.amount = amount
+        self.fee_rate = fee_rate
+        self.min_confirmation = min_confirmation
+        self.is_loading.emit(True)
+        self.run_in_thread(
+            RgbRepository.inflate_begin,
+            {
+                'args': [
+                    InflateRequestModel(
+                        asset_id=asset_id,
+                        inflation_amounts=[amount],
+                        fee_rate=fee_rate,
+                        min_confirmations=min_confirmation,
+                    ),
+                ],
+                'callback': self.on_success_inflate_begin,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_success_inflate_begin(self, response: str) -> None:
+        """Handle success response of IFA second issuance."""
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
+            self.hw_dialog_update.emit(
+                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+            )
+            hardware_client_store.set_rgb_mode(True)
+            self.run_in_thread(
+                CommonOperationRepository.sign_and_finalize_psbt,
+                {
+                    'args': [response],
+                    'callback': self.on_psbt_signed_and_finalized_success,
+                    'error_callback': self.on_error,
+                },
+            )
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+            self.unsigned_psbt.emit(response)
+
+    def on_psbt_signed_and_finalized_success(self, finalized_psbt: str):
+        """
+        Callback after PSBT is signed and finalized.
+        Now broadcast the transaction.
+        """
+        self.hw_dialog_update.emit(
+            INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
+        )
+        self.inflate_end(finalized_psbt)
+
+    def inflate_end(self, signed_psbt: str):
+        """
+        Finalize and broadcast the signed PSBT.
+        Calls RgbRepository.inflate_end to broadcast the transaction.
+        """
+        self.run_in_thread(
+            RgbRepository.inflate_end,
+            {
+                'args': [signed_psbt],
+                'callback': self.on_success_inflate,
+                'error_callback': self.on_error,
+            },
+        )

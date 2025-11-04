@@ -59,6 +59,7 @@ python3-pyatspi = { version = "^1.19.0", platform = "linux" }
 allure-pytest = { version = "^2.13.5", platform = "linux" }
 pyperclip = { version = "^1.9.0", platform = "linux" }
 pygobject = { version = "==3.50.0", platform = "linux" }
+speculos = "^0.25.8"
 
 # Extra package required only for windows os
 winsdk = { version = "^1.0.0b10", platform = "win32" }

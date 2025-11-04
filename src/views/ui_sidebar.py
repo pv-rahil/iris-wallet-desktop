@@ -24,6 +24,7 @@ from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
 from accessible_constant import FUNGIBLE_BUTTON
 from accessible_constant import HELP_BUTTON
+from accessible_constant import INFLATABLE_BUTTON
 from accessible_constant import SETTINGS_BUTTON
 from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
 from accessible_constant import SIGN_PSBT_BUTTON
@@ -142,6 +143,7 @@ class Sidebar(QWidget):
         self.my_inflatable = SidebarButton(
             'Issue IFA', ':/assets/my_asset.png', translation_key='inflatables',
         )
+        self.my_inflatable.setAccessibleName(INFLATABLE_BUTTON)
         self.grid_layout_sidebar.addWidget(self.my_inflatable, 2, 0, 1, 1)
 
         self.settings = SidebarButton(
@@ -312,6 +314,7 @@ class Sidebar(QWidget):
             self.faucet,
             self.my_fungibles,
             self.my_collectibles,
+            self.my_inflatable,
             self.settings,
             self.about,
             self.broadcast_transaction,

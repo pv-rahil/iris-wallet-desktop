@@ -24,14 +24,18 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
-from accessible_constant import ISSUE_NIA_ASSET_CLOSE_BUTTON
-from accessible_constant import ISSUE_NIA_BUTTON
-from accessible_constant import NIA_ASSET_AMOUNT
-from accessible_constant import NIA_ASSET_NAME
-from accessible_constant import NIA_ASSET_TICKER
+from accessible_constant import IFA_ASSET_AMOUNT
+from accessible_constant import IFA_ASSET_NAME
+from accessible_constant import IFA_ASSET_TICKER
+from accessible_constant import ISSUE_IFA_ASSET_CLOSE_BUTTON
+from accessible_constant import ISSUE_IFA_BUTTON
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.setting_model import DefaultFeeRate
@@ -64,6 +68,12 @@ class IssueIFAWidget(QWidget):
         self.secondary_issuance: bool = bool(
             self.params and self.params.is_secondary_issuance,
         )
+        self.is_hardware_wallet = SettingRepository.get_key_storage_type(
+        ) == KeyStorageType.HARDWARE_WALLET
+        self.is_online_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.ONLINE_TYPE_WALLET
+        self.is_watch_only = SettingRepository.get_wallet_access_type(
+        ) == WalletAccessType.WATCH_ONLY
         self.asset_transactions: ListTransferAssetWithBalanceResponseModel | None = None
         self.value_of_default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         self.issue_ifa_grid_layout = QGridLayout(self)
@@ -149,8 +159,8 @@ class IssueIFAWidget(QWidget):
         self.issue_ifa_title_layout.addWidget(self.issue_ifa_title)
 
         self.ifa_close_btn = QPushButton(self.issue_ifa_widget)
-        self.ifa_close_btn.setAccessibleName(ISSUE_NIA_ASSET_CLOSE_BUTTON)
-        self.ifa_close_btn.setObjectName('nia_close_btn')
+        self.ifa_close_btn.setAccessibleName(ISSUE_IFA_ASSET_CLOSE_BUTTON)
+        self.ifa_close_btn.setObjectName('ifa_close_btn')
         self.ifa_close_btn.setMinimumSize(QSize(24, 24))
         self.ifa_close_btn.setMaximumSize(QSize(50, 65))
         self.ifa_close_btn.setAutoFillBackground(False)
@@ -209,7 +219,7 @@ class IssueIFAWidget(QWidget):
             'issue_nia_input',
         )
         self.inflatables_short_identifier_input.setAccessibleName(
-            NIA_ASSET_TICKER,
+            IFA_ASSET_TICKER,
         )
         self.inflatables_short_identifier_input.setMinimumSize(QSize(0, 40))
         self.inflatables_short_identifier_input.setMaximumSize(QSize(370, 40))
@@ -242,7 +252,7 @@ class IssueIFAWidget(QWidget):
             self.issue_ifa_widget,
         )
         self.inflatables_asset_name_input.setObjectName('asset_name_input')
-        self.inflatables_asset_name_input.setAccessibleName(NIA_ASSET_NAME)
+        self.inflatables_asset_name_input.setAccessibleName(IFA_ASSET_NAME)
         self.inflatables_asset_name_input.setMinimumSize(QSize(0, 40))
         self.inflatables_asset_name_input.setMaximumSize(QSize(370, 40))
 
@@ -273,7 +283,7 @@ class IssueIFAWidget(QWidget):
             self.issue_ifa_widget,
         )
         self.inflatables_issue_amount_input.setObjectName('amount_input')
-        self.inflatables_issue_amount_input.setAccessibleName(NIA_ASSET_AMOUNT)
+        self.inflatables_issue_amount_input.setAccessibleName(IFA_ASSET_AMOUNT)
         self.inflatables_issue_amount_input.setMinimumSize(QSize(0, 40))
         self.inflatables_issue_amount_input.setMaximumSize(QSize(370, 40))
         set_number_validator(self.inflatables_issue_amount_input)
@@ -296,7 +306,7 @@ class IssueIFAWidget(QWidget):
             self.issue_ifa_widget,
         )
         self.inflatables_total_supply_input.setObjectName('amount_input')
-        self.inflatables_total_supply_input.setAccessibleName(NIA_ASSET_AMOUNT)
+        self.inflatables_total_supply_input.setAccessibleName(IFA_ASSET_AMOUNT)
         self.inflatables_total_supply_input.setMinimumSize(QSize(0, 40))
         self.inflatables_total_supply_input.setMaximumSize(QSize(370, 40))
         set_number_validator(self.inflatables_total_supply_input)
@@ -392,7 +402,7 @@ class IssueIFAWidget(QWidget):
             self.inflatables_issue_button_spacer,
         )
         self.issue_ifa_btn = PrimaryButton()
-        self.issue_ifa_btn.setAccessibleName(ISSUE_NIA_BUTTON)
+        self.issue_ifa_btn.setAccessibleName(ISSUE_IFA_BUTTON)
         self.issue_ifa_btn.setCursor(
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
@@ -496,7 +506,9 @@ class IssueIFAWidget(QWidget):
             self.handle_ifa_utxo_created,
         )
         self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
-            self.show_ifa_psbt_page,
+            lambda psbt: self.show_ifa_psbt_page(
+                psbt,
+            ) if self.is_hardware_wallet or self.is_watch_only else None,
         )
         self._view_model.issue_ifa_asset_view_model.utxo_creation_started.connect(
             self.handle_ifa_issue,
@@ -657,12 +669,20 @@ class IssueIFAWidget(QWidget):
         value_of_default_min_confirmation: DefaultMinConfirmation = SettingCardRepository.get_default_min_confirmation()
         amount_to_issue = self.inflatables_issue_amount_input.text()
         fee_text = self.inflatables_fee_rate_input.text() or FEE_RATE
-        self._view_model.issue_ifa_asset_view_model.secondary_issuance(
-            asset_id=self.params.asset_id,
-            amount=int(amount_to_issue),
-            fee_rate=int(fee_text),
-            min_confirmation=value_of_default_min_confirmation.min_confirmation,
-        )
+        if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only:
+            self._view_model.issue_ifa_asset_view_model.secondary_issuance_begin(
+                asset_id=self.params.asset_id,
+                amount=int(amount_to_issue),
+                fee_rate=int(fee_text),
+                min_confirmation=value_of_default_min_confirmation.min_confirmation,
+            )
+        else:
+            self._view_model.issue_ifa_asset_view_model.secondary_issuance(
+                asset_id=self.params.asset_id,
+                amount=int(amount_to_issue),
+                fee_rate=int(fee_text),
+                min_confirmation=value_of_default_min_confirmation.min_confirmation,
+            )
 
     def handle_button_enabled(self):
         """Updates the enabled state of the send button."""
@@ -727,6 +747,9 @@ class IssueIFAWidget(QWidget):
 
     def handle_ifa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
+        # Only handle if the current purpose matches IFA issuing
+        if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_ifa':
+            return
         if status:
             self._view_model.utxo_creation_view_model.utxo_created.disconnect()
 
@@ -748,20 +771,22 @@ class IssueIFAWidget(QWidget):
             )
             existing_inflatables_psbt = next(
                 (
-                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
+                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset_ifa'
                 ), None,
             )
             if existing_inflatables_psbt and existing_inflatables_psbt.get('psbt'):
                 self.show_ifa_psbt_page(existing_inflatables_psbt.get('psbt'))
                 return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            'issue_asset',
+            'issue_asset_ifa', 2,
         )
 
     def show_ifa_psbt_page(self, inflatables_psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        # Only respond if PSBT relates to IFA issuing purpose
+        if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_ifa':
+            return
         if inflatables_psbt:
-            self._view_model.utxo_creation_view_model.unsigned_psbt.disconnect()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='IFA page',

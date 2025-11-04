@@ -73,9 +73,9 @@ class CFAViewModel(QObject, ThreadManager):
         self.asset_type = None
         self.blinded_utxo = None
         self.transport_endpoints = None
-        self.amount = None
         self.fee_rate = None
         self.min_confirmation = None
+        self.assignment = None
         self.txn_list = []
 
     def get_cfa_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: Enum) -> None:
@@ -126,6 +126,8 @@ class CFAViewModel(QObject, ThreadManager):
             self._page_navigation.collectibles_asset_page()
         elif self.asset_type == AssetSchema.NIA:
             self._page_navigation.fungibles_asset_page()
+        elif self.asset_type == AssetSchema.IFA:
+            self._page_navigation.inflatable_asset_page()
 
     def on_error(self, error) -> None:
         """Handle error for sending CFA asset."""
@@ -151,9 +153,7 @@ class CFAViewModel(QObject, ThreadManager):
                         'args': [
                             SendAssetRequestModel(
                                 asset_id=self.asset_id,
-                                assignment=Assignment.FUNGIBLE(
-                                    amount=int(self.amount),
-                                ),
+                                assignment=self.assignment,
                                 recipient_id=self.blinded_utxo,
                                 transport_endpoints=self.transport_endpoints,
                                 fee_rate=int(self.fee_rate),
@@ -176,13 +176,13 @@ class CFAViewModel(QObject, ThreadManager):
         ) else ERROR_SOMETHING_WENT_WRONG
         ToastManager.error(description=description)
 
-    def on_send_click(self, amount: int, blinded_utxo: str, transport_endpoints: list, fee_rate: int, min_confirmation: int) -> None:
+    def on_send_click(self, blinded_utxo: str, transport_endpoints: list, fee_rate: int, min_confirmation: int, assignment: Assignment) -> None:
         """Starts a thread to execute the send_cfa function with the provided arguments."""
-        self.amount = amount
         self.blinded_utxo = blinded_utxo
         self.transport_endpoints = transport_endpoints
         self.fee_rate = fee_rate
         self.min_confirmation = min_confirmation
+        self.assignment = assignment
         self.run_in_thread(
             SettingRepository.native_authentication,
             {
@@ -284,7 +284,7 @@ class CFAViewModel(QObject, ThreadManager):
         except Exception as e:
             on_error(CommonException(message=str(e)))
 
-    def send_begin(self, amount: int, blinded_utxo: str, transport_endpoints: list, fee_rate: int, min_confirmation: int):
+    def send_begin(self, blinded_utxo: str, transport_endpoints: list, fee_rate: int, min_confirmation: int, assignment: Assignment):
         """
         Begin the process of sending an asset by creating a PSBT.
         Calls RgbRepository.send_begin and expects a PSBT to be signed externally.
@@ -292,7 +292,7 @@ class CFAViewModel(QObject, ThreadManager):
         self.send_cfa_button_clicked.emit(True)
         request = SendBeginRequestModel(
             asset_id=self.asset_id,
-            amount=amount,
+            assignment=assignment,
             recipient_id=blinded_utxo,
             transport_endpoints=transport_endpoints,
             fee_rate=fee_rate,

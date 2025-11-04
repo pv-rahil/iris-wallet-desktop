@@ -521,6 +521,9 @@ class IssueCFAWidget(QWidget):
 
     def handle_cfa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation."""
+        # Only handle if the current purpose matches CFA issuing
+        if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_cfa':
+            return
         if status:
             self._view_model.utxo_creation_view_model.utxo_created.disconnect()
             cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
@@ -538,14 +541,14 @@ class IssueCFAWidget(QWidget):
             unsigned_psbts = wallet_service.list_psbt(signed=False)
             existing_psbt = next(
                 (
-                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
+                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset_cfa'
                 ), None,
             )
             if existing_psbt and existing_psbt.get('psbt'):
                 self.show_cfa_psbt_page(existing_psbt.get('psbt'))
                 return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            'issue_asset',
+            'issue_asset_cfa', 2,
         )
 
     def create_issue_cfa_draft(self, name: str, description: str, total_supply: str, file_path: str | None) -> None:
@@ -585,6 +588,9 @@ class IssueCFAWidget(QWidget):
 
     def show_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        # Only respond if PSBT relates to CFA issuing purpose
+        if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_cfa':
+            return
         if psbt:
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(

@@ -45,17 +45,19 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         """
         super().__init__(parent)
         self.param: CreateUtxosRequestModel = None
+        self.current_purpose: str | None = None
 
-    def create_utxos_begin(self, purpose: str | None = None):
+    def create_utxos_begin(self, purpose: str | None = None, num: int = NO_OF_UTXO):
         """
         Create unsigned PSBT for UTXO creation in a worker thread.
         Generates an unsigned PSBT that will be used to create new UTXOs.
         """
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
+        self.current_purpose = purpose
         self.param = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
-            num=NO_OF_UTXO,
+            num=num,
         )
         self.run_in_thread(
             BtcRepository.create_utxos_begin,

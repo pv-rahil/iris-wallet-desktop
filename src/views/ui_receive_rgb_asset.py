@@ -58,11 +58,14 @@ class ReceiveRGBAssetWidget(QWidget):
 
     def generate_invoice(self):
         """Call get rgb invoice to get invoice"""
+        print(self.originating_page)
         if self.originating_page in [
             AssetSchema.NIA,
             'fungibles',
             AssetSchema.CFA,
             'collectibles',
+            AssetSchema.IFA,
+            'inflatables',
             'view_unspent_list',
             'faucets',
             'settings',
@@ -131,12 +134,16 @@ class ReceiveRGBAssetWidget(QWidget):
             self._view_model.page_navigation.collectibles_asset_page()
         elif self.close_page_navigation == AssetSchema.NIA:
             self._view_model.page_navigation.fungibles_asset_page()
+        elif self.close_page_navigation == AssetSchema.IFA:
+            self._view_model.page_navigation.inflatable_asset_page()
         else:
             navigation_map = {
                 'NIA': self._view_model.page_navigation.fungibles_asset_page,
                 'fungibles': self._view_model.page_navigation.fungibles_asset_page,
                 'CFA': self._view_model.page_navigation.collectibles_asset_page,
                 'collectibles': self._view_model.page_navigation.collectibles_asset_page,
+                'IFA': self._view_model.page_navigation.inflatable_asset_page,
+                'inflatables': self._view_model.page_navigation.inflatable_asset_page,
                 'view_unspent_list': self._view_model.page_navigation.view_unspent_list_page,
                 'faucets': self._view_model.page_navigation.faucets_page,
                 'settings': self._view_model.page_navigation.settings_page,

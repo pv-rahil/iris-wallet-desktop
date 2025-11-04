@@ -26,10 +26,27 @@ from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
 
 
-def create_utxos() -> None:
-    """Create UTXOs for RGB operations by calling the wallet's create_utxos method."""
+def get_unspent_utxo_count() -> int:
+    """Get the count of unspent UTXOs that are not assigned to any RGB asset."""
     try:
+        unspents = colored_wallet.wallet.list_unspents(
+            online=colored_wallet.online, settled_only=False, skip_sync=False,
+        )
+        return len([u for u in unspents if not getattr(u, 'rgb_allocations', None)])
+    except Exception as exc:
+        logger.error(
+            'Error getting unspent UTXO count: %s: %s',
+            type(exc).__name__, str(exc),
+        )
+        return 0
 
+
+def create_utxos(num: int) -> None:
+    """Create UTXOs for RGB operations by calling the wallet's create_utxos method.
+
+    :param num: exact number of UTXOs to create in a single transaction
+    """
+    try:
         default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         key_storage_type = SettingRepository.get_key_storage_type()
         wallet_type = SettingRepository.get_wallet_type()
@@ -37,13 +54,13 @@ def create_utxos() -> None:
         create_utxos_model = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
-            num=2,
+            num=num,
         )
         if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
                 or wallet_access_type == WalletAccessType.WATCH_ONLY:
             raise CommonException('NoAvailableUtxos')
         colored_wallet.wallet.create_utxos(
-            online=create_utxos_model.online, up_to=create_utxos_model.up_to,
+            online=create_utxos_model.online, up_to=False,
             num=create_utxos_model.num, size=create_utxos_model.size,
             fee_rate=create_utxos_model.fee_rate, skip_sync=create_utxos_model.skip_sync,
         )
@@ -76,12 +93,12 @@ def create_utxos() -> None:
         ) from exc
 
 
-def check_colorable_available() -> Callable[..., Any]:
+def check_colorable_available(required_utxos: int = 2) -> Callable[..., Any]:
     """
-    Decorator to check if colorable UTXOs are available. If not, it calls create_utxos
-    and retries the original method.
+    Ensure at least `required_utxos` uncolored UTXOs exist. If insufficient, create only the missing
+    count in a single transaction and retry the original method.
 
-    :param create_utxos: Fallback function to create UTXOs when insufficient UTXOs are available.
+    :param required_utxos: Number of uncolored UTXOs required (default: 2)
     """
     def decorator(method: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(method)
@@ -92,7 +109,10 @@ def check_colorable_available() -> Callable[..., Any]:
             except RgbLibError.InsufficientAllocationSlots:
                 # If the error is due to insufficient uncolored UTXOs, call the fallback
                 try:
-                    create_utxos()  # Fallback call to create UTXOs
+                    current = get_unspent_utxo_count()
+                    needed = required_utxos - (current-1)
+                    if needed > 0:
+                        create_utxos(num=needed)
                     # Retry the original function
                     return method(*args, **kwargs)
                 except RgbLibError.InsufficientAllocationSlots as exc:

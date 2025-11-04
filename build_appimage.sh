@@ -86,7 +86,9 @@ chmod +x $APPDIR/AppRun
 # Build the AppImage
 if [ -f "$APPIMAGETOOL" ]; then
     echo "Building AppImage..."
-    $APPIMAGETOOL $APPDIR
+    export ARCH=x86_64
+    OUTPUT_NAME="${PROJECT_NAME}-${VERSION}-x86_64.AppImage"
+    "$APPIMAGETOOL" "$APPDIR" "$OUTPUT_NAME"
 else
     echo "Error: appimagetool not found."
     exit 1

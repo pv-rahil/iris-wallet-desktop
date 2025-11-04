@@ -10,6 +10,7 @@ from accessible_constant import COLLECTIBLE_BUTTON
 from accessible_constant import FAUCET_BUTTON
 from accessible_constant import FUNGIBLE_BUTTON
 from accessible_constant import HELP_BUTTON
+from accessible_constant import INFLATABLE_BUTTON
 from accessible_constant import SETTINGS_BUTTON
 from accessible_constant import SIDEBAR_RECEIVE_ASSET_BUTTON
 from accessible_constant import SIGN_PSBT_BUTTON
@@ -57,6 +58,9 @@ class SidebarPageObjects(BaseOperations):
         self.sign_psbt_button = lambda: self.perform_action_on_element(
             role_name='push button', name=SIGN_PSBT_BUTTON,
         )
+        self.inflatable_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=INFLATABLE_BUTTON,
+        )
 
     def click_fungibles_button(self):
         """Clicks the fungibles button if it is displayed."""
@@ -101,3 +105,7 @@ class SidebarPageObjects(BaseOperations):
     def click_sign_psbt_button(self):
         """Clicks the sign psbt button if it is displayed."""
         return self.do_click(self.sign_psbt_button()) if self.do_is_displayed(self.sign_psbt_button()) else None
+
+    def click_inflatable_button(self):
+        """Clicks the inflatable button if it is displayed."""
+        return self.do_click(self.inflatable_button()) if self.do_is_displayed(self.inflatable_button()) else None

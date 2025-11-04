@@ -23,6 +23,8 @@ rgb_lib_datas = collect_data_files('rgb_lib')
 rgb_lib_binaries = collect_dynamic_libs('rgb_lib')
 hwilib_datas = collect_data_files('hwilib')
 hwilib_binaries = collect_dynamic_libs('hwilib')
+speculos_datas = collect_data_files('speculos')
+speculos_binaries = collect_dynamic_libs('speculos')
 
 base_project_path = os.path.abspath(__name__)
 print(base_project_path)
@@ -32,15 +34,15 @@ datas = [
     ('./src/assets/icons/*', './assets/icons/'),
     ('./src/views/qss/*.qss', './views/qss/'),
     ('./build_info.json', './build_info.json'),
-] + pyqttoast_datas + rgb_lib_datas + hwilib_datas
+] + pyqttoast_datas + rgb_lib_datas + hwilib_datas + speculos_datas
 
 # Common Analysis
 a = Analysis(
     ['src/main.py'],
     pathex=[],
-    binaries=rgb_lib_binaries+hwilib_binaries,
+    binaries=rgb_lib_binaries+hwilib_binaries+speculos_binaries,
     datas=datas,
-    hiddenimports=['pyqttoast', 'PySide6', 'bip32utils', 'mnemonic', 'importlib_metadata', 'hashlib', 'rgb_lib', 'hwilib'],
+    hiddenimports=['pyqttoast', 'PySide6', 'bip32utils', 'mnemonic', 'importlib_metadata', 'hashlib', 'rgb_lib', 'hwilib', 'speculos'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[

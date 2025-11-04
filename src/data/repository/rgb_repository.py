@@ -235,7 +235,7 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @check_colorable_available()
+    @check_colorable_available(required_utxos=3)
     def inflate(detail: InflateRequestModel) -> TransferResult:
         """Inflate asset."""
         with repository_custom_context():
@@ -246,4 +246,34 @@ class RgbRepository:
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
+            return data
+
+    @staticmethod
+    @check_colorable_available(required_utxos=3)
+    def inflate_begin(detail: InflateRequestModel) -> str:
+        """Create psbt for inflate rgb asset"""
+        with repository_custom_context():
+            psbt: str = colored_wallet.wallet.inflate_begin(
+                online=colored_wallet.online, asset_id=detail.asset_id, inflation_amounts=detail.inflation_amounts,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
+            )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.add_psbt(psbt, purpose='inflate_asset')
+            return psbt
+
+    @staticmethod
+    @check_colorable_available(required_utxos=0)
+    def inflate_end(signed_psbt: str) -> TransferResult:
+        """broadcast signed psbt of inflate rgb asset"""
+        with repository_custom_context():
+            data: TransferResult = colored_wallet.wallet.inflate_end(
+                online=colored_wallet.online, signed_psbt=signed_psbt,
+            )
+            cache = Cache.get_cache_session()
+            if cache is not None:
+                cache.invalidate_cache()
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_psbt(signed_psbt)
             return data

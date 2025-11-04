@@ -5,6 +5,7 @@ Main features module.
 from __future__ import annotations
 
 from e2e_tests.test.features.issue_cfa import IssueCfa
+from e2e_tests.test.features.issue_ifa import IssueIfa
 from e2e_tests.test.features.issue_nia import IssueNia
 from e2e_tests.test.features.receive import ReceiveOperation
 from e2e_tests.test.features.send import SendOperation
@@ -25,6 +26,8 @@ class MainFeatures():
         self.wallet_features = Wallet(self.application)
 
         self.issue_nia_features = IssueNia(self.application)
+
+        self.issue_ifa_features = IssueIfa(self.application)
 
         self.issue_cfa_features = IssueCfa(self.application)
 

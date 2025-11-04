@@ -25,7 +25,7 @@ from rgb_lib import AssetSchema
 
 import src.resources_rc
 from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
-from accessible_constant import ISSUE_NIA_ASSET
+from accessible_constant import ISSUE_IFA_ASSET
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import NetworkEnumModel
@@ -85,7 +85,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             title_logo_path=':/assets/my_asset.png', title_name='inflatables',
         )
         self.inflatables_header_title_frame.action_button.setAccessibleName(
-            ISSUE_NIA_ASSET,
+            ISSUE_IFA_ASSET,
         )
         config = get_current_wallet_mode_config()
         self.is_watch_only = SettingRepository.get_wallet_access_type(

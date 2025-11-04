@@ -7,7 +7,6 @@ from __future__ import annotations
 from enum import Enum
 
 from PySide6.QtCore import QCoreApplication
-from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 from rgb_lib import AssetSchema
@@ -172,14 +171,19 @@ class SendRGBAssetWidget(QWidget):
             decoded_rgb_invoice: InvoiceData = RgbRepository.decode_invoice(
                 DecodeRgbInvoiceRequestModel(invoice=provided_invoice),
             )
+            assignment = type(decoded_rgb_invoice.assignment)(
+                amount=int(amount),
+            )
             try:
                 if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only:
                     self._view_model.cfa_view_model.send_begin(
-                        amount, decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
+                        decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
+                        assignment,
                     )
                 else:
                     self._view_model.cfa_view_model.on_send_click(
-                        amount, decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
+                        decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
+                        assignment,
                     )
                 # Success toast or indicator can be added here if needed
             except CommonException as e:

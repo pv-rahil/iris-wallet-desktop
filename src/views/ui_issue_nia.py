@@ -495,6 +495,9 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
+        # Only handle if the current purpose matches NIA issuing
+        if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_nia':
+            return
         if status:
             self._view_model.utxo_creation_view_model.utxo_created.disconnect()
 
@@ -516,20 +519,22 @@ class IssueNIAWidget(QWidget):
             )
             existing_psbt = next(
                 (
-                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
+                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset_nia'
                 ), None,
             )
             if existing_psbt and existing_psbt.get('psbt'):
                 self.show_nia_psbt_page(existing_psbt.get('psbt'))
                 return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            'issue_asset',
+            'issue_asset_nia', 2,
         )
 
     def show_nia_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        # Only respond if PSBT relates to NIA issuing purpose
+        if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_nia':
+            return
         if psbt:
-            self._view_model.utxo_creation_view_model.unsigned_psbt.disconnect()
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name='NIA page',
