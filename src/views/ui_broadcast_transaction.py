@@ -386,9 +386,12 @@ class BroadcastTransactionWidget(QWidget):
                 ).format(0, total_disp),
             )
 
-        # Load PSBTs for broadcast AFTER widgets exist
-        if self.priv.can_broadcast_psbt and not self.from_sidebar:
-            self._load_psbts_for_broadcast()
+        # Load PSBTs AFTER widgets exist
+        if not self.from_sidebar:
+            if self.priv.can_broadcast_psbt:
+                self._load_psbts_for_broadcast()
+            else:
+                self._load_psbts_for_signing()
 
     def setup_ui_connection(self):
         """
@@ -815,6 +818,7 @@ class BroadcastTransactionWidget(QWidget):
             drafts = wallet_service.list_psbt(
                 True,
             ) if wallet_service is not None else []
+            print(drafts)
         except Exception:
             drafts = []
 

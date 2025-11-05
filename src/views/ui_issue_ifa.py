@@ -27,11 +27,13 @@ import src.resources_rc
 from accessible_constant import IFA_ASSET_AMOUNT
 from accessible_constant import IFA_ASSET_NAME
 from accessible_constant import IFA_ASSET_TICKER
+from accessible_constant import IFA_ASSET_TOTAL_SUPPLY
 from accessible_constant import ISSUE_IFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_IFA_BUTTON
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
+from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
@@ -306,7 +308,9 @@ class IssueIFAWidget(QWidget):
             self.issue_ifa_widget,
         )
         self.inflatables_total_supply_input.setObjectName('amount_input')
-        self.inflatables_total_supply_input.setAccessibleName(IFA_ASSET_AMOUNT)
+        self.inflatables_total_supply_input.setAccessibleName(
+            IFA_ASSET_TOTAL_SUPPLY,
+        )
         self.inflatables_total_supply_input.setMinimumSize(QSize(0, 40))
         self.inflatables_total_supply_input.setMaximumSize(QSize(370, 40))
         set_number_validator(self.inflatables_total_supply_input)
@@ -801,11 +805,13 @@ class IssueIFAWidget(QWidget):
         inflatables_wallet_service = WalletDataService.get_session()
         if inflatables_wallet_service is not None:
             inflatables_wallet_service.upsert_draft_issue_asset(
-                name=name,
-                ticker=ticker,
-                issued_amount=int(amount),
-                inflation_amounts=int(inflation_amounts),
-                replace_rights_num=int(replace_rights_num),
+                IssueAssetDraftModel(
+                    name=name,
+                    ticker=ticker,
+                    issued_amount=int(amount),
+                    inflation_amounts=int(inflation_amounts),
+                    replace_rights_num=int(replace_rights_num),
+                ),
             )
 
     def _load_inflatables_draft_data(self):

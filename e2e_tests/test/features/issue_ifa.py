@@ -28,7 +28,7 @@ class IssueIfa(MainPageObjects, BaseOperations):
 
     def issue_ifa_with_sufficient_sats_and_utxo(
         self, application, asset_ticker, asset_name,
-        issue_amount, variant_name: str | None = None, is_native_auth_enabled: bool = False,
+        issue_amount, total_supply, variant_name: str | None = None, is_native_auth_enabled: bool = False,
     ):
         """
         Issues an IFA asset with sufficient sats and UTXO.
@@ -55,12 +55,17 @@ class IssueIfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
                 self.issue_ifa_page_objects.enter_asset_amount(issue_amount)
 
+            if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
+                self.issue_ifa_page_objects.enter_asset_total_supply(
+                    total_supply,
+                )
+
             if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
                 self.issue_ifa_page_objects.click_issue_ifa_button()
 
             if self.hardware_wallet_emulator:
                 self.wallet_feature.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+                    LEDGER_EMULATOR_APP_NAME, is_issue_ifa=True,
                 )
 
             if is_native_auth_enabled is True:
@@ -76,7 +81,7 @@ class IssueIfa(MainPageObjects, BaseOperations):
             if self.hardware_wallet_emulator:
                 self.hardware_wallet_emulator.terminate()
 
-    def issue_ifa_asset_without_sat(self, application, asset_ticker, asset_name, issue_amount):
+    def issue_ifa_asset_without_sat(self, application, asset_ticker, asset_name, issue_amount, total_supply):
         """
         Issues an IFA asset without sufficient sats and captures toaster message.
         """
@@ -96,6 +101,9 @@ class IssueIfa(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
             self.issue_ifa_page_objects.enter_asset_amount(issue_amount)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
+            self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
 
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
@@ -126,3 +134,36 @@ class IssueIfa(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
+
+        self.do_focus_on_application(application)
+
+        self.wallet_feature.usb_sync(is_receive=True)
+
+    def issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(self, application, asset_ticker, asset_name, asset_amount, total_supply):
+        """
+        Issues an IFA asset with sufficient sats and no UTXO.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
+            self.inflatable_page_objects.issue_ifa_button()
+
+        if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
+            self.inflatable_page_objects.click_issue_ifa_button()
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_ticker()):
+            self.issue_ifa_page_objects.enter_asset_ticker(asset_ticker)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_name()):
+            self.issue_ifa_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
+            self.issue_ifa_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
+            self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+            self.issue_ifa_page_objects.click_issue_ifa_button()
+
+        self.wallet_feature.usb_sync(is_receive=True)

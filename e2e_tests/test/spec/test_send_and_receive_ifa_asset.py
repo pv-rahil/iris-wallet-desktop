@@ -20,6 +20,7 @@ from src.model.enums.enums_model import TransactionStatusEnumModel
 ASSET_TICKER = 'IFK'
 IFA_ASSET_NAME = 'Inflatable'
 ASSET_AMOUNT = '2000'
+TOTAL_SUPPLY = '10000'
 SEND_AMOUNT = '50'
 INVOICE = 'rgb:~/~/utxob:2msKeFq-uPjwpYxVY-jKS2ymYBq-SqmyP3ovg-AGvth8491-J7seMBm?expiry=1709616110&endpoints=rpc://10.0.2.2:3000/json-rpc'
 
@@ -42,13 +43,16 @@ def test_send_ifa_with_expired_invoice(wallets_and_operations: WalletTestSetup, 
 
     with allure.step('Issue IFA asset'):
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_utxo(
-            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=IFA_ASSET_NAME, issue_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
+            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER,
+            asset_name=IFA_ASSET_NAME, issue_amount=ASSET_AMOUNT,
+            total_supply=TOTAL_SUPPLY, variant_name=wallet_variant_name,
         )
 
     with allure.step('Send IFA asset with expired invoice'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME,
         )
@@ -74,7 +78,9 @@ def test_send_and_receive_ifa_asset_operation(wallets_and_operations: WalletTest
 
     with allure.step('Issue IFA asset'):
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_utxo(
-            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=IFA_ASSET_NAME, issue_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
+            application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER,
+            asset_name=IFA_ASSET_NAME, issue_amount=ASSET_AMOUNT,
+            total_supply=TOTAL_SUPPLY, variant_name=wallet_variant_name,
         )
 
     with allure.step('Generate invoice'):
@@ -86,6 +92,7 @@ def test_send_and_receive_ifa_asset_operation(wallets_and_operations: WalletTest
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME,
         )
@@ -113,8 +120,9 @@ def test_send_and_receive_ifa_asset_operation(wallets_and_operations: WalletTest
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME,
         )
@@ -153,10 +161,12 @@ def test_send_ifa_with_expired_invoice_for_offline_wallet(wallets_and_operations
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
 
-        wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_utxo(
-            application=SECOND_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=IFA_ASSET_NAME, issue_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
+        wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(
+            application=SECOND_APPLICATION, asset_ticker=ASSET_TICKER,
+            asset_name=IFA_ASSET_NAME, issue_amount=ASSET_AMOUNT,
+            total_supply=TOTAL_SUPPLY, variant_name=wallet_variant_name,
         )
 
     with allure.step('Sign PSBT for IFA asset (offline wallet)'):

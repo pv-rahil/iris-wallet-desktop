@@ -29,6 +29,7 @@ from accessible_constant import NIA_ASSET_AMOUNT
 from accessible_constant import NIA_ASSET_NAME
 from accessible_constant import NIA_ASSET_TICKER
 from src.data.service.wallet_data_service import WalletDataService
+from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
@@ -526,7 +527,7 @@ class IssueNIAWidget(QWidget):
                 self.show_nia_psbt_page(existing_psbt.get('psbt'))
                 return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            'issue_asset_nia', 2,
+            'issue_asset_nia',
         )
 
     def show_nia_psbt_page(self, psbt):
@@ -549,9 +550,11 @@ class IssueNIAWidget(QWidget):
         wallet_service = WalletDataService.get_session()
         if wallet_service is not None:
             wallet_service.upsert_draft_issue_asset(
-                name=name,
-                ticker=ticker,
-                issued_amount=int(amount),
+                IssueAssetDraftModel(
+                    name=name,
+                    ticker=ticker,
+                    issued_amount=int(amount),
+                ),
             )
 
     def _load_draft_data(self):

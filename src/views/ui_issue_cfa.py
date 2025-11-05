@@ -31,6 +31,7 @@ from accessible_constant import CFA_UPLOAD_FILE_BUTTON
 from accessible_constant import ISSUE_CFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_CFA_BUTTON
 from src.data.service.wallet_data_service import WalletDataService
+from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
@@ -548,7 +549,7 @@ class IssueCFAWidget(QWidget):
                 self.show_cfa_psbt_page(existing_psbt.get('psbt'))
                 return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            'issue_asset_cfa', 2,
+            'issue_asset_cfa',
         )
 
     def create_issue_cfa_draft(self, name: str, description: str, total_supply: str, file_path: str | None) -> None:
@@ -557,10 +558,12 @@ class IssueCFAWidget(QWidget):
         if wallet_service is not None:
             try:
                 wallet_service.upsert_draft_issue_asset(
-                    name=name,
-                    ticker=description,
-                    issued_amount=int(total_supply) if total_supply else 0,
-                    file_path=file_path,
+                    IssueAssetDraftModel(
+                        name=name,
+                        ticker=description,
+                        issued_amount=int(total_supply) if total_supply else 0,
+                        file_path=file_path,
+                    ),
                 )
             except Exception:
                 pass

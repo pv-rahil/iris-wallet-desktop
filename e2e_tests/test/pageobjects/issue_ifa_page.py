@@ -6,6 +6,7 @@ from __future__ import annotations
 from accessible_constant import IFA_ASSET_AMOUNT
 from accessible_constant import IFA_ASSET_NAME
 from accessible_constant import IFA_ASSET_TICKER
+from accessible_constant import IFA_ASSET_TOTAL_SUPPLY
 from accessible_constant import ISSUE_IFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_IFA_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -35,6 +36,9 @@ class IssueIfaPageObjects(BaseOperations):
         self.issue_ifa_button = lambda: self.perform_action_on_element(
             role_name='push button', name=ISSUE_IFA_BUTTON,
         )
+        self.asset_total_supply = lambda: self.perform_action_on_element(
+            role_name='text', name=IFA_ASSET_TOTAL_SUPPLY,
+        )
 
     def click_close_button(self):
         """Clicks the close button if it is displayed."""
@@ -55,3 +59,7 @@ class IssueIfaPageObjects(BaseOperations):
     def click_issue_ifa_button(self):
         """Clicks the issue IFA button if it is displayed."""
         return self.do_click(self.issue_ifa_button()) if self.do_is_displayed(self.issue_ifa_button()) else None
+
+    def enter_asset_total_supply(self, asset_total_supply):
+        """Enters the asset total supply if it is displayed."""
+        return self.do_set_value(self.asset_total_supply(), asset_total_supply) if self.do_is_displayed(self.asset_total_supply()) else None

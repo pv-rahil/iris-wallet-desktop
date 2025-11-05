@@ -194,6 +194,8 @@ class CollectiblesAssetWidget(QWidget):
                 fp = d.get('file_path')
                 if not fp:
                     continue
+                if d.get('inflation_amounts') or d.get('replace_rights_num'):
+                    continue
                 self.frames.append(self.create_collectible_frame(draft=d))
         # Then append actual issued CFA assets
         for coll_asset in self._view_model.main_asset_view_model.assets.cfa:

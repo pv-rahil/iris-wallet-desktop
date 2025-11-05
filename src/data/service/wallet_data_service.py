@@ -30,6 +30,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import UnspentsListResponseModel
+from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.utils.build_app_path import app_paths
@@ -130,7 +131,9 @@ class WalletDataService:
             name TEXT NOT NULL,
             ticker TEXT NOT NULL,
             issued_amount INTEGER NOT NULL,
-            file_path TEXT
+            file_path TEXT,
+            inflation_amounts INTEGER,
+            replace_rights_num INTEGER
         )
         """
         with self._db_lock:
@@ -187,7 +190,7 @@ class WalletDataService:
             )
             raise
 
-    def upsert_draft_issue_asset(self, name: str, ticker: str, issued_amount: int, file_path: str | None = None) -> None:
+    def upsert_draft_issue_asset(self, issue_asset_draft_model: IssueAssetDraftModel) -> None:
         """Insert or replace a draft issue asset row."""
         if not (self.is_watch_only or self.is_offline_wallet):
             return
@@ -196,8 +199,13 @@ class WalletDataService:
                 # Use a transaction so the insert is committed and survives app restarts
                 with self.conn:
                     self.conn.execute(
-                        'INSERT INTO draft_issue_asset (name, ticker, issued_amount, file_path) VALUES (?, ?, ?, ?)',
-                        (name, ticker, int(issued_amount), file_path),
+                        'INSERT INTO draft_issue_asset (name, ticker, issued_amount, file_path, inflation_amounts, replace_rights_num) VALUES (?, ?, ?, ?, ?, ?)',
+                        (
+                            issue_asset_draft_model.name, issue_asset_draft_model.ticker, int(
+                                issue_asset_draft_model.issued_amount,
+                            ), issue_asset_draft_model.file_path,
+                            issue_asset_draft_model.inflation_amounts, issue_asset_draft_model.replace_rights_num,
+                        ),
                     )
             except sqlite3.Error as exc:
                 logger.error(
@@ -213,7 +221,7 @@ class WalletDataService:
             try:
                 cur = self.conn.cursor()
                 cur.execute(
-                    'SELECT id, name, ticker, issued_amount, file_path FROM draft_issue_asset ORDER BY id DESC',
+                    'SELECT id, name, ticker, issued_amount, file_path, inflation_amounts, replace_rights_num FROM draft_issue_asset ORDER BY id DESC',
                 )
                 rows = cur.fetchall()
                 return [
@@ -223,6 +231,8 @@ class WalletDataService:
                         'ticker': r[2],
                         'issued_amount': int(r[3]),
                         'file_path': r[4],
+                        'inflation_amounts': r[5],
+                        'replace_rights_num': r[6],
                     }
                     for r in rows
                 ]

@@ -59,7 +59,7 @@ class SidebarPageObjects(BaseOperations):
             role_name='push button', name=SIGN_PSBT_BUTTON,
         )
         self.inflatable_button = lambda: self.perform_action_on_element(
-            role_name='push button', name=INFLATABLE_BUTTON,
+            role_name='radio button', name=INFLATABLE_BUTTON,
         )
 
     def click_fungibles_button(self):

@@ -241,12 +241,16 @@ class FailTransferRequestModel(BaseModel):
 class SendBeginRequestModel(BaseModel):
     """Request model for send begin"""
     asset_id: str
-    amount: int
+    assignment: Assignment
     recipient_id: str
     donation: bool | None = False
     fee_rate: int
     min_confirmations: int
     transport_endpoints: list[str]
+
+    class Config:
+        """Pydantic configuration class allowing arbitrary types."""
+        arbitrary_types_allowed = True
 # -------------------- Response models -----------------------
 
 

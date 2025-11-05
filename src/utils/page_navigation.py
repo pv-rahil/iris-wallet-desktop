@@ -402,7 +402,7 @@ class PageNavigation:
     def broadcast_transaction_page(self, from_sidebar: bool = False):
         """This method display the help page."""
         self.current_stack = {
-            'name': 'ReceiveAssetWidget',
+            'name': 'BroadcastTransactionWidget',
             'widget': self.pages['BroadcastTransactionWidget'](self._ui.view_model, from_sidebar),
         }
         self.navigate_and_toggle(False)

@@ -266,6 +266,8 @@ class Wallet(MainPageObjects, BaseOperations):
         self.do_focus_on_application(application)
 
         if variant in REQUIRE_USB_VARIANTS:
+            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                self.usb_sync_dialog_page_objects.click_continue_button()
             if variant in HARDWARE_WALLET_VARIANTS:
                 self.restore_with_xpubs(
                     xpub_vanilla, xpub_colored, fingerprint, password,
@@ -634,7 +636,7 @@ class Wallet(MainPageObjects, BaseOperations):
             sidebar_page.click_fungibles_button()
         return xpub_vanilla, xpub_colored, fingerprint, password
 
-    def sign_psbt(self, application, variant_name, is_rgb: bool = False):
+    def sign_psbt(self, application, variant_name, is_rgb: bool = False, is_issue_ifa: bool = False):
         """
         Sign psbt.
         """
@@ -680,7 +682,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
             if self.hardware_wallet_emu:
                 self.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_rgb,
+                    LEDGER_EMULATOR_APP_NAME, is_rgb, is_issue_ifa,
                 )
 
             self.do_focus_on_application(application)
@@ -733,7 +735,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
         return description
 
-    def confirm_transaction_on_hardware_wallet(self, application, is_rgb: bool = False):
+    def confirm_transaction_on_hardware_wallet(self, application, is_rgb: bool = False, is_issue_ifa: bool = False):
         """
         Confirm transaction on hardware wallet.
         """
@@ -743,7 +745,11 @@ class Wallet(MainPageObjects, BaseOperations):
             self.hw_emulator_page_objects.click_right_arrow_key(5)
             self.hw_emulator_page_objects.press_left_and_right()
         else:
-            for _ in range(2):
+            if is_issue_ifa:
+                num_of_iter = 3
+            else:
+                num_of_iter = 2
+            for _ in range(num_of_iter):
                 time.sleep(1)
                 self.hw_emulator_page_objects.click_right_arrow_key(4)
                 self.hw_emulator_page_objects.press_left_and_right()

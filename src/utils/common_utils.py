@@ -618,6 +618,7 @@ def close_button_navigation(widget: QWidget):
         'NIA': widget.view_model.page_navigation.fungibles_asset_page,
         'CFA': widget.view_model.page_navigation.collectibles_asset_page,
         'IFA': widget.view_model.page_navigation.inflatable_asset_page,
+        'inflatables': widget.view_model.page_navigation.inflatable_asset_page,
         'collectibles': widget.view_model.page_navigation.collectibles_asset_page,
         'faucets': widget.view_model.page_navigation.faucets_page,
         'view_unspent_list': widget.view_model.page_navigation.view_unspent_list_page,

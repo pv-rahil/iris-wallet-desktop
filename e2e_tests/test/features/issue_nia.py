@@ -20,7 +20,7 @@ class IssueNia(MainPageObjects, BaseOperations):
 
     def __init__(self, application):
         """
-        Initializes the IssuenNa class.
+        Initializes the IssueNia class.
         """
         self.hardware_wallet_emulator = None
         self.wallet_feature = Wallet(application)

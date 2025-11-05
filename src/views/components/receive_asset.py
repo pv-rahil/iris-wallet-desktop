@@ -246,6 +246,10 @@ class ReceiveAssetWidget(QWidget):
             self.receive_asset_close_button.clicked.connect(
                 self.close_button_navigation,
             )
+        elif self.page_name == 'IFA page':
+            self.receive_asset_close_button.clicked.connect(
+                self._view_model.page_navigation.inflatable_asset_page,
+            )
         else:
             self.receive_asset_close_button.clicked.connect(
                 self._view_model.page_navigation.collectibles_asset_page,

@@ -170,3 +170,13 @@ class WalletModeConfig(BaseModel):
     capabilities: list[dict]
     limitations: list[dict]
     recommended_for: list[dict]
+
+
+class IssueAssetDraftModel(BaseModel):
+    """Model representing the data needed to display and share a PSBT (Partially Signed Bitcoin Transaction)."""
+    name: str
+    ticker: str
+    issued_amount: int
+    file_path: str | None = None
+    inflation_amounts: int | None = None
+    replace_rights_num: int | None = None

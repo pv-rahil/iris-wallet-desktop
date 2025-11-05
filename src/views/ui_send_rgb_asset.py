@@ -146,13 +146,19 @@ class SendRGBAssetWidget(QWidget):
         """This method sets the originating page for when closing send asset"""
         if asset_type == AssetSchema.NIA:
             self.asset_type = AssetSchema.NIA
+        elif asset_type == AssetSchema.IFA:
+            self.asset_type = AssetSchema.IFA
 
     def rgb_asset_page_navigation(self):
         """Navigate to the collectibles asset page."""
+        print(self.asset_type)
         self.sidebar = self._view_model.page_navigation.sidebar()
         if self.asset_type == AssetSchema.NIA:
             self.sidebar.my_fungibles.setChecked(True)
             self._view_model.page_navigation.fungibles_asset_page()
+        elif self.asset_type == AssetSchema.IFA:
+            self.sidebar.my_inflatable.setChecked(True)
+            self._view_model.page_navigation.inflatable_asset_page()
         else:
             self.sidebar.my_collectibles.setChecked(True)
             self._view_model.page_navigation.collectibles_asset_page()

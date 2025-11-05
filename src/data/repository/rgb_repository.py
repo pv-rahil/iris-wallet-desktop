@@ -205,7 +205,7 @@ class RgbRepository:
             recipient = Recipient(
                 recipient_id=detail.recipient_id,
                 witness_data=None,
-                amount=detail.amount,
+                assignment=detail.assignment,
                 transport_endpoints=detail.transport_endpoints,
             )
             recipient_map = {detail.asset_id: [recipient]}
