@@ -58,7 +58,6 @@ class ReceiveRGBAssetWidget(QWidget):
 
     def generate_invoice(self):
         """Call get rgb invoice to get invoice"""
-        print(self.originating_page)
         if self.originating_page in [
             AssetSchema.NIA,
             'fungibles',

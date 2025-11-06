@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from src.model.enums.enums_model import PsbtStatus
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
@@ -193,6 +194,10 @@ class HardwareWalletOperationDialog(QDialog):
         """
         if self.parent_widget:
             self.parent_widget.setGraphicsEffect(None)
+        try:
+            hardware_client_store.stop_client()
+        except Exception:
+            pass
         super().accept()
 
     def reject(self):
@@ -201,6 +206,10 @@ class HardwareWalletOperationDialog(QDialog):
         """
         if self.parent_widget:
             self.parent_widget.setGraphicsEffect(None)
+        try:
+            hardware_client_store.stop_client()
+        except Exception:
+            pass
         super().reject()
 
     @classmethod

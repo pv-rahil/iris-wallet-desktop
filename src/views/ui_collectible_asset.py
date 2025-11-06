@@ -35,6 +35,7 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
+from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
@@ -89,6 +90,11 @@ class CollectiblesAssetWidget(QWidget):
         )
         self.collectible_header_frame.action_button.setAccessibleName(
             ISSUE_CFA_ASSET,
+        )
+        # Start hidden until we confirm issued assets exist (use header API to lock)
+        self.issue_button_in_header = False
+        self.collectible_header_frame.set_action_button_visible(
+            False, override=True,
         )
         self.vertical_layout_2.addWidget(self.collectible_header_frame)
 
@@ -167,6 +173,9 @@ class CollectiblesAssetWidget(QWidget):
         self.retranslate_ui()
         self.setup_ui_connection()
         self.resizeEvent = self.resize_event_called  # pylint: disable=invalid-name
+        # Empty state management
+        self._empty_state_widget = None
+        self.issue_button_in_header = True
 
     def calculate_columns(self):
         """Calculate the number of columns based on the available width"""
@@ -203,6 +212,13 @@ class CollectiblesAssetWidget(QWidget):
                 self.create_collectible_frame(coll_asset=coll_asset),
             )
         self.total_items = len(self.frames)
+
+        # Show empty state if there are no issued assets (drafts don't count)
+        issued_count = len(self._view_model.main_asset_view_model.assets.cfa)
+        if issued_count == 0:
+            self._show_empty_collectibles_state()
+            return
+        self._hide_empty_collectibles_state()
 
         if hasattr(self, 'scroll_area'):
             grid_widget = self.scroll_area.widget()
@@ -362,6 +378,92 @@ class CollectiblesAssetWidget(QWidget):
             )
         self.resizeEvent = self.resize_event_called
         return collectibles_frame
+
+    def _show_empty_collectibles_state(self):
+        """Display an empty-state card with action button centered."""
+        # Hide header issue button
+        self.collectible_header_frame.set_action_button_visible(
+            False, override=True,
+        )
+        self.issue_button_in_header = False
+        if self._empty_state_widget is not None:
+            return
+        # Hide scroll area so we can truly center the card
+        if hasattr(self, 'scroll_area'):
+            self.scroll_area.hide()
+        wrapper = QFrame(self.widget)
+        # remove card visuals per request (transparent)
+        wrapper.setStyleSheet(
+            'QFrame{border:none; background: transparent;} QLabel{background:transparent;}',
+        )
+        wrapper.setFixedWidth(680)
+        wrapper.setFixedHeight(200)
+        v = QVBoxLayout(wrapper)
+        # reduce internal spacing so content sits tighter
+        v.setContentsMargins(8, 8, 8, 8)
+        v.setSpacing(2)
+        # Title
+        title = QLabel('No Assets Issued')
+        title.setStyleSheet('color:#fff; font: 600 20px "Inter"; border:None;')
+        v.addWidget(title, 0, Qt.AlignHCenter)
+        # Subtext
+        sub = QLabel(
+            "You haven't issued any assets yet. Create your first collectible asset to get started.",
+        )
+        sub.setStyleSheet(
+            'color: rgba(255,255,255,0.75); font: 14px "Inter"; border:None;',
+        )
+        sub.setWordWrap(True)
+        sub.setAlignment(Qt.AlignHCenter)
+        sub.setFixedWidth(560)
+        v.addWidget(sub, 0, Qt.AlignHCenter)
+        # Action button
+        btn = PrimaryButton('Issue New Collectibles')
+        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setFixedWidth(200)
+        btn.clicked.connect(
+            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                self._view_model.page_navigation.issue_cfa_asset_page,
+            ),
+        )
+        v.addWidget(btn, 0, Qt.AlignHCenter)
+        # Add to grid area centered with stretches
+        # Clear previous temp items if any
+        self.grid_layout.addItem(
+            QSpacerItem(
+                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding,
+            ), 0, 0,
+        )
+        self.grid_layout.addWidget(wrapper, 1, 1, Qt.AlignCenter)
+        self.grid_layout.setRowStretch(0, 1)
+        self.grid_layout.setRowStretch(2, 3)
+        self.grid_layout.setColumnStretch(0, 1)
+        self.grid_layout.setColumnStretch(2, 1)
+        self._empty_state_widget = wrapper
+
+    def _hide_empty_collectibles_state(self):
+        """Remove empty-state card and show header action button."""
+        if self._empty_state_widget is not None:
+            self.grid_layout.removeWidget(self._empty_state_widget)
+            self._empty_state_widget.deleteLater()
+            self._empty_state_widget = None
+        # Show scroll area again
+        if hasattr(self, 'scroll_area'):
+            self.scroll_area.show()
+        # Show header button only if there are issued assets; release override accordingly
+        issued_count = len(self._view_model.main_asset_view_model.assets.cfa)
+        if issued_count > 0:
+            # make it visible and keep override so network changes won't flip it
+            self.collectible_header_frame.set_action_button_visible(
+                True, override=True,
+            )
+            self.issue_button_in_header = True
+        else:
+            # keep hidden
+            self.collectible_header_frame.set_action_button_visible(
+                False, override=True,
+            )
+            self.issue_button_in_header = False
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""

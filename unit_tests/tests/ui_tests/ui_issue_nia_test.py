@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
+from src.model.common_operation_model import IssueAssetDraftModel
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.ui_issue_nia import IssueNIAWidget
 from unit_tests.tests.ui_tests.ui_helper_test.issue_asset_helper_test import assert_success_page_called
@@ -84,7 +85,8 @@ def test_handle_nia_utxo_created_accepts_and_calls_issue(issue_nia_widget: Issue
         mocker.patch(
             'src.views.ui_issue_nia.HardwareWalletOperationDialog.get_instance', return_value=dlg,
         )
-
+        # Gate by current purpose for accept path
+        widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_nia'
         widget.handle_nia_utxo_created(True)
 
         dlg.accept.assert_called_once()
@@ -96,7 +98,7 @@ def test_handle_nia_issue_reuse_existing_psbt(issue_nia_widget: IssueNIAWidget, 
     widget = issue_nia_widget
     svc = MagicMock()
     svc.list_psbt.return_value = [
-        {'purpose': 'issue_asset', 'psbt': 'psbt123'},
+        {'purpose': 'issue_asset_nia', 'psbt': 'psbt123'},
     ]
     with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()) as mock_show:
         mocker.patch(
@@ -120,7 +122,7 @@ def test_handle_nia_issue_create_utxos_when_no_psbt(issue_nia_widget: IssueNIAWi
 
     widget.handle_nia_issue()
     widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-        'issue_asset',
+        'issue_asset_nia',
     )
 
 
@@ -135,7 +137,7 @@ def test_handle_nia_issue_wallet_service_none(issue_nia_widget: IssueNIAWidget, 
 
     widget.handle_nia_issue()
     widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-        'issue_asset',
+        'issue_asset_nia',
     )
 
 
@@ -143,6 +145,8 @@ def test_show_nia_psbt_page_navigates(issue_nia_widget: IssueNIAWidget):
     """Cover positive path of show_nia_psbt_page: disconnect unsigned_psbt and navigate."""
     widget = issue_nia_widget
     widget._view_model.page_navigation.receive_asset_page = MagicMock()
+    # Gate by current purpose
+    widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_nia'
     widget.show_nia_psbt_page('psbtXYZ')
     widget._view_model.page_navigation.receive_asset_page.assert_called_once()
 
@@ -158,7 +162,9 @@ def test_create_issue_asset_draft_calls_upsert(issue_nia_widget: IssueNIAWidget,
 
     widget.create_issue_asset_draft('TICK', 'Name', '25')
     svc.upsert_draft_issue_asset.assert_called_once_with(
-        name='Name', ticker='TICK', issued_amount=25,
+        IssueAssetDraftModel(
+            name='Name', ticker='TICK', issued_amount=25,
+        ),
     )
 
 
@@ -207,6 +213,8 @@ def test_on_issue_nia_click(issue_nia_widget: IssueNIAWidget, qtbot):
     widget.amount_input = MagicMock()
     widget.amount_input.text.return_value = '100'
 
+    # Avoid creating draft during click in this unit test
+    widget.from_draft = True
     # Mock the view model method
     widget._view_model.issue_nia_asset_view_model.on_issue_click = MagicMock()
 

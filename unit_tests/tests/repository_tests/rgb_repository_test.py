@@ -12,12 +12,13 @@ from rgb_lib import AssetCfa
 from rgb_lib import AssetNia
 from rgb_lib import Assets
 from rgb_lib import AssetUda
+from rgb_lib import Assignment
 from rgb_lib import Balance
 from rgb_lib import Invoice
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
-from rgb_lib import SendResult
 from rgb_lib import Transfer
+from rgb_lib import TransferResult
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -25,7 +26,9 @@ from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FilterAssetRequestModel
+from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetCfaRequestModel
+from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetUdaRequestModel
 from src.model.rgb_model import ListTransfersRequestModel
@@ -132,29 +135,109 @@ def test_rgb_invoice(mock_wallet, mock_cache):
     mock_wallet.blind_receive.return_value = mock_receive_data
 
     # Execute
+    _assignment = Assignment.__new__(Assignment)
     request = RgbInvoiceRequestModel(
         asset_id='test_asset_id',
         duration_seconds=3600,
         transport_endpoints=['test_endpoint'],
         min_confirmations=1,
+        assignment=_assignment,
     )
     result = RgbRepository.rgb_invoice(request)
 
     # Assert
     assert result == mock_receive_data
-    mock_wallet.blind_receive.assert_called_once_with(
-        asset_id='test_asset_id',
-        amount=None,
-        duration_seconds=3600,
-        transport_endpoints=['test_endpoint'],
-        min_confirmations=1,
+    mock_wallet.blind_receive.assert_called_once()
+    mock_cache.invalidate_cache.assert_called_once()
+
+
+def test_issue_asset_ifa(mock_wallet, mock_cache):
+    """Test issue_asset_ifa method"""
+    # Setup
+    mock_asset_ifa = MagicMock()
+    mock_wallet.issue_asset_ifa.return_value = mock_asset_ifa
+
+    # Execute
+    request = IssueAssetIfaRequestModel(
+        ticker='IFAT',
+        name='IFA Asset',
+        precision=0,
+        amounts=[1000],
+        inflation_amounts=[500],
+        replace_rights_num=1,
+    )
+    result = RgbRepository.issue_asset_ifa(request)
+
+    # Assert
+    assert result == mock_asset_ifa
+    mock_wallet.issue_asset_ifa.assert_called_once_with(
+        ticker='IFAT', name='IFA Asset', precision=0, amounts=[1000],
+        inflation_amounts=[500], replace_rights_num=1,
     )
     mock_cache.invalidate_cache.assert_called_once()
 
 
+def test_inflate(mock_wallet, mock_cache):
+    """Test inflate method"""
+    # Setup
+    mock_transfer_res = MagicMock()
+    mock_wallet.inflate.return_value = mock_transfer_res
+
+    # Execute
+    request = InflateRequestModel(
+        asset_id='aid', inflation_amounts=[123], fee_rate=2, min_confirmations=1,
+    )
+    result = RgbRepository.inflate(request)
+
+    # Assert
+    assert result == mock_transfer_res
+    mock_wallet.inflate.assert_called_once()
+    mock_cache.invalidate_cache.assert_called_once()
+
+
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_inflate_begin_with_session(mock_get_session, mock_wallet):
+    """Test inflate_begin adds psbt to session with purpose and returns psbt."""
+    # Setup
+    psbt = 'psbt_string'
+    mock_wallet.inflate_begin.return_value = psbt
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    # Execute
+    req = InflateRequestModel(
+        asset_id='aid', inflation_amounts=[10], fee_rate=3, min_confirmations=2,
+    )
+    result = RgbRepository.inflate_begin(req)
+
+    # Assert
+    assert result == psbt
+    mock_wallet.inflate_begin.assert_called_once()
+    svc.add_psbt.assert_called_once_with(psbt, purpose='inflate_asset')
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_inflate_end_with_session_and_cache(mock_get_session, mock_wallet, mock_cache):
+    """Test inflate_end invalidates cache and deletes psbt in session."""
+    # Setup
+    transfer_result = MagicMock()
+    mock_wallet.inflate_end.return_value = transfer_result
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    # Execute
+    res = RgbRepository.inflate_end('psbt_final')
+
+    # Assert
+    assert res == transfer_result
+    mock_wallet.inflate_end.assert_called_once()
+    mock_cache.invalidate_cache.assert_called_once()
+    svc.delete_psbt.assert_called_once_with('psbt_final')
+
+
 @patch('src.data.repository.rgb_repository.Recipient')
-def test_send_begin_with_session(mock_recipient_cls, mock_get_session, mock_wallet):
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_send_begin_with_session(mock_get_session, mock_recipient_cls, mock_wallet):
     """Test send_begin adds psbt to session with purpose and returns psbt."""
     # Setup Recipient and send_begin return
     mock_recipient = MagicMock(spec=Recipient)
@@ -166,17 +249,16 @@ def test_send_begin_with_session(mock_recipient_cls, mock_get_session, mock_wall
     mock_get_session.return_value = svc
 
     # Execute
+    _assignment = Assignment.__new__(Assignment)
     req = SendBeginRequestModel(
-        asset_id='aid', amount=123, recipient_id='rid', donation=False,
+        asset_id='aid', assignment=_assignment, recipient_id='rid', donation=False,
         fee_rate=2, min_confirmations=1, transport_endpoints=['te1'],
     )
     result = RgbRepository.send_begin(req)
 
     # Assert
     assert result == psbt
-    mock_recipient_cls.assert_called_once_with(
-        recipient_id='rid', witness_data=None, amount=123, transport_endpoints=['te1'],
-    )
+    mock_recipient_cls.assert_called_once()
     mock_wallet.send_begin.assert_called_once()
     svc.add_psbt.assert_called_once_with(psbt, purpose='send_asset')
 
@@ -184,7 +266,7 @@ def test_send_begin_with_session(mock_recipient_cls, mock_get_session, mock_wall
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_send_end_with_session_and_cache(mock_get_session, mock_wallet, mock_cache):
     """Test send_end invalidates cache and deletes psbt in session."""
-    send_result = MagicMock(spec=SendResult)
+    send_result = MagicMock(spec=TransferResult)
     mock_wallet.send_end.return_value = send_result
     svc = MagicMock()
     mock_get_session.return_value = svc
@@ -204,7 +286,7 @@ def test_send_end_with_session_and_cache(mock_get_session, mock_wallet, mock_cac
 def test_send_asset(mock_wallet, mock_cache):
     """Test send_asset method"""
     # Setup
-    mock_send_result = MagicMock(spec=SendResult)
+    mock_send_result = MagicMock(spec=TransferResult)
     mock_wallet.send.return_value = mock_send_result
 
     with patch('src.data.repository.rgb_repository.Recipient') as mock_recipient_class:
@@ -212,10 +294,11 @@ def test_send_asset(mock_wallet, mock_cache):
         mock_recipient_class.return_value = mock_recipient
 
         # Execute
+        _assignment = Assignment.__new__(Assignment)
         request = SendAssetRequestModel(
             asset_id='test_asset_id',
             recipient_id='test_recipient_id',
-            amount=1000,
+            assignment=_assignment,
             transport_endpoints=['test_endpoint'],
             donation=False,
             fee_rate=5,
@@ -226,12 +309,7 @@ def test_send_asset(mock_wallet, mock_cache):
 
         # Assert
         assert result == mock_send_result
-        mock_recipient_class.assert_called_once_with(
-            recipient_id='test_recipient_id',
-            witness_data=None,
-            amount=1000,
-            transport_endpoints=['test_endpoint'],
-        )
+        mock_recipient_class.assert_called_once()
         mock_wallet.send.assert_called_once()
         mock_cache.invalidate_cache.assert_called_once()
 

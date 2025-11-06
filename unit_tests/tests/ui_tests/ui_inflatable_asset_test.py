@@ -67,7 +67,7 @@ def test_show_assets_populates_headers_and_cards(widget: InflatableAssetWidget, 
     asset.name = 'Name'
     asset.ticker = 'TCK'
     asset.balance.future = 1
-    vm_mock.main_asset_view_model.assets.nia = [asset]
+    vm_mock.main_asset_view_model.assets.ifa = [asset]
 
     with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_draft_issue_assets=lambda: [])
@@ -91,8 +91,10 @@ def test_draft_asset_click_navigates_to_issue(widget: InflatableAssetWidget, vm_
         widget.show_inflatables_assets()
         # A draft card should exist and clicking triggers navigation to issue_ifa_page
         vm_mock.page_navigation.issue_ifa_page.assert_not_called()
-        # Simulate click; the connected lambda ignores args and uses captured draft_id
-        widget.inflatable_frame.clicked.emit('', '', None, None)
+        # Simulate click; ClickableFrame.clicked carries signature (asset_id, name, image_path, asset_type)
+        widget.inflatable_frame.clicked.emit(
+            'draft_asset', 'Draft (Draft)', None, AssetSchema.IFA,
+        )
         assert vm_mock.page_navigation.issue_ifa_page.called
 
 
@@ -104,12 +106,12 @@ def test_normal_asset_click_navigates_detail(widget: InflatableAssetWidget, vm_m
     asset.name = 'N'
     asset.ticker = 'T'
     asset.balance.future = 0
-    vm_mock.main_asset_view_model.assets.nia = [asset]
+    vm_mock.main_asset_view_model.assets.ifa = [asset]
     with patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         get_sess.return_value = MagicMock(list_draft_issue_assets=lambda: [])
         widget.show_inflatables_assets()
-        # Simulate click
-        widget.inflatable_frame.clicked.emit(
-            asset.asset_id, asset.name, None, AssetSchema.NIA,
+        # Simulate click by invoking the handler directly with expected args
+        widget.handle_asset_frame_click(
+            asset.asset_id, asset.name, None, AssetSchema.IFA,
         )
         assert vm_mock.page_navigation.cfa_detail_page.called

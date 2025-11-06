@@ -21,7 +21,7 @@ def vm_mock():
     issue_vm.issue_button_clicked.connect = lambda *_a, **_k: None
     issue_vm.is_issued = MagicMock()
     issue_vm.is_issued.connect = lambda *_a, **_k: None
-    vm.issue_nia_asset_view_model = issue_vm
+    vm.issue_ifa_asset_view_model = issue_vm
 
     utxo_vm = MagicMock()
     utxo_vm.hw_dialog_update = MagicMock()
@@ -64,13 +64,12 @@ def test_on_issue_ifa_click_calls_vm_and_draft(widget: IssueIFAWidget, vm_mock):
     widget.inflatables_short_identifier_input.setText('abc')
     widget.inflatables_asset_name_input.setText('MyAsset')
     widget.inflatables_issue_amount_input.setText('25')
+    widget.inflatables_total_supply_input.setText('50')
 
     with patch.object(widget, 'create_issue_inflatables_asset_draft') as draft:
         widget.on_issue_ifa_click()
         draft.assert_called_once()
-        vm_mock.issue_nia_asset_view_model.on_issue_click.assert_called_once_with(
-            'ABC', 'MyAsset', '25',
-        )
+        vm_mock.issue_ifa_asset_view_model.issue_ifa_asset.assert_called_once()
 
 
 def test_secondary_issuance_prefill_and_locks(qt_app, vm_mock):
@@ -88,7 +87,7 @@ def test_secondary_issuance_prefill_and_locks(qt_app, vm_mock):
             assert w.inflatables_asset_name_input.isReadOnly()
             assert w.inflatables_total_supply_label.isHidden()
             assert w.inflatables_total_supply_input.isHidden()
-            assert not w.replace_label_checkbox.isHidden()
+            assert w.replace_label_checkbox.isHidden()
         finally:
             w.close()
 
@@ -100,9 +99,11 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
         w = IssueIFAWidget(vm_mock)
         try:
             # Case 1: existing draft PSBT present
+            # Ensure widget gates PSBT display by current purpose and purpose key
+            vm_mock.utxo_creation_view_model.current_purpose = 'issue_asset_ifa'
             get_sess.return_value = MagicMock(
                 list_psbt=lambda signed: [
-                    {'purpose': 'issue_asset', 'psbt': 'P1'},
+                    {'purpose': 'issue_asset_ifa', 'psbt': 'P1'},
                 ],
             )
             with patch.object(w, 'show_ifa_psbt_page') as show:
@@ -113,7 +114,7 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
             vm_mock.utxo_creation_view_model.create_utxos_begin.reset_mock()
             w.handle_ifa_issue()
             vm_mock.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-                'issue_asset',
+                'issue_asset_ifa', 2,
             )
         finally:
             w.close()

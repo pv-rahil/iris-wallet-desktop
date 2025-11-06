@@ -624,7 +624,7 @@ class RGBAssetDetailWidget(QWidget):
         """Handle the page navigation according the NIA or CFA page"""
         if self.asset_type == AssetSchema.NIA:
             self._view_model.page_navigation.fungibles_asset_page()
-        if self.asset_type == AssetSchema.IFA:
+        elif self.asset_type == AssetSchema.IFA:
             self._view_model.page_navigation.inflatable_asset_page()
         else:
             self._view_model.page_navigation.collectibles_asset_page()

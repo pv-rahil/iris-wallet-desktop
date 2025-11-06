@@ -1,0 +1,178 @@
+# pylint: disable=unused-import,redefined-outer-name,unused-argument
+"""Unit tests for IssueIFAViewModel (Inflatable Asset).
+Plain-function tests aligned with legacy style, mirroring IssueNIAViewModel tests.
+"""
+from __future__ import annotations
+
+from unittest.mock import MagicMock
+from unittest.mock import Mock
+from unittest.mock import patch
+
+import pytest
+from rgb_lib import TransferResult
+
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
+from src.model.rgb_model import Balance
+from src.model.rgb_model import IssueAssetResponseModel
+from src.utils.custom_exception import CommonException
+from src.utils.error_message import ERROR_AUTHENTICATION
+from src.utils.error_message import ERROR_FIELD_MISSING
+from src.viewmodels.issue_ifa_view_model import IssueIFAViewModel
+
+
+@pytest.fixture
+def mock_page_navigation(mocker):
+    """Mock page navigation."""
+    return mocker.MagicMock()
+
+
+@pytest.fixture
+def vm(mock_page_navigation):
+    """Mock view model."""
+    return IssueIFAViewModel(mock_page_navigation)
+
+
+def _mk_issue_resp():
+    """Mock issue response."""
+    return IssueAssetResponseModel(
+        asset_id='aid',
+        ticker='IFAT',
+        name='AssetName',
+        details=None,
+        precision=0,
+        issued_supply=1000,
+        timestamp=123456,
+        added_at=123456,
+        balance=Balance(spendable=1, future=0, settled=1),
+        media=None,
+    )
+
+
+@patch('src.views.components.toast.ToastManager.error')
+@patch('src.data.repository.rgb_repository.RgbRepository.issue_asset_ifa')
+@patch('src.utils.worker.ThreadManager.run_in_thread')
+def test_issue_ifa_asset_success_flow(mock_run, mock_issue, mock_toast_err, vm):
+    """Test issue ifa asset success flow."""
+    mock_issue.return_value = _mk_issue_resp()
+
+    # Wire signals
+    sig_loading = Mock()
+    sig_success = Mock()
+    vm.is_loading.connect(sig_loading)
+    vm.success_page_message.connect(sig_success)
+
+    # Provide inputs
+    vm.issue_ifa_asset('IFAT', 'AssetName', 100, 50, True)
+
+    # Simulate worker success callback
+    worker = MagicMock()
+    vm.worker = worker
+    worker.result.emit = Mock()
+    worker.result.emit(mock_issue.return_value)
+
+    mock_toast_err.assert_not_called()
+
+
+@patch('src.views.components.toast.ToastManager.error')
+def test_on_success_native_auth_ifa_missing_fields(mock_toast, vm):
+    """Test on success native auth ifa missing fields."""
+    vm.asset_ticker = 'IFAT'
+    vm.asset_name = 'AssetName'
+    vm.amount = None  # missing
+    vm.inflation_amounts = 10
+    vm.replace_rights_num = True
+
+    vm.on_success_native_auth_ifa(True)
+
+    mock_toast.assert_called_once_with(description=ERROR_FIELD_MISSING)
+
+
+@patch('src.views.components.toast.ToastManager.error')
+def test_on_success_native_auth_ifa_auth_failed(mock_toast, vm):
+    """Test on success native auth ifa auth failed."""
+    vm.on_success_native_auth_ifa(False)
+    mock_toast.assert_called_once_with(description=ERROR_AUTHENTICATION)
+
+
+def test_on_error_handles_no_available_utxos(vm, mocker):
+    """Test on error handles no available utxos."""
+    vm.is_loading.connect(lambda *_: None)
+    slot = Mock()
+    vm.utxo_creation_started.connect(slot)
+
+    err = CommonException('NoAvailableUtxos')
+    err.message = 'NoAvailableUtxos'
+
+    vm.on_error(err)
+    slot.assert_called_once_with(True)
+
+
+@patch('src.views.components.toast.ToastManager.error')
+def test_on_error_generic_message(mock_toast, vm):
+    """Test on error generic message."""
+    e = CommonException('x')
+    e.message = 'x'
+    vm.on_error(e)
+    mock_toast.assert_called_once_with(description='x')
+
+
+@patch('src.views.components.toast.ToastManager.success')
+@patch('src.data.repository.rgb_repository.RgbRepository.inflate')
+@patch('src.utils.worker.ThreadManager.run_in_thread')
+@patch('src.data.repository.setting_repository.SettingRepository.native_authentication')
+def test_secondary_issuance_flow(mock_auth, mock_run, mock_inflate, _mock_toast_success, vm):
+    """Test secondary issuance flow."""
+    mock_auth.return_value = True
+    vm.secondary_issuance('aid', 7, 2, 1)
+
+    # Simulate emitted success from worker -> on_success_inflate
+    res = MagicMock(spec=TransferResult)
+    res.txid = 'tx123'
+    vm.on_success_inflate(res)
+
+
+@patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+@patch('src.data.repository.setting_repository.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+@patch('src.utils.hardware_client_store.hardware_client_store.set_rgb_mode')
+@patch('src.data.repository.common_operations_repository.CommonOperationRepository.sign_and_finalize_psbt')
+@patch('src.utils.worker.ThreadManager.run_in_thread')
+def test_secondary_issuance_begin_hardware_sign(mock_run, mock_sign, mock_set_rgb, _get_kst, _get_wt, vm):
+    """Test secondary issuance begin hardware sign."""
+    # Expect HW dialog update to be emitted with SIGNING, then run sign_and_finalize
+    slot = Mock()
+    vm.hw_dialog_update.connect(slot)
+
+    vm.on_success_inflate_begin('psbt_str')
+    # Ensure the run_in_thread scheduled signing
+    mock_run.assert_called()
+
+
+@patch('src.data.repository.setting_repository.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
+def test_secondary_issuance_begin_watch_only_emits_unsigned_psbt(_get_acc, vm):
+    """Test secondary issuance begin watch only emits unsigned psbt."""
+    slot = Mock()
+    vm.unsigned_psbt.connect(slot)
+
+    vm.on_success_inflate_begin('psbt_str')
+    slot.assert_called_once_with('psbt_str')
+
+
+def test_on_psbt_signed_and_finalized_success_triggers_broadcast(vm, mocker):
+    """Test on psbt signed and finalized success triggers broadcast."""
+    # Capture hw_dialog_update state and ensure inflate_end is called
+    hw_slot = Mock()
+    vm.hw_dialog_update.connect(hw_slot)
+
+    with patch.object(vm, 'inflate_end') as infl_end:
+        vm.on_psbt_signed_and_finalized_success('signed')
+        infl_end.assert_called_once_with('signed')
+
+
+@patch('src.data.repository.rgb_repository.RgbRepository.inflate_end')
+@patch('src.utils.worker.ThreadManager.run_in_thread')
+def test_inflate_end_runs(mock_run, mock_end, vm):
+    """Test inflate end runs."""
+    vm.inflate_end('signed_psbt')
+    mock_run.assert_called()

@@ -112,7 +112,6 @@ class IssueIFAViewModel(QObject, ThreadManager):
         replace_rights_num: bool,
     ) -> None:
         """Issue an IFA asset with provided details."""
-        print('Issue IFA asset')
         self.is_loading.emit(True)
         self.asset_ticker = asset_ticker
         self.asset_name = asset_name

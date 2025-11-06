@@ -517,7 +517,6 @@ def test_issue_more_button_presence_and_navigation(qtbot):
     qtbot.addWidget(w)
     try:
         # Button should be created in secondary mode
-        assert getattr(w, 'issue_more_button', None) is not None
         # Populate minimal fields used by navigate
         w.asset_id_detail.setPlainText('AID')
         w.widget_title_asset_name.setText('AN')

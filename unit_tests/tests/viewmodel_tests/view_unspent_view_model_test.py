@@ -9,6 +9,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import Assignment
 from rgb_lib import RgbAllocation
 from rgb_lib import Unspent
 from rgb_lib import Utxo
@@ -45,10 +46,11 @@ def mock_list_unspents_response():
             rgb_allocations=[
                 RgbAllocation(
                     asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
-                    amount=42,
+                    assignment=Assignment.FUNGIBLE(amount=42),
                     settled=False,
                 ),
             ],
+            pending_blinded=1,
         ),
     ]
     mock_response_model = UnspentsListResponseModel(

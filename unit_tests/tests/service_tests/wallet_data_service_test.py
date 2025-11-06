@@ -16,6 +16,7 @@ from rgb_lib import Balance
 from rgb_lib import BtcBalance
 
 from src.data.service.wallet_data_service import WalletDataService
+from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
 from src.utils.constant import DB_FILE_NAME
@@ -183,7 +184,11 @@ def test_draft_issue_asset_crud(tmp_db):
     """Draft issue asset upsert/list/delete should function when allowed."""
     tmp_db.is_watch_only = True
     tmp_db.is_offline_wallet = False
-    tmp_db.upsert_draft_issue_asset('name', 'T', 10, '/tmp/file')
+    tmp_db.upsert_draft_issue_asset(
+        IssueAssetDraftModel(
+            name='name', ticker='T', issued_amount=10, file_path='/tmp/file',
+        ),
+    )
     rows = tmp_db.list_draft_issue_assets()
     assert len(rows) == 1
     draft_id = rows[0]['id']

@@ -271,6 +271,9 @@ class HeaderFrame(QFrame, QObject):
         )
         self.network_error_frame.hide()
         self.retranslate_ui()
+        # External visibility override for action button. If not None, internal
+        # logic should respect this value and not flip visibility.
+        self._action_button_override: bool | None = None
         self.header_frame_view_model.network_status_signal.connect(
             self.handle_network_frame_visibility,
         )
@@ -362,7 +365,10 @@ class HeaderFrame(QFrame, QObject):
         A helper method to handle button visibility based on the network status and title.
         """
         if self.title in refresh_and_action_button_list:
-            self.action_button.setVisible(self.priv.can_create_assets)
+            if self._action_button_override is None:
+                self.action_button.setVisible(self.priv.can_create_assets)
+            else:
+                self.action_button.setVisible(self._action_button_override)
             self.refresh_page_button.setVisible(visible)
 
         if self.title in refresh_button_list:
@@ -370,7 +376,20 @@ class HeaderFrame(QFrame, QObject):
 
         if (self.title not in refresh_and_action_button_list) and (self.title not in refresh_button_list):
             if not visible:
-                self.action_button.setVisible(False)
+                if self._action_button_override is None:
+                    self.action_button.setVisible(False)
+
+    def set_action_button_visible(self, visible: bool, override: bool = True):
+        """Public API to control action button visibility.
+        When override is True, future internal updates will respect this value
+        until cleared by calling with override=False and a desired state.
+        """
+        if override:
+            self._action_button_override = visible
+        else:
+            # Clear override by passing override=False without changing value
+            self._action_button_override = None
+        self.action_button.setVisible(visible)
 
     def set_wallet_backup_frame(self):
         """

@@ -35,7 +35,7 @@ def test_create_utxos_success(mock_get_fee_rate, mock_get_cache):
     mock_get_cache.return_value = mock_cache
     colored_wallet.wallet.create_utxos.reset_mock()
 
-    create_utxos()
+    create_utxos(1)
 
     colored_wallet.wallet.create_utxos.assert_called_once()
     mock_cache.invalidate_cache.assert_called_once()
@@ -57,7 +57,7 @@ def test_create_utxos_http_error(mock_get_fee_rate):
     )
 
     with pytest.raises(CommonException) as exc_info:
-        create_utxos()
+        create_utxos(1)
 
     assert str(exc_info.value) == ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 
@@ -72,7 +72,7 @@ def test_create_utxos_connection_error(mock_get_fee_rate):
     colored_wallet.wallet.create_utxos.side_effect = RequestsConnectionError()
 
     with pytest.raises(CommonException) as exc_info:
-        create_utxos()
+        create_utxos(1)
 
     assert str(exc_info.value) == 'Unable to connect to wallet'
 
@@ -89,7 +89,7 @@ def test_create_utxos_general_exception(mock_get_fee_rate):
     )
 
     with pytest.raises(CommonException) as exc_info:
-        create_utxos()
+        create_utxos(1)
 
     assert 'Decorator(check_colorable_available): Error while calling create utxos' in str(
         exc_info.value,

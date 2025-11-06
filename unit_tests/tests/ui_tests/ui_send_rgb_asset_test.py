@@ -1,7 +1,7 @@
 """Unit test for Send RGB asset ui."""
 # Disable the redefined-outer-name warning as
 # it's normal to pass mocked objects in test functions
-# pylint: disable=redefined-outer-name,unused-argument,protected-access
+# pylint: disable=redefined-outer-name,unused-argument,protected-access,too-few-public-methods
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -261,13 +261,25 @@ def test_send_rgb_asset_button_success(send_rgb_asset_widget: SendRGBAssetWidget
     )
 
     # Mock the decoded RGB invoice response
+    class DummyAssign:
+        """Dummy assignment class for testing."""
+
+        def __init__(self, amount: int):
+            self.amount = amount
+
     mock_decoded_rgb_invoice = MagicMock()
     mock_decoded_rgb_invoice.recipient_id = 'recipient_id'
     mock_decoded_rgb_invoice.transport_endpoints = 'some_endpoints'
+    mock_decoded_rgb_invoice.assignment = DummyAssign(1)
     mocker.patch(
         'src.data.repository.rgb_repository.RgbRepository.decode_invoice',
         return_value=mock_decoded_rgb_invoice,
     )
+
+    # Force software path (not hardware/watch-only)
+    send_rgb_asset_widget.is_hardware_wallet = False
+    send_rgb_asset_widget.is_online_wallet = False
+    send_rgb_asset_widget.is_watch_only = False
 
     # Mock the on_send_click method
     mock_on_send_click = MagicMock()
@@ -283,10 +295,16 @@ def test_send_rgb_asset_button_success(send_rgb_asset_widget: SendRGBAssetWidget
     # Verify loading_performer is set correctly
     assert send_rgb_asset_widget.loading_performer == 'SEND_BUTTON'
 
-    # Verify that the on_send_click method was called with the correct parameters
-    mock_on_send_click.assert_called_once_with(
-        '10', 'recipient_id', 'some_endpoints', '0.01', 1,
-    )
+    # Verify that on_send_click was called with expected args
+    assert mock_on_send_click.called
+    args, _ = mock_on_send_click.call_args
+    # Expected order: recipient_id, endpoints, fee_rate, min_conf, assignment
+    assert args[0] == 'recipient_id'
+    assert args[1] == 'some_endpoints'
+    assert args[2] == '0.01'
+    assert args[3] == 1
+    # last arg should have amount 10
+    assert getattr(args[4], 'amount', None) == 10
 
     # Verify that no error toast was shown
     mock_toast_manager.error.assert_not_called()

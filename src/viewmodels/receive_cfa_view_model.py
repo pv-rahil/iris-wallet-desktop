@@ -77,4 +77,3 @@ class ReceiveCFAViewModel(QObject, ThreadManager):
         self.sidebar = self._page_navigation.sidebar()
         if self.sidebar is not None:
             self.sidebar.my_fungibles.setChecked(True)
-        print(error)

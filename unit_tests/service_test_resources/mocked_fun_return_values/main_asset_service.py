@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from rgb_lib import AssetCfa
+from rgb_lib import AssetIfa
 from rgb_lib import AssetNia
 from rgb_lib import AssetUda
 from rgb_lib import Balance
@@ -33,7 +34,6 @@ mock_uda_asset = AssetUda(
     name='Unique',
     details='asset details',
     precision=0,
-    issued_supply=777,
     timestamp=1691160565,
     added_at=1691161979,
     balance=Balance(
@@ -87,10 +87,32 @@ mock_cfa_asset = AssetCfa(
     ),
 )
 
+mock_ifa_asset = AssetIfa(
+    asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
+    ticker='IFA',
+    name='Collectible',
+    details='asset details',
+    precision=0,
+    initial_supply=777,
+    max_supply=777,
+    known_circulating_supply=777,
+    timestamp=1691160565,
+    added_at=1691161979,
+    balance=Balance(
+        settled=777000, future=777000, spendable=777000,
+    ),
+    media=Media(
+        file_path='/path/to/media', mime='text/plain',
+        digest='5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
+        hex=None,
+    ),
+)
+
 mock_get_asset_response_model = GetAssetResponseModel(
     nia=[mock_nia_asset],
     cfa=[mock_cfa_asset],
     uda=[mock_uda_asset],
+    ifa=[mock_ifa_asset],
 )
 
 """Mock Return Data Of Function - BtcRepository.get_btc_balance"""
@@ -123,7 +145,6 @@ mock_uda_asset_exhausted_asset = AssetUda(
     name='Unique',
     details='asset details',
     precision=0,
-    issued_supply=777,
     timestamp=1691160565,
     added_at=1691161979,
     balance=Balance(
@@ -177,9 +198,30 @@ mock_cfa_asset_exhausted_asset = AssetCfa(
     ),
 )
 
+mock_ifa_asset_exhausted_asset = AssetIfa(
+    asset_id='rgb:2dkSTbr-jFhznbPmo-TQafzswCN-av4gTsJjX-ttx6CNou5-M98k8Zd',
+    ticker='IFA',
+    name='Collectible',
+    details='asset details',
+    precision=0,
+    initial_supply=777,
+    max_supply=777,
+    known_circulating_supply=777,
+    timestamp=1691160565,
+    added_at=1691161979,
+    balance=Balance(
+        settled=0, future=0, spendable=0,
+    ),
+    media=Media(
+        file_path='/path/to/media', mime='text/plain',
+        digest='5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
+        hex=None,
+    ),
+)
 
 mock_get_asset_response_model_when_exhausted_asset = GetAssetResponseModel(
     nia=[mock_nia_asset, mock_nia_asset_exhausted_asset],
     cfa=[mock_cfa_asset, mock_cfa_asset_exhausted_asset],
     uda=[mock_uda_asset, mock_uda_asset_exhausted_asset],
+    ifa=[mock_ifa_asset, mock_ifa_asset_exhausted_asset],
 )

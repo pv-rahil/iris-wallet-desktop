@@ -63,6 +63,7 @@ def test_get_assets(
     assert result.nia == mock_get_asset_response_model.nia
     assert result.cfa == mock_get_asset_response_model.cfa
     assert result.uda == mock_get_asset_response_model.uda
+    assert result.ifa == mock_get_asset_response_model.ifa
     assert result.vanilla.ticker == 'rBTC'
     assert result.vanilla.name == 'rBitcoin'
     assert result.vanilla.balance.settled == mock_balance_response_data.vanilla.settled
@@ -82,6 +83,7 @@ def test_get_assets(
                 AssetSchema.NIA,
                 AssetSchema.CFA,
                 AssetSchema.UDA,
+                AssetSchema.IFA,
             ],
         ),
     )
@@ -227,6 +229,7 @@ def test_none_asset_lists_return_path(
     assert not result.nia
     assert not result.cfa
     assert not result.uda
+    assert not result.ifa
     get_asset.assert_called_once()
 
 
@@ -256,12 +259,14 @@ def test_when_asset_exhausted(
     assert len(result.cfa) == 1
     assert len(result.uda) == 1
     assert len(result.nia) == 1
+    assert len(result.ifa) == 1
     get_asset.assert_called_once_with(
         FilterAssetRequestModel(
             filter_asset_schemas=[
                 AssetSchema.NIA,
                 AssetSchema.CFA,
                 AssetSchema.UDA,
+                AssetSchema.IFA,
             ],
         ),
     )

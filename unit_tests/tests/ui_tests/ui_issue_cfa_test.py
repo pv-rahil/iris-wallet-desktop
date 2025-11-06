@@ -215,6 +215,8 @@ def test_handle_cfa_utxo_created_accepts_and_calls_issue(issue_cfa_widget: Issue
     widget = issue_cfa_widget
     dlg = MagicMock()
     dlg.isVisible.return_value = True
+    # Gate by current purpose for accept path
+    widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_cfa'
     with patch.object(widget, 'on_issue_cfa', new=MagicMock()):
         mocker.patch(
             'src.views.ui_issue_cfa.HardwareWalletOperationDialog.get_instance', return_value=dlg,
@@ -229,7 +231,9 @@ def test_handle_cfa_issue_reuse_existing_psbt(issue_cfa_widget: IssueCFAWidget, 
     """Cover existing PSBT branch -> show_cfa_psbt_page called."""
     widget = issue_cfa_widget
     svc = MagicMock()
-    svc.list_psbt.return_value = [{'purpose': 'issue_asset', 'psbt': 'abc'}]
+    svc.list_psbt.return_value = [
+        {'purpose': 'issue_asset_cfa', 'psbt': 'abc'},
+    ]
     mocker.patch(
         'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
@@ -248,9 +252,10 @@ def test_handle_cfa_issue_create_utxos_when_no_psbt(issue_cfa_widget: IssueCFAWi
             'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
 
+        # The widget now uses purpose 'issue_asset_cfa'
         widget.handle_cfa_issue()
         widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-            'issue_asset',
+            'issue_asset_cfa',
         )
 
 
@@ -264,9 +269,14 @@ def test_create_issue_cfa_draft_success_and_exception(issue_cfa_widget: IssueCFA
         )
 
     widget.create_issue_cfa_draft('N', 'TICK', '10', '/tmp/x')
-    svc.upsert_draft_issue_asset.assert_called_once_with(
-        name='N', ticker='TICK', issued_amount=10, file_path='/tmp/x',
-    )
+    # Service now receives a single IssueAssetDraftModel argument
+    assert svc.upsert_draft_issue_asset.called
+    args, _ = svc.upsert_draft_issue_asset.call_args
+    model = args[0]
+    assert getattr(model, 'name') == 'N'
+    assert getattr(model, 'ticker') == 'TICK'
+    assert getattr(model, 'issued_amount') == 10
+    assert getattr(model, 'file_path') == '/tmp/x'
 
     # exception path
     svc.upsert_draft_issue_asset.side_effect = Exception('boom')
@@ -325,6 +335,8 @@ def test_show_cfa_psbt_page_navigates(issue_cfa_widget: IssueCFAWidget):
     """Cover positive path of show_cfa_psbt_page."""
     widget = issue_cfa_widget
     widget._view_model.page_navigation.receive_asset_page = MagicMock()
+    # Gate by current purpose
+    widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_cfa'
     widget.show_cfa_psbt_page('abc')
     widget._view_model.page_navigation.receive_asset_page.assert_called_once()
 

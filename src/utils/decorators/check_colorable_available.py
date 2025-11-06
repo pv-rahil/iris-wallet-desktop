@@ -116,7 +116,14 @@ def check_colorable_available(required_utxos: int = 2) -> Callable[..., Any]:
                     # Retry the original function
                     return method(*args, **kwargs)
                 except RgbLibError.InsufficientAllocationSlots as exc:
-                    raise CommonException('NoAvailableUtxos') from exc
+                    key_storage_type = SettingRepository.get_key_storage_type()
+                    wallet_type = SettingRepository.get_wallet_type()
+                    wallet_access_type = SettingRepository.get_wallet_access_type()
+                    if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
+                            or wallet_access_type == WalletAccessType.WATCH_ONLY:
+                        raise CommonException('NoAvailableUtxos') from exc
+                    create_utxos(num=needed)
+                    return method(*args, **kwargs)
                 except CommonException:
                     raise
                 except Exception as fallback_exc:

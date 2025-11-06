@@ -213,7 +213,6 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
 
         """
         self.is_loading.emit(False)
-        print(exc)
         if exc.message == ERROR_NETWORK_MISMATCH:
             local_store.clear_settings()
             MessageBox('critical', exc.message)

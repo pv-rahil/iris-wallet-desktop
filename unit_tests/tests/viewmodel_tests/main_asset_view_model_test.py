@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 from rgb_lib import AssetCfa
+from rgb_lib import AssetIfa
 from rgb_lib import AssetNia
 from rgb_lib import AssetUda
 
@@ -79,7 +80,6 @@ def mock_main_page_data_response():
                 name='Asset3',
                 details=None,
                 precision=2,
-                issued_supply=3000,
                 timestamp=1620004000,
                 added_at=1620005000,
                 balance=Balance(
@@ -128,6 +128,24 @@ def mock_main_page_data_response():
                 added_at=1620011000,
                 balance=Balance(
                     settled=600, future=300, spendable=900,
+                ),
+                media='filepath',
+            ),
+        ],
+        ifa=[
+            AssetIfa(
+                asset_id='7',
+                ticker='USD',
+                name='Asset7',
+                details=None,
+                precision=2,
+                initial_supply=7000,
+                max_supply=10000,
+                known_circulating_supply=7000,
+                timestamp=1620012000,
+                added_at=1620013000,
+                balance=Balance(
+                    settled=700, future=350, spendable=1050,
                 ),
                 media='filepath',
             ),

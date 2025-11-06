@@ -818,7 +818,6 @@ class BroadcastTransactionWidget(QWidget):
             drafts = wallet_service.list_psbt(
                 True,
             ) if wallet_service is not None else []
-            print(drafts)
         except Exception:
             drafts = []
 

@@ -35,21 +35,18 @@ class ConfirmationDialogPageObjects(BaseOperations):
         """
         Clicks the confirmation dialog on the confirmation dialog page.
         """
-        print('called', self.confirmation_dialog())
         return self.do_click(self.confirmation_dialog()) if self.do_is_displayed(self.confirmation_dialog()) else None
 
     def click_confirmation_continue_button(self):
         """
         Clicks the confirmation continue button on the confirmation dialog page.
         """
-        print('called', self.confirmation_continue_button())
         return self.do_click(self.confirmation_continue_button()) if self.do_is_displayed(self.confirmation_continue_button()) else None
 
     def click_confirmation_checkbox(self):
         """
         Clicks the confirmation checkbox on the confirmation dialog page.
         """
-        print('called', self.confirmation_checkbox())
         if self.do_is_displayed(self.confirmation_checkbox()):
             return self.do_click(self.confirmation_checkbox())
         return None

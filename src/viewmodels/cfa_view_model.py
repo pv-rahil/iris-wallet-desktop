@@ -138,7 +138,6 @@ class CFAViewModel(QObject, ThreadManager):
                 str(error), PsbtStatus.ERROR,
             )
         else:
-            print(error)
             ToastManager.error(description=error.message)
 
     def on_success_send_rgb_asset(self, success: bool) -> None:

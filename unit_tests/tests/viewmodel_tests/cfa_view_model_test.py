@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 from rgb_lib import AssetSchema
+from rgb_lib import Assignment
 from rgb_lib import TransferStatus
 
 from src.model.enums.enums_model import KeyStorageType
@@ -62,7 +63,11 @@ def mock_asset_details_response():
                 update_at_date='2024-06-13',
                 updated_at_time='17:35:42',
                 status=TransferStatus.SETTLED,
-                amount=69,
+                assignments=[
+                    Assignment.FUNGIBLE(
+                        amount=69,
+                    ),
+                ],
                 amount_status='+69',
                 kind='Issuance',
                 transfer_Status=TransferStatusEnumModel.INTERNAL,
@@ -116,7 +121,7 @@ def test_get_cfa_asset_detail_success(mock_get_asset_transactions, cfa_view_mode
 def test_on_send_click(mock_run_in_thread, cfa_view_model):
     """Test the on_send_click method of CFAViewModel without executing the actual method."""
     # Setup test parameters
-    amount = 100
+    assignment = Assignment.FUNGIBLE(amount=100)
     blinded_utxo = 'test_blinded_utxo'
     transport_endpoints = ['test_endpoint']
     fee_rate = 1.0
@@ -130,12 +135,13 @@ def test_on_send_click(mock_run_in_thread, cfa_view_model):
     cfa_view_model.worker = mock_worker
 
     # Call the method
+    # Method signature: (blinded_utxo, transport_endpoints, fee_rate, min_confirmation, assignment)
     cfa_view_model.on_send_click(
-        amount, blinded_utxo, transport_endpoints, fee_rate, min_confirmation,
+        blinded_utxo, transport_endpoints, fee_rate, min_confirmation, assignment,
     )
 
     # Verify the state changes
-    assert cfa_view_model.amount == amount
+    assert cfa_view_model.assignment.amount == assignment.amount
     assert cfa_view_model.blinded_utxo == blinded_utxo
     assert cfa_view_model.transport_endpoints == transport_endpoints
     assert cfa_view_model.fee_rate == fee_rate
@@ -371,7 +377,7 @@ def test_on_success_send_rgb_asset(cfa_view_model, mocker):
 
     # Test successful case
     cfa_view_model.asset_id = 'test_asset_id'
-    cfa_view_model.amount = 100
+    cfa_view_model.assignment = Assignment.FUNGIBLE(amount=100)
     cfa_view_model.blinded_utxo = 'test_blinded_utxo'
     cfa_view_model.transport_endpoints = ['endpoint1', 'endpoint2']
     cfa_view_model.fee_rate = 1.0
@@ -391,7 +397,7 @@ def test_on_success_send_rgb_asset(cfa_view_model, mocker):
     # Verify run_in_thread arguments
     call_args = cfa_view_model.run_in_thread.call_args[0][1]
     assert call_args['args'][0].asset_id == cfa_view_model.asset_id
-    assert call_args['args'][0].amount == cfa_view_model.amount
+    assert call_args['args'][0].assignment.amount == cfa_view_model.assignment.amount
     assert call_args['args'][0].recipient_id == cfa_view_model.blinded_utxo
     assert call_args['args'][0].transport_endpoints == cfa_view_model.transport_endpoints
     assert call_args['args'][0].fee_rate == cfa_view_model.fee_rate
@@ -617,12 +623,14 @@ def test_send_begin_sets_request_and_runs(cfa_view_model):
     cfa_view_model.asset_id = 'aid'
     cfa_view_model.run_in_thread = MagicMock()
     cfa_view_model.send_cfa_button_clicked = Mock()
-    cfa_view_model.send_begin(1, 'blind', ['te'], 2, 3)
+    cfa_view_model.send_begin(
+        'blind', ['te'], 2, 3, Assignment.FUNGIBLE(amount=1),
+    )
     cfa_view_model.send_cfa_button_clicked.emit.assert_called_once_with(True)
     params = cfa_view_model.run_in_thread.call_args[0][1]
     req = params['args'][0]
     assert req.asset_id == 'aid'
-    assert req.amount == 1
+    assert req.assignment.amount == 1
     assert req.recipient_id == 'blind'
     assert req.transport_endpoints == ['te']
     assert req.fee_rate == 2
