@@ -44,7 +44,7 @@ def rgb_asset_detail_widget(qtbot):
 
     # Mock the params as an instance of RgbAssetPageLoadModel
     mock_params = MagicMock()
-    mock_params.asset_type = 'RGB20'  # Set the asset_type as needed
+    mock_params.asset_type = 'NIA'  # Set the asset_type as needed
 
     widget = RGBAssetDetailWidget(view_model, mock_params)
     qtbot.addWidget(widget)
@@ -119,16 +119,16 @@ def test_is_path(rgb_asset_detail_widget: RGBAssetDetailWidget):
     ) is False  # Windows path format
 
 
-def test_handle_page_navigation_rgb_20(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test page navigation handling when asset type is RGB20."""
-    rgb_asset_detail_widget.asset_type = AssetType.RGB20.value
+def test_handle_page_navigation_nia(rgb_asset_detail_widget: RGBAssetDetailWidget):
+    """Test page navigation handling when asset type is NIA."""
+    rgb_asset_detail_widget.asset_type = AssetType.NIA.value
     rgb_asset_detail_widget.handle_page_navigation()
     rgb_asset_detail_widget._view_model.page_navigation.fungibles_asset_page.assert_called_once()
 
 
-def test_handle_page_navigation_rgb_25(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test page navigation handling when asset type is RGB25."""
-    rgb_asset_detail_widget.asset_type = AssetType.RGB25.value
+def test_handle_page_navigation_cfa(rgb_asset_detail_widget: RGBAssetDetailWidget):
+    """Test page navigation handling when asset type is CFA."""
+    rgb_asset_detail_widget.asset_type = AssetType.CFA.value
     rgb_asset_detail_widget.handle_page_navigation()
     rgb_asset_detail_widget._view_model.page_navigation.collectibles_asset_page.assert_called_once()
 
@@ -140,7 +140,7 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
     asset_id = 'test_asset_id'
     asset_name = 'Test Asset'
     image_path = asset_image_path
-    asset_type = AssetType.RGB20.value
+    asset_type = AssetType.NIA.value
 
     # Mock the transaction details
     mock_transaction = MagicMock()
@@ -162,7 +162,7 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
     mock_transactions.off_chain_transfers = [mock_transaction]
     mock_transactions.transfers = [mock_transaction]
 
-    rgb_asset_detail_widget._view_model.rgb25_view_model.txn_list = mock_transactions
+    rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_transactions
 
     # Call the method to test
     rgb_asset_detail_widget.set_transaction_detail_frame(
@@ -212,7 +212,7 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
     mock_transactions.onchain_transfers = [mock_transaction]
     mock_transactions.off_chain_transfers = [mock_transaction]
 
-    rgb_asset_detail_widget._view_model.rgb25_view_model.txn_list = mock_transactions
+    rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_transactions
 
     # Call the method to test
     rgb_asset_detail_widget.set_transaction_detail_frame(
@@ -340,7 +340,7 @@ def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWid
 
     # Set up mock data for the test
     asset_id = 'test_asset_id'
-    asset_type = AssetType.RGB20.value
+    asset_type = AssetType.NIA.value
     rgb_asset_detail_widget.asset_id_detail.setPlainText(
         asset_id,
     )  # Mock asset_id in widget
@@ -356,9 +356,9 @@ def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWid
         rgb_asset_detail_widget,
         'navigate_to_selection_page',
     )
-    mock_receive_rgb25 = mocker.patch.object(
+    mock_receive_cfa = mocker.patch.object(
         rgb_asset_detail_widget._view_model.page_navigation,
-        'receive_rgb25_page',
+        'receive_cfa_page',
     )
 
     # Case 1: Channel is open for the asset (is_channel_open_for_asset returns True)
@@ -371,11 +371,11 @@ def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWid
     mock_navigate.assert_called_once_with(
         TransferStatusEnumModel.RECEIVE.value,
     )
-    mock_receive_rgb25.assert_not_called()
+    mock_receive_cfa.assert_not_called()
 
     # Reset the mocks to ensure clean state for the next test case
     mock_navigate.reset_mock()
-    mock_receive_rgb25.reset_mock()
+    mock_receive_cfa.reset_mock()
 
     # Case 2: Channel is not open for the asset (is_channel_open_for_asset returns False)
     mock_is_channel_open.return_value = False
@@ -384,7 +384,7 @@ def test_select_receive_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWid
     rgb_asset_detail_widget.select_receive_transfer_type()
 
     # Assertions for when the channel is not open
-    mock_receive_rgb25.assert_called_once_with(
+    mock_receive_cfa.assert_called_once_with(
         params=AssetDataModel(
             asset_type=asset_type,
             asset_id=asset_id,
@@ -413,9 +413,9 @@ def test_select_send_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWidget
         rgb_asset_detail_widget,
         'navigate_to_selection_page',
     )
-    mock_send_rgb25 = mocker.patch.object(
+    mock_send_cfa = mocker.patch.object(
         rgb_asset_detail_widget._view_model.page_navigation,
-        'send_rgb25_page',
+        'send_cfa_page',
     )
 
     # Case 1: Channel is open for the asset (is_channel_open_for_asset returns True)
@@ -428,11 +428,11 @@ def test_select_send_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWidget
     mock_navigate.assert_called_once_with(
         TransferStatusEnumModel.SEND.value,
     )
-    mock_send_rgb25.assert_not_called()
+    mock_send_cfa.assert_not_called()
 
     # Reset the mocks to ensure clean state for the next test case
     mock_navigate.reset_mock()
-    mock_send_rgb25.reset_mock()
+    mock_send_cfa.reset_mock()
 
     # Case 2: Channel is not open for the asset (is_channel_open_for_asset returns False)
     mock_is_channel_open.return_value = False
@@ -441,7 +441,7 @@ def test_select_send_transfer_type(rgb_asset_detail_widget: RGBAssetDetailWidget
     rgb_asset_detail_widget.select_send_transfer_type()
 
     # Assertions for when the channel is not open
-    mock_send_rgb25.assert_called_once()
+    mock_send_cfa.assert_called_once()
     mock_navigate.assert_not_called()
 
 
@@ -450,7 +450,7 @@ def test_refresh_transaction(rgb_asset_detail_widget: RGBAssetDetailWidget):
 
     # Mock the render timer and the refresh function
     rgb_asset_detail_widget.render_timer = MagicMock()
-    rgb_asset_detail_widget._view_model.rgb25_view_model.on_refresh_click = MagicMock()
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_refresh_click = MagicMock()
 
     # Call the method
     rgb_asset_detail_widget.refresh_transaction()
@@ -459,7 +459,7 @@ def test_refresh_transaction(rgb_asset_detail_widget: RGBAssetDetailWidget):
     # Verify render_timer.start was called once
     rgb_asset_detail_widget.render_timer.start.assert_called_once()
     # Verify on_refresh_click was called once
-    rgb_asset_detail_widget._view_model.rgb25_view_model.on_refresh_click.assert_called_once()
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_refresh_click.assert_called_once()
 
 
 def test_handle_asset_frame_click(rgb_asset_detail_widget: RGBAssetDetailWidget):
@@ -474,13 +474,13 @@ def test_handle_asset_frame_click(rgb_asset_detail_widget: RGBAssetDetailWidget)
     )
 
     # Mock the navigation method
-    rgb_asset_detail_widget._view_model.page_navigation.rgb25_transaction_detail_page = MagicMock()
+    rgb_asset_detail_widget._view_model.page_navigation.cfa_transaction_detail_page = MagicMock()
 
     # Call the method
     rgb_asset_detail_widget.handle_asset_frame_click(params)
 
     # Assertions to check if the navigation method was called with the correct parameters
-    rgb_asset_detail_widget._view_model.page_navigation.rgb25_transaction_detail_page.assert_called_once_with(
+    rgb_asset_detail_widget._view_model.page_navigation.cfa_transaction_detail_page.assert_called_once_with(
         params,
     )
 
@@ -720,9 +720,13 @@ def test_handle_fail_transfer(rgb_asset_detail_widget: RGBAssetDetailWidget):
         # Verify dialog was created with correct message containing tx_id
         mock_confirmation_dialog.assert_called_with(
             parent=rgb_asset_detail_widget,
-            message=f"{QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_id', None)}: {
+            message=f"""{
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_id', None,
+                )
+            }: {
                 tx_id
-            }\n\n {QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cancel_transfer', None)}",
+            }\n\n {QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cancel_transfer', None)}""",
         )
 
         # Reset mock for next test
@@ -768,7 +772,7 @@ def test_confirm_fail_transfer(rgb_asset_detail_widget: RGBAssetDetailWidget):
     rgb_asset_detail_widget._confirm_fail_transfer(idx)
 
     # Verify the view model method was called with correct index
-    rgb_asset_detail_widget._view_model.rgb25_view_model.on_fail_transfer.assert_called_once_with(
+    rgb_asset_detail_widget._view_model.cfa_view_model.on_fail_transfer.assert_called_once_with(
         idx,
     )
 

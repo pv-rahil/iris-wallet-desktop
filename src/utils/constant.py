@@ -128,9 +128,9 @@ IRIS_WALLET_TRANSLATIONS_CONTEXT = 'iris_wallet_desktop'
 
 # RGB lightning node commit ID
 RGB_LN_COMMIT_ID_KEY = 'rgb_ln_commit_id'
-CURRENT_RLN_NODE_COMMIT = 'a623edbd7c49639dc41c72c5aef98d808d6c1d00'
+CURRENT_RLN_NODE_COMMIT = '87d6b9f0d1957691f6bfa07301879e3d1d20dfd2'
 COMPATIBLE_RLN_NODE_COMMITS = [
-    'a623edbd7c49639dc41c72c5aef98d808d6c1d00',
+    '87d6b9f0d1957691f6bfa07301879e3d1d20dfd2',
 ]
 
 # Directory names used in paths

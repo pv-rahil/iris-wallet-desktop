@@ -24,7 +24,7 @@ from PySide6.QtWidgets import QWidget
 
 import src.resources_rc
 from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
-from accessible_constant import ISSUE_RGB20_ASSET
+from accessible_constant import ISSUE_NIA_ASSET
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.enums.enums_model import AssetType
@@ -84,7 +84,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.title_frame = HeaderFrame(
             title_logo_path=':/assets/my_asset.png', title_name='fungibles',
         )
-        self.title_frame.action_button.setAccessibleName(ISSUE_RGB20_ASSET)
+        self.title_frame.action_button.setAccessibleName(ISSUE_NIA_ASSET)
         self.fungible_frame = None
         self.vertical_layout_fungible_frame = None
         self.grid_layout_fungible_frame = None
@@ -276,7 +276,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
     def create_fungible_card(self, asset, img_path=None):
         """This method creates all the fungible assets elements of the main asset page."""
         self.fungible_frame = ClickableFrame(
-            asset.asset_id, asset.name, self.fungibles_widget, asset_type=asset.asset_iface,
+            asset.asset_id, asset.name, self.fungibles_widget, asset_type=AssetType.BITCOIN if img_path else AssetType.NIA,
         )
         self.fungible_frame.setStyleSheet(
             load_stylesheet('views/qss/fungible_asset_style.qss'),
@@ -334,7 +334,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
             'padding-left:10px;',
         )
 
-        if asset.asset_iface == AssetType.BITCOIN:
+        if img_path:
             network = SettingRepository.get_wallet_network()
             if network == NetworkEnumModel.REGTEST:
                 self.address.setText(TokenSymbol.REGTEST_BITCOIN)
@@ -361,7 +361,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.outbound_balance.setObjectName('outbound_balance')
         self.outbound_balance.setMinimumSize(QSize(80, 40))
 
-        if asset.asset_iface == AssetType.RGB20:
+        if not img_path:
             self.outbound_balance.setText(
                 str(asset.balance.offchain_outbound) if asset.balance.offchain_outbound else 'N/A',
             )
@@ -411,7 +411,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         )
         self.title_frame.action_button.clicked.connect(
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_rgb20_asset_page,
+                self._view_model.page_navigation.issue_nia_asset_page,
             ),
         )
         self._view_model.main_asset_view_model.loading_started.connect(
@@ -445,10 +445,10 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         if asset_type == AssetType.BITCOIN.value:
             self._view_model.page_navigation.bitcoin_page()
         else:
-            self._view_model.rgb25_view_model.asset_info.emit(
+            self._view_model.cfa_view_model.asset_info.emit(
                 asset_id, asset_name, image_path, asset_type,
             )
-            self._view_model.page_navigation.rgb25_detail_page(
+            self._view_model.page_navigation.cfa_detail_page(
                 RgbAssetPageLoadModel(asset_type=asset_type),
             )
 

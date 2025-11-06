@@ -33,7 +33,6 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
-from src.views.components.toast import ToastManager
 
 
 class ViewUnspentList(QWidget):
