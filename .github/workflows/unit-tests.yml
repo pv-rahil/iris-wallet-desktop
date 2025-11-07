@@ -1,0 +1,58 @@
+name: Unit Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-22.04
+    env:
+      QT_QPA_PLATFORM: offscreen
+      TZ: Asia/Kolkata
+      PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12.3 environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+
+      - name: Install required system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libxcb-cursor0 \
+            libegl1 \
+            libgl1
+          sudo apt-get install ruby-dev build-essential libgirepository1.0-dev python3-dev -y && sudo gem i fpm -f
+          sudo apt-get update && sudo apt-get install -y libfuse2 # Required for AppImage creation
+          
+      - name: Set environment variables from GitHub Secrets and generate config.py
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          AUTH_URI: ${{ secrets.AUTH_URI }}
+          TOKEN_URI: ${{ secrets.TOKEN_URI }}
+          AUTH_PROVIDER_CERT_URL: ${{ secrets.AUTH_PROVIDER_CERT_URL }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        run: |
+          cd src/utils
+          python generate_config.py
+
+      - name: Install Python dependencies
+        uses: ./.github/actions/install-python-dependencies
+
+      - name: Compile QT resources
+        run: |
+                poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+      - name: Run unit tests (fail if coverage < 90%)
+        run: |
+          poetry run pytest -v --maxfail=1 --disable-warnings \
+            -p no:faulthandler \
+            --cov=src --cov-report=term --cov-fail-under=90 -n 3 -ra \
+            unit_tests/tests
