@@ -113,6 +113,14 @@ QFrame#frame_4 {
     border: none;
 }
 
+/* Styles for the Max supply frame (match frame_4) */
+QFrame#frame_max_supply {
+    background: transparent;
+    background-color: #1B233B;
+    border-radius: 8px;
+    border: none;
+}
+
 /* Styles for the collectible amount label */
 QLabel#asset_balance_label {
     font: 14px "Inter";
@@ -122,8 +130,26 @@ QLabel#asset_balance_label {
     font-weight: 600;
 }
 
+/* Header label in Max supply frame */
+QLabel#max_supply_label {
+    font: 14px "Inter";
+    color: white;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+}
+
 /* Styles for the collectible amount */
 QLabel#asset_total_balance, #asset_spendable_amount {
+    font: 14px "Inter";
+    color: #959BAE;
+    background: transparent;
+    border: none;
+    font-weight: 400;
+}
+
+/* Values in Max supply frame */
+QLabel#max_supply_value, QLabel#remaining_issue_value {
     font: 14px "Inter";
     color: #959BAE;
     background: transparent;
@@ -155,6 +181,24 @@ QWidget#scroll_area_widget_contents{
 }
 
 QLabel#asset_total_amount_label, #asset_spendable_amount_label {
+    font: 14px "Inter";
+    color: #D0D3DD;
+    background: transparent;
+    border: none;
+    font-weight: 500;
+}
+
+/* Secondary label in Max supply frame */
+QLabel#remaining_issue_label {
+    font: 14px "Inter";
+    color: #D0D3DD;
+    background: transparent;
+    border: none;
+    font-weight: 500;
+}
+
+/* Left caption label in Max supply frame */
+QLabel#max_supply_total_label {
     font: 14px "Inter";
     color: #D0D3DD;
     background: transparent;

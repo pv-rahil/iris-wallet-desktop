@@ -36,6 +36,7 @@ from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
@@ -137,7 +138,7 @@ class IssueNIAWidget(QWidget):
 
         self.nia_close_btn = QPushButton(self.issue_nia_widget)
         self.nia_close_btn.setAccessibleName(ISSUE_NIA_ASSET_CLOSE_BUTTON)
-        self.nia_close_btn.setObjectName('nia_close_btn')
+        self.nia_close_btn.setObjectName('close_btn')
         self.nia_close_btn.setMinimumSize(QSize(24, 24))
         self.nia_close_btn.setMaximumSize(QSize(50, 65))
         self.nia_close_btn.setAutoFillBackground(False)
@@ -526,8 +527,12 @@ class IssueNIAWidget(QWidget):
             if existing_psbt and existing_psbt.get('psbt'):
                 self.show_nia_psbt_page(existing_psbt.get('psbt'))
                 return
+        # Compute missing UTXOs (required = 3) and create only those
+        current = get_unspent_utxo_count()
+        needed = 3 - max(0, current - 1)
+        needed = needed if needed > 0 else 1
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            'issue_asset_nia',
+            'issue_asset_nia', needed,
         )
 
     def show_nia_psbt_page(self, psbt):

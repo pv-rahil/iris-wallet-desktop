@@ -2228,5 +2228,29 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>secondary_issuance</source>
         <translation>Secondary Issuance</translation>
     </message>
+    <message>
+        <source>ifa_total_supply_help</source>
+        <translation>Total maximum supply for this asset. Initial issue amount will be minted now; the rest can be issued later.</translation>
+    </message>
+    <message>
+        <source>fee_rate_sat_vb</source>
+        <translation>Fee rate (sat/vB)</translation>
+    </message>
+    <message>
+        <source>enter_valid_number</source>
+        <translation>Enter a valid number</translation>
+    </message>
+    <message>
+        <source>values_must_be_non_negative</source>
+        <translation>Values must be non-negative</translation>
+    </message>
+    <message>
+        <source>initial_supply_not_exceed_total</source>
+        <translation>Initial supply must not exceed Total supply</translation>
+    </message>
+    <message>
+        <source>new_issue_amount</source>
+        <translation>New issue amount</translation>
+    </message>
 </context>
 </TS>

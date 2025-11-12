@@ -3,6 +3,8 @@
  which represents the UI for receive asset.
  """
 from __future__ import annotations
+import base64
+import zlib
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
@@ -246,7 +248,7 @@ class ReceiveAssetWidget(QWidget):
             self.receive_asset_close_button.clicked.connect(
                 self.close_button_navigation,
             )
-        elif self.page_name == 'IFA page':
+        elif self.page_name == 'IFA page' or self.page_name == 'IFA secondary issuance':
             self.receive_asset_close_button.clicked.connect(
                 self._view_model.page_navigation.inflatable_asset_page,
             )
@@ -328,7 +330,10 @@ class ReceiveAssetWidget(QWidget):
                 if match:
                     display_text = f"psbt:{match.get('purpose')}:{address}"
 
-        qr_image = set_qr_code(str(display_text))
+        # For IFA secondary issuance page, compress QR payload to better fit
+        if self.page_name == 'IFA secondary issuance' and self.psbt:
+            ifa_display_text = base64.b64encode(zlib.compress(display_text.encode())).decode()
+        qr_image = set_qr_code(str(display_text)if self.page_name != 'IFA secondary issuance' else ifa_display_text)
         pixmap = QPixmap.fromImage(qr_image)
         self.label.setPixmap(pixmap)
         self.receiver_address.setText(

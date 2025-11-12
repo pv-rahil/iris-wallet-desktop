@@ -51,7 +51,7 @@ QLabel#set_wallet_password_label {
 }
 
 /* Styles for the NIA close button */
-QPushButton#nia_close_btn {
+QPushButton#close_btn {
     background: transparent;
     border: none;
 }
@@ -86,4 +86,29 @@ QCheckBox#replace_label_checkbox::indicator:unchecked {
 
 QCheckBox#replace_label_checkbox::indicator:checked {
     background-color: green;
+}
+
+/* Info icon beside Total Supply (used in IFA/NIA issue forms) */
+QPushButton#total_supply_info_btn {
+    background: transparent;
+    border: none;
+    min-width: 22px;
+    min-height: 22px;
+    max-width: 22px;
+    max-height: 22px;
+    padding: 0px;
+    margin-left: 4px; /* keep tight to label */
+}
+
+QPushButton#total_supply_info_btn:hover {
+    opacity: 0.9;
+}
+
+/* Tooltip readability */
+QToolTip {
+    background-color: #FFFFFF;
+    color: #0A0F1F;
+    border: 1px solid #D0D3DD;
+    padding: 4px 4px;
+    font: 13px "Inter";
 }

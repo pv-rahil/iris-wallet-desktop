@@ -176,6 +176,7 @@ class CollectiblesAssetWidget(QWidget):
         # Empty state management
         self._empty_state_widget = None
         self.issue_button_in_header = True
+        self._has_collectible_drafts = False
 
     def calculate_columns(self):
         """Calculate the number of columns based on the available width"""
@@ -199,13 +200,16 @@ class CollectiblesAssetWidget(QWidget):
         wallet_service = WalletDataService.get_session()
         if wallet_service is not None:
             drafts = wallet_service.list_draft_issue_assets()
+            has_drafts = False
             for d in drafts:
                 fp = d.get('file_path')
                 if not fp:
                     continue
                 if d.get('inflation_amounts') or d.get('replace_rights_num'):
                     continue
+                has_drafts = True
                 self.frames.append(self.create_collectible_frame(draft=d))
+            self._has_collectible_drafts = has_drafts
         # Then append actual issued CFA assets
         for coll_asset in self._view_model.main_asset_view_model.assets.cfa:
             self.frames.append(
@@ -213,9 +217,9 @@ class CollectiblesAssetWidget(QWidget):
             )
         self.total_items = len(self.frames)
 
-        # Show empty state if there are no issued assets (drafts don't count)
+        # Show empty state only if there are no issued assets AND no drafts
         issued_count = len(self._view_model.main_asset_view_model.assets.cfa)
-        if issued_count == 0:
+        if issued_count == 0 and not self._has_collectible_drafts:
             self._show_empty_collectibles_state()
             return
         self._hide_empty_collectibles_state()
@@ -426,7 +430,8 @@ class CollectiblesAssetWidget(QWidget):
                 self._view_model.page_navigation.issue_cfa_asset_page,
             ),
         )
-        v.addWidget(btn, 0, Qt.AlignHCenter)
+        if not self.is_offline_wallet:
+            v.addWidget(btn, 0, Qt.AlignHCenter)
         # Add to grid area centered with stretches
         # Clear previous temp items if any
         self.grid_layout.addItem(
@@ -450,9 +455,9 @@ class CollectiblesAssetWidget(QWidget):
         # Show scroll area again
         if hasattr(self, 'scroll_area'):
             self.scroll_area.show()
-        # Show header button only if there are issued assets; release override accordingly
+        # Show header button if there are issued assets or drafts; release override accordingly
         issued_count = len(self._view_model.main_asset_view_model.assets.cfa)
-        if issued_count > 0:
+        if issued_count > 0 or self._has_collectible_drafts or not self.is_offline_wallet:
             # make it visible and keep override so network changes won't flip it
             self.collectible_header_frame.set_action_button_visible(
                 True, override=True,

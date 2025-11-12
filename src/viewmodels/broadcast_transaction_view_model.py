@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import TransferResult
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.common_operations_repository import CommonOperationRepository
@@ -152,3 +153,24 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
                 'Exception occurred: %s, Message: %s',
                 type(error).__name__, str(error),
             )
+
+    def inflate_end(self, signed_psbt: str):
+        """
+        Broadcast a signed PSBT using the RgbRepository.
+        """
+        self.is_loading.emit(True)
+        self.run_in_thread(
+            RgbRepository.inflate_end,
+            {
+                'args': [signed_psbt],
+                'callback': self.on_success_inflate_end,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_success_inflate_end(self, response: TransferResult):
+        """Handle success message for broadcast"""
+        self.is_loading.emit(False)
+        self.tx_broadcasted.emit(True)
+        ToastManager.success(description=INFO_ASSET_SENT.format(response.txid))
+        

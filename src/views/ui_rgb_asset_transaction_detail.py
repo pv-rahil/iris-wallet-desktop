@@ -355,7 +355,10 @@ class RGBAssetTransactionDetail(QWidget):
             self.amount_value.setStyleSheet(
                 load_stylesheet('views/qss/q_label.qss'),
             )
-
+        if self.params.transfer_status == TransferStatusEnumModel.INFLATION:
+            self.consignment_endpoints_value.setText('N/A')
+            if self.params.confirmation_date and self.params.confirmation_time:
+                self.date_value.setText(f'{self.params.confirmation_date} | {self.params.confirmation_time}')
         if self.params.transfer_status == TransferStatusEnumModel.INTERNAL:
             self.consignment_endpoints_value.setText('N/A')
             date_time_concat = f'{self.params.confirmation_date} | {

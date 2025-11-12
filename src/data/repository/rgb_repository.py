@@ -172,13 +172,13 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @check_colorable_available()
+    @check_colorable_available(required_utxos=3)
     def issue_asset_ifa(asset: IssueAssetIfaRequestModel) -> AssetIfa:
         """Issue asset."""
         with repository_custom_context():
             data: AssetIfa = colored_wallet.wallet.issue_asset_ifa(
                 ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
-                inflation_amounts=asset.inflation_amounts, replace_rights_num=asset.replace_rights_num,
+                inflation_amounts=asset.inflation_amounts, replace_rights_num=1,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -263,7 +263,6 @@ class RgbRepository:
             return psbt
 
     @staticmethod
-    @check_colorable_available(required_utxos=0)
     def inflate_end(signed_psbt: str) -> TransferResult:
         """broadcast signed psbt of inflate rgb asset"""
         with repository_custom_context():

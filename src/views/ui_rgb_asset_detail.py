@@ -98,6 +98,11 @@ class RGBAssetDetailWidget(QWidget):
         self.image_path = params.image_path
         self.max_amount = None
         self.circulation = None
+        self.max_supply_frame = None
+        self.max_supply_label = None
+        self.max_supply_value = None
+        self.remaining_issue_label = None
+        self.remaining_issue_value = None
         self._view_model: MainViewModel = view_model
         self.config = get_current_wallet_mode_config()
         self.grid_layout_2 = QGridLayout(self)
@@ -162,6 +167,7 @@ class RGBAssetDetailWidget(QWidget):
             self.secondary_issuance.setCursor(
                 QCursor(Qt.CursorShape.PointingHandCursor),
             )
+            self.secondary_issuance.setDisabled(True)
             self.receive_rgb_asset.setFixedSize(QSize(104, 50))
             self.send_asset.setFixedSize(QSize(104, 50))
             self.secondary_issuance.setFixedSize(QSize(104, 50))
@@ -308,6 +314,35 @@ class RGBAssetDetailWidget(QWidget):
         self.vertical_layout.addWidget(
             self.asset_balance_frame, alignment=Qt.AlignmentFlag.AlignHCenter,
         )
+        # Max Supply frame (shown for IFA assets)
+        self.max_supply_frame = QFrame(self.rgb_asset_detail_widget)
+        self.max_supply_frame.setObjectName('frame_max_supply')
+        self.max_supply_frame.setMinimumSize(QSize(335, 86))
+        self.max_supply_frame.setMaximumSize(QSize(335, 86))
+        self.max_supply_frame.setFrameShape(QFrame.StyledPanel)
+        self.max_supply_frame.setFrameShadow(QFrame.Raised)
+        max_supply_layout = QGridLayout(self.max_supply_frame)
+        max_supply_layout.setObjectName('gridLayout_max_supply')
+        max_supply_layout.setContentsMargins(15, -1, 15, 9)
+        self.max_supply_label = QLabel(self.max_supply_frame)
+        self.max_supply_label.setObjectName('max_supply_label')
+        self.max_supply_label.setMinimumSize(QSize(83, 20))
+        max_supply_layout.addWidget(self.max_supply_label, 0, 0, 1, 1, Qt.AlignLeft)
+        # Left caption label (mirrors On-chain balance 'Total')
+        self.max_supply_total_label = QLabel(self.max_supply_frame)
+        self.max_supply_total_label.setObjectName('max_supply_total_label')
+        max_supply_layout.addWidget(self.max_supply_total_label, 1, 0, 1, 1, Qt.AlignLeft)
+        self.max_supply_value = QLabel(self.max_supply_frame)
+        self.max_supply_value.setObjectName('max_supply_value')
+        max_supply_layout.addWidget(self.max_supply_value, 2, 0, 1, 1, Qt.AlignLeft)
+        self.remaining_issue_label = QLabel(self.max_supply_frame)
+        self.remaining_issue_label.setObjectName('remaining_issue_label')
+        max_supply_layout.addWidget(self.remaining_issue_label, 1, 1, 1, 1, Qt.AlignLeft)
+        self.remaining_issue_value = QLabel(self.max_supply_frame)
+        self.remaining_issue_value.setObjectName('remaining_issue_value')
+        max_supply_layout.addWidget(self.remaining_issue_value, 2, 1, 1, 1, Qt.AlignLeft)
+        self.max_supply_frame.hide()
+        self.vertical_layout.addWidget(self.max_supply_frame, alignment=Qt.AlignmentFlag.AlignHCenter)
         self.rgb_asset_detail_widget_layout.addLayout(
             self.vertical_layout, 3, 0, 1, 1,
         )
@@ -411,6 +446,17 @@ class RGBAssetDetailWidget(QWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'spendable_bal', None,
             ),
         )
+        # Max Supply panel labels
+        if self.max_supply_label is not None:
+            self.max_supply_label.setText('Max supply')
+        if self.max_supply_total_label is not None:
+            self.max_supply_total_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total', None,
+                ),
+            )
+        if self.remaining_issue_label is not None:
+            self.remaining_issue_label.setText('Remaining you can issue')
 
     def select_receive_transfer_type(self):
         """This method navigates receive asset page according to the condition"""
@@ -503,6 +549,25 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_spendable_amount.setText(
             str(asset_transactions.asset_balance.spendable),
         )
+        # Populate Max Supply / Remaining for IFA assets
+        if asset_type == AssetSchema.IFA or asset_type == str(AssetSchema.IFA.value):
+            # Find asset details in main view model to compute supply
+            if self._view_model.main_asset_view_model.assets and self._view_model.main_asset_view_model.assets.ifa:
+                for a in self._view_model.main_asset_view_model.assets.ifa:
+                    if a.asset_id == asset_id:
+                        max_supply = a.max_supply
+                        circ = a.known_circulating_supply
+                        if max_supply is not None and circ is not None:
+                            remaining = max_supply - circ
+                            self.max_supply_value.setText(str(max_supply))
+                            self.remaining_issue_value.setText(str(remaining))
+                            self.max_supply_frame.show()
+                            # Disable Secondary Issuance when nothing remains to issue
+                            if self.secondary_issuance is not None:
+                                has_rights = self._has_inflation_rights()
+                                disabled = (remaining <= 0 or not has_rights)
+                                self.secondary_issuance.setDisabled(disabled)
+                        break
         # Ensure asset_transactions is unpacked correctly if it's a tuple
         if isinstance(asset_transactions, tuple):
             asset_transactions, _ = asset_transactions
@@ -557,22 +622,36 @@ class RGBAssetDetailWidget(QWidget):
             self.vertical_spacer_3, row_index, 0, 1, 1,
         )
 
+    def _has_inflation_rights(self) -> bool:
+        """
+        Return True if this wallet holds an INFLATION_RIGHT for the current asset,
+        inferred from local transfers (requested_assignment or assignments).
+        """
+        tx_list: ListTransferAssetWithBalanceResponseModel = self._view_model.cfa_view_model.txn_list
+
+        for t in tx_list.transfers:
+            for a in t.assignments:
+                if a.is_inflation_right():
+                    return True
+
+        return False
+
     def handle_asset_frame_click(self, params: TransactionDetailPageModel):
         """Pass emit value to navigation page"""
         self._view_model.page_navigation.cfa_transaction_detail_page(params)
 
     def handle_show_hide(self, transaction_detail_frame):
         """It handled to hide and show transaction details frame"""
-        if self.transfer_status == TransferStatusEnumModel.INTERNAL.value:
+        if self.transfer_status == TransferStatusEnumModel.INFLATION.value:
+            transaction_detail_frame.transaction_type.setText('INFLATION')
+            transaction_detail_frame.transaction_amount.setStyleSheet(
+                'color:#01A781;font-weight: 600',
+            )
+            transaction_detail_frame.transaction_type.show()
+            transaction_detail_frame.transfer_type.hide()
+        elif self.transfer_status == TransferStatusEnumModel.INTERNAL.value:
             if self.transaction_type == TransferKind.ISSUANCE:
                 transaction_detail_frame.transaction_type.setText('ISSUANCE')
-                transaction_detail_frame.transaction_amount.setStyleSheet(
-                    'color:#01A781;font-weight: 600',
-                )
-                transaction_detail_frame.transaction_type.show()
-                transaction_detail_frame.transfer_type.hide()
-            elif self.transaction_type == TransferKind.INFLATION:
-                transaction_detail_frame.transaction_type.setText('INFLATION')
                 transaction_detail_frame.transaction_amount.setStyleSheet(
                     'color:#01A781;font-weight: 600',
                 )
@@ -615,10 +694,18 @@ class RGBAssetDetailWidget(QWidget):
             self.receive_rgb_asset.setDisabled(
                 not self.config.privileges.can_receive_asset,
             )
-            if self.asset_type == AssetSchema.IFA:
-                self.secondary_issuance.setDisabled(
-                    not self.config.privileges.can_send_transactions,
-                )
+            if self.asset_type == AssetSchema.IFA or self.asset_type == str(AssetSchema.IFA.value):
+                if self.secondary_issuance is not None:
+                    rights = self._has_inflation_rights()
+                    remaining_ok = True
+                    try:
+                        if self.remaining_issue_value is not None and self.remaining_issue_value.text():
+                            remaining_ok = int(self.remaining_issue_value.text()) > 0
+                    except Exception:
+                        remaining_ok = True
+                    self.secondary_issuance.setDisabled(
+                        (not self.config.privileges.can_send_transactions) or (not rights) or (not remaining_ok),
+                    )
 
     def handle_page_navigation(self):
         """Handle the page navigation according the NIA or CFA page"""

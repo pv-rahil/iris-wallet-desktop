@@ -28,6 +28,7 @@ class TransferStatusEnumModel(str, Enum):
     SENT = 'SENT'
     RECEIVED = 'RECEIVED'
     INTERNAL = 'INTERNAL'
+    INFLATION = 'INFLATION'
     SEND = 'send'
     RECEIVE = 'receive'
     SEND_BTC = 'send_btc'

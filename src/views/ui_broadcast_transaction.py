@@ -536,6 +536,7 @@ class BroadcastTransactionWidget(QWidget):
             purpose_map = {
                 'send_btc': self.view_model.broadcast_transaction_view_model.send_btc_end,
                 'send_asset': self.view_model.broadcast_transaction_view_model.send_end,
+                'inflate_asset': self.view_model.broadcast_transaction_view_model.inflate_end,
             }
 
             handler = purpose_map.get(
@@ -551,7 +552,7 @@ class BroadcastTransactionWidget(QWidget):
                     purpose = self._psbt_items[idx].get('purpose')
 
             # Enable RGB mode only for RGB asset signing; BTC/UTXO default to False
-            hardware_client_store.set_rgb_mode(purpose == 'send_asset')
+            hardware_client_store.set_rgb_mode(purpose == 'send_asset' or purpose == 'inflate_asset')
 
             self.view_model.broadcast_transaction_view_model.sign_and_finalize_psbt(
                 signed_psbt,

@@ -47,6 +47,7 @@ from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
+from src.views.components.buttons import PrimaryButton
 
 
 class InflatableAssetWidget(QWidget, ThreadManager):
@@ -117,11 +118,12 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.vertical_layout_inflatable_2.addWidget(
             self.inflatables_header_title_frame,
         )
-        # flag to control where issue button is shown
-        self.issue_button_in_header = True
-        self.inflatables_header_title_frame.action_button.setVisible(
-            self.issue_button_in_header,
-        )
+        # Start hidden until issued assets exist (use header API to lock)
+        self.issue_button_in_header = False
+        if hasattr(self.inflatables_header_title_frame, 'set_action_button_visible'):
+            self.inflatables_header_title_frame.set_action_button_visible(False, override=True)
+        else:
+            self.inflatables_header_title_frame.action_button.setVisible(False)
 
         self.inflatable_label = QLabel(self.inflatable_widget)
         self.inflatable_label.setObjectName('fungibles_label')
@@ -238,6 +240,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.setup_ui_connection()
         # empty state ref
         self._empty_state_widget = None
+        self._has_inflatable_drafts = False
 
     def show_inflatables_assets(self):
         """This method creates all the inflatable assets elements of the main asset page."""
@@ -308,9 +311,11 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             inflatables_wallet_service.list_draft_issue_assets(
             ) if inflatables_wallet_service is not None else []
         )
+        has_drafts = False
         for d in inflatables_draft_assets:
-            if d.get('file_path'):
+            if d.get('inflation_amounts') is None and d.get('replace_rights_num') is None:
                 continue
+            has_drafts = True
             inflatables_draft_asset = DraftAsset(
                 draft_id=d.get('id'),
                 asset_id='draft_asset',
@@ -319,13 +324,15 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             )
             if self.is_watch_only:
                 self.create_inflatable_card(inflatables_draft_asset)
+        self._has_inflatable_drafts = has_drafts
 
         for asset in self._view_model.main_asset_view_model.assets.ifa:
             self.create_inflatable_card(asset)
-        # if there is no asset and no draft-created card
-        has_any = self.inflatables_vertical_layout_3.count() > 1  # header frame exists
-        if not has_any:
+        # If there are no issued assets AND no drafts, show empty state and hide table header
+        issued_count = len(self._view_model.main_asset_view_model.assets.ifa)
+        if issued_count == 0 and not self._has_inflatable_drafts:
             self._show_empty_inflatables_state()
+            return
         else:
             self._hide_empty_inflatables_state()
         self.inflatables_vertical_spacer_scroll_area = QSpacerItem(
@@ -357,54 +364,79 @@ class InflatableAssetWidget(QWidget, ThreadManager):
 
     def _show_empty_inflatables_state(self):
         """Display an empty-state card with centered issue button."""
-        # hide header button
-        self.inflatables_header_title_frame.action_button.setVisible(False)
+        # hide header button (lock via header API if available)
+        if hasattr(self.inflatables_header_title_frame, 'set_action_button_visible'):
+            self.inflatables_header_title_frame.set_action_button_visible(False, override=True)
+        else:
+            self.inflatables_header_title_frame.action_button.setVisible(False)
         self.issue_button_in_header = False
         if self._empty_state_widget is not None:
             return
-        wrapper = QFrame(self.scroll_area_widget_inflatable)
-        wrapper.setStyleSheet(
-            'QFrame{border:1px dashed rgba(255,255,255,0.12); border-radius:12px; background: rgba(255,255,255,0.02);} QLabel{background:transparent;}',
-        )
+        # hide column header row inside the scroll area
+        if hasattr(self, 'inflatables_header_frame') and self.inflatables_header_frame is not None:
+            self.inflatables_header_frame.hide()
+        if hasattr(self, 'scroll_area_inflatable'):
+            self.scroll_area_inflatable.hide()
+        if hasattr(self, 'inflatable_frame_card') and self.inflatable_frame_card is not None:
+            self.inflatable_frame_card.hide()
+        wrapper = QFrame(self.inflatable_widget)
+        wrapper.setStyleSheet('QFrame{border:none; background: transparent;} QLabel{background:transparent;}')
+        wrapper.setFixedWidth(680)
+        wrapper.setFixedHeight(200)
         lay = QVBoxLayout(wrapper)
-        lay.setContentsMargins(40, 40, 40, 40)
-        lay.setSpacing(10)
-        icon = QLabel()
-        icon.setAlignment(Qt.AlignHCenter)
-        icon.setPixmap(QPixmap(':/assets/my_asset.png'))
-        lay.addWidget(icon, 0, Qt.AlignHCenter)
+        lay.setContentsMargins(8, 8, 8, 8)
+        lay.setSpacing(2)
         title = QLabel('No Assets Issued')
-        title.setStyleSheet('color:#fff; font:600 18px "Inter";')
+        title.setStyleSheet('color:#fff; font:600 20px "Inter"; border:none;')
         lay.addWidget(title, 0, Qt.AlignHCenter)
-        sub = QLabel(
-            "You haven't issued any assets yet. Create your first inflatable asset to get started.",
-        )
-        sub.setStyleSheet('color: rgba(255,255,255,0.65); font: 14px "Inter";')
+        sub = QLabel("You haven't issued any assets yet. Create your first inflatable asset to get started.")
+        sub.setStyleSheet('color: rgba(255,255,255,0.75); font: 14px "Inter"; border:none;')
         sub.setWordWrap(True)
+        sub.setAlignment(Qt.AlignHCenter)
+        sub.setFixedWidth(560)
         lay.addWidget(sub, 0, Qt.AlignHCenter)
-        btn = QPushButton('Issue New Inflatable')
+        btn = PrimaryButton('Issue New Inflatable')
         btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setStyleSheet(
-            'QPushButton{background:#111; color:#fff; padding:10px 16px; border-radius:6px; font:600 14px "Inter";} QPushButton:hover{background:#1b1b1b;}',
-        )
-        btn.clicked.connect(
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_ifa_page,
-            ),
-        )
-        lay.addWidget(btn, 0, Qt.AlignHCenter)
-        self.inflatables_vertical_layout_3.addWidget(wrapper)
+        btn.setFixedWidth(200)
+        btn.clicked.connect(lambda: self._view_model.main_asset_view_model.navigate_issue_asset(self._view_model.page_navigation.issue_ifa_page))
+        if not self.is_offline_wallet:
+            lay.addWidget(btn, 0, Qt.AlignHCenter)
+        self.inflatables_horizontal_layout_2.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
+        self.inflatables_horizontal_layout_2.addWidget(wrapper, 0, Qt.AlignCenter)
+        self.inflatables_horizontal_layout_2.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
+        # Add a bottom spacer to the parent vertical layout so the card sits higher
+        self._empty_bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.vertical_layout_inflatable_2.addItem(self._empty_bottom_spacer)
+        # Favor space below over above
+        # Indexes: 0=header_title_frame, 1=horizontal_layout, 2=scroll_area, 3=bottom layout
+        self.vertical_layout_inflatable_2.setStretch(3, 1)
         self._empty_state_widget = wrapper
 
     def _hide_empty_inflatables_state(self):
         if self._empty_state_widget is not None:
-            self.inflatables_vertical_layout_3.removeWidget(
-                self._empty_state_widget,
-            )
+            # Remove wrapper from its parent layout
+            self._empty_state_widget.setParent(None)
             self._empty_state_widget.deleteLater()
             self._empty_state_widget = None
-        self.inflatables_header_title_frame.action_button.setVisible(True)
-        self.issue_button_in_header = True
+        # Remove bottom spacer if present
+        if hasattr(self, '_empty_bottom_spacer') and self._empty_bottom_spacer is not None:
+            self.vertical_layout_inflatable_2.removeItem(self._empty_bottom_spacer)
+            self._empty_bottom_spacer = None
+        # Show scroll/list frames and column header row
+        if hasattr(self, 'scroll_area_inflatable'):
+            self.scroll_area_inflatable.show()
+        if hasattr(self, 'inflatable_frame_card') and self.inflatable_frame_card is not None:
+            self.inflatable_frame_card.show()
+        if hasattr(self, 'inflatables_header_frame') and self.inflatables_header_frame is not None:
+            self.inflatables_header_frame.show()
+        # Show header action button if issued assets or drafts exist
+        issued_count = len(self._view_model.main_asset_view_model.assets.ifa)
+        show_action = (issued_count > 0) or self._has_inflatable_drafts or not self.is_offline_wallet
+        if hasattr(self.inflatables_header_title_frame, 'set_action_button_visible'):
+            self.inflatables_header_title_frame.set_action_button_visible(show_action, override=True)
+        else:
+            self.inflatables_header_title_frame.action_button.setVisible(show_action)
+        self.issue_button_in_header = show_action
 
     def create_inflatable_card(self, asset, img_path=None):
         """This method creates all the inflatable assets elements of the main asset page."""

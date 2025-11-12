@@ -142,7 +142,15 @@ class IssueIFAViewModel(QObject, ThreadManager):
             if getattr(error, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)
                 return
-        ToastManager.error(description=error.message)
+        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET:
+            description = error.message if isinstance(
+                error, CommonException,
+            ) else ERROR_SOMETHING_WENT_WRONG
+            ToastManager.error(description=description)
+        else:
+            self.hw_dialog_update.emit(
+                str(error), PsbtStatus.ERROR,
+            )
 
     def on_success_native_auth_inflate(self, success: bool) -> None:
         """Callback after native authentication for IFA."""
@@ -191,6 +199,11 @@ class IssueIFAViewModel(QObject, ThreadManager):
         ToastManager.success(
             description=INFO_ASSET_ISSUED.format(response.txid),
         )
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.hw_dialog_update.emit(
+                None,
+                PsbtStatus.SUCCESS,
+            )
         self.secondary_issuance_success.emit()
         self.is_loading.emit(False)
 

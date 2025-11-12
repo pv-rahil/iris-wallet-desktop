@@ -182,7 +182,7 @@ class AssetDetailPageService:
                 }'
             transaction.transfer_Status = TransferStatusEnumModel.SENT
         elif transaction.kind == TransferKind.INFLATION:
-            transaction.transfer_Status = TransferStatusEnumModel.INTERNAL
+            transaction.transfer_Status = TransferStatusEnumModel.INFLATION
             if transaction.requested_assignment and transaction.requested_assignment.amount is not None:
                 transaction.amount_status = f'+{
                     str(transaction.requested_assignment.amount)

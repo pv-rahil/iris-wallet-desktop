@@ -100,10 +100,10 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
         try:
             # Case 1: existing draft PSBT present
             # Ensure widget gates PSBT display by current purpose and purpose key
-            vm_mock.utxo_creation_view_model.current_purpose = 'issue_asset_ifa'
+            vm_mock.utxo_creation_view_model.current_purpose = 'issue_asset'
             get_sess.return_value = MagicMock(
                 list_psbt=lambda signed: [
-                    {'purpose': 'issue_asset_ifa', 'psbt': 'P1'},
+                    {'purpose': 'issue_asset', 'psbt': 'P1'},
                 ],
             )
             with patch.object(w, 'show_ifa_psbt_page') as show:
@@ -114,7 +114,7 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
             vm_mock.utxo_creation_view_model.create_utxos_begin.reset_mock()
             w.handle_ifa_issue()
             vm_mock.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-                'issue_asset_ifa', 2,
+                'issue_asset', 2,
             )
         finally:
             w.close()
