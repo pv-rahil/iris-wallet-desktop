@@ -401,15 +401,19 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         btn.clicked.connect(lambda: self._view_model.main_asset_view_model.navigate_issue_asset(self._view_model.page_navigation.issue_ifa_page))
         if not self.is_offline_wallet:
             lay.addWidget(btn, 0, Qt.AlignHCenter)
-        self.inflatables_horizontal_layout_2.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
-        self.inflatables_horizontal_layout_2.addWidget(wrapper, 0, Qt.AlignCenter)
-        self.inflatables_horizontal_layout_2.addItem(QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
-        # Add a bottom spacer to the parent vertical layout so the card sits higher
+        # Build a dedicated vertical layout with top/bottom stretches to position card higher (like collectibles)
+        self._empty_state_layout = QVBoxLayout()
+        self._empty_state_layout.setContentsMargins(0, 0, 0, 0)
+        self._empty_state_layout.setSpacing(0)
+        self._empty_top_spacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         self._empty_bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        self.vertical_layout_inflatable_2.addItem(self._empty_bottom_spacer)
-        # Favor space below over above
-        # Indexes: 0=header_title_frame, 1=horizontal_layout, 2=scroll_area, 3=bottom layout
-        self.vertical_layout_inflatable_2.setStretch(3, 1)
+        self._empty_state_layout.addItem(self._empty_top_spacer)
+        self._empty_state_layout.addWidget(wrapper, 0, Qt.AlignHCenter)
+        self._empty_state_layout.addItem(self._empty_bottom_spacer)
+        # Prefer more space below so the card sits higher
+        self._empty_state_layout.setStretch(0, 1)  # top spacer
+        self._empty_state_layout.setStretch(2, 3)  # bottom spacer
+        self.vertical_layout_inflatable_2.addLayout(self._empty_state_layout)
         self._empty_state_widget = wrapper
 
     def _hide_empty_inflatables_state(self):
@@ -418,10 +422,18 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             self._empty_state_widget.setParent(None)
             self._empty_state_widget.deleteLater()
             self._empty_state_widget = None
-        # Remove bottom spacer if present
-        if hasattr(self, '_empty_bottom_spacer') and self._empty_bottom_spacer is not None:
-            self.vertical_layout_inflatable_2.removeItem(self._empty_bottom_spacer)
-            self._empty_bottom_spacer = None
+        # Remove temporary empty layout and spacers if present
+        if hasattr(self, '_empty_state_layout') and self._empty_state_layout is not None:
+            # Remove items from layout
+            while self._empty_state_layout.count():
+                item = self._empty_state_layout.takeAt(0)
+                w = item.widget()
+                if w is not None:
+                    w.setParent(None)
+            self.vertical_layout_inflatable_2.removeItem(self._empty_state_layout)
+            self._empty_state_layout = None
+        self._empty_top_spacer = None
+        self._empty_bottom_spacer = None
         # Show scroll/list frames and column header row
         if hasattr(self, 'scroll_area_inflatable'):
             self.scroll_area_inflatable.show()
