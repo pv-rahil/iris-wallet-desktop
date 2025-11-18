@@ -4,14 +4,21 @@
  """
 from __future__ import annotations
 
+import os
+import shutil
+from urllib.parse import urlparse
+from urllib.request import urlopen
+
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
+from PySide6.QtCore import QStandardPaths
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtWidgets import QPushButton
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
@@ -24,14 +31,21 @@ from accessible_constant import ASSET_TRANSACTION_DETAIL_CLOSE_BUTTON
 from accessible_constant import ASSET_TX_ID
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
+from src.utils.build_app_path import app_paths
 from src.utils.common_utils import get_bitcoin_explorer_url
 from src.utils.common_utils import insert_zero_width_spaces
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.error_message import ERROR_CONSIGNMENT_NOT_AVAILABLE
+from src.utils.error_message import ERROR_FAILED_TO_DOWNLOAD_CONSIGNMENT
 from src.utils.helpers import load_stylesheet
+from src.utils.info_message import INFO_CONSIGNMENT_SAVED_SUCCESSFULLY
 from src.viewmodels.main_view_model import MainViewModel
+from src.views.components.buttons import PrimaryButton
+from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -74,10 +88,10 @@ class RGBAssetTransactionDetail(QWidget):
             'rgb_single_transaction_detail_widget',
         )
         self.rgb_asset_single_transaction_detail_widget.setMinimumSize(
-            QSize(515, 790),
+            QSize(515, 820),
         )
         self.rgb_asset_single_transaction_detail_widget.setMaximumSize(
-            QSize(515, 790),
+            QSize(515, 820),
         )
 
         self.transaction_detail_layout = QGridLayout(
@@ -105,15 +119,15 @@ class RGBAssetTransactionDetail(QWidget):
             self.rgb_asset_single_transaction_detail_widget,
         )
         self.transaction_detail_frame.setObjectName('transaction_detail_frame')
-        self.transaction_detail_frame.setMinimumSize(QSize(340, 520))
-        self.transaction_detail_frame.setMaximumSize(QSize(345, 530))
+        self.transaction_detail_frame.setMinimumSize(QSize(340, 600))
+        self.transaction_detail_frame.setMaximumSize(QSize(345, 620))
 
         self.transaction_detail_frame.setFrameShape(QFrame.StyledPanel)
         self.transaction_detail_frame.setFrameShadow(QFrame.Raised)
         self.vertical_layout_tx_detail_frame = QVBoxLayout(
             self.transaction_detail_frame,
         )
-        self.vertical_layout_tx_detail_frame.setSpacing(15)
+        self.vertical_layout_tx_detail_frame.setSpacing(8)
         self.vertical_layout_tx_detail_frame.setObjectName('verticalLayout')
         self.vertical_layout_tx_detail_frame.setContentsMargins(19, 25, -1, 9)
         self.tx_id_label = QLabel(self.transaction_detail_frame)
@@ -223,6 +237,23 @@ class RGBAssetTransactionDetail(QWidget):
 
         self.vertical_layout_tx_detail_frame.addWidget(
             self.consignment_endpoints_value,
+        )
+
+        self.consignment_file_label = QLabel(self.transaction_detail_frame)
+        self.consignment_file_label.setObjectName(
+            'consignment_endpoints_label',
+        )
+        self.consignment_file_label.setMinimumSize(QSize(295, 20))
+        self.consignment_file_label.setMaximumSize(QSize(295, 20))
+
+        self.vertical_layout_tx_detail_frame.addWidget(
+            self.consignment_file_label,
+        )
+
+        self.download_consignment_button = PrimaryButton()
+        self.download_consignment_button.setFixedSize(QSize(150, 40))
+        self.vertical_layout_tx_detail_frame.addWidget(
+            self.download_consignment_button,
         )
 
         self.rgb_transaction_layout.addWidget(
@@ -339,6 +370,16 @@ class RGBAssetTransactionDetail(QWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'amount', None,
             ),
         )
+        self.download_consignment_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'download', None,
+            ),
+        )
+        self.consignment_file_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'consignment_file', None,
+            ),
+        )
 
     def set_rgb_asset_value(self):
         """
@@ -358,7 +399,9 @@ class RGBAssetTransactionDetail(QWidget):
         if self.params.transfer_status == TransferStatusEnumModel.INFLATION:
             self.consignment_endpoints_value.setText('N/A')
             if self.params.confirmation_date and self.params.confirmation_time:
-                self.date_value.setText(f'{self.params.confirmation_date} | {self.params.confirmation_time}')
+                self.date_value.setText(f'{self.params.confirmation_date} | {
+                                        self.params.confirmation_time
+                                        }')
         if self.params.transfer_status == TransferStatusEnumModel.INTERNAL:
             self.consignment_endpoints_value.setText('N/A')
             date_time_concat = f'{self.params.confirmation_date} | {
@@ -418,6 +461,22 @@ class RGBAssetTransactionDetail(QWidget):
         else:
             consignment_endpoint = 'N/A'
         self.consignment_endpoints_value.setText(consignment_endpoint)
+        # Enable/disable and visibility based on status, type, and file availability
+        is_send_or_receive = self.params.transfer_status in (
+            TransferStatusEnumModel.SEND,
+            TransferStatusEnumModel.RECEIVE,
+            TransferStatusEnumModel.SENT,
+            TransferStatusEnumModel.RECEIVED,
+        )
+        status_str = str(self.params.transaction_status)
+        is_waiting_counterparty = status_str == TransactionStatusEnumModel.WAITING_COUNTERPARTY
+        visible = is_send_or_receive and not is_waiting_counterparty
+        self.consignment_file_label.setVisible(visible)
+        self.download_consignment_button.setVisible(visible)
+        self.download_consignment_button.setDisabled(not visible)
+        self.download_consignment_button.clicked.connect(
+            self.handle_download_consignment,
+        )
         if self.params.confirmation_date and self.params.confirmation_time:
             date_time_concat = f'{self.params.confirmation_date} | {
                 self.params.confirmation_time
@@ -456,3 +515,101 @@ class RGBAssetTransactionDetail(QWidget):
         self._view_model.page_navigation.cfa_detail_page(
             RgbAssetPageLoadModel(asset_type=self.params.asset_type),
         )
+
+    def handle_download_consignment(self) -> None:
+        """
+        Export/copy the consignment `.rgbc` file to the user's Downloads directory.
+        """
+        try:
+            consignment_path = self.params.consignment_path
+            if not consignment_path:
+                ToastManager.error(ERROR_CONSIGNMENT_NOT_AVAILABLE)
+                return
+
+            os.makedirs(app_paths.download_consignment_path, exist_ok=True)
+
+            if os.path.isdir(consignment_path):
+                files = [
+                    os.path.join(consignment_path, f)
+                    for f in os.listdir(consignment_path)
+                    if os.path.isfile(os.path.join(consignment_path, f))
+                ]
+                if not files:
+                    ToastManager.error(ERROR_CONSIGNMENT_NOT_AVAILABLE)
+                    return
+                source_file = sorted(files)[0]
+            else:
+                source_file = consignment_path
+
+            if not os.path.exists(source_file):
+                ToastManager.error(ERROR_CONSIGNMENT_NOT_AVAILABLE)
+                return
+
+            filename = self._build_consignment_filename()
+            target_path = self._resolve_collision(
+                os.path.join(
+                    app_paths.download_consignment_path, filename,
+                ),
+            )
+            shutil.copy2(source_file, target_path)
+
+            ToastManager.success(
+                INFO_CONSIGNMENT_SAVED_SUCCESSFULLY.format(target_path),
+            )
+        except Exception as e:
+            ToastManager.error(ERROR_FAILED_TO_DOWNLOAD_CONSIGNMENT.format(e))
+
+    def _sanitize_suffix(self, s: str) -> str:
+        """
+        Clean the suffix part of filename by removing invalid characters.
+
+        Args:
+            s (str): Asset ID, recipient, or other unique identifier.
+
+        Returns:
+            str: Sanitized string safe for filenames.
+        """
+        s = s or 'unknown'
+        return s.replace('rgb:', '').replace(':', '_').replace('/', '_')
+
+    def _build_consignment_filename(self) -> str:
+        """
+        Build a valid filename for the exported consignment file.
+
+        Format:
+            consignment_<kind>_<suffix>.rgbc
+
+        Returns:
+            str: Filename for the consignment.
+        """
+        kind_map = {
+            TransferStatusEnumModel.SEND: 'send',
+            TransferStatusEnumModel.SENT: 'send',
+            TransferStatusEnumModel.RECEIVE: 'receive',
+            TransferStatusEnumModel.RECEIVED: 'receive',
+        }
+
+        kind = kind_map.get(
+            self.params.transfer_status if self.params.transfer_status is not None else TransferStatusEnumModel.SEND,
+        )
+        suffix_source = self.params.asset_id or self.params.recipient_id or 'unknown'
+        suffix = self._sanitize_suffix(str(suffix_source))
+        return f"consignment_{kind}_{suffix}.rgbc"
+
+    def _resolve_collision(self, dest: str) -> str:
+        """
+        If the file already exists, append (1), (2)... to avoid overwriting.
+
+        Args:
+            dest (str): Initial target full path.
+
+        Returns:
+            str: Unique file path.
+        """
+        base, ext = os.path.splitext(dest)
+        candidate = dest
+        i = 1
+        while os.path.exists(candidate):
+            candidate = f"{base} ({i}){ext}"
+            i += 1
+        return candidate

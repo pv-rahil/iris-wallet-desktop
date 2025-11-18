@@ -31,7 +31,7 @@ QLineEdit#issue_nia_input, QLineEdit#asset_name_input, QLineEdit#amount_input {
 }
 
 /* Styles for label elements within the issue NIA widget */
-QLabel#issue_nia_label, QLabel#asset_ticker_label, QLabel#asset_name_label, QLabel#total_supply_label {
+QLabel#issue_nia_label, QLabel#asset_ticker_label, QLabel#asset_name_label, QLabel#total_supply_label, QLabel#fee_rate_label {
     font: 14px "Inter";
     color: rgb(121, 128, 148);
     background: transparent;

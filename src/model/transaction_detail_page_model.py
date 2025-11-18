@@ -34,6 +34,8 @@ class TransactionDetailPageModel(BaseModel):
     transaction_status: TransactionStatusEnumModel | str
     transfer_status: TransferStatusEnumModel | None = None
     consignment_endpoints: list[TransferTransportEndpoint | None] | None = []
+    invoice_string: str | None = None
+    consignment_path: str | None = None
     recipient_id: str | None = None
     receive_utxo: Outpoint | None = None
     change_utxo: Outpoint | None = None

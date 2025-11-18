@@ -2249,8 +2249,28 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Initial supply must not exceed Total supply</translation>
     </message>
     <message>
-        <source>new_issue_amount</source>
-        <translation>New issue amount</translation>
+        <source>max_supply</source>
+        <translation>Max supply</translation>
+    </message>
+    <message>
+        <source>remaining_issue</source>
+        <translation>Remaining</translation>
+    </message>
+    <message>
+        <source>issue_new_supply</source>
+        <translation>Issue new supply</translation>
+    </message>
+    <message>
+        <source>ifa_fee_rate</source>
+        <translation>Fee rate (sat/vB)</translation>
+    </message>
+    <message>
+        <source>consignment_file</source>
+        <translation>Consignment file</translation>
+    </message>
+    <message>
+        <source>download</source>
+        <translation>Download</translation>
     </message>
 </context>
 </TS>

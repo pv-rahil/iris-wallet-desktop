@@ -9,6 +9,8 @@ from __future__ import annotations
 import os
 import tempfile
 
+from PySide6.QtCore import QStandardPaths
+
 from src.flavour import __network__
 from src.model.common_operation_model import AppPathsModel
 from src.utils.constant import APP_DIR
@@ -43,6 +45,9 @@ def build_app_paths(base_path: str) -> AppPathsModel:
         iriswallet_temp_folder_path = os.path.join(
             temp_dir, app_name_with_network,
         )
+        downloads_dir = QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.DownloadLocation,
+        )
 
         return AppPathsModel(
             app_path=app_path,
@@ -63,6 +68,7 @@ def build_app_paths(base_path: str) -> AppPathsModel:
             wallet_data_folder_path=os.path.join(
                 app_path, WALLET_DATA_FOLDER_NAME,
             ),
+            download_consignment_path=downloads_dir,
 
         )
     except Exception as exc:

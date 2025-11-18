@@ -59,3 +59,5 @@ ERROR_RGB_LIB_INCOMPATIBILITY = 'The version of the rgb lib is incompatible with
 ERROR_WHILE_DOWNLOADING_LOGS = 'An error occurred while downloading logs.'
 ERROR_INSUFFICIENT_FUNDS = 'You have insufficient funds'
 ERROR_NETWORK = 'Network error. Please check your connection.'
+ERROR_CONSIGNMENT_NOT_AVAILABLE = 'Consignment not available yet.'
+ERROR_FAILED_TO_DOWNLOAD_CONSIGNMENT = 'Failed to download consignment file: {}'

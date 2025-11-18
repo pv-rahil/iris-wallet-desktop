@@ -37,10 +37,10 @@ from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
-from src.model.enums.enums_model import PsbtStatus
-from src.model.enums.enums_model import NetworkEnumModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.setting_model import DefaultFeeRate
@@ -280,24 +280,40 @@ class IssueIFAWidget(QWidget):
         self.inflatables_asset_supply_layout.setContentsMargins(60, -1, 0, -1)
 
         # Total Supply title with info icon
-        self.inflatables_total_supply_title_widget = QWidget(self.issue_ifa_widget)
-        self.inflatables_total_supply_title_layout = QHBoxLayout(self.inflatables_total_supply_title_widget)
-        self.inflatables_total_supply_title_layout.setContentsMargins(0, 0, 0, 0)
+        self.inflatables_total_supply_title_widget = QWidget(
+            self.issue_ifa_widget,
+        )
+        self.inflatables_total_supply_title_layout = QHBoxLayout(
+            self.inflatables_total_supply_title_widget,
+        )
+        self.inflatables_total_supply_title_layout.setContentsMargins(
+            0, 0, 0, 0,
+        )
         self.inflatables_total_supply_title_layout.setSpacing(0)
         self.inflatables_total_supply_label = QLabel(self.issue_ifa_widget)
         self.inflatables_total_supply_label.setObjectName('total_supply_label')
         self.inflatables_total_supply_label.setMinimumSize(QSize(0, 40))
         self.inflatables_total_supply_label.setMaximumSize(QSize(100, 40))
-        self.inflatables_total_supply_title_layout.addWidget(self.inflatables_total_supply_label)
-        self.inflatables_total_supply_info_btn = QPushButton(self.issue_ifa_widget)
-        self.inflatables_total_supply_info_btn.setObjectName('total_supply_info_btn')
-        self.inflatables_total_supply_info_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.inflatables_total_supply_title_layout.addWidget(
+            self.inflatables_total_supply_label,
+        )
+        self.inflatables_total_supply_info_btn = QPushButton(
+            self.issue_ifa_widget,
+        )
+        self.inflatables_total_supply_info_btn.setObjectName(
+            'total_supply_info_btn',
+        )
+        self.inflatables_total_supply_info_btn.setCursor(
+            QCursor(Qt.PointingHandCursor),
+        )
         self.inflatables_total_supply_info_btn.setFlat(True)
         info_icon = QIcon(':/assets/info_circle.png')
         self.inflatables_total_supply_info_btn.setIcon(info_icon)
         self.inflatables_total_supply_info_btn.setIconSize(QSize(50, 50))
         self.inflatables_total_supply_info_btn.setFixedSize(QSize(50, 50))
-        self.inflatables_total_supply_title_layout.addWidget(self.inflatables_total_supply_info_btn)
+        self.inflatables_total_supply_title_layout.addWidget(
+            self.inflatables_total_supply_info_btn,
+        )
 
         self.inflatables_total_supply_input = QLineEdit(
             self.issue_ifa_widget,
@@ -329,7 +345,7 @@ class IssueIFAWidget(QWidget):
         self.inflatables_issue_amount_input.setClearButtonEnabled(False)
 
         self.inflatables_asset_supply_layout.addWidget(
-            self.inflatables_total_supply_title_widget,alignment=Qt.AlignLeft
+            self.inflatables_total_supply_title_widget, alignment=Qt.AlignLeft,
         )
         self.inflatables_asset_supply_layout.addWidget(
             self.inflatables_total_supply_input,
@@ -354,17 +370,12 @@ class IssueIFAWidget(QWidget):
         self.inflatables_asset_supply_layout.addWidget(
             self.inflatables_error_label,
         )
-        # Placeholder for future helper messages (kept hidden)
-        self.inflatables_remaining_hint = QLabel(self.issue_ifa_widget)
-        self.inflatables_remaining_hint.setObjectName('remaining_hint_label')
-        self.inflatables_remaining_hint.hide()
-        self.inflatables_asset_supply_layout.addWidget(self.inflatables_remaining_hint)
 
         self.inflatables_fee_rate_label = QLabel(self.issue_ifa_widget)
         self.inflatables_fee_rate_label.setObjectName('fee_rate_label')
         self.inflatables_fee_rate_label.setMinimumSize(QSize(0, 40))
         self.inflatables_fee_rate_label.setMaximumSize(QSize(370, 40))
-        self.inflatables_fee_rate_label.setText('Fee rate (sat/vB)')
+
         self.inflatables_asset_supply_layout.addWidget(
             self.inflatables_fee_rate_label,
         )
@@ -478,16 +489,6 @@ class IssueIFAWidget(QWidget):
             self.inflatables_asset_name_input.setReadOnly(True)
             # self.replace_label_checkbox.show()
             self.issue_ifa_widget.setFixedHeight(608)
-            # Update label for new issue amount (translated)
-            self.inflatables_issue_supply_label.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'new_issue_amount',
-                    None,
-                ),
-            )
-            # No remaining hint on this page per request
-            self.inflatables_remaining_hint.hide()
 
         if self.from_draft and self.draft_id:
             self._load_inflatables_draft_data()
@@ -549,8 +550,12 @@ class IssueIFAWidget(QWidget):
         )
         # Validate supply relationships only in primary issuance
         if not self.secondary_issuance:
-            self.inflatables_total_supply_input.textChanged.connect(self.validate_supply_fields)
-            self.inflatables_issue_amount_input.textChanged.connect(self.validate_supply_fields)
+            self.inflatables_total_supply_input.textChanged.connect(
+                self.validate_supply_fields,
+            )
+            self.inflatables_issue_amount_input.textChanged.connect(
+                self.validate_supply_fields,
+            )
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
             self.handle_ifa_hw_dialog,
         )
@@ -559,7 +564,7 @@ class IssueIFAWidget(QWidget):
         )
         # Show UTXO-creation PSBT for hardware-online, watch-only, and offline wallets
         self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
-            lambda psbt: self.show_ifa_psbt_page(psbt),
+            self.show_ifa_psbt_page,
         )
         self._view_model.issue_ifa_asset_view_model.utxo_creation_started.connect(
             self.handle_ifa_issue,
@@ -570,6 +575,10 @@ class IssueIFAWidget(QWidget):
         # Also ensure any open HW dialog is closed after secondary issuance completes
         self._view_model.issue_ifa_asset_view_model.secondary_issuance_success.connect(
             self._close_hw_dialog_if_open,
+        )
+        # Delete the active secondary issuance draft after successful broadcast
+        self._view_model.issue_ifa_asset_view_model.secondary_issuance_success.connect(
+            self._delete_active_secondary_draft_on_success,
         )
 
     def retranslate_ui(self):
@@ -597,12 +606,33 @@ class IssueIFAWidget(QWidget):
                     None,
                 ),
             )
+            self.inflatables_fee_rate_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'ifa_fee_rate',
+                    None,
+                ),
+            )
+            self.inflatables_issue_supply_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'issue_new_supply',
+                    None,
+                ),
+            )
 
         else:
             self.inflatables_asset_ticker_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT,
                     'asset_ticker',
+                    None,
+                ),
+            )
+            self.inflatables_issue_supply_label.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'issue_supply',
                     None,
                 ),
             )
@@ -624,13 +654,6 @@ class IssueIFAWidget(QWidget):
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,
                 'name_of_the_asset',
-                None,
-            ),
-        )
-        self.inflatables_issue_supply_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'issue_supply',
                 None,
             ),
         )
@@ -716,19 +739,31 @@ class IssueIFAWidget(QWidget):
             t = int(total_supply)
             a = int(amount_to_issue)
         except ValueError:
-            self._show_error(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_valid_number', None))
+            self._show_error(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_valid_number', None,
+                ),
+            )
             return
         if t < 0 or a < 0:
-            self._show_error(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'values_must_be_non_negative', None))
+            self._show_error(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'values_must_be_non_negative', None,
+                ),
+            )
             return
-        if a > t:
-            self._show_error(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'initial_supply_not_exceed_total', None))
+        if a >= t:
+            self._show_error(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'initial_supply_not_exceed_total', None,
+                ),
+            )
             return
         inflation_amounts = t - a
         replace_rights_num = self.replace_label_checkbox.isChecked()
         if not self.from_draft:
             self.create_issue_inflatables_asset_draft(
-                short_identifier, asset_name, amount_to_issue,
+                short_identifier, asset_name, a,
                 inflation_amounts, replace_rights_num,
             )
 
@@ -736,8 +771,8 @@ class IssueIFAWidget(QWidget):
         self._view_model.issue_ifa_asset_view_model.issue_ifa_asset(
             short_identifier,
             asset_name,
-            int(a),
-            int(inflation_amounts),
+            a,
+            inflation_amounts,
             replace_rights_num,
         )
 
@@ -746,6 +781,44 @@ class IssueIFAWidget(QWidget):
         value_of_default_min_confirmation: DefaultMinConfirmation = SettingCardRepository.get_default_min_confirmation()
         amount_to_issue = self.inflatables_issue_amount_input.text()
         fee_text = self.inflatables_fee_rate_input.text() or FEE_RATE
+        svc = WalletDataService.get_session()
+        if svc is not None and self.params is not None:
+            if self.from_draft and self.draft_id is not None:
+                svc.set_active_secondary_draft(
+                    int(self.draft_id), self.params.asset_id,
+                )
+            else:
+                active = svc.get_active_secondary_draft_for_asset(
+                    self.params.asset_id,
+                )
+                if active is None:
+                    amt_text = amount_to_issue or ''
+                    pref_amt = int(
+                        amt_text,
+                    ) if amt_text.strip().isdigit() else None
+                    draft_id = svc.add_ifa_secondary_draft_meta(
+                        asset_id=self.params.asset_id,
+                        asset_name=self.params.asset_name,
+                        amount=pref_amt,
+                    )
+                    if draft_id is not None:
+                        svc.set_active_secondary_draft(
+                            int(draft_id), self.params.asset_id,
+                        )
+                else:
+                    svc.set_active_secondary_draft(
+                        int(active.get('id')), self.params.asset_id,
+                    )
+
+        existing_unsigned = None
+        drafts = svc.list_psbt(False) or []
+        for p in drafts:
+            if p.get('purpose') == 'inflate_asset' and p.get('psbt'):
+                existing_unsigned = p.get('psbt')
+                break
+        if existing_unsigned:
+            self.show_inflate_psbt_page(existing_unsigned)
+            return
         if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only:
             self._view_model.issue_ifa_asset_view_model.secondary_issuance_begin(
                 asset_id=self.params.asset_id,
@@ -786,33 +859,55 @@ class IssueIFAWidget(QWidget):
         self.inflatables_error_label.show()
 
     def validate_supply_fields(self):
-        """Inline validation for total vs initial/new issue supply."""
-        total_text = self.inflatables_total_supply_input.text() if not self.secondary_issuance else None
-        issue_text = self.inflatables_issue_amount_input.text()
-        # In secondary issuance, only issue amount is editable; enforce remaining capacity when known
-        try:
-            issue_val = int(issue_text) if issue_text else 0
-        except ValueError:
-            self._show_error(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_valid_number', None))
-            self.handle_button_enabled()
-            return
+        """Inline validation for total vs initial/new issue supply (primary issuance only)."""
         if self.secondary_issuance:
-            # No secondary validations here per request
-            self.inflatables_error_label.hide()
+            # No total supply field in secondary mode
             self.handle_button_enabled()
             return
-        # Primary issuance validation (both fields visible)
+        total_text = self.inflatables_total_supply_input.text()
+        issue_text = self.inflatables_issue_amount_input.text()
         try:
             total_val = int(total_text) if total_text else 0
+            issue_val = int(issue_text) if issue_text else 0
         except ValueError:
-            self._show_error(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_valid_number', None))
+            self._show_error(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'enter_valid_number', None,
+                ),
+            )
+            self.handle_button_enabled()
+            return
+        if total_val < 0 or issue_val < 0:
+            self._show_error(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'values_must_be_non_negative', None,
+                ),
+            )
             self.handle_button_enabled()
             return
         if issue_val > total_val:
-            self._show_error(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'initial_supply_not_exceed_total', None))
+            self._show_error(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'initial_supply_not_exceed_total', None,
+                ),
+            )
         else:
             self.inflatables_error_label.hide()
         self.handle_button_enabled()
+
+    def _delete_active_secondary_draft_on_success(self):
+        if not self.secondary_issuance:
+            return
+        if not self.params or not self.params.asset_id:
+            return
+        svc = WalletDataService.get_session()
+        if svc is None:
+            return
+        active = svc.get_active_secondary_draft_for_asset(
+            self.params.asset_id,
+        )
+        if isinstance(active, dict) and active.get('id') is not None:
+            svc.delete_ifa_secondary_draft(int(active.get('id')))
 
     def inflatables_asset_issued(self, asset_name):
         """This method handled after asset issued"""
@@ -850,10 +945,27 @@ class IssueIFAWidget(QWidget):
         ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
-        # Always close the dialog immediately on SUCCESS
+        # Always close the dialog immediately on SUCCESS and delete secondary draft
         if dialog_type == PsbtStatus.SUCCESS:
             if ifa_hw_dialog.isVisible():
                 ifa_hw_dialog.accept()
+            try:
+                if self.secondary_issuance and self.params is not None:
+                    svc = WalletDataService.get_session()
+                    if svc is not None:
+                        active = None
+                        if self.params.asset_id:  # ensure str, not None
+                            active = svc.get_active_secondary_draft_for_asset(
+                                self.params.asset_id,
+                            )
+
+                        if active and active.get('id'):
+                            draft_id = active.get('id')
+                            svc.delete_ifa_secondary_draft(
+                                int(draft_id) if draft_id else 0,
+                            )
+            except Exception:
+                pass
             return
         # Intercept common UTXO errors and route to UTXO creation (inflate path)
         if dialog_type == PsbtStatus.ERROR and message:
@@ -914,7 +1026,9 @@ class IssueIFAWidget(QWidget):
         expected_btc_app = 'Bitcoin' if network == NetworkEnumModel.MAINNET else 'Bitcoin Test'
         ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
         ifa_hw_dialog.setMinimumWidth(500)
-        guidance_msg = f"Please open '{expected_btc_app}' on your Ledger and click Continue."
+        guidance_msg = f"Please open '{
+            expected_btc_app
+        }' on your Ledger and click Continue."
         ifa_hw_dialog.set_loading(guidance_msg)
         ifa_hw_dialog.done_button.setText('Continue')
         ifa_hw_dialog.done_button.setVisible(True)
@@ -930,7 +1044,9 @@ class IssueIFAWidget(QWidget):
         expected_rgb_app = 'RGB' if network == NetworkEnumModel.MAINNET else 'RGB Test'
         ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
         ifa_hw_dialog.setMinimumWidth(500)
-        guidance_msg = f"Ready for secondary issuance. Please open '{expected_rgb_app}' on your Ledger and click Continue."
+        guidance_msg = f"Ready for secondary issuance. Please open '{
+            expected_rgb_app
+        }' on your Ledger and click Continue."
         ifa_hw_dialog.set_loading(guidance_msg)
         ifa_hw_dialog.done_button.setText('Continue')
         ifa_hw_dialog.done_button.setVisible(True)
@@ -942,17 +1058,15 @@ class IssueIFAWidget(QWidget):
 
     def handle_ifa_issue(self):
         """handle ifa issue"""
-        self._view_model.issue_fa_asset_view_model = getattr(self._view_model, 'issue_ifa_asset_view_model')
         self._view_model.issue_ifa_asset_view_model.utxo_creation_started.disconnect()
         inflatables_wallet_service = WalletDataService.get_session()
-        utxo_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset'
         if inflatables_wallet_service and not self.secondary_issuance:
             unsigned_psbts = inflatables_wallet_service.list_psbt(
                 signed=False,
             )
             existing_inflatables_psbt = next(
                 (
-                    p for p in unsigned_psbts if p.get('purpose') == utxo_purpose
+                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
                 ), None,
             )
             if existing_inflatables_psbt and existing_inflatables_psbt.get('psbt'):
@@ -967,14 +1081,12 @@ class IssueIFAWidget(QWidget):
         needed = 3 - max(0, current - 1)
         needed = needed if needed > 0 else 1
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            purpose=utxo_purpose, num=needed,
+            purpose='issue_asset', num=needed,
         )
 
     def show_ifa_psbt_page(self, inflatables_psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         # Only respond if PSBT relates to IFA UTXO creation purposes
-        if self._view_model.utxo_creation_view_model.current_purpose not in ('issue_asset', 'inflate_asset'):
-            return
         if inflatables_psbt:
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
@@ -987,6 +1099,17 @@ class IssueIFAWidget(QWidget):
         """Display the unsigned PSBT for the inflate transaction itself in offline/watch-only."""
         if not psbt:
             return
+        # Attach psbt to active/last draft so we can clean it up post-broadcast
+        try:
+            svc = WalletDataService.get_session()
+            if svc is not None and self.params is not None:
+                svc.add_psbt(psbt, signed=False, purpose='inflate_asset')
+                if self.params.asset_id:
+                    svc.attach_inflate_psbt_to_secondary_draft(
+                        self.params.asset_id, psbt,
+                    )
+        except Exception:
+            pass
         self._view_model.page_navigation.receive_asset_page(
             ReceiveAssetModel(
                 page_name='IFA secondary issuance',
@@ -1013,6 +1136,25 @@ class IssueIFAWidget(QWidget):
     def _load_inflatables_draft_data(self):
         """Load draft data using the draft ID"""
         inflatables_wallet_service = WalletDataService.get_session()
+        # Secondary issuance: resume from IFA secondary draft (amount only)
+        try:
+            if (
+                self.secondary_issuance
+                and self.from_draft
+                and self.draft_id is not None
+                and inflatables_wallet_service is not None
+            ):
+                d = inflatables_wallet_service.get_ifa_secondary_draft_by_id(
+                    int(self.draft_id),
+                )
+                if isinstance(d, dict):
+                    amt = d.get('amount')
+                    if amt is not None:
+                        self.inflatables_issue_amount_input.setText(str(amt))
+                    self.handle_button_enabled()
+                return
+        except Exception:
+            pass
 
         inflatables_drafts = inflatables_wallet_service.list_draft_issue_assets()
         draft = next(
@@ -1053,6 +1195,8 @@ class IssueIFAWidget(QWidget):
             self.inflatables_error_label.hide()
             self.issue_ifa_btn.setDisabled(True)
             self.handle_button_enabled()
+            return
+        if max_amount_for_issuance is None:
             return
         if int(amount) > max_amount_for_issuance:
             self.inflatables_error_label.setText(

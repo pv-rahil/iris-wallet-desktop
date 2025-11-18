@@ -429,10 +429,12 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def issue_ifa_secondary_page(self, params: RgbAssetPageLoadModel):
-        """Open the Issue IFA page in secondary issue mode passing RgbAssetPageLoadModel."""
+    def issue_ifa_secondary_page(self, params: RgbAssetPageLoadModel, draft_id=None, from_draft: bool = False):
+        """Open the Issue IFA page in secondary issue mode.
+        Supports resuming a specific draft when provided.
+        """
         self.current_stack = {
             'name': 'IssueIFA',
-            'widget': IssueIFAWidget(self._ui.view_model, params=params),
+            'widget': IssueIFAWidget(self._ui.view_model, draft_id, from_draft, params),
         }
         self.navigate_and_toggle(False)

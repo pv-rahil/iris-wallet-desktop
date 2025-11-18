@@ -552,7 +552,9 @@ class BroadcastTransactionWidget(QWidget):
                     purpose = self._psbt_items[idx].get('purpose')
 
             # Enable RGB mode only for RGB asset signing; BTC/UTXO default to False
-            hardware_client_store.set_rgb_mode(purpose == 'send_asset' or purpose == 'inflate_asset')
+            hardware_client_store.set_rgb_mode(
+                purpose in ('send_asset', 'inflate_asset'),
+            )
 
             self.view_model.broadcast_transaction_view_model.sign_and_finalize_psbt(
                 signed_psbt,
@@ -563,6 +565,47 @@ class BroadcastTransactionWidget(QWidget):
         Navigate to collectibles or fungibles page when the originating page is create ln invoice.
         """
         self.view_model.page_navigation.fungibles_asset_page()
+
+    def _cleanup_secondary_draft_if_any(self, *_):
+        """Delete the latest active IFA secondary draft (watch-only/offline)."""
+        try:
+            svc = WalletDataService.get_session()
+            if svc is None:
+                return
+            # Prefer precise cleanup by PSBT content if available, and guard by purpose
+            psbt_text = self.broadcast_transaction_input.toPlainText().strip()
+            purpose = None
+            if psbt_text.startswith('psbt:'):
+                parts = psbt_text.split(':', 2)
+                if len(parts) == 3:
+                    purpose, _psbt_only = parts[1], parts[2]
+                elif len(parts) == 2:
+                    _psbt_only = parts[1]
+                else:
+                    _psbt_only = psbt_text
+            else:
+                _psbt_only = psbt_text
+
+            # If purpose is known and not inflate, do nothing
+            if purpose is not None and purpose != 'inflate_asset':
+                return
+
+            # First, try exact delete by PSBT content
+            if _psbt_only:
+                try:
+                    if svc.delete_secondary_draft_by_psbt(_psbt_only):
+                        return
+                except Exception:
+                    pass
+
+            # If purpose explicitly 'inflate_asset', fallback to deleting latest active draft
+            if purpose == 'inflate_asset':
+                latest = svc.get_latest_active_secondary_draft()
+                if isinstance(latest, dict) and latest.get('id') is not None:
+                    svc.delete_ifa_secondary_draft(int(latest['id']))
+        except Exception:
+            # Silent best-effort cleanup
+            pass
 
     def handle_button_enable(self):
         """
@@ -803,9 +846,22 @@ class BroadcastTransactionWidget(QWidget):
         if psbt:
             if self.hw_dialog.isVisible():
                 self.hw_dialog.accept()
+                # Determine purpose from signed PSBT storage to select the page name
+            page_name = 'NIA page'
+            svc = WalletDataService.get_session()
+            if svc is not None:
+                signed = svc.list_psbt(True) or []
+                match = next(
+                    (p for p in signed if p.get('psbt') == psbt), None,
+                )
+                purpose = match.get('purpose') if isinstance(
+                    match, dict,
+                ) else None
+                if purpose == 'inflate_asset':
+                    page_name = 'IFA secondary issuance'
             self.view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
-                    page_name='NIA page',
+                    page_name=page_name,
                     address_info='psbt_info', psbt=psbt, is_signed=True,
                 ),
             )

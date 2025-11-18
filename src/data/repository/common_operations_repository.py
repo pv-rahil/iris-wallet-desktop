@@ -96,4 +96,7 @@ class CommonOperationRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.mark_psbt_signed(unsigned_psbt, finalized_psbt)
+                wallet_service.update_secondary_draft_psbt_id(
+                    unsigned_psbt, finalized_psbt,
+                )
             return finalized_psbt

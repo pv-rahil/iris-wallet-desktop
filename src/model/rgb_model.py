@@ -118,6 +118,8 @@ class TransferAsset(BaseModel):
     change_utxo: Outpoint | None = None
     expiration: int | None = None
     transport_endpoints: list[TransferTransportEndpoint | None] | None = []
+    invoice_string: str | None = None
+    consignment_path: str | None = None
     created_at: int
     updated_at: int
     created_at_date: str | None = None  # for UI purpose

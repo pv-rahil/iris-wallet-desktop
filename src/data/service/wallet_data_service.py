@@ -136,17 +136,54 @@ class WalletDataService:
             replace_rights_num INTEGER
         )
         """
+        create_ifa_secondary_draft_table_query = """
+        CREATE TABLE IF NOT EXISTS ifa_secondary_draft (
+            id INTEGER PRIMARY KEY,
+            asset_id TEXT NOT NULL,
+            asset_name TEXT,
+            amount INTEGER,
+            psbt_id TEXT UNIQUE,
+            active_utxo INTEGER DEFAULT 0,
+            created_at INTEGER
+        )
+        """
         with self._db_lock:
             try:
                 with self.conn:
                     self.conn.execute(create_table_query)
                     self.conn.execute(create_psbt_table_query)
                     self.conn.execute(create_draft_issue_asset_table_query)
+                    self.conn.execute(create_ifa_secondary_draft_table_query)
             except sqlite3.Error as exc:
                 logger.error(
                     'Exception occur in wallet-data: %s, Message: %s', type(
                         exc,
                     ).__name__, str(exc),
+                )
+                raise
+
+    def get_ifa_secondary_draft_by_id(self, draft_id: int) -> dict | None:
+        """
+        Get a secondary draft by ID.
+        """
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return None
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(
+                    'SELECT id, asset_id, asset_name, amount, psbt_id, active_utxo, created_at FROM ifa_secondary_draft WHERE id = ? LIMIT 1',
+                    (draft_id,),
+                )
+                r = cur.fetchone()
+                if not r:
+                    return None
+                return {
+                    'id': r[0], 'asset_id': r[1], 'asset_name': r[2], 'amount': r[3], 'psbt_id': r[4], 'active_utxo': int(r[5]), 'created_at': r[6],
+                }
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: get_ifa_secondary_draft_by_id failed: %s', exc,
                 )
                 raise
 
@@ -298,6 +335,210 @@ class WalletDataService:
         if data is not None:
             return UnspentsListResponseModel(unspents=data)
         return UnspentsListResponseModel(unspents=[])
+
+    # -------- Secondary issuance drafts (IFA inflate) --------
+    def add_ifa_secondary_draft_meta(self, asset_id: str, asset_name: str | None, amount: int | None) -> int | None:
+        """Add a secondary draft meta."""
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return None
+        with self._db_lock:
+            try:
+                with self.conn:
+                    cur = self.conn.execute(
+                        'INSERT INTO ifa_secondary_draft (asset_id, asset_name, amount, psbt_id, active_utxo, created_at) VALUES (?, ?, ?, NULL, 1, ?)',
+                        (asset_id, asset_name, amount, int(time.time())),
+                    )
+                    return cur.lastrowid
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: add_ifa_secondary_draft_meta failed: %s', exc,
+                )
+                raise
+
+    def attach_inflate_psbt_to_secondary_draft(self, asset_id: str, psbt_base64: str) -> str | None:
+        """Attach a PSBT to a secondary draft."""
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return None
+        psbt_id = self._psbt_id(psbt_base64)
+        with self._db_lock:
+            try:
+                with self.conn:
+                    # Attach to latest draft for this asset (prefer active one)
+                    cur = self.conn.execute(
+                        'SELECT id FROM ifa_secondary_draft WHERE asset_id = ? ORDER BY active_utxo DESC, created_at DESC, id DESC LIMIT 1',
+                        (asset_id,),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        return None
+                    self.conn.execute(
+                        'UPDATE ifa_secondary_draft SET psbt_id = ? WHERE id = ?',
+                        (psbt_id, row[0]),
+                    )
+                return psbt_id
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: attach_inflate_psbt_to_secondary_draft failed: %s', exc,
+                )
+                raise
+
+    def list_ifa_secondary_drafts(self, asset_id: str) -> list[dict]:
+        """List all secondary drafts for a given asset."""
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return []
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(
+                    '''SELECT id, asset_id, asset_name, amount, psbt_id, active_utxo,
+                    created_at FROM ifa_secondary_draft WHERE asset_id = ? ORDER BY created_at DESC, id DESC''',
+                    (asset_id,),
+                )
+                rows = cur.fetchall()
+                return [
+                    {
+                        'id': r[0], 'asset_id': r[1], 'asset_name': r[2], 'amount': r[3], 'psbt_id': r[4], 'active_utxo': int(r[5]), 'created_at': r[6],
+                    }
+                    for r in rows
+                ]
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: list_ifa_secondary_drafts failed: %s', exc,
+                )
+                raise
+
+    def set_active_secondary_draft(self, draft_id: int, asset_id: str) -> None:
+        """Set a secondary draft as active."""
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return
+        with self._db_lock:
+            try:
+                with self.conn:
+                    self.conn.execute(
+                        'UPDATE ifa_secondary_draft SET active_utxo = 0 WHERE asset_id = ?', (
+                            asset_id,
+                        ),
+                    )
+                    self.conn.execute(
+                        'UPDATE ifa_secondary_draft SET active_utxo = 1 WHERE id = ?', (
+                            draft_id,
+                        ),
+                    )
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: set_active_secondary_draft failed: %s', exc,
+                )
+                raise
+
+    def get_active_secondary_draft_for_asset(self, asset_id: str) -> dict | None:
+        """Get the active secondary draft for a given asset."""
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return None
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(
+                    '''SELECT id, asset_id, asset_name, amount, psbt_id, active_utxo,
+                    created_at FROM ifa_secondary_draft WHERE asset_id = ? AND active_utxo = 1 ORDER BY created_at DESC, id DESC LIMIT 1''',
+                    (asset_id,),
+                )
+                r = cur.fetchone()
+                if not r:
+                    return None
+                return {
+                    'id': r[0], 'asset_id': r[1], 'asset_name': r[2], 'amount': r[3], 'psbt_id': r[4], 'active_utxo': int(r[5]), 'created_at': r[6],
+                }
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: get_active_secondary_draft_for_asset failed: %s', exc,
+                )
+                raise
+
+    def get_latest_active_secondary_draft(self) -> dict | None:
+        """Get the most recent active secondary draft across all assets, if any."""
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return None
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(
+                    '''SELECT id, asset_id, asset_name, amount, psbt_id, active_utxo,
+                    created_at FROM ifa_secondary_draft WHERE active_utxo = 1 ORDER BY created_at DESC, id DESC LIMIT 1''',
+                )
+                r = cur.fetchone()
+                if not r:
+                    return None
+                return {
+                    'id': r[0], 'asset_id': r[1], 'asset_name': r[2], 'amount': r[3], 'psbt_id': r[4], 'active_utxo': int(r[5]), 'created_at': r[6],
+                }
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: get_latest_active_secondary_draft failed: %s', exc,
+                )
+                raise
+
+    def delete_ifa_secondary_draft(self, draft_id: int) -> bool:
+        """Delete a secondary draft by its ID."""
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return False
+        with self._db_lock:
+            try:
+                with self.conn:
+                    cur = self.conn.execute(
+                        'DELETE FROM ifa_secondary_draft WHERE id = ?', (
+                            draft_id,
+                        ),
+                    )
+                return cur.rowcount > 0
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: delete_ifa_secondary_draft failed: %s', exc,
+                )
+                raise
+
+    def delete_secondary_draft_by_psbt(self, psbt_base64: str) -> bool:
+        """Delete secondary issuance draft row by attached psbt content (unsigned/signed base64).
+        Returns True if a row was deleted.
+        """
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return False
+        psbt_id = self._psbt_id(psbt_base64)
+        with self._db_lock:
+            try:
+                with self.conn:
+                    cur = self.conn.execute(
+                        'DELETE FROM ifa_secondary_draft WHERE psbt_id = ?', (
+                            psbt_id,
+                        ),
+                    )
+                return cur.rowcount > 0
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: delete_secondary_draft_by_psbt failed: %s', exc,
+                )
+                raise
+
+    def update_secondary_draft_psbt_id(self, old_psbt_base64: str, new_psbt_base64: str) -> bool:
+        """If a secondary draft is anchored to the unsigned psbt id, switch it to the signed psbt id.
+        Returns True if a row was updated.
+        """
+        if not (self.is_watch_only or self.is_offline_wallet):
+            return False
+        old_id = self._psbt_id(old_psbt_base64)
+        new_id = self._psbt_id(new_psbt_base64)
+        with self._db_lock:
+            try:
+                with self.conn:
+                    cur = self.conn.execute(
+                        'UPDATE ifa_secondary_draft SET psbt_id = ? WHERE psbt_id = ?',
+                        (new_id, old_id),
+                    )
+                return cur.rowcount > 0
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: update_secondary_draft_psbt_id failed: %s', exc,
+                )
+                raise
 
     @staticmethod
     def _psbt_id(psbt_base64: str) -> str:
