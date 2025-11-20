@@ -268,9 +268,9 @@ jobs:
             +extension GLX \
             +extension RENDER \
             +extension RANDR \
-            +extension XInput \
             +extension COMPOSITE \
-            -extension MIT-SHM &
+            +extension XFIXES \
+            +extension DAMAGE &
           echo "XVFB_PID=$!" >> $GITHUB_ENV
           sleep 30 # Wait for Xvfb to start
 
