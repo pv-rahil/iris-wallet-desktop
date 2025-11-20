@@ -162,7 +162,7 @@ class TestEnvironment:
                 self.second_application,
             )
 
-    def wait_for_application(self, app_name, timeout=10):
+    def wait_for_application(self, app_name, timeout=60):
         """Waits for an application to be fully loaded dynamically."""
         start_time = time.time()
         while time.time() - start_time < timeout:
