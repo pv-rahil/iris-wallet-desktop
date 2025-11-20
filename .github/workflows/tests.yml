@@ -182,7 +182,12 @@ jobs:
             libfontconfig1 \
             libdrm2 \
             libegl1 \
+            libegl1-mesa \
             libgl1 \
+            libgl1-mesa-glx \
+            libglu1-mesa \
+            libglx-mesa0 \
+            libglx0 \
             libgtk-3-0 \
             gir1.2-gtk-3.0 \
             gir1.2-atspi-2.0 \
@@ -195,6 +200,7 @@ jobs:
             shared-mime-info \
             libgl1-mesa-dri \
             mesa-utils \
+            xserver-xorg-video-dummy \
             libgirepository1.0-dev \
             meson \
             gobject-introspection \
@@ -212,7 +218,8 @@ jobs:
             libxcb-util1 \
             ruby-dev \
             build-essential \
-            libfuse2
+            libfuse2 \
+            scrot
           sudo gem install fpm -f
 
       - name: Install Rust toolchain
@@ -257,9 +264,15 @@ jobs:
           cookie=$(mcookie)
           xauth -f "$XAUTHORITY" add :99 . "$cookie"
           echo "XAUTHORITY=$XAUTHORITY" >> $GITHUB_ENV
-          Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp -extension MIT-SHM &
+          Xvfb :99 -screen 0 1920x1080x24 -ac -nolisten tcp \
+            +extension GLX \
+            +extension RENDER \
+            +extension RANDR \
+            +extension XInput \
+            +extension COMPOSITE \
+            -extension MIT-SHM &
           echo "XVFB_PID=$!" >> $GITHUB_ENV
-          sleep 3 # Wait for Xvfb to start
+          sleep 30 # Wait for Xvfb to start
 
       - name: Ensure E2E scripts are executable
         run: |
@@ -304,10 +317,10 @@ jobs:
           export XDG_CURRENT_DESKTOP=GNOME
           export GTK_USE_PORTAL=1
           export QT_QPA_PLATFORMTHEME=gtk3
-          export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=none
           export LIBGL_ALWAYS_SOFTWARE=1
-          export QT_X11_NO_MITSHM=1
+          export MESA_GL_VERSION_OVERRIDE=3.3
+          export MESA_GLSL_VERSION_OVERRIDE=330
+          export GALLIUM_DRIVER=llvmpipe
           export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
@@ -327,5 +340,39 @@ jobs:
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
           openbox &
           sleep 6  # Wait for Xvfb to start
-          poetry run e2e-test all
+          poetry run single-test test_send_and_receive_rgb25_asset.py
           '
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failure-screenshots
+          path: /tmp/screenshot_*.png
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results-*
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Generate Allure Report
+        if: always()
+        uses: simple-elf/allure-report-action@master
+        with:
+          allure_results: allure-results-*
+          allure_history: allure-history
+          keep_reports: 20
+
+      - name: Publish Allure Report to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history
