@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import TransferStatus
 
 import src.resources_rc
 from accessible_constant import AMOUNT_VALUE
@@ -38,6 +39,7 @@ from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.build_app_path import app_paths
 from src.utils.common_utils import get_bitcoin_explorer_url
 from src.utils.common_utils import insert_zero_width_spaces
+from src.utils.constant import CONSIGNMENT_FILE_NAME
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.error_message import ERROR_CONSIGNMENT_NOT_AVAILABLE
 from src.utils.error_message import ERROR_FAILED_TO_DOWNLOAD_CONSIGNMENT
@@ -129,7 +131,7 @@ class RGBAssetTransactionDetail(QWidget):
         )
         self.vertical_layout_tx_detail_frame.setSpacing(8)
         self.vertical_layout_tx_detail_frame.setObjectName('verticalLayout')
-        self.vertical_layout_tx_detail_frame.setContentsMargins(19, 25, -1, 9)
+        self.vertical_layout_tx_detail_frame.setContentsMargins(19, 25, -1, 25)
         self.tx_id_label = QLabel(self.transaction_detail_frame)
         self.tx_id_label.setObjectName('tx_id_label')
         self.tx_id_label.setMinimumSize(QSize(295, 20))
@@ -238,22 +240,24 @@ class RGBAssetTransactionDetail(QWidget):
         self.vertical_layout_tx_detail_frame.addWidget(
             self.consignment_endpoints_value,
         )
+        self.consignment_file_horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
         self.consignment_file_label = QLabel(self.transaction_detail_frame)
         self.consignment_file_label.setObjectName(
             'consignment_endpoints_label',
         )
-        self.consignment_file_label.setMinimumSize(QSize(295, 20))
-        self.consignment_file_label.setMaximumSize(QSize(295, 20))
+        self.consignment_file_label.setMinimumSize(QSize(295, 40))
+        self.consignment_file_label.setMaximumSize(QSize(295, 40))
 
-        self.vertical_layout_tx_detail_frame.addWidget(
-            self.consignment_file_label,
-        )
 
         self.download_consignment_button = PrimaryButton()
         self.download_consignment_button.setFixedSize(QSize(150, 40))
+
         self.vertical_layout_tx_detail_frame.addWidget(
-            self.download_consignment_button,
+            self.consignment_file_label
+        )
+        self.vertical_layout_tx_detail_frame.addWidget(
+            self.download_consignment_button
         )
 
         self.rgb_transaction_layout.addWidget(
@@ -420,8 +424,8 @@ class RGBAssetTransactionDetail(QWidget):
             self.rgb_asset_single_transaction_detail_widget.setMaximumHeight(
                 450,
             )
-            self.transaction_detail_frame.setMinimumHeight(190)
-            self.transaction_detail_frame.setMaximumHeight(190)
+            self.transaction_detail_frame.setMinimumHeight(230)
+            self.transaction_detail_frame.setMaximumHeight(230)
             self.grid_layout.addWidget(self.wallet_logo, 0, 0, 1, 1)
             self.vertical_spacer = QSpacerItem(
                 40, 250, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred,
@@ -462,18 +466,9 @@ class RGBAssetTransactionDetail(QWidget):
             consignment_endpoint = 'N/A'
         self.consignment_endpoints_value.setText(consignment_endpoint)
         # Enable/disable and visibility based on status, type, and file availability
-        is_send_or_receive = self.params.transfer_status in (
-            TransferStatusEnumModel.SEND,
-            TransferStatusEnumModel.RECEIVE,
-            TransferStatusEnumModel.SENT,
-            TransferStatusEnumModel.RECEIVED,
+        self.download_consignment_button.setDisabled(
+            self.params.consignment_path is None,
         )
-        status_str = str(self.params.transaction_status)
-        is_waiting_counterparty = status_str == TransactionStatusEnumModel.WAITING_COUNTERPARTY
-        visible = is_send_or_receive and not is_waiting_counterparty
-        self.consignment_file_label.setVisible(visible)
-        self.download_consignment_button.setVisible(visible)
-        self.download_consignment_button.setDisabled(not visible)
         self.download_consignment_button.clicked.connect(
             self.handle_download_consignment,
         )
@@ -582,19 +577,13 @@ class RGBAssetTransactionDetail(QWidget):
         Returns:
             str: Filename for the consignment.
         """
-        kind_map = {
-            TransferStatusEnumModel.SEND: 'send',
-            TransferStatusEnumModel.SENT: 'send',
-            TransferStatusEnumModel.RECEIVE: 'receive',
-            TransferStatusEnumModel.RECEIVED: 'receive',
-        }
-
-        kind = kind_map.get(
-            self.params.transfer_status if self.params.transfer_status is not None else TransferStatusEnumModel.SEND,
-        )
-        suffix_source = self.params.asset_id or self.params.recipient_id or 'unknown'
+        kind = self.params.transfer_status.value.lower()
+        if self.params.transfer_status == TransferStatusEnumModel.INTERNAL:
+            suffix_source = self.params.asset_id
+        else:
+            suffix_source = self.params.recipient_id
         suffix = self._sanitize_suffix(str(suffix_source))
-        return f"consignment_{kind}_{suffix}.rgbc"
+        return CONSIGNMENT_FILE_NAME.format(kind, suffix)
 
     def _resolve_collision(self, dest: str) -> str:
         """

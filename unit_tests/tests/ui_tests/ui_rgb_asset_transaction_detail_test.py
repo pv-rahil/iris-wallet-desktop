@@ -61,6 +61,7 @@ def rgb_asset_transaction_detail_widget(qtbot):
     mock_change_utxo.txid = 'mock_change_txid_67890'
     params.change_utxo = mock_change_utxo
     params.asset_type = AssetSchema.NIA
+    params.consignment_path = '/tmp/mock_consignment.rgbc'
 
     # Patch set_rgb_asset_value to avoid AttributeError during widget creation
     with patch('src.views.ui_rgb_asset_transaction_detail.get_bitcoin_explorer_url', return_value='https://example.com/tx/mock_txid'), \

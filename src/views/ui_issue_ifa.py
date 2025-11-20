@@ -810,14 +810,14 @@ class IssueIFAWidget(QWidget):
                         int(active.get('id')), self.params.asset_id,
                     )
 
-        existing_unsigned = None
-        drafts = svc.list_psbt(False) or []
-        for p in drafts:
-            if p.get('purpose') == 'inflate_asset' and p.get('psbt'):
-                existing_unsigned = p.get('psbt')
-                break
-        if existing_unsigned:
-            self.show_inflate_psbt_page(existing_unsigned)
+            existing_unsigned = None
+            drafts = svc.list_psbt(False) or []
+            for p in drafts:
+                if p.get('purpose') == 'inflate_asset' and p.get('psbt'):
+                    existing_unsigned = p.get('psbt')
+                    break
+            if existing_unsigned:
+                self.show_inflate_psbt_page(existing_unsigned)
             return
         if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only:
             self._view_model.issue_ifa_asset_view_model.secondary_issuance_begin(

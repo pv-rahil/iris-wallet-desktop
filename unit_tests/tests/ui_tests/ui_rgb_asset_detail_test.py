@@ -560,6 +560,8 @@ def test_set_on_chain_transaction_frame(rgb_asset_detail_widget: RGBAssetDetailW
     mock_transaction.transfer_Status = TransferStatusEnumModel.SENT.value
     mock_transaction.status = 'settled'
     mock_transaction.recipient_id = 'recipient123'
+    mock_transaction.invoice_string = ''
+    mock_transaction.consignment_path = ''
     mock_change_utxo = MagicMock(spec=Outpoint)
     mock_receive_utxo = MagicMock(spec=Outpoint)
     mock_transaction.change_utxo = mock_change_utxo

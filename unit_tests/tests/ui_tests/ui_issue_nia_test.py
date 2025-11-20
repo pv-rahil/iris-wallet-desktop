@@ -121,9 +121,10 @@ def test_handle_nia_issue_create_utxos_when_no_psbt(issue_nia_widget: IssueNIAWi
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 
     widget.handle_nia_issue()
-    widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-        'issue_asset_nia',
-    )
+    # Implementation now passes a required count along with purpose; assert purpose only
+    assert widget._view_model.utxo_creation_view_model.create_utxos_begin.called
+    args, _ = widget._view_model.utxo_creation_view_model.create_utxos_begin.call_args
+    assert args[0] == 'issue_asset_nia'
 
 
 def test_handle_nia_issue_wallet_service_none(issue_nia_widget: IssueNIAWidget, mocker):
@@ -136,9 +137,9 @@ def test_handle_nia_issue_wallet_service_none(issue_nia_widget: IssueNIAWidget, 
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 
     widget.handle_nia_issue()
-    widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-        'issue_asset_nia',
-    )
+    assert widget._view_model.utxo_creation_view_model.create_utxos_begin.called
+    args, _ = widget._view_model.utxo_creation_view_model.create_utxos_begin.call_args
+    assert args[0] == 'issue_asset_nia'
 
 
 def test_show_nia_psbt_page_navigates(issue_nia_widget: IssueNIAWidget):

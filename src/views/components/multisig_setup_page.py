@@ -25,12 +25,12 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletAccessType
+from src.utils.common_utils import copy_text
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-from src.model.enums.enums_model import WalletAccessType
-from src.utils.common_utils import copy_text
 
 
 class MultisigSetupPage(QWidget):
@@ -215,7 +215,7 @@ class MultisigSetupPage(QWidget):
         self.review_frame_title_label.setObjectName('ms_label')
         self.review_frame_title_label.setContentsMargins(0, 4, 0, 10)
         self.review_frame_title_label.setText(
-           'Review your wallet info and copy fields as needed.'
+            'Review your wallet info and copy fields as needed.',
         )
         self.r_v.addWidget(self.review_frame_title_label)
         self.row1 = QHBoxLayout()
@@ -226,12 +226,14 @@ class MultisigSetupPage(QWidget):
         self.row2.setSpacing(12)
 
         self.fp_display, _ = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
-            'f23a7c1d'
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
+            'f23a7c1d',
         )
         self.keychain_display, _ = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'),
-            'xpub keychain (demo)'
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'),
+            'xpub keychain (demo)',
         )
         self.row1.addLayout(self.fp_display)
         self.row1.addLayout(self.keychain_display)
@@ -239,12 +241,14 @@ class MultisigSetupPage(QWidget):
 
         # Row 2: Derivation path | Account XPUB (vanilla)
         self.path_display, _ = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
-            'm/48\'/0\'/0\'/2\''
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
+            'm/48\'/0\'/0\'/2\'',
         )
         self.xpub_vanilla_display, _ = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'),
-            'xpub6CUGRUonZS...'
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'),
+            'xpub6CUGRUonZS...',
         )
         self.row2.addLayout(self.path_display)
         self.row2.addLayout(self.xpub_vanilla_display)
@@ -255,8 +259,9 @@ class MultisigSetupPage(QWidget):
         self.row3.setContentsMargins(0, 0, 0, 0)
         self.row3.setSpacing(12)
         self.xpub_colored_display, _ = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'),
-            'xpub6CUGRUonZS...'
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'),
+            'xpub6CUGRUonZS...',
         )
         self.row3.addLayout(self.xpub_colored_display)
         self.r_v.addLayout(self.row3)
@@ -595,28 +600,37 @@ class MultisigSetupPage(QWidget):
         row3.setContentsMargins(0, 0, 0, 0)
         row3.setSpacing(12)
         fp_field, fp_input = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fingerprint_example'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fingerprint_example'),
             editable=True,
         )
         keychain_field, keychain_input = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'),
             'xpub keychain (demo)',
             editable=True,
         )
         path_field, path_input = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path_example'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path_example'),
             editable=True,
         )
         xpub_vanilla_field, xpub_vanilla_input = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'),
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_example'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_example'),
             editable=True,
         )
         xpub_colored_field, xpub_colored_input = self._create_wallet_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'),
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_example'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'xpub_example'),
             editable=True,
         )
         row1.addLayout(fp_field)
@@ -706,7 +720,7 @@ class MultisigSetupPage(QWidget):
         """
         Enable continue button if M/N are valid
         """
-                # Step 1: Enable Next if M/N are valid
+        # Step 1: Enable Next if M/N are valid
         # if self._current_step == 1:
         #     n = self._get_n()
         #     m = self._get_m()
@@ -811,27 +825,27 @@ class MultisigSetupPage(QWidget):
                 ).format(m_disp, n_disp),
             )
 
-    def _create_wallet_detail_field(self, title: str,placeholder: str,editable: bool = False) -> tuple[QGridLayout, QLineEdit]:
-            """Create a wallet detail field with copy button."""
-            wallet_detail_grid_layout = QGridLayout()
-            wallet_detail_grid_layout.setContentsMargins(0, 0, 0, 0)
-            wallet_detail_grid_layout.setSpacing(10)
-            wallet_detail_label = QLabel(title)
-            wallet_detail_label.setObjectName('ms_label')
-            wallet_detail_grid_layout.addWidget(wallet_detail_label, 0, 0)
-            wallet_detail_horizontal_layout = QHBoxLayout()
-            wallet_detail_horizontal_layout.setContentsMargins(0, 0, 0, 0)
-            wallet_detail_horizontal_layout.setSpacing(0)
-            wallet_detail_input = QLineEdit()
-            wallet_detail_input.setObjectName('wallet_detail_input')
-            wallet_detail_input.setFixedHeight(40)
-            wallet_detail_input.setReadOnly(not editable)
-            wallet_detail_input.setFrame(False)
-            wallet_detail_input.setClearButtonEnabled(False)
-            wallet_detail_input.setPlaceholderText(placeholder)
-            wallet_detail_horizontal_layout.addWidget(wallet_detail_input)
-            if not editable:
-                wallet_detail_input.setStyleSheet("""
+    def _create_wallet_detail_field(self, title: str, placeholder: str, editable: bool = False) -> tuple[QGridLayout, QLineEdit]:
+        """Create a wallet detail field with copy button."""
+        wallet_detail_grid_layout = QGridLayout()
+        wallet_detail_grid_layout.setContentsMargins(0, 0, 0, 0)
+        wallet_detail_grid_layout.setSpacing(10)
+        wallet_detail_label = QLabel(title)
+        wallet_detail_label.setObjectName('ms_label')
+        wallet_detail_grid_layout.addWidget(wallet_detail_label, 0, 0)
+        wallet_detail_horizontal_layout = QHBoxLayout()
+        wallet_detail_horizontal_layout.setContentsMargins(0, 0, 0, 0)
+        wallet_detail_horizontal_layout.setSpacing(0)
+        wallet_detail_input = QLineEdit()
+        wallet_detail_input.setObjectName('wallet_detail_input')
+        wallet_detail_input.setFixedHeight(40)
+        wallet_detail_input.setReadOnly(not editable)
+        wallet_detail_input.setFrame(False)
+        wallet_detail_input.setClearButtonEnabled(False)
+        wallet_detail_input.setPlaceholderText(placeholder)
+        wallet_detail_horizontal_layout.addWidget(wallet_detail_input)
+        if not editable:
+            wallet_detail_input.setStyleSheet("""
                     padding-left: 10px;
                     font: 15px "Inter";
                     color: rgb(102, 108, 129);
@@ -841,16 +855,18 @@ class MultisigSetupPage(QWidget):
                     border-top-right-radius: 0px;
                     border-bottom-right-radius: 0px;
                 """)
-                wallet_detail_input.setCursor(QCursor(Qt.CursorShape.ForbiddenCursor))
-                copy_btn = QPushButton()
-                copy_btn.setObjectName('copy_button')
-                copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-                copy_btn.setMinimumSize(QSize(50, 0))
-                copy_btn.setMaximumSize(QSize(50, 40))
-                ic = QIcon()
-                ic.addFile(':/assets/copy.png', QSize(), QIcon.Normal, QIcon.Off)
-                copy_btn.setIcon(ic)
-                copy_btn.clicked.connect(lambda: copy_text(wallet_detail_input))
-                wallet_detail_horizontal_layout.addWidget(copy_btn)
-            wallet_detail_grid_layout.addLayout(wallet_detail_horizontal_layout, 1, 0)
-            return wallet_detail_grid_layout, wallet_detail_input
+            wallet_detail_input.setCursor(
+                QCursor(Qt.CursorShape.ForbiddenCursor))
+            copy_btn = QPushButton()
+            copy_btn.setObjectName('copy_button')
+            copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            copy_btn.setMinimumSize(QSize(50, 0))
+            copy_btn.setMaximumSize(QSize(50, 40))
+            ic = QIcon()
+            ic.addFile(':/assets/copy.png', QSize(), QIcon.Normal, QIcon.Off)
+            copy_btn.setIcon(ic)
+            copy_btn.clicked.connect(lambda: copy_text(wallet_detail_input))
+            wallet_detail_horizontal_layout.addWidget(copy_btn)
+        wallet_detail_grid_layout.addLayout(
+            wallet_detail_horizontal_layout, 1, 0)
+        return wallet_detail_grid_layout, wallet_detail_input

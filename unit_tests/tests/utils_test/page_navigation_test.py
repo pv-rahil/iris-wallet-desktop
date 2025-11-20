@@ -238,3 +238,136 @@ def test_error_report_dialog_box(page_navigation):
 
         # Verify the dialog was shown
         mock_dialog_instance.exec.assert_called_once()
+
+
+def test_selection_page(page_navigation):
+    """selection_page should set current stack name and not show sidebar."""
+    page_navigation.selection_page()
+    assert page_navigation.current_stack['name'] == 'SelectionPage'
+
+
+def test_hardware_wallet_connect_page_with_flag(page_navigation, mock_ui, monkeypatch):
+    """hardware_wallet_connect_page should pass is_multisig flag to widget factory."""
+    factory = MagicMock(return_value=MagicMock())
+    page_navigation.pages['HardwareWalletConnectPage'] = factory
+    # Avoid UI side-effects
+    monkeypatch.setattr(page_navigation, 'navigate_and_toggle', MagicMock())
+
+    page_navigation.hardware_wallet_connect_page(is_multisig=True)
+
+    assert page_navigation.current_stack['name'] == 'HardwareWalletConnectPage'
+    factory.assert_called_once()
+    args, _ = factory.call_args
+    # (view_model, is_multisig)
+    assert args[0] is mock_ui.view_model
+    assert args[1] is True
+
+
+def test_broadcast_transaction_page_flags(page_navigation, mock_ui, monkeypatch):
+    """broadcast_transaction_page should pass from_sidebar flag to widget constructor."""
+    factory = MagicMock(return_value=MagicMock())
+    page_navigation.pages['BroadcastTransactionWidget'] = factory
+    monkeypatch.setattr(page_navigation, 'navigate_and_toggle', MagicMock())
+
+    page_navigation.broadcast_transaction_page()
+    page_navigation.broadcast_transaction_page(from_sidebar=True)
+
+    # Two calls: default False, then True
+    assert factory.call_count == 2
+    first_args, _ = factory.call_args_list[0]
+    second_args, _ = factory.call_args_list[1]
+    assert first_args[0] is mock_ui.view_model and first_args[1] is False
+    assert second_args[0] is mock_ui.view_model and second_args[1] is True
+
+
+def test_receive_asset_page_sets_params(page_navigation, mock_ui, monkeypatch):
+    """receive_asset_page should construct page with provided ReceiveAssetModel params."""
+    factory = MagicMock(return_value=MagicMock())
+    page_navigation.pages['ReceiveAssetWidget'] = factory
+    monkeypatch.setattr(page_navigation, 'navigate_and_toggle', MagicMock())
+    params = MagicMock()
+
+    page_navigation.receive_asset_page(params)
+
+    factory.assert_called_once()
+    args, _ = factory.call_args
+    assert args[0] is mock_ui.view_model and args[1] is params
+    assert page_navigation.current_stack['name'] == 'ReceiveAssetWidget'
+
+
+def test_refresh_transfer_result_dialog_shows_dialog(page_navigation, mocker):
+    """Dialog should be constructed with current widget and show() called."""
+    parent_widget = MagicMock()
+    page_navigation._ui.stacked_widget.currentWidget.return_value = parent_widget
+    dlg = MagicMock()
+    mocker.patch('src.utils.page_navigation.RefreshTransferDialog', return_value=dlg)
+
+    payload = {'k': 'v'}
+    page_navigation.refresh_transfer_result_dialog(payload)
+
+    mocker.spy(page_navigation._ui.stacked_widget, 'currentWidget')
+    assert dlg.show.called
+
+
+def test_issue_ifa_page_uses_factory(page_navigation, mock_ui, monkeypatch):
+    """issue_ifa_page should use pages factory and pass draft context."""
+    factory = MagicMock(return_value=MagicMock())
+    page_navigation.pages['IssueIFA'] = factory
+    monkeypatch.setattr(page_navigation, 'navigate_and_toggle', MagicMock())
+
+    page_navigation.issue_ifa_page(draft_id=7, from_draft=True)
+
+    factory.assert_called_once()
+    args, _ = factory.call_args
+    assert args[0] is mock_ui.view_model and args[1] == 7 and args[2] is True
+    assert page_navigation.current_stack['name'] == 'IssueIFA'
+
+
+def test_issue_ifa_secondary_page_calls_widget(page_navigation, mock_ui, mocker):
+    """issue_ifa_secondary_page constructs IssueIFAWidget directly with params."""
+    widget = MagicMock()
+    mocker.patch('src.utils.page_navigation.IssueIFAWidget', return_value=widget)
+    params = MagicMock(spec=RgbAssetPageLoadModel)
+
+    page_navigation.issue_ifa_secondary_page(params, draft_id=9, from_draft=True)
+
+    from src.utils.page_navigation import IssueIFAWidget as _W
+    _W.assert_called_once()
+    args, _ = _W.call_args
+    assert args[0] is mock_ui.view_model and args[1] == 9 and args[2] is True and args[3] is params
+    assert page_navigation.current_stack['name'] == 'IssueIFA'
+
+
+def test_multisig_setup_page_calls_widget(page_navigation, mock_ui, mocker):
+    """multisig_setup_page should construct MultisigSetupPage and set current stack."""
+    widget = MagicMock()
+    mocker.patch('src.utils.page_navigation.MultisigSetupPage', return_value=widget)
+
+    page_navigation.multisig_setup_page()
+
+    from src.utils.page_navigation import MultisigSetupPage as _M
+    _M.assert_called_once()
+    args, _ = _M.call_args
+    assert args[0] is mock_ui.view_model
+    assert page_navigation.current_stack['name'] == 'MultisigSetupPage'
+
+
+def test_toggle_sidebar_show_hide(page_navigation, mock_ui):
+    """toggle_sidebar should call show/hide on UI sidebar."""
+    page_navigation.toggle_sidebar(True)
+    mock_ui.sidebar.show.assert_called_once()
+    page_navigation.toggle_sidebar(False)
+    mock_ui.sidebar.hide.assert_called_once()
+
+
+def test_show_current_page_adds_and_sets(page_navigation, mock_ui):
+    """show_current_page should add and set current widget when not present."""
+    widget = MagicMock()
+    page_navigation.current_stack = {'name': 'X', 'widget': widget}
+    # children() returns list (empty to force add)
+    mock_ui.stacked_widget.children = MagicMock(return_value=[])
+
+    page_navigation.show_current_page()
+
+    mock_ui.stacked_widget.addWidget.assert_called_once_with(widget)
+    mock_ui.stacked_widget.setCurrentWidget.assert_called_once_with(widget)

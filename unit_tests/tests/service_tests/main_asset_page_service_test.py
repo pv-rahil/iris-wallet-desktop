@@ -94,6 +94,55 @@ def test_get_assets(
     is_exhausted_asset_enabled.assert_called_once()
 
 
+@patch('src.data.service.main_asset_page_service.RgbRepository.get_assets')
+def test_get_all_assets_flattens_and_handles_none(mock_get_assets):
+    """get_all_assets should flatten lists and handle None gracefully."""
+    from src.model.rgb_model import GetAssetResponseModel
+    # Build a response with mixed lists and None
+    response = MagicMock(spec=GetAssetResponseModel)
+    a1 = MagicMock(asset_id='n1')
+    a2 = MagicMock(asset_id='c1')
+    a3 = MagicMock(asset_id='u1')
+    a4 = MagicMock(asset_id='i1')
+    response.nia = [a1]
+    response.cfa = None
+    response.uda = [a3]
+    response.ifa = [a4]
+    mock_get_assets.return_value = response
+
+    svc = MainAssetPageDataService()
+    all_assets = svc.get_all_assets()
+
+    assert [a.asset_id for a in all_assets] == ['n1', 'u1', 'i1']
+    assert mock_get_assets.called
+
+
+@patch('src.data.service.main_asset_page_service.RgbRepository.list_transfers')
+def test_find_asset_for_failed_transfer_matches_and_skips_on_exception(mock_list_transfers):
+    """find_asset_for_failed_transfer should return asset_id when idx matches and skip assets raising exceptions."""
+    # Prepare assets; first will raise, second will match
+    a_bad = MagicMock(asset_id='bad')
+    a_ok = MagicMock(asset_id='ok')
+    assets = [a_bad, a_ok]
+
+    # First call raises, second returns transfers with a matching idx
+    def side_effect(arg):
+        if arg.asset_id == 'bad':
+            raise RuntimeError('boom')
+        t = MagicMock()
+        t.idx = '42'
+        return [t]
+
+    mock_list_transfers.side_effect = side_effect
+
+    svc = MainAssetPageDataService()
+    found = svc.find_asset_for_failed_transfer('42', assets)
+
+    assert found == 'ok'
+    # Ensure list_transfers attempted for both assets
+    assert mock_list_transfers.call_count == 2
+
+
 @patch('src.utils.page_navigation_events.PageNavigationEventManager.get_instance')
 @patch('src.data.service.main_asset_page_service.MainAssetPageDataService.find_asset_for_failed_transfer')
 @patch('src.data.service.main_asset_page_service.MainAssetPageDataService.get_all_assets')

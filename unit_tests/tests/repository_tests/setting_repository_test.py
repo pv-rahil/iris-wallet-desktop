@@ -1349,3 +1349,146 @@ def test_set_rgb_lib_version_exception(mock_local_store, mock_handle_exceptions)
     SettingRepository.set_rgb_lib_version('0.0.1')
 
     mock_handle_exceptions.assert_called_once()
+
+
+def test_set_wallet_signature_type_success(mock_local_store):
+    """set_wallet_signature_type returns True when persisted value matches."""
+    from src.model.enums.enums_model import WalletSignatureType
+    mock_local_store.get_value.return_value = WalletSignatureType.STANDARD_TYPE_WALLET.value
+
+    res = SettingRepository.set_wallet_signature_type(WalletSignatureType.STANDARD_TYPE_WALLET)
+
+    assert res is True
+    mock_local_store.set_value.assert_called_once_with(
+        'wallet_signature_type', WalletSignatureType.STANDARD_TYPE_WALLET.value,
+    )
+    mock_local_store.get_value.assert_called_once_with('wallet_signature_type')
+
+
+def test_set_wallet_signature_type_none_success(mock_local_store):
+    """set_wallet_signature_type returns True when clearing value with None."""
+    from src.model.enums.enums_model import WalletSignatureType
+    mock_local_store.get_value.return_value = None
+
+    res = SettingRepository.set_wallet_signature_type(None)
+
+    assert res is True
+    mock_local_store.set_value.assert_called_once_with('wallet_signature_type', None)
+    mock_local_store.get_value.assert_called_once_with('wallet_signature_type')
+
+
+def test_set_wallet_signature_type_failure(mock_local_store):
+    """set_wallet_signature_type returns False when persisted value differs."""
+    from src.model.enums.enums_model import WalletSignatureType
+    mock_local_store.get_value.return_value = 'DIFFERENT'
+
+    res = SettingRepository.set_wallet_signature_type(WalletSignatureType.STANDARD_TYPE_WALLET)
+
+    assert res is False
+    mock_local_store.set_value.assert_called_once_with(
+        'wallet_signature_type', WalletSignatureType.STANDARD_TYPE_WALLET.value,
+    )
+    mock_local_store.get_value.assert_called_once_with('wallet_signature_type')
+
+
+def test_set_wallet_signature_type_exception(mock_local_store, mock_handle_exceptions):
+    """set_wallet_signature_type returns 'Error handled' when exception occurs."""
+    from src.model.enums.enums_model import WalletSignatureType
+    mock_local_store.set_value.side_effect = Exception('x')
+
+    res = SettingRepository.set_wallet_signature_type(WalletSignatureType.STANDARD_TYPE_WALLET)
+
+    assert res == 'Error handled'
+
+
+def test_get_wallet_signature_type_value(mock_local_store):
+    """get_wallet_signature_type returns enum when stored string exists."""
+    from src.model.enums.enums_model import WalletSignatureType
+    mock_local_store.get_value.return_value = WalletSignatureType.MULTI_SIG_WALLET.value
+
+    res = SettingRepository.get_wallet_signature_type()
+
+    assert res == WalletSignatureType.MULTI_SIG_WALLET
+    mock_local_store.get_value.assert_called_once_with('wallet_signature_type')
+
+
+def test_get_wallet_signature_type_none(mock_local_store):
+    """get_wallet_signature_type returns None when not set."""
+    mock_local_store.get_value.return_value = None
+
+    res = SettingRepository.get_wallet_signature_type()
+
+    assert res is None
+    mock_local_store.get_value.assert_called_once_with('wallet_signature_type')
+
+
+def test_get_wallet_signature_type_exception(mock_local_store, mock_handle_exceptions):
+    """get_wallet_signature_type returns 'Error handled' on exception."""
+    mock_local_store.get_value.side_effect = Exception('x')
+
+    res = SettingRepository.get_wallet_signature_type()
+
+    assert res == 'Error handled'
+
+
+def test_set_multisig_config_success(mock_local_store):
+    """set_multisig_config returns True when both values persist."""
+    req, tot = 2, 3
+    # simulate round-trip
+    mock_local_store.get_value.side_effect = [req, tot]
+
+    res = SettingRepository.set_multisig_config(req, tot)
+
+    assert res is True
+    mock_local_store.set_value.assert_any_call('multisig_required_signers', req)
+    mock_local_store.set_value.assert_any_call('multisig_total_signers', tot)
+    assert mock_local_store.get_value.call_count == 2
+
+
+def test_set_multisig_config_failure(mock_local_store):
+    """set_multisig_config returns False when any value mismatches."""
+    req, tot = 2, 3
+    mock_local_store.get_value.side_effect = [req, 99]
+
+    res = SettingRepository.set_multisig_config(req, tot)
+
+    assert res is False
+
+
+def test_set_multisig_config_exception(mock_local_store, mock_handle_exceptions):
+    """set_multisig_config returns 'Error handled' on exception."""
+    mock_local_store.set_value.side_effect = Exception('x')
+
+    res = SettingRepository.set_multisig_config(1, 2)
+
+    assert res == 'Error handled'
+
+
+def test_get_multisig_config_values(mock_local_store):
+    """get_multisig_config returns a tuple of ints (or None) using value_type=int."""
+    mock_local_store.get_value.side_effect = [2, 4]
+
+    res = SettingRepository.get_multisig_config()
+
+    assert res == (2, 4)
+    # Ensure value_type=int is used
+    mock_local_store.get_value.assert_any_call('multisig_required_signers', value_type=int)
+    mock_local_store.get_value.assert_any_call('multisig_total_signers', value_type=int)
+
+
+def test_get_multisig_config_none(mock_local_store):
+    """get_multisig_config returns (None, None) when not set."""
+    mock_local_store.get_value.side_effect = [None, None]
+
+    res = SettingRepository.get_multisig_config()
+
+    assert res == (None, None)
+
+
+def test_get_multisig_config_exception(mock_local_store, mock_handle_exceptions):
+    """get_multisig_config returns 'Error handled' when exception occurs."""
+    mock_local_store.get_value.side_effect = Exception('x')
+
+    res = SettingRepository.get_multisig_config()
+
+    assert res == 'Error handled'

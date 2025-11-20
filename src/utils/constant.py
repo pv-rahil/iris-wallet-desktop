@@ -51,6 +51,7 @@ TERMS_OF_SERVICE_URL = 'https://iriswallet.com/testnet/terms_of_service.html'
 LOG_FOLDER_NAME = 'logs'
 PING_DNS_ADDRESS_FOR_NETWORK_CHECK = '8.8.8.8'
 PING_DNS_SERVER_CALL_INTERVAL = 5000
+CONSIGNMENT_FILE_NAME = 'consignment_{}_{}.rgbc'
 
 INDEXER_URL_REGTEST = '127.0.0.1:50001'
 PROXY_ENDPOINT_REGTEST = 'rpc://127.0.0.1:3000/json-rpc'

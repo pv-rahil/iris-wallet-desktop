@@ -289,3 +289,90 @@ def test_get_session_none_for_non_watch_only_online(get_wallet_type, get_access_
         assert WalletDataService.get_session() is None
     finally:
         WalletDataService._instance = None
+
+
+def test_ifa_secondary_draft_add_and_get_by_id(tmp_db):
+    """add_ifa_secondary_draft_meta should insert and get_ifa_secondary_draft_by_id should fetch it."""
+    tmp_db.is_watch_only = True
+    tmp_db.is_offline_wallet = False
+    draft_id = tmp_db.add_ifa_secondary_draft_meta('AID', 'AN', 5)
+    assert draft_id is not None
+    row = tmp_db.get_ifa_secondary_draft_by_id(int(draft_id))
+    assert row and row['asset_id'] == 'AID' and row['asset_name'] == 'AN' and row['amount'] == 5
+    assert row['active_utxo'] == 1
+
+
+def test_ifa_secondary_attach_psbt_and_list(tmp_db):
+    """attach_inflate_psbt_to_secondary_draft should set psbt_id and list_ifa_secondary_drafts returns it."""
+    tmp_db.is_watch_only = True
+    tmp_db.is_offline_wallet = False
+    _id = tmp_db.add_ifa_secondary_draft_meta('X', None, None)
+    assert _id is not None
+    psbt = 'psbt_base64_payload'
+    psbt_id = tmp_db.attach_inflate_psbt_to_secondary_draft('X', psbt)
+    assert psbt_id is not None
+    rows = tmp_db.list_ifa_secondary_drafts('X')
+    assert len(rows) >= 1 and rows[0]['psbt_id'] == psbt_id
+
+
+def test_ifa_secondary_set_active_and_get_active(tmp_db):
+    """set_active_secondary_draft should flip active_utxo and getters should reflect it."""
+    tmp_db.is_watch_only = True
+    tmp_db.is_offline_wallet = False
+    a = tmp_db.add_ifa_secondary_draft_meta('A', 'N1', 1)
+    b = tmp_db.add_ifa_secondary_draft_meta('A', 'N2', 2)
+    assert a and b
+    # Set first as active explicitly
+    tmp_db.set_active_secondary_draft(int(a), 'A')
+    act = tmp_db.get_active_secondary_draft_for_asset('A')
+    assert act and act['id'] == int(a)
+    # Switch to second
+    tmp_db.set_active_secondary_draft(int(b), 'A')
+    act2 = tmp_db.get_active_secondary_draft_for_asset('A')
+    assert act2 and act2['id'] == int(b)
+
+
+def test_ifa_secondary_latest_active_across_assets(tmp_db):
+    """get_latest_active_secondary_draft should return the most recent active."""
+    import time as _t
+    tmp_db.is_watch_only = True
+    tmp_db.is_offline_wallet = False
+    _ = tmp_db.add_ifa_secondary_draft_meta('Z1', 'N', 1)
+    _t.sleep(1)
+    last_id = tmp_db.add_ifa_secondary_draft_meta('Z2', 'N', 1)
+    row = tmp_db.get_latest_active_secondary_draft()
+    assert row and row['asset_id'] == 'Z2' and row['id'] == int(last_id)
+
+
+def test_ifa_secondary_delete_by_id_and_by_psbt_and_update_psbt(tmp_db):
+    """delete_ifa_secondary_draft returns True; delete_secondary_draft_by_psbt and update_secondary_draft_psbt_id paths work."""
+    tmp_db.is_watch_only = True
+    tmp_db.is_offline_wallet = False
+    did = tmp_db.add_ifa_secondary_draft_meta('B', 'NB', 3)
+    assert did is not None
+    # Update psbt id using update method
+    old_psbt = 'old_psbt'
+    new_psbt = 'new_psbt'
+    # Attach old psbt first
+    _ = tmp_db.attach_inflate_psbt_to_secondary_draft('B', old_psbt)
+    # Update to new
+    assert tmp_db.update_secondary_draft_psbt_id(old_psbt, new_psbt) is True
+    # Delete by psbt
+    assert tmp_db.delete_secondary_draft_by_psbt(new_psbt) is True
+    # Delete again by id should be False (already deleted)
+    assert tmp_db.delete_ifa_secondary_draft(int(did)) in (True, False)
+
+
+def test_ifa_secondary_gating_when_not_allowed(tmp_db):
+    """All secondary draft methods should no-op when not watch-only/offline."""
+    tmp_db.is_watch_only = False
+    tmp_db.is_offline_wallet = False
+    assert tmp_db.add_ifa_secondary_draft_meta('X', None, None) is None
+    assert tmp_db.attach_inflate_psbt_to_secondary_draft('X', 'p') is None
+    assert tmp_db.list_ifa_secondary_drafts('X') == []
+    assert tmp_db.get_ifa_secondary_draft_by_id(1) is None
+    assert tmp_db.get_active_secondary_draft_for_asset('X') is None
+    assert tmp_db.get_latest_active_secondary_draft() is None
+    assert tmp_db.update_secondary_draft_psbt_id('a', 'b') is False
+    assert tmp_db.delete_ifa_secondary_draft(1) is False
+    assert tmp_db.delete_secondary_draft_by_psbt('x') is False

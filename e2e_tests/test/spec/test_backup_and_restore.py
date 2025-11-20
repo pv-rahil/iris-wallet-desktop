@@ -510,7 +510,7 @@ def test_restore_for_offline_wallet(test_environment, wallets_and_operations: Wa
     with allure.step('Restore the wallet'):
         load_variant = map_to_load_variant(wallet_variant_name)
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, variant=load_variant, fund=False,is_restore_wallet=True,
+            application=FIRST_APPLICATION, variant=load_variant, fund=False, is_restore_wallet=True,
         )
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,

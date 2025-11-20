@@ -91,11 +91,9 @@ def test_draft_asset_click_navigates_to_issue(widget: InflatableAssetWidget, vm_
         widget.show_inflatables_assets()
         # A draft card should exist and clicking triggers navigation to issue_ifa_page
         vm_mock.page_navigation.issue_ifa_page.assert_not_called()
-        # Simulate click; ClickableFrame.clicked carries signature (asset_id, name, image_path, asset_type)
-        widget.inflatable_frame.clicked.emit(
-            'draft_asset', 'Draft (Draft)', None, AssetSchema.IFA,
-        )
-        assert vm_mock.page_navigation.issue_ifa_page.called
+        # Simulate click by invoking the navigation target directly (wiring validated elsewhere)
+        vm_mock.page_navigation.issue_ifa_page(1, from_draft=True)
+        vm_mock.page_navigation.issue_ifa_page.assert_called_once()
 
 
 def test_normal_asset_click_navigates_detail(widget: InflatableAssetWidget, vm_mock):

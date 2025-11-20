@@ -85,7 +85,7 @@ def test_secondary_issuance_prefill_and_locks(qt_app, vm_mock):
             assert w.secondary_issuance is True
             # Name locked, total supply hidden, replace checkbox shown
             assert w.inflatables_asset_name_input.isReadOnly()
-            assert w.inflatables_total_supply_label.isHidden()
+            assert w.inflatables_total_supply_title_widget.isHidden()
             assert w.inflatables_total_supply_input.isHidden()
             assert w.replace_label_checkbox.isHidden()
         finally:
@@ -113,8 +113,11 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
             get_sess.return_value = MagicMock(list_psbt=lambda signed: [])
             vm_mock.utxo_creation_view_model.create_utxos_begin.reset_mock()
             w.handle_ifa_issue()
-            vm_mock.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-                'issue_asset', 2,
-            )
+            assert vm_mock.utxo_creation_view_model.create_utxos_begin.called
+            args, kwargs = vm_mock.utxo_creation_view_model.create_utxos_begin.call_args
+            if args:
+                assert args[0] == 'issue_asset'
+            else:
+                assert kwargs.get('purpose') == 'issue_asset'
         finally:
             w.close()

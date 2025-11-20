@@ -173,4 +173,3 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
         ToastManager.success(description=INFO_ASSET_SENT.format(response.txid))
-        

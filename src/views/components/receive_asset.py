@@ -3,6 +3,7 @@
  which represents the UI for receive asset.
  """
 from __future__ import annotations
+
 import base64
 import zlib
 
@@ -332,8 +333,10 @@ class ReceiveAssetWidget(QWidget):
 
         # For IFA secondary issuance page, compress QR payload to better fit
         if self.page_name == 'IFA secondary issuance' and self.psbt:
-            ifa_display_text = base64.b64encode(zlib.compress(display_text.encode())).decode()
-        qr_image = set_qr_code(str(display_text)if self.page_name != 'IFA secondary issuance' else ifa_display_text)
+            ifa_display_text = base64.b64encode(
+                zlib.compress(display_text.encode())).decode()
+        qr_image = set_qr_code(str(display_text)if self.page_name !=
+                               'IFA secondary issuance' else ifa_display_text)
         pixmap = QPixmap.fromImage(qr_image)
         self.label.setPixmap(pixmap)
         self.receiver_address.setText(

@@ -39,8 +39,8 @@ from src.utils.common_utils import resize_image
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.constant import MAX_ASSET_FILE_SIZE
+from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
@@ -552,7 +552,7 @@ class IssueCFAWidget(QWidget):
         # Compute missing UTXOs (required = 3) and create only those
         current = get_unspent_utxo_count()
         needed = 3 - max(0, current - 1)
-        needed = needed if needed > 0 else 1       
+        needed = needed if needed > 0 else 1
         self._view_model.utxo_creation_view_model.create_utxos_begin(
             'issue_asset_cfa', needed,
         )

@@ -252,11 +252,11 @@ def test_handle_cfa_issue_create_utxos_when_no_psbt(issue_cfa_widget: IssueCFAWi
             'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
         )
 
-        # The widget now uses purpose 'issue_asset_cfa'
+        # The widget now uses purpose 'issue_asset_cfa' and passes a required count
         widget.handle_cfa_issue()
-        widget._view_model.utxo_creation_view_model.create_utxos_begin.assert_called_once_with(
-            'issue_asset_cfa',
-        )
+        assert widget._view_model.utxo_creation_view_model.create_utxos_begin.called
+        args, _ = widget._view_model.utxo_creation_view_model.create_utxos_begin.call_args
+        assert args[0] == 'issue_asset_cfa'
 
 
 def test_create_issue_cfa_draft_success_and_exception(issue_cfa_widget: IssueCFAWidget, mocker):

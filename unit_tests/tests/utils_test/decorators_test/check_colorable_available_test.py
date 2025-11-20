@@ -13,6 +13,7 @@ from src.data.repository.setting_card_repository import SettingCardRepository
 from src.model.setting_model import DefaultFeeRate
 from src.utils.decorators.check_colorable_available import check_colorable_available
 from src.utils.decorators.check_colorable_available import create_utxos
+from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.error_message import ERROR_CREATE_UTXO_FEE_RATE_ISSUE
 from src.utils.error_message import ERROR_MESSAGE_TO_CHANGE_FEE_RATE
 from src.utils.handle_exception import CommonException
@@ -108,6 +109,79 @@ def test_check_colorable_available_decorator_success(mock_create_utxos):
     result = decorated_method()
     assert result == 'success'
     mock_create_utxos.assert_not_called()
+
+
+@patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_access_type')
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_type')
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type')
+@patch.object(SettingCardRepository, 'get_default_fee_rate')
+def test_create_utxos_gated_hw_online_raises_no_available(mock_fee, mock_key, mock_wtype, mock_access):
+    """create_utxos should raise CommonException('NoAvailableUtxos') for HW wallet online."""
+    mock_fee.return_value = DefaultFeeRate(fee_rate=1)
+    from src.model.enums.enums_model import KeyStorageType, WalletType, WalletAccessType
+    mock_key.return_value = KeyStorageType.HARDWARE_WALLET
+    mock_wtype.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
+    colored_wallet.wallet.create_utxos.reset_mock()
+
+    with pytest.raises(CommonException) as exc:
+        create_utxos(2)
+    assert str(exc.value) == 'NoAvailableUtxos'
+    colored_wallet.wallet.create_utxos.assert_not_called()
+
+
+@patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_access_type')
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_type')
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type')
+@patch.object(SettingCardRepository, 'get_default_fee_rate')
+def test_create_utxos_gated_watch_only_raises_no_available(mock_fee, mock_key, mock_wtype, mock_access):
+    """create_utxos should raise CommonException('NoAvailableUtxos') for WATCH_ONLY wallets."""
+    mock_fee.return_value = DefaultFeeRate(fee_rate=1)
+    from src.model.enums.enums_model import KeyStorageType, WalletType, WalletAccessType
+    mock_key.return_value = KeyStorageType.ON_DEVICE
+    mock_wtype.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_access.return_value = WalletAccessType.WATCH_ONLY
+    colored_wallet.wallet.create_utxos.reset_mock()
+
+    with pytest.raises(CommonException) as exc:
+        create_utxos(2)
+    assert str(exc.value) == 'NoAvailableUtxos'
+    colored_wallet.wallet.create_utxos.assert_not_called()
+
+
+@patch('src.utils.decorators.check_colorable_available.create_utxos')
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_access_type')
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_type')
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type')
+def test_decorator_gating_on_insufficient_slots_raises_no_available(mock_key, mock_wtype, mock_access, mock_create):
+    """Decorator should raise NoAvailableUtxos without calling create_utxos when gated."""
+    from src.model.enums.enums_model import KeyStorageType, WalletType, WalletAccessType
+    mock_key.return_value = KeyStorageType.HARDWARE_WALLET
+    mock_wtype.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_access.return_value = WalletAccessType.WATCH_ONLY
+
+    # Method raises InsufficientAllocationSlots
+    mock_method = MagicMock(side_effect=RgbLibError.InsufficientAllocationSlots())
+
+    @check_colorable_available()
+    def decorated_method():
+        return mock_method()
+
+    with pytest.raises(CommonException) as exc_info:
+        decorated_method()
+    assert str(exc_info.value) == 'NoAvailableUtxos'
+    mock_create.assert_called_once()
+
+
+@patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+def test_get_unspent_utxo_count_logs_and_returns_zero_on_error(mocker):
+    """get_unspent_utxo_count should return 0 on exception and log it."""
+    colored_wallet.wallet.list_unspents.side_effect = Exception('boom')
+    log = mocker.patch('src.utils.decorators.check_colorable_available.logger')
+    assert get_unspent_utxo_count() == 0
+    assert log.error.called
 
 
 @patch('src.utils.decorators.check_colorable_available.create_utxos')

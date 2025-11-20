@@ -94,7 +94,6 @@ def mock_main_page_data_response():
                 name='Asset4',
                 details=None,
                 precision=2,
-                issued_supply=4000,
                 timestamp=1620006000,
                 added_at=1620007000,
                 balance=Balance(
