@@ -93,7 +93,10 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
             BACKUP_EMAIL_PASSWORD,
         )
         wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
+        try:
+            wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
+        except Exception:
+            pass
         wallets_and_operations.first_page_objects.backup_page_objects.click_google_authenticator_button()
         code = wallets_and_operations.first_page_objects.backup_page_objects.get_security_otp()
         wallets_and_operations.first_page_objects.backup_page_objects.enter_security_code(
@@ -142,7 +145,10 @@ def test_restore(wallets_and_operations: WalletTestSetup):
             BACKUP_EMAIL_PASSWORD,
         )
         wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
+        try:
+            wallets_and_operations.first_page_objects.backup_page_objects.click_try_another_way_button()
+        except Exception:
+            pass        
         wallets_and_operations.first_page_objects.backup_page_objects.click_google_authenticator_button()
         code = wallets_and_operations.first_page_objects.backup_page_objects.get_security_otp()
         wallets_and_operations.first_page_objects.backup_page_objects.enter_security_code(

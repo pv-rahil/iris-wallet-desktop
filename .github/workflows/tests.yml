@@ -150,6 +150,7 @@ jobs:
             xvfb \
             x11-apps \
             xauth \
+            openbox \
             dbus-x11 \
             at-spi2-core \
             libatk-bridge2.0-0 \
@@ -182,12 +183,7 @@ jobs:
             libfontconfig1 \
             libdrm2 \
             libegl1 \
-            libegl1-mesa \
             libgl1 \
-            libgl1-mesa-glx \
-            libglu1-mesa \
-            libglx-mesa0 \
-            libglx0 \
             libgtk-3-0 \
             gir1.2-gtk-3.0 \
             gir1.2-atspi-2.0 \
@@ -200,7 +196,6 @@ jobs:
             shared-mime-info \
             libgl1-mesa-dri \
             mesa-utils \
-            xserver-xorg-video-dummy \
             libgirepository1.0-dev \
             meson \
             gobject-introspection \
@@ -218,8 +213,12 @@ jobs:
             libxcb-util1 \
             ruby-dev \
             build-essential \
-            libfuse2 \
-            scrot
+            libgl1-mesa-glx \
+            libegl1-mesa \
+            libgbm1 \
+            libosmesa6 \
+            mesa-utils-extra \
+            libfuse2
           sudo gem install fpm -f
 
       - name: Install Rust toolchain
@@ -408,6 +407,14 @@ jobs:
           /usr/lib/at-spi2-core/at-spi2-registryd &
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
+          export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --disable-software-rasterizer"
+          export QT_OPENGL=software
+          export QT_XCB_GL_INTEGRATION=none
+          export QT_QPA_PLATFORM=xcb       # (already set earlier but safe)
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+          export QTWEBENGINE_DISABLE_SANDBOX=1
+          export QTWEBENGINE_NO_SANDBOX=1 
           openbox &
           sleep 6  # Wait for Xvfb to start
           poetry run e2e-test all
