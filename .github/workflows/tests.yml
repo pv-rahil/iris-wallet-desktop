@@ -256,23 +256,19 @@ jobs:
         run: |
           poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-      - name: Start Xvfb (headless display) and prepare XAUTHORITY
+      - name: Start Xvfb and openbox
         run: |
-          export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
-          mkdir -p "$(dirname "$XAUTHORITY")"
+          export XAUTHORITY="$RUNNER_TEMP/.Xauthority"
           touch "$XAUTHORITY"
-          cookie=$(mcookie)
-          xauth -f "$XAUTHORITY" add :99 . "$cookie"
+          xauth -f "$XAUTHORITY" add :99 . $(mcookie)
           echo "XAUTHORITY=$XAUTHORITY" >> $GITHUB_ENV
-          Xvfb :99 -screen 0 1920x1080x24 -ac -nolisten tcp \
-            +extension GLX \
-            +extension RENDER \
-            +extension RANDR \
-            +extension COMPOSITE \
-            +extension XFIXES \
-            +extension DAMAGE &
+
+          Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
           echo "XVFB_PID=$!" >> $GITHUB_ENV
-          sleep 30 # Wait for Xvfb to start
+          sleep 4
+
+          openbox &
+          sleep 3
 
       - name: Ensure E2E scripts are executable
         run: |
@@ -391,10 +387,10 @@ jobs:
           export XDG_CURRENT_DESKTOP=GNOME
           export GTK_USE_PORTAL=1
           export QT_QPA_PLATFORMTHEME=gtk3
+          export QT_OPENGL=software
+          export QT_XCB_GL_INTEGRATION=none
           export LIBGL_ALWAYS_SOFTWARE=1
-          export MESA_GL_VERSION_OVERRIDE=3.3
-          export MESA_GLSL_VERSION_OVERRIDE=330
-          export GALLIUM_DRIVER=llvmpipe
+          export QT_X11_NO_MITSHM=1
           export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
