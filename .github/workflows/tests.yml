@@ -144,6 +144,9 @@ jobs:
           virtualenvs-in-project: false
           installer-parallel: true
 
+      - name: Check Poetry
+        run: poetry --version
+
       - name: Install required system dependencies
         run: |
           sudo apt-get install -y \
@@ -221,6 +224,11 @@ jobs:
             libfuse2
           sudo gem install fpm -f
 
+      - name: Setup env for GUI testing
+        run: |
+          echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
+          echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
@@ -243,18 +251,6 @@ jobs:
         run: |
           mkdir -p "$KEYRING_HOME"
 
-      # - name: Build the rgb-lightning-node binary
-      #   uses: ./.github/actions/build-rln-node
-
-      - name: Add rgb-lightning-node to PATH
-        run: |
-          chmod +x ln_node_binary/rgb-lightning-node
-          echo "$GITHUB_WORKSPACE/ln_node_binary" >> $GITHUB_PATH
-
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
-
       - name: Start Xvfb and openbox
         run: |
           export XAUTHORITY="$RUNNER_TEMP/.Xauthority"
@@ -268,6 +264,37 @@ jobs:
 
           openbox &
           sleep 3
+
+      - name: Debug OpenGL
+        run: glxinfo | grep "OpenGL" || echo "No OpenGL"
+
+      # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
+      #   uses: ./.github/actions/build-rln-node
+
+      - name: Add rgb-lightning-node to PATH
+        run: |
+          chmod +x ln_node_binary/rgb-lightning-node
+          echo "$GITHUB_WORKSPACE/ln_node_binary" >> $GITHUB_PATH
+
+      - name: Compile QT resources
+        run: |
+          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+
+      # - name: Start Xvfb (headless display) and prepare XAUTHORITY
+      #   run: |
+      #     export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
+      #     mkdir -p "$(dirname "$XAUTHORITY")"
+      #     touch "$XAUTHORITY"
+      #     cookie=$(mcookie)
+      #     xauth -f "$XAUTHORITY" add :99 . "$cookie"
+      #     echo "XAUTHORITY=$XAUTHORITY" >> $GITHUB_ENV
+      #     Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
+
+      #     echo "XVFB_PID=$!" >> $GITHUB_ENV
+      #     sleep 3
+
+      # - name: Debug OpenGL
+      #   run: glxinfo | grep "OpenGL"
 
       - name: Ensure E2E scripts are executable
         run: |
@@ -407,6 +434,7 @@ jobs:
           /usr/lib/at-spi2-core/at-spi2-registryd &
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
+          export QT_QUICK_BACKEND=software
           export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --disable-software-rasterizer"
           export QT_OPENGL=software
           export QT_XCB_GL_INTEGRATION=none
