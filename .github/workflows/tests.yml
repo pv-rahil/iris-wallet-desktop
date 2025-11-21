@@ -416,7 +416,7 @@ jobs:
           export QTWEBENGINE_NO_SANDBOX=1
           openbox &
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test test_keyring_dialog.py
+          poetry run single-test test_send_and_receive_rgb20_asset.py
           '
 
       - name: Upload screenshots on failure
