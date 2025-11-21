@@ -410,7 +410,7 @@ jobs:
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
           openbox &
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test test_rgb20_channel_tx.py
+          poetry run e2e-test all
           '
 
       - name: Upload screenshots on failure

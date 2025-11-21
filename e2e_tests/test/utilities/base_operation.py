@@ -138,13 +138,8 @@ class BaseOperations:
         Returns:
             bool: True if the element is displayed, False otherwise.
         """
-        if not element:
-            return False
-        try:
-            element.grabFocus()
-            return element.showing
-        except AttributeError:
-            return False
+        element.grabFocus()
+        return element and element.showing
 
     def do_is_enabled(self, element):
         """
