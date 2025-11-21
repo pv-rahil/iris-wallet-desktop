@@ -442,10 +442,10 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
           export QTWEBENGINE_DISABLE_SANDBOX=1
-          export QTWEBENGINE_NO_SANDBOX=1 
+          export QTWEBENGINE_NO_SANDBOX=1
           openbox &
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test test_backup_and_restore.py
+          poetry run single-test test_settings.py
           '
 
       - name: Upload screenshots on failure
