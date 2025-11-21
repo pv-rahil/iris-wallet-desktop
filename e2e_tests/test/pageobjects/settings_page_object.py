@@ -2,6 +2,11 @@
 """This module represents the page object for the settings page"""
 from __future__ import annotations
 
+import os
+
+import keyring
+from keyrings.alt.file import PlaintextKeyring
+
 from accessible_constant import ASK_AUTH_FOR_APP_LOGIN_TOGGLE
 from accessible_constant import ASK_AUTH_FOR_IMPORTANT_QUESTION_TOGGLE
 from accessible_constant import EXPIRY_TIME_COMBO_BOX
@@ -191,3 +196,9 @@ class SettingsPageObjects(BaseOperations):
     def click_ask_auth_imp_question(self):
         """Click on the ask auth imp question toggle button"""
         return self.do_click(self.ask_auth_for_imp_question_toggle()) if self.do_is_displayed(self.ask_auth_for_imp_question_toggle()) else None
+
+    def set_keyring_enable_ci(self):
+        """Use Plaintext keyring (enable) only in CI."""
+        if os.getenv('CI') == 'true':
+            os.environ['PYTHON_KEYRING_BACKEND'] = 'keyrings.alt.file.PlaintextKeyring'
+            keyring.set_keyring(PlaintextKeyring())

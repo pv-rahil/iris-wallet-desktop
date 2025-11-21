@@ -127,6 +127,7 @@ jobs:
     timeout-minutes: 120
     env:
       DISPLAY: :99
+      CI: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -135,17 +136,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: false
-          installer-parallel: true
-
-      - name: Check Poetry
-        run: poetry --version
 
       - name: Install required system dependencies
         run: |
@@ -265,9 +255,6 @@ jobs:
           openbox &
           sleep 3
 
-      - name: Debug OpenGL
-        run: glxinfo | grep "OpenGL" || echo "No OpenGL"
-
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
 
@@ -279,22 +266,6 @@ jobs:
       - name: Compile QT resources
         run: |
           poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
-
-      # - name: Start Xvfb (headless display) and prepare XAUTHORITY
-      #   run: |
-      #     export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
-      #     mkdir -p "$(dirname "$XAUTHORITY")"
-      #     touch "$XAUTHORITY"
-      #     cookie=$(mcookie)
-      #     xauth -f "$XAUTHORITY" add :99 . "$cookie"
-      #     echo "XAUTHORITY=$XAUTHORITY" >> $GITHUB_ENV
-      #     Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
-
-      #     echo "XVFB_PID=$!" >> $GITHUB_ENV
-      #     sleep 3
-
-      # - name: Debug OpenGL
-      #   run: glxinfo | grep "OpenGL"
 
       - name: Ensure E2E scripts are executable
         run: |
@@ -445,7 +416,7 @@ jobs:
           export QTWEBENGINE_NO_SANDBOX=1
           openbox &
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test test_settings.py
+          poetry run single-test test_keyring_dialog.py
           '
 
       - name: Upload screenshots on failure
