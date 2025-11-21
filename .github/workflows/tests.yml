@@ -279,11 +279,6 @@ jobs:
           chmod +x run_e2e_tests.sh
           chmod +x e2e_tests/regtest.sh
 
-      - name: Ensure E2E scripts are executable
-        run: |
-          chmod +x run_e2e_tests.sh
-          chmod +x e2e_tests/regtest.sh
-
       - name: Fetch AppImages from Drive/URLs into e2e_tests/applications
         env:
           APP1_APPIMAGE_URL: ${{ secrets.APP1_APPIMAGE_URL }}
@@ -419,7 +414,7 @@ jobs:
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
           openbox &
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test test_send_and_receive_rgb25_asset.py
+          poetry run single-test test_rgb20_channel_tx.py
           '
 
       - name: Upload screenshots on failure

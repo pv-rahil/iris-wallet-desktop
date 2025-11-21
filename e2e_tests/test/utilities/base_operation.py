@@ -223,7 +223,7 @@ class BaseOperations:
         """
         return self.activate_window_by_name(application)
 
-    def perform_action_on_element(self, role_name, name=None, description=None, timeout=60, retry_interval=0.5):
+    def perform_action_on_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5):
         """
         Retrieves the specified element with the given role and name or description, with retries.
 
@@ -231,7 +231,7 @@ class BaseOperations:
             role_name (str): The role of the element.
             name (str, optional): The name of the element. Defaults to None.
             description (str, optional): The description of the element. Defaults to None.
-            timeout (int): The maximum time to wait for the element in seconds. Defaults to 60.
+            timeout (int): The maximum time to wait for the element in seconds. Defaults to 30.
             retry_interval (float): The time to wait between retries in seconds. Defaults to 0.5.
 
         Returns:
@@ -271,7 +271,7 @@ class BaseOperations:
 
         return False
 
-    def get_first_element(self, role_name, name=None, description=None, timeout=60, retry_interval=0.5):
+    def get_first_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5):
         """
         Retrieves the first element with the given role and name or description, with retries.
 
@@ -279,7 +279,7 @@ class BaseOperations:
             role_name (str): The role of the element.
             name (str, optional): The name of the element. Defaults to None.
             description (str, optional): The description of the element. Defaults to None.
-            timeout (int): The maximum time to wait for the element in seconds. Defaults to 60.
+            timeout (int): The maximum time to wait for the element in seconds. Defaults to 30.
             retry_interval (float): The time to wait between retries in seconds. Defaults to 0.5.
 
         Returns:
