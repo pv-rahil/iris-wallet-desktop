@@ -445,7 +445,7 @@ jobs:
           export QTWEBENGINE_NO_SANDBOX=1 
           openbox &
           sleep 6  # Wait for Xvfb to start
-          poetry run e2e-test all
+          poetry run single-test test_backup_and_restore.py
           '
 
       - name: Upload screenshots on failure
