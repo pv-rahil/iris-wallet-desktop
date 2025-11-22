@@ -424,7 +424,7 @@ jobs:
           echo $! > /tmp/ffmpeg_pid.txt
 
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test test_refresh_transfer.py
+          poetry run single-test test_backup_and_restore.py
           '
 
       - name: Stop recording
