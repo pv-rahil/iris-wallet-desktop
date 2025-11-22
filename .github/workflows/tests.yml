@@ -400,12 +400,10 @@ jobs:
           export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
           export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
           export PYTHONNOUSERSITE=0
-          export DBUS_SESSION_BUS_ADDRESS=/dev/null
-          export A11Y_BUS_ADDRESS=/dev/null
           export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
-          gsettings set org.gnome.desktop.interface toolkit-accessibility false
+          gsettings set org.gnome.desktop.interface toolkit-accessibility true
           /usr/lib/at-spi2-core/at-spi-bus-launcher --launch-immediately &
           /usr/lib/at-spi2-core/at-spi2-registryd &
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
@@ -417,7 +415,7 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
           export QTWEBENGINE_DISABLE_SANDBOX=1
-          export QTWEBENGINE_NO_SANDBOX=1 
+          export QTWEBENGINE_NO_SANDBOX=1
           export DISABLE_NATIVE_KEYRING=1
           ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
           -vcodec libx264 -preset ultrafast /tmp/test_run_recording.mp4 \
