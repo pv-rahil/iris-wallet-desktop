@@ -359,6 +359,9 @@ jobs:
         run: |
           poetry run regtest-start
 
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Run E2E tests (build if missing and run for both modes)
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -377,9 +380,9 @@ jobs:
           dbus-run-session -- bash -lc '
           set -euo pipefail
           export DISPLAY=:99
-          export NO_AT_BRIDGE=0
+          export NO_AT_BRIDGE=1
           export GTK_MODULES=atk-bridge
-          export QT_QPA_PLATFORM=xcb
+          # export QT_QPA_PLATFORM=xcb
           export GDK_BACKEND=x11
           export XDG_CURRENT_DESKTOP=GNOME
           export GTK_USE_PORTAL=1
@@ -397,10 +400,12 @@ jobs:
           export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
           export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
           export PYTHONNOUSERSITE=0
+          export DBUS_SESSION_BUS_ADDRESS=/dev/null
+          export A11Y_BUS_ADDRESS=/dev/null
           export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
-          gsettings set org.gnome.desktop.interface toolkit-accessibility true
+          gsettings set org.gnome.desktop.interface toolkit-accessibility false
           /usr/lib/at-spi2-core/at-spi-bus-launcher --launch-immediately &
           /usr/lib/at-spi2-core/at-spi2-registryd &
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
@@ -409,15 +414,34 @@ jobs:
           export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --disable-software-rasterizer"
           export QT_OPENGL=software
           export QT_XCB_GL_INTEGRATION=none
-          export QT_QPA_PLATFORM=xcb       # (already set earlier but safe)
           export LIBGL_ALWAYS_SOFTWARE=1
           export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
           export QTWEBENGINE_DISABLE_SANDBOX=1
-          export QTWEBENGINE_NO_SANDBOX=1
-          openbox &
+          export QTWEBENGINE_NO_SANDBOX=1 
+          export DISABLE_NATIVE_KEYRING=1
+          ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
+          -vcodec libx264 -preset ultrafast /tmp/test_run_recording.mp4 \
+          > /dev/null 2> /tmp/ffmpeg_errors.log &
+          # Save PID only if ffmpeg started
+          echo $! > /tmp/ffmpeg_pid.txt
+
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test test_ask_auth_for_imp_operations.py
+          poetry run single-test test_refresh_transfer.py
           '
+
+      - name: Stop recording
+        if: always()
+        run: |
+          kill $(cat /tmp/ffmpeg_pid.txt)
+
+      - name: Upload video recording
+        if: always()              # <-- Upload every time
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-video-recording
+          path: /tmp/test_run_recording.mp4
+          retention-days: 30
+          if-no-files-found: ignore
 
       - name: Upload screenshots on failure
         if: failure()
