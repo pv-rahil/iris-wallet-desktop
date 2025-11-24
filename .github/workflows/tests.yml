@@ -301,6 +301,7 @@ jobs:
         run: |
           chmod +x run_e2e_tests.sh
           chmod +x e2e_tests/regtest.sh
+          chmod +x .github/scripts/monitor_resources.sh
 
       - name: Download AppImages from GitHub Releases
         env:
@@ -332,6 +333,11 @@ jobs:
       - name: Start regtest services (Docker)
         run: |
           poetry run regtest-start
+
+      - name: Start resource monitoring
+        run: |
+          .github/scripts/monitor_resources.sh start
+          echo "Resource monitoring started"
 
       - name: Run E2E tests (build if missing and run for both modes)
         env:
@@ -442,3 +448,25 @@ jobs:
           # poetry run single-test ${{ matrix.test_file }}.py
           poetry run single-test test_keyring_dialog.py
           '
+
+      - name: Stop resource monitoring and generate summary
+        if: always()
+        run: |
+          .github/scripts/monitor_resources.sh stop
+          .github/scripts/monitor_resources.sh summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Resource Usage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat resource_summary.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload resource usage logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-usage-test
+          path: |
+            resource_usage.log
+            resource_summary.txt
+          retention-days: 30
