@@ -4,9 +4,6 @@ Custom pytest configuration for wallet mode testing
 """
 from __future__ import annotations
 
-import subprocess
-
-import allure
 import pytest
 
 from accessible_constant import DEFAULT_WALLET_MODES
@@ -69,33 +66,3 @@ def pytest_runtest_setup(item):
         pytest.skip(
             'Skipping test because it is not applicable in remote mode.',
         )
-
-
-@pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item):
-    """
-    Capture screenshot on test failure and attach to Allure report.
-    """
-    outcome = yield
-    report = outcome.get_result()
-
-    # Only capture screenshot on test failure during the call phase
-    if report.when == 'call' and report.failed:
-        try:
-            # Capture screenshot using scrot (X11 screenshot tool)
-            screenshot_path = f'/tmp/screenshot_{item.name}.png'
-            subprocess.run(
-                ['scrot', screenshot_path],
-                check=True,
-                capture_output=True,
-            )
-
-            # Attach screenshot to Allure report
-            with open(screenshot_path, 'rb') as screenshot_file:
-                allure.attach(
-                    screenshot_file.read(),
-                    name=f'Screenshot on failure: {item.name}',
-                    attachment_type=allure.attachment_type.PNG,
-                )
-        except Exception as e:
-            print(f'Failed to capture screenshot: {e}')

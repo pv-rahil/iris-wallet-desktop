@@ -380,9 +380,6 @@ jobs:
         run: |
           poetry run regtest-start
 
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
       - name: Run E2E tests (build if missing and run for both modes)
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -438,60 +435,7 @@ jobs:
           export QTWEBENGINE_DISABLE_SANDBOX=1
           export QTWEBENGINE_NO_SANDBOX=1
           export DISABLE_NATIVE_KEYRING=1
-          ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
-          -vcodec libx264 -preset ultrafast /tmp/test_run_recording.mp4 \
-          > /dev/null 2> /tmp/ffmpeg_errors.log &
-          # Save PID only if ffmpeg started
-          echo $! > /tmp/ffmpeg_pid.txt
 
           sleep 6  # Wait for Xvfb to start
           poetry run single-test ${{ matrix.test_file }}.py
           '
-
-      - name: Stop recording
-        if: always()
-        run: |
-          kill $(cat /tmp/ffmpeg_pid.txt)
-
-      - name: Upload video recording
-        if: always()              # <-- Upload every time
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-video-recording
-          path: /tmp/test_run_recording.mp4
-          retention-days: 30
-          if-no-files-found: ignore
-
-      - name: Upload screenshots on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-failure-screenshots
-          path: /tmp/screenshot_*.png
-          retention-days: 30
-          if-no-files-found: ignore
-
-      - name: Upload Allure results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
-          path: allure-results-*
-          retention-days: 30
-          if-no-files-found: ignore
-
-      - name: Generate Allure Report
-        if: always()
-        uses: simple-elf/allure-report-action@master
-        with:
-          allure_results: allure-results-*
-          allure_history: allure-history
-          keep_reports: 20
-
-      - name: Publish Allure Report to GitHub Pages
-        if: always()
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: allure-history
