@@ -128,18 +128,40 @@ class BaseOperations:
 
         return None
 
-    def do_is_displayed(self, element):
+    def do_is_displayed(self, element, timeout: int = 30, interval: float = 1.0) -> bool:
         """
-        Checks if the specified element is displayed.
+        Check if the UI element is displayed within a given timeout.
 
         Args:
-            element (Node): The element to check.
+            element: The UI element to check (must support grabFocus & showing attributes).
+            timeout (int): Maximum time to wait, in seconds.
+            interval (float): How often to retry, in seconds.
 
         Returns:
-            bool: True if the element is displayed, False otherwise.
+            bool: True if element is visible within timeout, False otherwise.
         """
-        element.grabFocus()
-        return element and element.showing
+        if not element:
+            print('[WARN] do_is_displayed: element is None.')
+            return False
+
+        if not hasattr(element, 'grabFocus') or not hasattr(element, 'showing'):
+            print('[ERROR] do_is_displayed: element does not have required attributes.')
+            return False
+
+        end_time = time.time() + timeout
+
+        while time.time() < end_time:
+            try:
+                element.grabFocus()  # attempt to focus
+                if element.showing:  # check visibility
+                    return True
+            except Exception as e:
+                print(f"[INFO] Retrying... element not ready yet: {e}")
+
+            time.sleep(interval)
+
+        print(f"[TIMEOUT] Element was not visible after {timeout} seconds.")
+        return False
 
     def do_is_enabled(self, element):
         """
