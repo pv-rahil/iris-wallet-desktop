@@ -291,12 +291,9 @@ jobs:
           chmod +x run_e2e_tests.sh
           chmod +x e2e_tests/regtest.sh
 
-      - name: Fetch AppImages from Drive/URLs into e2e_tests/applications
+      - name: Download AppImages from GitHub Releases
         env:
-          APP1_APPIMAGE_URL: ${{ secrets.APP1_APPIMAGE_URL }}
-          APP2_APPIMAGE_URL: ${{ secrets.APP2_APPIMAGE_URL }}
-          APP1_GDRIVE_ID: ${{ secrets.APP1_GDRIVE_ID }}
-          APP2_GDRIVE_ID: ${{ secrets.APP2_GDRIVE_ID }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
@@ -304,63 +301,11 @@ jobs:
           APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
           APPDIR=e2e_tests/applications
           mkdir -p "$APPDIR"
+          sudo apt-get update && sudo apt-get install -y gh
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+          chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
 
-          APP1_FILE="iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage"
-          APP2_FILE="iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage"
-
-          need_gdown=false
-
-          fetch_one() {
-            local url="$1"; local gid="$2"; local out="$3"
-            if [ -n "$url" ]; then
-              echo "Downloading $out from URL..."
-              if echo "$url" | grep -qi "drive.google.com"; then
-                echo "Detected Google Drive URL; using gdown..."
-                python -m pip install --quiet gdown
-                gdown --fuzzy "$url" -O "$out" || { echo "gdown failed for $out"; exit 1; }
-              else
-                curl -L --fail --silent --show-error -o "$out" "$url" || { echo "Failed to download $out from URL"; exit 1; }
-              fi
-              return 0
-            fi
-            if [ -n "$gid" ]; then
-              need_gdown=true
-              echo "Will download $out from Google Drive ID $gid"
-              echo "$gid $out" >> /tmp/gdrive_list
-              return 0
-            fi
-            return 1
-          }
-
-          rm -f /tmp/gdrive_list
-
-          # Try to queue downloads if URLs/IDs provided
-          fetch_one "${APP1_APPIMAGE_URL:-}" "${APP1_GDRIVE_ID:-}" "$APPDIR/$APP1_FILE"
-          fetch_one "${APP2_APPIMAGE_URL:-}" "${APP2_GDRIVE_ID:-}" "$APPDIR/$APP2_FILE"
-
-          # Perform gdown downloads if needed
-          if [ "$need_gdown" = true ]; then
-            python -m pip install --quiet gdown
-            while read -r gid outfile; do
-              echo "Downloading $(basename "$outfile") from Google Drive..."
-              gdown --fuzzy "https://drive.google.com/uc?id=$gid" -O "$outfile"
-            done < <(cat /tmp/gdrive_list)
-          fi
-
-          # chmod +x for any downloaded files
-          for f in "$APPDIR/$APP1_FILE" "$APPDIR/$APP2_FILE"; do
-            if [ -f "$f" ]; then
-              chmod +x "$f"
-              # Validate ELF binary to avoid Exec format error from HTML/redirects
-              if ! file "$f" | grep -q "ELF .* x86-64"; then
-                echo "Downloaded file is not a valid x86_64 ELF AppImage: $f"
-                echo "file output:" && file "$f"
-                echo "head -n 5:" && head -n 5 "$f" || true
-                echo "Consider providing a direct asset URL or use APP*_GDRIVE_ID secrets."
-                exit 1
-              fi
-            fi
-          done
 
       - name: Prepare runtime Python deps for AppImage (keyring backends)
         run: |
