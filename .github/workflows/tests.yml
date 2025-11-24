@@ -148,7 +148,8 @@ jobs:
           - test_refresh_transfer
     env:
       DISPLAY: :99
-      CI: "true"
+      QT_IM_MODULE: virtualkeyboard # Prevents native password dialog
+      CI: "true" # Helpful flag inside Python tests
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -166,6 +167,8 @@ jobs:
             xauth \
             openbox \
             dbus-x11 \
+            policykit-1-gnome \
+            lxqt-policykit \
             at-spi2-core \
             libatk-bridge2.0-0 \
             libxcb-cursor0 \
@@ -198,6 +201,11 @@ jobs:
             libdrm2 \
             libegl1 \
             libgl1 \
+            libopengl0 \
+            libglu1-mesa \
+            libglx-mesa0 \
+            libglvnd0 \
+            libgles2 \
             libgtk-3-0 \
             gir1.2-gtk-3.0 \
             gir1.2-atspi-2.0 \
@@ -232,7 +240,8 @@ jobs:
             libgbm1 \
             libosmesa6 \
             mesa-utils-extra \
-            libfuse2
+            libfuse2 \
+            scrot
           sudo gem install fpm -f
 
       - name: Setup env for GUI testing
@@ -269,10 +278,12 @@ jobs:
           xauth -f "$XAUTHORITY" add :99 . $(mcookie)
           echo "XAUTHORITY=$XAUTHORITY" >> $GITHUB_ENV
 
-          Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
+          Xvfb :99 -screen 0 1920x1080x24 -ac +iglx +extension GLX +render -noreset &
           echo "XVFB_PID=$!" >> $GITHUB_ENV
+          sleep 4
 
           openbox &
+          sleep 3
 
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
@@ -306,7 +317,6 @@ jobs:
           gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
           chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
 
-
       - name: Prepare runtime Python deps for AppImage (keyring backends)
         run: |
           RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
@@ -338,6 +348,20 @@ jobs:
           cd src/utils
           python generate_config.py
           cd ../../
+          # Set a known password for the 'runner' user so pkexec can authenticate
+          echo 'runner:123456' | sudo chpasswd
+          # Configure polkit to require authentication (not auto-approve)
+          # This allows us to test the actual authentication flow with Dogtail
+          sudo mkdir -p /etc/polkit-1/rules.d
+          sudo tee /etc/polkit-1/rules.d/49-allow-pkexec-ci.rules > /dev/null << 'EOF'
+          polkit.addRule(function(action, subject) {
+            if (subject.user == "runner") {
+              // Require authentication but allow it (password: 123456)
+              return polkit.Result.AUTH_ADMIN;
+            }
+          });
+          EOF
+          sudo chmod 0644 /etc/polkit-1/rules.d/49-allow-pkexec-ci.rules
           dbus-run-session -- bash -lc '
           set -euo pipefail
           export DISPLAY=:99
@@ -348,17 +372,18 @@ jobs:
           export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
           export QT_ACCESSIBILITY=1
           export GTK_MODULES=atk-bridge
+          # export QT_QPA_PLATFORM=xcb
           export GDK_BACKEND=x11
           export XDG_CURRENT_DESKTOP=GNOME
-          export GTK_USE_PORTAL=1
           export QT_QPA_PLATFORMTHEME=gtk3
           export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=none
+          export QT_XCB_GL_INTEGRATION=egl
+          export QSG_RENDER_LOOP=basic
+          export QT_AUTO_SCREEN_SCALE_FACTOR=0
           export LIBGL_ALWAYS_SOFTWARE=1
           export LIBGL_DRI3_DISABLE=1
-          export QT_XCB_FORCE_SOFTWARE_OPENGL=1
-          export MESA_GL_VERSION_OVERRIDE=3.3
           export QT_X11_NO_MITSHM=1
+          export QT_SCALE_FACTOR=1
           export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
@@ -371,20 +396,48 @@ jobs:
           export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
-          gsettings set org.gnome.desktop.interface toolkit-accessibility true
-          /usr/lib/at-spi2-core/at-spi-bus-launcher --launch-immediately &
-          /usr/lib/at-spi2-core/at-spi2-registryd &
+          # Ensure dbus session is available
+          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null || true
+          sleep 1
+          # Set accessibility
+          gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
+          sleep 1
+          # Start AT-SPI services and wait for them to initialize
+          /usr/libexec/at-spi-bus-launcher --launch-immediately &
+          sleep 2
+          /usr/libexec/at-spi2-registryd &
+          sleep 2
+          # Start PolicyKit authentication agent with proper session
+          # Use polkit-gnome as it works better with AT-SPI/Dogtail
+          if [ -x /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 ]; then
+            # Start the agent in background - it will show dialogs that Dogtail can interact with
+            /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+            POLKIT_AGENT_PID=$!
+            sleep 3
+            echo "Started polkit-gnome-authentication-agent-1 with PID: $POLKIT_AGENT_PID"
+            # Verify the agent is running
+            if kill -0 $POLKIT_AGENT_PID 2>/dev/null; then
+              echo "PolicyKit agent is running successfully"
+            else
+              echo "WARNING: PolicyKit agent failed to start"
+            fi
+          fi
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
+          # Ensure the test password is visible to the AppImage subprocesses
+          export NATIVE_AUTHENTICATION_PASSWORD="123456"
+          export DOGTAIL_FIND_TIMEOUT=60
+          # Update dbus activation environment with all necessary variables
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
           export QT_QUICK_BACKEND=software
           export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
           export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=none
+          export QT_XCB_GL_INTEGRATION=egl
           export LIBGL_ALWAYS_SOFTWARE=1
           export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
           export QTWEBENGINE_DISABLE_SANDBOX=1
           export QTWEBENGINE_NO_SANDBOX=1
-          export DISABLE_NATIVE_KEYRING=1
-
+          export QT_DISABLE_WINDOW_TRANSPARENCY=1
+          export GDK_SYNCHRONIZE=1
+          export __GLX_VENDOR_LIBRARY_NAME=mesa
           poetry run single-test ${{ matrix.test_file }}.py
           '

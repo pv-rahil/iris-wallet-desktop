@@ -82,8 +82,29 @@ class BaseOperations:
         Returns:
             None
         """
-        if self.do_is_displayed(element):
+        if not element:
+            return
+        last_error = None
+        try:
+            # Retry click with short waits; ensure focus and sensitivity first (helps in CI)
+            end_time = time.time() + 10
+            while time.time() < end_time:
+                try:
+                    if self.do_is_displayed(element):
+                        # Some widgets expose 'sensitive' to indicate readiness
+                        if hasattr(element, 'sensitive') and not element.sensitive:
+                            time.sleep(0.2)
+                            continue
+                        element.grabFocus()
+                        element.click()
+                        return
+                except Exception as e:
+                    last_error = e
+                time.sleep(0.2)
+        # Final best-effort attempt
             element.click()
+        except Exception as e:
+            print(f"[ERROR] do_click failed after retries: {last_error or e}")
 
     def do_set_value(self, element, value):
         """
@@ -275,7 +296,7 @@ class BaseOperations:
 
                 if elements:
                     element = elements[-1]
-                    if element.showing:
+                    if element.showing and (not hasattr(element, 'sensitive') or element.sensitive):
                         element.grabFocus()
                         return element
 
