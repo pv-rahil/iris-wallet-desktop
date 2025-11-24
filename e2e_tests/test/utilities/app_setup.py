@@ -114,114 +114,8 @@ class TestEnvironment:
         process = subprocess.Popen(command)
         return process
 
-    def wait_for_xvfb_ready(self, timeout=20):
-        """Waits for Xvfb to be ready by checking if X server responds."""
-        print("Waiting for Xvfb to be ready...")
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                result = subprocess.run(
-                    ['xset', 'q'],
-                    capture_output=True,
-                    timeout=2,
-                    check=False,
-                )
-                if result.returncode == 0:
-                    print("✓ Xvfb is ready")
-                    return True
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                pass
-            time.sleep(0.5)
-        raise TimeoutError(f"Xvfb failed to become ready within {timeout} seconds")
-
-    def wait_for_at_spi_ready(self, timeout=30):
-        """Waits for AT-SPI services to be running."""
-        print("Waiting for AT-SPI services to be ready...")
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                # Check for at-spi-bus-launcher
-                bus_launcher = subprocess.run(
-                    ['pgrep', '-f', 'at-spi-bus-launcher'],
-                    capture_output=True,
-                    check=False,
-                )
-                # Check for at-spi2-registryd
-                registryd = subprocess.run(
-                    ['pgrep', '-f', 'at-spi2-registryd'],
-                    capture_output=True,
-                    check=False,
-                )
-                if bus_launcher.returncode == 0 and registryd.returncode == 0:
-                    print("✓ AT-SPI services are ready")
-                    return True
-            except FileNotFoundError:
-                pass
-            time.sleep(0.5)
-        raise TimeoutError(
-            f"AT-SPI services failed to become ready within {timeout} seconds",
-        )
-
-    def wait_for_dbus_ready(self, timeout=15):
-        """Waits for dbus session to be available."""
-        print("Waiting for dbus session to be ready...")
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                # Check if DBUS_SESSION_BUS_ADDRESS is set
-                if not os.environ.get('DBUS_SESSION_BUS_ADDRESS'):
-                    time.sleep(0.5)
-                    continue
-
-                # Test dbus connection
-                result = subprocess.run(
-                    [
-                        'dbus-send', '--session', '--print-reply',
-                        '--dest=org.freedesktop.DBus',
-                        '/org/freedesktop/DBus',
-                        'org.freedesktop.DBus.ListNames',
-                    ],
-                    capture_output=True,
-                    timeout=2,
-                    check=False,
-                )
-                if result.returncode == 0:
-                    print("✓ dbus session is ready")
-                    return True
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                pass
-            time.sleep(0.5)
-        raise TimeoutError(
-            f"dbus session failed to become ready within {timeout} seconds",
-        )
-
-    def wait_for_accessibility_tree(self, app_name, timeout=30):
-        """Waits for application's accessibility tree to be accessible via dogtail."""
-        print(f"Waiting for accessibility tree of '{app_name}' to be ready...")
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                # Try to access the application via dogtail
-                app = root.child(roleName='frame', name=app_name)
-                if app:
-                    print(f"✓ Accessibility tree for '{app_name}' is ready")
-                    return app
-            except Exception:
-                pass
-            time.sleep(0.5)
-        raise TimeoutError(
-            f"""Accessibility tree for '{app_name}' failed to become ready within {
-                timeout
-            } seconds""",
-        )
-
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
-        # Verify GUI infrastructure is ready before launching applications
-        self.wait_for_xvfb_ready()
-        self.wait_for_at_spi_ready()
-        self.wait_for_dbus_ready()
-
         self.first_process = subprocess.Popen(
             [f"e2e_tests/applications/iriswallet_{APP1_NAME}-{
                 __version__
@@ -237,8 +131,9 @@ class TestEnvironment:
             ],
             check=True,
         )
-        # Use the new accessibility tree check instead of direct root.child access
-        self.first_application = self.wait_for_accessibility_tree(FIRST_APPLICATION)
+        self.first_application = root.child(
+            roleName='frame', name=FIRST_APPLICATION,
+        )
         self.first_page_features = MainFeatures(self.first_application)
         self.first_page_objects = MainPageObjects(self.first_application)
         self.first_page_operations = BaseOperations(self.first_application)
@@ -258,9 +153,8 @@ class TestEnvironment:
                 ],
                 check=True,
             )
-            # Use the new accessibility tree check instead of direct root.child access
-            self.second_application = self.wait_for_accessibility_tree(
-                SECOND_APPLICATION,
+            self.second_application = root.child(
+                roleName='frame', name=SECOND_APPLICATION,
             )
             self.second_page_features = MainFeatures(self.second_application)
             self.second_page_objects = MainPageObjects(self.second_application)
@@ -268,12 +162,8 @@ class TestEnvironment:
                 self.second_application,
             )
 
-    def wait_for_application(self, app_name, timeout=90):
-        """Waits for an application to be fully loaded dynamically.
-        
-        Increased timeout to 90 seconds for CI environments where
-        application startup may take longer.
-        """
+    def wait_for_application(self, app_name, timeout=60):
+        """Waits for an application to be fully loaded dynamically."""
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
