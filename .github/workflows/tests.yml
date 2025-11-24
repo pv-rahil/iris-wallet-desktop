@@ -283,7 +283,7 @@ jobs:
           sleep 4
 
           openbox &
-          sleep 3
+          sleep 2
 
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
@@ -349,7 +349,7 @@ jobs:
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
           LD_LIBRARY_PATH: /usr/local/lib
           QT_QPA_PLATFORM: xcb
-          APPIMAGE_EXTRACT_AND_RUN: '1'
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           cd src/utils
           python generate_config.py
@@ -404,22 +404,51 @@ jobs:
           export GSETTINGS_BACKEND=dconf
           # Ensure dbus session is available
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null || true
-          sleep 1
+          
+          # Wait for dbus session to be ready (health check)
+          for i in {1..10}; do
+            if dbus-send --session --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.ListNames &>/dev/null; then
+              echo "✓ dbus session is ready"
+              break
+            fi
+            echo "Waiting for dbus session... ($i/10)"
+            sleep 1
+          done
           # Set accessibility
           gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
-          sleep 1
-          # Start AT-SPI services and wait for them to initialize
+          
+          # Start AT-SPI services
           /usr/libexec/at-spi-bus-launcher --launch-immediately &
-          sleep 2
           /usr/libexec/at-spi2-registryd &
-          sleep 2
+          
+          # Wait for AT-SPI services to be ready (health check)
+          for i in {1..30}; do
+            if pgrep -f "at-spi-bus-launcher" > /dev/null && pgrep -f "at-spi2-registryd" > /dev/null; then
+              echo "✓ AT-SPI services are ready"
+              break
+            fi
+            echo "Waiting for AT-SPI services... ($i/30)"
+            sleep 1
+          done
+          pgrep -f "at-spi-bus-launcher" > /dev/null || { echo "ERROR: AT-SPI bus launcher not running"; exit 1; }
+          pgrep -f "at-spi2-registryd" > /dev/null || { echo "ERROR: AT-SPI registryd not running"; exit 1; }
           # Start PolicyKit authentication agent with proper session
           # Use polkit-gnome as it works better with AT-SPI/Dogtail
           if [ -x /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 ]; then
             # Start the agent in background - it will show dialogs that Dogtail can interact with
             /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
             POLKIT_AGENT_PID=$!
-            sleep 3
+            
+            # Wait for PolicyKit agent to be ready (health check)
+            for i in {1..10}; do
+              if pgrep -f "polkit-gnome-authentication-agent" > /dev/null; then
+                echo "✓ PolicyKit agent is ready"
+                break
+              fi
+              echo "Waiting for PolicyKit agent... ($i/10)"
+              sleep 1
+            done
+            
             echo "Started polkit-gnome-authentication-agent-1 with PID: $POLKIT_AGENT_PID"
             # Verify the agent is running
             if kill -0 $POLKIT_AGENT_PID 2>/dev/null; then
