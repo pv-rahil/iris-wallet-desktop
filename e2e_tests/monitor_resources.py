@@ -30,7 +30,7 @@ class ResourceMonitor:
         interval: int = 5,
         output_file: str = 'resource_usage.log',
         summary_file: str = 'resource_summary.txt',
-        json_output: str,
+        json_output: str = None,
     ):
         self.interval = interval
         self.output_file = Path(output_file)
@@ -73,8 +73,13 @@ class ResourceMonitor:
                 'load_avg_15m',
                 'processes',
                 'threads',
-                'swap_used_mb',
                 'swap_percent',
+                'top_cpu_name',
+                'top_cpu_pid',
+                'top_cpu_percent',
+                'top_mem_name',
+                'top_mem_pid',
+                'top_mem_mb',
             ])
 
         start_time = datetime.now()
@@ -101,6 +106,12 @@ class ResourceMonitor:
                         metrics['threads'],
                         metrics['swap_used_mb'],
                         metrics['swap_percent'],
+                        metrics['top_cpu_name'],
+                        metrics['top_cpu_pid'],
+                        metrics['top_cpu_percent'],
+                        metrics['top_mem_name'],
+                        metrics['top_mem_pid'],
+                        metrics['top_mem_mb'],
                     ])
 
                 time.sleep(self.interval)
@@ -143,6 +154,36 @@ class ResourceMonitor:
             for p in psutil.process_iter(['num_threads'])
         )
 
+        # Find top resource consumers
+        top_cpu = {'name': 'N/A', 'pid': 0, 'percent': 0.0}
+        top_mem = {'name': 'N/A', 'pid': 0, 'mb': 0.0}
+
+        try:
+            # We iterate once to find both
+            for p in psutil.process_iter(['name', 'cpu_percent', 'memory_info']):
+                try:
+                    # CPU
+                    p_cpu = p.info['cpu_percent'] or 0.0
+                    if p_cpu > top_cpu['percent']:
+                        top_cpu = {
+                            'name': p.info['name'],
+                            'pid': p.pid,
+                            'percent': p_cpu,
+                        }
+                    
+                    # Memory
+                    p_mem = (p.info['memory_info'].rss or 0) / (1024 * 1024)
+                    if p_mem > top_mem['mb']:
+                        top_mem = {
+                            'name': p.info['name'],
+                            'pid': p.pid,
+                            'mb': p_mem,
+                        }
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception:
+            pass  # Fail gracefully if process enumeration fails
+
         return {
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'cpu_percent': round(cpu_percent, 2),
@@ -157,6 +198,12 @@ class ResourceMonitor:
             'threads': threads,
             'swap_used_mb': round(swap_used_mb, 2),
             'swap_percent': round(swap_percent, 2),
+            'top_cpu_name': top_cpu['name'],
+            'top_cpu_pid': top_cpu['pid'],
+            'top_cpu_percent': round(top_cpu['percent'], 2),
+            'top_mem_name': top_mem['name'],
+            'top_mem_pid': top_mem['pid'],
+            'top_mem_mb': round(top_mem['mb'], 2),
         }
 
     def generate_summary(self) -> None:
@@ -210,6 +257,8 @@ class ResourceMonitor:
             'threads',
             'swap_used_mb',
             'swap_percent',
+            'top_cpu_percent',
+            'top_mem_mb',
         ]
 
         stats = {}
@@ -236,15 +285,29 @@ class ResourceMonitor:
             f.write(f"  End:   {data[-1]['timestamp']}\n")
             f.write(f"  Samples: {len(data)}\n\n")
 
+            # Initial Usage
+            initial = data[0]
+            f.write('Initial Resource Usage:\n')
+            f.write(f"  CPU:    {initial['cpu_percent']}%\n")
+            f.write(f"  Memory: {initial['memory_used_mb']} MB ({initial['memory_percent']}%)\n")
+            f.write(f"  Disk:   {initial['disk_used_gb']} GB ({initial['disk_percent']}%)\n")
+            f.write(f"  Swap:   {initial['swap_used_mb']} MB ({initial['swap_percent']}%)\n\n")
+
             f.write('CPU Usage (%):\n')
             f.write(f"  Average: {stats['cpu_percent']['avg']:.2f}%\n")
             f.write(f"  Maximum: {stats['cpu_percent']['max']:.2f}%\n")
-            f.write(f"  Minimum: {stats['cpu_percent']['min']:.2f}%\n\n")
+            f.write(f"  Minimum: {stats['cpu_percent']['min']:.2f}%\n")
+            # Find sample with max CPU
+            max_cpu_sample = max(data, key=lambda x: x['cpu_percent'])
+            f.write(f"  Top Consumer (Peak): {max_cpu_sample['top_cpu_name']} (PID: {max_cpu_sample['top_cpu_pid']}) - {max_cpu_sample['top_cpu_percent']}%\n\n")
 
             f.write('Memory Usage (MB):\n')
             f.write(f"  Average: {stats['memory_used_mb']['avg']:.2f} MB\n")
             f.write(f"  Maximum: {stats['memory_used_mb']['max']:.2f} MB\n")
-            f.write(f"  Minimum: {stats['memory_used_mb']['min']:.2f} MB\n\n")
+            f.write(f"  Minimum: {stats['memory_used_mb']['min']:.2f} MB\n")
+            # Find sample with max Memory
+            max_mem_sample = max(data, key=lambda x: x['memory_used_mb'])
+            f.write(f"  Top Consumer (Peak): {max_mem_sample['top_mem_name']} (PID: {max_mem_sample['top_mem_pid']}) - {max_mem_sample['top_mem_mb']} MB\n\n")
 
             f.write('Memory Usage (%):\n')
             f.write(f"  Average: {stats['memory_percent']['avg']:.2f}%\n")
