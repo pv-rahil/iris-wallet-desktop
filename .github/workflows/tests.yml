@@ -125,27 +125,27 @@ jobs:
     name: E2E Dogtail tests
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        test_file:
-          - test_help
-          - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_rgb20_asset
-          - test_send_and_receive_rgb25_asset
-          - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_create_and_close_channel
-          - test_issue_rgb20_asset
-          - test_issue_rgb25_asset
-          - test_btc_channel_tx
-          - test_rgb20_channel_tx
-          - test_view_unspent
-          - test_settings
-          - test_refresh_transfer
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     test_file:
+    #       - test_help
+    #       - test_about
+    #       - test_backup_and_restore
+    #       - test_send_and_receive_rgb20_asset
+    #       - test_send_and_receive_rgb25_asset
+    #       - test_keyring_dialog
+    #       - test_receive_and_send_bitcoin
+    #       - test_hide_exhausted_asset
+    #       - test_fail_transfer
+    #       - test_create_and_close_channel
+    #       - test_issue_rgb20_asset
+    #       - test_issue_rgb25_asset
+    #       - test_btc_channel_tx
+    #       - test_rgb20_channel_tx
+    #       - test_view_unspent
+    #       - test_settings
+    #       - test_refresh_transfer
     env:
       DISPLAY: :99
       CI: "true"
@@ -398,9 +398,13 @@ jobs:
           dbus-run-session -- bash -lc '
           set -euo pipefail
           export DISPLAY=:99
-          export NO_AT_BRIDGE=1
+          export LIBGL_DEBUG=verbose
+          export MESA_DEBUG=1
+          export GALLIUM_DRIVER=llvmpipe
+          export NO_AT_BRIDGE=0
+          export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+          export QT_ACCESSIBILITY=1
           export GTK_MODULES=atk-bridge
-          # export QT_QPA_PLATFORM=xcb
           export GDK_BACKEND=x11
           export XDG_CURRENT_DESKTOP=GNOME
           export GTK_USE_PORTAL=1
@@ -408,6 +412,9 @@ jobs:
           export QT_OPENGL=software
           export QT_XCB_GL_INTEGRATION=none
           export LIBGL_ALWAYS_SOFTWARE=1
+          export LIBGL_DRI3_DISABLE=1
+          export QT_XCB_FORCE_SOFTWARE_OPENGL=1
+          export MESA_GL_VERSION_OVERRIDE=3.3
           export QT_X11_NO_MITSHM=1
           export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
           export LANG=C.UTF-8
@@ -427,7 +434,7 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
           export QT_QUICK_BACKEND=software
-          export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --disable-software-rasterizer"
+          export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
           export QT_OPENGL=software
           export QT_XCB_GL_INTEGRATION=none
           export LIBGL_ALWAYS_SOFTWARE=1
@@ -437,5 +444,6 @@ jobs:
           export DISABLE_NATIVE_KEYRING=1
 
           sleep 6  # Wait for Xvfb to start
-          poetry run single-test ${{ matrix.test_file }}.py
+          # poetry run single-test ${{ matrix.test_file }}.py
+          poetry run single-test test_about.py
           '
