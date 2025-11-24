@@ -125,27 +125,27 @@ jobs:
     name: E2E Dogtail tests
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    # strategy:
-    #   fail-fast: false
-    #   matrix:
-    #     test_file:
-    #       - test_help
-    #       - test_about
-    #       - test_backup_and_restore
-    #       - test_send_and_receive_rgb20_asset
-    #       - test_send_and_receive_rgb25_asset
-    #       - test_keyring_dialog
-    #       - test_receive_and_send_bitcoin
-    #       - test_hide_exhausted_asset
-    #       - test_fail_transfer
-    #       - test_create_and_close_channel
-    #       - test_issue_rgb20_asset
-    #       - test_issue_rgb25_asset
-    #       - test_btc_channel_tx
-    #       - test_rgb20_channel_tx
-    #       - test_view_unspent
-    #       - test_settings
-    #       - test_refresh_transfer
+    strategy:
+      fail-fast: false
+      matrix:
+        test_file:
+          - test_help
+          - test_about
+          - test_backup_and_restore
+          - test_send_and_receive_rgb20_asset
+          - test_send_and_receive_rgb25_asset
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_create_and_close_channel
+          - test_issue_rgb20_asset
+          - test_issue_rgb25_asset
+          - test_btc_channel_tx
+          - test_rgb20_channel_tx
+          - test_view_unspent
+          - test_settings
+          - test_refresh_transfer
     env:
       DISPLAY: :99
       CI: "true"
@@ -271,10 +271,8 @@ jobs:
 
           Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
           echo "XVFB_PID=$!" >> $GITHUB_ENV
-          sleep 4
 
           openbox &
-          sleep 3
 
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
@@ -443,7 +441,5 @@ jobs:
           export QTWEBENGINE_NO_SANDBOX=1
           export DISABLE_NATIVE_KEYRING=1
 
-          sleep 6  # Wait for Xvfb to start
-          # poetry run single-test ${{ matrix.test_file }}.py
-          poetry run single-test test_about.py
+          poetry run single-test ${{ matrix.test_file }}.py
           '
