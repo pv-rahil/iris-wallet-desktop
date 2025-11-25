@@ -693,12 +693,23 @@ jobs:
           cd src/utils && python generate_config.py && cd ../../
           echo 'runner:123456' | sudo chpasswd
           export GDK_BACKEND=x11
+          export GDK_SCALE=1
+          export GDK_DPI_SCALE=1
           export XDG_CURRENT_DESKTOP=GNOME
           export QT_QPA_PLATFORMTHEME=gtk3
+          export QT_AUTO_SCREEN_SCALE_FACTOR=0
+          export QT_SCALE_FACTOR=1
           export QT_OPENGL=software
           export GTK_MODULES=atk-bridge
+          export APPIMAGE_EXTRACT_AND_RUN=1
           export KEYRING_HOME="$RUNNER_TEMP/keyring"
+          mkdir -p "$KEYRING_HOME"
           export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
+          export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
+          export PYTHONNOUSERSITE=0
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          export GSETTINGS_BACKEND=dconf
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           gsettings set org.gnome.desktop.interface toolkit-accessibility true
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
