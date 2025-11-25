@@ -474,27 +474,27 @@ jobs:
     name: E2E Dogtail tests
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    # strategy:
-    #   fail-fast: false
-    #   matrix:
-    #     test_file:
-    #       - test_help
-    #       - test_about
-    #       - test_backup_and_restore
-    #       - test_send_and_receive_rgb20_asset
-    #       - test_send_and_receive_rgb25_asset
-    #       - test_keyring_dialog
-    #       - test_receive_and_send_bitcoin
-    #       - test_hide_exhausted_asset
-    #       - test_fail_transfer
-    #       - test_create_and_close_channel
-    #       - test_issue_rgb20_asset
-    #       - test_issue_rgb25_asset
-    #       - test_btc_channel_tx
-    #       - test_rgb20_channel_tx
-    #       - test_view_unspent
-    #       - test_settings
-    #       - test_refresh_transfer
+    strategy:
+      fail-fast: false
+      matrix:
+        test_file:
+          - test_help
+          - test_about
+          - test_backup_and_restore
+          - test_send_and_receive_rgb20_asset
+          - test_send_and_receive_rgb25_asset
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_create_and_close_channel
+          - test_issue_rgb20_asset
+          - test_issue_rgb25_asset
+          - test_btc_channel_tx
+          - test_rgb20_channel_tx
+          - test_view_unspent
+          - test_settings
+          - test_refresh_transfer
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -649,7 +649,7 @@ jobs:
       - name: Ensure E2E scripts are executable
         run: |
           chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
-          chmod +x .github/scripts/monitor_resources.sh
+          # chmod +x .github/scripts/monitor_resources.sh
 
       - name: Download AppImages from Releases
         env:
@@ -693,12 +693,8 @@ jobs:
           cd src/utils && python generate_config.py && cd ../../
           echo 'runner:123456' | sudo chpasswd
           export GDK_BACKEND=x11
-          export GDK_SCALE=1
-          export GDK_DPI_SCALE=1
           export XDG_CURRENT_DESKTOP=GNOME
           export QT_QPA_PLATFORMTHEME=gtk3
-          export QT_AUTO_SCREEN_SCALE_FACTOR=0
-          export QT_SCALE_FACTOR=1
           export QT_OPENGL=software
           export GTK_MODULES=atk-bridge
           export APPIMAGE_EXTRACT_AND_RUN=1
@@ -713,8 +709,8 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           gsettings set org.gnome.desktop.interface toolkit-accessibility true
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
-          # poetry run single-test ${{ matrix.test_file }}.py
-          poetry run e2e-test all
+          poetry run single-test ${{ matrix.test_file }}.py
+          # poetry run e2e-test all
 
       # - name: Stop & show resource monitoring
       #   if: always()
