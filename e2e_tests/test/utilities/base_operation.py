@@ -102,8 +102,7 @@ class BaseOperations:
                     last_error = e
                 time.sleep(0.2)
         # Final best-effort attempt
-            if element:
-                element.click()
+            element.click()
         except Exception as e:
             print(f"[ERROR] do_click failed after retries: {last_error or e}")
 
@@ -282,13 +281,13 @@ class BaseOperations:
         while time.time() - start_time < timeout:
             try:
                 # Try to find elements by name or description
-                if name and element:
+                if name and self.application:
                     elements = list(
                         self.application.findChildren(
                             lambda n: n.roleName == role_name and n.name == name,
                         ),
                     )
-                elif description and element:
+                elif description and self.application:
                     elements = list(
                         self.application.findChildren(
                             lambda n: n.roleName == role_name and n.description == description,
@@ -330,13 +329,13 @@ class BaseOperations:
         while time.time() - start_time < timeout:
             try:
                 # Try to find elements by name or description
-                if name and element:
+                if name and self.application:
                     elements = list(
                         self.application.findChildren(
                             lambda n: n.roleName == role_name and n.name == name,
                         ),
                     )
-                elif description and element:
+                elif description and self.application:
                     elements = list(
                         self.application.findChildren(
                             lambda n: n.roleName == role_name and n.description == description,
