@@ -125,27 +125,27 @@ jobs:
     name: E2E Dogtail tests
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    # strategy:
-    #   fail-fast: false
-    #   matrix:
-    #     test_file:
-    #       - test_help
-    #       - test_about
-    #       - test_backup_and_restore
-    #       - test_send_and_receive_rgb20_asset
-    #       - test_send_and_receive_rgb25_asset
-    #       - test_keyring_dialog
-    #       - test_receive_and_send_bitcoin
-    #       - test_hide_exhausted_asset
-    #       - test_fail_transfer
-    #       - test_create_and_close_channel
-    #       - test_issue_rgb20_asset
-    #       - test_issue_rgb25_asset
-    #       - test_btc_channel_tx
-    #       - test_rgb20_channel_tx
-    #       - test_view_unspent
-    #       - test_settings
-    #       - test_refresh_transfer
+    strategy:
+      fail-fast: false
+      matrix:
+        test_file:
+          - test_help
+          - test_about
+          - test_backup_and_restore
+          - test_send_and_receive_rgb20_asset
+          - test_send_and_receive_rgb25_asset
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_create_and_close_channel
+          - test_issue_rgb20_asset
+          - test_issue_rgb25_asset
+          - test_btc_channel_tx
+          - test_rgb20_channel_tx
+          - test_view_unspent
+          - test_settings
+          - test_refresh_transfer
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -402,8 +402,8 @@ jobs:
           export QT_DISABLE_WINDOW_TRANSPARENCY=1
           export GDK_SYNCHRONIZE=1
           export __GLX_VENDOR_LIBRARY_NAME=mesa
-          # poetry run single-test ${{ matrix.test_file }}.py
-          poetry run single-test test_receive_and_send_bitcoin.py
+          poetry run single-test ${{ matrix.test_file }}.py
+          # poetry run single-test test_receive_and_send_bitcoin.py
           '
 
 
