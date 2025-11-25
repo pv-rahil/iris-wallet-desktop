@@ -146,7 +146,6 @@ jobs:
     #       - test_view_unspent
     #       - test_settings
     #       - test_refresh_transfer
-    #     mode: [embedded, remote]
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -344,13 +343,13 @@ jobs:
         run: |
           cd src/utils && python generate_config.py && cd ../../
           echo 'runner:123456' | sudo chpasswd
-          export QT_ACCESSIBILITY=1
-          export NO_AT_BRIDGE=1
           export GDK_BACKEND=x11
           export XDG_CURRENT_DESKTOP=GNOME
           export QT_QPA_PLATFORMTHEME=gtk3
           export QT_OPENGL=software
           export GTK_MODULES=atk-bridge
+          export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+          export QT_ACCESSIBILITY=1
           export APPIMAGE_EXTRACT_AND_RUN=1
           export KEYRING_HOME="$RUNNER_TEMP/keyring"
           mkdir -p "$KEYRING_HOME"
@@ -362,7 +361,7 @@ jobs:
           export GSETTINGS_BACKEND=dconf
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           gsettings set org.gnome.desktop.interface toolkit-accessibility true
-          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY
+          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
           # poetry run single-test ${{ matrix.test_file }}.py embedded
           poetry run single-test test_about.py
           # poetry run e2e-test all
