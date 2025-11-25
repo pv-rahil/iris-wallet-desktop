@@ -117,7 +117,7 @@ class BaseOperations:
         Returns:
             None
         """
-        if self.do_is_displayed(element):
+        if self.do_is_displayed(element) and value:
             element.typeText(value)
 
     def do_set_text(self, element, value:str):
@@ -131,7 +131,7 @@ class BaseOperations:
         Returns:
             None
         """
-        if self.do_is_displayed(element):
+        if self.do_is_displayed(element) and value:
             element.text = value
 
     def do_get_text(self, element) -> str:
