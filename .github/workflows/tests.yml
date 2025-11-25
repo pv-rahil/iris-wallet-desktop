@@ -121,6 +121,355 @@ jobs:
             --cov-fail-under=90 \
             unit_tests/tests
 
+  # e2e-dogtail:
+  #   name: E2E Dogtail tests
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 120
+  #   # strategy:
+  #   #   fail-fast: false
+  #   #   matrix:
+  #   #     test_file:
+  #   #       - test_help
+  #   #       - test_about
+  #   #       - test_backup_and_restore
+  #   #       - test_send_and_receive_rgb20_asset
+  #   #       - test_send_and_receive_rgb25_asset
+  #   #       - test_keyring_dialog
+  #   #       - test_receive_and_send_bitcoin
+  #   #       - test_hide_exhausted_asset
+  #   #       - test_fail_transfer
+  #   #       - test_create_and_close_channel
+  #   #       - test_issue_rgb20_asset
+  #   #       - test_issue_rgb25_asset
+  #   #       - test_btc_channel_tx
+  #   #       - test_rgb20_channel_tx
+  #   #       - test_view_unspent
+  #   #       - test_settings
+  #   #       - test_refresh_transfer
+  #   env:
+  #     DISPLAY: :99
+  #     QT_IM_MODULE: virtualkeyboard # Prevents native password dialog
+  #     CI: "true" # Helpful flag inside Python tests
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Python 3.12.3 environment
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12.3"
+
+  #     - name: Install required system dependencies
+  #       run: |
+  #         sudo apt-get install -y \
+  #           xvfb \
+  #           x11-apps \
+  #           xauth \
+  #           openbox \
+  #           dbus-x11 \
+  #           policykit-1-gnome \
+  #           lxqt-policykit \
+  #           at-spi2-core \
+  #           libatk-bridge2.0-0 \
+  #           libxcb-cursor0 \
+  #           libxkbcommon-x11-0 \
+  #           libxkbcommon0 \
+  #           libxcb1 \
+  #           libxcb-xinerama0 \
+  #           libxcb-xfixes0 \
+  #           libxcb-randr0 \
+  #           libxcb-icccm4 \
+  #           libxcb-image0 \
+  #           libxcb-keysyms1 \
+  #           libxcb-render-util0 \
+  #           libxcb-shape0 \
+  #           libxcb-shm0 \
+  #           libxcb-glx0 \
+  #           libxcb-render0 \
+  #           libxcb-present0 \
+  #           libxcb-dri3-0 \
+  #           libxcb-xinput0 \
+  #           libx11-xcb1 \
+  #           libxrender1 \
+  #           libxcomposite1 \
+  #           libxi6 \
+  #           libxtst6 \
+  #           libxrandr2 \
+  #           libxdamage1 \
+  #           libxext6 \
+  #           libfontconfig1 \
+  #           libdrm2 \
+  #           libegl1 \
+  #           libgl1 \
+  #           libopengl0 \
+  #           libglu1-mesa \
+  #           libglx-mesa0 \
+  #           libglvnd0 \
+  #           libgles2 \
+  #           libgtk-3-0 \
+  #           gir1.2-gtk-3.0 \
+  #           gir1.2-atspi-2.0 \
+  #           python3-gi \
+  #           xdg-desktop-portal \
+  #           xdg-desktop-portal-gtk \
+  #           qt6-gtk-platformtheme \
+  #           fonts-dejavu-core \
+  #           adwaita-icon-theme \
+  #           shared-mime-info \
+  #           libgl1-mesa-dri \
+  #           mesa-utils \
+  #           libgirepository1.0-dev \
+  #           meson \
+  #           gobject-introspection \
+  #           ninja-build \
+  #           gsettings-desktop-schemas \
+  #           dconf-cli \
+  #           dconf-service \
+  #           xclip \
+  #           wmctrl \
+  #           libdbus-1-3 \
+  #           libglib2.0-0 \
+  #           libnss3 \
+  #           libxss1 \
+  #           libatk1.0-0 \
+  #           libxcb-util1 \
+  #           ruby-dev \
+  #           build-essential \
+  #           libgl1-mesa-glx \
+  #           libegl1-mesa \
+  #           libgbm1 \
+  #           libosmesa6 \
+  #           mesa-utils-extra \
+  #           libfuse2 \
+  #           scrot
+  #         sudo gem install fpm -f
+
+  #     - name: Setup env for GUI testing
+  #       run: |
+  #         echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
+  #         echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
+
+  #     - name: Install Rust toolchain
+  #       uses: dtolnay/rust-toolchain@stable
+
+  #     - name: Preinstall keyring backends (system Python)
+  #       run: |
+  #         pip install keyring keyrings.alt
+
+  #     - name: Install Python dependencies
+  #       uses: ./.github/actions/install-python-dependencies
+
+  #     - name: Install keyring backends in Poetry venv
+  #       run: |
+  #         poetry run pip install keyring keyrings.alt
+
+  #     - name: Set KEYRING_HOME env
+  #       run: |
+  #         echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
+
+  #     - name: Ensure keyring storage directory exists
+  #       run: |
+  #         mkdir -p "$KEYRING_HOME"
+
+  #     - name: Start Xvfb and openbox
+  #       run: |
+  #         export XAUTHORITY="$RUNNER_TEMP/.Xauthority"
+  #         touch "$XAUTHORITY"
+  #         xauth -f "$XAUTHORITY" add :99 . $(mcookie)
+  #         echo "XAUTHORITY=$XAUTHORITY" >> $GITHUB_ENV
+
+  #         Xvfb :99 -screen 0 1920x1080x24 -ac +iglx +extension GLX +render -noreset &
+  #         echo "XVFB_PID=$!" >> $GITHUB_ENV
+  #         sleep 4
+
+  #         openbox &
+  #         sleep 3
+
+  #     # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
+  #     #   uses: ./.github/actions/build-rln-node
+
+  #     - name: Add rgb-lightning-node to PATH
+  #       run: |
+  #         chmod +x ln_node_binary/rgb-lightning-node
+  #         echo "$GITHUB_WORKSPACE/ln_node_binary" >> $GITHUB_PATH
+
+  #     - name: Compile QT resources
+  #       run: |
+  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+
+  #     - name: Ensure E2E scripts are executable
+  #       run: |
+  #         chmod +x run_e2e_tests.sh
+  #         chmod +x e2e_tests/regtest.sh
+  #         chmod +x .github/scripts/monitor_resources.sh
+
+  #     - name: Download AppImages from GitHub Releases
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #       run: |
+  #         set -euo pipefail
+  #         VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #         APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #         APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #         APPDIR=e2e_tests/applications
+  #         mkdir -p "$APPDIR"
+  #         sudo apt-get update && sudo apt-get install -y gh
+  #         gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+  #         gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+  #         chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
+
+  #     - name: Prepare runtime Python deps for AppImage (keyring backends)
+  #       run: |
+  #         RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
+  #         mkdir -p "$RUNTIME_PYDEPS"
+  #         python -m pip install --upgrade pip
+  #         python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
+  #         echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
+
+  #     - name: Install lightweight window manager for Xvfb
+  #       run: |
+  #         sudo apt-get install -y --no-install-recommends openbox wmctrl dbus-x11
+
+  #     - name: Start regtest services (Docker)
+  #       run: |
+  #         poetry run regtest-start
+
+  #     - name: Start resource monitoring
+  #       run: |
+  #         .github/scripts/monitor_resources.sh start
+  #         echo "Resource monitoring started"
+
+  #     - name: Run E2E tests (build if missing and run for both modes)
+  #       env:
+  #         CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  #         PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  #         CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  #         BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
+  #         BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
+  #         GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
+  #         LD_LIBRARY_PATH: /usr/local/lib
+  #         QT_QPA_PLATFORM: xcb
+  #         APPIMAGE_EXTRACT_AND_RUN: '1'
+  #       run: |
+  #         cd src/utils
+  #         python generate_config.py
+  #         cd ../../
+  #         # Set a known password for the 'runner' user so pkexec can authenticate
+  #         echo 'runner:123456' | sudo chpasswd
+  #         # Configure polkit to require authentication (not auto-approve)
+  #         # This allows us to test the actual authentication flow with Dogtail
+  #         sudo mkdir -p /etc/polkit-1/rules.d
+  #         sudo tee /etc/polkit-1/rules.d/49-allow-pkexec-ci.rules > /dev/null << 'EOF'
+  #         polkit.addRule(function(action, subject) {
+  #           if (subject.user == "runner") {
+  #             // Require authentication but allow it (password: 123456)
+  #             return polkit.Result.AUTH_ADMIN;
+  #           }
+  #         });
+  #         EOF
+  #         sudo chmod 0644 /etc/polkit-1/rules.d/49-allow-pkexec-ci.rules
+  #         dbus-run-session -- bash -lc '
+  #         set -euo pipefail
+  #         export DISPLAY=:99
+  #         export LIBGL_DEBUG=verbose
+  #         export MESA_DEBUG=1
+  #         export GALLIUM_DRIVER=llvmpipe
+  #         export NO_AT_BRIDGE=0
+  #         export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+  #         export QT_ACCESSIBILITY=1
+  #         export GTK_MODULES=atk-bridge
+  #         # export QT_QPA_PLATFORM=xcb
+  #         export GDK_BACKEND=x11
+  #         export XDG_CURRENT_DESKTOP=GNOME
+  #         export QT_QPA_PLATFORMTHEME=gtk3
+  #         export QT_OPENGL=software
+  #         export QT_XCB_GL_INTEGRATION=egl
+  #         export QSG_RENDER_LOOP=basic
+  #         export QT_AUTO_SCREEN_SCALE_FACTOR=0
+  #         export LIBGL_ALWAYS_SOFTWARE=1
+  #         export LIBGL_DRI3_DISABLE=1
+  #         export QT_X11_NO_MITSHM=1
+  #         export QT_SCALE_FACTOR=1
+  #         export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
+  #         export LANG=C.UTF-8
+  #         export LC_ALL=C.UTF-8
+  #         export APPIMAGE_EXTRACT_AND_RUN=1
+  #         export KEYRING_HOME="$RUNNER_TEMP/keyring"
+  #         mkdir -p "$KEYRING_HOME"
+  #         export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
+  #         export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
+  #         export PYTHONNOUSERSITE=0
+  #         export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
+  #         mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+  #         export GSETTINGS_BACKEND=dconf
+  #         # Ensure dbus session is available
+  #         dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null || true
+  #         sleep 1
+  #         # Set accessibility
+  #         gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
+  #         sleep 1
+  #         # Start AT-SPI services and wait for them to initialize
+  #         /usr/libexec/at-spi-bus-launcher --launch-immediately &
+  #         sleep 2
+  #         /usr/libexec/at-spi2-registryd &
+  #         sleep 2
+  #         # Start PolicyKit authentication agent with proper session
+  #         # Use polkit-gnome as it works better with AT-SPI/Dogtail
+  #         if [ -x /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 ]; then
+  #           # Start the agent in background - it will show dialogs that Dogtail can interact with
+  #           /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+  #           POLKIT_AGENT_PID=$!
+  #           sleep 3
+  #           echo "Started polkit-gnome-authentication-agent-1 with PID: $POLKIT_AGENT_PID"
+  #           # Verify the agent is running
+  #           if kill -0 $POLKIT_AGENT_PID 2>/dev/null; then
+  #             echo "PolicyKit agent is running successfully"
+  #           else
+  #             echo "WARNING: PolicyKit agent failed to start"
+  #           fi
+  #         fi
+  #         export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
+  #         # Ensure the test password is visible to the AppImage subprocesses
+  #         export NATIVE_AUTHENTICATION_PASSWORD="123456"
+  #         export DOGTAIL_FIND_TIMEOUT=60
+  #         # Update dbus activation environment with all necessary variables
+  #         dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
+  #         export QT_QUICK_BACKEND=software
+  #         export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
+  #         export QT_OPENGL=software
+  #         export QT_XCB_GL_INTEGRATION=egl
+  #         export LIBGL_ALWAYS_SOFTWARE=1
+  #         export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+  #         export QTWEBENGINE_DISABLE_SANDBOX=1
+  #         export QTWEBENGINE_NO_SANDBOX=1
+  #         export QT_DISABLE_WINDOW_TRANSPARENCY=1
+  #         export GDK_SYNCHRONIZE=1
+  #         export __GLX_VENDOR_LIBRARY_NAME=mesa
+  #         # poetry run single-test ${{ matrix.test_file }}.py
+  #         poetry run single-test test_rgb20_channel_tx.py
+  #         '
+
+  #     - name: Stop resource monitoring and generate summary
+  #       if: always()
+  #       run: |
+  #         .github/scripts/monitor_resources.sh stop
+  #         .github/scripts/monitor_resources.sh summary
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "## 📊 Resource Usage Summary" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+  #         cat resource_summary.txt >> $GITHUB_STEP_SUMMARY
+  #         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  #     - name: Upload resource usage logs
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: resource-usage-test
+  #         path: |
+  #           resource_usage.log
+  #           resource_summary.txt
+  #         retention-days: 30
   e2e-dogtail:
     name: E2E Dogtail tests
     runs-on: ubuntu-22.04
@@ -148,19 +497,21 @@ jobs:
     #       - test_refresh_transfer
     env:
       DISPLAY: :99
-      QT_IM_MODULE: virtualkeyboard # Prevents native password dialog
-      CI: "true" # Helpful flag inside Python tests
+      QT_IM_MODULE: virtualkeyboard
+      CI: "true"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12.3 environment
+      - name: Set up Python 3.12.3
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
 
       - name: Install required system dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y \
             xvfb \
             x11-apps \
@@ -271,22 +622,20 @@ jobs:
         run: |
           mkdir -p "$KEYRING_HOME"
 
-      - name: Start Xvfb and openbox
+      - name: Start Xvfb & openbox
         run: |
-          export XAUTHORITY="$RUNNER_TEMP/.Xauthority"
-          touch "$XAUTHORITY"
-          xauth -f "$XAUTHORITY" add :99 . $(mcookie)
-          echo "XAUTHORITY=$XAUTHORITY" >> $GITHUB_ENV
+          XAUTH="$RUNNER_TEMP/.Xauthority"
+          touch "$XAUTH"; echo "XAUTHORITY=$XAUTH" >> $GITHUB_ENV
+          xauth -f "$XAUTH" add :99 . $(mcookie)
 
-          Xvfb :99 -screen 0 1920x1080x24 -ac +iglx +extension GLX +render -noreset &
-          echo "XVFB_PID=$!" >> $GITHUB_ENV
+          Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
           sleep 4
+          openbox & sleep 3
 
-          openbox &
-          sleep 3
 
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
+
 
       - name: Add rgb-lightning-node to PATH
         run: |
@@ -299,11 +648,10 @@ jobs:
 
       - name: Ensure E2E scripts are executable
         run: |
-          chmod +x run_e2e_tests.sh
-          chmod +x e2e_tests/regtest.sh
+          chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
           chmod +x .github/scripts/monitor_resources.sh
 
-      - name: Download AppImages from GitHub Releases
+      - name: Download AppImages from Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -318,28 +666,20 @@ jobs:
           gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
           chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
 
-      - name: Prepare runtime Python deps for AppImage (keyring backends)
+      - name: Prepare runtime Python deps for AppImage
         run: |
           RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
           mkdir -p "$RUNTIME_PYDEPS"
-          python -m pip install --upgrade pip
           python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
           echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
 
-      - name: Install lightweight window manager for Xvfb
-        run: |
-          sudo apt-get install -y --no-install-recommends openbox wmctrl dbus-x11
-
-      - name: Start regtest services (Docker)
-        run: |
-          poetry run regtest-start
+      - name: Start regtest services
+        run: poetry run regtest-start
 
       - name: Start resource monitoring
-        run: |
-          .github/scripts/monitor_resources.sh start
-          echo "Resource monitoring started"
+        run: .github/scripts/monitor_resources.sh start
 
-      - name: Run E2E tests (build if missing and run for both modes)
+      - name: Run E2E Dogtail Test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -347,121 +687,28 @@ jobs:
           BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
           BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
-          LD_LIBRARY_PATH: /usr/local/lib
           QT_QPA_PLATFORM: xcb
           APPIMAGE_EXTRACT_AND_RUN: '1'
         run: |
-          cd src/utils
-          python generate_config.py
-          cd ../../
-          # Set a known password for the 'runner' user so pkexec can authenticate
+          cd src/utils && python generate_config.py && cd ../../
           echo 'runner:123456' | sudo chpasswd
-          # Configure polkit to require authentication (not auto-approve)
-          # This allows us to test the actual authentication flow with Dogtail
-          sudo mkdir -p /etc/polkit-1/rules.d
-          sudo tee /etc/polkit-1/rules.d/49-allow-pkexec-ci.rules > /dev/null << 'EOF'
-          polkit.addRule(function(action, subject) {
-            if (subject.user == "runner") {
-              // Require authentication but allow it (password: 123456)
-              return polkit.Result.AUTH_ADMIN;
-            }
-          });
-          EOF
-          sudo chmod 0644 /etc/polkit-1/rules.d/49-allow-pkexec-ci.rules
-          dbus-run-session -- bash -lc '
-          set -euo pipefail
-          export DISPLAY=:99
-          export LIBGL_DEBUG=verbose
-          export MESA_DEBUG=1
-          export GALLIUM_DRIVER=llvmpipe
-          export NO_AT_BRIDGE=0
-          export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
-          export QT_ACCESSIBILITY=1
-          export GTK_MODULES=atk-bridge
-          # export QT_QPA_PLATFORM=xcb
-          export GDK_BACKEND=x11
-          export XDG_CURRENT_DESKTOP=GNOME
-          export QT_QPA_PLATFORMTHEME=gtk3
-          export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=egl
-          export QSG_RENDER_LOOP=basic
-          export QT_AUTO_SCREEN_SCALE_FACTOR=0
-          export LIBGL_ALWAYS_SOFTWARE=1
-          export LIBGL_DRI3_DISABLE=1
-          export QT_X11_NO_MITSHM=1
-          export QT_SCALE_FACTOR=1
-          export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
-          export APPIMAGE_EXTRACT_AND_RUN=1
           export KEYRING_HOME="$RUNNER_TEMP/keyring"
-          mkdir -p "$KEYRING_HOME"
           export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
-          export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
-          export PYTHONNOUSERSITE=0
-          export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
-          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
-          export GSETTINGS_BACKEND=dconf
-          # Ensure dbus session is available
-          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null || true
-          sleep 1
-          # Set accessibility
-          gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
-          sleep 1
-          # Start AT-SPI services and wait for them to initialize
-          /usr/libexec/at-spi-bus-launcher --launch-immediately &
-          sleep 2
-          /usr/libexec/at-spi2-registryd &
-          sleep 2
-          # Start PolicyKit authentication agent with proper session
-          # Use polkit-gnome as it works better with AT-SPI/Dogtail
-          if [ -x /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 ]; then
-            # Start the agent in background - it will show dialogs that Dogtail can interact with
-            /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
-            POLKIT_AGENT_PID=$!
-            sleep 3
-            echo "Started polkit-gnome-authentication-agent-1 with PID: $POLKIT_AGENT_PID"
-            # Verify the agent is running
-            if kill -0 $POLKIT_AGENT_PID 2>/dev/null; then
-              echo "PolicyKit agent is running successfully"
-            else
-              echo "WARNING: PolicyKit agent failed to start"
-            fi
-          fi
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
-          # Ensure the test password is visible to the AppImage subprocesses
-          export NATIVE_AUTHENTICATION_PASSWORD="123456"
-          export DOGTAIL_FIND_TIMEOUT=60
-          # Update dbus activation environment with all necessary variables
-          dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
-          export QT_QUICK_BACKEND=software
-          export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
-          export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=egl
-          export LIBGL_ALWAYS_SOFTWARE=1
-          export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
-          export QTWEBENGINE_DISABLE_SANDBOX=1
-          export QTWEBENGINE_NO_SANDBOX=1
-          export QT_DISABLE_WINDOW_TRANSPARENCY=1
-          export GDK_SYNCHRONIZE=1
-          export __GLX_VENDOR_LIBRARY_NAME=mesa
-          # poetry run single-test ${{ matrix.test_file }}.py
+          gsettings set org.gnome.desktop.interface toolkit-accessibility true
+          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
           poetry run single-test test_rgb20_channel_tx.py
-          '
 
-      - name: Stop resource monitoring and generate summary
+      - name: Stop & show resource monitoring
         if: always()
         run: |
           .github/scripts/monitor_resources.sh stop
           .github/scripts/monitor_resources.sh summary
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📊 Resource Usage Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           cat resource_summary.txt >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload resource usage logs
+      - name: Upload resource logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -469,4 +716,3 @@ jobs:
           path: |
             resource_usage.log
             resource_summary.txt
-          retention-days: 30
