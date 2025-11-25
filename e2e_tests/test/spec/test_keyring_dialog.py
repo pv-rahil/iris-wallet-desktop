@@ -60,7 +60,9 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
-        wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.password_input().click()
+        wallets_and_operations.first_page_operations.do_click(
+            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.password_input().click(),
+        )
         wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
             password=PASSWORD,
         )

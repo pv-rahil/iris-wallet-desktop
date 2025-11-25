@@ -106,7 +106,7 @@ class BaseOperations:
         except Exception as e:
             print(f"[ERROR] do_click failed after retries: {last_error or e}")
 
-    def do_set_value(self, element, value:str):
+    def do_set_value(self, element, value: str):
         """
         Sets the value of the specified element.
 
@@ -120,7 +120,7 @@ class BaseOperations:
         if self.do_is_displayed(element) and value:
             element.typeText(value)
 
-    def do_set_text(self, element, value:str):
+    def do_set_text(self, element, value: str):
         """
         Sets the value of the specified element.
 
@@ -147,7 +147,7 @@ class BaseOperations:
         if self.do_is_displayed(element):
             return element.name
 
-        return None
+        return ''
 
     def do_is_displayed(self, element, timeout: int = 30, interval: float = 1.0) -> bool:
         """
@@ -371,7 +371,7 @@ class BaseOperations:
         """gets the text of the specified element from its description"""
         if self.do_is_displayed(element):
             return element.text
-        return None
+        return ''
 
     def wait_for_toaster_message(self, toaster_name=TOASTER_DESCRIPTION, timeout=120, interval=0.5):
         """
