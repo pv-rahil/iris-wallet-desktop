@@ -403,7 +403,7 @@ jobs:
           export GDK_SYNCHRONIZE=1
           export __GLX_VENDOR_LIBRARY_NAME=mesa
           # poetry run single-test ${{ matrix.test_file }}.py
-          poetry run single-test test_refresh_transfer.py
+          poetry run single-test test_hide_exhausted_asset.py
           '
 
 
