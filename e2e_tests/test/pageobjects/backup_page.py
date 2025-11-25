@@ -225,14 +225,15 @@ class BackupPageObjects(BaseOperations):
         """
         Gets the mnemonic as a formatted string.
         """
-        children = self.mnemonic_frame().children
-        mnemonic_parts = [child.name for child in children if child.name]
+        if self.mnemonic_frame():
+            children = self.mnemonic_frame().children
+            mnemonic_parts = [child.name for child in children if child.name]
 
-        # Remove numerical prefixes like '1.', '2.', etc.
-        cleaned_mnemonic = [
-            re.sub(r'^\d+\.\s*', '', word)
-            for word in mnemonic_parts
-        ]
+            # Remove numerical prefixes like '1.', '2.', etc.
+            cleaned_mnemonic = [
+                re.sub(r'^\d+\.\s*', '', word)
+                for word in mnemonic_parts
+            ]
 
-        # Join words into a single string
-        return ' '.join(cleaned_mnemonic)
+            # Join words into a single string
+            return ' '.join(cleaned_mnemonic)
