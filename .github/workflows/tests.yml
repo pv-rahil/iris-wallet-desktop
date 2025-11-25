@@ -709,7 +709,7 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           gsettings set org.gnome.desktop.interface toolkit-accessibility true
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
-          poetry run single-test ${{ matrix.test_file }}.py
+          poetry run single-test ${{ matrix.test_file }}.py embedded
           # poetry run e2e-test all
 
       # - name: Stop & show resource monitoring
