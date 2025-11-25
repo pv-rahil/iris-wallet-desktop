@@ -90,7 +90,7 @@ class BaseOperations:
             end_time = time.time() + 10
             while time.time() < end_time:
                 try:
-                    if self.do_is_displayed(element):
+                    if self.do_is_displayed(element) and element:
                         # Some widgets expose 'sensitive' to indicate readiness
                         if hasattr(element, 'sensitive') and not element.sensitive:
                             time.sleep(0.2)
