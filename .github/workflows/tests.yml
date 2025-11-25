@@ -364,7 +364,7 @@ jobs:
           gsettings set org.gnome.desktop.interface toolkit-accessibility true
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
           # poetry run single-test ${{ matrix.test_file }}.py ${{ matrix.mode }}
-          poetry run single-test test_fail_transfer.py
+          poetry run single-test test_hide_exhausted_asset.py
           # poetry run e2e-test all
 
 
