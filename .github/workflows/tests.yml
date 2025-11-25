@@ -146,6 +146,7 @@ jobs:
     #       - test_view_unspent
     #       - test_settings
     #       - test_refresh_transfer
+    #     mode: [embedded, remote]
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -362,9 +363,8 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           gsettings set org.gnome.desktop.interface toolkit-accessibility true
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
-          # poetry run single-test ${{ matrix.test_file }}.py embedded
-          # poetry run single-test ${{ matrix.test_file }}.py remote
-          poetry run single-test test_send_and_receive_rgb20_asset.py
+          # poetry run single-test ${{ matrix.test_file }}.py ${{ matrix.mode }}
+          poetry run single-test test_fail_transfer.py
           # poetry run e2e-test all
 
 
