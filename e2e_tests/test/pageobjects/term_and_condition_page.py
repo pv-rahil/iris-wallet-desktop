@@ -41,9 +41,14 @@ class TermAndConditionPageObjects(BaseOperations):
 
         self.tnc_scrollbar_list = lambda: self.tnc_description(
         ).findChildren(lambda node: node.roleName == 'scroll bar')
-        self.tnc_scrollbar = lambda: self.tnc_scrollbar_list()[1] if len(
-            self.tnc_scrollbar_list(),
-        ) > 1 else self.tnc_scrollbar_list()[0]
+        self.tnc_scrollbar = lambda: (
+            self.tnc_scrollbar_list()[1]
+            if self.tnc_scrollbar_list() and len(self.tnc_scrollbar_list()) > 1
+            else self.tnc_scrollbar_list()[0]
+            if self.tnc_scrollbar_list()
+            else None
+        )
+
 
     def click_accept_button(self):
         """
