@@ -43,17 +43,17 @@ class BitcoinDetailPageObjects(BaseOperations):
             role_name='panel', name=BITCOIN_TRANSACTION_DETAIL_FRAME,
         )
 
-    def get_total_balance(self):
+    def get_total_balance(self) -> str:
         """
         Get total balance.
         """
-        return self.do_get_text(self.bitcoin_balance()) if self.do_is_displayed(self.bitcoin_balance()) else None
+        return self.do_get_text(self.bitcoin_balance()) if self.do_is_displayed(self.bitcoin_balance()) else ''
 
-    def get_spendable_balance(self):
+    def get_spendable_balance(self) -> str:
         """
         Get spendable balance.
         """
-        return self.do_get_text(self.spendable_balance()) if self.do_is_displayed(self.spendable_balance()) else None
+        return self.do_get_text(self.spendable_balance()) if self.do_is_displayed(self.spendable_balance()) else ''
 
     def click_receive_bitcoin_button(self):
         """
