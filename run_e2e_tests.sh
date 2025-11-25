@@ -154,27 +154,24 @@ run_e2e_tests() {
 
     if [[ "$RUN_ALL" == true ]]; then
         echo "Running full test suite (per-file)..."
-        # Find all test files and run them one by one so we can banner each file name
-        mapfile -t TEST_FILES < <(find "$TESTS_DIR" -type f -name "test_*.py" | sort)
-        if [[ ${#TEST_FILES[@]} -eq 0 ]]; then
-            echo "No test files found in $TESTS_DIR"
-            exit 1
-        fi
         for test_file in "${TEST_FILES[@]}"; do
             echo "----------------------------------------"
             echo "Test Suite: $(basename "$test_file")"
             echo "Path      : $test_file"
             echo "Mode      : $wallet_mode"
             echo "----------------------------------------"
-            pytest -s "$test_file" --alluredir="$results_dir" --wallet-mode "$wallet_mode" || [ $? -eq 5 ]
         done
+
+        # Run all tests once – ordering will be applied automatically
+        pytest -s "$TESTS_DIR/" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
+
     elif [[ -n "$TEST_FILE" ]]; then
         echo "----------------------------------------"
         echo "Test Suite: $TEST_FILE"
         echo "Path      : $TESTS_DIR/$TEST_FILE"
         echo "Mode      : $wallet_mode"
         echo "----------------------------------------"
-        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode" || [ $? -eq 5 ]
+        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
     else
         echo "No test file provided. Use --all to run all tests."
         exit 1
