@@ -166,7 +166,7 @@ run_e2e_tests() {
             echo "Path      : $test_file"
             echo "Mode      : $wallet_mode"
             echo "----------------------------------------"
-            pytest -s "$test_file" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
+            pytest -s "$test_file" --alluredir="$results_dir" --wallet-mode "$wallet_mode" || [ $? -eq 5 ]
         done
     elif [[ -n "$TEST_FILE" ]]; then
         echo "----------------------------------------"
@@ -174,7 +174,7 @@ run_e2e_tests() {
         echo "Path      : $TESTS_DIR/$TEST_FILE"
         echo "Mode      : $wallet_mode"
         echo "----------------------------------------"
-        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
+        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode" || [ $? -eq 5 ]
     else
         echo "No test file provided. Use --all to run all tests."
         exit 1
