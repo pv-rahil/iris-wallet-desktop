@@ -70,16 +70,16 @@ class SettingsPageObjects(BaseOperations):
         self.save_button = lambda: self.perform_action_on_element(
             role_name='push button', name='Save',
         )
-        self.expiry_combo_box = lambda: self.perform_action_on_element(
+        self.expiry_combo_box = lambda: self.get_first_element(
             role_name='combo box', description=EXPIRY_TIME_COMBO_BOX,
         )
-        self.hour_list_item = lambda: self.perform_action_on_element(
+        self.hour_list_item = lambda: self.get_first_element(
             role_name='list item', name='Hours',
         )
-        self.minute_list_item = lambda: self.perform_action_on_element(
+        self.minute_list_item = lambda: self.get_first_element(
             role_name='list item', name='Minutes',
         )
-        self.days_list_item = lambda: self.perform_action_on_element(
+        self.days_list_item = lambda: self.get_first_element(
             role_name='list item', name='Days',
         )
 
