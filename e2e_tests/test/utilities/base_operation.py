@@ -106,7 +106,7 @@ class BaseOperations:
         except Exception as e:
             print(f"[ERROR] do_click failed after retries: {last_error or e}")
 
-    def do_set_value(self, element, value):
+    def do_set_value(self, element, value:str):
         """
         Sets the value of the specified element.
 
@@ -120,7 +120,7 @@ class BaseOperations:
         if self.do_is_displayed(element):
             element.typeText(value)
 
-    def do_set_text(self, element, value):
+    def do_set_text(self, element, value:str):
         """
         Sets the value of the specified element.
 
@@ -134,7 +134,7 @@ class BaseOperations:
         if self.do_is_displayed(element):
             element.text = value
 
-    def do_get_text(self, element):
+    def do_get_text(self, element) -> str:
         """
         Gets the text of the specified element.
 
@@ -184,7 +184,7 @@ class BaseOperations:
         print(f"[TIMEOUT] Element was not visible after {timeout} seconds.")
         return False
 
-    def do_is_enabled(self, element):
+    def do_is_enabled(self, element) -> bool:
         """
         Checks if the specified element is enabled.
 
@@ -207,7 +207,7 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_get_copied_address(self):
+    def do_get_copied_address(self) -> str:
         """
         Gets the copied address.
 
@@ -367,7 +367,7 @@ class BaseOperations:
             for _ in range(len(element.text)):
                 pressKey('backspace')
 
-    def get_text(self, element):
+    def get_text(self, element) -> str:
         """gets the text of the specified element from its description"""
         if self.do_is_displayed(element):
             return element.text

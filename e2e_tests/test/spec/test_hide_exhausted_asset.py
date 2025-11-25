@@ -67,7 +67,7 @@ def test_hide_exhausted_asset_on(wallets_and_operations: WalletTestSetup):
 
         child_count = wallets_and_operations.first_page_objects.fungible_page_objects.get_child_count()
 
-        assert len(child_count) == 3
+        assert child_count is not None and len(child_count) == 3
 
 
 @allure.feature('Hide exhausted asset')
@@ -87,4 +87,4 @@ def test_hide_exhausted_asset_off(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         child_count = wallets_and_operations.first_page_objects.fungible_page_objects.get_child_count()
 
-        assert len(child_count) == 4
+        assert child_count is not None and len(child_count) == 4

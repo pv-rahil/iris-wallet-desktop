@@ -341,15 +341,34 @@ jobs:
           QT_QPA_PLATFORM: xcb
           APPIMAGE_EXTRACT_AND_RUN: '1'
         run: |
-          cd src/utils && python generate_config.py && cd ../../
-          echo 'runner:123456' | sudo chpasswd
+          cd src/utils
+          python generate_config.py
+          cd ../../
+          dbus-run-session -- bash -lc '
+          set -euo pipefail
+          export DISPLAY=:99
+          export LIBGL_DEBUG=verbose
+          export MESA_DEBUG=1
+          export GALLIUM_DRIVER=llvmpipe
+          export NO_AT_BRIDGE=0
+          export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+          export QT_ACCESSIBILITY=1
+          export GTK_MODULES=atk-bridge
+          # export QT_QPA_PLATFORM=xcb
           export GDK_BACKEND=x11
           export XDG_CURRENT_DESKTOP=GNOME
           export QT_QPA_PLATFORMTHEME=gtk3
           export QT_OPENGL=software
-          export GTK_MODULES=atk-bridge
-          export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
-          export QT_ACCESSIBILITY=1
+          export QT_XCB_GL_INTEGRATION=egl
+          export QSG_RENDER_LOOP=basic
+          export QT_AUTO_SCREEN_SCALE_FACTOR=0
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export LIBGL_DRI3_DISABLE=1
+          export QT_X11_NO_MITSHM=1
+          export QT_SCALE_FACTOR=1
+          export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
           export APPIMAGE_EXTRACT_AND_RUN=1
           export KEYRING_HOME="$RUNNER_TEMP/keyring"
           mkdir -p "$KEYRING_HOME"
@@ -359,12 +378,33 @@ jobs:
           export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
+          # Ensure dbus session is available
+          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null || true
+          # Set accessibility
+          gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
+          # Start AT-SPI services and wait for them to initialize
+          /usr/libexec/at-spi-bus-launcher --launch-immediately &
+          /usr/libexec/at-spi2-registryd &
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
-          gsettings set org.gnome.desktop.interface toolkit-accessibility true
-          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY || true
-          # poetry run single-test ${{ matrix.test_file }}.py embedded
+          # Ensure the test password is visible to the AppImage subprocesses
+          export NATIVE_AUTHENTICATION_PASSWORD="123456"
+          export DOGTAIL_FIND_TIMEOUT=60
+          # Update dbus activation environment with all necessary variables
+          dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
+          export QT_QUICK_BACKEND=software
+          export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
+          export QT_OPENGL=software
+          export QT_XCB_GL_INTEGRATION=egl
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+          export QTWEBENGINE_DISABLE_SANDBOX=1
+          export QTWEBENGINE_NO_SANDBOX=1
+          export QT_DISABLE_WINDOW_TRANSPARENCY=1
+          export GDK_SYNCHRONIZE=1
+          export __GLX_VENDOR_LIBRARY_NAME=mesa
+          # poetry run single-test ${{ matrix.test_file }}.py
           poetry run single-test test_about.py
-          # poetry run e2e-test all
+          '
 
 
     #     - name: Stop resource monitoring and generate summary
