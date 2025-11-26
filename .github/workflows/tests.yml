@@ -138,13 +138,13 @@ jobs:
           - test_keyring_dialog
           - test_receive_and_send_bitcoin
           - test_hide_exhausted_asset
-          # - test_fail_transfer
+          - test_fail_transfer
           # - test_create_and_close_channel
-          # - test_issue_rgb20_asset
-          # - test_issue_rgb25_asset
+          - test_issue_rgb20_asset
+          - test_issue_rgb25_asset
           # - test_btc_channel_tx
           # - test_rgb20_channel_tx
-          # - test_view_unspent
+          - test_view_unspent
           # - test_settings
           # - test_refresh_transfer
     env:
