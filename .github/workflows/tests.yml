@@ -133,11 +133,11 @@ jobs:
           - test_help
           - test_about
           - test_backup_and_restore
-          # - test_send_and_receive_rgb20_asset
-          # - test_send_and_receive_rgb25_asset
-          # - test_keyring_dialog
-          # - test_receive_and_send_bitcoin
-          # - test_hide_exhausted_asset
+          - test_send_and_receive_rgb20_asset
+          - test_send_and_receive_rgb25_asset
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_hide_exhausted_asset
           # - test_fail_transfer
           # - test_create_and_close_channel
           # - test_issue_rgb20_asset
