@@ -66,9 +66,9 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
     with allure.step('assert the state of toggle button and toggle it to off'):
         wallets_and_operations.first_page_operations.enter_native_password()
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-        assert True is wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked
+        assert wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button() is not None and wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked is True
         wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
 
         wallets_and_operations.first_page_operations.enter_native_password()
 
-        assert False is wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked
+        assert wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button() is not None and wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked is False

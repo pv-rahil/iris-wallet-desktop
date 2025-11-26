@@ -225,8 +225,9 @@ class BackupPageObjects(BaseOperations):
         """
         Gets the mnemonic as a formatted string.
         """
-        if self.mnemonic_frame():
-            children = self.mnemonic_frame().children
+        mnemonic_frame = self.mnemonic_frame()
+        if mnemonic_frame:
+            children = mnemonic_frame.children
             mnemonic_parts = [child.name for child in children if child.name]
 
             # Remove numerical prefixes like '1.', '2.', etc.
@@ -237,3 +238,4 @@ class BackupPageObjects(BaseOperations):
 
             # Join words into a single string
             return ' '.join(cleaned_mnemonic)
+        return ''

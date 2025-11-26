@@ -72,7 +72,7 @@ class TermAndConditionPageObjects(BaseOperations):
         """
         Smoothly scrolls to the end of the terms and conditions page.
         """
-        if self.do_is_displayed(self.tnc_scrollbar()):
+        if self.tnc_scrollbar() and self.do_is_displayed(self.tnc_scrollbar()):
             scrollbar = self.tnc_scrollbar()
             while scrollbar.value < scrollbar.maxValue:
                 scrollbar.value += 50  # Increment the value gradually
