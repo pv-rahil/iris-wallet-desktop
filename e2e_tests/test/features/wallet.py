@@ -107,6 +107,10 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.wallet_selection_page_objects.embedded_button()):
             self.wallet_selection_page_objects.click_remote_button()
+            if not self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
+                time.sleep(0.5)
+                self.wallet_selection_page_objects.click_remote_button()
+                self.do_is_displayed(self.wallet_selection_page_objects.continue_button())
 
         if self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
             self.wallet_selection_page_objects.click_continue_button()
