@@ -173,6 +173,8 @@ jobs:
             policykit-1-gnome \
             lxqt-policykit \
             at-spi2-core \
+            gnome-keyring \
+            python3-secretstorage \
             libatk-bridge2.0-0 \
             libxcb-cursor0 \
             libxkbcommon-x11-0 \
@@ -244,7 +246,7 @@ jobs:
             libosmesa6 \
             mesa-utils-extra \
             libfuse2 \
-            scrot
+            scrot zenity
           sudo gem install fpm -f
 
       - name: Setup env for GUI testing
