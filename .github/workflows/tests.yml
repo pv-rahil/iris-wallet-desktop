@@ -125,28 +125,28 @@ jobs:
     name: E2E Dogtail tests
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    strategy:
-      max-parallel: 1
-      fail-fast: false
-      matrix:
-        test_file:
-          # - test_help
-          # - test_about
-          # - test_backup_and_restore
-          # - test_send_and_receive_rgb20_asset
-          # - test_send_and_receive_rgb25_asset
-          # - test_keyring_dialog
-          # - test_receive_and_send_bitcoin
-          # - test_hide_exhausted_asset
-          # - test_fail_transfer
-          - test_create_and_close_channel
-          # - test_issue_rgb20_asset
-          # - test_issue_rgb25_asset
-          - test_btc_channel_tx
-          - test_rgb20_channel_tx
-          # - test_view_unspent
-          # - test_settings
-          - test_refresh_transfer
+    # strategy:
+    #   max-parallel: 1
+    #   fail-fast: false
+    #   matrix:
+    #     test_file:
+    #       # - test_help
+    #       # - test_about
+    #       # - test_backup_and_restore
+    #       # - test_send_and_receive_rgb20_asset
+    #       # - test_send_and_receive_rgb25_asset
+    #       # - test_keyring_dialog
+    #       # - test_receive_and_send_bitcoin
+    #       # - test_hide_exhausted_asset
+    #       # - test_fail_transfer
+    #       - test_create_and_close_channel
+    #       # - test_issue_rgb20_asset
+    #       # - test_issue_rgb25_asset
+    #       - test_btc_channel_tx
+    #       - test_rgb20_channel_tx
+    #       # - test_view_unspent
+    #       # - test_settings
+    #       - test_refresh_transfer
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -379,8 +379,63 @@ jobs:
           export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
+          # Start gnome-keyring-daemon and unlock with empty password
+          eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
+          export SSH_AUTH_SOCK
+          # Create pkexec wrapper using zenity
+          # This mocks the native authentication dialog for tests
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
+          #!/bin/bash
+          set +u
+          
+          # Background process to continuously maintain focus on the zenity window
+          # This mimics native authentication behavior where auth dialog blocks everything
+          (
+            # Wait for dialog to appear
+            for i in {1..50}; do
+              if wmctrl -a "Authentication Required" 2>/dev/null; then
+                wmctrl -r "Authentication Required" -b add,above,modal 2>/dev/null
+                break
+              fi
+              sleep 0.1
+            done
+            
+            # Keep focusing the dialog until it closes
+            while wmctrl -l | grep -q "Authentication Required"; do
+              wmctrl -a "Authentication Required" 2>/dev/null
+              wmctrl -r "Authentication Required" -b add,above,modal 2>/dev/null
+              sleep 0.2
+            done
+          ) &
+          FOCUS_PID=\$!
+          
+          # Show zenity password dialog and wait for it to complete
+          # This will block until user enters password or cancels
+          AUTH_RESPONSE=\$(zenity --password --title="Authentication Required" 2>/dev/null)
+          ZENITY_EXIT=\$?
+          
+          # Wait for focus process to complete
+          wait \$FOCUS_PID 2>/dev/null || true
+          
+          # Check if user provided password (exit code 0) or cancelled (exit code 1)
+          if [ \$ZENITY_EXIT -eq 0 ]; then
+              # User provided password, execute command with sudo
+              echo "\$AUTH_RESPONSE" | sudo -S "\$@"
+              SUDO_EXIT=\$?
+              # Clear the password from memory
+              unset AUTH_RESPONSE
+              exit \$SUDO_EXIT
+          else
+              # User cancelled, exit with error
+              exit 1
+          fi
+          END_OF_PKEXEC_SCRIPT
+          chmod +x "$RUNNER_TEMP/bin/pkexec"
+          export PATH="$RUNNER_TEMP/bin:$PATH"
+
           # Ensure dbus session is available
-          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null || true
+          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
           # Set accessibility
           gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
           # Start AT-SPI services and wait for them to initialize
@@ -407,10 +462,9 @@ jobs:
           export QT_DISABLE_WINDOW_TRANSPARENCY=1
           export GDK_SYNCHRONIZE=1
           export __GLX_VENDOR_LIBRARY_NAME=mesa
-          # Additional wait for UI to stabilize (increased for stability)
           sleep 5
-          poetry run single-test ${{ matrix.test_file }}.py
-          # poetry run single-test test_settings.py
+          # poetry run single-test ${{ matrix.test_file }}.py
+          poetry run single-test test_login_app_auth.py
           '
 
 

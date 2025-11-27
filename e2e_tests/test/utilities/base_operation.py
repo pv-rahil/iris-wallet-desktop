@@ -97,12 +97,14 @@ class BaseOperations:
                             continue
                         element.grabFocus()
                         element.click()
+                        time.sleep(0.3)
                         return
                 except Exception as e:
                     last_error = e
                 time.sleep(0.2)
         # Final best-effort attempt
             element.click()
+            time.sleep(0.3)
         except Exception as e:
             print(f"[ERROR] do_click failed after retries: {last_error or e}")
 
