@@ -175,7 +175,7 @@ class BaseOperations:
 
         while time.time() < end_time:
             try:
-                time.sleep(interval)
+                time.sleep(0.3)
                 element.grabFocus()  # attempt to focus
                 if element.showing:  # check visibility
                     return True
