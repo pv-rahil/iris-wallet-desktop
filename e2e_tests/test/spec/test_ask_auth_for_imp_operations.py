@@ -2,9 +2,6 @@
 """Test module for hiding exhausted asset"""
 from __future__ import annotations
 
-import pytest
-pytest.skip("Skipping for now", allow_module_level=True)
-
 import re
 
 import allure
