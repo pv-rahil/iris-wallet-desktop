@@ -169,7 +169,7 @@ run_e2e_tests() {
                 EXIT_CODE=1
             fi
         done
-        
+
         if [[ $EXIT_CODE -ne 0 ]]; then
             echo ""
             echo "════════════════════════════════════════"

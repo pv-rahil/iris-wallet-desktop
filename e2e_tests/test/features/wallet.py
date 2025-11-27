@@ -2,6 +2,7 @@
 Wallet class for creating and funding a wallet.
 """
 from __future__ import annotations
+
 import time
 
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -39,7 +40,9 @@ class Wallet(MainPageObjects, BaseOperations):
             if not self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
                 time.sleep(0.5)
                 self.wallet_selection_page_objects.click_embedded_button()
-                self.do_is_displayed(self.wallet_selection_page_objects.continue_button())
+                self.do_is_displayed(
+                    self.wallet_selection_page_objects.continue_button(),
+                )
 
         if self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
             self.wallet_selection_page_objects.click_continue_button()
@@ -110,7 +113,9 @@ class Wallet(MainPageObjects, BaseOperations):
             if not self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
                 time.sleep(0.5)
                 self.wallet_selection_page_objects.click_remote_button()
-                self.do_is_displayed(self.wallet_selection_page_objects.continue_button())
+                self.do_is_displayed(
+                    self.wallet_selection_page_objects.continue_button(),
+                )
 
         if self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
             self.wallet_selection_page_objects.click_continue_button()

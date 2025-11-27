@@ -49,7 +49,6 @@ class TermAndConditionPageObjects(BaseOperations):
             else None
         )
 
-
     def click_accept_button(self):
         """
         Clicks the accept button if it is displayed.

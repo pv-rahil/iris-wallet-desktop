@@ -51,7 +51,6 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
         )
 
         if native_status_casted is not True:
-            wallets_and_operations.first_page_objects.settings_page_objects.set_keyring_enable_ci()
             wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
             wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 

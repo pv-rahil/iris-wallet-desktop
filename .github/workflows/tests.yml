@@ -145,10 +145,10 @@ jobs:
           - test_btc_channel_tx
           - test_rgb20_channel_tx
           - test_view_unspent
-          # - test_settings
           - test_refresh_transfer
           - test_login_app_auth
           - test_ask_auth_for_imp_operations
+          # - test_settings
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -332,9 +332,6 @@ jobs:
       - name: Start regtest services
         run: poetry run regtest-start
 
-      # - name: Start resource monitoring
-      #   run: .github/scripts/monitor_resources.sh start
-
       - name: Run E2E Dogtail Test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -392,7 +389,7 @@ jobs:
           cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
           #!/bin/bash
           set +u
-          
+
           # Background process to continuously maintain focus on the zenity window
           # This mimics native authentication behavior where auth dialog blocks everything
           (
@@ -404,7 +401,7 @@ jobs:
               fi
               sleep 0.1
             done
-            
+
             # Keep focusing the dialog until it closes
             while wmctrl -l | grep -q "Authentication Required"; do
               wmctrl -a "Authentication Required" 2>/dev/null
@@ -413,15 +410,15 @@ jobs:
             done
           ) &
           FOCUS_PID=\$!
-          
+
           # Show zenity password dialog and wait for it to complete
           # This will block until user enters password or cancels
           AUTH_RESPONSE=\$(zenity --password --title="Authentication Required" 2>/dev/null)
           ZENITY_EXIT=\$?
-          
+
           # Wait for focus process to complete
           wait \$FOCUS_PID 2>/dev/null || true
-          
+
           # Check if user provided password (exit code 0) or cancelled (exit code 1)
           if [ \$ZENITY_EXIT -eq 0 ]; then
               # User provided password, execute command with sudo
@@ -467,29 +464,6 @@ jobs:
           export GDK_SYNCHRONIZE=1
           export __GLX_VENDOR_LIBRARY_NAME=mesa
           sleep 5
-          # poetry run single-test ${{ matrix.test_file }}.py
-          poetry run single-test test_login_app_auth.py
+          poetry run single-test ${{ matrix.test_file }}.py
+          # poetry run single-test test_login_app_auth.py
           '
-
-
-    #     - name: Stop resource monitoring and generate summary
-    #       if: always()
-    #       run: |
-    #         .github/scripts/monitor_resources.sh stop
-    #         .github/scripts/monitor_resources.sh summary
-    #         echo "" >> $GITHUB_STEP_SUMMARY
-    #         echo "## 📊 Resource Usage Summary" >> $GITHUB_STEP_SUMMARY
-    #         echo "" >> $GITHUB_STEP_SUMMARY
-    #         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-    #         cat resource_summary.txt >> $GITHUB_STEP_SUMMARY
-    #         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-    #     - name: Upload resource usage logs
-    #       if: always()
-    #       uses: actions/upload-artifact@v4
-    #       with:
-    #         name: resource-usage-test
-    #         path: |
-    #           resource_usage.log
-    #           resource_summary.txt
-    #         retention-days: 30
