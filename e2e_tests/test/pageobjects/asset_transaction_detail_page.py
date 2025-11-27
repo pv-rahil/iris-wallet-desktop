@@ -55,4 +55,4 @@ class AssetTransactionDetailPageObjects(BaseOperations):
         """
         Retrieves the transaction ID.
         """
-        return self.do_get_text(self.tx_id()) if self.do_is_displayed(self.tx_id()) else None
+        return self.do_get_text(self.tx_id()) if self.do_is_displayed(self.tx_id()) else ''
