@@ -24,13 +24,13 @@ class WalletSelectionPageObjects(BaseOperations):
         super().__init__(application)
 
         # Lazy evaluation of elements using lambdas
-        self.embedded_button = lambda: self.get_first_element(
+        self.embedded_button = lambda: self.perform_action_on_element(
             role_name='panel', name=OPTION_1_FRAME,
         )
-        self.remote_button = lambda: self.get_first_element(
+        self.remote_button = lambda: self.perform_action_on_element(
             role_name='panel', name=OPTION_2_FRAME,
         )
-        self.continue_button = lambda: self.get_first_element(
+        self.continue_button = lambda: self.perform_action_on_element(
             role_name='push button', name=WALLET_OR_TRANSFER_SELECTION_CONTINUE_BUTTON,
         )
 

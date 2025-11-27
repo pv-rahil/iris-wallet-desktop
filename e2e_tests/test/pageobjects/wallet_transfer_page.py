@@ -23,10 +23,10 @@ class WalletTransferPageObjects(BaseOperations):
         super().__init__(application)
 
         # Lazy evaluation of elements using lambdas
-        self.on_chain_button = lambda: self.get_first_element(
+        self.on_chain_button = lambda: self.perform_action_on_element(
             role_name='panel', name=OPTION_1_FRAME,
         )
-        self.lightning_button = lambda: self.get_first_element(
+        self.lightning_button = lambda: self.perform_action_on_element(
             role_name='panel', name=OPTION_2_FRAME,
         )
 
