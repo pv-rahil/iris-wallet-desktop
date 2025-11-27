@@ -155,30 +155,44 @@ run_e2e_tests() {
     if [[ "$RUN_ALL" == true ]]; then
         echo "Running full test suite (per-file)..."
         for test_file in "${TEST_FILES[@]}"; do
-            echo "----------------------------------------"
+            echo "========================================"
             echo "Test Suite: $(basename "$test_file")"
             echo "Path      : $test_file"
             echo "Mode      : $wallet_mode"
-            echo "----------------------------------------"
+            echo "========================================"
+            if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-mode "$wallet_mode"; then
+                echo ""
+                echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+                echo "✗ FAILED: $(basename "$test_file") in ${wallet_mode^^} mode"
+                echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+                echo ""
+                EXIT_CODE=1
+            fi
         done
-
-        # Run all tests once – ordering will be applied automatically
-        pytest -s "$TESTS_DIR/" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
-
+        
+        if [[ $EXIT_CODE -ne 0 ]]; then
+            echo ""
+            echo "════════════════════════════════════════"
+            echo "One or more test suites FAILED in ${wallet_mode^^} mode"
+            echo "════════════════════════════════════════"
+            exit $EXIT_CODE
+        fi
     elif [[ -n "$TEST_FILE" ]]; then
-        echo "----------------------------------------"
+        echo "========================================"
         echo "Test Suite: $TEST_FILE"
         echo "Path      : $TESTS_DIR/$TEST_FILE"
         echo "Mode      : $wallet_mode"
-        echo "----------------------------------------"
-        pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode"
+        echo "========================================"
+        if ! pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode"; then
+            echo ""
+            echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+            echo "✗ FAILED: $TEST_FILE in ${wallet_mode^^} mode"
+            echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+            echo ""
+            exit 1
+        fi
     else
         echo "No test file provided. Use --all to run all tests."
-        exit 1
-    fi
-
-    if [[ $? -ne 0 ]]; then
-        echo "E2E tests failed!"
         exit 1
     fi
 }

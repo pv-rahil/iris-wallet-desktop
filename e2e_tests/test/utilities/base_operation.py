@@ -151,7 +151,7 @@ class BaseOperations:
 
         return ''
 
-    def do_is_displayed(self, element, timeout: int = 30, interval: float = 1.0) -> bool:
+    def do_is_displayed(self, element, timeout: int = 30, interval: float = 2.0) -> bool:
         """
         Check if the UI element is displayed within a given timeout.
 
@@ -175,6 +175,7 @@ class BaseOperations:
 
         while time.time() < end_time:
             try:
+                time.sleep(interval)
                 element.grabFocus()  # attempt to focus
                 if element.showing:  # check visibility
                     return True

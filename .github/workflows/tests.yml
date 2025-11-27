@@ -125,28 +125,28 @@ jobs:
     name: E2E Dogtail tests
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    # strategy:
-    #   max-parallel: 1
-    #   fail-fast: false
-    #   matrix:
-    #     test_file:
-    #       # - test_help
-    #       # - test_about
-    #       # - test_backup_and_restore
-    #       # - test_send_and_receive_rgb20_asset
-    #       # - test_send_and_receive_rgb25_asset
-    #       # - test_keyring_dialog
-    #       # - test_receive_and_send_bitcoin
-    #       # - test_hide_exhausted_asset
-    #       # - test_fail_transfer
-    #       - test_create_and_close_channel
-    #       # - test_issue_rgb20_asset
-    #       # - test_issue_rgb25_asset
-    #       - test_btc_channel_tx
-    #       - test_rgb20_channel_tx
-    #       # - test_view_unspent
-    #       # - test_settings
-    #       - test_refresh_transfer
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        test_file:
+          # - test_help
+          # - test_about
+          # - test_backup_and_restore
+          # - test_send_and_receive_rgb20_asset
+          # - test_send_and_receive_rgb25_asset
+          # - test_keyring_dialog
+          # - test_receive_and_send_bitcoin
+          # - test_hide_exhausted_asset
+          # - test_fail_transfer
+          - test_create_and_close_channel
+          # - test_issue_rgb20_asset
+          # - test_issue_rgb25_asset
+          - test_btc_channel_tx
+          - test_rgb20_channel_tx
+          # - test_view_unspent
+          # - test_settings
+          - test_refresh_transfer
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -446,7 +446,7 @@ jobs:
           # Wait for AT-SPI to be fully ready (increased for stability)
           sleep 8
           # Verify AT-SPI is accessible
-          python3 -c "from dogtail.tree import root; print(f\"AT-SPI ready, desktop children: {len(root.children)}\")" || sleep 5
+          poetry run python -c "from dogtail.tree import root; print(f\"AT-SPI ready, desktop children: {len(root.children)}\")" || sleep 5
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"
