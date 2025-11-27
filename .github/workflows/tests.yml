@@ -386,6 +386,10 @@ jobs:
           # Start AT-SPI services and wait for them to initialize
           /usr/libexec/at-spi-bus-launcher --launch-immediately &
           /usr/libexec/at-spi2-registryd &
+          # Wait for AT-SPI to be fully ready
+          sleep 5
+          # Verify AT-SPI is accessible
+          python3 -c "from dogtail.tree import root; print(f\"AT-SPI ready, desktop children: {len(root.children)}\")" || sleep 3
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"
@@ -403,6 +407,8 @@ jobs:
           export QT_DISABLE_WINDOW_TRANSPARENCY=1
           export GDK_SYNCHRONIZE=1
           export __GLX_VENDOR_LIBRARY_NAME=mesa
+          # Additional wait for UI to stabilize
+          sleep 2
           poetry run single-test ${{ matrix.test_file }}.py
           # poetry run single-test test_refresh_transfer.py
           '
