@@ -3,6 +3,7 @@
 SendOperation class provides methods for sending assets using bitcoin or lightning transfer.
 """
 from __future__ import annotations
+import time
 
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -28,6 +29,7 @@ class SendOperation(MainPageObjects, BaseOperations):
         :param transfer_type: The type of transfer ('bitcoin' or 'lightning').
         """
         self.do_focus_on_application(application)
+        time.sleep(1)
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
 
@@ -53,6 +55,7 @@ class SendOperation(MainPageObjects, BaseOperations):
         Send assets without sufficient funds.
         """
         validation = None
+        time.sleep(1)
         self.do_focus_on_application(application)
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
@@ -76,6 +79,7 @@ class SendOperation(MainPageObjects, BaseOperations):
         Send assets with a wrong invoice.
         """
         description = None
+        time.sleep(1)
         self.do_focus_on_application(application)
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
@@ -106,6 +110,7 @@ class SendOperation(MainPageObjects, BaseOperations):
         """
 
         description = None
+        time.sleep(1)
 
         self.do_focus_on_application(application)
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
