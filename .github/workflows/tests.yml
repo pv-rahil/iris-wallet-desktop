@@ -332,40 +332,6 @@ jobs:
       - name: Start regtest services
         run: poetry run regtest-start
 
-      - name: Free up runner resources
-        run: |
-          echo "=== Cleaning up resources before test execution ==="
-
-          # Clean up Docker resources (containers, images, volumes)
-          docker system prune -af --volumes || true
-
-          # Clean up package manager caches
-          sudo apt-get clean || true
-          sudo rm -rf /var/lib/apt/lists/* || true
-
-          # Clean up pip cache (but NOT poetry cache - we need the installed virtualenv)
-          rm -rf ~/.cache/pip || true
-
-          # Kill any lingering processes from previous runs
-          pkill -9 zenity || true
-          pkill -9 iriswallet || true
-          pkill -9 Xvfb || true
-
-          # Clean up temporary files
-          sudo rm -rf /tmp/* || true
-
-          # Show available resources for monitoring
-          echo ""
-          echo "=== Available Resources After Cleanup ==="
-          echo "--- Disk Space ---"
-          df -h / | grep -E 'Filesystem|/$'
-          echo ""
-          echo "--- Memory ---"
-          free -h
-          echo ""
-          echo "--- CPU Cores ---"
-          nproc
-
       - name: Run E2E Dogtail Test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -503,3 +469,39 @@ jobs:
           poetry run single-test ${{ matrix.test_file }}.py
           # poetry run single-test test_login_app_auth.py
           '
+
+      - name: Cleanup after test (prepare for next matrix job)
+        if: always()  # Run even if test failed
+        run: |
+          echo "=== Cleaning up after test for next matrix job ==="
+          
+          # Kill all application processes
+          pkill -9 iriswallet || true
+          pkill -9 zenity || true
+          pkill -9 rgb-lightning-node || true
+          
+          # Stop regtest services properly
+          cd e2e_tests
+          bash regtest.sh stop || true
+          cd ..
+          
+          # Kill X server and window manager (will be restarted in next job)
+          pkill -9 Xvfb || true
+          pkill -9 openbox || true
+          
+          # Kill dbus and AT-SPI services (will be restarted in next job)
+          pkill -9 dbus-daemon || true
+          pkill -9 at-spi-bus-launcher || true
+          pkill -9 at-spi2-registryd || true
+          
+          # Clean up application data directories
+          rm -rf e2e_tests/applications/*/data || true
+          rm -rf dataldk* || true
+          
+          # Clean up keyring data
+          rm -rf "$KEYRING_HOME" || true
+          
+          # Wait for all processes to fully terminate
+          sleep 3
+          
+          echo "Cleanup complete - runner ready for next test"
