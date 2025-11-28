@@ -132,21 +132,21 @@ jobs:
         test_file:
           - test_help
           - test_about
-          # - test_backup_and_restore
-          # - test_send_and_receive_rgb20_asset
-          # - test_send_and_receive_rgb25_asset
-          # - test_keyring_dialog
-          # - test_receive_and_send_bitcoin
-          # - test_hide_exhausted_asset
-          # - test_fail_transfer
-          # - test_create_and_close_channel
-          # - test_issue_rgb20_asset
-          # - test_issue_rgb25_asset
-          # - test_btc_channel_tx
-          # - test_rgb20_channel_tx
-          # - test_view_unspent
-          # - test_refresh_transfer
-          # - test_login_app_auth
+          - test_backup_and_restore
+          - test_send_and_receive_rgb20_asset
+          - test_send_and_receive_rgb25_asset
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_create_and_close_channel
+          - test_issue_rgb20_asset
+          - test_issue_rgb25_asset
+          - test_btc_channel_tx
+          - test_rgb20_channel_tx
+          - test_view_unspent
+          - test_refresh_transfer
+          - test_login_app_auth
           # - test_ask_auth_for_imp_operations
           # - test_settings
     env:
@@ -474,34 +474,34 @@ jobs:
         if: always()  # Run even if test failed
         run: |
           echo "=== Cleaning up after test for next matrix job ==="
-          
+
           # Kill all application processes
           pkill -9 iriswallet || true
           pkill -9 zenity || true
           pkill -9 rgb-lightning-node || true
-          
+
           # Stop regtest services properly
           cd e2e_tests
           bash regtest.sh stop || true
           cd ..
-          
+
           # Kill X server and window manager (will be restarted in next job)
           pkill -9 Xvfb || true
           pkill -9 openbox || true
-          
+
           # Kill dbus and AT-SPI services (will be restarted in next job)
           pkill -9 dbus-daemon || true
           pkill -9 at-spi-bus-launcher || true
           pkill -9 at-spi2-registryd || true
-          
+
           # Clean up application data directories
           rm -rf e2e_tests/applications/*/data || true
           rm -rf dataldk* || true
-          
+
           # Clean up keyring data
           rm -rf "$KEYRING_HOME" || true
-          
+
           # Wait for all processes to fully terminate
           sleep 3
-          
+
           echo "Cleanup complete - runner ready for next test"
