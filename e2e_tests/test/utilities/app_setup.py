@@ -26,6 +26,7 @@ from accessible_constant import SECOND_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.dogtail_config import warm_up_atspi
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.translation_utils import TranslationManager
@@ -62,6 +63,11 @@ class TestEnvironment:
         self.reset_app_data()
         self.remove_keyring_entries(service=FIRST_SERVICE, app_name=APP1_NAME)
         self.remove_keyring_entries(service=SECOND_SERVICE, app_name=APP2_NAME)
+
+        # Warm up AT-SPI before launching applications
+        # This ensures the accessibility tree is initialized and cached
+        print('[TEST ENV] Warming up AT-SPI before launching applications...')
+        warm_up_atspi(timeout=15)
 
         # Start applications based on wallet mode
         if self.wallet_mode == WalletType.REMOTE_TYPE_WALLET.value:

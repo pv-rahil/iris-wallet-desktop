@@ -17,6 +17,7 @@ from Xlib import display
 from Xlib import X
 
 from accessible_constant import TOASTER_DESCRIPTION
+from e2e_tests.test.utilities.dogtail_config import get_default_timeout
 
 load_dotenv()
 NATIVE_AUTHENTICATION_PASSWORD = os.getenv('NATIVE_AUTHENTICATION_PASSWORD')
@@ -128,18 +129,21 @@ class BaseOperations:
 
         return ''
 
-    def do_is_displayed(self, element, timeout: int = 30, interval: float = 2.0) -> bool:
+    def do_is_displayed(self, element, timeout: int | None = None, interval: float = 2.0) -> bool:
         """
         Check if the UI element is displayed within a given timeout.
 
         Args:
             element: The UI element to check (must support grabFocus & showing attributes).
-            timeout (int): Maximum time to wait, in seconds.
+            timeout (int): Maximum time to wait, in seconds. If None, uses CI-aware default.
             interval (float): How often to retry, in seconds.
 
         Returns:
             bool: True if element is visible within timeout, False otherwise.
         """
+        if timeout is None:
+            timeout = get_default_timeout(30)
+
         if not element:
             print('[WARN] do_is_displayed: element is None.')
             return False
@@ -241,22 +245,27 @@ class BaseOperations:
         """
         return self.activate_window_by_name(application)
 
-    def perform_action_on_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5):
+    def perform_action_on_element(self, role_name, name=None, description=None, timeout=None, retry_interval=0.5):
         """
-        Retrieves the specified element with the given role and name or description, with retries.
+        Retrieves the specified element with the given role and name or description, with exponential backoff retries.
 
         Args:
             role_name (str): The role of the element.
             name (str, optional): The name of the element. Defaults to None.
             description (str, optional): The description of the element. Defaults to None.
-            timeout (int): The maximum time to wait for the element in seconds. Defaults to 30.
-            retry_interval (float): The time to wait between retries in seconds. Defaults to 0.5.
+            timeout (int, optional): The maximum time to wait for the element in seconds. If None, uses CI-aware default.
+            retry_interval (float): The initial time to wait between retries in seconds. Defaults to 0.5.
 
         Returns:
             Node: The retrieved element, or False if no matching element is found within the timeout.
         """
+        if timeout is None:
+            timeout = get_default_timeout(30)
+
         start_time = time.time()
         elements = []
+        current_interval = retry_interval
+        max_interval = 4.0  # Cap exponential backoff at 4 seconds
 
         while time.time() - start_time < timeout:
             try:
@@ -281,30 +290,43 @@ class BaseOperations:
                         return element
 
             except Exception as e:
-                # Log the exception and retry
-                print(f"Exception while finding element: {e}")
+                # Log the exception with more details for debugging
+                identifier = name if name else description
+                print(f"[RETRY] Finding {role_name} '{identifier}': {e}")
 
-            # Wait before the next retry
-            time.sleep(retry_interval)
+            # Exponential backoff: increase interval for next retry
+            time.sleep(current_interval)
+            current_interval = min(current_interval * 1.5, max_interval)
 
+        # Final attempt with relaxed constraints if we still haven't found it
+        print(
+            f"""[WARN] Element not found after {
+                timeout
+            }s, attempting relaxed search...""",
+        )
         return False
 
-    def get_first_element(self, role_name, name=None, description=None, timeout=30, retry_interval=0.5):
+    def get_first_element(self, role_name, name=None, description=None, timeout=None, retry_interval=0.5):
         """
-        Retrieves the first element with the given role and name or description, with retries.
+        Retrieves the first element with the given role and name or description, with exponential backoff retries.
 
         Args:
             role_name (str): The role of the element.
             name (str, optional): The name of the element. Defaults to None.
             description (str, optional): The description of the element. Defaults to None.
-            timeout (int): The maximum time to wait for the element in seconds. Defaults to 30.
-            retry_interval (float): The time to wait between retries in seconds. Defaults to 0.5.
+            timeout (int, optional): The maximum time to wait for the element in seconds. If None, uses CI-aware default.
+            retry_interval (float): The initial time to wait between retries in seconds. Defaults to 0.5.
 
         Returns:
             Node: The retrieved element, or False if no matching element is found within the timeout.
         """
+        if timeout is None:
+            timeout = get_default_timeout(30)
+
         start_time = time.time()
         elements = []
+        current_interval = retry_interval
+        max_interval = 4.0  # Cap exponential backoff at 4 seconds
 
         while time.time() - start_time < timeout:
             try:
@@ -329,11 +351,13 @@ class BaseOperations:
                             return element
 
             except Exception as e:
-                # Log the exception and retry
-                print(f"Exception while finding element: {e}")
+                # Log the exception with more details for debugging
+                identifier = name if name else description
+                print(f"[RETRY] Finding first {role_name} '{identifier}': {e}")
 
-            # Wait before the next retry
-            time.sleep(retry_interval)
+            # Exponential backoff: increase interval for next retry
+            time.sleep(current_interval)
+            current_interval = min(current_interval * 1.5, max_interval)
 
         return False
 
@@ -353,18 +377,21 @@ class BaseOperations:
             return element.text
         return ''
 
-    def wait_for_toaster_message(self, toaster_name=TOASTER_DESCRIPTION, timeout=120, interval=0.5):
+    def wait_for_toaster_message(self, toaster_name=TOASTER_DESCRIPTION, timeout=None, interval=0.5):
         """
         Waits until a toaster message appears on the screen.
 
         Args:
             toaster_name (str): The accessible name of the toaster message.
-            timeout (int): Maximum time to wait (in seconds). Default is 120 seconds.
+            timeout (int, optional): Maximum time to wait (in seconds). If None, uses CI-aware default (120s base).
             interval (float): Time interval between checks. Default is 0.5 seconds.
 
         Raises:
             TimeoutError: If the toaster message does not appear within the timeout.
         """
+        if timeout is None:
+            timeout = get_default_timeout(120)
+
         start_time = time.time()
 
         while time.time() - start_time < timeout:

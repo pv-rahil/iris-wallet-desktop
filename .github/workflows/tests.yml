@@ -342,6 +342,9 @@ jobs:
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
           QT_QPA_PLATFORM: xcb
           APPIMAGE_EXTRACT_AND_RUN: '1'
+          # Dogtail configuration for CI stability
+          DOGTAIL_SEARCH_TIMEOUT: '90'
+          DOGTAIL_SEARCH_BACKOFF: '1.5'
         run: |
           cd src/utils
           python generate_config.py
@@ -439,19 +442,22 @@ jobs:
 
           # Ensure dbus session is available
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
-          # Set accessibility
+          # Set accessibility and enable debugging for better AT-SPI stability
           gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
+          gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
           # Start AT-SPI services and wait for them to initialize (suppress logs)
           /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
           /usr/libexec/at-spi2-registryd 2>/dev/null &
-          # Wait for AT-SPI to be fully ready (increased for stability)
-          sleep 8
+          # Wait for AT-SPI to be fully ready (increased from 8s to 15s for better stability)
+          sleep 15
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"
-          export DOGTAIL_FIND_TIMEOUT=60
-          # Update dbus activation environment with all necessary variables
-          dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH
+          # Dogtail configuration for CI stability (exported for Python tests)
+          export DOGTAIL_SEARCH_TIMEOUT=90
+          export DOGTAIL_SEARCH_BACKOFF=1.5
+          # Update dbus activation environment with all necessary variables including dogtail config
+          dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH DOGTAIL_SEARCH_TIMEOUT DOGTAIL_SEARCH_BACKOFF
           export QT_QUICK_BACKEND=software
           export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
           export QT_OPENGL=software
@@ -478,11 +484,6 @@ jobs:
           pkill -9 zenity || true
           pkill -9 rgb-lightning-node || true
 
-          # Stop regtest services properly
-          cd e2e_tests
-          bash regtest.sh stop || true
-          cd ..
-
           # Kill X server and window manager (will be restarted in next job)
           pkill -9 Xvfb || true
           pkill -9 openbox || true
@@ -491,10 +492,6 @@ jobs:
           pkill -9 dbus-daemon || true
           pkill -9 at-spi-bus-launcher || true
           pkill -9 at-spi2-registryd || true
-
-          # Clean up application data directories
-          rm -rf e2e_tests/applications/*/data || true
-          rm -rf dataldk* || true
 
           # Clean up keyring data
           rm -rf "$KEYRING_HOME" || true
