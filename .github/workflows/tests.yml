@@ -270,14 +270,6 @@ jobs:
         run: |
           poetry run pip install keyring keyrings.alt
 
-      - name: Set KEYRING_HOME env
-        run: |
-          echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
-
-      - name: Ensure keyring storage directory exists
-        run: |
-          mkdir -p "$KEYRING_HOME"
-
       - name: Start Xvfb & openbox
         run: |
           XAUTH="$RUNNER_TEMP/.Xauthority"
@@ -350,6 +342,7 @@ jobs:
           python generate_config.py
           cd ../../
           dbus-run-session -- bash -lc '
+          rm -rf ~/.local/share/python_keyring
           mkdir -p "$XDG_RUNTIME_DIR/keyring"
           export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
           set -euo pipefail
@@ -473,30 +466,3 @@ jobs:
           poetry run single-test ${{ matrix.test_file }}.py
           # poetry run single-test test_rgb20_channel_tx.py
           '
-
-      - name: Cleanup after test (prepare for next matrix job)
-        if: always()  # Run even if test failed
-        run: |
-          echo "=== Cleaning up after test for next matrix job ==="
-
-          # Kill all application processes
-          pkill -9 iriswallet || true
-          pkill -9 zenity || true
-          pkill -9 rgb-lightning-node || true
-
-          # Kill X server and window manager (will be restarted in next job)
-          pkill -9 Xvfb || true
-          pkill -9 openbox || true
-
-          # Kill dbus and AT-SPI services (will be restarted in next job)
-          pkill -9 dbus-daemon || true
-          pkill -9 at-spi-bus-launcher || true
-          pkill -9 at-spi2-registryd || true
-
-          # Clean up keyring data
-          rm -rf "$KEYRING_HOME" || true
-
-          # Wait for all processes to fully terminate
-          sleep 3
-
-          echo "Cleanup complete - runner ready for next test"
