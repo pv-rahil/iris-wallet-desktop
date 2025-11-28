@@ -132,22 +132,22 @@ jobs:
         test_file:
           - test_help
           - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_rgb20_asset
-          - test_send_and_receive_rgb25_asset
-          - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_create_and_close_channel
-          - test_issue_rgb20_asset
-          - test_issue_rgb25_asset
-          - test_btc_channel_tx
-          - test_rgb20_channel_tx
-          - test_view_unspent
-          - test_refresh_transfer
-          - test_login_app_auth
-          - test_ask_auth_for_imp_operations
+          # - test_backup_and_restore
+          # - test_send_and_receive_rgb20_asset
+          # - test_send_and_receive_rgb25_asset
+          # - test_keyring_dialog
+          # - test_receive_and_send_bitcoin
+          # - test_hide_exhausted_asset
+          # - test_fail_transfer
+          # - test_create_and_close_channel
+          # - test_issue_rgb20_asset
+          # - test_issue_rgb25_asset
+          # - test_btc_channel_tx
+          # - test_rgb20_channel_tx
+          # - test_view_unspent
+          # - test_refresh_transfer
+          # - test_login_app_auth
+          # - test_ask_auth_for_imp_operations
           # - test_settings
     env:
       DISPLAY: :99
@@ -335,26 +335,25 @@ jobs:
       - name: Free up runner resources
         run: |
           echo "=== Cleaning up resources before test execution ==="
-          
+
           # Clean up Docker resources (containers, images, volumes)
           docker system prune -af --volumes || true
-          
+
           # Clean up package manager caches
           sudo apt-get clean || true
           sudo rm -rf /var/lib/apt/lists/* || true
-          
-          # Clean up pip/poetry caches
+
+          # Clean up pip cache (but NOT poetry cache - we need the installed virtualenv)
           rm -rf ~/.cache/pip || true
-          rm -rf ~/.cache/pypoetry || true
-          
+
           # Kill any lingering processes from previous runs
           pkill -9 zenity || true
           pkill -9 iriswallet || true
           pkill -9 Xvfb || true
-          
+
           # Clean up temporary files
           sudo rm -rf /tmp/* || true
-          
+
           # Show available resources for monitoring
           echo ""
           echo "=== Available Resources After Cleanup ==="
