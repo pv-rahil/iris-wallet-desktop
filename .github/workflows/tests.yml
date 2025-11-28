@@ -332,6 +332,41 @@ jobs:
       - name: Start regtest services
         run: poetry run regtest-start
 
+      - name: Free up runner resources
+        run: |
+          echo "=== Cleaning up resources before test execution ==="
+          
+          # Clean up Docker resources (containers, images, volumes)
+          docker system prune -af --volumes || true
+          
+          # Clean up package manager caches
+          sudo apt-get clean || true
+          sudo rm -rf /var/lib/apt/lists/* || true
+          
+          # Clean up pip/poetry caches
+          rm -rf ~/.cache/pip || true
+          rm -rf ~/.cache/pypoetry || true
+          
+          # Kill any lingering processes from previous runs
+          pkill -9 zenity || true
+          pkill -9 iriswallet || true
+          pkill -9 Xvfb || true
+          
+          # Clean up temporary files
+          sudo rm -rf /tmp/* || true
+          
+          # Show available resources for monitoring
+          echo ""
+          echo "=== Available Resources After Cleanup ==="
+          echo "--- Disk Space ---"
+          df -h / | grep -E 'Filesystem|/$'
+          echo ""
+          echo "--- Memory ---"
+          free -h
+          echo ""
+          echo "--- CPU Cores ---"
+          nproc
+
       - name: Run E2E Dogtail Test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -349,8 +384,9 @@ jobs:
           dbus-run-session -- bash -lc '
           set -euo pipefail
           export DISPLAY=:99
-          export LIBGL_DEBUG=verbose
-          export MESA_DEBUG=1
+          # Suppress verbose GL/Mesa logs
+          export LIBGL_DEBUG=quiet
+          unset MESA_DEBUG
           export GALLIUM_DRIVER=llvmpipe
           export NO_AT_BRIDGE=0
           export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
@@ -380,13 +416,16 @@ jobs:
           export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
-          # Start gnome-keyring-daemon and unlock with empty password
-          eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
+          # Suppress verbose warnings from GVFS, GTK, and GLib
+          export G_MESSAGES_DEBUG=""
+          export GVFS_DISABLE_FUSE=1
+          # Start gnome-keyring-daemon and unlock with empty password (suppress logs)
+          eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11 2>/dev/null)
           export SSH_AUTH_SOCK
           # Create pkexec wrapper using zenity
           # This mocks the native authentication dialog for tests
           mkdir -p "$RUNNER_TEMP/bin"
-          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
+          cat <<'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
           #!/bin/bash
           set +u
 
@@ -411,15 +450,15 @@ jobs:
           ) &
           FOCUS_PID=\$!
 
-          # Show zenity password dialog and wait for it to complete
-          # This will block until user enters password or cancels
-          AUTH_RESPONSE=\$(zenity --password --title="Authentication Required" 2>/dev/null)
+          # Show zenity password dialog with timeout to prevent indefinite hangs
+          # This will block until user enters password, cancels, or times out (30 seconds)
+          AUTH_RESPONSE=\$(timeout 30 zenity --password --title="Authentication Required" 2>/dev/null)
           ZENITY_EXIT=\$?
 
           # Wait for focus process to complete
           wait \$FOCUS_PID 2>/dev/null || true
 
-          # Check if user provided password (exit code 0) or cancelled (exit code 1)
+          # Check if user provided password (exit code 0) or cancelled/timed out (exit code 1 or 124)
           if [ \$ZENITY_EXIT -eq 0 ]; then
               # User provided password, execute command with sudo
               echo "\$AUTH_RESPONSE" | sudo -S "\$@"
@@ -428,7 +467,7 @@ jobs:
               unset AUTH_RESPONSE
               exit \$SUDO_EXIT
           else
-              # User cancelled, exit with error
+              # User cancelled or timed out, exit with error
               exit 1
           fi
           END_OF_PKEXEC_SCRIPT
@@ -439,13 +478,11 @@ jobs:
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
           # Set accessibility
           gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
-          # Start AT-SPI services and wait for them to initialize
-          /usr/libexec/at-spi-bus-launcher --launch-immediately &
-          /usr/libexec/at-spi2-registryd &
+          # Start AT-SPI services and wait for them to initialize (suppress logs)
+          /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
+          /usr/libexec/at-spi2-registryd 2>/dev/null &
           # Wait for AT-SPI to be fully ready (increased for stability)
           sleep 8
-          # Verify AT-SPI is accessible
-          poetry run python -c "from dogtail.tree import root; print(f\"AT-SPI ready, desktop children: {len(root.children)}\")" || sleep 5
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"
