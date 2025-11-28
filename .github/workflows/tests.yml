@@ -147,7 +147,7 @@ jobs:
           - test_view_unspent
           - test_refresh_transfer
           - test_login_app_auth
-          # - test_ask_auth_for_imp_operations
+          - test_ask_auth_for_imp_operations
           # - test_settings
     env:
       DISPLAY: :99
@@ -347,11 +347,12 @@ jobs:
           python generate_config.py
           cd ../../
           dbus-run-session -- bash -lc '
+          mkdir -p "$XDG_RUNTIME_DIR/keyring"
+          export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
           set -euo pipefail
           export DISPLAY=:99
-          # Suppress verbose GL/Mesa logs
-          export LIBGL_DEBUG=quiet
-          unset MESA_DEBUG
+          export LIBGL_DEBUG=verbose
+          export MESA_DEBUG=1
           export GALLIUM_DRIVER=llvmpipe
           export NO_AT_BRIDGE=0
           export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
@@ -381,16 +382,13 @@ jobs:
           export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
-          # Suppress verbose warnings from GVFS, GTK, and GLib
-          export G_MESSAGES_DEBUG=""
-          export GVFS_DISABLE_FUSE=1
-          # Start gnome-keyring-daemon and unlock with empty password (suppress logs)
-          eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11 2>/dev/null)
+          # Start gnome-keyring-daemon and unlock with empty password
+          eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
           # Create pkexec wrapper using zenity
           # This mocks the native authentication dialog for tests
           mkdir -p "$RUNNER_TEMP/bin"
-          cat <<'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
+          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
           #!/bin/bash
           set +u
 
@@ -415,15 +413,15 @@ jobs:
           ) &
           FOCUS_PID=\$!
 
-          # Show zenity password dialog with timeout to prevent indefinite hangs
-          # This will block until user enters password, cancels, or times out (30 seconds)
-          AUTH_RESPONSE=\$(timeout 30 zenity --password --title="Authentication Required" 2>/dev/null)
+          # Show zenity password dialog and wait for it to complete
+          # This will block until user enters password or cancels
+          AUTH_RESPONSE=\$(zenity --password --title="Authentication Required" 2>/dev/null)
           ZENITY_EXIT=\$?
 
           # Wait for focus process to complete
           wait \$FOCUS_PID 2>/dev/null || true
 
-          # Check if user provided password (exit code 0) or cancelled/timed out (exit code 1 or 124)
+          # Check if user provided password (exit code 0) or cancelled (exit code 1)
           if [ \$ZENITY_EXIT -eq 0 ]; then
               # User provided password, execute command with sudo
               echo "\$AUTH_RESPONSE" | sudo -S "\$@"
@@ -432,7 +430,7 @@ jobs:
               unset AUTH_RESPONSE
               exit \$SUDO_EXIT
           else
-              # User cancelled or timed out, exit with error
+              # User cancelled, exit with error
               exit 1
           fi
           END_OF_PKEXEC_SCRIPT
@@ -467,7 +465,7 @@ jobs:
           export __GLX_VENDOR_LIBRARY_NAME=mesa
           sleep 5
           poetry run single-test ${{ matrix.test_file }}.py
-          # poetry run single-test test_login_app_auth.py
+          # poetry run single-test test_rgb20_channel_tx.py
           '
 
       - name: Cleanup after test (prepare for next matrix job)
