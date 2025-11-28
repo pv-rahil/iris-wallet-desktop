@@ -3,6 +3,7 @@
 SendOperation class provides methods for sending assets using bitcoin or lightning transfer.
 """
 from __future__ import annotations
+
 import time
 
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -29,12 +30,23 @@ class SendOperation(MainPageObjects, BaseOperations):
         :param transfer_type: The type of transfer ('bitcoin' or 'lightning').
         """
         self.do_focus_on_application(application)
-        time.sleep(1)
+
+        # Select transfer type and wait for UI to update
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
+            # Wait for the on-chain interface to be ready
+            for _ in range(10):
+                if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+                    break
+                time.sleep(0.2)
 
         if transfer_type == 'lightning' and self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
             self.wallet_transfer_page_objects.click_lightning_button()
+            # Wait for the lightning interface to be ready
+            for _ in range(10):
+                if self.do_is_displayed(self.send_ln_invoice_page_objects.invoice_input()):
+                    break
+                time.sleep(0.2)
 
         send_objects = self.send_asset_page_objects if transfer_type != 'lightning' else self.send_ln_invoice_page_objects
 
@@ -55,10 +67,14 @@ class SendOperation(MainPageObjects, BaseOperations):
         Send assets without sufficient funds.
         """
         validation = None
-        time.sleep(1)
         self.do_focus_on_application(application)
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
+            # Wait for the on-chain interface to be ready
+            for _ in range(10):
+                if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+                    break
+                time.sleep(0.2)
 
         if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
             self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
@@ -79,10 +95,14 @@ class SendOperation(MainPageObjects, BaseOperations):
         Send assets with a wrong invoice.
         """
         description = None
-        time.sleep(1)
         self.do_focus_on_application(application)
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
+            # Wait for the on-chain interface to be ready
+            for _ in range(10):
+                if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+                    break
+                time.sleep(0.2)
 
         if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
             self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
@@ -110,11 +130,15 @@ class SendOperation(MainPageObjects, BaseOperations):
         """
 
         description = None
-        time.sleep(1)
 
         self.do_focus_on_application(application)
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
+            # Wait for the on-chain interface to be ready
+            for _ in range(10):
+                if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+                    break
+                time.sleep(0.2)
 
         if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
             self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)

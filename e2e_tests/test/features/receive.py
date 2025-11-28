@@ -2,6 +2,7 @@
 Module for handling receive operations in the application.
 """
 from __future__ import annotations
+
 import time
 
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -24,13 +25,22 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         Receive assets from the application.
         """
         address, copied_address = None, None
-        time.sleep(1)
         self.do_focus_on_application(application)
         # Select appropriate transfer method
         if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
             self.wallet_transfer_page_objects.click_on_chain_button()
+            # Wait for the on-chain interface to be ready
+            for _ in range(10):
+                if self.do_is_displayed(self.receive_asset_page_objects.invoice_copy_button()):
+                    break
+                time.sleep(0.2)
         elif transfer_type == 'lightning' and self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
             self.wallet_transfer_page_objects.click_lightning_button()
+            # Wait for the lightning interface to be ready
+            for _ in range(10):
+                if self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):
+                    break
+                time.sleep(0.2)
 
         # Handle additional input for Lightning
         if transfer_type == 'lightning' and self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):
@@ -76,9 +86,9 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         Sends assets using lightning transfer with a wrong invoice.
         """
         error_label = None
-        time.sleep(1)
 
         self.do_focus_on_application(application)
+        time.sleep(1)
 
         if self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
             self.wallet_transfer_page_objects.click_lightning_button()
