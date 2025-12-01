@@ -78,14 +78,17 @@ class ToasterPageObjects(BaseOperations):
         # Fallback: Search AT-SPI tree directly
         print('[TOASTER] Primary detection failed. Attempting AT-SPI tree fallback...')
         try:
-            # Search for any label with TOASTER_DESCRIPTION, regardless of visibility
             matches = self.application.findChildren(
                 lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
             )
-            for node in matches:
-                if node.name:
-                    print(f"[TOASTER] Fallback found text: {node.name}")
-                    return node.name
+
+            if matches:
+                # Pick the LAST matched node
+                last_node = matches[-1]
+                if last_node.name:
+                    print(f"[TOASTER] Fallback found text (latest): {last_node.name}")
+                    return last_node.name
+
         except Exception as e:
             print(f"[TOASTER] Fallback failed: {e}")
 

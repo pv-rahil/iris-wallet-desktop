@@ -44,7 +44,7 @@ class BaseOperations:
 
         # Circuit breaker pattern for element searches
         self._consecutive_failures = 0
-        self._max_consecutive_failures = 3 if is_ci_environment() else 4
+        self._max_consecutive_failures = 5 if is_ci_environment() else 4
         self._circuit_broken = False
 
         # Define the elements like buttons and text fields as lambdas
