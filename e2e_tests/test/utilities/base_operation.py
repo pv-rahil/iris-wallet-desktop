@@ -1,4 +1,4 @@
-# pylint: disable=unused-import
+# pylint: disable=unused-import,too-many-arguments
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import re
 import time
+from datetime import datetime
 
 import pyperclip
 from dogtail.rawinput import keyCombo
@@ -18,6 +19,7 @@ from Xlib import X
 
 from accessible_constant import TOASTER_DESCRIPTION
 from e2e_tests.test.utilities.dogtail_config import get_default_timeout
+from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 
 load_dotenv()
 NATIVE_AUTHENTICATION_PASSWORD = os.getenv('NATIVE_AUTHENTICATION_PASSWORD')
@@ -39,6 +41,11 @@ class BaseOperations:
             application (Node): The root node of the GUI application.
         """
         self.application = application
+
+        # Circuit breaker pattern for element searches
+        self._consecutive_failures = 0
+        self._max_consecutive_failures = 3 if is_ci_environment() else 4
+        self._circuit_broken = False
 
         # Define the elements like buttons and text fields as lambdas
         self.refresh_button = lambda: self.perform_action_on_element(
@@ -157,7 +164,7 @@ class BaseOperations:
         while time.time() < end_time:
             try:
                 time.sleep(0.3)
-                element.grabFocus()  # attempt to focus
+                element.grabFocus()
                 if element.showing:  # check visibility
                     return True
             except Exception as e:
@@ -165,7 +172,16 @@ class BaseOperations:
 
             time.sleep(interval)
 
-        print(f"[TIMEOUT] Element was not visible after {timeout} seconds.")
+        # Print detailed element information on timeout
+        try:
+            element_info = f"role='{element.roleName}', name='{
+                element.name
+            }', description='{element.description}'"
+        except Exception:
+            element_info = '<unable to read element details>'
+
+        print(f"""[TIMEOUT] Element was not visible after
+        {timeout} seconds. Element: [{element_info}]""")
         return False
 
     def do_is_enabled(self, element) -> bool:
@@ -245,7 +261,7 @@ class BaseOperations:
         """
         return self.activate_window_by_name(application)
 
-    def perform_action_on_element(self, role_name, name=None, description=None, timeout=None, retry_interval=0.5):
+    def perform_action_on_element(self, role_name, name=None, description=None, timeout=None, retry_interval=1.5, max_retries=None):
         """
         Retrieves the specified element with the given role and name or description, with exponential backoff retries.
 
@@ -253,21 +269,39 @@ class BaseOperations:
             role_name (str): The role of the element.
             name (str, optional): The name of the element. Defaults to None.
             description (str, optional): The description of the element. Defaults to None.
-            timeout (int, optional): The maximum time to wait for the element in seconds. If None, uses CI-aware default.
+            timeout (int, optional): The maximum time to wait for the element in seconds. If None, uses CI-aware default (20s).
             retry_interval (float): The initial time to wait between retries in seconds. Defaults to 0.5.
+            max_retries (int, optional): Maximum number of retry attempts. If None, uses timeout-based approach.
 
         Returns:
             Node: The retrieved element, or False if no matching element is found within the timeout.
+
+        Raises:
+            RuntimeError: If circuit breaker is triggered after consecutive failures.
         """
+        # Check circuit breaker
+        if self._should_break_circuit():
+            identifier = name if name else description
+            error_msg = f"[CIRCUIT BREAKER] Stopping search for {role_name} '{
+                identifier
+            }' after {self._consecutive_failures} consecutive failures"
+            print(error_msg)
+            raise RuntimeError(error_msg)
+
         if timeout is None:
-            timeout = get_default_timeout(30)
+            timeout = get_default_timeout(20)  # Reduced from 30s to 20s
 
         start_time = time.time()
         elements = []
         current_interval = retry_interval
         max_interval = 4.0  # Cap exponential backoff at 4 seconds
+        attempt = 0
+
+        identifier = name if name else description
+        self._log_search_attempt(role_name, identifier, timeout, 'START')
 
         while time.time() - start_time < timeout:
+            attempt += 1
             try:
                 # Try to find elements by name or description
                 if name and self.application:
@@ -286,23 +320,39 @@ class BaseOperations:
                 if elements:
                     element = elements[-1]
                     if element.showing and (not hasattr(element, 'sensitive') or element.sensitive):
-                        element.grabFocus()
+                        self._log_search_attempt(
+                            role_name, identifier, timeout, 'SUCCESS', attempt,
+                        )
+                        self._reset_circuit_breaker()  # Reset on success
                         return element
 
             except Exception as e:
                 # Log the exception with more details for debugging
-                identifier = name if name else description
-                print(f"[RETRY] Finding {role_name} '{identifier}': {e}")
+                print(f"""[RETRY {attempt}] Finding {role_name} '{identifier}': {e}
+                      """)
+
+            # Check if we should exit early (max_retries)
+            if max_retries and attempt >= max_retries:
+                print(f"""[MAX RETRIES] Reached max retries (
+                      {max_retries}) for {role_name} '{identifier}'
+                      """)
+                break
 
             # Exponential backoff: increase interval for next retry
             time.sleep(current_interval)
             current_interval = min(current_interval * 1.5, max_interval)
 
-        # Final attempt with relaxed constraints if we still haven't found it
+        # Element not found - log failure and update circuit breaker
+        self._log_search_attempt(
+            role_name, identifier, timeout, 'FAILURE', attempt,
+        )
+        self._dump_tree_on_failure(role_name, identifier)
+        self._consecutive_failures += 1
+
         print(
             f"""[WARN] Element not found after {
                 timeout
-            }s, attempting relaxed search...""",
+            }s and {attempt} attempts (consecutive failures: {self._consecutive_failures})""",
         )
         return False
 
@@ -347,7 +397,6 @@ class BaseOperations:
                 if elements:
                     for element in elements:
                         if element.showing and element.sensitive:
-                            element.grabFocus()
                             return element
 
             except Exception as e:
@@ -424,3 +473,186 @@ class BaseOperations:
         """Enter the password when the native auth dialog is show"""
         typeText(NATIVE_AUTHENTICATION_PASSWORD)
         keyCombo('enter')
+
+    def _should_break_circuit(self):
+        """
+        Check if circuit breaker should trigger.
+
+        Returns:
+            bool: True if circuit should break, False otherwise.
+        """
+        return self._consecutive_failures >= self._max_consecutive_failures
+
+    def _reset_circuit_breaker(self):
+        """Reset the circuit breaker counter after a successful element find."""
+        if self._consecutive_failures > 0:
+            print(f"""[CIRCUIT BREAKER] Reset after
+            {self._consecutive_failures} failures""")
+        self._consecutive_failures = 0
+        self._circuit_broken = False
+
+    def _log_search_attempt(self, role_name, identifier, timeout, status, attempt=0):
+        """
+        Log element search attempts with structured information.
+
+        Args:
+            role_name (str): The role of the element being searched.
+            identifier (str): The name or description of the element.
+            timeout (int): The timeout value for the search.
+            status (str): Status of the search (START, SUCCESS, FAILURE).
+            attempt (int): Current attempt number.
+        """
+        timestamp = datetime.now().strftime('%H:%M:%S.%f')[:-3]
+        if status == 'START':
+            print(f"""[{timestamp}] [SEARCH START] {role_name} '
+            {identifier}' (timeout: {timeout}s)""")
+        elif status == 'SUCCESS':
+            print(f"""[{timestamp}] [SEARCH SUCCESS] {role_name} '
+            {identifier}' (attempt: {attempt})""")
+        elif status == 'FAILURE':
+            print(f"""[{timestamp}] [SEARCH FAILURE] {role_name} '
+            {identifier}' (attempts: {attempt}, timeout: {timeout}s)""")
+
+    def _get_visible_elements(self):
+        """Get all visible elements from the application tree."""
+        all_elements = list(self.application.findChildren(lambda n: True))
+        visible_elements = []
+        for elem in all_elements:
+            try:
+                if elem.showing:
+                    visible_elements.append(elem)
+            except Exception:
+                continue
+        return visible_elements
+
+    def _group_elements_by_role(self, elements):
+        """Group elements by their role name."""
+        elements_by_role = {}
+        for elem in elements:
+            role = elem.roleName
+            if role not in elements_by_role:
+                elements_by_role[role] = []
+            elements_by_role[role].append(elem)
+        return elements_by_role
+
+    def _print_element_details(self, idx, elem):
+        """Print details of a single element."""
+        try:
+            name = elem.name if elem.name else '<empty>'
+            description = elem.description if elem.description else '<empty>'
+
+            # Show name and description on same line if both are short
+            if len(name) < 40 and len(description) < 40:
+                print(f"{idx}. name: '{name}' | description: '{description}'")
+            else:
+                print(f"{idx}. name: '{name}'")
+                if description != '<empty>':
+                    print(f"       description: '{description}'")
+        except Exception:
+            print(f"    {idx}. [Error reading element]")
+
+    def _print_matching_role_elements(self, role_name, elements_by_role):
+        """Print elements with the same role as the one being searched for."""
+        if role_name in elements_by_role:
+            print(f"""▶ Elements with role '
+            {role_name}' (what you're looking for):""")
+            print(
+                f""" Found {
+                    len(elements_by_role[role_name])
+                } visible element(s)\n""",
+            )
+            for idx, elem in enumerate(elements_by_role[role_name], 1):
+                try:
+                    name = elem.name if elem.name else '<empty>'
+                    description = elem.description if elem.description else '<empty>'
+                    print(f"  {idx}. name: '{name}'")
+                    print(f"     description: '{description}'")
+                    print()
+                except Exception as e:
+                    print(f"  {idx}. [Error reading element: {e}]\n")
+            print(f"{'─'*80}\n")
+        else:
+            print(f"▶ No visible elements found with role '{role_name}'\n")
+            print(f"{'─'*80}\n")
+
+    def _print_other_role_elements(self, role_name, elements_by_role):
+        """Print all other visible elements grouped by role."""
+        print('▶ All other visible elements on this page:\n')
+        for role in sorted(elements_by_role.keys()):
+            if role == role_name:
+                continue  # Already shown above
+
+            elements = elements_by_role[role]
+            print(f"  [{role}] ({len(elements)} element(s))")
+
+            # Show up to 5 elements per role to keep output manageable
+            for idx, elem in enumerate(elements[:5], 1):
+                self._print_element_details(idx, elem)
+
+            if len(elements) > 5:
+                print(f"    ... and {len(elements) - 5} more")
+            print()
+
+    def _dump_tree_on_failure(self, role_name, identifier):
+        """
+        Dump AT-SPI tree information when element search fails.
+        Shows only visible elements on the current page for easier debugging.
+
+        Args:
+            role_name (str): The role of the element that was not found.
+            identifier (str): The name or description of the element.
+        """
+        try:
+            # Get current page/window info
+            try:
+                app_name = self.application.name if hasattr(
+                    self.application, 'name') else '<unknown>'
+                window_name = self.application.child(
+                    roleName='frame').name if self.application.child(roleName='frame') else '<unknown>'
+            except Exception:
+                app_name = '<unknown>'
+                window_name = '<unknown>'
+
+            print(f"\n{'='*80}")
+            print(f"❌ ELEMENT NOT FOUND ❌")
+            print(f"{'='*80}")
+            print(f"  Role:        {role_name}")
+            print(f"  Name/Desc:   {identifier}")
+            print(f"  Current App: {app_name}")
+            print(f"  Window:      {window_name}")
+            print(f"{'='*80}")
+
+            # Only dump tree in CI or when explicitly enabled
+            if not (is_ci_environment() or os.getenv('DUMP_ATSPI_TREE', '').lower() == 'true'):
+                print('[INFO] Set DUMP_ATSPI_TREE=true to see available elements')
+                return
+
+            try:
+                visible_elements = self._get_visible_elements()
+
+                if not visible_elements:
+                    print(
+                        '\n[WARNING] No visible elements found on current page!',
+                    )
+                    print(
+                        "This might indicate the page hasn't loaded or AT-SPI tree is not ready.\n",
+                    )
+                    return
+
+                print(f'\n📋 VISIBLE ELEMENTS ON CURRENT PAGE: {
+                      len(visible_elements)} total')
+                print(f"{'─'*80}\n")
+
+                elements_by_role = self._group_elements_by_role(
+                    visible_elements,
+                )
+                self._print_matching_role_elements(role_name, elements_by_role)
+                self._print_other_role_elements(role_name, elements_by_role)
+
+                print(f"{'='*80}\n")
+
+            except Exception as e:
+                print(f"[ERROR] Failed to dump element tree: {e}\n")
+
+        except Exception as e:
+            print(f"[ERROR] Critical error in _dump_tree_on_failure: {e}")

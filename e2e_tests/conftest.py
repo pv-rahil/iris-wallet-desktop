@@ -52,7 +52,13 @@ def wallet_mode(request):
 
 
 def pytest_runtest_setup(item):
-    """Skip tests based on wallet mode."""
+    """Skip tests based on wallet mode and print test start."""
+    # Print test start banner
+    test_name = item.nodeid
+    print(f"\n{'='*80}")
+    print(f"🧪 STARTING TEST: {test_name}")
+    print(f"{'='*80}\n")
+
     wallet_mode = item.config.getoption('--wallet-mode')
 
     # Skip tests marked with @pytest.mark.skip_for_embedded if running in embedded mode
@@ -66,3 +72,25 @@ def pytest_runtest_setup(item):
         pytest.skip(
             'Skipping test because it is not applicable in remote mode.',
         )
+
+
+def pytest_runtest_teardown(item, nextitem):
+    """Print test completion banner."""
+    test_name = item.nodeid
+    print(f"\n{'='*80}")
+    print(f"✅ COMPLETED TEST: {test_name}")
+    print(f"{'='*80}\n")
+
+
+def pytest_runtest_logreport(report):
+    """Print test result after execution."""
+    if report.when == 'call':
+        test_name = report.nodeid
+        if report.passed:
+            print(f"✅ PASSED: {test_name}")
+        elif report.failed:
+            print(f"❌ FAILED: {test_name}")
+            # First 200 chars of error
+            print(f"   Error: {report.longreprtext[:200]}...")
+        elif report.skipped:
+            print(f"⏭️  SKIPPED: {test_name}")

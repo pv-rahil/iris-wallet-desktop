@@ -18,17 +18,48 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         """
         super().__init__(application)
 
+    def _retry_receive_dialog(self, max_retries=2, transfer_type=None):
+        """
+        Retry logic to ensure receive dialog shows transfer selection buttons.
+        Closes any open dialog and reopens the receive dialog.
+        """
+        retry_count = 0
+        while retry_count < max_retries:
+            if self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()) or self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
+                if transfer_type == 'bitcoin':
+                    self.wallet_transfer_page_objects.click_on_chain_button()
+                elif transfer_type == 'lightning':
+                    self.wallet_transfer_page_objects.click_lightning_button()
+                return True  # Buttons are visible, success
+
+            print(f"""[RETRY] Transfer buttons not visible, retrying... (attempt
+            {retry_count + 1}/{max_retries})""")
+            if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+                self.receive_asset_page_objects.click_receive_asset_close_button()
+            elif self.do_is_displayed(self.create_ln_invoice_page_objects.close_button()):
+                self.create_ln_invoice_page_objects.click_close_button()
+                self.fungible_page_objects.click_bitcoin_frame()
+            if self.do_is_displayed(self.bitcoin_detail_page_objects.receive_bitcoin_button()):
+                self.bitcoin_detail_page_objects.click_receive_bitcoin_button()
+            retry_count += 1
+        return False
+
     def receive(self, application, transfer_type=None, value=None):
         """
         Receive assets from the application.
         """
         address, copied_address = None, None
         self.do_focus_on_application(application)
+
+        # Retry logic: if transfer buttons not visible, try closing and reopening (max 2 attempts)
+        if transfer_type == 'bitcoin':
+            self._retry_receive_dialog(transfer_type=transfer_type)
+
         # Select appropriate transfer method
-        if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
-            self.wallet_transfer_page_objects.click_on_chain_button()
-        elif transfer_type == 'lightning' and self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
-            self.wallet_transfer_page_objects.click_lightning_button()
+        # if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
+        #     self.wallet_transfer_page_objects.click_on_chain_button()
+        # elif transfer_type == 'lightning' and self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
+        #     self.wallet_transfer_page_objects.click_lightning_button()
 
         # Handle additional input for Lightning
         if transfer_type == 'lightning' and self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):

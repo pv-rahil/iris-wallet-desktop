@@ -65,11 +65,31 @@ class ToasterPageObjects(BaseOperations):
     def get_toaster_description(self):
         """
         Gets the text of the toaster description element if it is displayed.
+        Fallback: searches AT-SPI tree for the element if primary check fails.
 
         Returns:
-            str: The text of the element if it is displayed, None otherwise.
+            str: The text of the element if found, None otherwise.
         """
-        return self.do_get_text(self.toaster_description()) if self.do_is_displayed(self.toaster_description()) else None
+        # Try standard way first
+        element = self.toaster_description()
+        if self.do_is_displayed(element):
+            return self.do_get_text(element)
+
+        # Fallback: Search AT-SPI tree directly
+        print('[TOASTER] Primary detection failed. Attempting AT-SPI tree fallback...')
+        try:
+            # Search for any label with TOASTER_DESCRIPTION, regardless of visibility
+            matches = self.application.findChildren(
+                lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+            )
+            for node in matches:
+                if node.name:
+                    print(f"[TOASTER] Fallback found text: {node.name}")
+                    return node.name
+        except Exception as e:
+            print(f"[TOASTER] Fallback failed: {e}")
+
+        return None
 
     def click_toaster_close_button(self):
         """

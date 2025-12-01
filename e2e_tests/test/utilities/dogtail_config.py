@@ -52,19 +52,22 @@ def configure_dogtail():
 
     # defaultDelay: Delay before performing actions (in seconds)
     # Slightly longer in CI to ensure UI is ready
-    config.config.defaultDelay = 0.5 if in_ci else 0.3
+    config.config.defaultDelay = 1.5 if in_ci else 0.3
 
     # actionDelay: Delay after performing actions (in seconds)
     # Longer in CI to allow UI to update
-    config.config.actionDelay = 1.0 if in_ci else 0.5
+    config.config.actionDelay = 1.5 if in_ci else 0.5
 
     # typingDelay: Delay between keystrokes when typing
     config.config.typingDelay = 0.1 if in_ci else 0.05
 
-    # Enable debug logging in CI for troubleshooting
-    if in_ci:
-        config.config.logDebugToFile = False  # Avoid excessive log files
-        config.config.logDebugToStdOut = False  # Keep CI logs clean
+    # # Enable debug logging in CI for troubleshooting
+    # if in_ci:
+    #     config.config.logDebugToFile = False  # Avoid excessive log files
+    #     config.config.logDebugToStdOut = True  # Enable stdout logging for CI visibility
+    #     print('[DOGTAIL CONFIG] Debug logging enabled for CI')
+    # else:
+    #     config.config.logDebugToStdOut = False  # Keep local logs clean
 
     print(f"[DOGTAIL CONFIG] Environment: {'CI' if in_ci else 'Local'}")
     print(f"[DOGTAIL CONFIG] Search timeout: {search_timeout}s")
@@ -153,5 +156,49 @@ def get_default_timeout(base_timeout=30):
     return int(base_timeout * multiplier)
 
 
+def get_toaster_timeout():
+    """
+    Get the timeout for toaster element searches.
+    Toasters are short-lived (6s display time), so we need shorter timeouts.
+
+    Returns:
+        int: Timeout in seconds (10s in CI, 8s locally).
+    """
+    return 10 if is_ci_environment() else 8
+
+
+def get_toaster_poll_interval():
+    """
+    Get the polling interval for toaster element searches.
+    Aggressive polling is needed to catch short-lived toasters.
+
+    Returns:
+        float: Poll interval in seconds (0.1s for aggressive polling).
+    """
+    return 0.1
+
+
+def get_max_consecutive_failures():
+    """
+    Get the maximum number of consecutive element search failures
+    before circuit breaker triggers.
+
+    Returns:
+        int: Max failures (3 in CI, 2 locally).
+    """
+    return 3 if is_ci_environment() else 2
+
+
+def get_element_search_timeout():
+    """
+    Get the default timeout for element searches.
+    Reduced from 30s to 20s for faster failure detection.
+
+    Returns:
+        int: Timeout in seconds (30s in CI, 20s locally).
+    """
+    return get_default_timeout(20)
+
+
 # Initialize dogtail configuration when module is imported
-configure_dogtail()
+# configure_dogtail()
