@@ -18,7 +18,7 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         """
         super().__init__(application)
 
-    def _retry_receive_dialog(self, max_retries=2, transfer_type=None):
+    def retry_receive_dialog(self, max_retries=2, transfer_type=None):
         """
         Retry logic to ensure receive dialog shows transfer selection buttons.
         Closes any open dialog and reopens the receive dialog.
@@ -53,7 +53,7 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
 
         # Retry logic: if transfer buttons not visible, try closing and reopening (max 2 attempts)
         if transfer_type == 'bitcoin':
-            self._retry_receive_dialog(transfer_type=transfer_type)
+            self.retry_receive_dialog(transfer_type=transfer_type)
 
         # Select appropriate transfer method
         # if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):

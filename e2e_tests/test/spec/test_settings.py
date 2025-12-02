@@ -9,6 +9,7 @@ from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_APPLICATION_URL
 from accessible_constant import TEST_ANNOUNCE_ADDRESS
 from accessible_constant import TEST_ANNOUNCE_ALIAS
+from accessible_constant import TOASTER_DESCRIPTION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -70,7 +71,6 @@ def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup):
             TEST_FEE_RATE,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
 
@@ -80,14 +80,20 @@ def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_on_chain_button()
-        new_default_fee_rate = wallets_and_operations.first_page_objects.send_asset_page_objects.get_fee_rate_text()
+        wallets_and_operations.first_page_features.send_features.retry_send_dialog(
+            transfer_type='bitcoin',
+        )
+    new_default_fee_rate = wallets_and_operations.first_page_objects.send_asset_page_objects.get_fee_rate_text()
 
     assert new_default_fee_rate == TEST_FEE_RATE
 
     with allure.step('Navigating back to fungibles page'):
         wallets_and_operations.first_page_objects.send_asset_page_objects.click_send_asset_close_button()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+        if wallets_and_operations.first_page_operations.do_is_displayed(
+            wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.bitcoin_close_button(),
+        ):
+            wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
 
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -121,7 +127,6 @@ def test_default_expiry_time_minute(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_MINUTES,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
 
@@ -131,12 +136,18 @@ def test_default_expiry_time_minute(wallets_and_operations: WalletTestSetup):
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
     wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
     wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
-    wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_lightning_button()
+    wallets_and_operations.first_page_features.receive_features.retry_receive_dialog(
+        transfer_type='lightning',
+    )
 
     # Getting the expiry time
     expiry_time = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_amount()
     expiry_time_unit = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_time_unit()
     wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.click_close_button()
+    if wallets_and_operations.first_page_operations.do_is_displayed(
+        wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.close_button(),
+    ):
+        wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.click_close_button()
 
     assert expiry_time == TEST_EXPIRY_MINUTES
     assert expiry_time_unit == TranslationManager.translate('minutes')
@@ -176,7 +187,6 @@ def test_default_expiry_time_hour(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_HOURS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
 
@@ -186,12 +196,18 @@ def test_default_expiry_time_hour(wallets_and_operations: WalletTestSetup):
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
     wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
     wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
-    wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_lightning_button()
+    wallets_and_operations.first_page_features.receive_features.retry_receive_dialog(
+        transfer_type='lightning',
+    )
 
     # Getting the expiry time
     expiry_time = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_amount()
     expiry_time_unit = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_time_unit()
     wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.click_close_button()
+    if wallets_and_operations.first_page_operations.do_is_displayed(
+        wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.close_button(),
+    ):
+        wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.click_close_button()
 
     assert expiry_time == TEST_EXPIRY_HOURS
     assert expiry_time_unit == TranslationManager.translate('hours')
@@ -231,7 +247,6 @@ def test_default_expiry_time_days(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_DAYS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
 
@@ -241,12 +256,18 @@ def test_default_expiry_time_days(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
-        wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_lightning_button()
+        wallets_and_operations.first_page_features.receive_features.retry_receive_dialog(
+            transfer_type='lightning',
+        )
 
     # Getting the expiry time
     expiry_time = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_amount()
     expiry_time_unit = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_time_unit()
     wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.click_close_button()
+    if wallets_and_operations.first_page_operations.do_is_displayed(
+        wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.close_button(),
+    ):
+        wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.click_close_button()
 
     assert expiry_time == TEST_EXPIRY_DAYS
     assert expiry_time_unit == TranslationManager.translate('days')
@@ -277,7 +298,6 @@ def test_set_default_min_confirmation(wallets_and_operations: WalletTestSetup):
             TEST_FEE_RATE,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
 
@@ -314,7 +334,6 @@ def test_set_valid_announce_address(wallets_and_operations: WalletTestSetup):
             TEST_ANNOUNCE_ADDRESS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -362,7 +381,6 @@ def test_set_announce_alias(wallets_and_operations: WalletTestSetup):
             TEST_ANNOUNCE_ALIAS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -410,7 +428,6 @@ def test_set_invalid_bitcoind_host(wallets_and_operations: WalletTestSetup):
             TEST_INVALID_BITCOIND_HOST,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -450,7 +467,6 @@ def test_set_invalid_bitcoind_port(wallets_and_operations: WalletTestSetup):
             TEST_INVALID_BITCOIND_PORT,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -490,7 +506,6 @@ def test_set_invalid_electrum_url(wallets_and_operations: WalletTestSetup):
             TEST_INVALID_INDEXER_URL,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -530,7 +545,6 @@ def test_set_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
             TEST_RGB_PROXY_URL,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -578,7 +592,6 @@ def test_set_invalid_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
             TEST_INVALID_RGB_PROXY_URL,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
@@ -618,7 +631,6 @@ def test_set_valid_electrum_url(wallets_and_operations: WalletTestSetup):
             TEST_INDEXER_URL,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()

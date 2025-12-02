@@ -140,7 +140,7 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        wallets_and_operations.first_page_features.send_features.send_with_custom_fee_rate(
+        description = wallets_and_operations.first_page_features.send_features.send_with_custom_fee_rate(
             application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE, transfer_type=TransferType.BITCOIN.value,
         )
 
@@ -152,9 +152,9 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
         tx_id = wallets_and_operations.second_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
 
-    # with allure.step('Verify transaction id'):
-    #     tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
-    #     assert description == INFO_BITCOIN_SENT.format(tx_id)
+    with allure.step('Verify transaction id'):
+        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
+        assert description == INFO_BITCOIN_SENT.format(tx_id)
 
     with allure.step('Close transaction detail page'):
         wallets_and_operations.second_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()

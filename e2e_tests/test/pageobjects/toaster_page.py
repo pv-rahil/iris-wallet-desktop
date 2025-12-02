@@ -62,10 +62,14 @@ class ToasterPageObjects(BaseOperations):
         """
         return self.do_get_text(self.toaster_title()) if self.do_is_displayed(self.toaster_title()) else None
 
-    def get_toaster_description(self):
+    def get_toaster_description(self, filter_pattern=None):
         """
         Gets the text of the toaster description element if it is displayed.
         Fallback: searches AT-SPI tree for the element if primary check fails.
+
+        Args:
+            filter_pattern (str, optional): A substring to filter the toaster text.
+                                            If provided, only toasters containing this text will be considered.
 
         Returns:
             str: The text of the element if found, None otherwise.
@@ -75,22 +79,31 @@ class ToasterPageObjects(BaseOperations):
         if self.do_is_displayed(element):
             return self.do_get_text(element)
 
-        # Fallback: Search AT-SPI tree directly
-        print('[TOASTER] Primary detection failed. Attempting AT-SPI tree fallback...')
+        # Fallback / Filtered Search: Search AT-SPI tree directly
+        print(
+            f'[TOASTER] Searching AT-SPI tree (filter="{filter_pattern}")...',
+        )
         try:
             matches = self.application.findChildren(
                 lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
             )
 
             if matches:
-                # Pick the LAST matched node
-                last_node = matches[-1]
-                if last_node.name:
-                    print(f"[TOASTER] Fallback found text (latest): {last_node.name}")
-                    return last_node.name
+                # Filter matches if pattern is provided
+                if filter_pattern:
+                    matches = [
+                        m for m in matches if m.name and filter_pattern in m.name
+                    ]
+
+                if matches:
+                    # Pick the LAST matched node
+                    last_node = matches[-1]
+                    if last_node.name:
+                        print(f"[TOASTER] Found text: {last_node.name}")
+                        return last_node.name
 
         except Exception as e:
-            print(f"[TOASTER] Fallback failed: {e}")
+            print(f"[TOASTER] Search failed: {e}")
 
         return None
 
