@@ -248,7 +248,7 @@ jobs:
             libosmesa6 \
             mesa-utils-extra \
             libfuse2 \
-            scrot zenity
+            scrot zenity ffmpeg
           sudo gem install fpm -f
 
       - name: Setup env for GUI testing
@@ -320,6 +320,14 @@ jobs:
 
       - name: Start regtest services
         run: poetry run regtest-start
+
+      - name: Start screen recording (background)
+        run: |
+          ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
+            -vcodec libx264 -preset ultrafast /tmp/${{ matrix.test_file }}_recording.mp4 \
+            > /dev/null 2> /tmp/ffmpeg_errors.log &
+          # Save PID only if ffmpeg started
+          echo $! > /tmp/ffmpeg_pid.txt || true
 
       - name: Run E2E Dogtail Test
         env:
@@ -463,3 +471,22 @@ jobs:
           poetry run single-test ${{ matrix.test_file }}.py
           # poetry run single-test test_rgb20_channel_tx.py
           '
+
+      - name: Stop recording
+        if: ${{ always() || cancelled() }}
+        run: |
+          if [ -f /tmp/ffmpeg_pid.txt ]; then
+            PID=$(cat /tmp/ffmpeg_pid.txt || true)
+            if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+              kill "$PID" || true
+            fi
+          fi
+
+      - name: Upload video recording
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.test_file }}-video-recording
+          path: /tmp/${{ matrix.test_file }}_recording.mp4
+          retention-days: 30
+          if-no-files-found: ignore
