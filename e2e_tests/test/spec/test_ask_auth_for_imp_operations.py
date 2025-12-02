@@ -78,7 +78,6 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT, transfer_type='bitcoin', is_native_auth_enabled=True,
         )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message(TOASTER_DESCRIPTION)
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             filter_pattern=INFO_BITCOIN_SENT.split('{}')[0],
@@ -134,7 +133,6 @@ def test_ask_auth_for_imp_question_send_rgb20_on(wallets_and_operations: WalletT
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb20_invoice, ASSET_AMOUNT, is_native_auth_enabled=True,
         )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message(TOASTER_DESCRIPTION)
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             filter_pattern=INFO_ASSET_SENT.split('{}')[0],
@@ -190,7 +188,6 @@ def test_ask_auth_for_imp_question_send_rgb_25_on(wallets_and_operations: Wallet
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb25_invoice, ASSET_AMOUNT, is_native_auth_enabled=True,
         )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message(TOASTER_DESCRIPTION)
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             filter_pattern=INFO_ASSET_SENT.split('{}')[0],
@@ -256,7 +253,6 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT, transfer_type='bitcoin',
         )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message(TOASTER_DESCRIPTION)
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_title = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_title()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
@@ -298,7 +294,6 @@ def test_ask_auth_for_imp_question_send_rgb_20_off(wallets_and_operations: Walle
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb20_invoice, ASSET_AMOUNT,
         )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message(TOASTER_DESCRIPTION)
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             filter_pattern=INFO_ASSET_SENT.split('{}')[0],
@@ -356,7 +351,6 @@ def test_ask_auth_for_imp_question_send_rgb_25_off(wallets_and_operations: Walle
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb25_invoice, ASSET_AMOUNT,
         )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message(TOASTER_DESCRIPTION)
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             filter_pattern=INFO_ASSET_SENT.split('{}')[0],

@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from accessible_constant import TOASTER_DESCRIPTION
+from src.utils.info_message import INFO_BITCOIN_SENT
 
 
 class SendOperation(MainPageObjects, BaseOperations):
@@ -160,6 +162,6 @@ class SendOperation(MainPageObjects, BaseOperations):
             self.toaster_page_objects.click_toaster_frame()
 
         if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
-            description = self.toaster_page_objects.get_toaster_description()
+            description = self.toaster_page_objects.get_toaster_description(filter_pattern=INFO_BITCOIN_SENT.split('{}')[0])
 
         return description
