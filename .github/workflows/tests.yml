@@ -139,7 +139,7 @@ jobs:
           # - test_receive_and_send_bitcoin
           # - test_hide_exhausted_asset
           # - test_fail_transfer
-          - test_create_and_close_channel
+          # - test_create_and_close_channel
           # - test_issue_rgb20_asset
           # - test_issue_rgb25_asset
           # - test_btc_channel_tx
@@ -147,7 +147,7 @@ jobs:
           # - test_view_unspent
           # - test_refresh_transfer
           # - test_login_app_auth
-          # - test_ask_auth_for_imp_operations
+          - test_ask_auth_for_imp_operations
           # - test_settings
     env:
       DISPLAY: :99
