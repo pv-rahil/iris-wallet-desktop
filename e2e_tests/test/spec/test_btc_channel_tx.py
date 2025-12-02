@@ -87,6 +87,8 @@ def test_send_and_receive_with_correct_invoice_for_btc(wallets_and_operations: W
             application=FIRST_APPLICATION, receiver_invoice=btc_invoice, transfer_type=TransferType.LIGHTNING.value,
         )
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            filter_pattern=INFO_ASSET_SENT_SUCCESSFULLY,
+        )
 
         assert description == INFO_ASSET_SENT_SUCCESSFULLY

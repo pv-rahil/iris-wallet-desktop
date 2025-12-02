@@ -92,7 +92,9 @@ def test_create_channel_with_actual_value(wallets_and_operations: WalletTestSetu
         wallets_and_operations.first_page_objects.channel_detail_dialog_page_objects.click_channel_detail_dialog()
         wallets_and_operations.first_page_objects.close_channel_detail_dialog_page_objects.click_continue_button()
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            filter_pattern=INFO_CHANNEL_DELETED.split('{}')[0],
+        )
 
         assert description == INFO_CHANNEL_DELETED.format(pub_key)
 
