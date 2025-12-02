@@ -52,14 +52,8 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         self.do_focus_on_application(application)
 
         # Retry logic: if transfer buttons not visible, try closing and reopening (max 2 attempts)
-        if transfer_type == 'bitcoin':
+        if transfer_type == 'bitcoin' or transfer_type == 'lightning':
             self.retry_receive_dialog(transfer_type=transfer_type)
-
-        # Select appropriate transfer method
-        # if transfer_type == 'bitcoin' and self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()):
-        #     self.wallet_transfer_page_objects.click_on_chain_button()
-        # elif transfer_type == 'lightning' and self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
-        #     self.wallet_transfer_page_objects.click_lightning_button()
 
         # Handle additional input for Lightning
         if transfer_type == 'lightning' and self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):
