@@ -41,6 +41,8 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
         PASSWORD = wallets_and_operations.first_page_operations.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
+        if getattr(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.keyring_check_box(), "checked", None) is False:
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
         wallets_and_operations.first_page_objects.settings_page_objects.set_keyring_enable_ci()
         test_environment.restart(reset_data=False)
@@ -79,4 +81,13 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
         toggle_button_after = wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button()
+        if getattr(toggle_button_after, "checked", None) is False:
+            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
+            MNEMONIC,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+                PASSWORD,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
         assert toggle_button_after is not None and getattr(toggle_button_after, "checked", None) is True
