@@ -321,7 +321,7 @@ class BaseOperations:
                 if elements:
                     element = elements[-1]
                     if element.showing and (not hasattr(element, 'sensitive') or element.sensitive):
-                        element.set_focus()
+                        element.grabFocus()
                         self._log_search_attempt(
                             role_name, identifier, timeout, 'SUCCESS', attempt,
                         )
