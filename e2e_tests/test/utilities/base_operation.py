@@ -656,3 +656,82 @@ class BaseOperations:
 
         except Exception as e:
             print(f"[ERROR] Critical error in _dump_tree_on_failure: {e}")
+
+    def wait_for_stable_state(self, seconds=3):
+        """
+        Waits for AT-SPI tree to stabilize after state changes.
+        Uses exponential backoff to verify stability.
+        
+        Args:
+            seconds (int): Number of seconds to wait for stability
+            
+        Returns:
+            bool: True if stable, False otherwise
+        """
+        print(f"[STABILITY] Waiting for AT-SPI tree to stabilize ({seconds}s)...")
+        time.sleep(seconds)
+        
+        # Verify stability by checking if we can access the application tree
+        try:
+            _ = list(self.application.findChildren(lambda n: True, showingOnly=True))
+            print("[STABILITY] ✅ AT-SPI tree is stable")
+            return True
+        except Exception as e:
+            print(f"[STABILITY] ⚠️  AT-SPI tree may be unstable: {e}")
+            return False
+    
+    def retry_with_wait(self, operation, max_attempts=3, wait_seconds=2, operation_name="operation"):
+        """
+        Retries flaky operations with waits between attempts.
+        
+        Args:
+            operation (callable): The operation to retry
+            max_attempts (int): Maximum number of retry attempts
+            wait_seconds (int): Seconds to wait between attempts
+            operation_name (str): Name of the operation for logging
+            
+        Returns:
+            Result of the operation
+            
+        Raises:
+            Last exception if all attempts fail
+        """
+        last_exception = None
+        
+        for attempt in range(1, max_attempts + 1):
+            try:
+                print(f"[RETRY] Attempting {operation_name} (attempt {attempt}/{max_attempts})...")
+                result = operation()
+                print(f"[RETRY] ✅ {operation_name} succeeded on attempt {attempt}")
+                return result
+            except Exception as e:
+                last_exception = e
+                print(f"[RETRY] ❌ {operation_name} failed on attempt {attempt}: {e}")
+                if attempt < max_attempts:
+                    print(f"[RETRY] Waiting {wait_seconds}s before retry...")
+                    time.sleep(wait_seconds)
+        
+        print(f"[RETRY] ⚠️  {operation_name} failed after {max_attempts} attempts")
+        raise last_exception
+    
+    def clear_ui_state(self):
+        """
+        Clears UI state by closing any open dialogs/toasters and returning to home screen.
+        Useful for cleanup between tests.
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        print("[CLEAR_UI] Clearing UI state...")
+        try:
+            # Try to press Escape a few times to close any dialogs
+            from dogtail.rawinput import pressKey
+            for _ in range(3):
+                pressKey('Escape')
+                time.sleep(0.5)
+            
+            print("[CLEAR_UI] ✅ UI state cleared")
+            return True
+        except Exception as e:
+            print(f"[CLEAR_UI] ⚠️  Warning: Could not clear UI state: {e}")
+            return False

@@ -94,3 +94,62 @@ def pytest_runtest_logreport(report):
             print(f"   Error: {report.longreprtext[:200]}...")
         elif report.skipped:
             print(f"⏭️  SKIPPED: {test_name}")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """
+    Cleanup hook that runs after each test session (test file) completes.
+    This is critical for matrix runs to prevent state pollution between test files.
+    """
+    import time
+    import psutil
+    from dogtail.tree import root
+    
+    print(f"\n{'='*80}")
+    print("🧹 INTER-FILE CLEANUP: Starting aggressive cleanup between test files")
+    print(f"{'='*80}\n")
+    
+    try:
+        # 1. Kill any zombie application processes
+        print("[CLEANUP] Terminating any remaining application processes...")
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                cmdline = proc.info.get('cmdline', [])
+                if cmdline and any('iriswallet' in str(arg).lower() for arg in cmdline):
+                    print(f"  Killing process: {proc.info['name']} (PID: {proc.info['pid']})")
+                    proc.kill()
+                    proc.wait(timeout=3)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
+                pass
+        
+        # 2. Kill any RGB lightning node processes
+        print("[CLEANUP] Terminating RGB lightning node processes...")
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                cmdline = proc.info.get('cmdline', [])
+                if cmdline and any('rgb-lightning-node' in str(arg) for arg in cmdline):
+                    print(f"  Killing RGB node: PID {proc.info['pid']}")
+                    proc.kill()
+                    proc.wait(timeout=3)
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
+                pass
+        
+        # 3. Clear AT-SPI cache by forcing tree refresh
+        print("[CLEANUP] Refreshing AT-SPI tree cache...")
+        try:
+            # Force dogtail to rebuild its cache
+            root._node = None  # Clear cached root node
+            time.sleep(1)
+        except Exception as e:
+            print(f"  Warning: Could not refresh AT-SPI cache: {e}")
+        
+        # 4. Wait for system to stabilize
+        print("[CLEANUP] Waiting for system to stabilize (5 seconds)...")
+        time.sleep(5)
+        
+        print("[CLEANUP] ✅ Inter-file cleanup completed successfully\n")
+        print(f"{'='*80}\n")
+        
+    except Exception as e:
+        print(f"[CLEANUP] ⚠️  Warning: Cleanup encountered an error: {e}")
+        print(f"{'='*80}\n")

@@ -114,11 +114,11 @@ description = "Backport of CPython tarfile module"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev"]
-markers = "python_version < \"3.12\""
 files = [
     {file = "backports.tarfile-1.2.0-py3-none-any.whl", hash = "sha256:77e284d754527b01fb1e6fa8a1afe577858ebe4e9dad8919e34c862cb399bc34"},
     {file = "backports_tarfile-1.2.0.tar.gz", hash = "sha256:d75e02c268746e1b8144c278978b6e98e85de6ad16f8e4b0844a154557eca991"},
 ]
+markers = {main = "python_version < \"3.12\"", dev = "python_version < \"3.12\" and sys_platform == \"linux\""}
 
 [package.extras]
 docs = ["furo", "jaraco.packaging (>=9.3)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
@@ -659,15 +659,15 @@ files = [
 
 [[package]]
 name = "dogtail"
-version = "1.0.5"
+version = "1.0.7"
 description = "GUI test tool and automation framework that uses Accessibility (a11y) technologies to communicate with desktop applications."
 optional = false
 python-versions = "*"
 groups = ["dev"]
 markers = "sys_platform == \"linux\""
 files = [
-    {file = "dogtail-1.0.5-py3-none-any.whl", hash = "sha256:f585f45a68d8b4d07bd7c7095f85d04b385c04eb705eaf5f2d8bf5473d38222a"},
-    {file = "dogtail-1.0.5.tar.gz", hash = "sha256:ae66611697277dcab1ea9d2e9fcfdcd325d6222b555f60dc20fd9550baa138b3"},
+    {file = "dogtail-1.0.7-py3-none-any.whl", hash = "sha256:efbb225cbdbe0e6fb3b9aa5cf479d1907355126027b79973ea62263db4c5ad3c"},
+    {file = "dogtail-1.0.7.tar.gz", hash = "sha256:55447073c962ef5d1845d11972e21ac9579240490de82b4e3770b9a8c3a4fb3b"},
 ]
 
 [[package]]
@@ -987,6 +987,7 @@ files = [
     {file = "jaraco.classes-3.4.0-py3-none-any.whl", hash = "sha256:f662826b6bed8cace05e7ff873ce0f9283b5c924470fe664fff1c2f00f581790"},
     {file = "jaraco.classes-3.4.0.tar.gz", hash = "sha256:47a024b51d0239c0dd8c8540c6c7f484be3b8fcf0b2d85c13825780d3b3f3acd"},
 ]
+markers = {dev = "sys_platform == \"linux\""}
 
 [package.dependencies]
 more-itertools = "*"
@@ -1006,6 +1007,7 @@ files = [
     {file = "jaraco.context-6.0.1-py3-none-any.whl", hash = "sha256:f797fc481b490edb305122c9181830a3a5b76d84ef6d1aef2fb9b47ab956f9e4"},
     {file = "jaraco_context-6.0.1.tar.gz", hash = "sha256:9bae4ea555cf0b14938dc0aee7c9f32ed303aa20a3b73e7dc80111628792d1b3"},
 ]
+markers = {dev = "sys_platform == \"linux\""}
 
 [package.dependencies]
 "backports.tarfile" = {version = "*", markers = "python_version < \"3.12\""}
@@ -1105,6 +1107,7 @@ description = "Alternate keyring implementations"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
+markers = "sys_platform == \"linux\""
 files = [
     {file = "keyrings.alt-5.0.2-py3-none-any.whl", hash = "sha256:6be74693192f3f37bbb752bfac9b86e6177076b17d2ac12a390f1d6abff8ac7c"},
     {file = "keyrings_alt-5.0.2.tar.gz", hash = "sha256:8f097ebe9dc8b185106502b8cdb066c926d2180e13b4689fd4771a3eab7d69fb"},
@@ -1240,6 +1243,7 @@ files = [
     {file = "more-itertools-10.6.0.tar.gz", hash = "sha256:2cd7fad1009c31cc9fb6a035108509e6547547a7a738374f10bd49a09eb3ee3b"},
     {file = "more_itertools-10.6.0-py3-none-any.whl", hash = "sha256:6eb054cb4b6db1473f6e15fcc676a08e4732548acd47c708f0e179c2c7c01e89"},
 ]
+markers = {dev = "sys_platform == \"linux\""}
 
 [[package]]
 name = "mypy-extensions"
@@ -2743,4 +2747,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "cd38811345c154e6276847f531640b02827f4f7a2b2bdcda17b7287418dfc66f"
+content-hash = "2c8c40dab7561f11bae1e6a8c22aaf1141ba692a73ff8ebfa97889232b1f0e15"
