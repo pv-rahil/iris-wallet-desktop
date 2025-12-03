@@ -74,7 +74,7 @@ def pytest_runtest_setup(item):
         )
 
 
-def pytest_runtest_teardown(item, nextitem):
+def pytest_runtest_teardown(item):
     """Print test completion banner."""
     test_name = item.nodeid
     print(f"\n{'='*80}")

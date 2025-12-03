@@ -49,13 +49,16 @@ class BaseOperations:
 
         # Define the elements like buttons and text fields as lambdas
         self.refresh_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='refresh_button',
+            role_name='push button',
+            name='refresh_button',
         )
         self.close_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='close_button',
+            role_name='push button',
+            name='close_button',
         )
         self.copy_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='Copy address',
+            role_name='push button',
+            name='Copy address',
         )
 
     def click_close_button(self):
@@ -137,7 +140,12 @@ class BaseOperations:
 
         return ''
 
-    def do_is_displayed(self, element, timeout: int | None = None, interval: float = 2.0) -> bool:
+    def do_is_displayed(
+        self,
+        element,
+        timeout: int | None = None,
+        interval: float = 2.0,
+    ) -> bool:
         """
         Check if the UI element is displayed within a given timeout.
 
@@ -181,8 +189,10 @@ class BaseOperations:
         except Exception:
             element_info = '<unable to read element details>'
 
-        print(f"""[TIMEOUT] Element was not visible after
-        {timeout} seconds. Element: [{element_info}]""")
+        print(
+            f"""[TIMEOUT] Element was not visible after
+        {timeout} seconds. Element: [{element_info}]""",
+        )
         return False
 
     def do_is_enabled(self, element) -> bool:
@@ -235,7 +245,8 @@ class BaseOperations:
         raw_data = root.get_full_property(
             d.intern_atom(
                 '_NET_CLIENT_LIST',
-            ), X.AnyPropertyType,
+            ),
+            X.AnyPropertyType,
         ).value
         for window_id in raw_data:
             window = d.create_resource_object('window', window_id)
@@ -262,7 +273,15 @@ class BaseOperations:
         """
         return self.activate_window_by_name(application)
 
-    def perform_action_on_element(self, role_name, name=None, description=None, timeout=None, retry_interval=1.5, max_retries=None):
+    def perform_action_on_element(
+        self,
+        role_name,
+        name=None,
+        description=None,
+        timeout=None,
+        retry_interval=1.5,
+        max_retries=None,
+    ):
         """
         Retrieves the specified element with the given role and name or description, with exponential backoff retries.
 
@@ -314,30 +333,41 @@ class BaseOperations:
                 elif description and self.application:
                     elements = list(
                         self.application.findChildren(
-                            lambda n: n.roleName == role_name and n.description == description,
+                            lambda n: n.roleName == role_name
+                            and n.description == description,
                         ),
                     )
 
                 if elements:
                     element = elements[-1]
-                    if element.showing and (not hasattr(element, 'sensitive') or element.sensitive):
+                    if element.showing and (
+                        not hasattr(element, 'sensitive') or element.sensitive
+                    ):
                         element.grabFocus()
                         self._log_search_attempt(
-                            role_name, identifier, timeout, 'SUCCESS', attempt,
+                            role_name,
+                            identifier,
+                            timeout,
+                            'SUCCESS',
+                            attempt,
                         )
                         self._reset_circuit_breaker()  # Reset on success
                         return element
 
             except Exception as e:
                 # Log the exception with more details for debugging
-                print(f"""[RETRY {attempt}] Finding {role_name} '{identifier}': {e}
-                      """)
+                print(
+                    f"""[RETRY {attempt}] Finding {role_name} '{identifier}': {e}
+                      """,
+                )
 
             # Check if we should exit early (max_retries)
             if max_retries and attempt >= max_retries:
-                print(f"""[MAX RETRIES] Reached max retries (
+                print(
+                    f"""[MAX RETRIES] Reached max retries (
                       {max_retries}) for {role_name} '{identifier}'
-                      """)
+                      """,
+                )
                 break
 
             # Exponential backoff: increase interval for next retry
@@ -346,7 +376,11 @@ class BaseOperations:
 
         # Element not found - log failure and update circuit breaker
         self._log_search_attempt(
-            role_name, identifier, timeout, 'FAILURE', attempt,
+            role_name,
+            identifier,
+            timeout,
+            'FAILURE',
+            attempt,
         )
         self._dump_tree_on_failure(role_name, identifier)
         self._consecutive_failures += 1
@@ -358,7 +392,14 @@ class BaseOperations:
         )
         return False
 
-    def get_first_element(self, role_name, name=None, description=None, timeout=None, retry_interval=0.5):
+    def get_first_element(
+        self,
+        role_name,
+        name=None,
+        description=None,
+        timeout=None,
+        retry_interval=0.5,
+    ):
         """
         Retrieves the first element with the given role and name or description, with exponential backoff retries.
 
@@ -392,7 +433,8 @@ class BaseOperations:
                 elif description and self.application:
                     elements = list(
                         self.application.findChildren(
-                            lambda n: n.roleName == role_name and n.description == description,
+                            lambda n: n.roleName == role_name
+                            and n.description == description,
                         ),
                     )
 
@@ -429,7 +471,12 @@ class BaseOperations:
             return element.text
         return ''
 
-    def wait_for_toaster_message(self, toaster_name=TOASTER_DESCRIPTION, timeout=None, interval=0.5):
+    def wait_for_toaster_message(
+        self,
+        toaster_name=TOASTER_DESCRIPTION,
+        timeout=None,
+        interval=0.5,
+    ):
         """
         Waits until a toaster message appears on the screen.
 
@@ -449,7 +496,8 @@ class BaseOperations:
         while time.time() - start_time < timeout:
             try:
                 toaster = self.perform_action_on_element(
-                    role_name='label', description=toaster_name,
+                    role_name='label',
+                    description=toaster_name,
                 )
                 if toaster:
                     return  # Exit function when toaster appears
@@ -489,8 +537,10 @@ class BaseOperations:
     def _reset_circuit_breaker(self):
         """Reset the circuit breaker counter after a successful element find."""
         if self._consecutive_failures > 0:
-            print(f"""[CIRCUIT BREAKER] Reset after
-            {self._consecutive_failures} failures""")
+            print(
+                f"""[CIRCUIT BREAKER] Reset after
+            {self._consecutive_failures} failures""",
+            )
         self._consecutive_failures = 0
         self._circuit_broken = False
 
@@ -507,14 +557,20 @@ class BaseOperations:
         """
         timestamp = datetime.now().strftime('%H:%M:%S.%f')[:-3]
         if status == 'START':
-            print(f"""[{timestamp}] [SEARCH START] {role_name} '
-            {identifier}' (timeout: {timeout}s)""")
+            print(
+                f"""[{timestamp}] [SEARCH START] {role_name} '
+            {identifier}' (timeout: {timeout}s)""",
+            )
         elif status == 'SUCCESS':
-            print(f"""[{timestamp}] [SEARCH SUCCESS] {role_name} '
-            {identifier}' (attempt: {attempt})""")
+            print(
+                f"""[{timestamp}] [SEARCH SUCCESS] {role_name} '
+            {identifier}' (attempt: {attempt})""",
+            )
         elif status == 'FAILURE':
-            print(f"""[{timestamp}] [SEARCH FAILURE] {role_name} '
-            {identifier}' (attempts: {attempt}, timeout: {timeout}s)""")
+            print(
+                f"""[{timestamp}] [SEARCH FAILURE] {role_name} '
+            {identifier}' (attempts: {attempt}, timeout: {timeout}s)""",
+            )
 
     def _get_visible_elements(self):
         """Get all visible elements from the application tree."""
@@ -557,8 +613,10 @@ class BaseOperations:
     def _print_matching_role_elements(self, role_name, elements_by_role):
         """Print elements with the same role as the one being searched for."""
         if role_name in elements_by_role:
-            print(f"""▶ Elements with role '
-            {role_name}' (what you're looking for):""")
+            print(
+                f"""▶ Elements with role '
+            {role_name}' (what you're looking for):""",
+            )
             print(
                 f""" Found {
                     len(elements_by_role[role_name])
@@ -608,16 +666,27 @@ class BaseOperations:
         try:
             # Get current page/window info
             try:
-                app_name = self.application.name if hasattr(
-                    self.application, 'name') else '<unknown>'
-                window_name = self.application.child(
-                    roleName='frame').name if self.application.child(roleName='frame') else '<unknown>'
+                app_name = (
+                    self.application.name
+                    if hasattr(
+                        self.application,
+                        'name',
+                    )
+                    else '<unknown>'
+                )
+                window_name = (
+                    self.application.child(
+                        roleName='frame',
+                    ).name
+                    if self.application.child(roleName='frame')
+                    else '<unknown>'
+                )
             except Exception:
                 app_name = '<unknown>'
                 window_name = '<unknown>'
 
             print(f"\n{'='*80}")
-            print(f"❌ ELEMENT NOT FOUND ❌")
+            print('❌ ELEMENT NOT FOUND ❌')
             print(f"{'='*80}")
             print(f"  Role:        {role_name}")
             print(f"  Name/Desc:   {identifier}")
@@ -626,7 +695,10 @@ class BaseOperations:
             print(f"{'='*80}")
 
             # Only dump tree in CI or when explicitly enabled
-            if not (is_ci_environment() or os.getenv('DUMP_ATSPI_TREE', '').lower() == 'true'):
+            if not (
+                is_ci_environment()
+                or os.getenv('DUMP_ATSPI_TREE', '').lower() == 'true'
+            ):
                 print('[INFO] Set DUMP_ATSPI_TREE=true to see available elements')
                 return
 
@@ -642,8 +714,11 @@ class BaseOperations:
                     )
                     return
 
-                print(f'\n📋 VISIBLE ELEMENTS ON CURRENT PAGE: {
-                      len(visible_elements)} total')
+                print(
+                    f"\n📋 VISIBLE ELEMENTS ON CURRENT PAGE: {
+                        len(visible_elements)
+                    } total",
+                )
                 print(f"{'─'*80}\n")
 
                 elements_by_role = self._group_elements_by_role(

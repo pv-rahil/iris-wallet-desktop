@@ -101,10 +101,12 @@ def test_announce_address_info(wallets_and_operations: WalletTestSetup):
     """Test asserting announce address info"""
     with allure.step('Announce address'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-        wallets_and_operations.first_page_objects.settings_page_objects.click_specify_announce_address_frame()
-        if not wallets_and_operations.first_page_operations.do_is_displayed(
-            wallets_and_operations.first_page_objects.settings_page_objects.input_box(),
-        ):
+        for _ in range(3):
+            if wallets_and_operations.first_page_operations.do_is_displayed(
+                wallets_and_operations.first_page_objects.settings_page_objects.input_box(),
+            ):
+                break
+
             wallets_and_operations.first_page_objects.settings_page_objects.click_specify_announce_address_frame()
         wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
         wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
@@ -127,10 +129,12 @@ def test_announce_alias_info(wallets_and_operations: WalletTestSetup):
     """Test asserting announce alias info"""
     with allure.step('Announce alias'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-        wallets_and_operations.first_page_objects.settings_page_objects.click_specify_announce_alias()
-        if not wallets_and_operations.first_page_operations.do_is_displayed(
-            wallets_and_operations.first_page_objects.settings_page_objects.input_box(),
-        ):
+        for _ in range(3):
+            if wallets_and_operations.first_page_operations.do_is_displayed(
+                wallets_and_operations.first_page_objects.settings_page_objects.input_box(),
+            ):
+                break
+
             wallets_and_operations.first_page_objects.settings_page_objects.click_specify_announce_alias()
         wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
         wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(

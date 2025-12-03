@@ -52,7 +52,7 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         self.do_focus_on_application(application)
 
         # Retry logic: if transfer buttons not visible, try closing and reopening (max 2 attempts)
-        if transfer_type == 'bitcoin' or transfer_type == 'lightning':
+        if transfer_type in ('bitcoin', 'lightning'):
             self.retry_receive_dialog(transfer_type=transfer_type)
 
         # Handle additional input for Lightning
