@@ -155,9 +155,13 @@ class BackupPageObjects(BaseOperations):
         Returns:
             The result of the click action.
         """
-        self.try_another_way_button().grabFocus()
-        self.try_another_way_button().grabFocus()
-        return self.do_click(self.try_another_way_button()) if self.do_is_displayed(self.try_another_way_button()) else None
+        # Cache element to avoid stale references
+        button = self.try_another_way_button()
+        if self.do_is_displayed(button):
+            button.grabFocus()
+            button.grabFocus()
+            return self.do_click(button)
+        return None
 
     def click_google_authenticator_button(self):
         """
@@ -166,8 +170,12 @@ class BackupPageObjects(BaseOperations):
         Returns:
             The result of the click action.
         """
-        self.google_authenticator().grabFocus()
-        return self.do_click(self.google_authenticator()) if self.do_is_displayed(self.google_authenticator()) else None
+        # Cache element to avoid stale references
+        button = self.google_authenticator()
+        if self.do_is_displayed(button):
+            button.grabFocus()
+            return self.do_click(button)
+        return None
 
     def enter_security_code(self, code):
         """
@@ -211,9 +219,13 @@ class BackupPageObjects(BaseOperations):
         Returns:
             The result of the click action.
         """
-        self.continue_button().grabFocus()
-        self.continue_button().grabFocus()
-        return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
+        # Cache element to avoid stale references
+        button = self.continue_button()
+        if self.do_is_displayed(button):
+            button.grabFocus()
+            button.grabFocus()
+            return self.do_click(button)
+        return None
 
     def click_backup_node_data_button(self):
         """

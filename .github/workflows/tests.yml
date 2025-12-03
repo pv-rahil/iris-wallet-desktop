@@ -446,8 +446,8 @@ jobs:
           # Start AT-SPI services and wait for them to initialize (suppress logs)
           /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
           /usr/libexec/at-spi2-registryd 2>/dev/null &
-          # Wait for AT-SPI to be fully ready (increased from 8s to 15s for better stability)
-          sleep 15
+          # Wait for AT-SPI to be fully ready (increased from 15s to 20s for better stability)
+          sleep 20
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"

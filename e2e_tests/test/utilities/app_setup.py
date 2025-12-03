@@ -243,83 +243,16 @@ class TestEnvironment:
         self.rgb_processes.clear()
 
     def restart(self, reset_data=True):
-        """
-        Restarts the application by terminating, optionally resetting data, and relaunching.
-        Enhanced with aggressive cleanup for better test isolation.
-        """
-        print("[RESTART] Starting application restart with aggressive cleanup...")
-
-        # Step 1: Terminate all processes
+        """Restarts the application by terminating, optionally resetting data, and relaunching."""
         self.terminate()
 
-        # Step 2: Verify all processes are dead
-        print("[RESTART] Verifying process termination...")
-        time.sleep(2)  # Give processes time to die
-
-        # Double-check for zombie processes
-        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
-            try:
-                cmdline = proc.info.get("cmdline", [])
-                if cmdline and any(
-                    "iriswallet" in str(arg).lower() or "rgb-lightning-node" in str(arg)
-                    for arg in cmdline
-                ):
-                    print(
-                        f"[RESTART] Force killing zombie process: {proc.info['name']} (PID: {proc.info['pid']})"
-                    )
-                    os.kill(proc.info["pid"], signal.SIGKILL)
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-
-        # Step 3: Reset application data if requested
         if reset_data:
-            print("[RESTART] Resetting application data...")
             self.reset_app_data()
-            self.remove_keyring_entries(service=FIRST_SERVICE, app_name=APP1_NAME)
-            self.remove_keyring_entries(service=SECOND_SERVICE, app_name=APP2_NAME)
 
-        # Step 4: Wait for system to stabilize
-        print("[RESTART] Waiting for system to stabilize (5 seconds)...")
-        time.sleep(5)
-
-        # Step 5: Restart RGB nodes if needed
         if self.wallet_mode == WalletType.REMOTE_TYPE_WALLET.value:
-            print("[RESTART] Starting RGB lightning nodes...")
             self.start_rgb_lightning_nodes()
 
-        # Step 6: Launch applications
-        print("[RESTART] Launching applications...")
         self.launch_applications()
-
-        print("[RESTART] ✅ Restart completed successfully")
-
-    def reset_state(self):
-        """
-        Resets UI state without restarting applications.
-        Useful for cleanup between tests within the same module.
-        """
-        print("[RESET_STATE] Resetting UI state...")
-        try:
-            # Try to close any open dialogs or toasters
-            # This is a best-effort cleanup
-            if hasattr(self, "first_page_operations"):
-                try:
-                    # Attempt to return to home screen
-                    self.first_page_objects.sidebar_page_objects.click_fungibles_button()
-                except Exception:
-                    pass
-
-            if self.multi_instance and hasattr(self, "second_page_operations"):
-                try:
-                    self.second_page_objects.sidebar_page_objects.click_fungibles_button()
-                except Exception:
-                    pass
-
-            # Small wait for UI to stabilize
-            time.sleep(2)
-            print("[RESET_STATE] ✅ State reset completed")
-        except Exception as e:
-            print(f"[RESET_STATE] ⚠️  Warning: State reset encountered error: {e}")
 
     def remove_keyring_entries(self, service, app_name):
         """Removes keyring entries for a given service and application name."""
