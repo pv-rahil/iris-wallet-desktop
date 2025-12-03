@@ -54,8 +54,9 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
         if native_status_casted is not True:
             wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
             toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.ask_auth_for_imp_question_toggle()
-            if toggle_button is not None and not toggle_button.checked:
-                wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
+            if toggle_button:
+                if not toggle_button.checked:
+                    wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
             wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
     with allure.step('Getting the receiver\'s address'):
@@ -227,8 +228,9 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         if native_status_casted is True:
             wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
             toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.ask_auth_for_imp_question_toggle()
-            if toggle_button is not None and toggle_button.checked:
-                wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
+            if toggle_button:
+                if toggle_button.checked:
+                    wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
             wallets_and_operations.first_page_operations.enter_native_password()
 
     with allure.step('getting address'):

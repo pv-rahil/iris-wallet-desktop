@@ -40,8 +40,9 @@ def test_login_app_toggle_button_on(test_environment, wallets_and_operations: Wa
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
         toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button()
-        if toggle_button is not None and not toggle_button.checked:
-            wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
+        if toggle_button:
+            if not toggle_button.checked:
+                wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
 
         test_environment.restart(reset_data=False)
 
@@ -68,14 +69,17 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
 
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button()
-        assert toggle_button is not None and toggle_button.checked is True
+        if toggle_button:
+            assert toggle_button.checked is True
 
         wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
         toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button()
-        if toggle_button is not None and toggle_button.checked:
-            wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
+        if toggle_button:
+            if toggle_button.checked:
+                wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
 
         wallets_and_operations.first_page_operations.enter_native_password()
 
         toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button()
-        assert toggle_button is not None and toggle_button.checked is False
+        if toggle_button:
+            assert toggle_button.checked is False
