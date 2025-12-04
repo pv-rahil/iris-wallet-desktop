@@ -30,6 +30,8 @@ def test_network_checker_thread_failure(mocker, qtbot):
     """Test that NetworkCheckerThread emits False when network is unavailable."""
     network_checker = NetworkCheckerThread()
 
+    mocker.patch('socket.create_connection', return_value=False)
+
     mocker.patch.object(
         network_checker, 'check_internet_conn', return_value=False,
     )
