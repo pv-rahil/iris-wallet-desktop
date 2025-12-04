@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
+          cache: "poetry"
 
       - name: Install system build dependencies
         run: |
@@ -65,6 +66,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
+          cache: "poetry"
 
       - name: Install required system dependencies
         run: |
@@ -162,6 +164,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
+          cache: "poetry"
 
       - name: Install required system dependencies
         run: |
@@ -278,8 +281,8 @@ jobs:
           openbox & sleep 3
 
 
-      - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
-        uses: ./.github/actions/build-rln-node
+      # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
+      #   uses: ./.github/actions/build-rln-node
 
 
       - name: Add rgb-lightning-node to PATH
@@ -296,20 +299,28 @@ jobs:
           chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
           # chmod +x .github/scripts/monitor_resources.sh
 
-      # - name: Download AppImages from Releases
-      #   env:
-      #     GH_TOKEN: ${{ github.token }}
-      #   run: |
-      #     set -euo pipefail
-      #     VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APPDIR=e2e_tests/applications
-      #     mkdir -p "$APPDIR"
-      #     sudo apt-get update && sudo apt-get install -y gh
-      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-      #     chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
+      - name: Cache AppImages
+        id: cache-appimages
+        uses: actions/cache@v4
+        with:
+          path: e2e_tests/applications
+          key: appimages-${{ runner.os }}-${{ hashFiles('src/version.py') }}
+
+      - name: Download AppImages from Releases
+        if: steps.cache-appimages.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          APPDIR=e2e_tests/applications
+          mkdir -p "$APPDIR"
+          sudo apt-get update && sudo apt-get install -y gh
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+          chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
 
       - name: Prepare runtime Python deps for AppImage
         run: |
