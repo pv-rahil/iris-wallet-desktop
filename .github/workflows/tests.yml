@@ -6,56 +6,56 @@ on:
   workflow_dispatch:
 
 jobs:
-  # lint:
-    # name: Lint & static checks
-    # runs-on: ubuntu-22.04
-    # steps:
-    #   - name: Checkout repository
-    #     uses: actions/checkout@v4
+  lint:
+    name: Lint & static checks
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    #   - name: Set up Python 3.12.3
-    #     uses: actions/setup-python@v5
-    #     with:
-    #       python-version: "3.12.3"
-    #       cache: "pip"
+      - name: Set up Python 3.12.3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+          cache: "pip"
 
-    #   - name: Install system build dependencies
-    #     run: |
-    #       sudo apt-get update
-    #       sudo apt-get install -y \
-    #         gobject-introspection \
-    #         libgirepository1.0-dev \
-    #         libcairo2-dev \
-    #         libffi-dev \
-    #         build-essential \
-    #         python3-dev \
-    #         meson \
-    #         ninja-build \
-    #         pkg-config \
-    #         gir1.2-gtk-3.0
+      - name: Install system build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gobject-introspection \
+            libgirepository1.0-dev \
+            libcairo2-dev \
+            libffi-dev \
+            build-essential \
+            python3-dev \
+            meson \
+            ninja-build \
+            pkg-config \
+            gir1.2-gtk-3.0
 
-    #   - name: Cache Poetry dependencies
-    #     uses: actions/cache@v4
-    #     with:
-    #       path: ~/.cache/pypoetry
-    #       key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
-    #   - name: Install Python dependencies (project)
-    #     uses: ./.github/actions/install-python-dependencies
+      - name: Install Python dependencies (project)
+        uses: ./.github/actions/install-python-dependencies
 
-    #   - name: Generate config.py
-    #     run: |
-    #       cd src/utils
-    #       python generate_config.py
+      - name: Generate config.py
+        run: |
+          cd src/utils
+          python generate_config.py
 
-    #   - name: Compile QT resources
-    #     run: |
-    #       poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+      - name: Compile QT resources
+        run: |
+          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-    #   - name: Code quality checks
-    #     run: |
-    #       pip install pre-commit
-    #       pre-commit run --all-files --show-diff-on-failure
+      - name: Code quality checks
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files --show-diff-on-failure
 
   unit-tests:
     name: Unit tests
@@ -135,389 +135,389 @@ jobs:
             --cov-fail-under=90 \
             unit_tests/tests
 
-  # e2e-dogtail:
-  #   name: E2E Dogtail tests
-  #   runs-on: ubuntu-22.04
-  #   timeout-minutes: 120
-  #   strategy:
-  #     max-parallel: 1
-  #     fail-fast: false
-  #     matrix:
-  #       test_file:
-  #         - test_help
-  #         - test_about
-  #         - test_backup_and_restore
-  #         - test_send_and_receive_rgb20_asset
-  #         - test_send_and_receive_rgb25_asset
-  #         - test_keyring_dialog
-  #         - test_receive_and_send_bitcoin
-  #         - test_hide_exhausted_asset
-  #         - test_fail_transfer
-  #         - test_create_and_close_channel
-  #         - test_issue_rgb20_asset
-  #         - test_issue_rgb25_asset
-  #         - test_btc_channel_tx
-  #         - test_rgb20_channel_tx
-  #         - test_view_unspent
-  #         - test_refresh_transfer
-  #         - test_login_app_auth
-  #         - test_ask_auth_for_imp_operations
-  #         - test_settings
-  #   env:
-  #     DISPLAY: :99
-  #     QT_IM_MODULE: virtualkeyboard
-  #     CI: "true"
+  e2e-dogtail:
+    name: E2E Dogtail tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        test_file:
+          # - test_help
+          # - test_about
+          # - test_backup_and_restore
+          # - test_send_and_receive_rgb20_asset
+          # - test_send_and_receive_rgb25_asset
+          # - test_keyring_dialog
+          # - test_receive_and_send_bitcoin
+          # - test_hide_exhausted_asset
+          # - test_fail_transfer
+          - test_create_and_close_channel
+          # - test_issue_rgb20_asset
+          # - test_issue_rgb25_asset
+          - test_btc_channel_tx
+          - test_rgb20_channel_tx
+          # - test_view_unspent
+          # - test_refresh_transfer
+          # - test_login_app_auth
+          # - test_ask_auth_for_imp_operations
+          # - test_settings
+    env:
+      DISPLAY: :99
+      QT_IM_MODULE: virtualkeyboard
+      CI: "true"
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  #     - name: Set up Python 3.12.3
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.12.3"
-  #         cache: "pip"
+      - name: Set up Python 3.12.3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+          cache: "pip"
 
-  #     - name: Install required system dependencies
-  #       run: |
-  #         sudo apt-get update
-  #         sudo apt-get install -y \
-  #           xvfb \
-  #           x11-apps \
-  #           xauth \
-  #           openbox \
-  #           dbus-x11 \
-  #           policykit-1-gnome \
-  #           lxqt-policykit \
-  #           at-spi2-core \
-  #           gnome-keyring \
-  #           python3-secretstorage \
-  #           libatk-bridge2.0-0 \
-  #           libxcb-cursor0 \
-  #           libxkbcommon-x11-0 \
-  #           libxkbcommon0 \
-  #           libxcb1 \
-  #           libxcb-xinerama0 \
-  #           libxcb-xfixes0 \
-  #           libxcb-randr0 \
-  #           libxcb-icccm4 \
-  #           libxcb-image0 \
-  #           libxcb-keysyms1 \
-  #           libxcb-render-util0 \
-  #           libxcb-shape0 \
-  #           libxcb-shm0 \
-  #           libxcb-glx0 \
-  #           libxcb-render0 \
-  #           libxcb-present0 \
-  #           libxcb-dri3-0 \
-  #           libxcb-xinput0 \
-  #           libx11-xcb1 \
-  #           libxrender1 \
-  #           libxcomposite1 \
-  #           libxi6 \
-  #           libxtst6 \
-  #           libxrandr2 \
-  #           libxdamage1 \
-  #           libxext6 \
-  #           libfontconfig1 \
-  #           libdrm2 \
-  #           libegl1 \
-  #           libgl1 \
-  #           libopengl0 \
-  #           libglu1-mesa \
-  #           libglx-mesa0 \
-  #           libglvnd0 \
-  #           libgles2 \
-  #           libgtk-3-0 \
-  #           gir1.2-gtk-3.0 \
-  #           gir1.2-atspi-2.0 \
-  #           python3-gi \
-  #           xdg-desktop-portal \
-  #           xdg-desktop-portal-gtk \
-  #           qt6-gtk-platformtheme \
-  #           fonts-dejavu-core \
-  #           adwaita-icon-theme \
-  #           shared-mime-info \
-  #           libgl1-mesa-dri \
-  #           mesa-utils \
-  #           libgirepository1.0-dev \
-  #           meson \
-  #           gobject-introspection \
-  #           ninja-build \
-  #           gsettings-desktop-schemas \
-  #           dconf-cli \
-  #           dconf-service \
-  #           xclip \
-  #           wmctrl \
-  #           libdbus-1-3 \
-  #           libglib2.0-0 \
-  #           libnss3 \
-  #           libxss1 \
-  #           libatk1.0-0 \
-  #           libxcb-util1 \
-  #           ruby-dev \
-  #           build-essential \
-  #           libgl1-mesa-glx \
-  #           libegl1-mesa \
-  #           libgbm1 \
-  #           libosmesa6 \
-  #           mesa-utils-extra \
-  #           libfuse2 \
-  #           scrot zenity ffmpeg
-  #         sudo gem install fpm -f
+      - name: Install required system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb \
+            x11-apps \
+            xauth \
+            openbox \
+            dbus-x11 \
+            policykit-1-gnome \
+            lxqt-policykit \
+            at-spi2-core \
+            gnome-keyring \
+            python3-secretstorage \
+            libatk-bridge2.0-0 \
+            libxcb-cursor0 \
+            libxkbcommon-x11-0 \
+            libxkbcommon0 \
+            libxcb1 \
+            libxcb-xinerama0 \
+            libxcb-xfixes0 \
+            libxcb-randr0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-shm0 \
+            libxcb-glx0 \
+            libxcb-render0 \
+            libxcb-present0 \
+            libxcb-dri3-0 \
+            libxcb-xinput0 \
+            libx11-xcb1 \
+            libxrender1 \
+            libxcomposite1 \
+            libxi6 \
+            libxtst6 \
+            libxrandr2 \
+            libxdamage1 \
+            libxext6 \
+            libfontconfig1 \
+            libdrm2 \
+            libegl1 \
+            libgl1 \
+            libopengl0 \
+            libglu1-mesa \
+            libglx-mesa0 \
+            libglvnd0 \
+            libgles2 \
+            libgtk-3-0 \
+            gir1.2-gtk-3.0 \
+            gir1.2-atspi-2.0 \
+            python3-gi \
+            xdg-desktop-portal \
+            xdg-desktop-portal-gtk \
+            qt6-gtk-platformtheme \
+            fonts-dejavu-core \
+            adwaita-icon-theme \
+            shared-mime-info \
+            libgl1-mesa-dri \
+            mesa-utils \
+            libgirepository1.0-dev \
+            meson \
+            gobject-introspection \
+            ninja-build \
+            gsettings-desktop-schemas \
+            dconf-cli \
+            dconf-service \
+            xclip \
+            wmctrl \
+            libdbus-1-3 \
+            libglib2.0-0 \
+            libnss3 \
+            libxss1 \
+            libatk1.0-0 \
+            libxcb-util1 \
+            ruby-dev \
+            build-essential \
+            libgl1-mesa-glx \
+            libegl1-mesa \
+            libgbm1 \
+            libosmesa6 \
+            mesa-utils-extra \
+            libfuse2 \
+            scrot zenity ffmpeg
+          sudo gem install fpm -f
 
-  #     - name: Setup env for GUI testing
-  #       run: |
-  #         echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
-  #         echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
+      - name: Setup env for GUI testing
+        run: |
+          echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
+          echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
 
-  #     - name: Preinstall keyring backends (system Python)
-  #       run: |
-  #         pip install keyring keyrings.alt
+      - name: Preinstall keyring backends (system Python)
+        run: |
+          pip install keyring keyrings.alt
 
-  #     - name: Cache Poetry dependencies
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: ~/.cache/pypoetry
-  #         key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
-  #     - name: Install Python dependencies
-  #       uses: ./.github/actions/install-python-dependencies
+      - name: Install Python dependencies
+        uses: ./.github/actions/install-python-dependencies
 
-  #     - name: Install keyring backends in Poetry venv
-  #       run: |
-  #         poetry run pip install keyring keyrings.alt
+      - name: Install keyring backends in Poetry venv
+        run: |
+          poetry run pip install keyring keyrings.alt
 
-  #     - name: Start Xvfb & openbox
-  #       run: |
-  #         XAUTH="$RUNNER_TEMP/.Xauthority"
-  #         touch "$XAUTH"; echo "XAUTHORITY=$XAUTH" >> $GITHUB_ENV
-  #         xauth -f "$XAUTH" add :99 . $(mcookie)
+      - name: Start Xvfb & openbox
+        run: |
+          XAUTH="$RUNNER_TEMP/.Xauthority"
+          touch "$XAUTH"; echo "XAUTHORITY=$XAUTH" >> $GITHUB_ENV
+          xauth -f "$XAUTH" add :99 . $(mcookie)
 
-  #         Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
-  #         sleep 4
-  #         openbox & sleep 3
-
-
-  #     # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
-  #     #   uses: ./.github/actions/build-rln-node
+          Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
+          sleep 4
+          openbox & sleep 3
 
 
-  #     - name: Add rgb-lightning-node to PATH
-  #       run: |
-  #         chmod +x ln_node_binary/rgb-lightning-node
-  #         echo "$GITHUB_WORKSPACE/ln_node_binary" >> $GITHUB_PATH
+      # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
+      #   uses: ./.github/actions/build-rln-node
 
-  #     - name: Compile QT resources
-  #       run: |
-  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-  #     - name: Ensure E2E scripts are executable
-  #       run: |
-  #         chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
-  #         # chmod +x .github/scripts/monitor_resources.sh
+      - name: Add rgb-lightning-node to PATH
+        run: |
+          chmod +x ln_node_binary/rgb-lightning-node
+          echo "$GITHUB_WORKSPACE/ln_node_binary" >> $GITHUB_PATH
 
-  #     - name: Cache AppImages
-  #       id: cache-appimages
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: e2e_tests/applications
-  #         key: appimages-${{ runner.os }}-${{ hashFiles('src/version.py') }}
+      - name: Compile QT resources
+        run: |
+          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-  #     - name: Download AppImages from Releases
-  #       if: steps.cache-appimages.outputs.cache-hit != 'true'
-  #       env:
-  #         GH_TOKEN: ${{ github.token }}
-  #       run: |
-  #         set -euo pipefail
-  #         VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-  #         APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-  #         APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-  #         APPDIR=e2e_tests/applications
-  #         mkdir -p "$APPDIR"
-  #         sudo apt-get update && sudo apt-get install -y gh
-  #         gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-  #         gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-  #         chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
+      - name: Ensure E2E scripts are executable
+        run: |
+          chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
+          # chmod +x .github/scripts/monitor_resources.sh
 
-  #     - name: Prepare runtime Python deps for AppImage
-  #       run: |
-  #         RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
-  #         mkdir -p "$RUNTIME_PYDEPS"
-  #         python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
-  #         echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
+      - name: Cache AppImages
+        id: cache-appimages
+        uses: actions/cache@v4
+        with:
+          path: e2e_tests/applications
+          key: appimages-${{ runner.os }}-${{ hashFiles('src/version.py') }}
 
-  #     - name: Start regtest services
-  #       run: poetry run regtest-start
+      - name: Download AppImages from Releases
+        if: steps.cache-appimages.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          APPDIR=e2e_tests/applications
+          mkdir -p "$APPDIR"
+          sudo apt-get update && sudo apt-get install -y gh
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+          chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
 
-  #     - name: Start screen recording (background)
-  #       run: |
-  #         ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
-  #           -vcodec libx264 -preset ultrafast /tmp/${{ matrix.test_file }}_recording.mp4 \
-  #           > /dev/null 2> /tmp/ffmpeg_errors.log &
-  #         # Save PID only if ffmpeg started
-  #         echo $! > /tmp/ffmpeg_pid.txt || true
+      - name: Prepare runtime Python deps for AppImage
+        run: |
+          RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
+          mkdir -p "$RUNTIME_PYDEPS"
+          python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
+          echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
 
-  #     - name: Run E2E Dogtail Test
-  #       env:
-  #         CLIENT_ID: ${{ secrets.CLIENT_ID }}
-  #         PROJECT_ID: ${{ secrets.PROJECT_ID }}
-  #         CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-  #         BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
-  #         BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
-  #         GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
-  #         QT_QPA_PLATFORM: xcb
-  #         APPIMAGE_EXTRACT_AND_RUN: '1'
-  #         # Dogtail configuration for CI stability
-  #         DOGTAIL_SEARCH_TIMEOUT: '90'
-  #         DOGTAIL_SEARCH_BACKOFF: '1.5'
-  #       run: |
-  #         cd src/utils
-  #         python generate_config.py
-  #         cd ../../
-  #         dbus-run-session -- bash -lc '
-  #         rm -rf ~/.local/share/python_keyring
-  #         mkdir -p "$XDG_RUNTIME_DIR/keyring"
-  #         export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
-  #         set -euo pipefail
-  #         export DISPLAY=:99
-  #         export LIBGL_DEBUG=verbose
-  #         export MESA_DEBUG=1
-  #         export GALLIUM_DRIVER=llvmpipe
-  #         export NO_AT_BRIDGE=0
-  #         export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
-  #         export QT_ACCESSIBILITY=1
-  #         export GTK_MODULES=atk-bridge
-  #         # export QT_QPA_PLATFORM=xcb
-  #         export GDK_BACKEND=x11
-  #         export XDG_CURRENT_DESKTOP=GNOME
-  #         export QT_QPA_PLATFORMTHEME=gtk3
-  #         export QT_OPENGL=software
-  #         export QT_XCB_GL_INTEGRATION=egl
-  #         export QSG_RENDER_LOOP=basic
-  #         export QT_AUTO_SCREEN_SCALE_FACTOR=0
-  #         export LIBGL_ALWAYS_SOFTWARE=1
-  #         export LIBGL_DRI3_DISABLE=1
-  #         export QT_X11_NO_MITSHM=1
-  #         export QT_SCALE_FACTOR=1
-  #         export GVFS_DISABLE_FUSE=1
-  #         export GIO_USE_VFS=local
-  #         export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
-  #         export LANG=C.UTF-8
-  #         export LC_ALL=C.UTF-8
-  #         export APPIMAGE_EXTRACT_AND_RUN=1
-  #         export KEYRING_HOME="$RUNNER_TEMP/keyring"
-  #         mkdir -p "$KEYRING_HOME"
-  #         export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
-  #         export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
-  #         export PYTHONNOUSERSITE=0
-  #         export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
-  #         mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
-  #         export GSETTINGS_BACKEND=dconf
-  #         # Start gnome-keyring-daemon and unlock with empty password
-  #         eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
-  #         export SSH_AUTH_SOCK
-  #         # Create pkexec wrapper using zenity
-  #         # This mocks the native authentication dialog for tests
-  #         mkdir -p "$RUNNER_TEMP/bin"
-  #         cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
-  #         #!/bin/bash
-  #         set +u
+      - name: Start regtest services
+        run: poetry run regtest-start
 
-  #         # Background process to continuously maintain focus on the zenity window
-  #         # This mimics native authentication behavior where auth dialog blocks everything
-  #         (
-  #           # Wait for dialog to appear
-  #           for i in {1..50}; do
-  #             if wmctrl -a "Authentication Required" 2>/dev/null; then
-  #               wmctrl -r "Authentication Required" -b add,above,modal 2>/dev/null
-  #               break
-  #             fi
-  #             sleep 0.1
-  #           done
+      - name: Start screen recording (background)
+        run: |
+          ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
+            -vcodec libx264 -preset ultrafast /tmp/${{ matrix.test_file }}_recording.mp4 \
+            > /dev/null 2> /tmp/ffmpeg_errors.log &
+          # Save PID only if ffmpeg started
+          echo $! > /tmp/ffmpeg_pid.txt || true
 
-  #           # Keep focusing the dialog until it closes
-  #           while wmctrl -l | grep -q "Authentication Required"; do
-  #             wmctrl -a "Authentication Required" 2>/dev/null
-  #             wmctrl -r "Authentication Required" -b add,above,modal 2>/dev/null
-  #             sleep 0.2
-  #           done
-  #         ) &
-  #         FOCUS_PID=\$!
+      - name: Run E2E Dogtail Test
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
+          BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
+          GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
+          QT_QPA_PLATFORM: xcb
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+          # Dogtail configuration for CI stability
+          DOGTAIL_SEARCH_TIMEOUT: '90'
+          DOGTAIL_SEARCH_BACKOFF: '1.5'
+        run: |
+          cd src/utils
+          python generate_config.py
+          cd ../../
+          dbus-run-session -- bash -lc '
+          rm -rf ~/.local/share/python_keyring
+          mkdir -p "$XDG_RUNTIME_DIR/keyring"
+          export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
+          set -euo pipefail
+          export DISPLAY=:99
+          export LIBGL_DEBUG=verbose
+          export MESA_DEBUG=1
+          export GALLIUM_DRIVER=llvmpipe
+          export NO_AT_BRIDGE=0
+          export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+          export QT_ACCESSIBILITY=1
+          export GTK_MODULES=atk-bridge
+          # export QT_QPA_PLATFORM=xcb
+          export GDK_BACKEND=x11
+          export XDG_CURRENT_DESKTOP=GNOME
+          export QT_QPA_PLATFORMTHEME=gtk3
+          export QT_OPENGL=software
+          export QT_XCB_GL_INTEGRATION=egl
+          export QSG_RENDER_LOOP=basic
+          export QT_AUTO_SCREEN_SCALE_FACTOR=0
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export LIBGL_DRI3_DISABLE=1
+          export QT_X11_NO_MITSHM=1
+          export QT_SCALE_FACTOR=1
+          export GVFS_DISABLE_FUSE=1
+          export GIO_USE_VFS=local
+          export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
+          export LANG=C.UTF-8
+          export LC_ALL=C.UTF-8
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export KEYRING_HOME="$RUNNER_TEMP/keyring"
+          mkdir -p "$KEYRING_HOME"
+          export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
+          export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
+          export PYTHONNOUSERSITE=0
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          export GSETTINGS_BACKEND=dconf
+          # Start gnome-keyring-daemon and unlock with empty password
+          eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
+          export SSH_AUTH_SOCK
+          # Create pkexec wrapper using zenity
+          # This mocks the native authentication dialog for tests
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
+          #!/bin/bash
+          set +u
 
-  #         # Show zenity password dialog and wait for it to complete
-  #         # This will block until user enters password or cancels
-  #         AUTH_RESPONSE=\$(zenity --password --title="Authentication Required" 2>/dev/null)
-  #         ZENITY_EXIT=\$?
+          # Background process to continuously maintain focus on the zenity window
+          # This mimics native authentication behavior where auth dialog blocks everything
+          (
+            # Wait for dialog to appear
+            for i in {1..50}; do
+              if wmctrl -a "Authentication Required" 2>/dev/null; then
+                wmctrl -r "Authentication Required" -b add,above,modal 2>/dev/null
+                break
+              fi
+              sleep 0.1
+            done
 
-  #         # Wait for focus process to complete
-  #         wait \$FOCUS_PID 2>/dev/null || true
+            # Keep focusing the dialog until it closes
+            while wmctrl -l | grep -q "Authentication Required"; do
+              wmctrl -a "Authentication Required" 2>/dev/null
+              wmctrl -r "Authentication Required" -b add,above,modal 2>/dev/null
+              sleep 0.2
+            done
+          ) &
+          FOCUS_PID=\$!
 
-  #         # Check if user provided password (exit code 0) or cancelled (exit code 1)
-  #         if [ \$ZENITY_EXIT -eq 0 ]; then
-  #             # User provided password, execute command with sudo
-  #             echo "\$AUTH_RESPONSE" | sudo -S "\$@"
-  #             SUDO_EXIT=\$?
-  #             # Clear the password from memory
-  #             unset AUTH_RESPONSE
-  #             exit \$SUDO_EXIT
-  #         else
-  #             # User cancelled, exit with error
-  #             exit 1
-  #         fi
-  #         END_OF_PKEXEC_SCRIPT
-  #         chmod +x "$RUNNER_TEMP/bin/pkexec"
-  #         export PATH="$RUNNER_TEMP/bin:$PATH"
+          # Show zenity password dialog and wait for it to complete
+          # This will block until user enters password or cancels
+          AUTH_RESPONSE=\$(zenity --password --title="Authentication Required" 2>/dev/null)
+          ZENITY_EXIT=\$?
 
-  #         # Ensure dbus session is available
-  #         dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
-  #         # Set accessibility and enable debugging for better AT-SPI stability
-  #         gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
-  #         gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
-  #         # Start AT-SPI services and wait for them to initialize (suppress logs)
-  #         /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
-  #         /usr/libexec/at-spi2-registryd 2>/dev/null &
-  #         # Wait for AT-SPI to be fully ready (increased from 15s to 20s for better stability)
-  #         sleep 20
-  #         export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
-  #         # Ensure the test password is visible to the AppImage subprocesses
-  #         export NATIVE_AUTHENTICATION_PASSWORD="123456"
-  #         # Dogtail configuration for CI stability (exported for Python tests)
-  #         export DOGTAIL_SEARCH_TIMEOUT=90
-  #         export DOGTAIL_SEARCH_BACKOFF=1.5
-  #         # Update dbus activation environment with all necessary variables including dogtail config
-  #         dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH DOGTAIL_SEARCH_TIMEOUT DOGTAIL_SEARCH_BACKOFF
-  #         export QT_QUICK_BACKEND=software
-  #         export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
-  #         export QT_OPENGL=software
-  #         export QT_XCB_GL_INTEGRATION=egl
-  #         export LIBGL_ALWAYS_SOFTWARE=1
-  #         export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
-  #         export QTWEBENGINE_DISABLE_SANDBOX=1
-  #         export QTWEBENGINE_NO_SANDBOX=1
-  #         export QT_DISABLE_WINDOW_TRANSPARENCY=1
-  #         export GDK_SYNCHRONIZE=1
-  #         export __GLX_VENDOR_LIBRARY_NAME=mesa
-  #         sleep 5
-  #         poetry run single-test ${{ matrix.test_file }}.py
-  #         # poetry run single-test test_rgb20_channel_tx.py
-  #         '
+          # Wait for focus process to complete
+          wait \$FOCUS_PID 2>/dev/null || true
 
-  #     - name: Stop recording
-  #       if: ${{ always() || cancelled() }}
-  #       run: |
-  #         if [ -f /tmp/ffmpeg_pid.txt ]; then
-  #           PID=$(cat /tmp/ffmpeg_pid.txt || true)
-  #           if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
-  #             kill "$PID" || true
-  #           fi
-  #         fi
+          # Check if user provided password (exit code 0) or cancelled (exit code 1)
+          if [ \$ZENITY_EXIT -eq 0 ]; then
+              # User provided password, execute command with sudo
+              echo "\$AUTH_RESPONSE" | sudo -S "\$@"
+              SUDO_EXIT=\$?
+              # Clear the password from memory
+              unset AUTH_RESPONSE
+              exit \$SUDO_EXIT
+          else
+              # User cancelled, exit with error
+              exit 1
+          fi
+          END_OF_PKEXEC_SCRIPT
+          chmod +x "$RUNNER_TEMP/bin/pkexec"
+          export PATH="$RUNNER_TEMP/bin:$PATH"
 
-  #     - name: Upload video recording
-  #       if: failure()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ${{ matrix.test_file }}-video-recording
-  #         path: /tmp/${{ matrix.test_file }}_recording.mp4
-  #         retention-days: 30
-  #         if-no-files-found: ignore
+          # Ensure dbus session is available
+          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
+          # Set accessibility and enable debugging for better AT-SPI stability
+          gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
+          gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
+          # Start AT-SPI services and wait for them to initialize (suppress logs)
+          /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
+          /usr/libexec/at-spi2-registryd 2>/dev/null &
+          # Wait for AT-SPI to be fully ready (increased from 15s to 20s for better stability)
+          sleep 20
+          export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
+          # Ensure the test password is visible to the AppImage subprocesses
+          export NATIVE_AUTHENTICATION_PASSWORD="123456"
+          # Dogtail configuration for CI stability (exported for Python tests)
+          export DOGTAIL_SEARCH_TIMEOUT=90
+          export DOGTAIL_SEARCH_BACKOFF=1.5
+          # Update dbus activation environment with all necessary variables including dogtail config
+          dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH DOGTAIL_SEARCH_TIMEOUT DOGTAIL_SEARCH_BACKOFF
+          export QT_QUICK_BACKEND=software
+          export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
+          export QT_OPENGL=software
+          export QT_XCB_GL_INTEGRATION=egl
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+          export QTWEBENGINE_DISABLE_SANDBOX=1
+          export QTWEBENGINE_NO_SANDBOX=1
+          export QT_DISABLE_WINDOW_TRANSPARENCY=1
+          export GDK_SYNCHRONIZE=1
+          export __GLX_VENDOR_LIBRARY_NAME=mesa
+          sleep 5
+          poetry run single-test ${{ matrix.test_file }}.py
+          # poetry run single-test test_rgb20_channel_tx.py
+          '
+
+      - name: Stop recording
+        if: ${{ always() || cancelled() }}
+        run: |
+          if [ -f /tmp/ffmpeg_pid.txt ]; then
+            PID=$(cat /tmp/ffmpeg_pid.txt || true)
+            if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+              kill "$PID" || true
+            fi
+          fi
+
+      - name: Upload video recording
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.test_file }}-video-recording
+          path: /tmp/${{ matrix.test_file }}_recording.mp4
+          retention-days: 30
+          if-no-files-found: ignore
