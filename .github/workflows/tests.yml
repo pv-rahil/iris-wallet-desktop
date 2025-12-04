@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: "poetry"
+          cache: "pip"
 
       - name: Install system build dependencies
         run: |
@@ -33,6 +33,12 @@ jobs:
             ninja-build \
             pkg-config \
             gir1.2-gtk-3.0
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Python dependencies (project)
         uses: ./.github/actions/install-python-dependencies
@@ -66,7 +72,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: "poetry"
+          cache: "pip"
 
       - name: Install required system dependencies
         run: |
@@ -96,6 +102,12 @@ jobs:
       - name: Preinstall keyring backends (system Python)
         run: |
           pip install keyring keyrings.alt
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Python dependencies
         uses: ./.github/actions/install-python-dependencies
@@ -164,7 +176,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: "poetry"
+          cache: "pip"
 
       - name: Install required system dependencies
         run: |
@@ -262,6 +274,12 @@ jobs:
       - name: Preinstall keyring backends (system Python)
         run: |
           pip install keyring keyrings.alt
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Python dependencies
         uses: ./.github/actions/install-python-dependencies
@@ -382,6 +400,8 @@ jobs:
           export LIBGL_DRI3_DISABLE=1
           export QT_X11_NO_MITSHM=1
           export QT_SCALE_FACTOR=1
+          export GVFS_DISABLE_FUSE=1
+          export GIO_USE_VFS=local
           export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
