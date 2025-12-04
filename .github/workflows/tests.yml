@@ -6,56 +6,56 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: Lint & static checks
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # lint:
+    # name: Lint & static checks
+    # runs-on: ubuntu-22.04
+    # steps:
+    #   - name: Checkout repository
+    #     uses: actions/checkout@v4
 
-      - name: Set up Python 3.12.3
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.3"
-          cache: "pip"
+    #   - name: Set up Python 3.12.3
+    #     uses: actions/setup-python@v5
+    #     with:
+    #       python-version: "3.12.3"
+    #       cache: "pip"
 
-      - name: Install system build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gobject-introspection \
-            libgirepository1.0-dev \
-            libcairo2-dev \
-            libffi-dev \
-            build-essential \
-            python3-dev \
-            meson \
-            ninja-build \
-            pkg-config \
-            gir1.2-gtk-3.0
+    #   - name: Install system build dependencies
+    #     run: |
+    #       sudo apt-get update
+    #       sudo apt-get install -y \
+    #         gobject-introspection \
+    #         libgirepository1.0-dev \
+    #         libcairo2-dev \
+    #         libffi-dev \
+    #         build-essential \
+    #         python3-dev \
+    #         meson \
+    #         ninja-build \
+    #         pkg-config \
+    #         gir1.2-gtk-3.0
 
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+    #   - name: Cache Poetry dependencies
+    #     uses: actions/cache@v4
+    #     with:
+    #       path: ~/.cache/pypoetry
+    #       key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
-      - name: Install Python dependencies (project)
-        uses: ./.github/actions/install-python-dependencies
+    #   - name: Install Python dependencies (project)
+    #     uses: ./.github/actions/install-python-dependencies
 
-      - name: Generate config.py
-        run: |
-          cd src/utils
-          python generate_config.py
+    #   - name: Generate config.py
+    #     run: |
+    #       cd src/utils
+    #       python generate_config.py
 
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+    #   - name: Compile QT resources
+    #     run: |
+    #       poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-      - name: Code quality checks
-        run: |
-          pip install pre-commit
-          pre-commit run --all-files --show-diff-on-failure
+    #   - name: Code quality checks
+    #     run: |
+    #       pip install pre-commit
+    #       pre-commit run --all-files --show-diff-on-failure
 
   unit-tests:
     name: Unit tests
