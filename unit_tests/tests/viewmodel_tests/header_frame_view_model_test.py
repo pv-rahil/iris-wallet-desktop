@@ -11,7 +11,7 @@ def test_network_checker_thread_success(mocker, qtbot):
     """Test that NetworkCheckerThread emits True when network is available."""
     network_checker = NetworkCheckerThread()
 
-    mocker.patch("socket.create_connection", return_value=True)
+    mocker.patch('socket.create_connection', return_value=True)
 
     mocker.patch.object(
         network_checker, 'check_internet_conn', return_value=True,
