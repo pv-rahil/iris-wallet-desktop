@@ -167,9 +167,11 @@ def test_download_debug_log(wallets_and_operations: WalletTestSetup):
         complete_file_path = homepath+'/'+file_name
         wallets_and_operations.first_page_objects.about_page_objects.press_enter()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
-        toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
         assert toaster_desc == INFO_LOG_SAVE_DESCRIPTION.format(
             complete_file_path,
         )

@@ -71,8 +71,10 @@ def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup):
             TEST_FEE_RATE,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert toast_description == TEST_FEE_RATE_TOAST_DESC_SUCCESS
 
@@ -127,8 +129,10 @@ def test_default_expiry_time_minute(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_MINUTES,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert toast_description == INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 
@@ -187,8 +191,10 @@ def test_default_expiry_time_hour(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_HOURS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert toast_description == INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 
@@ -247,8 +253,10 @@ def test_default_expiry_time_days(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_DAYS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert toast_description == INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 
@@ -298,8 +306,10 @@ def test_set_default_min_confirmation(wallets_and_operations: WalletTestSetup):
             TEST_FEE_RATE,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert toast_description == INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
 
@@ -335,8 +345,10 @@ def test_set_valid_announce_address(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
         TranslationManager.translate('announce_address_endpoint'),
@@ -382,8 +394,10 @@ def test_set_announce_alias(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
         TranslationManager.translate('announce_alias_endpoint'),
@@ -468,8 +482,10 @@ def test_set_invalid_bitcoind_port(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon'
 
@@ -507,8 +523,10 @@ def test_set_invalid_electrum_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_INDEXER_URL
 
@@ -546,8 +564,10 @@ def test_set_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
         TranslationManager.translate('proxy_endpoint'),
@@ -593,8 +613,10 @@ def test_set_invalid_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
 
@@ -632,8 +654,10 @@ def test_set_valid_electrum_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
+            toaster_element=toaster_element,
+        )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
         TranslationManager.translate('indexer_endpoint'),

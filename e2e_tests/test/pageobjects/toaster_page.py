@@ -105,7 +105,7 @@ class ToasterPageObjects(BaseOperations):
         Clicks the toaster frame element if it is displayed.
 
         Returns:
-            bool: True if the element is clicked, False otherwise.
+            Node|bool: The toaster element if clicked successfully, False otherwise.
         """
         # Get the toaster element directly (no redundant searches)
         element = self.wait_for_toaster()
@@ -118,10 +118,35 @@ class ToasterPageObjects(BaseOperations):
         try:
             self.do_click(element, debounce_ms=500, skip_display_check=True)
             print('[TOASTER] Successfully clicked toaster')
-            return True
+            return element  # Return the element so it can be reused
         except Exception as e:
             print(f'[TOASTER] Failed to click toaster: {e}')
             return False
+
+    def click_and_get_description(self, filter_pattern=None):
+        """
+        Convenience method that clicks the toaster and gets its description.
+
+        Args:
+            filter_pattern (str, optional): A substring to filter the toaster text.
+
+        Returns:
+            str: The toaster description if successful, None otherwise.
+        """
+        if not self.do_is_displayed(self.toaster_frame()):
+            return None
+
+        toaster_element = self.click_toaster_frame()
+        if not toaster_element:
+            return None
+
+        if self.do_is_displayed(self.toaster_description()):
+            return self.get_toaster_description(
+                toaster_element=toaster_element,
+                filter_pattern=filter_pattern,
+            )
+
+        return None
 
     def get_toaster_title(self):
         """
@@ -132,7 +157,7 @@ class ToasterPageObjects(BaseOperations):
         """
         return self.do_get_text(self.toaster_title()) if self.do_is_displayed(self.toaster_title()) else None
 
-    def get_toaster_description(self, filter_pattern=None, max_retries=3):
+    def get_toaster_description(self, filter_pattern=None, max_retries=3, toaster_element=None):
         """
         Gets the text of the toaster description element if it is displayed.
         Uses the toaster element from wait_for_toaster to avoid redundant searches.
@@ -141,17 +166,19 @@ class ToasterPageObjects(BaseOperations):
             filter_pattern (str, optional): A substring to filter the toaster text.
                                             If provided, only toasters containing this text will be considered.
             max_retries (int): Number of retries if description is not immediately available.
+            toaster_element (Node, optional): Pre-found toaster element to use. If None, will search for one.
 
         Returns:
             str: The text of the element if found, None otherwise.
         """
-        # First, wait for toaster to appear and get the element
-        toaster_element = self.wait_for_toaster()
-        if not toaster_element:
-            print('[TOASTER] No toaster found for description')
-            return None
+        # Use provided element or wait for toaster to appear
+        if toaster_element is None:
+            toaster_element = self.wait_for_toaster()
+            if not toaster_element:
+                print('[TOASTER] No toaster found for description')
+                return None
 
-        # Try to get description from the specific toaster we just found
+        # Try to get description from the specific toaster we have
         for attempt in range(max_retries):
             try:
                 # Try to get description from this specific toaster
