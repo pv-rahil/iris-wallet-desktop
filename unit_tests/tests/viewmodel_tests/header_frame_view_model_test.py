@@ -22,6 +22,11 @@ def test_network_checker_thread_success(mocker, qtbot):
 
     assert blocker.args == [True]
 
+    # Ensure thread is properly cleaned up
+    if network_checker.isRunning():
+        network_checker.quit()
+        network_checker.wait(1000)
+
 
 def test_network_checker_thread_failure(mocker, qtbot):
     """NetworkCheckerThread emits False when network is unavailable."""
@@ -33,6 +38,11 @@ def test_network_checker_thread_failure(mocker, qtbot):
         network_checker.run()
 
     assert blocker.args == [False]
+
+    # Ensure thread is properly cleaned up
+    if network_checker.isRunning():
+        network_checker.quit()
+        network_checker.wait(1000)
 
 
 def test_check_internet_conn_success(mocker):
