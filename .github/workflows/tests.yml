@@ -521,3 +521,16 @@ jobs:
   #         path: /tmp/${{ matrix.test_file }}_recording.mp4
   #         retention-days: 30
   #         if-no-files-found: ignore
+  delete_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Delete all old artifacts
+      env:
+        GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
+        REPO: ${{ github.repository }}
+      run: |
+        artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
+        for artifact in $artifacts; do
+          echo "Deleting artifact: $artifact"
+          gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
+        done
