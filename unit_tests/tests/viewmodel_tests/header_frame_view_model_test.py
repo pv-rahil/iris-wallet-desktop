@@ -17,15 +17,13 @@ def test_network_checker_thread_success(mocker, qtbot):
     mock_socket = MagicMock()
     mocker.patch('socket.create_connection', return_value=mock_socket)
 
-    with qtbot.waitSignal(network_checker.network_status_signal, timeout=500) as blocker:
-        network_checker.run()  # run synchronously, NOT start()
+    # start() is mocked globally to call run() synchronously
+    with qtbot.waitSignal(
+        network_checker.network_status_signal, timeout=500,
+    ) as blocker:
+        network_checker.start()
 
     assert blocker.args == [True]
-
-    # Ensure thread is properly cleaned up
-    if network_checker.isRunning():
-        network_checker.quit()
-        network_checker.wait(1000)
 
 
 def test_network_checker_thread_failure(mocker, qtbot):
@@ -34,15 +32,12 @@ def test_network_checker_thread_failure(mocker, qtbot):
 
     mocker.patch('socket.create_connection', side_effect=OSError)
 
-    with qtbot.waitSignal(network_checker.network_status_signal, timeout=500) as blocker:
-        network_checker.run()
+    with qtbot.waitSignal(
+        network_checker.network_status_signal, timeout=500,
+    ) as blocker:
+        network_checker.start()
 
     assert blocker.args == [False]
-
-    # Ensure thread is properly cleaned up
-    if network_checker.isRunning():
-        network_checker.quit()
-        network_checker.wait(1000)
 
 
 def test_check_internet_conn_success(mocker):

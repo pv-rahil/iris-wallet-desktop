@@ -16,6 +16,7 @@ Yields:
 from __future__ import annotations
 
 import pytest
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
 
@@ -27,3 +28,22 @@ def qt_app():
         app = QApplication([])
     yield app
     app.quit()
+
+
+@pytest.fixture(autouse=True)
+def mock_qthread_start(mocker):
+    """
+    Automatically mock QThread.start() to prevent actual thread creation.
+
+    This prevents 'QThread: Destroyed while thread is still running' errors
+    that cause pytest-xdist to fail with 'ValueError: list.remove(x): x not in list'.
+
+    Tests that need actual threading should call thread.run() directly instead.
+    """
+
+    def mock_start_wrapper(self):
+        """Mock start that calls run() synchronously instead of starting a thread."""
+        # Call run() directly in the same thread instead of starting a new thread
+        self.run()
+
+    mocker.patch.object(QThread, 'start', mock_start_wrapper)
