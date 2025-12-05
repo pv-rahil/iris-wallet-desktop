@@ -100,7 +100,6 @@ class ToasterPageObjects(BaseOperations):
         print(f"[TOASTER] Timeout after {attempt} attempts ({timeout}s)")
         return None  # Return None instead of False
 
-
     def click_toaster_frame(self):
         """
         Clicks the toaster frame element if it is displayed.
@@ -155,53 +154,23 @@ class ToasterPageObjects(BaseOperations):
         # Try to get description from the specific toaster we just found
         for attempt in range(max_retries):
             try:
-                # Find description label within this specific toaster element
-                descriptions = toaster_element.findChildren(
-                    lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+                # Try to get description from this specific toaster
+                text = self._get_description_from_toaster(
+                    toaster_element, filter_pattern,
                 )
-
-                if descriptions:
-                    # Get the last description (most recent)
-                    last_desc = descriptions[-1]
-                    text = last_desc.name if hasattr(last_desc, 'name') else None
-
-                    if text:
-                        # Apply filter if provided
-                        if filter_pattern and filter_pattern not in text:
-                            print(
-                                f"""[TOASTER] Found text '{text}' but doesn't match filter '{
-                                    filter_pattern
-                                }'""",
-                            )
-                            continue
-
-                        print(
-                            f"""[TOASTER] Got description (attempt {
-                                attempt + 1
-                            }): {text}""",
-                        )
-                        return text
-
-                # If not found in specific toaster, try fallback search in application tree
-                if attempt == max_retries - 1:
-                    print('[TOASTER] Trying fallback search in application tree...')
-                    matches = self.application.findChildren(
-                        lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+                if text:
+                    print(
+                        f"[TOASTER] Got description (attempt {
+                            attempt + 1
+                        }): {text}",
                     )
+                    return text
 
-                    if matches:
-                        # Filter matches if pattern is provided
-                        if filter_pattern:
-                            matches = [
-                                m for m in matches if m.name and filter_pattern in m.name
-                            ]
-
-                        if matches:
-                            # Pick the LAST matched node (most recent toaster)
-                            last_node = matches[-1]
-                            if last_node.name:
-                                print(f"[TOASTER] Found text via fallback: {last_node.name}")
-                                return last_node.name
+                # On last attempt, try fallback search
+                if attempt == max_retries - 1:
+                    text = self._fallback_description_search(filter_pattern)
+                    if text:
+                        return text
 
             except Exception as e:
                 print(f"[TOASTER] Attempt {attempt + 1} failed: {e}")
@@ -211,6 +180,77 @@ class ToasterPageObjects(BaseOperations):
                 time.sleep(0.2)
 
         print('[TOASTER] Failed to get description after all retries')
+        return None
+
+    def _get_description_from_toaster(self, toaster_element, filter_pattern=None):
+        """
+        Extract description text from a specific toaster element.
+
+        Args:
+            toaster_element: The toaster element to search within.
+            filter_pattern (str, optional): Filter pattern to match.
+
+        Returns:
+            str: Description text if found and matches filter, None otherwise.
+        """
+        descriptions = toaster_element.findChildren(
+            lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+        )
+
+        if not descriptions:
+            return None
+
+        # Get the last description (most recent)
+        last_desc = descriptions[-1]
+        text = last_desc.name if hasattr(last_desc, 'name') else None
+
+        if not text:
+            return None
+
+        # Apply filter if provided
+        if filter_pattern and filter_pattern not in text:
+            print(
+                f"[TOASTER] Found text '{
+                    text
+                }' but doesn't match filter '{filter_pattern}'",
+            )
+            return None
+
+        return text
+
+    def _fallback_description_search(self, filter_pattern=None):
+        """
+        Fallback search for toaster description in entire application tree.
+
+        Args:
+            filter_pattern (str, optional): Filter pattern to match.
+
+        Returns:
+            str: Description text if found, None otherwise.
+        """
+        print('[TOASTER] Trying fallback search in application tree...')
+        matches = self.application.findChildren(
+            lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+        )
+
+        if not matches:
+            return None
+
+        # Filter matches if pattern is provided
+        if filter_pattern:
+            matches = [
+                m for m in matches if m.name and filter_pattern in m.name
+            ]
+
+        if not matches:
+            return None
+
+        # Pick the LAST matched node (most recent toaster)
+        last_node = matches[-1]
+        if last_node.name:
+            print(f"[TOASTER] Found text via fallback: {last_node.name}")
+            return last_node.name
+
         return None
 
     def click_toaster_close_button(self):
