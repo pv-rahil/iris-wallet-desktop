@@ -56,7 +56,7 @@ class ToasterPageObjects(BaseOperations):
             poll_interval (float): Seconds between polls. Default 0.2s for aggressive detection.
 
         Returns:
-            bool: True if toaster found, False otherwise.
+            Node: The toaster element if found, None otherwise.
         """
 
         # Use longer timeout in CI
@@ -90,7 +90,7 @@ class ToasterPageObjects(BaseOperations):
                                     attempt
                                 } attempts ({time.time() - start_time:.2f}s)""",
                             )
-                            return True
+                            return toaster  # Return the element
             except Exception as e:
                 if attempt % 10 == 0:  # Log every 10th attempt to avoid spam
                     print(f"[TOASTER] Attempt {attempt}: {e}")
@@ -98,7 +98,8 @@ class ToasterPageObjects(BaseOperations):
             time.sleep(poll_interval)
 
         print(f"[TOASTER] Timeout after {attempt} attempts ({timeout}s)")
-        return False
+        return None  # Return None instead of False
+
 
     def click_toaster_frame(self):
         """
@@ -107,19 +108,21 @@ class ToasterPageObjects(BaseOperations):
         Returns:
             bool: True if the element is clicked, False otherwise.
         """
-        # First, wait for toaster to appear
-        if not self.wait_for_toaster():
+        # Get the toaster element directly (no redundant searches)
+        element = self.wait_for_toaster()
+        if not element:
             print('[TOASTER] Toaster did not appear within timeout')
             return False
 
-        # Now try to click it
-        element = self.toaster_frame()
-        if self.do_is_displayed(element):
-            # Longer debounce for toasters
-            self.do_click(element, debounce_ms=500)
+        # Click it immediately without redundant checks
+        # skip_display_check=True because we just found it in wait_for_toaster()
+        try:
+            self.do_click(element, debounce_ms=500, skip_display_check=True)
+            print('[TOASTER] Successfully clicked toaster')
             return True
-
-        return False
+        except Exception as e:
+            print(f'[TOASTER] Failed to click toaster: {e}')
+            return False
 
     def get_toaster_title(self):
         """
@@ -133,22 +136,45 @@ class ToasterPageObjects(BaseOperations):
     def get_toaster_description(self, filter_pattern=None, max_retries=3):
         """
         Gets the text of the toaster description element if it is displayed.
-        Fallback: searches AT-SPI tree for the element if primary check fails.
+        Uses the toaster element from wait_for_toaster to avoid redundant searches.
 
         Args:
             filter_pattern (str, optional): A substring to filter the toaster text.
                                             If provided, only toasters containing this text will be considered.
+            max_retries (int): Number of retries if description is not immediately available.
 
         Returns:
             str: The text of the element if found, None otherwise.
         """
+        # First, wait for toaster to appear and get the element
+        toaster_element = self.wait_for_toaster()
+        if not toaster_element:
+            print('[TOASTER] No toaster found for description')
+            return None
+
+        # Try to get description from the specific toaster we just found
         for attempt in range(max_retries):
             try:
-                # Try standard way first
-                element = self.toaster_description()
-                if self.do_is_displayed(element):
-                    text = self.do_get_text(element)
+                # Find description label within this specific toaster element
+                descriptions = toaster_element.findChildren(
+                    lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+                )
+
+                if descriptions:
+                    # Get the last description (most recent)
+                    last_desc = descriptions[-1]
+                    text = last_desc.name if hasattr(last_desc, 'name') else None
+
                     if text:
+                        # Apply filter if provided
+                        if filter_pattern and filter_pattern not in text:
+                            print(
+                                f"""[TOASTER] Found text '{text}' but doesn't match filter '{
+                                    filter_pattern
+                                }'""",
+                            )
+                            continue
+
                         print(
                             f"""[TOASTER] Got description (attempt {
                                 attempt + 1
@@ -156,33 +182,35 @@ class ToasterPageObjects(BaseOperations):
                         )
                         return text
 
-        # Fallback / Filtered Search: Search AT-SPI tree directly
-                print(
-                    f'[TOASTER] Searching AT-SPI tree (filter="{
-                        filter_pattern
-                    }")...',
-                )
-                matches = self.application.findChildren(
-                    lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
-                )
-
-                if matches:
-                    # Filter matches if pattern is provided
-                    if filter_pattern:
-                        matches = [
-                            m for m in matches if m.name and filter_pattern in m.name
-                        ]
+                # If not found in specific toaster, try fallback search in application tree
+                if attempt == max_retries - 1:
+                    print('[TOASTER] Trying fallback search in application tree...')
+                    matches = self.application.findChildren(
+                        lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+                    )
 
                     if matches:
-                        # Pick the LAST matched node
-                        last_node = matches[-1]
-                        if last_node.name:
-                            print(f"[TOASTER] Found text: {last_node.name}")
-                            return last_node.name
+                        # Filter matches if pattern is provided
+                        if filter_pattern:
+                            matches = [
+                                m for m in matches if m.name and filter_pattern in m.name
+                            ]
+
+                        if matches:
+                            # Pick the LAST matched node (most recent toaster)
+                            last_node = matches[-1]
+                            if last_node.name:
+                                print(f"[TOASTER] Found text via fallback: {last_node.name}")
+                                return last_node.name
 
             except Exception as e:
-                print(f"[TOASTER] Search failed: {e}")
+                print(f"[TOASTER] Attempt {attempt + 1} failed: {e}")
 
+            # Small delay before retry
+            if attempt < max_retries - 1:
+                time.sleep(0.2)
+
+        print('[TOASTER] Failed to get description after all retries')
         return None
 
     def click_toaster_close_button(self):

@@ -84,18 +84,23 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_click(self, element, debounce_ms=300):
+    def do_click(self, element, debounce_ms=300, skip_display_check=False):
         """
         Clicks on the specified element with debouncing to prevent rapid repeated clicks.
 
         Args:
             element (Node): The element to click on.
             debounce_ms (int): Minimum milliseconds between clicks on same element. Default 300ms.
+            skip_display_check (bool): If True, skip the display check (use when element is known to be visible).
 
         Returns:
             None
         """
-        if not (self.do_is_displayed(element) and element):
+        # Only check if displayed when not skipping
+        if not skip_display_check:
+            if not (self.do_is_displayed(element) and element):
+                return
+        elif not element:
             return
 
         # Track last click time per element to prevent double-clicks
