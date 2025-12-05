@@ -46,6 +46,7 @@ class BaseOperations:
         self._consecutive_failures = 0
         self._max_consecutive_failures = 5 if is_ci_environment() else 4
         self._circuit_broken = False
+        self._last_click_times = {}
 
         # Define the elements like buttons and text fields as lambdas
         self.refresh_button = lambda: self.perform_action_on_element(
@@ -83,19 +84,51 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_click(self, element):
+    def do_click(self, element, debounce_ms=300):
         """
-        Clicks on the specified element.
+        Clicks on the specified element with debouncing to prevent rapid repeated clicks.
 
         Args:
             element (Node): The element to click on.
+            debounce_ms (int): Minimum milliseconds between clicks on same element. Default 300ms.
 
         Returns:
             None
         """
-        if self.do_is_displayed(element) and element:
+        if not (self.do_is_displayed(element) and element):
+            return
+
+        # Track last click time per element to prevent double-clicks
+        if not hasattr(self, '_last_click_times'):
+            self._last_click_times = {}
+
+        element_id = id(element)
+        current_time = time.time() * 1000  # Convert to milliseconds
+
+        # Check if we need to debounce
+        if element_id in self._last_click_times:
+            time_since_last_click = current_time - \
+                self._last_click_times[element_id]
+            if time_since_last_click < debounce_ms:
+                print(
+                    f"""[DEBOUNCE] Skipping click - only
+                    {time_since_last_click:.0f}ms since last click""",
+                )
+                return
+
+        # Perform the click
+        try:
             element.grabFocus()
+            # Small delay to ensure focus is established before clicking
+            time.sleep(0.1)  # Minimal 100ms delay for focus
             element.click()
+            self._last_click_times[element_id] = current_time
+            element_name = element.name if hasattr(
+                element, 'name',
+            ) else 'unknown'
+            print(f"[CLICK] Successfully clicked element: {element_name}")
+        except Exception as e:
+            print(f"[CLICK ERROR] Failed to click element: {e}")
 
     def do_set_value(self, element, value: str):
         """
@@ -389,6 +422,81 @@ class BaseOperations:
             f"""[WARN] Element not found after {
                 timeout
             }s and {attempt} attempts (consecutive failures: {self._consecutive_failures})""",
+        )
+        return False
+
+    def wait_for_element_with_polling(
+        self,
+        role_name,
+        name=None,
+        description=None,
+        timeout=15,
+        poll_interval=0.2,
+    ):
+        """
+        Wait for element to appear with aggressive polling (for short-lived elements like toasters).
+
+        Args:
+            role_name (str): The role of the element.
+            name (str, optional): The name of the element.
+            description (str, optional): The description of the element.
+            timeout (int): Maximum time to wait in seconds. Default 15s.
+            poll_interval (float): Time between polls in seconds. Default 0.2s.
+
+        Returns:
+            Node: The element if found, False otherwise.
+        """
+        if is_ci_environment():
+            timeout = int(timeout * 1.5)  # 50% longer in CI
+
+        start_time = time.time()
+        attempt = 0
+        identifier = name if name else description
+
+        print(f"""[POLL] Waiting for {role_name} '
+        {identifier}' (timeout={timeout}s)""")
+
+        while time.time() - start_time < timeout:
+            attempt += 1
+            try:
+                # Search for elements
+                if name:
+                    elements = list(
+                        self.application.findChildren(
+                            lambda n: n.roleName == role_name and n.name == name,
+                        ),
+                    )
+                elif description:
+                    elements = list(
+                        self.application.findChildren(
+                            lambda n: n.roleName == role_name
+                            and n.description == description,
+                        ),
+                    )
+                else:
+                    return False
+
+                # Check if any element is showing
+                for element in elements:
+                    if element.showing and (
+                        not hasattr(element, 'sensitive') or element.sensitive
+                    ):
+                        print(
+                            f"""[POLL] Found {role_name} '{identifier}'
+                            after {attempt} attempts""",
+                        )
+                        return element
+
+            except Exception as e:
+                if attempt % 10 == 0:
+                    print(f"[POLL] Attempt {attempt}: {e}")
+
+            time.sleep(poll_interval)
+
+        print(
+            f"""[POLL] Timeout for {role_name} '{
+                identifier
+            }' after {attempt} attempts""",
         )
         return False
 

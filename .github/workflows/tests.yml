@@ -152,7 +152,7 @@ jobs:
           # - test_keyring_dialog
           # - test_receive_and_send_bitcoin
           # - test_hide_exhausted_asset
-          # - test_fail_transfer
+          - test_fail_transfer
           - test_create_and_close_channel
           # - test_issue_rgb20_asset
           # - test_issue_rgb25_asset
@@ -161,8 +161,8 @@ jobs:
           # - test_view_unspent
           # - test_refresh_transfer
           # - test_login_app_auth
-          # - test_ask_auth_for_imp_operations
-          # - test_settings
+          - test_ask_auth_for_imp_operations
+          - test_settings
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -369,8 +369,8 @@ jobs:
           QT_QPA_PLATFORM: xcb
           APPIMAGE_EXTRACT_AND_RUN: '1'
           # Dogtail configuration for CI stability
-          DOGTAIL_SEARCH_TIMEOUT: '90'
-          DOGTAIL_SEARCH_BACKOFF: '1.5'
+          DOGTAIL_SEARCH_TIMEOUT: '120'
+          DOGTAIL_SEARCH_BACKOFF: '2.0'
         run: |
           cd src/utils
           python generate_config.py
@@ -483,8 +483,8 @@ jobs:
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"
           # Dogtail configuration for CI stability (exported for Python tests)
-          export DOGTAIL_SEARCH_TIMEOUT=90
-          export DOGTAIL_SEARCH_BACKOFF=1.5
+          export DOGTAIL_SEARCH_TIMEOUT=120
+          export DOGTAIL_SEARCH_BACKOFF=2.0
           # Update dbus activation environment with all necessary variables including dogtail config
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH DOGTAIL_SEARCH_TIMEOUT DOGTAIL_SEARCH_BACKOFF
           export QT_QUICK_BACKEND=software
