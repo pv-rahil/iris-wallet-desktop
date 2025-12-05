@@ -39,7 +39,8 @@ def test_check_internet_conn_success(mocker):
     """Test check_internet_conn returns True when socket connection succeeds."""
     network_checker = NetworkCheckerThread()
 
-    mocker.patch('socket.create_connection', return_value=True)
+    mock_socket = MagicMock()
+    mocker.patch('socket.create_connection', return_value=mock_socket)
 
     assert network_checker.check_internet_conn() is True
 
