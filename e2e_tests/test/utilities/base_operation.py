@@ -126,6 +126,7 @@ class BaseOperations:
             element.grabFocus()
             # Small delay to ensure focus is established before clicking
             time.sleep(0.1)  # Minimal 100ms delay for focus
+            element.grabFocus()
             element.click()
             self._last_click_times[element_id] = current_time
             element_name = element.name if hasattr(
@@ -428,6 +429,10 @@ class BaseOperations:
                 timeout
             }s and {attempt} attempts (consecutive failures: {self._consecutive_failures})""",
         )
+
+        # Reset counter after logging failure to prevent accumulation across different searches
+        self._reset_circuit_breaker()
+
         return False
 
     def wait_for_element_with_polling(
