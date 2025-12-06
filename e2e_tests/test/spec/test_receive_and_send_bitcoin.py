@@ -186,7 +186,9 @@ def test_send_bitcoin_with_invalid_invoice(wallets_and_operations: WalletTestSet
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_on_chain_button()
-        wallets_and_operations.first_page_features.send_features.retry_send_dialog(transfer_type=TransferType.BITCOIN.value)
+        wallets_and_operations.first_page_features.send_features.retry_send_dialog(
+            transfer_type=TransferType.BITCOIN.value,
+        )
         wallets_and_operations.first_page_objects.send_asset_page_objects.enter_asset_invoice(
             invoice,
         )
