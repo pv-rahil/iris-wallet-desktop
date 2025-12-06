@@ -124,9 +124,6 @@ class BaseOperations:
         # Perform the click
         try:
             element.grabFocus()
-            # Small delay to ensure focus is established before clicking
-            time.sleep(0.1)  # Minimal 100ms delay for focus
-            element.grabFocus()
             element.click()
             self._last_click_times[element_id] = current_time
             element_name = element.name if hasattr(

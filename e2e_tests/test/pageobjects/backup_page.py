@@ -82,7 +82,13 @@ class BackupPageObjects(BaseOperations):
 
     def click_show_mnemonic_button(self):
         """Clicks the mnemonic button."""
-        return self.do_click(self.show_mnemonic_button()) if self.do_is_displayed(self.show_mnemonic_button()) else None
+        if self.do_is_displayed(self.show_mnemonic_button()):
+            for _ in range(3):
+                if not self.do_is_displayed(self.mnemonic_frame()):
+                    self.do_click(self.show_mnemonic_button())
+                    return True
+                time.sleep(1)
+        return False
 
     def click_configurable_button(self):
         """

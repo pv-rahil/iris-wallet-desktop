@@ -35,18 +35,6 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.wallet_selection_page_objects.embedded_button()):
             self.wallet_selection_page_objects.click_embedded_button()
 
-            # Retry logic: ensure the selection registered (max 2 attempts)
-            max_retries = 2
-            retry_count = 0
-            while retry_count < max_retries:
-                if self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
-                    break  # Continue button is visible, proceed
-
-                print(f"""[RETRY] Continue button not visible after embedded selection, retrying... (attempt
-                {retry_count + 1}/{max_retries})""")
-                self.wallet_selection_page_objects.click_embedded_button()
-                retry_count += 1
-
         if self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
             self.wallet_selection_page_objects.click_continue_button()
 
@@ -113,18 +101,6 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.wallet_selection_page_objects.remote_button()):
             self.wallet_selection_page_objects.click_remote_button()
-
-            # Retry logic: ensure the selection registered (max 2 attempts)
-            max_retries = 2
-            retry_count = 0
-            while retry_count < max_retries:
-                if self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
-                    break  # Continue button is visible, proceed
-
-                print(f"""[RETRY] Continue button not visible after remote selection, retrying... (attempt
-                {retry_count + 1}/{max_retries})""")
-                self.wallet_selection_page_objects.click_remote_button()
-                retry_count += 1
 
         if self.do_is_displayed(self.wallet_selection_page_objects.continue_button()):
             self.wallet_selection_page_objects.click_continue_button()
