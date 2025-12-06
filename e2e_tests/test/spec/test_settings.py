@@ -353,7 +353,7 @@ def test_set_valid_announce_address(wallets_and_operations: WalletTestSetup):
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
-            filter_pattern="set successfully",
+            filter_pattern='set successfully',
         )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
@@ -403,7 +403,7 @@ def test_set_announce_alias(wallets_and_operations: WalletTestSetup):
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
-            filter_pattern="set successfully",
+            filter_pattern='set successfully',
         )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
@@ -452,7 +452,7 @@ def test_set_invalid_bitcoind_host(wallets_and_operations: WalletTestSetup):
 
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            filter_pattern="Unable to connect",
+            filter_pattern='Unable to connect',
         )
 
     assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon'
@@ -494,7 +494,7 @@ def test_set_invalid_bitcoind_port(wallets_and_operations: WalletTestSetup):
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
-            filter_pattern="Unable to connect",
+            filter_pattern='Unable to connect',
         )
 
     assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon'
@@ -578,7 +578,7 @@ def test_set_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
-            filter_pattern="set successfully",
+            filter_pattern='set successfully',
         )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
@@ -670,7 +670,7 @@ def test_set_valid_electrum_url(wallets_and_operations: WalletTestSetup):
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
-            filter_pattern="set successfully",
+            filter_pattern='set successfully',
         )
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
