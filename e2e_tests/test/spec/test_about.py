@@ -171,6 +171,7 @@ def test_download_debug_log(wallets_and_operations: WalletTestSetup):
 
         toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
+            filter_pattern="Logs have been saved",
         )
         assert toaster_desc == INFO_LOG_SAVE_DESCRIPTION.format(
             complete_file_path,

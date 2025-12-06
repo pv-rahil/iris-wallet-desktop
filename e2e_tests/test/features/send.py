@@ -154,12 +154,14 @@ class SendOperation(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.send_asset_page_objects.send_button()):
             self.send_asset_page_objects.click_send_button()
 
+        toaster_element = None
         if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-            self.toaster_page_objects.click_toaster_frame()
+            toaster_element = self.toaster_page_objects.click_toaster_frame()
 
-        if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
+        if toaster_element:
             description = self.toaster_page_objects.get_toaster_description(
                 filter_pattern=INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0],
+                toaster_element=toaster_element,
             )
 
         return description

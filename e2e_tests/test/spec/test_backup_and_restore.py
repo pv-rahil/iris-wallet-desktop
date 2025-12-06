@@ -111,6 +111,7 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
+            filter_pattern=INFO_BACKUP_COMPLETED,
         )
         assert description == INFO_BACKUP_COMPLETED
         test_environment.restart()
@@ -162,5 +163,6 @@ def test_restore(wallets_and_operations: WalletTestSetup):
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             toaster_element=toaster_element,
+            filter_pattern=INFO_RESTORE_COMPLETED,
         )
         assert description == INFO_RESTORE_COMPLETED
