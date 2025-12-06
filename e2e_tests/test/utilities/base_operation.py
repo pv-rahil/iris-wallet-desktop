@@ -197,7 +197,7 @@ class BaseOperations:
             bool: True if element is visible within timeout, False otherwise.
         """
         if timeout is None:
-            timeout = get_default_timeout(30)
+            timeout = get_default_timeout(15)  # Reduced from 30s to 15s
 
         if not element:
             print('[WARN] do_is_displayed: element is None.')
@@ -318,7 +318,6 @@ class BaseOperations:
         name=None,
         description=None,
         timeout=None,
-        retry_interval=1.5,
         max_retries=None,
     ):
         """
@@ -329,7 +328,6 @@ class BaseOperations:
             name (str, optional): The name of the element. Defaults to None.
             description (str, optional): The description of the element. Defaults to None.
             timeout (int, optional): The maximum time to wait for the element in seconds. If None, uses CI-aware default (20s).
-            retry_interval (float): The initial time to wait between retries in seconds. Defaults to 0.5.
             max_retries (int, optional): Maximum number of retry attempts. If None, uses timeout-based approach.
 
         Returns:
@@ -348,12 +346,14 @@ class BaseOperations:
             raise RuntimeError(error_msg)
 
         if timeout is None:
-            timeout = get_default_timeout(20)  # Reduced from 30s to 20s
+            # Reduced from 20s to 12s for faster failure detection
+            timeout = get_default_timeout(12)
 
         start_time = time.time()
         elements = []
-        current_interval = retry_interval
-        max_interval = 4.0  # Cap exponential backoff at 4 seconds
+        # Optimize retry intervals for CI
+        current_interval = 0.8 if is_ci_environment() else 1.5
+        max_interval = 2.5 if is_ci_environment() else 4.0  # Reduced max backoff in CI
         attempt = 0
 
         identifier = name if name else description
@@ -430,8 +430,8 @@ class BaseOperations:
             }s and {attempt} attempts (consecutive failures: {self._consecutive_failures})""",
         )
 
-        # Reset counter after logging failure to prevent accumulation across different searches
-        self._reset_circuit_breaker()
+        # Don't reset counter - let it accumulate to trigger circuit breaker
+        # Only reset on successful find (line 393)
 
         return False
 
@@ -532,7 +532,7 @@ class BaseOperations:
             Node: The retrieved element, or False if no matching element is found within the timeout.
         """
         if timeout is None:
-            timeout = get_default_timeout(30)
+            timeout = get_default_timeout(15)  # Reduced from 30s to 15s
 
         start_time = time.time()
         elements = []
@@ -607,7 +607,8 @@ class BaseOperations:
             TimeoutError: If the toaster message does not appear within the timeout.
         """
         if timeout is None:
-            timeout = get_default_timeout(120)
+            # Reduced from 120s to 30s for faster failure detection
+            timeout = get_default_timeout(30)
 
         start_time = time.time()
 

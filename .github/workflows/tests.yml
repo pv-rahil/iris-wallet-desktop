@@ -298,10 +298,8 @@ jobs:
           sleep 4
           openbox & sleep 3
 
-
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
-
 
       - name: Add rgb-lightning-node to PATH
         run: |
@@ -367,10 +365,10 @@ jobs:
           BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
           QT_QPA_PLATFORM: xcb
-          APPIMAGE_EXTRACT_AND_RUN: '1'
-          # Dogtail configuration for CI stability
-          DOGTAIL_SEARCH_TIMEOUT: '120'
-          DOGTAIL_SEARCH_BACKOFF: '2.0'
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          # Dogtail configuration for CI stability - optimized for faster failure detection
+          DOGTAIL_SEARCH_TIMEOUT: "90"
+          DOGTAIL_SEARCH_BACKOFF: "1.2"
         run: |
           cd src/utils
           python generate_config.py
@@ -477,14 +475,14 @@ jobs:
           # Start AT-SPI services and wait for them to initialize (suppress logs)
           /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
           /usr/libexec/at-spi2-registryd 2>/dev/null &
-          # Wait for AT-SPI to be fully ready (increased from 15s to 20s for better stability)
-          sleep 20
+          # Wait for AT-SPI to be fully ready (reduced from 20s to 12s for faster startup)
+          sleep 12
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"
           # Dogtail configuration for CI stability (exported for Python tests)
-          export DOGTAIL_SEARCH_TIMEOUT=120
-          export DOGTAIL_SEARCH_BACKOFF=2.0
+          export DOGTAIL_SEARCH_TIMEOUT=90
+          export DOGTAIL_SEARCH_BACKOFF=1.2
           # Update dbus activation environment with all necessary variables including dogtail config
           dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH DOGTAIL_SEARCH_TIMEOUT DOGTAIL_SEARCH_BACKOFF
           export QT_QUICK_BACKEND=software
@@ -498,7 +496,7 @@ jobs:
           export QT_DISABLE_WINDOW_TRANSPARENCY=1
           export GDK_SYNCHRONIZE=1
           export __GLX_VENDOR_LIBRARY_NAME=mesa
-          sleep 5
+          sleep 2  # Reduced from 5s to 2s
           poetry run single-test ${{ matrix.test_file }}.py
           # poetry run single-test test_rgb20_channel_tx.py
           '
@@ -521,16 +519,16 @@ jobs:
           path: /tmp/${{ matrix.test_file }}_recording.mp4
           retention-days: 30
           if-no-files-found: ignore
-  # delete_artifacts:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Delete all old artifacts
-  #     env:
-  #       GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
-  #       REPO: ${{ github.repository }}
-  #     run: |
-  #       artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
-  #       for artifact in $artifacts; do
-  #         echo "Deleting artifact: $artifact"
-  #         gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
-  #       done
+  delete_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Delete all old artifacts
+      env:
+        GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
+        REPO: ${{ github.repository }}
+      run: |
+        artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
+        for artifact in $artifacts; do
+          echo "Deleting artifact: $artifact"
+          gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
+        done

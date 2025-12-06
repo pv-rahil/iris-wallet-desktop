@@ -137,9 +137,9 @@ def get_ci_timeout_multiplier():
     Get the timeout multiplier for CI environments.
 
     Returns:
-        float: Multiplier to apply to timeouts (1.5x in CI, 1.0x locally).
+        float: Multiplier to apply to timeouts (1.2x in CI, 1.0x locally).
     """
-    return 1.5 if is_ci_environment() else 1.0
+    return 1.2 if is_ci_environment() else 1.0
 
 
 def get_default_timeout(base_timeout=30):
@@ -162,9 +162,9 @@ def get_toaster_timeout():
     Toasters are short-lived (6s display time), so we need shorter timeouts.
 
     Returns:
-        int: Timeout in seconds (10s in CI, 8s locally).
+        int: Timeout in seconds (8s in CI, 6s locally).
     """
-    return 10 if is_ci_environment() else 8
+    return 8 if is_ci_environment() else 6
 
 
 def get_toaster_poll_interval():
@@ -198,6 +198,17 @@ def get_element_search_timeout():
         int: Timeout in seconds (30s in CI, 20s locally).
     """
     return get_default_timeout(20)
+
+
+def get_fast_timeout():
+    """
+    Get a fast timeout for quick element checks.
+    Use for elements that should appear immediately or not at all.
+
+    Returns:
+        int: Timeout in seconds (8s in CI, 5s locally).
+    """
+    return 8 if is_ci_environment() else 5
 
 
 # Initialize dogtail configuration when module is imported
