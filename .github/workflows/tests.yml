@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
-      max-parallel: 1
+      # max-parallel: 1
       fail-fast: false
       matrix:
         test_file:
@@ -359,7 +359,7 @@ jobs:
           # GTK4 config is also created for future compatibility
           # With shadows disabled, Dogtail can accurately position clicks without offset issues
           # When shadows are active, offsets vary based on application, window size, and scaling
-          
+
           # Configure GTK3 (currently used by the application)
           cat > ~/.config/gtk-3.0/gtk.css << 'EOF'
           * {
