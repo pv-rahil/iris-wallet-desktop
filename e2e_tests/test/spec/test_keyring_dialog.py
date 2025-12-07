@@ -44,7 +44,7 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
         if getattr(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.keyring_check_box(), 'checked', None) is False:
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
         for _ in range(3):
-            if wallets_and_operations.first_page_operations.do_is_displayed(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.restore_dialog_box()):
+            if wallets_and_operations.first_page_operations.do_is_displayed(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.keyring_dialog()):
                 wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
         wallets_and_operations.first_page_objects.settings_page_objects.set_keyring_enable_ci()
         test_environment.restart(reset_data=False)

@@ -61,7 +61,7 @@ class ToasterPageObjects(BaseOperations):
 
         # Use longer timeout in CI but not excessive
         if is_ci_environment():
-            timeout = 12  # Reduced from 20s to 12s
+            timeout = 20
 
         start_time = time.time()
         attempt = 0
@@ -157,7 +157,7 @@ class ToasterPageObjects(BaseOperations):
         """
         return self.do_get_text(self.toaster_title()) if self.do_is_displayed(self.toaster_title()) else None
 
-    def get_toaster_description(self, filter_pattern=None, max_retries=2, toaster_element=None):
+    def get_toaster_description(self, filter_pattern=None, max_retries=4, toaster_element=None):
         """
         Gets the text of the toaster description element if it is displayed.
         Uses the toaster element from wait_for_toaster to avoid redundant searches.

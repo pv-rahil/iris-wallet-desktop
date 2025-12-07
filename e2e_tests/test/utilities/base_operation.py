@@ -194,7 +194,7 @@ class BaseOperations:
             bool: True if element is visible within timeout, False otherwise.
         """
         if timeout is None:
-            timeout = get_default_timeout(15)  # Reduced from 30s to 15s
+            timeout = get_default_timeout(30)
 
         if not element:
             print('[WARN] do_is_displayed: element is None.')
@@ -343,14 +343,13 @@ class BaseOperations:
             raise RuntimeError(error_msg)
 
         if timeout is None:
-            # Reduced from 20s to 12s for faster failure detection
-            timeout = get_default_timeout(12)
+            timeout = get_default_timeout(20)
 
         start_time = time.time()
         elements = []
         # Optimize retry intervals for CI
-        current_interval = 0.8 if is_ci_environment() else 1.5
-        max_interval = 2.5 if is_ci_environment() else 4.0  # Reduced max backoff in CI
+        current_interval = 1.5
+        max_interval = 4.0
         attempt = 0
 
         identifier = name if name else description
@@ -432,81 +431,6 @@ class BaseOperations:
 
         return False
 
-    def wait_for_element_with_polling(
-        self,
-        role_name,
-        name=None,
-        description=None,
-        timeout=15,
-        poll_interval=0.2,
-    ):
-        """
-        Wait for element to appear with aggressive polling (for short-lived elements like toasters).
-
-        Args:
-            role_name (str): The role of the element.
-            name (str, optional): The name of the element.
-            description (str, optional): The description of the element.
-            timeout (int): Maximum time to wait in seconds. Default 15s.
-            poll_interval (float): Time between polls in seconds. Default 0.2s.
-
-        Returns:
-            Node: The element if found, False otherwise.
-        """
-        if is_ci_environment():
-            timeout = int(timeout * 1.5)  # 50% longer in CI
-
-        start_time = time.time()
-        attempt = 0
-        identifier = name if name else description
-
-        print(f"""[POLL] Waiting for {role_name} '
-        {identifier}' (timeout={timeout}s)""")
-
-        while time.time() - start_time < timeout:
-            attempt += 1
-            try:
-                # Search for elements
-                if name:
-                    elements = list(
-                        self.application.findChildren(
-                            lambda n: n.roleName == role_name and n.name == name,
-                        ),
-                    )
-                elif description:
-                    elements = list(
-                        self.application.findChildren(
-                            lambda n: n.roleName == role_name
-                            and n.description == description,
-                        ),
-                    )
-                else:
-                    return False
-
-                # Check if any element is showing
-                for element in elements:
-                    if element.showing and (
-                        not hasattr(element, 'sensitive') or element.sensitive
-                    ):
-                        print(
-                            f"""[POLL] Found {role_name} '{identifier}'
-                            after {attempt} attempts""",
-                        )
-                        return element
-
-            except Exception as e:
-                if attempt % 10 == 0:
-                    print(f"[POLL] Attempt {attempt}: {e}")
-
-            time.sleep(poll_interval)
-
-        print(
-            f"""[POLL] Timeout for {role_name} '{
-                identifier
-            }' after {attempt} attempts""",
-        )
-        return False
-
     def get_first_element(
         self,
         role_name,
@@ -529,7 +453,7 @@ class BaseOperations:
             Node: The retrieved element, or False if no matching element is found within the timeout.
         """
         if timeout is None:
-            timeout = get_default_timeout(15)  # Reduced from 30s to 15s
+            timeout = get_default_timeout(30)
 
         start_time = time.time()
         elements = []
@@ -604,8 +528,7 @@ class BaseOperations:
             TimeoutError: If the toaster message does not appear within the timeout.
         """
         if timeout is None:
-            # Reduced from 120s to 30s for faster failure detection
-            timeout = get_default_timeout(30)
+            timeout = get_default_timeout(120)
 
         start_time = time.time()
 
