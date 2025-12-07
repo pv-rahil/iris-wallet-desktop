@@ -74,11 +74,11 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
                 toggle_button, 'checked', None,
             ) is True
 
-        wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
-        toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button()
-        if toggle_button:
-            if toggle_button.checked:
+        for _ in range(5):
+            toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button()
+            if toggle_button:
                 wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
+                break
 
         wallets_and_operations.first_page_operations.enter_native_password()
 
