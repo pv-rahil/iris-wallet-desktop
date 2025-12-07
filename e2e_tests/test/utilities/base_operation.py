@@ -1,4 +1,4 @@
-# pylint: disable=unused-import,too-many-arguments
+# pylint: disable=unused-import,too-many-arguments,too-many-statements,too-many-branches
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -47,6 +47,7 @@ class BaseOperations:
         self._max_consecutive_failures = 5 if is_ci_environment() else 4
         self._circuit_broken = False
         self._last_click_times = {}
+        self._just_switched_window = False
 
         # Define the elements like buttons and text fields as lambdas
         self.refresh_button = lambda: self.perform_action_on_element(
@@ -297,17 +298,35 @@ class BaseOperations:
 
         print(f"Window '{window_name}' not found")
 
-    def do_focus_on_application(self, application):
+    def do_focus_on_application(self, application, verify_ready=True):
         """
-        Focuses on the given application.
+        Focuses on the given application and waits for AT-SPI to synchronize.
 
         Args:
             application (str): The name of the application to focus on.
+            verify_ready (bool): If True, wait for AT-SPI tree to be ready.
 
         Returns:
             None
         """
-        return self.activate_window_by_name(application)
+        self.activate_window_by_name(application)
+
+        if verify_ready:
+            # Give AT-SPI time to synchronize after window switch
+            # CI environments need more time due to slower accessibility tree updates
+            sync_delay = 2.0 if is_ci_environment() else 1.0
+            print(
+                f"[FOCUS] Waiting {
+                    sync_delay
+                }s for AT-SPI to sync after focus change...",
+            )
+            time.sleep(sync_delay)
+
+            # Verify the application is actually ready by checking if we can access its tree
+            self._verify_application_ready(timeout=5.0)
+
+            # Flag that we just switched windows for enhanced retry on next search
+            self._just_switched_window = True
 
     def perform_action_on_element(
         self,
@@ -341,6 +360,18 @@ class BaseOperations:
             }' after {self._consecutive_failures} consecutive failures"
             print(error_msg)
             raise RuntimeError(error_msg)
+
+        # If we just switched windows, use enhanced retry strategy
+        if getattr(self, '_just_switched_window', False):
+            identifier = name if name else description
+            print(
+                f"[POST-FOCUS] First search after window switch for {
+                    role_name
+                } '{identifier}' - using enhanced retry",
+            )
+            initial_delay = 1.5 if is_ci_environment() else 0.8
+            time.sleep(initial_delay)
+            self._just_switched_window = False
 
         if timeout is None:
             timeout = get_default_timeout(20)
@@ -409,7 +440,7 @@ class BaseOperations:
             time.sleep(current_interval)
             current_interval = min(current_interval * 1.5, max_interval)
 
-        # Element not found - log failure and update circuit breaker
+        # Element not found - log failure
         self._log_search_attempt(
             role_name,
             identifier,
@@ -418,16 +449,34 @@ class BaseOperations:
             attempt,
         )
         self._dump_tree_on_failure(role_name, identifier)
-        self._consecutive_failures += 1
+
+        # Circuit breaker logic: only trigger on QUICK consecutive failures
+        # (indicating AT-SPI tree is broken), not on normal element-not-found
+        elapsed_time = time.time() - start_time
+
+        # If search took the full timeout, it's a normal "element not found" - don't count it
+        # If search failed quickly (< 2 seconds), AT-SPI tree might be broken - count it
+        if elapsed_time < 2.0:
+            self._consecutive_failures += 1
+            print(
+                f"""[CIRCUIT BREAKER] Quick failure detected ({elapsed_time:.1f}s) -
+                consecutive quick failures: {self._consecutive_failures}/{self._max_consecutive_failures}""",
+            )
+        else:
+            # Normal timeout - element genuinely not found, reset counter
+            if self._consecutive_failures > 0:
+                print(
+                    f"""[CIRCUIT BREAKER] Normal timeout - resetting counter from {
+                        self._consecutive_failures
+                    }""",
+                )
+            self._consecutive_failures = 0
 
         print(
             f"""[WARN] Element not found after {
                 timeout
-            }s and {attempt} attempts (consecutive failures: {self._consecutive_failures})""",
+            }s and {attempt} attempts""",
         )
-
-        # Don't reset counter - let it accumulate to trigger circuit breaker
-        # Only reset on successful find (line 393)
 
         return False
 
@@ -563,6 +612,43 @@ class BaseOperations:
         """Enter the password when the native auth dialog is show"""
         typeText(NATIVE_AUTHENTICATION_PASSWORD)
         keyCombo('enter')
+
+    def _verify_application_ready(self, timeout=5.0):
+        """
+        Verify that the application's AT-SPI tree is accessible and stable.
+
+        Args:
+            timeout (float): Maximum time to wait for readiness
+
+        Returns:
+            bool: True if ready, False if timeout
+        """
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            try:
+                # Try to access the application tree to verify it's ready
+                if self.application and hasattr(self.application, 'children'):
+                    # Successfully accessed the tree
+                    children_count = len(self.application.children)
+                    if children_count > 0:
+                        print(
+                            f"[FOCUS] Application ready - AT-SPI tree accessible ({
+                                children_count
+                            } children)",
+                        )
+                        return True
+            except Exception as e:
+                print(f"[FOCUS] Waiting for AT-SPI tree readiness: {e}")
+
+            time.sleep(0.3)
+
+        print(
+            f"[FOCUS] Warning: Application readiness could not be verified within {
+                timeout
+            }s",
+        )
+        return False
 
     def _should_break_circuit(self):
         """

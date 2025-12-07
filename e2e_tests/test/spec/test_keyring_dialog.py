@@ -84,7 +84,9 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
             PASSWORD,
         )
         for _ in range(3):
-            if wallets_and_operations.first_page_operations.do_is_displayed(wallets_and_operations.first_page_objects.restore_wallet_page_objects.restore_dialog_box()):
+            if wallets_and_operations.first_page_operations.do_is_displayed(
+                wallets_and_operations.first_page_objects.restore_wallet_page_objects.restore_continue_button(),
+            ):
                 wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
         toggle_button_after = wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button()
         if getattr(toggle_button_after, 'checked', None) is False:
@@ -95,7 +97,11 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
             wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
                 PASSWORD,
             )
-            wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
+            for _ in range(3):
+                if wallets_and_operations.first_page_operations.do_is_displayed(
+                    wallets_and_operations.first_page_objects.restore_wallet_page_objects.restore_continue_button(),
+                ):
+                    wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
         assert toggle_button_after is not None and getattr(
             toggle_button_after, 'checked', None,
         ) is True
