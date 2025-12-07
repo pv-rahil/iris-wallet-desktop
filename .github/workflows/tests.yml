@@ -348,6 +348,22 @@ jobs:
       - name: Start regtest services
         run: poetry run regtest-start
 
+      - name: Disable GTK4 window shadows for accurate Dogtail positioning
+        run: |
+          # Create GTK4 config directory
+          mkdir -p ~/.config/gtk-4.0
+
+          # Disable window shadows to ensure consistent coordinate offsets for Dogtail
+          # With shadows disabled, Dogtail can use a consistent gtk4Offset
+          # When shadows are active, offsets vary based on application, window size, and scaling
+          cat > ~/.config/gtk-4.0/gtk.css << 'EOF'
+          window, .popover, .tooltip {
+            box-shadow: none;
+          }
+          EOF
+
+          echo "GTK4 window shadows disabled for accurate Dogtail positioning"
+
       - name: Start screen recording (background)
         run: |
           ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
