@@ -430,27 +430,32 @@ jobs:
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
           # Start gnome-keyring-daemon and unlock with empty password
-          # Configure real polkit authentication instead of mocking with zenity
-          # Set password for runner user (same as test password for consistency)
-          echo "runner:123456" | sudo chpasswd
-          
-          # Configure sudo to require password (remove NOPASSWD for runner)
-          sudo sed -i '/runner.*NOPASSWD/d' /etc/sudoers.d/* /etc/sudoers || true
-          
-          # Add sudo rule that requires password
-          echo "runner ALL=(ALL) ALL" | sudo tee /etc/sudoers.d/runner-with-password
-          sudo chmod 0440 /etc/sudoers.d/runner-with-password
-          
-          # Start gnome-keyring-daemon
           eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
           
-          # Start polkit authentication agent (this will show real auth dialogs)
-          /usr/bin/lxqt-policykit-agent &
-          POLICYKIT_PID=$!
-          sleep 3
-          echo "Real PolicyKit agent started (PID: $POLICYKIT_PID)"
-          echo "Authentication will use password: 123456"
+          # Create pkexec wrapper that shows zenity authentication dialog
+          # Keep passwordless sudo for CI but show dialog for user interaction testing
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat << 'PKEXEC_WRAPPER' > "$RUNNER_TEMP/bin/pkexec"
+          #!/bin/bash
+          # Explicitly export display variables for zenity
+          export DISPLAY="${DISPLAY:-:99}"
+          export XAUTHORITY="${XAUTHORITY}"
+          
+          # Show zenity password dialog
+          /usr/bin/zenity --password \
+            --title="Authentication Required" \
+            --text="Enter password to authenticate" 2>/dev/null
+          
+          # If zenity succeeded (user entered password), execute command
+          if [ $? -eq 0 ]; then
+            sudo "$@"
+          else
+            exit 1
+          fi
+          PKEXEC_WRAPPER
+          chmod +x "$RUNNER_TEMP/bin/pkexec"
+          export PATH="$RUNNER_TEMP/bin:$PATH"
 
           # Ensure dbus session is available
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
