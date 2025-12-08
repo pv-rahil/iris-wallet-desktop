@@ -108,16 +108,22 @@ class BaseOperations:
         if not hasattr(self, '_last_click_times'):
             self._last_click_times = {}
 
-        element_id = id(element)
+        # Use stable identifier (name + role) instead of object id
+        # Object ID changes when AT-SPI refreshes elements
+        element_name = element.name if hasattr(element, 'name') else 'unknown'
+        element_role = element.roleName if hasattr(
+            element, 'roleName') else 'unknown'
+        element_key = f"{element_role}:{element_name}"
+
         current_time = time.time() * 1000  # Convert to milliseconds
 
         # Check if we need to debounce
-        if element_id in self._last_click_times:
+        if element_key in self._last_click_times:
             time_since_last_click = current_time - \
-                self._last_click_times[element_id]
+                self._last_click_times[element_key]
             if time_since_last_click < debounce_ms:
                 print(
-                    f"""[DEBOUNCE] Skipping click - only
+                    f"""[DEBOUNCE] Skipping click on '{element_name}' - only
                     {time_since_last_click:.0f}ms since last click""",
                 )
                 return
@@ -125,11 +131,10 @@ class BaseOperations:
         # Perform the click
         try:
             element.grabFocus()
+            # Small delay to prevent grabFocus from triggering click on Qt widgets
+            time.sleep(0.1)  # 100ms delay
             element.click()
-            self._last_click_times[element_id] = current_time
-            element_name = element.name if hasattr(
-                element, 'name',
-            ) else 'unknown'
+            self._last_click_times[element_key] = current_time
             print(f"[CLICK] Successfully clicked element: {element_name}")
         except Exception as e:
             print(f"[CLICK ERROR] Failed to click element: {e}")
