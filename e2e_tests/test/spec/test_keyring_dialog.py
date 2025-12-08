@@ -84,16 +84,6 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
             PASSWORD,
         )
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
-        toggle_button_after = wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button()
-        if getattr(toggle_button_after, 'checked', None) is False:
-            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
-                MNEMONIC,
-            )
-            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
-                PASSWORD,
-            )
-            wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
-        assert toggle_button_after is not None and getattr(
-            toggle_button_after, 'checked', None,
+        assert wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button() is not None and getattr(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button(), 'checked', None,
         ) is True
