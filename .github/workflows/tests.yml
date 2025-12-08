@@ -146,7 +146,7 @@ jobs:
         test_file:
           # - test_keyring_dialog
           # - test_receive_and_send_bitcoin
-          # - test_create_and_close_channel
+          - test_create_and_close_channel
           # - test_btc_channel_tx
           # - test_rgb20_channel_tx
           # - test_help
@@ -160,7 +160,7 @@ jobs:
           # - test_issue_rgb25_asset
           # - test_view_unspent
           # - test_refresh_transfer
-          - test_login_app_auth
+          # - test_login_app_auth
           # - test_ask_auth_for_imp_operations
           # - test_settings
     env:
@@ -426,54 +426,54 @@ jobs:
           # Start gnome-keyring-daemon and unlock with empty password
           eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
-          # Create pkexec wrapper that shows Zenity authentication dialog
-          # This allows E2E tests to interact with the authentication UI
-          mkdir -p "$RUNNER_TEMP/bin"
-          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
-          #!/bin/bash
-          set +u
+          # # Create pkexec wrapper that shows Zenity authentication dialog
+          # # This allows E2E tests to interact with the authentication UI
+          # mkdir -p "$RUNNER_TEMP/bin"
+          # cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
+          # #!/bin/bash
+          # set +u
 
-          # Use absolute path to zenity to avoid PATH issues
-          ZENITY_BIN="/usr/bin/zenity"
+          # # Use absolute path to zenity to avoid PATH issues
+          # ZENITY_BIN="/usr/bin/zenity"
 
-          # Check if zenity exists
-          if [ ! -x "\$ZENITY_BIN" ]; then
-            echo "[pkexec] Error: zenity not found at \$ZENITY_BIN" >&2
-            exit 127
-          fi
+          # # Check if zenity exists
+          # if [ ! -x "\$ZENITY_BIN" ]; then
+          #   echo "[pkexec] Error: zenity not found at \$ZENITY_BIN" >&2
+          #   exit 127
+          # fi
 
-          # Show Zenity password dialog for authentication
-          # This simulates the native polkit authentication dialog
-          AUTH_RESPONSE=\$("\$ZENITY_BIN" --password \
-            --title="Authentication Required" \
-            --text="Enter password to authenticate" \
-            --timeout=30 \
-            --ok-label="Authenticate" \
-            --cancel-label="Cancel" 2>/dev/null)
-          ZENITY_EXIT=\$?
+          # # Show Zenity password dialog for authentication
+          # # This simulates the native polkit authentication dialog
+          # AUTH_RESPONSE=\$("\$ZENITY_BIN" --password \
+          #   --title="Authentication Required" \
+          #   --text="Enter password to authenticate" \
+          #   --timeout=30 \
+          #   --ok-label="Authenticate" \
+          #   --cancel-label="Cancel" 2>/dev/null)
+          # ZENITY_EXIT=\$?
 
-          # Check result
-          if [ \$ZENITY_EXIT -eq 0 ] && [ -n "\$AUTH_RESPONSE" ]; then
-            # Password provided - verify it matches expected test password
-            if [ "\$AUTH_RESPONSE" = "${NATIVE_AUTHENTICATION_PASSWORD:-123456}" ]; then
-              # Password correct - execute command with sudo
-              sudo "\$@"
-              exit \$?
-            else
-              # Wrong password
-              echo "[pkexec] Authentication failed: incorrect password" >&2
-              exit 1
-            fi
-          elif [ \$ZENITY_EXIT -eq 5 ]; then
-            # Timeout occurred
-            echo "[pkexec] Authentication timeout" >&2
-            exit 1
-          else
-            # User cancelled or other error
-            echo "[pkexec] Authentication cancelled (exit code: \$ZENITY_EXIT)" >&2
-            exit 1
-          fi
-          END_OF_PKEXEC_SCRIPT
+          # # Check result
+          # if [ \$ZENITY_EXIT -eq 0 ] && [ -n "\$AUTH_RESPONSE" ]; then
+          #   # Password provided - verify it matches expected test password
+          #   if [ "\$AUTH_RESPONSE" = "${NATIVE_AUTHENTICATION_PASSWORD:-123456}" ]; then
+          #     # Password correct - execute command with sudo
+          #     sudo "\$@"
+          #     exit \$?
+          #   else
+          #     # Wrong password
+          #     echo "[pkexec] Authentication failed: incorrect password" >&2
+          #     exit 1
+          #   fi
+          # elif [ \$ZENITY_EXIT -eq 5 ]; then
+          #   # Timeout occurred
+          #   echo "[pkexec] Authentication timeout" >&2
+          #   exit 1
+          # else
+          #   # User cancelled or other error
+          #   echo "[pkexec] Authentication cancelled (exit code: \$ZENITY_EXIT)" >&2
+          #   exit 1
+          # fi
+          # END_OF_PKEXEC_SCRIPT
           chmod +x "$RUNNER_TEMP/bin/pkexec"
           export PATH="$RUNNER_TEMP/bin:$PATH"
 
