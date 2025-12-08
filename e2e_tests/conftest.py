@@ -4,7 +4,11 @@ Custom pytest configuration for wallet mode testing
 """
 from __future__ import annotations
 
+import os
+import time
+
 import pytest
+from dogtail.tree import root
 
 from accessible_constant import DEFAULT_WALLET_MODES
 from src.model.enums.enums_model import WalletType
@@ -94,3 +98,92 @@ def pytest_runtest_logreport(report):
             print(f"   Error: {report.longreprtext[:200]}...")
         elif report.skipped:
             print(f"⏭️  SKIPPED: {test_name}")
+
+
+def _is_ci_environment():
+    """Check if running in CI environment."""
+    return os.getenv('CI', '').lower() in ('true', '1', 'yes')
+
+
+def _refresh_atspi_tree():
+    """
+    Force AT-SPI tree refresh by accessing root.
+    This helps clear stale element caches between tests.
+    """
+    try:
+        # Access root to force tree refresh
+        _ = root.children
+        print('[CLEANUP] AT-SPI tree refreshed')
+    except Exception as e:
+        print(f'[CLEANUP] Warning: Could not refresh AT-SPI tree: {e}')
+
+
+def _reset_operations_state(test_environment):
+    """
+    Reset state in all BaseOperations instances.
+    Clears debounce tracking, circuit breakers, and window switch flags.
+    """
+    try:
+        if hasattr(test_environment, 'first_page_operations'):
+            test_environment.first_page_operations.reset_state()
+
+        if test_environment.multi_instance and hasattr(test_environment, 'second_page_operations'):
+            test_environment.second_page_operations.reset_state()
+
+        print('[CLEANUP] BaseOperations state reset complete')
+    except Exception as e:
+        print(f'[CLEANUP] Warning: Could not reset operations state: {e}')
+
+
+def _stabilize_ui(delay_seconds):
+    """
+    Add stabilization delay for UI and AT-SPI to settle.
+    Longer delays in CI to account for slower accessibility tree synchronization.
+    """
+    print(f'[CLEANUP] Stabilizing UI for {delay_seconds}s...')
+    time.sleep(delay_seconds)
+
+
+@pytest.fixture(autouse=True)
+def cleanup_between_tests(request):
+    """
+    Automatic cleanup fixture that runs between each test function.
+
+    This fixture ensures clean state when using module-scoped test_environment
+    by:
+    - Yielding before the test runs
+    - Performing cleanup after the test completes
+    - Refreshing AT-SPI tree to clear stale caches
+    - Resetting all BaseOperations state
+    - Adding stabilization delays in CI
+
+    The fixture only runs when test_environment is available (scope='module').
+    """
+    # Before test: nothing to do
+    yield
+
+    # After test: perform cleanup
+    try:
+        # Get the test_environment fixture if it exists
+        if 'test_environment' in request.fixturenames:
+            test_env = request.getfixturevalue('test_environment')
+
+            print('\n' + '='*80)
+            print('🧹 CLEANUP: Running inter-test cleanup')
+            print('='*80)
+
+            # 1. Refresh AT-SPI tree to clear stale element caches
+            _refresh_atspi_tree()
+
+            # 2. Reset state in BaseOperations instances
+            _reset_operations_state(test_env)
+
+            # 3. Add stabilization delay (longer in CI)
+            delay = 3.5 if _is_ci_environment() else 1.5
+            _stabilize_ui(delay)
+
+            print('✅ CLEANUP: Complete')
+            print('='*80 + '\n')
+    except Exception as e:
+        # Don't fail tests if cleanup has issues
+        print(f'[CLEANUP] Warning: Cleanup encountered an error: {e}')

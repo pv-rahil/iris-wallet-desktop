@@ -613,6 +613,23 @@ class BaseOperations:
         typeText(NATIVE_AUTHENTICATION_PASSWORD)
         keyCombo('enter')
 
+    def reset_state(self):
+        """
+        Reset all internal state tracking to ensure clean state between tests.
+        This is crucial when using module-scoped fixtures where the same
+        BaseOperations instance is reused across multiple test functions.
+
+        Resets:
+        - Click debounce tracking
+        - Circuit breaker failure counters
+        - Window switch flags
+        """
+        self._last_click_times = {}
+        self._consecutive_failures = 0
+        self._circuit_broken = False
+        self._just_switched_window = False
+        print('[STATE RESET] BaseOperations state cleared for next test')
+
     def _verify_application_ready(self, timeout=5.0):
         """
         Verify that the application's AT-SPI tree is accessible and stable.
