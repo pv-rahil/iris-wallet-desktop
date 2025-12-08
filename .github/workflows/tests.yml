@@ -391,7 +391,7 @@ jobs:
           export XDG_CURRENT_DESKTOP=GNOME
           export QT_QPA_PLATFORMTHEME=gtk3
           export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=egl
+          export QT_XCB_GL_INTEGRATION=none
           export QSG_RENDER_LOOP=basic
           export QT_AUTO_SCREEN_SCALE_FACTOR=0
           export LIBGL_ALWAYS_SOFTWARE=1
@@ -488,7 +488,7 @@ jobs:
           export QT_QUICK_BACKEND=software
           export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
           export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=egl
+          export QT_XCB_GL_INTEGRATION=none
           export LIBGL_ALWAYS_SOFTWARE=1
           export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
           export QTWEBENGINE_DISABLE_SANDBOX=1
