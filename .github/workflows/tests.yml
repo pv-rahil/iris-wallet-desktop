@@ -430,36 +430,27 @@ jobs:
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           export GSETTINGS_BACKEND=dconf
           # Start gnome-keyring-daemon and unlock with empty password
+          # Configure real polkit authentication instead of mocking with zenity
+          # Set password for runner user (same as test password for consistency)
+          echo "runner:123456" | sudo chpasswd
+          
+          # Configure sudo to require password (remove NOPASSWD for runner)
+          sudo sed -i '/runner.*NOPASSWD/d' /etc/sudoers.d/* /etc/sudoers || true
+          
+          # Add sudo rule that requires password
+          echo "runner ALL=(ALL) ALL" | sudo tee /etc/sudoers.d/runner-with-password
+          sudo chmod 0440 /etc/sudoers.d/runner-with-password
+          
+          # Start gnome-keyring-daemon
           eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
-          # Create pkexec wrapper that shows zenity dialog
-          mkdir -p "$RUNNER_TEMP/bin"
-          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
-          #!/bin/bash
-          # Ensure DISPLAY is set for zenity
-          export DISPLAY="${DISPLAY:-:99}"
           
-          # Use absolute path to zenity
-          ZENITY="/usr/bin/zenity"
-          
-          # Show authentication dialog
-          PASSWORD=\$("$ZENITY" --password \
-            --title="Authentication Required" \
-            --text="Administrator privileges required" \
-            --timeout=30 2>/dev/null)
-          EXIT_CODE=\$?
-          
-          # Handle response
-          if [ \$EXIT_CODE -eq 0 ]; then
-            # Password entered - for CI, accept any password since we have passwordless sudo
-            sudo "\$@"
-          else
-            echo "[pkexec] Dialog cancelled or timeout (exit: \$EXIT_CODE)" >&2
-            exit 1
-          fi
-          END_OF_PKEXEC_SCRIPT
-          chmod +x "$RUNNER_TEMP/bin/pkexec"
-          export PATH="$RUNNER_TEMP/bin:$PATH"
+          # Start polkit authentication agent (this will show real auth dialogs)
+          /usr/bin/lxqt-policykit-agent &
+          POLICYKIT_PID=$!
+          sleep 3
+          echo "Real PolicyKit agent started (PID: $POLICYKIT_PID)"
+          echo "Authentication will use password: 123456"
 
           # Ensure dbus session is available
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
