@@ -296,6 +296,20 @@ jobs:
           sleep 4
           openbox & sleep 3
 
+      - name: Configure PolicyKit for passwordless authentication
+        run: |
+          # Create polkit rule to allow runner user to execute commands without password
+          sudo mkdir -p /etc/polkit-1/rules.d
+          sudo tee /etc/polkit-1/rules.d/99-runner-nopasswd.rules > /dev/null << 'EOF'
+          polkit.addRule(function(action, subject) {
+            if (subject.user == "runner") {
+              return polkit.Result.YES;
+            }
+          });
+          EOF
+          sudo chmod 644 /etc/polkit-1/rules.d/99-runner-nopasswd.rules
+          echo "PolicyKit configured for passwordless authentication"
+
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
 
@@ -426,57 +440,12 @@ jobs:
           # Start gnome-keyring-daemon and unlock with empty password
           eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
-          # Create pkexec wrapper that finds and uses zenity
-          mkdir -p "$RUNNER_TEMP/bin"
-          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
-          #!/bin/bash
-          
-          # Find zenity binary - try multiple methods
-          ZENITY_BIN=""
-          if command -v zenity >/dev/null 2>&1; then
-            ZENITY_BIN=\$(command -v zenity)
-          elif [ -x "/usr/bin/zenity" ]; then
-            ZENITY_BIN="/usr/bin/zenity"
-          elif [ -x "/bin/zenity" ]; then
-            ZENITY_BIN="/bin/zenity"
-          fi
-          
-          # If zenity not found, use passwordless sudo as fallback
-          if [ -z "\$ZENITY_BIN" ]; then
-            echo "[pkexec] Warning: zenity not found, using passwordless sudo" >&2
-            exec sudo "\$@"
-          fi
-          
-          # Show zenity password dialog
-          AUTH_RESPONSE=\$("\$ZENITY_BIN" --password \
-            --title="Authentication Required" \
-            --text="Enter password to authenticate" \
-            --timeout=30 \
-            --ok-label="Authenticate" \
-            --cancel-label="Cancel" 2>/dev/null)
-          ZENITY_EXIT=\$?
-          
-          # Handle zenity result
-          if [ \$ZENITY_EXIT -eq 0 ] && [ -n "\$AUTH_RESPONSE" ]; then
-            # Check password (use env var or default 123456)
-            EXPECTED_PWD="${NATIVE_AUTHENTICATION_PASSWORD:-123456}"
-            if [ "\$AUTH_RESPONSE" = "\$EXPECTED_PWD" ]; then
-              sudo "\$@"
-              exit \$?
-            else
-              echo "[pkexec] Authentication failed: incorrect password" >&2
-              exit 1
-            fi
-          elif [ \$ZENITY_EXIT -eq 5 ]; then
-            echo "[pkexec] Authentication timeout" >&2
-            exit 1
-          else
-            echo "[pkexec] User cancelled (exit: \$ZENITY_EXIT)" >&2
-            exit 1
-          fi
-          END_OF_PKEXEC_SCRIPT
-          chmod +x "$RUNNER_TEMP/bin/pkexec"
-          export PATH="$RUNNER_TEMP/bin:$PATH"
+          # Use actual polkit authentication with lxqt-policykit-agent
+          # This is more reliable than zenity and supports AT-SPI for testing
+          /usr/bin/lxqt-policykit-agent &
+          POLICYKIT_PID=$!
+          sleep 2  # Give polkit agent time to start
+          echo "PolicyKit agent started (PID: $POLICYKIT_PID)"
 
           # Ensure dbus session is available
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true

@@ -40,7 +40,7 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
                 self.create_ln_invoice_page_objects.click_close_button()
                 if transfer_type == 'bitcoin':
                     self.fungible_page_objects.click_bitcoin_frame()
-            if transfer_type == 'bitcoin' and self.do_is_displayed(self.bitcoin_detail_page_objects.receive_bitcoin_button()):
+            if self.do_is_displayed(self.bitcoin_detail_page_objects.receive_bitcoin_button()):
                 self.bitcoin_detail_page_objects.click_receive_bitcoin_button()
             if asset_name:
                 self.fungible_page_objects.click_rgb20_frame(asset_name)
