@@ -144,11 +144,11 @@ jobs:
       fail-fast: false
       matrix:
         test_file:
-          # - test_keyring_dialog
-          # - test_receive_and_send_bitcoin
-          # - test_create_and_close_channel
-          # - test_btc_channel_tx
-          # - test_rgb20_channel_tx
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_create_and_close_channel
+          - test_btc_channel_tx
+          - test_rgb20_channel_tx
           # - test_help
           # - test_about
           # - test_backup_and_restore
@@ -160,7 +160,7 @@ jobs:
           # - test_issue_rgb25_asset
           # - test_view_unspent
           # - test_refresh_transfer
-          - test_login_app_auth
+          # - test_login_app_auth
           # - test_ask_auth_for_imp_operations
           # - test_settings
     env:
