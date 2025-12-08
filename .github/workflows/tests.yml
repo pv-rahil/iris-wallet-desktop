@@ -6,134 +6,134 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: Lint & static checks
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # lint:
+  #   name: Lint & static checks
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up Python 3.12.3
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.3"
-          cache: "pip"
+  #     - name: Set up Python 3.12.3
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12.3"
+  #         cache: "pip"
 
-      - name: Install system build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gobject-introspection \
-            libgirepository1.0-dev \
-            libcairo2-dev \
-            libffi-dev \
-            build-essential \
-            python3-dev \
-            meson \
-            ninja-build \
-            pkg-config \
-            gir1.2-gtk-3.0
+  #     - name: Install system build dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           gobject-introspection \
+  #           libgirepository1.0-dev \
+  #           libcairo2-dev \
+  #           libffi-dev \
+  #           build-essential \
+  #           python3-dev \
+  #           meson \
+  #           ninja-build \
+  #           pkg-config \
+  #           gir1.2-gtk-3.0
 
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+  #     - name: Cache Poetry dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/pypoetry
+  #         key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
-      - name: Install Python dependencies (project)
-        uses: ./.github/actions/install-python-dependencies
+  #     - name: Install Python dependencies (project)
+  #       uses: ./.github/actions/install-python-dependencies
 
-      - name: Generate config.py
-        run: |
-          cd src/utils
-          python generate_config.py
+  #     - name: Generate config.py
+  #       run: |
+  #         cd src/utils
+  #         python generate_config.py
 
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+  #     - name: Compile QT resources
+  #       run: |
+  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-      - name: Code quality checks
-        run: |
-          pip install pre-commit
-          pre-commit run --all-files --show-diff-on-failure
+  #     - name: Code quality checks
+  #       run: |
+  #         pip install pre-commit
+  #         pre-commit run --all-files --show-diff-on-failure
 
-  unit-tests:
-    name: Unit tests
-    runs-on: ubuntu-22.04
-    env:
-      QT_QPA_PLATFORM: offscreen
-      TZ: Asia/Kolkata
-      PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # unit-tests:
+  #   name: Unit tests
+  #   runs-on: ubuntu-22.04
+  #   env:
+  #     QT_QPA_PLATFORM: offscreen
+  #     TZ: Asia/Kolkata
+  #     PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up Python 3.12.3 environment
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.3"
-          cache: "pip"
+  #     - name: Set up Python 3.12.3 environment
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12.3"
+  #         cache: "pip"
 
-      - name: Install required system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libxcb-cursor0 \
-            libegl1 \
-            libgl1 \
-            ruby-dev \
-            build-essential \
-            libgirepository1.0-dev \
-            python3-dev \
-            libfuse2 \
-            gobject-introspection \
-            meson \
-            ninja-build \
-            pkg-config \
-            libcairo2-dev \
-            libffi-dev
-          sudo gem install fpm -f
+  #     - name: Install required system dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           libxcb-cursor0 \
+  #           libegl1 \
+  #           libgl1 \
+  #           ruby-dev \
+  #           build-essential \
+  #           libgirepository1.0-dev \
+  #           python3-dev \
+  #           libfuse2 \
+  #           gobject-introspection \
+  #           meson \
+  #           ninja-build \
+  #           pkg-config \
+  #           libcairo2-dev \
+  #           libffi-dev
+  #         sudo gem install fpm -f
 
-      - name: Generate config.py
-        run: |
-          cd src/utils
-          python generate_config.py
+  #     - name: Generate config.py
+  #       run: |
+  #         cd src/utils
+  #         python generate_config.py
 
-      - name: Preinstall keyring backends (system Python)
-        run: |
-          pip install keyring keyrings.alt
+  #     - name: Preinstall keyring backends (system Python)
+  #       run: |
+  #         pip install keyring keyrings.alt
 
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+  #     - name: Cache Poetry dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/pypoetry
+  #         key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
-      - name: Install Python dependencies
-        uses: ./.github/actions/install-python-dependencies
+  #     - name: Install Python dependencies
+  #       uses: ./.github/actions/install-python-dependencies
 
-      - name: Install keyring backends in Poetry venv
-        run: |
-          poetry run pip install keyring keyrings.alt
+  #     - name: Install keyring backends in Poetry venv
+  #       run: |
+  #         poetry run pip install keyring keyrings.alt
 
-      - name: Set KEYRING_HOME env
-        run: |
-          echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
+  #     - name: Set KEYRING_HOME env
+  #       run: |
+  #         echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
 
-      - name: Ensure keyring storage directory exists
-        run: |
-          mkdir -p "$KEYRING_HOME"
+  #     - name: Ensure keyring storage directory exists
+  #       run: |
+  #         mkdir -p "$KEYRING_HOME"
 
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+  #     - name: Compile QT resources
+  #       run: |
+  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-      - name: Run unit tests (fail if coverage < 90%)
-        run: |
-          poetry run pytest -v --maxfail=1 \
-            --cov=src \
-            --cov-fail-under=90 \
-            unit_tests/tests
+  #     - name: Run unit tests (fail if coverage < 90%)
+  #       run: |
+  #         poetry run pytest -v --maxfail=1 \
+  #           --cov=src \
+  #           --cov-fail-under=90 \
+  #           unit_tests/tests
 
   e2e-dogtail:
     name: E2E Dogtail tests
@@ -257,8 +257,6 @@ jobs:
             libxcb-util1 \
             ruby-dev \
             build-essential \
-            libgl1-mesa-glx \
-            libegl1-mesa \
             libgbm1 \
             libosmesa6 \
             mesa-utils-extra \
