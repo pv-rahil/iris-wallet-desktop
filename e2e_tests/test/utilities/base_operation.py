@@ -124,7 +124,10 @@ class BaseOperations:
 
         # Perform the click
         try:
-            element.grabFocus()
+            # Only grab focus if element doesn't already have it
+            # This prevents double-clicks on Qt widgets where grabFocus triggers a click
+            if not hasattr(element, 'focused') or not element.focused:
+                element.grabFocus()
             element.click()
             self._last_click_times[element_id] = current_time
             element_name = element.name if hasattr(
@@ -529,7 +532,8 @@ class BaseOperations:
                 if elements:
                     for element in elements:
                         if element.showing and element.sensitive:
-                            element.grabFocus()
+                            # Don't grab focus during search - only when clicking
+                            # This prevents accidental clicks during element lookups
                             return element
 
             except Exception as e:
