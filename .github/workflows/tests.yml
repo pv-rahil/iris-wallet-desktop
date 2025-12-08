@@ -433,39 +433,14 @@ jobs:
           eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
           
-          # Create pkexec wrapper with enhanced zenity support for Ubuntu 24.04
+          # Create simple pkexec wrapper - zenity fails on Ubuntu 24.04
+          # Exit code 127 suggests missing runtime dependencies even when zenity is installed
+          # Use direct sudo pass-through to prevent AT-SPI tree breakage
           mkdir -p "$RUNNER_TEMP/bin"
           cat << 'PKEXEC_WRAPPER' > "$RUNNER_TEMP/bin/pkexec"
           #!/bin/bash
-          # Ensure all necessary environment variables for zenity and AT-SPI
-          export DISPLAY="\${DISPLAY:-:99}"
-          export XAUTHORITY="\${XAUTHORITY}"
-          export GTK_MODULES="gail:atk-bridge"
-          export NO_AT_BRIDGE=0
-          export QT_ACCESSIBILITY=1
-          
-          # Debug: Log the zenity launch
-          echo "[pkexec] Launching zenity dialog..." >&2
-          
-          # Launch zenity and capture result
-          PASSWORD=\$(/usr/bin/zenity --password \
-            --title="Authentication Required" \
-            --text="Enter password to authenticate" \
-            --timeout=30 \
-            --width=300 \
-            --ok-label="Authenticate" \
-            --cancel-label="Cancel" 2>&1)
-          ZENITY_EXIT=\$?
-          
-          echo "[pkexec] Zenity exited with code: \$ZENITY_EXIT" >&2
-          
-          # Execute command if user provided password
-          if [ \$ZENITY_EXIT -eq 0 ]; then
-            /usr/bin/sudo "\$@"
-          else
-            echo "[pkexec] Authentication cancelled" >&2
-            exit 1
-          fi
+          # Direct pass-through to sudo (GitHub Actions has passwordless sudo)
+          exec /usr/bin/sudo "$@"
           PKEXEC_WRAPPER
           chmod +x "$RUNNER_TEMP/bin/pkexec"
           export PATH="$RUNNER_TEMP/bin:$PATH"

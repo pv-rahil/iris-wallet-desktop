@@ -615,7 +615,8 @@ class BaseOperations:
     def enter_native_password(self):
         """Enter the password when the native auth dialog is show"""
         typeText(NATIVE_AUTHENTICATION_PASSWORD)
-        keyCombo('enter')
+        if not os.getenv('CI'):
+            keyCombo('enter')
 
     def reset_state(self):
         """
