@@ -149,20 +149,20 @@ jobs:
           - test_create_and_close_channel
           - test_btc_channel_tx
           - test_rgb20_channel_tx
-          # - test_help
-          # - test_about
-          # - test_backup_and_restore
-          # - test_send_and_receive_rgb20_asset
-          # - test_send_and_receive_rgb25_asset
-          # - test_hide_exhausted_asset
-          # - test_fail_transfer
-          # - test_issue_rgb20_asset
-          # - test_issue_rgb25_asset
-          # - test_view_unspent
-          # - test_refresh_transfer
-          # - test_login_app_auth
-          # - test_ask_auth_for_imp_operations
-          # - test_settings
+          - test_help
+          - test_about
+          - test_backup_and_restore
+          - test_send_and_receive_rgb20_asset
+          - test_send_and_receive_rgb25_asset
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_issue_rgb20_asset
+          - test_issue_rgb25_asset
+          - test_view_unspent
+          - test_refresh_transfer
+          - test_login_app_auth
+          - test_ask_auth_for_imp_operations
+          - test_settings
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -295,12 +295,6 @@ jobs:
           Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
           sleep 4
           openbox & sleep 3
-
-      - name: Verify zenity installation
-        run: |
-          which zenity || echo "zenity not found in PATH"
-          ls -la /usr/bin/zenity || echo "/usr/bin/zenity not found"
-          DISPLAY=:99 /usr/bin/zenity --version || echo "zenity test failed"
 
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
