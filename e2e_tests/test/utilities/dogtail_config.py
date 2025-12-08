@@ -201,4 +201,4 @@ def get_element_search_timeout():
 
 
 # Initialize dogtail configuration when module is imported
-configure_dogtail()
+# configure_dogtail()
