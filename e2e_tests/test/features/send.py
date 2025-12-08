@@ -25,14 +25,6 @@ class SendOperation(MainPageObjects, BaseOperations):
         Retry logic to ensure send dialog shows transfer selection buttons.
         Closes any open dialog and reopens the send dialog.
         """
-        if transfer_type == 'lightning':
-            self.do_is_displayed(
-                self.send_ln_invoice_page_objects.invoice_input(),
-            )
-            return True
-        if transfer_type == 'bitcoin':
-            self.do_is_displayed(self.send_asset_page_objects.invoice_input())
-            return True
         retry_count = 0
         while retry_count < max_retries:
             if self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()) or self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):

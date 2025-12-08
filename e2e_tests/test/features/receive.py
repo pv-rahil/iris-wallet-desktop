@@ -23,17 +23,6 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         Retry logic to ensure receive dialog shows transfer selection buttons.
         Closes any open dialog and reopens the receive dialog.
         """
-        if transfer_type == 'lightning':
-            self.do_is_displayed(
-                self.receive_asset_page_objects.receiver_invoice(),
-            )
-            return True
-        if transfer_type == 'bitcoin':
-            self.do_is_displayed(
-                self.receive_asset_page_objects.receiver_invoice(),
-            )
-            return True
-
         retry_count = 0
         while retry_count < max_retries:
             if self.do_is_displayed(self.wallet_transfer_page_objects.on_chain_button()) or self.do_is_displayed(self.wallet_transfer_page_objects.lightning_button()):
