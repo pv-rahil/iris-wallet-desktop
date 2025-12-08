@@ -146,8 +146,8 @@ jobs:
         test_file:
           # - test_keyring_dialog
           # - test_receive_and_send_bitcoin
-          # - test_create_and_close_channel
-          # - test_btc_channel_tx
+          - test_create_and_close_channel
+          - test_btc_channel_tx
           # - test_rgb20_channel_tx
           # - test_help
           # - test_about
@@ -346,23 +346,14 @@ jobs:
       - name: Start regtest services
         run: poetry run regtest-start
 
-      - name: Disable GTK window shadows for accurate Dogtail positioning
+      - name: Configure Qt for accurate Dogtail positioning
         run: |
-          # Create GTK3 and GTK4 config directories
-          mkdir -p ~/.config/gtk-4.0
-
-          # GTK4 config is also created for future compatibility
-          # With shadows disabled, Dogtail can accurately position clicks without offset issues
-          # When shadows are active, offsets vary based on application, window size, and scaling
-          # Configure GTK4 (for future compatibility)
-          cat > ~/.config/gtk-4.0/gtk.css << 'EOF'
-          window, .popover, .tooltip {
-            box-shadow: none;
-          }
-          EOF
-
-          echo "GTK4 window shadows disabled for accurate Dogtail positioning"
-
+          # Qt applications use window effects and platform themes that can cause click offsets
+          # Disable these for accurate Dogtail element positioning
+          echo "QT_STYLE_OVERRIDE=Fusion" >> $GITHUB_ENV
+          echo "QT_QPA_PLATFORMTHEME=" >> $GITHUB_ENV
+          echo "QT_ENABLE_HIGHDPI_SCALING=0" >> $GITHUB_ENV
+          echo "QT_AUTO_SCREEN_SCALE_FACTOR=0" >> $GITHUB_ENV
 
       - name: Start screen recording (background)
         run: |
@@ -407,7 +398,9 @@ jobs:
           export QT_DISABLE_WINDOW_TRANSPARENCY=1
           export XLIB_SKIP_ARGB_VISUALS=1
           export XDG_CURRENT_DESKTOP=GNOME
-          export QT_QPA_PLATFORMTHEME=gtk4
+          export QT_QPA_PLATFORMTHEME=""
+          export QT_STYLE_OVERRIDE=Fusion
+          export QT_ENABLE_HIGHDPI_SCALING=0
           export QT_OPENGL=software
           export QT_XCB_GL_INTEGRATION=none
           export QSG_RENDER_LOOP=basic
@@ -433,56 +426,43 @@ jobs:
           # Start gnome-keyring-daemon and unlock with empty password
           eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
-          # Create pkexec wrapper that handles authentication
-          # Strategy: Use passwordless sudo by default (GitHub Actions)
-          # Only show Zenity dialog when SHOW_AUTH_DIALOG=1 is set (for UI testing)
+          # Create pkexec wrapper that shows Zenity authentication dialog
+          # This allows E2E tests to interact with the authentication UI
           mkdir -p "$RUNNER_TEMP/bin"
           cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
           #!/bin/bash
           set +u
 
-          # Check if we should show the authentication dialog for testing
-          if [ "${SHOW_AUTH_DIALOG:-0}" = "1" ]; then
-            # Use Zenity dialog for visual authentication testing
-            # This simulates the native authentication experience
+          # Show Zenity password dialog for authentication
+          # This simulates the native polkit authentication dialog
+          AUTH_RESPONSE=\$(zenity --password \
+            --title="Authentication Required" \
+            --text="Enter password to authenticate" \
+            --timeout=30 \
+            --ok-label="Authenticate" \
+            --cancel-label="Cancel" 2>/dev/null)
+          ZENITY_EXIT=\$?
 
-            # Ensure Zenity is available
-            if ! command -v zenity &>/dev/null; then
-              echo "[pkexec] Warning: zenity not found, falling back to direct sudo" >&2
+          # Check result
+          if [ \$ZENITY_EXIT -eq 0 ] && [ -n "\$AUTH_RESPONSE" ]; then
+            # Password provided - verify it matches expected test password
+            if [ "\$AUTH_RESPONSE" = "${NATIVE_AUTHENTICATION_PASSWORD:-123456}" ]; then
+              # Password correct - execute command with sudo
               sudo "\$@"
               exit \$?
-            fi
-
-            # Show password dialog without wmctrl focus management
-            # (wmctrl can be unreliable on Ubuntu 24.04 with Openbox)
-            AUTH_RESPONSE=\$(zenity --password \
-              --title="Authentication Required" \
-              --timeout=30 \
-              --ok-label="Authenticate" \
-              --cancel-label="Cancel" 2>/dev/null)
-            ZENITY_EXIT=\$?
-
-            # Check result
-            if [ \$ZENITY_EXIT -eq 0 ] && [ -n "\$AUTH_RESPONSE" ]; then
-              # Verify password matches expected test password
-              if [ "\$AUTH_RESPONSE" = "${NATIVE_AUTHENTICATION_PASSWORD:-123456}" ]; then
-                # Password correct - execute with sudo
-                sudo "\$@"
-                exit \$?
-              else
-                # Wrong password
-                echo "[pkexec] Authentication failed: incorrect password" >&2
-                exit 1
-              fi
             else
-              # User cancelled or timeout
-              echo "[pkexec] Authentication cancelled" >&2
+              # Wrong password
+              echo "[pkexec] Authentication failed: incorrect password" >&2
               exit 1
             fi
+          elif [ \$ZENITY_EXIT -eq 5 ]; then
+            # Timeout occurred
+            echo "[pkexec] Authentication timeout" >&2
+            exit 1
           else
-            # Direct passwordless sudo (default for CI infrastructure)
-            sudo "\$@"
-            exit \$?
+            # User cancelled or other error
+            echo "[pkexec] Authentication cancelled (exit code: \$ZENITY_EXIT)" >&2
+            exit 1
           fi
           END_OF_PKEXEC_SCRIPT
           chmod +x "$RUNNER_TEMP/bin/pkexec"
