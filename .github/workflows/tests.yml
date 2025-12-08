@@ -474,8 +474,8 @@ jobs:
           #   exit 1
           # fi
           # END_OF_PKEXEC_SCRIPT
-          chmod +x "$RUNNER_TEMP/bin/pkexec"
-          export PATH="$RUNNER_TEMP/bin:$PATH"
+          # chmod +x "$RUNNER_TEMP/bin/pkexec"
+          # export PATH="$RUNNER_TEMP/bin:$PATH"
 
           # Ensure dbus session is available
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
