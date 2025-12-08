@@ -433,9 +433,18 @@ jobs:
           #!/bin/bash
           set +u
 
+          # Use absolute path to zenity to avoid PATH issues
+          ZENITY_BIN="/usr/bin/zenity"
+
+          # Check if zenity exists
+          if [ ! -x "$ZENITY_BIN" ]; then
+            echo "[pkexec] Error: zenity not found at $ZENITY_BIN" >&2
+            exit 127
+          fi
+
           # Show Zenity password dialog for authentication
           # This simulates the native polkit authentication dialog
-          AUTH_RESPONSE=\$(zenity --password \
+          AUTH_RESPONSE=\$("$ZENITY_BIN" --password \
             --title="Authentication Required" \
             --text="Enter password to authenticate" \
             --timeout=30 \

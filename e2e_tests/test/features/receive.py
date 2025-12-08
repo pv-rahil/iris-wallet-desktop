@@ -44,6 +44,7 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
                 self.bitcoin_detail_page_objects.click_receive_bitcoin_button()
             if asset_name:
                 self.fungible_page_objects.click_rgb20_frame(asset_name)
+                self.asset_detail_page_objects.click_receive_button()
             retry_count += 1
         return False
 
