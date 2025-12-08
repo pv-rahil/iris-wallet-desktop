@@ -89,7 +89,6 @@ def test_create_channel_with_actual_value(wallets_and_operations: WalletTestSetu
         wallets_and_operations.first_page_objects.channel_detail_dialog_page_objects.click_copy_button()
         pub_key = wallets_and_operations.first_page_operations.do_get_copied_address()
         wallets_and_operations.first_page_objects.channel_detail_dialog_page_objects.click_close_channel_button()
-        wallets_and_operations.first_page_objects.close_channel_detail_dialog_page_objects.click_close_channel_dialog()
         wallets_and_operations.first_page_objects.close_channel_detail_dialog_page_objects.click_continue_button()
         toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
