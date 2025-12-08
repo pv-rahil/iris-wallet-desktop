@@ -84,6 +84,9 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
             PASSWORD,
         )
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
-        assert wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button() is not None and getattr(
-            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button(), 'checked', None,
-        ) is True
+        # Wait for toggle state to update (AT-SPI needs time to sync)
+        assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=True,
+            timeout=5
+        )

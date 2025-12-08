@@ -631,6 +631,37 @@ class BaseOperations:
         self._just_switched_window = False
         print('[STATE RESET] BaseOperations state cleared for next test')
 
+    def wait_for_toggle_state(self, toggle_element_getter, expected_checked, timeout=5):
+        """
+        Wait for a toggle button to reach the expected checked state.
+
+        Args:
+            toggle_element_getter: Function that returns the toggle element
+            expected_checked: Expected boolean state (True or False)
+            timeout: Maximum time to wait in seconds
+
+        Returns:
+            bool: True if state matched, False if timeout
+        """
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            try:
+                element = toggle_element_getter()
+                if element:
+                    current_state = getattr(element, 'checked', None)
+                    if current_state == expected_checked:
+                        print(
+                            f"[TOGGLE STATE] Verified checked={expected_checked}")
+                        return True
+                time.sleep(0.5)  # Check every 500ms
+            except Exception as e:
+                print(f"[TOGGLE STATE] Error checking state: {e}")
+                time.sleep(0.5)
+
+        print(f"[TOGGLE STATE] Timeout waiting for checked={expected_checked}")
+        return False
+
     def _verify_application_ready(self, timeout=5.0):
         """
         Verify that the application's AT-SPI tree is accessible and stable.
