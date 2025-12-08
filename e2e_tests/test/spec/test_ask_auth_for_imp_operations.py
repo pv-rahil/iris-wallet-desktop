@@ -232,7 +232,9 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
             wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
             toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.ask_auth_for_imp_question_toggle()
             if toggle_button:
-                if toggle_button.checked:
+                if getattr(
+                    toggle_button, 'checked', None,
+                ) is True:
                     wallets_and_operations.first_page_objects.settings_page_objects.click_ask_auth_imp_question()
             wallets_and_operations.first_page_operations.enter_native_password()
 

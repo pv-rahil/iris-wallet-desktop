@@ -160,8 +160,8 @@ jobs:
           # - test_issue_rgb25_asset
           # - test_view_unspent
           # - test_refresh_transfer
-          - test_login_app_auth
-          # - test_ask_auth_for_imp_operations
+          # - test_login_app_auth
+          - test_ask_auth_for_imp_operations
           # - test_settings
     env:
       DISPLAY: :99
