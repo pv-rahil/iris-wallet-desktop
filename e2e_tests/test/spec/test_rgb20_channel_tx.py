@@ -137,7 +137,7 @@ def test_create_wrong_amount_invoice(wallets_and_operations: WalletTestSetup, lo
         )
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_receive_button()
         error_label = wallets_and_operations.second_page_features.receive_features.create_wrong_ln_invoice(
-            application=SECOND_APPLICATION, amount=INVALID_AMOUNT,
+            application=SECOND_APPLICATION, amount=INVALID_AMOUNT, asset_name=ASSET_NAME,
         )
         assert error_label == TranslationManager.translate(
             'asset_amount_validation_invoice',

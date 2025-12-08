@@ -18,7 +18,7 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         """
         super().__init__(application)
 
-    def retry_receive_dialog(self, max_retries=2, transfer_type=None):
+    def retry_receive_dialog(self, max_retries=2, transfer_type=None, asset_name=None):
         """
         Retry logic to ensure receive dialog shows transfer selection buttons.
         Closes any open dialog and reopens the receive dialog.
@@ -38,9 +38,12 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
                 self.receive_asset_page_objects.click_receive_asset_close_button()
             elif self.do_is_displayed(self.create_ln_invoice_page_objects.close_button()):
                 self.create_ln_invoice_page_objects.click_close_button()
-                self.fungible_page_objects.click_bitcoin_frame()
-            if self.do_is_displayed(self.bitcoin_detail_page_objects.receive_bitcoin_button()):
+                if transfer_type == 'bitcoin':
+                    self.fungible_page_objects.click_bitcoin_frame()
+            if transfer_type == 'bitcoin' and self.do_is_displayed(self.bitcoin_detail_page_objects.receive_bitcoin_button()):
                 self.bitcoin_detail_page_objects.click_receive_bitcoin_button()
+            if asset_name:
+                self.fungible_page_objects.click_rgb20_frame(asset_name)
             retry_count += 1
         return False
 
@@ -94,14 +97,15 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
             self.sidebar_page_objects.click_fungibles_button()
         return invoice
 
-    def create_wrong_ln_invoice(self, application, amount):
+    def create_wrong_ln_invoice(self, application, amount, asset_name):
         """
         Sends assets using lightning transfer with a wrong invoice.
         """
         error_label = None
 
         self.do_focus_on_application(application)
-        self.retry_receive_dialog(transfer_type='lightning')
+        self.retry_receive_dialog(transfer_type='lightning', asset_name=asset_name)
+
 
         if self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):
             self.create_ln_invoice_page_objects.enter_asset_amount(amount)

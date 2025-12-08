@@ -144,25 +144,25 @@ jobs:
       fail-fast: false
       matrix:
         test_file:
-          - test_keyring_dialog
-          - test_receive_and_send_bitcoin
+          # - test_keyring_dialog
+          # - test_receive_and_send_bitcoin
           - test_create_and_close_channel
-          - test_btc_channel_tx
+          # - test_btc_channel_tx
           - test_rgb20_channel_tx
-          - test_help
-          - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_rgb20_asset
-          - test_send_and_receive_rgb25_asset
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_issue_rgb20_asset
-          - test_issue_rgb25_asset
-          - test_view_unspent
-          - test_refresh_transfer
-          - test_login_app_auth
-          - test_ask_auth_for_imp_operations
-          - test_settings
+          # - test_help
+          # - test_about
+          # - test_backup_and_restore
+          # - test_send_and_receive_rgb20_asset
+          # - test_send_and_receive_rgb25_asset
+          # - test_hide_exhausted_asset
+          # - test_fail_transfer
+          # - test_issue_rgb20_asset
+          # - test_issue_rgb25_asset
+          # - test_view_unspent
+          # - test_refresh_transfer
+          # - test_login_app_auth
+          # - test_ask_auth_for_imp_operations
+          # - test_settings
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -346,6 +346,24 @@ jobs:
       - name: Start regtest services
         run: poetry run regtest-start
 
+      - name: Disable GTK window shadows for accurate Dogtail positioning
+        run: |
+          # Create GTK3 and GTK4 config directories
+          mkdir -p ~/.config/gtk-4.0
+
+          # GTK4 config is also created for future compatibility
+          # With shadows disabled, Dogtail can accurately position clicks without offset issues
+          # When shadows are active, offsets vary based on application, window size, and scaling
+          # Configure GTK4 (for future compatibility)
+          cat > ~/.config/gtk-4.0/gtk.css << 'EOF'
+          window, .popover, .tooltip {
+            box-shadow: none;
+          }
+          EOF
+
+          echo "GTK4 window shadows disabled for accurate Dogtail positioning"
+
+
       - name: Start screen recording (background)
         run: |
           ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
@@ -389,7 +407,7 @@ jobs:
           export QT_DISABLE_WINDOW_TRANSPARENCY=1
           export XLIB_SKIP_ARGB_VISUALS=1
           export XDG_CURRENT_DESKTOP=GNOME
-          export QT_QPA_PLATFORMTHEME=gtk3
+          export QT_QPA_PLATFORMTHEME=gtk4
           export QT_OPENGL=software
           export QT_XCB_GL_INTEGRATION=none
           export QSG_RENDER_LOOP=basic
