@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
-      # max-parallel: 1
+      max-parallel: 1
       fail-fast: false
       matrix:
         test_file:
