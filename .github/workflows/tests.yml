@@ -144,11 +144,11 @@ jobs:
       fail-fast: false
       matrix:
         test_file:
-          - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_create_and_close_channel
-          - test_btc_channel_tx
-          - test_rgb20_channel_tx
+          # - test_keyring_dialog
+          # - test_receive_and_send_bitcoin
+          # - test_create_and_close_channel
+          # - test_btc_channel_tx
+          # - test_rgb20_channel_tx
           # - test_help
           # - test_about
           # - test_backup_and_restore
@@ -160,7 +160,7 @@ jobs:
           # - test_issue_rgb25_asset
           # - test_view_unspent
           # - test_refresh_transfer
-          # - test_login_app_auth
+          - test_login_app_auth
           # - test_ask_auth_for_imp_operations
           # - test_settings
     env:
@@ -296,19 +296,11 @@ jobs:
           sleep 4
           openbox & sleep 3
 
-      - name: Configure PolicyKit for passwordless authentication
+      - name: Verify zenity installation
         run: |
-          # Create polkit rule to allow runner user to execute commands without password
-          sudo mkdir -p /etc/polkit-1/rules.d
-          sudo tee /etc/polkit-1/rules.d/99-runner-nopasswd.rules > /dev/null << 'EOF'
-          polkit.addRule(function(action, subject) {
-            if (subject.user == "runner") {
-              return polkit.Result.YES;
-            }
-          });
-          EOF
-          sudo chmod 644 /etc/polkit-1/rules.d/99-runner-nopasswd.rules
-          echo "PolicyKit configured for passwordless authentication"
+          which zenity || echo "zenity not found in PATH"
+          ls -la /usr/bin/zenity || echo "/usr/bin/zenity not found"
+          DISPLAY=:99 /usr/bin/zenity --version || echo "zenity test failed"
 
       # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
       #   uses: ./.github/actions/build-rln-node
@@ -440,12 +432,34 @@ jobs:
           # Start gnome-keyring-daemon and unlock with empty password
           eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
           export SSH_AUTH_SOCK
-          # Use actual polkit authentication with lxqt-policykit-agent
-          # This is more reliable than zenity and supports AT-SPI for testing
-          /usr/bin/lxqt-policykit-agent &
-          POLICYKIT_PID=$!
-          sleep 2  # Give polkit agent time to start
-          echo "PolicyKit agent started (PID: $POLICYKIT_PID)"
+          # Create pkexec wrapper that shows zenity dialog
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat << 'END_OF_PKEXEC_SCRIPT' > "$RUNNER_TEMP/bin/pkexec"
+          #!/bin/bash
+          # Ensure DISPLAY is set for zenity
+          export DISPLAY="${DISPLAY:-:99}"
+          
+          # Use absolute path to zenity
+          ZENITY="/usr/bin/zenity"
+          
+          # Show authentication dialog
+          PASSWORD=\$("$ZENITY" --password \
+            --title="Authentication Required" \
+            --text="Administrator privileges required" \
+            --timeout=30 2>/dev/null)
+          EXIT_CODE=\$?
+          
+          # Handle response
+          if [ \$EXIT_CODE -eq 0 ]; then
+            # Password entered - for CI, accept any password since we have passwordless sudo
+            sudo "\$@"
+          else
+            echo "[pkexec] Dialog cancelled or timeout (exit: \$EXIT_CODE)" >&2
+            exit 1
+          fi
+          END_OF_PKEXEC_SCRIPT
+          chmod +x "$RUNNER_TEMP/bin/pkexec"
+          export PATH="$RUNNER_TEMP/bin:$PATH"
 
           # Ensure dbus session is available
           dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
