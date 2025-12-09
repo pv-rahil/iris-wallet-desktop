@@ -130,9 +130,18 @@ class BaseOperations:
 
         # Perform the click
         try:
-            element.grabFocus()
-            # Small delay to prevent grabFocus from triggering click on Qt widgets
-            time.sleep(0.1)  # 100ms delay
+            # Skip grabFocus for buttons that trigger double-clicks
+            # These Qt widgets respond to focus events by activating
+            skip_grab_focus_buttons = [
+                'send_asset_button',
+                'send_button',
+                'receive_button',
+            ]
+
+            if element_name not in skip_grab_focus_buttons:
+                element.grabFocus()
+                # Small delay to prevent grabFocus from triggering click on Qt widgets
+                time.sleep(0.1)  # 100ms delay
             element.click()
             self._last_click_times[element_key] = current_time
             print(f"[CLICK] Successfully clicked element: {element_name}")
