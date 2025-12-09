@@ -44,13 +44,16 @@ from src.utils.constant import ANNOUNCE_ALIAS
 from src.utils.constant import BITCOIND_RPC_HOST_MAINNET
 from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
 from src.utils.constant import BITCOIND_RPC_HOST_TESTNET
+from src.utils.constant import BITCOIND_RPC_HOST_TESTNET4
 from src.utils.constant import BITCOIND_RPC_PORT_MAINNET
 from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
 from src.utils.constant import BITCOIND_RPC_PORT_TESTNET
+from src.utils.constant import BITCOIND_RPC_PORT_TESTNET4
 from src.utils.constant import FEE_RATE
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
+from src.utils.constant import INDEXER_URL_TESTNET4
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import LN_INVOICE_EXPIRY_TIME
 from src.utils.constant import LN_INVOICE_EXPIRY_TIME_UNIT
@@ -59,6 +62,7 @@ from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
+from src.utils.constant import PROXY_ENDPOINT_TESTNET4
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.helpers import load_stylesheet
 from src.utils.info_message import INFO_VALIDATION_OF_NODE_PASSWORD_AND_KEYRING_ACCESS
@@ -860,11 +864,11 @@ class SettingsWidget(QWidget):
         return None
 
     def _set_endpoint_based_on_network(self):
-        """Sets various endpoints and configuration parameters
-        based on the currently selected wallet network."""
+        """Sets various endpoints and configuration parameters based on the currently selected wallet network."""
         network_config_map = {
             NetworkEnumModel.MAINNET: (INDEXER_URL_MAINNET, PROXY_ENDPOINT_MAINNET, BITCOIND_RPC_HOST_MAINNET, BITCOIND_RPC_PORT_MAINNET),
             NetworkEnumModel.TESTNET: (INDEXER_URL_TESTNET, PROXY_ENDPOINT_TESTNET, BITCOIND_RPC_HOST_TESTNET, BITCOIND_RPC_PORT_TESTNET),
+            NetworkEnumModel.TESTNET4: (INDEXER_URL_TESTNET4, PROXY_ENDPOINT_TESTNET4, BITCOIND_RPC_HOST_TESTNET4, BITCOIND_RPC_PORT_TESTNET4),
             NetworkEnumModel.REGTEST: (INDEXER_URL_REGTEST, PROXY_ENDPOINT_REGTEST, BITCOIND_RPC_HOST_REGTEST, BITCOIND_RPC_PORT_REGTEST),
         }
         stored_network: NetworkEnumModel = SettingRepository.get_wallet_network()
@@ -875,9 +879,7 @@ class SettingsWidget(QWidget):
             raise ValueError(f"Unsupported network type: {stored_network}")
 
     def _set_frame_content(self, frame, input_value, validator=None, time_unit_combobox=None, suggestion_desc=None):
-        """
-        Sets the content for a given frame, configuring the input value and optionally hiding/showing other widgets.
-        """
+        """Sets the content for a given frame, configuring the input value and optionally hiding/showing other widgets."""
         if isinstance(input_value, float) and input_value.is_integer():
             input_value = int(input_value)
 
@@ -912,14 +914,10 @@ class SettingsWidget(QWidget):
         self._update_save_button(frame, input_value, time_unit_combobox)
 
     def _update_save_button(self, frame, input_value, time_unit_combobox=None):
-        """
-        Updates the state of the save button based on input value and time unit changes.
-        """
+        """Updates the state of the save button based on input value and time unit changes."""
         current_text = frame.input_value.text().strip()
         current_unit = frame.time_unit_combobox.currentText() if time_unit_combobox else ''
-
         time_unit_changed = current_unit != self.expiry_time_unit
-
         if current_text and (current_text != str(input_value) or (time_unit_combobox and time_unit_changed)):
             frame.save_button.setDisabled(False)
         else:

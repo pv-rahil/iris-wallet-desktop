@@ -1,8 +1,6 @@
 """Module containing RgbRepository."""
 from __future__ import annotations
 
-import requests
-
 from src.model.rgb_model import AssetBalanceResponseModel
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import CreateUtxosRequestModel

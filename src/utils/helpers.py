@@ -29,26 +29,38 @@ from src.utils.constant import ANNOUNCE_ADDRESS
 from src.utils.constant import ANNOUNCE_ALIAS
 from src.utils.constant import BITCOIND_RPC_HOST_MAINNET
 from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
+from src.utils.constant import BITCOIND_RPC_HOST_SIGNET
 from src.utils.constant import BITCOIND_RPC_HOST_TESTNET
+from src.utils.constant import BITCOIND_RPC_HOST_TESTNET4
 from src.utils.constant import BITCOIND_RPC_PASSWORD_MAINNET
 from src.utils.constant import BITCOIND_RPC_PASSWORD_REGTEST
+from src.utils.constant import BITCOIND_RPC_PASSWORD_SIGNET
 from src.utils.constant import BITCOIND_RPC_PASSWORD_TESTNET
+from src.utils.constant import BITCOIND_RPC_PASSWORD_TESTNET4
 from src.utils.constant import BITCOIND_RPC_PORT_MAINNET
 from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
+from src.utils.constant import BITCOIND_RPC_PORT_SIGNET
 from src.utils.constant import BITCOIND_RPC_PORT_TESTNET
+from src.utils.constant import BITCOIND_RPC_PORT_TESTNET4
 from src.utils.constant import BITCOIND_RPC_USER_MAINNET
 from src.utils.constant import BITCOIND_RPC_USER_REGTEST
+from src.utils.constant import BITCOIND_RPC_USER_SIGNET
 from src.utils.constant import BITCOIND_RPC_USER_TESTNET
+from src.utils.constant import BITCOIND_RPC_USER_TESTNET4
 from src.utils.constant import DAEMON_PORT
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
+from src.utils.constant import INDEXER_URL_SIGNET
 from src.utils.constant import INDEXER_URL_TESTNET
+from src.utils.constant import INDEXER_URL_TESTNET4
 from src.utils.constant import LDK_PORT
 from src.utils.constant import LDK_PORT_KEY
 from src.utils.constant import LIGHTNING_URL_KEY
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
+from src.utils.constant import PROXY_ENDPOINT_SIGNET
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
+from src.utils.constant import PROXY_ENDPOINT_TESTNET4
 from src.utils.constant import SAVED_ANNOUNCE_ADDRESS
 from src.utils.constant import SAVED_ANNOUNCE_ALIAS
 from src.utils.constant import SAVED_BITCOIND_RPC_HOST
@@ -337,6 +349,22 @@ def get_bitcoin_config(network: NetworkEnumModel, password) -> UnlockRequestMode
                 SAVED_BITCOIND_RPC_PORT: BITCOIND_RPC_PORT_REGTEST,
                 SAVED_INDEXER_URL: INDEXER_URL_REGTEST,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_REGTEST,
+            },
+            NetworkEnumModel.TESTNET4: {
+                SAVED_BITCOIND_RPC_USER: BITCOIND_RPC_USER_TESTNET4,
+                SAVED_BITCOIND_RPC_PASSWORD: BITCOIND_RPC_PASSWORD_TESTNET4,
+                SAVED_BITCOIND_RPC_HOST: BITCOIND_RPC_HOST_TESTNET4,
+                SAVED_BITCOIND_RPC_PORT: BITCOIND_RPC_PORT_TESTNET4,
+                SAVED_INDEXER_URL: INDEXER_URL_TESTNET4,
+                SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_TESTNET4,
+            },
+            NetworkEnumModel.SIGNET: {
+                SAVED_BITCOIND_RPC_USER: BITCOIND_RPC_USER_SIGNET,
+                SAVED_BITCOIND_RPC_PASSWORD: BITCOIND_RPC_PASSWORD_SIGNET,
+                SAVED_BITCOIND_RPC_HOST: BITCOIND_RPC_HOST_SIGNET,
+                SAVED_BITCOIND_RPC_PORT: BITCOIND_RPC_PORT_SIGNET,
+                SAVED_INDEXER_URL: INDEXER_URL_SIGNET,
+                SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_SIGNET,
             },
         }
         # Retrieve the appropriate configuration based on the network

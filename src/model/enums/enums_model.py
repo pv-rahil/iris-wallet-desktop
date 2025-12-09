@@ -11,6 +11,8 @@ class NetworkEnumModel(str, Enum):
     REGTEST = 'regtest'
     MAINNET = 'mainnet'
     TESTNET = 'testnet'
+    TESTNET4 = 'testnet4'
+    SIGNET = 'signet'
 
 
 class FilterAssetEnumModel(str, Enum):
@@ -90,6 +92,7 @@ class TokenSymbol(str, Enum):
     """Enum for token symbol"""
     BITCOIN = 'BTC'
     TESTNET_BITCOIN = 'tBTC'
+    TESTNET4_BITCOIN = 'tBTC'
     REGTEST_BITCOIN = 'rBTC'
     SAT = 'SAT'
 

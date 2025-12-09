@@ -518,21 +518,32 @@ def test_create_fungible_card(create_fungible_asset_widget, qtbot):
     assert widget.token_symbol.text() == TokenSymbol.SAT.value
     assert widget.asset_name.text() == AssetType.BITCOIN.value.lower()
 
+    # Test for TESTNET4_BITCOIN
+    with patch('src.views.ui_fungible_asset.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET4):
+        asset.ticker = TokenSymbol.TESTNET4_BITCOIN.value
+        widget.create_fungible_card(asset)
+        assert widget.token_symbol.text() == TokenSymbol.SAT.value
+        assert widget.asset_name.text() == f'{NetworkEnumModel.TESTNET4.value} {
+            AssetType.BITCOIN.value.lower()
+        }'
+
     # Test for TESTNET_BITCOIN
-    asset.ticker = TokenSymbol.TESTNET_BITCOIN.value
-    widget.create_fungible_card(asset)
-    assert widget.token_symbol.text() == TokenSymbol.SAT.value
-    assert widget.asset_name.text() == f"""{NetworkEnumModel.TESTNET.value} {
-        AssetType.BITCOIN.value.lower()
-    }"""
+    with patch('src.views.ui_fungible_asset.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET):
+        asset.ticker = TokenSymbol.TESTNET_BITCOIN.value
+        widget.create_fungible_card(asset)
+        assert widget.token_symbol.text() == TokenSymbol.SAT.value
+        assert widget.asset_name.text() == f'{NetworkEnumModel.TESTNET.value} {
+            AssetType.BITCOIN.value.lower()
+        }'
 
     # Test for REGTEST_BITCOIN
-    asset.ticker = TokenSymbol.REGTEST_BITCOIN.value
-    widget.create_fungible_card(asset)
-    assert widget.token_symbol.text() == TokenSymbol.SAT.value
-    assert widget.asset_name.text() == f"""{NetworkEnumModel.REGTEST.value} {
-        AssetType.BITCOIN.value.lower()
-    }"""
+    with patch('src.views.ui_fungible_asset.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.REGTEST):
+        asset.ticker = TokenSymbol.REGTEST_BITCOIN.value
+        widget.create_fungible_card(asset)
+        assert widget.token_symbol.text() == TokenSymbol.SAT.value
+        assert widget.asset_name.text() == f'{NetworkEnumModel.REGTEST.value} {
+            AssetType.BITCOIN.value.lower()
+        }'
 
 
 def test_show_assets(create_fungible_asset_widget, qtbot):

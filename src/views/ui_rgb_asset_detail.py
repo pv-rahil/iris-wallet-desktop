@@ -97,6 +97,7 @@ class RGBAssetDetailWidget(QWidget):
             NetworkEnumModel.MAINNET.value: ':/assets/bitcoin.png',
             NetworkEnumModel.REGTEST.value: ':/assets/regtest_bitcoin.png',
             NetworkEnumModel.TESTNET.value: ':/assets/testnet_bitcoin.png',
+            NetworkEnumModel.TESTNET4.value: ':/assets/testnet_bitcoin.png',
         }
         self.__loading_translucent_screen = LoadingTranslucentScreen(self)
         self.asset_type = params.asset_type
@@ -741,9 +742,7 @@ class RGBAssetDetailWidget(QWidget):
             self.show_loading_screen(False)
 
     def handle_fail_transfer(self, idx, tx_id):
-        """
-        Handles the close button click for a transaction, with a custom confirmation dialog.
-        """
+        """Handles the close button click for a transaction, with a custom confirmation dialog."""
         if tx_id:
             confirmation_dialog = ConfirmationDialog(
                 parent=self, message=(f"{
@@ -775,10 +774,8 @@ class RGBAssetDetailWidget(QWidget):
         self._view_model.cfa_view_model.on_fail_transfer(idx)
 
     def handle_img_path(self, image_path):
-        """
-        Configures the asset detail widget and related components based on the provided image path.
-        Adjusts the layout and styles, and sets the asset image.
-        """
+        """Configures the asset detail widget and related components based on the provided image path.
+        Adjusts the layout and styles, and sets the asset image."""
         if image_path:
             self.rgb_asset_detail_widget.setMinimumSize(QSize(466, 848))
             self.rgb_asset_detail_widget.setFixedWidth(499)

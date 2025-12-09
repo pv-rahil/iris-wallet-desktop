@@ -586,6 +586,7 @@ def get_bitcoin_info_by_network():
         NetworkEnumModel.MAINNET.value: ':/assets/bitcoin.png',
         NetworkEnumModel.REGTEST.value: ':/assets/regtest_bitcoin.png',
         NetworkEnumModel.TESTNET.value: ':/assets/testnet_bitcoin.png',
+        NetworkEnumModel.TESTNET4.value: ':/assets/testnet_bitcoin.png',
     }
     img_path = bitcoin_img_path.get(network.value)
 
@@ -595,6 +596,8 @@ def get_bitcoin_info_by_network():
             return (ticker, f'{bitcoin_asset}', img_path)
         if ticker == TokenSymbol.TESTNET_BITCOIN.value:
             return (ticker, f'{NetworkEnumModel.TESTNET.value} {bitcoin_asset}', img_path)
+        if ticker == TokenSymbol.TESTNET4_BITCOIN.value:
+            return (ticker, f'{NetworkEnumModel.TESTNET4.value} {bitcoin_asset}', img_path)
         if ticker == TokenSymbol.REGTEST_BITCOIN.value:
             return (ticker, f'{NetworkEnumModel.REGTEST.value} {bitcoin_asset}', img_path)
 
