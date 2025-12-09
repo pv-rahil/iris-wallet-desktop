@@ -659,7 +659,9 @@ class BaseOperations:
                 if element:
                     current_state = getattr(element, 'checked', None)
                     print(
-                        f"[TOGGLE STATE] Attempt {attempt}: current={current_state}, expected={expected_checked}",
+                        f"[TOGGLE STATE] Attempt {attempt}: current={
+                            current_state
+                        }, expected={expected_checked}",
                     )
                     if current_state == expected_checked:
                         print(
@@ -670,14 +672,17 @@ class BaseOperations:
                         return True
                 else:
                     print(
-                        f"[TOGGLE STATE] Attempt {attempt}: Element not found")
+                        f"[TOGGLE STATE] Attempt {attempt}: Element not found",
+                    )
                 time.sleep(0.5)  # Check every 500ms
             except Exception as e:
                 print(f"[TOGGLE STATE] Attempt {attempt} error: {e}")
                 time.sleep(0.5)
 
         print(
-            f"[TOGGLE STATE] Timeout after {attempt} attempts waiting for checked={expected_checked}",
+            f"[TOGGLE STATE] Timeout after {
+                attempt
+            } attempts waiting for checked={expected_checked}",
         )
         return False
 
