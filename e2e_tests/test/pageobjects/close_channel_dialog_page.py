@@ -52,7 +52,10 @@ class CloseChannelDialogPageObjects(BaseOperations):
         Returns:
             The result of the click action or None if the button is not displayed.
         """
-        if self.do_is_displayed(self.continue_button()):
-            self.continue_button().grabFocus()
-            return self.do_click(self.continue_button())
+        continue_button = self.continue_button()
+        if self.do_is_displayed(continue_button):
+            continue_button.grabFocus()
+            if getattr(continue_button, 'focused', None) is False:
+                continue_button.grabFocus()
+            return self.do_click(continue_button)
         return None
