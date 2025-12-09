@@ -140,7 +140,10 @@ class BaseOperations:
                 if element_role in ['push button', 'panel']:
                     should_skip_grab_focus = True
                     print(
-                        f"[CI] Skipping grabFocus for push button: {element_name}")
+                        f"[CI] Skipping grabFocus for push button: {
+                            element_name
+                        }",
+                    )
             if not should_skip_grab_focus:
                 element.grabFocus()
                 # Small delay to prevent grabFocus from triggering click on Qt widgets
