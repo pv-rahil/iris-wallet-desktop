@@ -131,15 +131,17 @@ class BaseOperations:
 
         # Perform the click
         try:
-            # Skip grabFocus for buttons that trigger double-clicks
-            # These Qt widgets respond to focus events by activating
-            skip_grab_focus_buttons = [
-                'send_asset_button',
-                'send_button',
-                'receive_button',
-            ]
+            # In CI, Qt buttons universally trigger on focus - skip grabFocus entirely for push buttons
+            # In local environments, grabFocus is needed for proper element interaction
+            should_skip_grab_focus = False
 
-            if element_name not in skip_grab_focus_buttons:
+            if is_ci_environment():
+                # In CI, skip grabFocus for all push buttons to prevent focus-triggered activation
+                if element_role in ['push button', 'panel']:
+                    should_skip_grab_focus = True
+                    print(
+                        f"[CI] Skipping grabFocus for push button: {element_name}")
+            if not should_skip_grab_focus:
                 element.grabFocus()
                 # Small delay to prevent grabFocus from triggering click on Qt widgets
                 time.sleep(0.1)  # 100ms delay

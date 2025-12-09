@@ -354,6 +354,8 @@ jobs:
           echo "QT_QPA_PLATFORMTHEME=" >> $GITHUB_ENV
           echo "QT_ENABLE_HIGHDPI_SCALING=0" >> $GITHUB_ENV
           echo "QT_AUTO_SCREEN_SCALE_FACTOR=0" >> $GITHUB_ENV
+          # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
+          echo "GTK_CSD=0" >> $GITHUB_ENV
 
       - name: Start screen recording (background)
         run: |
@@ -411,6 +413,7 @@ jobs:
           export QT_SCALE_FACTOR=1
           export GVFS_DISABLE_FUSE=1
           export GIO_USE_VFS=local
+          export GTK_CSD=0
           export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
           export LANG=C.UTF-8
           export LC_ALL=C.UTF-8
