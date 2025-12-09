@@ -144,10 +144,10 @@ jobs:
       fail-fast: false
       matrix:
         test_file:
+          - test_keyring_dialog
           - test_receive_and_send_bitcoin
           - test_create_and_close_channel
           - test_ask_auth_for_imp_operations
-          - test_keyring_dialog
           - test_settings
           - test_btc_channel_tx
           - test_rgb20_channel_tx
