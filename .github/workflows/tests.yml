@@ -315,26 +315,26 @@ jobs:
 
       - name: Cache AppImages
         id: cache-appimages
-        uses: actions/cache@v4
+        uses: actions/cache@v_1_4
         with:
           path: e2e_tests/applications
           key: appimages-${{ runner.os }}-${{ hashFiles('src/version.py') }}
 
-      - name: Download AppImages from Releases
-        if: steps.cache-appimages.outputs.cache-hit != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          APPDIR=e2e_tests/applications
-          mkdir -p "$APPDIR"
-          sudo apt-get update && sudo apt-get install -y gh
-          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-          gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-          chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
+      # - name: Download AppImages from Releases
+      #   if: steps.cache-appimages.outputs.cache-hit != 'true'
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
+      #   run: |
+      #     set -euo pipefail
+      #     VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+      #     APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+      #     APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+      #     APPDIR=e2e_tests/applications
+      #     mkdir -p "$APPDIR"
+      #     sudo apt-get update && sudo apt-get install -y gh
+      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+      #     chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
 
       - name: Prepare runtime Python deps for AppImage
         run: |
@@ -491,6 +491,13 @@ jobs:
           path: /tmp/${{ matrix.test_file }}_recording.mp4
           retention-days: 30
           if-no-files-found: ignore
+
+      - name: Save internally-built AppImages to cache
+        if: always() && steps.cache-appimages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v_1_4
+        with:
+          path: e2e_tests/applications
+          key: appimages-${{ runner.os }}-${{ hashFiles('src/version.py') }}
   # delete_artifacts:
   #   runs-on: ubuntu-latest
   #   steps:
