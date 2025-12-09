@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import time
 
 import pyotp
@@ -121,7 +122,16 @@ class BackupPageObjects(BaseOperations):
             if not is_ci_environment():
                 keyCombo('<Alt>F10')
             else:
-                keyCombo('F11')
+                try:
+                    subprocess.run(
+                        [
+                            'wmctrl', '-r', ':ACTIVE:', '-b',
+                            'add,maximized_vert,maximized_horz',
+                        ],
+                        check=False, capture_output=True, timeout=2,
+                    )
+                except Exception as e:
+                    print(f"[WARN] Failed to maximize window with wmctrl: {e}")
             return True
         return False
 
