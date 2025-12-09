@@ -17,6 +17,11 @@ from dotenv import load_dotenv
 from Xlib import display
 from Xlib import X
 
+from accessible_constant import OPTION_1_FRAME
+from accessible_constant import OPTION_2_FRAME
+from accessible_constant import RECEIVE_BITCOIN_BUTTON
+from accessible_constant import SEND_ASSET_BUTTON
+from accessible_constant import SEND_BITCOIN_BUTTON
 from accessible_constant import TOASTER_DESCRIPTION
 from e2e_tests.test.utilities.dogtail_config import get_default_timeout
 from e2e_tests.test.utilities.dogtail_config import is_ci_environment
@@ -131,8 +136,10 @@ class BaseOperations:
 
         # Perform the click
         try:
-            element.grabFocus()
-            time.sleep(0.1)
+            if element_role not in ['push button', 'button', 'panel'] and \
+                    element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
+                element.grabFocus()
+                time.sleep(0.1)
             element.click()
             self._last_click_times[element_key] = current_time
             print(f"[CLICK] Successfully clicked element: {element_name}")
