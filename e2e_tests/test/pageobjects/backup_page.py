@@ -20,6 +20,7 @@ from accessible_constant import CONFIGURE_BACKUP_BUTTON
 from accessible_constant import MNEMONIC_FRAME
 from accessible_constant import SHOW_MNEMONIC_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 
 load_dotenv()
 
@@ -117,7 +118,10 @@ class BackupPageObjects(BaseOperations):
         """
         if self.do_is_displayed(self.backup_window()):
             self.do_click(self.backup_window())
-            keyCombo('<Alt>F10')
+            if not is_ci_environment():
+                keyCombo('<Alt>F10')
+            else:
+                keyCombo('F11')
             return True
         return False
 
