@@ -112,7 +112,8 @@ class BaseOperations:
         # Object ID changes when AT-SPI refreshes elements
         element_name = element.name if hasattr(element, 'name') else 'unknown'
         element_role = element.roleName if hasattr(
-            element, 'roleName') else 'unknown'
+            element, 'roleName',
+        ) else 'unknown'
         element_key = f"{element_role}:{element_name}"
 
         current_time = time.time() * 1000  # Convert to milliseconds
@@ -666,7 +667,10 @@ class BaseOperations:
                     current_state = getattr(element, 'checked', None)
                     if current_state == expected_checked:
                         print(
-                            f"[TOGGLE STATE] Verified checked={expected_checked}")
+                            f"[TOGGLE STATE] Verified checked={
+                                expected_checked
+                            }",
+                        )
                         return True
                 time.sleep(0.5)  # Check every 500ms
             except Exception as e:

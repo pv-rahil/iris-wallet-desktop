@@ -87,7 +87,7 @@ def test_hide_exhausted_asset_off(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.settings_page_objects.click_hide_exhausted_asset_toggle_button()
         toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.hide_exhausted_asset_toggle_button()
         if toggle_button:
-            if getattr(toggle_button, 'checked', None,):
+            if getattr(toggle_button, 'checked', None):
                 wallets_and_operations.first_page_objects.settings_page_objects.click_hide_exhausted_asset_toggle_button()
 
     with allure.step('Send asset to the second page'):

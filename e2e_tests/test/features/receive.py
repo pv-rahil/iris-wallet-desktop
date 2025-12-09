@@ -105,8 +105,9 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
         error_label = None
 
         self.do_focus_on_application(application)
-        self.retry_receive_dialog(transfer_type='lightning', asset_name=asset_name)
-
+        self.retry_receive_dialog(
+            transfer_type='lightning', asset_name=asset_name,
+        )
 
         if self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):
             self.create_ln_invoice_page_objects.enter_asset_amount(amount)

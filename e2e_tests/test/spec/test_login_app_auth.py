@@ -73,8 +73,8 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
         assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button,
             expected_checked=True,
-            timeout=5
-        ), "Login auth toggle should be checked=True after enabling"
+            timeout=5,
+        ), 'Login auth toggle should be checked=True after enabling'
 
         toggle_button = wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button()
         if toggle_button:
@@ -93,5 +93,5 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
         assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button,
             expected_checked=False,
-            timeout=5
-        ), "Login auth toggle should be checked=False after disabling"
+            timeout=5,
+        ), 'Login auth toggle should be checked=False after disabling'

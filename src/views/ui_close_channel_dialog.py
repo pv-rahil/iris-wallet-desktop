@@ -38,7 +38,7 @@ class CloseChannelDialog(QDialog):
         self.channel_id = channel_id
         # Hide the title bar and close button
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Dialog)
-        self.setModal(True)
+        self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(300, 160)
         self.setStyleSheet(
             load_stylesheet(
@@ -116,6 +116,7 @@ class CloseChannelDialog(QDialog):
         )
         self.close_channel_continue_button.setMinimumSize(QSize(80, 35))
         self.close_channel_continue_button.setMaximumSize(QSize(80, 35))
+        self.close_channel_continue_button.setDefault(True)
 
         self.close_channel_horizontal_button_layout.addWidget(
             self.close_channel_continue_button,
