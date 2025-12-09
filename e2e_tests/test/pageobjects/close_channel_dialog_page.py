@@ -58,5 +58,6 @@ class CloseChannelDialogPageObjects(BaseOperations):
         if self.do_is_displayed(continue_button):
             if os.getenv('CI'):
                 keyCombo('enter')
+                return True
             return self.do_click(continue_button)
         return None
