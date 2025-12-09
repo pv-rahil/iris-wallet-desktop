@@ -131,23 +131,8 @@ class BaseOperations:
 
         # Perform the click
         try:
-            # In CI, Qt buttons universally trigger on focus - skip grabFocus entirely for push buttons
-            # In local environments, grabFocus is needed for proper element interaction
-            should_skip_grab_focus = False
-
-            if is_ci_environment():
-                # In CI, skip grabFocus for all push buttons to prevent focus-triggered activation
-                if element_role in ['push button', 'panel']:
-                    should_skip_grab_focus = True
-                    print(
-                        f"[CI] Skipping grabFocus for push button: {
-                            element_name
-                        }",
-                    )
-            if not should_skip_grab_focus:
-                element.grabFocus()
-                # Small delay to prevent grabFocus from triggering click on Qt widgets
-                time.sleep(0.1)  # 100ms delay
+            element.grabFocus()
+            time.sleep(0.1)
             element.click()
             self._last_click_times[element_key] = current_time
             print(f"[CLICK] Successfully clicked element: {element_name}")
