@@ -80,6 +80,8 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        if not wallets_and_operations.first_page_operations.do_is_displayed(wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
             expected_checked=False,

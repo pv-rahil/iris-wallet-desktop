@@ -649,25 +649,36 @@ class BaseOperations:
             bool: True if state matched, False if timeout
         """
         start_time = time.time()
+        attempt = 0
 
         while time.time() - start_time < timeout:
+            attempt += 1
             try:
+                # Refresh element on each check to avoid stale references
                 element = toggle_element_getter()
                 if element:
                     current_state = getattr(element, 'checked', None)
+                    print(
+                        f"[TOGGLE STATE] Attempt {attempt}: current={current_state}, expected={expected_checked}",
+                    )
                     if current_state == expected_checked:
                         print(
                             f"[TOGGLE STATE] Verified checked={
                                 expected_checked
-                            }",
+                            } after {attempt} attempts",
                         )
                         return True
+                else:
+                    print(
+                        f"[TOGGLE STATE] Attempt {attempt}: Element not found")
                 time.sleep(0.5)  # Check every 500ms
             except Exception as e:
-                print(f"[TOGGLE STATE] Error checking state: {e}")
+                print(f"[TOGGLE STATE] Attempt {attempt} error: {e}")
                 time.sleep(0.5)
 
-        print(f"[TOGGLE STATE] Timeout waiting for checked={expected_checked}")
+        print(
+            f"[TOGGLE STATE] Timeout after {attempt} attempts waiting for checked={expected_checked}",
+        )
         return False
 
     def _verify_application_ready(self, timeout=5.0):
