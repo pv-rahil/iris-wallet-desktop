@@ -139,7 +139,7 @@ class BaseOperations:
             if element_role not in ['push button', 'button', 'panel'] and \
                     element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
                 element.grabFocus()
-                time.sleep(0.1)
+            time.sleep(0.1)
             element.click()
             self._last_click_times[element_key] = current_time
             print(f"[CLICK] Successfully clicked element: {element_name}")
@@ -421,7 +421,9 @@ class BaseOperations:
                     if element.showing and (
                         not hasattr(element, 'sensitive') or element.sensitive
                     ):
-                        element.grabFocus()
+                        if role_name not in ['push button', 'button', 'panel'] and \
+                        name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
+                            element.grabFocus()
                         self._log_search_attempt(
                             role_name,
                             identifier,
@@ -541,7 +543,9 @@ class BaseOperations:
                 if elements:
                     for element in elements:
                         if element.showing and element.sensitive:
-                            element.grabFocus()
+                            if role_name not in ['push button', 'button', 'panel'] and \
+                            name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
+                                element.grabFocus()
                             return element
 
             except Exception as e:
