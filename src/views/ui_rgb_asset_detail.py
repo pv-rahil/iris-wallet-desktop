@@ -4,8 +4,6 @@
  """
 from __future__ import annotations
 
-import re
-
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QRect
 from PySide6.QtCore import QSize
@@ -49,12 +47,11 @@ from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import AssetDataModel
 from src.model.selection_page_model import SelectionPageModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
-from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import copy_text
-from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
+from src.utils.rgb_asset_helpers import handle_img_path
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import AssetTransferButton
 from src.views.components.confirmation_dialog import ConfirmationDialog
@@ -688,32 +685,6 @@ class RGBAssetDetailWidget(QWidget):
         else:
             self._view_model.page_navigation.collectibles_asset_page()
 
-    def is_path(self, file_path):
-        """Check the file path"""
-        if not isinstance(file_path, str):
-            return False
-        # Define a basic regex pattern for Unix-like file paths
-        pattern = r'^(\/[a-zA-Z0-9_.-]+)+\/?$'
-        # Check if the file_path matches the pattern
-        return bool(re.match(pattern, file_path))
-
-    def is_hex_string(self, bytes_hex):
-        """Check if the string is a valid hex string."""
-        if len(bytes_hex) % 2 != 0:
-            return False
-        hex_pattern = re.compile(r'^[0-9a-fA-F]+$')
-        return bool(hex_pattern.match(bytes_hex))
-
-    def set_asset_image(self, image_hex):
-        """This method set the asset image according to the media path or image hex """
-        if self.is_hex_string(image_hex):
-            pixmap = convert_hex_to_image(image_hex)
-            resized_image = resize_image(pixmap, 335, 335)
-            self.label_asset_name.setPixmap(resized_image)
-        else:
-            resized_image = resize_image(image_hex, 335, 335)
-            self.label_asset_name.setPixmap(resized_image)
-
     def is_channel_open_for_asset(self):
         """Check if there is an open channel for the current asset."""
         self.asset_id_detail.textChanged.connect(self.set_lightning_balance)
@@ -742,7 +713,9 @@ class RGBAssetDetailWidget(QWidget):
             self.show_loading_screen(False)
 
     def handle_fail_transfer(self, idx, tx_id):
-        """Handles the close button click for a transaction, with a custom confirmation dialog."""
+        """
+        Handles the close button click for a transaction, with a custom confirmation dialog.
+        """
         if tx_id:
             confirmation_dialog = ConfirmationDialog(
                 parent=self, message=(f"{
@@ -774,30 +747,18 @@ class RGBAssetDetailWidget(QWidget):
         self._view_model.cfa_view_model.on_fail_transfer(idx)
 
     def handle_img_path(self, image_path):
-        """Configures the asset detail widget and related components based on the provided image path.
-        Adjusts the layout and styles, and sets the asset image."""
+        """Configure the asset detail widget based on the provided image path."""
         if image_path:
-            self.rgb_asset_detail_widget.setMinimumSize(QSize(466, 848))
-            self.rgb_asset_detail_widget.setFixedWidth(499)
             self.lightning_balance_frame.setMinimumSize(QSize(159, 120))
-            self.label_asset_name = QLabel(self.rgb_asset_detail_widget)
-            self.label_asset_name.setObjectName('label_asset_name')
-            self.label_asset_name.setMaximumSize(QSize(335, 335))
-            self.asset_id_frame.setMinimumSize(QSize(335, 86))
-            self.asset_id_frame.setMaximumSize(QSize(335, 86))
-            self.label_asset_name.setStyleSheet(
-                "font: 14px \"Inter\";\n"
-                'color: #B3B6C3;\n'
-                'background: transparent;\n'
-                'border: none;\n'
-                'border-radius: 8px;\n'
-                'font-weight: 400;\n'
-                '',
+            self.label_asset_name = handle_img_path(
+                self.rgb_asset_detail_widget,
+                image_path,
+                self.asset_image_layout,
+                self.asset_id_frame,
+                self.label_asset_name if hasattr(
+                    self, 'label_asset_name',
+                ) else None,
             )
-            self.asset_image_layout.addWidget(
-                self.label_asset_name, 0, Qt.AlignHCenter,
-            )
-            self.set_asset_image(image_hex=image_path)
             self.transactions_label.setMinimumWidth(305)
 
     def set_on_chain_transaction_frame(self, transaction, asset_name, asset_type, asset_id, image_path):

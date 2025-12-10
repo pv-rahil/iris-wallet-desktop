@@ -24,6 +24,7 @@ from src.model.enums.enums_model import TransferType
 from src.model.selection_page_model import AssetDataModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.rgb_asset_helpers import set_asset_image
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.transaction_detail_frame import TransactionDetailFrame
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
@@ -57,66 +58,6 @@ def test_retranslate_ui(rgb_asset_detail_widget: RGBAssetDetailWidget):
 
     assert rgb_asset_detail_widget.send_asset.text() == 'send_assets'
     assert rgb_asset_detail_widget.transactions_label.text() == 'transfers'
-
-
-def test_valid_hex_string(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test with valid hex strings."""
-    valid_hex_strings = [
-        '00',  # simple hex
-        '0a1b2c3d4e5f',  # longer valid hex
-        'AABBCCDDEE',  # uppercase hex
-        '1234567890abcdef',  # mixed lower and uppercase
-    ]
-    for hex_string in valid_hex_strings:
-        assert rgb_asset_detail_widget.is_hex_string(hex_string) is True
-
-
-def test_invalid_hex_string(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test with invalid hex strings."""
-    invalid_hex_strings = [
-        '00G1',  # contains non-hex character 'G'
-        '123z',  # contains non-hex character 'z'
-        '12345',  # odd length
-        '0x1234',  # prefixed with '0x'
-        ' ',  # empty or space character
-    ]
-    for hex_string in invalid_hex_strings:
-        assert rgb_asset_detail_widget.is_hex_string(hex_string) is False
-
-
-def test_empty_string(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test with an empty string."""
-    assert rgb_asset_detail_widget.is_hex_string('') is False
-
-
-def test_odd_length_string(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test with a string of odd length."""
-    odd_length_hex_strings = [
-        '1',  # single character
-        '123',  # three characters
-        '12345',  # five characters
-    ]
-    for hex_string in odd_length_hex_strings:
-        assert rgb_asset_detail_widget.is_hex_string(hex_string) is False
-
-
-def test_is_path(rgb_asset_detail_widget: RGBAssetDetailWidget):
-    """Test the is_path method with various file paths."""
-
-    # Test valid Unix-like paths
-    assert rgb_asset_detail_widget.is_path('/path/to/file') is True
-    assert rgb_asset_detail_widget.is_path('/usr/local/bin/') is True
-    assert rgb_asset_detail_widget.is_path('/home/user/doc-1.txt') is True
-
-    # Test invalid paths
-    assert rgb_asset_detail_widget.is_path(
-        'invalid/path',
-    ) is False  # No leading slash
-    assert rgb_asset_detail_widget.is_path(123) is False  # Non-string input
-    assert rgb_asset_detail_widget.is_path('') is False  # Empty string
-    assert rgb_asset_detail_widget.is_path(
-        'C:\\Windows\\Path',
-    ) is False  # Windows path format
 
 
 def test_handle_page_navigation_nia(rgb_asset_detail_widget: RGBAssetDetailWidget):
@@ -236,8 +177,8 @@ def test_set_transaction_detail_frame(rgb_asset_detail_widget: RGBAssetDetailWid
         ) == mock_transaction.amount_status
 
 
-@patch('src.views.ui_rgb_asset_detail.convert_hex_to_image')
-@patch('src.views.ui_rgb_asset_detail.resize_image')
+@patch('src.utils.rgb_asset_helpers.convert_hex_to_image')
+@patch('src.utils.rgb_asset_helpers.resize_image')
 def test_set_asset_image(mock_resize_image, mock_convert_hex_to_image, rgb_asset_detail_widget: RGBAssetDetailWidget):
     """Test setting the asset image with mocked image conversion and resizing."""
 
@@ -255,7 +196,7 @@ def test_set_asset_image(mock_resize_image, mock_convert_hex_to_image, rgb_asset
     mock_resize_image.return_value = mock_resized_pixmap
 
     # Test with hex string
-    rgb_asset_detail_widget.set_asset_image(mock_hex_image)
+    set_asset_image(rgb_asset_detail_widget.label_asset_name, mock_hex_image)
 
     # Verify that the convert_hex_to_image was called with the correct hex string
     mock_convert_hex_to_image.assert_called_once_with(mock_hex_image)
