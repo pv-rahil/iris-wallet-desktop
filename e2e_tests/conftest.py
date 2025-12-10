@@ -5,6 +5,7 @@ Custom pytest configuration for wallet mode testing
 from __future__ import annotations
 
 import os
+import subprocess
 import time
 
 import pytest
@@ -144,6 +145,31 @@ def _stabilize_ui(delay_seconds):
     time.sleep(delay_seconds)
 
 
+def _verify_no_zombie_processes():
+    """
+    Check for and log any zombie AppImage or RGB processes.
+    Note: Module-scoped fixtures keep main processes alive, but warns about extras.
+    """
+    try:
+        result = subprocess.run(
+            ['pgrep', '-f', 'iriswallet.*AppImage'],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        process_count = len(
+            [p for p in result.stdout.strip().split('\n') if p],
+        )
+        if process_count > 2:  # Expect 2 for dual instance tests
+            print(
+                f'[CLEANUP] Warning: Found {
+                    process_count
+                } AppImage processes (expected ≤2)',
+            )
+    except Exception as e:
+        print(f'[CLEANUP] Could not check for zombie processes: {e}')
+
+
 @pytest.fixture(autouse=True)
 def cleanup_between_tests(request):
     """
@@ -181,6 +207,9 @@ def cleanup_between_tests(request):
             # 3. Add stabilization delay (longer in CI)
             delay = 3.5 if _is_ci_environment() else 1.5
             _stabilize_ui(delay)
+
+            # 4. Verify no zombie processes
+            _verify_no_zombie_processes()
 
             print('✅ CLEANUP: Complete')
             print('='*80 + '\n')

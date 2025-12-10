@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import time
 
 from accessible_constant import DEFAULT_WALLET_MODES
 
@@ -100,11 +101,38 @@ def result_remote():
 
 
 def run_regtest(extra_args=None):
-    """Runs the regtest script with optional arguments."""
+    """Runs the regtest script with retry logic for port conflicts."""
     cmd = [
         'bash', '-c',
         'COMPOSE_FILE=compose.yaml ./e2e_tests/regtest.sh start',
     ]
     if extra_args:
         cmd.extend(extra_args)
-    subprocess.run(cmd, check=True)
+
+    # Retry up to 3 times with exponential backoff
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        try:
+            print(
+                f"🚀 Starting regtest services (attempt {
+                    attempt
+                }/{max_attempts})...",
+            )
+            subprocess.run(
+                cmd, check=True, capture_output=True, text=True,
+            )
+            print('✅ Regtest services started successfully')
+            return
+        except subprocess.CalledProcessError as e:
+            error_msg = (e.stderr or e.stdout or '').lower()
+            if attempt < max_attempts and 'port' in error_msg:
+                wait_time = 2 ** attempt  # 2, 4, 8 seconds
+                print(
+                    f"⚠️  Port conflict detected, retrying in {wait_time}s...",
+                )
+                time.sleep(wait_time)
+            else:
+                print(f"❌ Failed to start regtest after {attempt} attempts")
+                if e.stderr:
+                    print(f"Error output: {e.stderr}")
+                raise

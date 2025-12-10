@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import signal
+import socket
 import subprocess
 import time
 
@@ -89,6 +90,9 @@ class TestEnvironment:
 
     def start_rgb_lightning_nodes(self):
         """Starts two RGB lightning nodes when wallet mode is 'remote'."""
+        # Ensure RGB node ports are available before starting
+        self._ensure_rgb_ports_available()
+
         self.rgb_processes.append(self.start_rgb_node('dataldk0', 3001, 9735))
         if self.multi_instance:
             self.rgb_processes.append(
@@ -119,6 +123,44 @@ class TestEnvironment:
         ]
         process = subprocess.Popen(command)
         return process
+
+    def _ensure_rgb_ports_available(self, timeout=15):
+        """
+        Ensure RGB lightning node ports are available.
+        Kills processes using these ports if necessary.
+        """
+        rgb_ports = [3001, 3002, 9735, 9736]
+
+        for port in rgb_ports:
+            elapsed = 0
+            port_available = False
+
+            while elapsed < timeout:
+                try:
+                    # Try to bind to the port
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                        s.bind(('127.0.0.1', port))
+                        port_available = True
+                        break
+                except OSError:
+                    # Port in use, wait and retry
+                    time.sleep(0.5)
+                    elapsed += 0.5
+
+            if not port_available:
+                print(
+                    f"[RGB] Port {port} still in use after {
+                        timeout
+                    }s, force killing...",
+                )
+                subprocess.run(
+                    ['fuser', '-k', f'{port}/tcp'],
+                    stderr=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    check=False,
+                )
+                time.sleep(1)
 
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
@@ -210,19 +252,27 @@ class TestEnvironment:
 
     def terminate(self):
         """Cleans up the test environment by shutting down applications and RGB nodes."""
+        print('[CLEANUP] Terminating test environment...')
+
         self.terminate_process(self.first_process)
         if self.multi_instance:
             self.terminate_process(self.second_process)
 
-        # Terminate RGB lightning nodes
+        # Terminate RGB lightning nodes with prejudice
         for process in self.rgb_processes:
             self.terminate_process(process)
-            # Clear out any references to running RGB processes
+
+        # Force kill any remaining RGB processes by name
+        subprocess.run(
+            ['pkill', '-9', '-f', 'rgb-lightning-node'],
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
 
         self.rgb_processes.clear()
-
-        # Ensure processes are terminated and ports are freed up
         self._ensure_processes_terminated()
+
+        print('[CLEANUP] Test environment terminated')
 
     def _ensure_processes_terminated(self):
         """Checks that RGB processes have been properly terminated."""

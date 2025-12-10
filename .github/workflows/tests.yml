@@ -358,6 +358,52 @@ jobs:
           python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
           echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
 
+      - name: Ensure clean state before regtest
+        run: |
+          echo "🧹 Cleaning up previous test resources..."
+
+          # Stop any running Docker containers from previous matrix jobs
+          docker ps -q | xargs -r docker kill 2>/dev/null || true
+          docker compose -f e2e_tests/compose.yaml down --remove-orphans --timeout 5 2>/dev/null || true
+
+          # Kill lingering AppImage processes
+          pkill -9 -f "iriswallet.*AppImage" 2>/dev/null || true
+
+          # Kill lingering RGB lightning node processes
+          pkill -9 -f "rgb-lightning-node" 2>/dev/null || true
+
+          # Wait for ports to be released (max 30 seconds)
+          PORTS=(3000 50001 18443)
+          for port in "${PORTS[@]}"; do
+            ELAPSED=0
+            while ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; do
+              if [ $ELAPSED -ge 30 ]; then
+                echo "⚠️  Port $port still bound after 30s, force killing..."
+                fuser -k $port/tcp 2>/dev/null || true
+                sleep 2
+                break
+              fi
+              echo "⏳ Waiting for port $port to be released... (${ELAPSED}s)"
+              sleep 1
+              ELAPSED=$((ELAPSED + 1))
+            done
+          done
+
+          # Clean data directories
+          rm -rf e2e_tests/data{core,index,ldk0,ldk1,ldk2} || true
+
+          # Clean keyring storage
+          rm -rf "$RUNNER_TEMP/keyring"/* || true
+
+          # Clean application data
+          rm -rf ~/.local/share/iriswallet_* 2>/dev/null || true
+          rm -rf ~/.local/share/python_keyring 2>/dev/null || true
+
+          # Final wait to ensure filesystem sync
+          sleep 2
+
+          echo "✅ Cleanup complete, ready for regtest"
+
       - name: Start regtest services
         run: poetry run regtest-start
 
@@ -490,6 +536,20 @@ jobs:
           poetry run single-test ${{ matrix.test_file }}.py
           # poetry run single-test test_rgb20_channel_tx.py
           '
+
+      - name: Post-test cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up after test..."
+
+          # Kill test processes
+          pkill -9 -f "iriswallet.*AppImage" 2>/dev/null || true
+          pkill -9 -f "rgb-lightning-node" 2>/dev/null || true
+
+          # Stop docker containers (but don't remove - next job will clean)
+          docker compose -f e2e_tests/compose.yaml stop --timeout 5 2>/dev/null || true
+
+          echo "✅ Post-test cleanup complete"
 
       - name: Stop recording
         if: ${{ always() || cancelled() }}
