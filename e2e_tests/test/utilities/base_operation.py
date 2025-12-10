@@ -340,6 +340,68 @@ class BaseOperations:
             # Flag that we just switched windows for enhanced retry on next search
             self._just_switched_window = True
 
+    def _find_elements_by_criteria(self, role_name, name=None, description=None):
+        """
+        Find elements matching the given criteria.
+
+        Args:
+            role_name (str): The role of the element.
+            name (str, optional): The name of the element.
+            description (str, optional): The description of the element.
+
+        Returns:
+            list: List of matching elements.
+        """
+        if name and self.application:
+            return list(
+                self.application.findChildren(
+                    lambda n: n.roleName == role_name and n.name == name,
+                ),
+            )
+        if description and self.application:
+            return list(
+                self.application.findChildren(
+                    lambda n: n.roleName == role_name
+                    and n.description == description,
+                ),
+            )
+        return []
+
+    def _is_element_ready(self, element):
+        """
+        Check if the element is ready for interaction (showing and sensitive).
+
+        Args:
+            element: The element to check.
+
+        Returns:
+            bool: True if element is ready, False otherwise.
+        """
+        return element.showing and (
+            not hasattr(element, 'sensitive') or element.sensitive
+        )
+
+    def _should_grab_focus(self, role_name, name):
+        """
+        Determine if grabFocus should be called on the element.
+
+        Args:
+            role_name (str): The role of the element.
+            name (str): The name of the element.
+
+        Returns:
+            bool: True if grabFocus should be called, False otherwise.
+        """
+        excluded_roles = ['push button', 'button', 'panel']
+        excluded_names = [
+            SEND_BITCOIN_BUTTON,
+            SEND_ASSET_BUTTON,
+            RECEIVE_BITCOIN_BUTTON,
+            OPTION_1_FRAME,
+            OPTION_2_FRAME,
+        ]
+        return role_name not in excluded_roles and name not in excluded_names
+
     def perform_action_on_element(
         self,
         role_name,
@@ -389,7 +451,6 @@ class BaseOperations:
             timeout = get_default_timeout(20)
 
         start_time = time.time()
-        elements = []
         # Optimize retry intervals for CI
         current_interval = 1.5
         max_interval = 4.0
@@ -402,27 +463,13 @@ class BaseOperations:
             attempt += 1
             try:
                 # Try to find elements by name or description
-                if name and self.application:
-                    elements = list(
-                        self.application.findChildren(
-                            lambda n: n.roleName == role_name and n.name == name,
-                        ),
-                    )
-                elif description and self.application:
-                    elements = list(
-                        self.application.findChildren(
-                            lambda n: n.roleName == role_name
-                            and n.description == description,
-                        ),
-                    )
+                elements = self._find_elements_by_criteria(
+                    role_name, name, description)
 
                 if elements:
                     element = elements[-1]
-                    if element.showing and (
-                        not hasattr(element, 'sensitive') or element.sensitive
-                    ):
-                        if role_name not in ['push button', 'button', 'panel'] and \
-                        name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
+                    if self._is_element_ready(element):
+                        if self._should_grab_focus(role_name, name):
                             element.grabFocus()
                         self._log_search_attempt(
                             role_name,
@@ -544,7 +591,7 @@ class BaseOperations:
                     for element in elements:
                         if element.showing and element.sensitive:
                             if role_name not in ['push button', 'button', 'panel'] and \
-                            name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
+                                    name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
                                 element.grabFocus()
                             return element
 
