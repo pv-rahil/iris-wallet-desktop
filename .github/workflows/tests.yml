@@ -296,8 +296,23 @@ jobs:
           sleep 4
           openbox & sleep 3
 
-      # - name: Build the rgb-lightning-node binary (disabled; using prebundled ln_node_binary)
-      #   uses: ./.github/actions/build-rln-node
+      - name: Get RGB Lightning Node commit hash
+        id: ln-commit
+        run: |
+          COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          echo "hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "RGB Lightning Node commit: $COMMIT_HASH"
+
+      - name: Cache RGB Lightning Node binary
+        id: cache-ln-node
+        uses: actions/cache@v4
+        with:
+          path: ln_node_binary
+          key: ln-node-${{ runner.os }}-${{ steps.ln-commit.outputs.hash }}
+
+      - name: Build RGB Lightning Node binary
+        if: steps.cache-ln-node.outputs.cache-hit != 'true'
+        uses: ./.github/actions/build-rln-node
 
       - name: Add rgb-lightning-node to PATH
         run: |
