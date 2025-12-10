@@ -1,3 +1,4 @@
+# pylint: disable=too-many-return-statements,too-many-branches
 """
 This module contains the ToasterPageObjects class, which provides methods for interacting with toaster page elements.
 """
@@ -50,13 +51,15 @@ class ToasterPageObjects(BaseOperations):
     def wait_for_toaster(self, timeout=15, poll_interval=0.2):
         """
         Wait for toaster to appear in AT-SPI tree with aggressive polling.
+        Captures the description IMMEDIATELY to avoid disappearance issues.
 
         Args:
             timeout (int): Maximum seconds to wait. Default 15s for CI.
             poll_interval (float): Seconds between polls. Default 0.2s for aggressive detection.
 
         Returns:
-            Node: The toaster element if found, None otherwise.
+            tuple: (toaster_element, description_text) if found, (None, None) otherwise.
+                   Description is captured immediately to prevent race conditions.
         """
 
         # Use longer timeout in CI but not excessive
@@ -67,9 +70,9 @@ class ToasterPageObjects(BaseOperations):
         attempt = 0
 
         print(
-            f"""[TOASTER] Waiting for toaster (timeout={
-                timeout
-            }s, poll_interval={poll_interval}s)...""",
+            f"[TOASTER] Waiting for toaster (timeout={timeout}s, poll_interval={
+                poll_interval
+            }s)...",
         )
 
         while time.time() - start_time < timeout:
@@ -85,12 +88,18 @@ class ToasterPageObjects(BaseOperations):
                     # Check if any toaster is actually showing
                     for toaster in toasters:
                         if toaster.showing:
-                            print(
-                                f"""[TOASTER] Found visible toaster after {
-                                    attempt
-                                } attempts ({time.time() - start_time:.2f}s)""",
+                            # IMMEDIATELY capture description before toaster can disappear
+                            description = self._extract_description_immediately(
+                                toaster,
                             )
-                            return toaster  # Return the element
+                            elapsed = time.time() - start_time
+                            print(
+                                f"[TOASTER] Found toaster after {attempt} attempts ({elapsed:.2f}s), description: {
+                                    description
+                                }",
+                            )
+                            # Return both element and description
+                            return (toaster, description)
             except Exception as e:
                 if attempt % 10 == 0:  # Log every 10th attempt to avoid spam
                     print(f"[TOASTER] Attempt {attempt}: {e}")
@@ -98,34 +107,78 @@ class ToasterPageObjects(BaseOperations):
             time.sleep(poll_interval)
 
         print(f"[TOASTER] Timeout after {attempt} attempts ({timeout}s)")
-        return None  # Return None instead of False
+        return (None, None)  # Return tuple for consistency
+
+    def _extract_description_immediately(self, toaster_element):
+        """
+        Extract description from toaster IMMEDIATELY to prevent race conditions.
+        This is called as soon as the toaster is found, before it can disappear.
+
+        Args:
+            toaster_element: The toaster panel element.
+
+        Returns:
+            str: Description text if found, None otherwise.
+        """
+        try:
+            # Find description labels within this specific toaster
+            descriptions = toaster_element.findChildren(
+                lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+            )
+
+            if descriptions:
+                # Get the last one(most recent)
+                last_desc = descriptions[-1]
+                text = last_desc.name if hasattr(last_desc, 'name') else None
+                if text:
+                    return text
+
+            # Fallback: try to get any label text from the toaster
+            labels = toaster_element.findChildren(
+                lambda node: node.roleName == 'label' and node.name,
+            )
+            if labels and len(labels) > 1:  # Skip title, get description
+                return labels[-1].name
+
+        except Exception as e:
+            print(f"[TOASTER] Failed to extract description immediately: {e}")
+
+        return None
 
     def click_toaster_frame(self):
         """
-        Clicks the toaster frame element if it is displayed.
+        Waits for toaster, captures description immediately, then clicks it.
 
         Returns:
-            Node|bool: The toaster element if clicked successfully, False otherwise.
+            tuple: (toaster_element, description) if successful, (False, None) otherwise.
         """
-        # Get the toaster element directly (no redundant searches)
-        element = self.wait_for_toaster()
-        if not element:
+        # Get both toaster element and description atomically
+        toaster_element, description = self.wait_for_toaster()
+        if not toaster_element:
             print('[TOASTER] Toaster did not appear within timeout')
-            return False
+            return (False, None)
 
-        # Click it immediately without redundant checks
+        # Click it with higher debounce for toasters (1000ms to prevent double-clicks)
         # skip_display_check=True because we just found it in wait_for_toaster()
         try:
-            self.do_click(element, debounce_ms=500, skip_display_check=True)
-            print('[TOASTER] Successfully clicked toaster')
-            return element  # Return the element so it can be reused
+            self.do_click(
+                toaster_element, debounce_ms=1000,
+                skip_display_check=True,
+            )
+            print(
+                f'[TOASTER] Clicked toaster, captured description: {
+                    description
+                }',
+            )
+            return (toaster_element, description)  # Return both for reuse
         except Exception as e:
             print(f'[TOASTER] Failed to click toaster: {e}')
-            return False
+            return (False, None)
 
     def click_and_get_description(self, filter_pattern=None):
         """
-        Convenience method that clicks the toaster and gets its description.
+        Convenience method that waits for toaster, captures description, and clicks it.
+        Description is captured BEFORE clicking to prevent disappearance issues.
 
         Args:
             filter_pattern (str, optional): A substring to filter the toaster text.
@@ -133,20 +186,21 @@ class ToasterPageObjects(BaseOperations):
         Returns:
             str: The toaster description if successful, None otherwise.
         """
-        if not self.do_is_displayed(self.toaster_frame()):
-            return None
-
-        toaster_element = self.click_toaster_frame()
+        toaster_element, description = self.click_toaster_frame()
         if not toaster_element:
             return None
 
-        if self.do_is_displayed(self.toaster_description()):
-            return self.get_toaster_description(
-                toaster_element=toaster_element,
-                filter_pattern=filter_pattern,
-            )
+        # Apply filter if needed
+        if filter_pattern and description:
+            if filter_pattern not in description:
+                print(
+                    f"[TOASTER] Description '{
+                        description
+                    }' doesn't match filter '{filter_pattern}'",
+                )
+                return None
 
-        return None
+        return description
 
     def get_toaster_title(self):
         """
@@ -159,26 +213,39 @@ class ToasterPageObjects(BaseOperations):
 
     def get_toaster_description(self, filter_pattern=None, max_retries=4, toaster_element=None):
         """
-        Gets the text of the toaster description element if it is displayed.
-        Uses the toaster element from wait_for_toaster to avoid redundant searches.
+        Gets the text of the toaster description element.
+        DEPRECATED: Prefer using click_toaster_frame() which returns description immediately.
+        This method is kept for backward compatibility but may fail if toaster disappears.
 
         Args:
             filter_pattern (str, optional): A substring to filter the toaster text.
-                                            If provided, only toasters containing this text will be considered.
             max_retries (int): Number of retries if description is not immediately available.
             toaster_element (Node, optional): Pre-found toaster element to use. If None, will search for one.
 
         Returns:
             str: The text of the element if found, None otherwise.
         """
-        # Use provided element or wait for toaster to appear
+        # If no element provided, try to wait for toaster
         if toaster_element is None:
-            toaster_element = self.wait_for_toaster()
+            toaster_element, description = self.wait_for_toaster()
+            if description:  # If we got description from wait_for_toaster, use it
+                if filter_pattern and filter_pattern not in description:
+                    return None
+                return description
             if not toaster_element:
                 print('[TOASTER] No toaster found for description')
                 return None
 
-        # Try to get description from the specific toaster we have
+        # If element is a tuple (from new click_toaster_frame), extract
+        if isinstance(toaster_element, tuple):
+            element, desc = toaster_element
+            if desc:  # Use captured description if available
+                if filter_pattern and filter_pattern not in desc:
+                    return None
+                return desc
+            toaster_element = element
+
+        # Legacy path: try to get description from the specific toaster we have
         for attempt in range(max_retries):
             try:
                 # Try to get description from this specific toaster

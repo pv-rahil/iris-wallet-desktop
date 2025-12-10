@@ -1,4 +1,4 @@
-# pylint: disable=unused-import,too-many-arguments,too-many-statements,too-many-branches
+# pylint: disable=unused-import,too-many-arguments,too-many-statements,too-many-branches,too-many-lines
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -90,24 +90,36 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_click(self, element, debounce_ms=300, skip_display_check=False):
+    def do_click(self, element, debounce_ms=500, skip_display_check=False):
         """
         Clicks on the specified element with debouncing to prevent rapid repeated clicks.
 
         Args:
             element (Node): The element to click on.
-            debounce_ms (int): Minimum milliseconds between clicks on same element. Default 300ms.
+            debounce_ms (int): Minimum milliseconds between clicks on same element. Default 500ms (increased from 300ms).
             skip_display_check (bool): If True, skip the display check (use when element is known to be visible).
 
         Returns:
             None
         """
+        # Validate element exists and has required attributes
+        if not element:
+            print('[CLICK ERROR] Element is None')
+            return
+
+        if not hasattr(element, 'name') or not hasattr(element, 'roleName'):
+            print('[CLICK ERROR] Element missing required attributes (name/roleName)')
+            return
+
         # Only check if displayed when not skipping
         if not skip_display_check:
-            if not (self.do_is_displayed(element) and element):
+            if not self.do_is_displayed(element):
+                print(
+                    f"[CLICK] Element '{
+                        element.name
+                    }' not displayed, skipping click",
+                )
                 return
-        elif not element:
-            return
 
         # Track last click time per element to prevent double-clicks
         if not hasattr(self, '_last_click_times'):
@@ -115,10 +127,8 @@ class BaseOperations:
 
         # Use stable identifier (name + role) instead of object id
         # Object ID changes when AT-SPI refreshes elements
-        element_name = element.name if hasattr(element, 'name') else 'unknown'
-        element_role = element.roleName if hasattr(
-            element, 'roleName',
-        ) else 'unknown'
+        element_name = element.name
+        element_role = element.roleName
         element_key = f"{element_role}:{element_name}"
 
         current_time = time.time() * 1000  # Convert to milliseconds
@@ -129,22 +139,36 @@ class BaseOperations:
                 self._last_click_times[element_key]
             if time_since_last_click < debounce_ms:
                 print(
-                    f"""[DEBOUNCE] Skipping click on '{element_name}' - only
-                    {time_since_last_click:.0f}ms since last click""",
+                    f"[DEBOUNCE] Prevented double-click on '{element_name}' "
+                    f"({element_role}) - only {time_since_last_click:.0f}ms since last click "
+                    f"(minimum: {debounce_ms}ms)",
                 )
                 return
 
         # Perform the click
         try:
+            # Validate element is still valid before clicking
+            if not hasattr(element, 'showing'):
+                print(
+                    f"[CLICK ERROR] Element '{
+                        element_name
+                    }' became stale before click",
+                )
+                return
+
             if element_role not in ['push button', 'button', 'panel'] and \
                     element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
                 element.grabFocus()
             time.sleep(0.1)
             element.click()
             self._last_click_times[element_key] = current_time
-            print(f"[CLICK] Successfully clicked element: {element_name}")
+            print(
+                f"[CLICK] Successfully clicked '{
+                    element_name
+                }' ({element_role})",
+            )
         except Exception as e:
-            print(f"[CLICK ERROR] Failed to click element: {e}")
+            print(f"[CLICK ERROR] Failed to click '{element_name}': {e}")
 
     def do_set_value(self, element, value: str):
         """
@@ -232,9 +256,11 @@ class BaseOperations:
 
         # Print detailed element information on timeout
         try:
-            element_info = f"role='{element.roleName}', name='{
-                element.name
-            }', description='{element.description}'"
+            element_info = (
+                f"role='{element.roleName}', "
+                f"name='{element.name}', "
+                f"description='{element.description}'"
+            )
         except Exception:
             element_info = '<unable to read element details>'
 
@@ -666,9 +692,8 @@ class BaseOperations:
             time.sleep(interval)  # Wait and retry
 
         raise TimeoutError(
-            f"""Toaster message '{
-                toaster_name
-            }' did not appear within {timeout} seconds.""",
+            f"""Toaster message '{toaster_name}
+                ' did not appear within {timeout} seconds.""",
         )
 
     def do_get_child_count(self, element):

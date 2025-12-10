@@ -156,12 +156,12 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         toaster_element = None
         if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-            toaster_element = self.toaster_page_objects.click_toaster_frame()
+            toaster_element, description = self.toaster_page_objects.click_toaster_frame()
 
-        if toaster_element:
-            description = self.toaster_page_objects.get_toaster_description(
-                filter_pattern=INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0],
-                toaster_element=toaster_element,
-            )
+        # Filter description if we got one
+        if toaster_element and description:
+            filter_text = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0]
+            if filter_text not in description:
+                description = None
 
         return description

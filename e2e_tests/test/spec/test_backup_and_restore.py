@@ -110,12 +110,13 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup):
     with allure.step('Take a backup of wallet'):
         wallets_and_operations.first_page_objects.backup_page_objects.click_backup_node_data_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
-        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            toaster_element=toaster_element,
-            filter_pattern=INFO_BACKUP_COMPLETED,
-        )
-        assert description == INFO_BACKUP_COMPLETED
+        toaster_element, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        # Filter the description
+        if toaster_element and description and INFO_BACKUP_COMPLETED in description:
+            toaster_description = description  # Already has the right description
+        else:
+            toaster_description = None
+        assert toaster_description == INFO_BACKUP_COMPLETED
         test_environment.restart()
 
 
@@ -162,9 +163,10 @@ def test_restore(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.backup_page_objects.click_next_button()
         wallets_and_operations.first_page_objects.backup_page_objects.click_continue_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
-        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            toaster_element=toaster_element,
-            filter_pattern=INFO_RESTORE_COMPLETED,
-        )
-        assert description == INFO_RESTORE_COMPLETED
+        toaster_element, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        # Filter the description
+        if toaster_element and description and INFO_RESTORE_COMPLETED in description:
+            toaster_description = description  # Already has the right description
+        else:
+            toaster_description = None
+        assert toaster_description == INFO_RESTORE_COMPLETED

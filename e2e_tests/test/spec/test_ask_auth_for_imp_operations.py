@@ -79,11 +79,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT, transfer_type='bitcoin', is_native_auth_enabled=True,
         )
-        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            filter_pattern=INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0],
-            toaster_element=toaster_element,
-        )
+        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
     with allure.step('asserting tx id'):
@@ -135,11 +131,7 @@ def test_ask_auth_for_imp_question_send_rgb20_on(wallets_and_operations: WalletT
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb20_invoice, ASSET_AMOUNT, is_native_auth_enabled=True,
         )
-        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            filter_pattern=INFO_ASSET_SENT.split('{}', maxsplit=1)[0],
-            toaster_element=toaster_element,
-        )
+        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
     with allure.step('asserting tx id'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -191,11 +183,7 @@ def test_ask_auth_for_imp_question_send_rgb_25_on(wallets_and_operations: Wallet
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb25_invoice, ASSET_AMOUNT, is_native_auth_enabled=True,
         )
-        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            filter_pattern=INFO_ASSET_SENT.split('{}', maxsplit=1)[0],
-            toaster_element=toaster_element,
-        )
+        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
     with allure.step('asserting tx id'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -260,7 +248,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT, transfer_type='bitcoin',
         )
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        __, _description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_title = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_title()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
@@ -301,11 +289,7 @@ def test_ask_auth_for_imp_question_send_rgb_20_off(wallets_and_operations: Walle
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb20_invoice, ASSET_AMOUNT,
         )
-        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            filter_pattern=INFO_ASSET_SENT.split('{}', maxsplit=1)[0],
-            toaster_element=toaster_element,
-        )
+        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
     with allure.step('asserting tx id'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -359,11 +343,7 @@ def test_ask_auth_for_imp_question_send_rgb_25_off(wallets_and_operations: Walle
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, rgb25_invoice, ASSET_AMOUNT,
         )
-        toaster_element = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            filter_pattern=INFO_ASSET_SENT.split('{}', maxsplit=1)[0],
-            toaster_element=toaster_element,
-        )
+        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
     with allure.step('asserting tx id'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
