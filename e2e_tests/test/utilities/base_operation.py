@@ -402,6 +402,25 @@ class BaseOperations:
         ]
         return role_name not in excluded_roles and name not in excluded_names
 
+    def _get_first_ready_element(self, elements, role_name, name):
+        """
+        Get the first element from a list that is showing and sensitive.
+
+        Args:
+            elements (list): List of elements to check.
+            role_name (str): The role of the element.
+            name (str): The name of the element.
+
+        Returns:
+            Node or None: The first ready element, or None if none found.
+        """
+        for element in elements:
+            if element.showing and element.sensitive:
+                if self._should_grab_focus(role_name, name):
+                    element.grabFocus()
+                return element
+        return None
+
     def perform_action_on_element(
         self,
         role_name,
@@ -464,7 +483,8 @@ class BaseOperations:
             try:
                 # Try to find elements by name or description
                 elements = self._find_elements_by_criteria(
-                    role_name, name, description)
+                    role_name, name, description,
+                )
 
                 if elements:
                     element = elements[-1]
@@ -566,34 +586,22 @@ class BaseOperations:
             timeout = get_default_timeout(30)
 
         start_time = time.time()
-        elements = []
         current_interval = retry_interval
         max_interval = 4.0  # Cap exponential backoff at 4 seconds
 
         while time.time() - start_time < timeout:
             try:
                 # Try to find elements by name or description
-                if name and self.application:
-                    elements = list(
-                        self.application.findChildren(
-                            lambda n: n.roleName == role_name and n.name == name,
-                        ),
-                    )
-                elif description and self.application:
-                    elements = list(
-                        self.application.findChildren(
-                            lambda n: n.roleName == role_name
-                            and n.description == description,
-                        ),
-                    )
+                elements = self._find_elements_by_criteria(
+                    role_name, name, description,
+                )
 
                 if elements:
-                    for element in elements:
-                        if element.showing and element.sensitive:
-                            if role_name not in ['push button', 'button', 'panel'] and \
-                                    name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
-                                element.grabFocus()
-                            return element
+                    element = self._get_first_ready_element(
+                        elements, role_name, name,
+                    )
+                    if element:
+                        return element
 
             except Exception as e:
                 # Log the exception with more details for debugging
