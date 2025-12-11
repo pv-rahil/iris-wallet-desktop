@@ -162,6 +162,16 @@ class BaseOperations:
             time.sleep(0.1)
             element.click()
             self._last_click_times[element_key] = current_time
+
+            # Add post-click wait for panel elements in CI to allow event propagation
+            # This compensates for signal/slot timing issues without modifying app code
+            if element_role == 'panel' and element_name in [OPTION_1_FRAME, OPTION_2_FRAME]:
+                post_click_delay = 0.8 if is_ci_environment() else 0.3
+                print(
+                    f"[PANEL CLICK] Waiting {post_click_delay}s for event propagation on '{element_name}'...",
+                )
+                time.sleep(post_click_delay)
+
             print(
                 f"[CLICK] Successfully clicked '{
                     element_name
