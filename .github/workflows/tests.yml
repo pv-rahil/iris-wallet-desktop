@@ -144,8 +144,8 @@ jobs:
       fail-fast: false
       matrix:
         test_file:
-          - test_keyring_dialog
           - test_receive_and_send_bitcoin
+          - test_keyring_dialog
           - test_create_and_close_channel
           - test_login_app_auth
           - test_ask_auth_for_imp_operations
