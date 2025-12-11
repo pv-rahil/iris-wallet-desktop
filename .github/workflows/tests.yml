@@ -387,6 +387,14 @@ jobs:
               sleep 1
               ELAPSED=$((ELAPSED + 1))
             done
+
+            # Verify port is actually free
+            if ! ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; then
+              echo "✅ Port $port confirmed free"
+            else
+              echo "❌ Port $port still in use after cleanup!"
+              exit 1
+            fi
           done
 
           # Clean data directories
@@ -399,10 +407,11 @@ jobs:
           rm -rf ~/.local/share/iriswallet_* 2>/dev/null || true
           rm -rf ~/.local/share/python_keyring 2>/dev/null || true
 
-          # Final wait to ensure filesystem sync
-          sleep 2
+          # Wait for filesystem sync and verify
+          sync
+          sleep 3
 
-          echo "✅ Cleanup complete, ready for regtest"
+          echo "✅ Cleanup verified, ready for regtest"
 
       - name: Start regtest services
         run: poetry run regtest-start

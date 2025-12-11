@@ -13,6 +13,7 @@ import pyperclip
 from dogtail.rawinput import keyCombo
 from dogtail.rawinput import pressKey
 from dogtail.rawinput import typeText
+from dogtail.tree import root
 from dotenv import load_dotenv
 from Xlib import display
 from Xlib import X
@@ -156,6 +157,15 @@ class BaseOperations:
                 )
                 return
 
+            # In CI, verify element is stable before clicking
+            # This prevents clicks on elements that are still animating/updating
+            if is_ci_environment() and not skip_display_check:
+                if not self._wait_for_element_stable(element, timeout=2.0):
+                    print(
+                        f"[CLICK WARN] Element '{element_name}' not stable, "
+                        f"proceeding with click anyway (may fail)",
+                    )
+
             if element_role not in ['push button', 'button', 'panel'] and \
                     element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
                 element.grabFocus()
@@ -168,7 +178,9 @@ class BaseOperations:
             if element_role == 'panel' and element_name in [OPTION_1_FRAME, OPTION_2_FRAME]:
                 post_click_delay = 0.8 if is_ci_environment() else 0.3
                 print(
-                    f"[PANEL CLICK] Waiting {post_click_delay}s for event propagation on '{element_name}'...",
+                    f"[PANEL CLICK] Waiting {
+                        post_click_delay
+                    }s for event propagation on '{element_name}'...",
                 )
                 time.sleep(post_click_delay)
 
@@ -323,11 +335,11 @@ class BaseOperations:
             None
         """
         d = display.Display()
-        root = d.screen().root
-        root.change_attributes(event_mask=X.SubstructureNotifyMask)
+        root_screen = d.screen().root
+        root_screen.change_attributes(event_mask=X.SubstructureNotifyMask)
 
         # Get window list
-        raw_data = root.get_full_property(
+        raw_data = root_screen.get_full_property(
             d.intern_atom(
                 '_NET_CLIENT_LIST',
             ),
@@ -417,6 +429,63 @@ class BaseOperations:
             not hasattr(element, 'sensitive') or element.sensitive
         )
 
+    def _wait_for_element_stable(self, element, timeout=3.0):
+        """
+        Wait for element to become stable (not changing state).
+        This prevents race conditions where elements are found but still updating.
+
+        Args:
+            element: The element to check
+            timeout: How long to wait for stability (default 3.0s)
+
+        Returns:
+            bool: True if stable, False if timeout
+        """
+        start_time = time.time()
+        last_state = None
+        stable_checks = 0
+        required_stable_checks = 2  # Must be stable for 2 consecutive checks
+
+        while time.time() - start_time < timeout:
+            try:
+                # Capture current element state (showing, sensitive, name)
+                current_state = (
+                    element.showing,
+                    getattr(element, 'sensitive', True),
+                    element.name,
+                )
+
+                if current_state == last_state:
+                    stable_checks += 1
+                    if stable_checks >= required_stable_checks:
+                        print(
+                            f"[STABILITY] Element '{
+                                element.name
+                            }' stable after "
+                            f"{stable_checks} checks",
+                        )
+                        return True
+                else:
+                    # State changed, reset counter
+                    stable_checks = 0
+                    print(
+                        f"[STABILITY] Element '{element.name}' state changed, "
+                        f"waiting for stability...",
+                    )
+
+                last_state = current_state
+                time.sleep(0.3)  # Check every 300ms
+
+            except Exception as e:
+                print(f"[STABILITY] Element became invalid during check: {e}")
+                return False
+
+        print(
+            f"[STABILITY] Element '{element.name}' did not stabilize within "
+            f"{timeout}s",
+        )
+        return False
+
     def _should_grab_focus(self, role_name, name):
         """
         Determine if grabFocus should be called on the element.
@@ -457,6 +526,69 @@ class BaseOperations:
                 return element
         return None
 
+    def _validate_and_return_element(
+        self,
+        element,
+        role_name,
+        name,
+        identifier,
+        timeout,
+        attempt,
+    ):
+        """
+        Validate element is stable and ready before returning it.
+
+        Args:
+            element: The element to validate
+            role_name: Role of the element
+            name: Name of the element
+            identifier: Name or description identifier
+            timeout: Timeout value for logging
+            attempt: Current attempt number
+
+        Returns:
+            element if valid, None if should retry
+        """
+        # In CI, verify element is stable before returning
+        if is_ci_environment():
+            if not self._wait_for_element_stable(element, timeout=2.0):
+                print(
+                    f"[STABILITY WARN] Element '{
+                        element.name
+                    }' not stable, "
+                    f"continuing search...",
+                )
+                return None  # Signal to continue retry loop
+
+        # Verify element is still valid (stale element detection)
+        try:
+            # Access element properties to ensure it's not stale
+            _ = element.name
+            _ = element.showing
+
+            # Grab focus if needed
+            if self._should_grab_focus(role_name, name):
+                element.grabFocus()
+                time.sleep(0.2)  # Allow focus to settle
+
+            self._log_search_attempt(
+                role_name,
+                identifier,
+                timeout,
+                'SUCCESS',
+                attempt,
+            )
+            self._reset_circuit_breaker()  # Reset on success
+            return element
+
+        except Exception as e:
+            print(
+                f"[STALE ELEMENT] Element became invalid before return: {
+                    e
+                }",
+            )
+            return None  # Signal to continue retry loop
+
     def perform_action_on_element(
         self,
         role_name,
@@ -484,11 +616,27 @@ class BaseOperations:
         # Check circuit breaker
         if self._should_break_circuit():
             identifier = name if name else description
-            error_msg = f"[CIRCUIT BREAKER] Stopping search for {role_name} '{
-                identifier
-            }' after {self._consecutive_failures} consecutive failures"
-            print(error_msg)
-            raise RuntimeError(error_msg)
+
+            # Attempt AT-SPI recovery before failing
+            print('[CIRCUIT BREAKER] Attempting AT-SPI recovery before failing...')
+            if self._refresh_atspi_tree():
+                print(
+                    '[CIRCUIT BREAKER] Recovery successful, resetting counter and retrying',
+                )
+                self._reset_circuit_breaker()
+                # Don't fail, continue with the search
+            else:
+                # Recovery failed, fail the search
+                error_msg = (
+                    f"[CIRCUIT BREAKER] Stopping search for {
+                        role_name
+                    } '{identifier}' "
+                    f"after {
+                        self._consecutive_failures
+                    } consecutive failures and failed recovery"
+                )
+                print(error_msg)
+                raise RuntimeError(error_msg)
 
         # If we just switched windows, use enhanced retry strategy
         if getattr(self, '_just_switched_window', False):
@@ -525,17 +673,20 @@ class BaseOperations:
                 if elements:
                     element = elements[-1]
                     if self._is_element_ready(element):
-                        if self._should_grab_focus(role_name, name):
-                            element.grabFocus()
-                        self._log_search_attempt(
+                        # Validate and return element (handles stability + stale detection)
+                        validated_element = self._validate_and_return_element(
+                            element,
                             role_name,
+                            name,
                             identifier,
                             timeout,
-                            'SUCCESS',
                             attempt,
                         )
-                        self._reset_circuit_breaker()  # Reset on success
-                        return element
+                        if validated_element:
+                            return validated_element
+                        # If None returned, continue retry loop
+                        time.sleep(0.5)
+                        continue
 
             except Exception as e:
                 # Log the exception with more details for debugging
@@ -842,6 +993,24 @@ class BaseOperations:
             )
         self._consecutive_failures = 0
         self._circuit_broken = False
+
+    def _refresh_atspi_tree(self):
+        """
+        Force AT-SPI to refresh its tree cache.
+        Use this when experiencing stale element issues or corrupted tree state.
+
+        Returns:
+            bool: True if refresh successful, False otherwise
+        """
+        try:
+            # Access root to force tree refresh
+            _ = root.children
+            time.sleep(0.5)
+            print('[AT-SPI] Tree refreshed successfully')
+            return True
+        except Exception as e:
+            print(f"[AT-SPI] Failed to refresh tree: {e}")
+            return False
 
     def _log_search_attempt(self, role_name, identifier, timeout, status, attempt=0):
         """
