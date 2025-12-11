@@ -308,7 +308,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ln_node_binary
-          key: ln-node-v1-${{ runner.os }}-${{ steps.ln-commit.outputs.hash }}
+          key: ln-node-${{ runner.os }}-${{ steps.ln-commit.outputs.hash }}
 
       - name: Build RGB Lightning Node binary
         if: steps.cache-ln-node.outputs.cache-hit != 'true'
@@ -326,7 +326,6 @@ jobs:
       - name: Ensure E2E scripts are executable
         run: |
           chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
-          # chmod +x .github/scripts/monitor_resources.sh
 
       - name: Cache AppImages
         id: cache-appimages
@@ -615,25 +614,25 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Delete LN node cache
-        continue-on-error: true
-        run: |
-          # Delete RGB Lightning Node cache
-          COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          CACHE_KEY="ln-node-v1-${{ runner.os }}-${COMMIT_HASH}"
+      # - name: Delete LN node cache
+      #   continue-on-error: true
+      #   run: |
+      #     # Delete RGB Lightning Node cache
+      #     COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+      #     CACHE_KEY="ln-node-v1-${{ runner.os }}-${COMMIT_HASH}"
 
-          gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
-            | jq -r '.actions_caches[].id' \
-            | xargs -I {} gh api \
-                --method DELETE \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "/repos/${{ github.repository }}/actions/caches/{}" || true
-        env:
-          GH_TOKEN: ${{ github.token }}
+      #     gh api \
+      #       -H "Accept: application/vnd.github+json" \
+      #       -H "X-GitHub-Api-Version: 2022-11-28" \
+      #       "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
+      #       | jq -r '.actions_caches[].id' \
+      #       | xargs -I {} gh api \
+      #           --method DELETE \
+      #           -H "Accept: application/vnd.github+json" \
+      #           -H "X-GitHub-Api-Version: 2022-11-28" \
+      #           "/repos/${{ github.repository }}/actions/caches/{}" || true
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
 
   # delete_artifacts:
   #   runs-on: ubuntu-latest
