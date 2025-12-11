@@ -343,7 +343,7 @@ class WalletOrTransferSelectionWidget(QWidget):
             self.on_click_frame(self.selected_frame, False)
 
         # Handle the 'On chain' frame click event
-        elif _id == TransferType.ON_CHAIN.value:
+        if _id == TransferType.ON_CHAIN.value:
             # Navigate to the appropriate page based on the transfer type
             if transfer_type == TransferStatusEnumModel.RECEIVE.value:
                 self._view_model.page_navigation.receive_rgb25_page(
