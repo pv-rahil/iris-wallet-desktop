@@ -144,8 +144,8 @@ jobs:
       fail-fast: false
       matrix:
         test_file:
-          - test_receive_and_send_bitcoin
           - test_keyring_dialog
+          - test_receive_and_send_bitcoin
           - test_create_and_close_channel
           - test_login_app_auth
           - test_ask_auth_for_imp_operations
@@ -592,7 +592,7 @@ jobs:
           # Delete AppImages cache using GitHub CLI
           VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
           CACHE_KEY="appimages-v4-${{ runner.os }}-${VERSION}"
-          
+
           gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -612,7 +612,7 @@ jobs:
           # Delete RGB Lightning Node cache
           COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
           CACHE_KEY="ln-node-v1-${{ runner.os }}-${COMMIT_HASH}"
-          
+
           gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
