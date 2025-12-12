@@ -175,15 +175,14 @@ class BaseOperations:
                         f"proceeding with click anyway (may fail)",
                     )
 
-            # Pre-click stabilization: ensure element is settled
-            if is_ci_environment():
-                time.sleep(0.2)  # Extra stabilization in CI
-
             if element_role not in ['push button', 'button', 'panel'] and \
                     element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
                 element.grabFocus()
             time.sleep(0.1)
-            element.click()
+            if element_role in ('push button', 'button'):
+                element.queryAction().doAction(0)
+            else:
+                element.click()
 
             # Update the click time AFTER the click, using the current time
             # This ensures debounce works correctly for subsequent clicks
