@@ -132,9 +132,14 @@ class BaseOperations:
         element_role = element.roleName
         element_key = f"{element_role}:{element_name}"
 
+        # CI-specific: Use significantly longer debounce to prevent double-clicks
+        # AT-SPI in CI has timing issues that can cause clicks to register twice
+        if is_ci_environment():
+            debounce_ms = max(debounce_ms, 1200)  # Minimum 1.2s in CI
+
         # Special handling for toaster elements - use longer debounce
         if element_name == TOASTER_DESCRIPTION or 'toaster' in element_name.lower():
-            debounce_ms = max(debounce_ms, 1000)  # Minimum 1s for toasters
+            debounce_ms = max(debounce_ms, 1500)  # 1.5s for toasters
 
         current_time = time.time() * 1000  # Convert to milliseconds
 
@@ -170,23 +175,38 @@ class BaseOperations:
                         f"proceeding with click anyway (may fail)",
                     )
 
+            # Pre-click stabilization: ensure element is settled
+            if is_ci_environment():
+                time.sleep(0.2)  # Extra stabilization in CI
+
             if element_role not in ['push button', 'button', 'panel'] and \
                     element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
                 element.grabFocus()
             time.sleep(0.1)
             element.click()
-            self._last_click_times[element_key] = current_time
 
-            # Add post-click wait for panel elements in CI to allow event propagation
-            # This compensates for signal/slot timing issues without modifying app code
-            if element_role == 'panel' and element_name in [OPTION_1_FRAME, OPTION_2_FRAME]:
-                post_click_delay = 0.8 if is_ci_environment() else 0.3
+            # Update the click time AFTER the click, using the current time
+            # This ensures debounce works correctly for subsequent clicks
+            self._last_click_times[element_key] = time.time() * 1000
+
+            # Add post-click wait to allow event propagation and prevent double-action
+            # This is critical in CI where AT-SPI events can be processed multiple times
+            if is_ci_environment():
+                if element_role == 'panel' and element_name in [OPTION_1_FRAME, OPTION_2_FRAME]:
+                    post_click_delay = 0.8
+                elif element_role in ['push button', 'button']:
+                    post_click_delay = 0.5  # All buttons get post-click delay in CI
+                else:
+                    post_click_delay = 0.3
                 print(
-                    f"[PANEL CLICK] Waiting {
-                        post_click_delay
-                    }s for event propagation on '{element_name}'...",
+                    f"[CI CLICK] Waiting {post_click_delay}s after clicking '{
+                        element_name
+                    }'...",
                 )
                 time.sleep(post_click_delay)
+            elif element_role == 'panel' and element_name in [OPTION_1_FRAME, OPTION_2_FRAME]:
+                # Only panel elements get delay outside CI
+                time.sleep(0.3)
 
             print(
                 f"[CLICK] Successfully clicked '{
