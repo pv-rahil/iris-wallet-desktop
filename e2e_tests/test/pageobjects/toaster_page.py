@@ -62,7 +62,6 @@ class ToasterPageObjects(BaseOperations):
                    Description is captured immediately to prevent race conditions.
         """
 
-        # Use longer timeout in CI but not excessive
         if is_ci_environment():
             timeout = 20
 

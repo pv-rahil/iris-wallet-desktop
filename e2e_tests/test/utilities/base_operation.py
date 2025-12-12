@@ -91,13 +91,13 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_click(self, element, debounce_ms=500, skip_display_check=False):
+    def do_click(self, element, debounce_ms=800, skip_display_check=False):
         """
         Clicks on the specified element with debouncing to prevent rapid repeated clicks.
 
         Args:
             element (Node): The element to click on.
-            debounce_ms (int): Minimum milliseconds between clicks on same element. Default 500ms (increased from 300ms).
+            debounce_ms (int): Minimum milliseconds between clicks on same element. Default 800ms (increased for CI stability).
             skip_display_check (bool): If True, skip the display check (use when element is known to be visible).
 
         Returns:
@@ -131,6 +131,10 @@ class BaseOperations:
         element_name = element.name
         element_role = element.roleName
         element_key = f"{element_role}:{element_name}"
+
+        # Special handling for toaster elements - use longer debounce
+        if element_name == TOASTER_DESCRIPTION or 'toaster' in element_name.lower():
+            debounce_ms = max(debounce_ms, 1000)  # Minimum 1s for toasters
 
         current_time = time.time() * 1000  # Convert to milliseconds
 
@@ -374,7 +378,7 @@ class BaseOperations:
         if verify_ready:
             # Give AT-SPI time to synchronize after window switch
             # CI environments need more time due to slower accessibility tree updates
-            sync_delay = 2.0 if is_ci_environment() else 1.0
+            sync_delay = 3.0 if is_ci_environment() else 1.0
             print(
                 f"[FOCUS] Waiting {
                     sync_delay
@@ -436,15 +440,20 @@ class BaseOperations:
 
         Args:
             element: The element to check
-            timeout: How long to wait for stability (default 3.0s)
+            timeout: How long to wait for stability (default 3.0s, increased to 5.0s in CI)
 
         Returns:
             bool: True if stable, False if timeout
         """
+        # Increase timeout in CI for slower environments
+        if is_ci_environment():
+            timeout = max(timeout, 5.0)
+
         start_time = time.time()
         last_state = None
         stable_checks = 0
-        required_stable_checks = 2  # Must be stable for 2 consecutive checks
+        # Must be stable for 3 consecutive checks (increased from 2)
+        required_stable_checks = 3
 
         while time.time() - start_time < timeout:
             try:
@@ -828,33 +837,48 @@ class BaseOperations:
 
         Args:
             toaster_name (str): The accessible name of the toaster message.
-            timeout (int, optional): Maximum time to wait (in seconds). If None, uses CI-aware default (120s base).
+            timeout (int, optional): Maximum time to wait (in seconds). If None, uses CI-aware default (150s base, increased for reliability).
             interval (float): Time interval between checks. Default is 0.5 seconds.
 
         Raises:
             TimeoutError: If the toaster message does not appear within the timeout.
         """
         if timeout is None:
-            timeout = get_default_timeout(120)
+            # Increased from 120s to 150s for better reliability with slow operations
+            timeout = get_default_timeout(150)
 
         start_time = time.time()
+        retry_count = 0
 
         while time.time() - start_time < timeout:
+            retry_count += 1
             try:
                 toaster = self.perform_action_on_element(
                     role_name='label',
                     description=toaster_name,
+                    timeout=10,  # Shorter timeout per attempt
                 )
                 if toaster:
+                    print(
+                        f"[TOASTER] Found toaster message after {
+                            retry_count
+                        } attempts",
+                    )
                     return  # Exit function when toaster appears
-            except Exception:
-                pass  # Ignore errors if the element is not found yet
+            except Exception as _:
+                # Log every 10th attempt to avoid spam
+                if retry_count % 10 == 0:
+                    print(
+                        f"[TOASTER] Still waiting for toaster (attempt {
+                            retry_count
+                        })...",
+                    )
 
             time.sleep(interval)  # Wait and retry
 
         raise TimeoutError(
             f"""Toaster message '{toaster_name}
-                ' did not appear within {timeout} seconds.""",
+                ' did not appear within {timeout} seconds after {retry_count} attempts.""",
         )
 
     def do_get_child_count(self, element):

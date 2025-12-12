@@ -519,8 +519,11 @@ jobs:
           # Start AT-SPI services and wait for them to initialize (suppress logs)
           /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
           /usr/libexec/at-spi2-registryd 2>/dev/null &
-          # Wait for AT-SPI to be fully ready (reduced from 20s to 12s for faster startup)
-          sleep 12
+          # Wait for AT-SPI to be fully ready (increased to 18s for reliability on slower runners)
+          sleep 18
+          # Verify AT-SPI services are running
+          pgrep -f "at-spi-bus-launcher" >/dev/null || echo "⚠️  AT-SPI bus launcher not running"
+          pgrep -f "at-spi2-registryd" >/dev/null || echo "⚠️  AT-SPI registryd not running"
           export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
           # Ensure the test password is visible to the AppImage subprocesses
           export NATIVE_AUTHENTICATION_PASSWORD="123456"
@@ -540,7 +543,7 @@ jobs:
           export QT_DISABLE_WINDOW_TRANSPARENCY=1
           export GDK_SYNCHRONIZE=1
           export __GLX_VENDOR_LIBRARY_NAME=mesa
-          sleep 2  # Reduced from 5s to 2s
+          sleep 3  # Increased to 3s for better UI stability
           poetry run single-test ${{ matrix.test_file }}.py
           # poetry run single-test test_rgb20_channel_tx.py
           '
@@ -554,8 +557,27 @@ jobs:
           pkill -9 -f "iriswallet.*AppImage" 2>/dev/null || true
           pkill -9 -f "rgb-lightning-node" 2>/dev/null || true
 
-          # Stop docker containers (but don't remove - next job will clean)
-          docker compose -f e2e_tests/compose.yaml stop --timeout 5 2>/dev/null || true
+          # Stop docker containers with longer timeout for graceful shutdown
+          docker compose -f e2e_tests/compose.yaml stop --timeout 10 2>/dev/null || true
+
+          # Wait for ports to be released (critical ports)
+          CRITICAL_PORTS=(3000 50001 18443)
+          for port in "${CRITICAL_PORTS[@]}"; do
+            ELAPSED=0
+            while ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; do
+              if [ $ELAPSED -ge 10 ]; then
+                echo "⚠️  Port $port still bound after 10s, force releasing..."
+                fuser -k $port/tcp 2>/dev/null || true
+                break
+              fi
+              sleep 1
+              ELAPSED=$((ELAPSED + 1))
+            done
+          done
+
+          # Sync filesystem to ensure all writes complete
+          sync
+          sleep 1
 
           echo "✅ Post-test cleanup complete"
 
