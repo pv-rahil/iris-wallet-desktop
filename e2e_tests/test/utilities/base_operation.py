@@ -179,7 +179,7 @@ class BaseOperations:
                     element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
                 element.grabFocus()
             time.sleep(0.1)
-            if element_role in ('push button', 'button'):
+            if element_role in ('push button', 'button', 'check box'):
                 element.queryAction().doAction(0)
             else:
                 element.click()
