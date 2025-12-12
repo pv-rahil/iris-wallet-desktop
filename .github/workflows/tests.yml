@@ -6,635 +6,635 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: Lint & static checks
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12.3
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.3"
-          cache: "pip"
-
-      - name: Install system build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gobject-introspection \
-            libgirepository1.0-dev \
-            libcairo2-dev \
-            libffi-dev \
-            build-essential \
-            python3-dev \
-            meson \
-            ninja-build \
-            pkg-config \
-            gir1.2-gtk-3.0
-
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Python dependencies (project)
-        uses: ./.github/actions/install-python-dependencies
-
-      - name: Generate config.py
-        run: |
-          cd src/utils
-          python generate_config.py
-
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
-
-      - name: Code quality checks
-        run: |
-          pip install pre-commit
-          pre-commit run --all-files --show-diff-on-failure
-
-  unit-tests:
-    name: Unit tests
-    runs-on: ubuntu-22.04
-    env:
-      QT_QPA_PLATFORM: offscreen
-      TZ: Asia/Kolkata
-      PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12.3 environment
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.3"
-          cache: "pip"
-
-      - name: Install required system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libxcb-cursor0 \
-            libegl1 \
-            libgl1 \
-            ruby-dev \
-            build-essential \
-            libgirepository1.0-dev \
-            python3-dev \
-            libfuse2 \
-            gobject-introspection \
-            meson \
-            ninja-build \
-            pkg-config \
-            libcairo2-dev \
-            libffi-dev
-          sudo gem install fpm -f
-
-      - name: Generate config.py
-        run: |
-          cd src/utils
-          python generate_config.py
-
-      - name: Preinstall keyring backends (system Python)
-        run: |
-          pip install keyring keyrings.alt
-
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Python dependencies
-        uses: ./.github/actions/install-python-dependencies
-
-      - name: Install keyring backends in Poetry venv
-        run: |
-          poetry run pip install keyring keyrings.alt
-
-      - name: Set KEYRING_HOME env
-        run: |
-          echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
-
-      - name: Ensure keyring storage directory exists
-        run: |
-          mkdir -p "$KEYRING_HOME"
-
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
-
-      - name: Run unit tests (fail if coverage < 90%)
-        run: |
-          poetry run pytest -v --maxfail=1 \
-            --cov=src \
-            --cov-fail-under=90 \
-            unit_tests/tests
-
-  e2e-dogtail:
-    name: E2E Dogtail tests
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    strategy:
-      max-parallel: 1
-      fail-fast: false
-      matrix:
-        test_file:
-          - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_create_and_close_channel
-          - test_login_app_auth
-          - test_ask_auth_for_imp_operations
-          - test_settings
-          - test_btc_channel_tx
-          - test_rgb20_channel_tx
-          - test_help
-          - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_rgb20_asset
-          - test_send_and_receive_rgb25_asset
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_issue_rgb20_asset
-          - test_issue_rgb25_asset
-          - test_view_unspent
-          - test_refresh_transfer
-    env:
-      DISPLAY: :99
-      QT_IM_MODULE: virtualkeyboard
-      CI: "true"
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12.3
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.3"
-          cache: "pip"
-
-      - name: Install required system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            xvfb \
-            x11-apps \
-            xauth \
-            openbox \
-            dbus-x11 \
-            policykit-1-gnome \
-            lxqt-policykit \
-            at-spi2-core \
-            gnome-keyring \
-            python3-secretstorage \
-            libatk-bridge2.0-0 \
-            libxcb-cursor0 \
-            libxkbcommon-x11-0 \
-            libxkbcommon0 \
-            libxcb1 \
-            libxcb-xinerama0 \
-            libxcb-xfixes0 \
-            libxcb-randr0 \
-            libxcb-icccm4 \
-            libxcb-image0 \
-            libxcb-keysyms1 \
-            libxcb-render-util0 \
-            libxcb-shape0 \
-            libxcb-shm0 \
-            libxcb-glx0 \
-            libxcb-render0 \
-            libxcb-present0 \
-            libxcb-dri3-0 \
-            libxcb-xinput0 \
-            libx11-xcb1 \
-            libxrender1 \
-            libxcomposite1 \
-            libxi6 \
-            libxtst6 \
-            libxrandr2 \
-            libxdamage1 \
-            libxext6 \
-            libfontconfig1 \
-            libdrm2 \
-            libegl1 \
-            libgl1 \
-            libopengl0 \
-            libglu1-mesa \
-            libglx-mesa0 \
-            libglvnd0 \
-            libgles2 \
-            libgtk-3-0 \
-            gir1.2-gtk-3.0 \
-            gir1.2-atspi-2.0 \
-            python3-gi \
-            xdg-desktop-portal \
-            xdg-desktop-portal-gtk \
-            qt6-gtk-platformtheme \
-            fonts-dejavu-core \
-            adwaita-icon-theme \
-            shared-mime-info \
-            libgl1-mesa-dri \
-            mesa-utils \
-            libgirepository1.0-dev \
-            meson \
-            gobject-introspection \
-            ninja-build \
-            gsettings-desktop-schemas \
-            dconf-cli \
-            dconf-service \
-            xclip \
-            wmctrl \
-            libdbus-1-3 \
-            libglib2.0-0 \
-            libnss3 \
-            libxss1 \
-            libatk1.0-0 \
-            libxcb-util1 \
-            ruby-dev \
-            build-essential \
-            libgbm1 \
-            libosmesa6 \
-            mesa-utils-extra \
-            libfuse2 \
-            scrot ffmpeg
-          sudo gem install fpm -f
-
-      - name: Setup env for GUI testing
-        run: |
-          echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
-          echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
-
-      - name: Preinstall keyring backends (system Python)
-        run: |
-          pip install keyring keyrings.alt
-
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Python dependencies
-        uses: ./.github/actions/install-python-dependencies
-
-      - name: Install keyring backends in Poetry venv
-        run: |
-          poetry run pip install keyring keyrings.alt
-
-      - name: Start Xvfb & openbox
-        run: |
-          XAUTH="$RUNNER_TEMP/.Xauthority"
-          touch "$XAUTH"; echo "XAUTHORITY=$XAUTH" >> $GITHUB_ENV
-          xauth -f "$XAUTH" add :99 . $(mcookie)
-
-          Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
-          sleep 4
-          openbox & sleep 3
-
-      - name: Get RGB Lightning Node commit hash
-        id: ln-commit
-        run: |
-          COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          echo "hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
-          echo "RGB Lightning Node commit: $COMMIT_HASH"
-
-      - name: Cache RGB Lightning Node binary
-        id: cache-ln-node
-        uses: actions/cache@v4
-        with:
-          path: ln_node_binary
-          key: ln-node-${{ runner.os }}-${{ steps.ln-commit.outputs.hash }}
-
-      - name: Build RGB Lightning Node binary
-        if: steps.cache-ln-node.outputs.cache-hit != 'true'
-        uses: ./.github/actions/build-rln-node
-
-      - name: Add rgb-lightning-node to PATH
-        run: |
-          chmod +x ln_node_binary/rgb-lightning-node
-          echo "$GITHUB_WORKSPACE/ln_node_binary" >> $GITHUB_PATH
-
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
-
-      - name: Ensure E2E scripts are executable
-        run: |
-          chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
-
-      - name: Cache AppImages
-        id: cache-appimages
-        uses: actions/cache@v4
-        with:
-          path: e2e_tests/applications
-          key: appimages-v4-${{ runner.os }}-${{ hashFiles('src/version.py') }}
-
-      # - name: Download AppImages from Releases
-      #   if: steps.cache-appimages.outputs.cache-hit != 'true'
-      #   env:
-      #     GH_TOKEN: ${{ github.token }}
-      #   run: |
-      #     set -euo pipefail
-      #     VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APPDIR=e2e_tests/applications
-      #     mkdir -p "$APPDIR"
-      #     sudo apt-get update && sudo apt-get install -y gh
-      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-      #     chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
-
-      - name: Prepare runtime Python deps for AppImage
-        run: |
-          RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
-          mkdir -p "$RUNTIME_PYDEPS"
-          python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
-          echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
-
-      - name: Ensure clean state before regtest
-        run: |
-          echo "🧹 Cleaning up previous test resources..."
-
-          # Stop any running Docker containers from previous matrix jobs
-          docker ps -q | xargs -r docker kill 2>/dev/null || true
-          docker compose -f e2e_tests/compose.yaml down --remove-orphans --timeout 5 2>/dev/null || true
-
-          # Kill lingering AppImage processes
-          pkill -9 -f "iriswallet.*AppImage" 2>/dev/null || true
-
-          # Kill lingering RGB lightning node processes
-          pkill -9 -f "rgb-lightning-node" 2>/dev/null || true
-
-          # Wait for ports to be released (max 30 seconds)
-          PORTS=(3000 50001 18443)
-          for port in "${PORTS[@]}"; do
-            ELAPSED=0
-            while ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; do
-              if [ $ELAPSED -ge 30 ]; then
-                echo "⚠️  Port $port still bound after 30s, force killing..."
-                fuser -k $port/tcp 2>/dev/null || true
-                sleep 2
-                break
-              fi
-              echo "⏳ Waiting for port $port to be released... (${ELAPSED}s)"
-              sleep 1
-              ELAPSED=$((ELAPSED + 1))
-            done
-
-            # Verify port is actually free
-            if ! ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; then
-              echo "✅ Port $port confirmed free"
-            else
-              echo "❌ Port $port still in use after cleanup!"
-              exit 1
-            fi
-          done
-
-          # Clean data directories
-          rm -rf e2e_tests/data{core,index,ldk0,ldk1,ldk2} || true
-
-          # Clean keyring storage
-          rm -rf "$RUNNER_TEMP/keyring"/* || true
-
-          # Clean application data
-          rm -rf ~/.local/share/iriswallet_* 2>/dev/null || true
-          rm -rf ~/.local/share/python_keyring 2>/dev/null || true
-
-          # Wait for filesystem sync and verify
-          sync
-          sleep 3
-
-          echo "✅ Cleanup verified, ready for regtest"
-
-      - name: Start regtest services
-        run: poetry run regtest-start
-
-      - name: Configure Qt for accurate Dogtail positioning
-        run: |
-          # Qt applications use window effects and platform themes that can cause click offsets
-          # Disable these for accurate Dogtail element positioning
-          echo "QT_STYLE_OVERRIDE=Fusion" >> $GITHUB_ENV
-          echo "QT_QPA_PLATFORMTHEME=" >> $GITHUB_ENV
-          echo "QT_ENABLE_HIGHDPI_SCALING=0" >> $GITHUB_ENV
-          echo "QT_AUTO_SCREEN_SCALE_FACTOR=0" >> $GITHUB_ENV
-          # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
-          echo "GTK_CSD=0" >> $GITHUB_ENV
-
-      - name: Start screen recording (background)
-        run: |
-          ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
-            -vcodec libx264 -preset ultrafast /tmp/${{ matrix.test_file }}_recording.mp4 \
-            > /dev/null 2> /tmp/ffmpeg_errors.log &
-          # Save PID only if ffmpeg started
-          echo $! > /tmp/ffmpeg_pid.txt || true
-
-      - name: Run E2E Dogtail Test
-        env:
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-          BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
-          BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
-          GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
-          QT_QPA_PLATFORM: xcb
-          APPIMAGE_EXTRACT_AND_RUN: "1"
-          # Dogtail configuration for CI stability - optimized for faster failure detection
-          DOGTAIL_SEARCH_TIMEOUT: "120"
-          DOGTAIL_SEARCH_BACKOFF: "1.5"
-        run: |
-          cd src/utils
-          python generate_config.py
-          cd ../../
-          dbus-run-session -- bash -lc '
-          rm -rf ~/.local/share/python_keyring
-          mkdir -p "$XDG_RUNTIME_DIR/keyring"
-          export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
-          set -euo pipefail
-          export DISPLAY=:99
-          export LIBGL_DEBUG=verbose
-          export MESA_DEBUG=1
-          export GALLIUM_DRIVER=llvmpipe
-          export NO_AT_BRIDGE=0
-          export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
-          export QT_ACCESSIBILITY=1
-          export GTK_MODULES=atk-bridge
-          export GDK_BACKEND=x11
-          export QT_QPA_PLATFORM=xcb
-          export QT_DISABLE_WINDOW_TRANSPARENCY=1
-          export XLIB_SKIP_ARGB_VISUALS=1
-          export XDG_CURRENT_DESKTOP=GNOME
-          export QT_QPA_PLATFORMTHEME=""
-          export QT_STYLE_OVERRIDE=Fusion
-          export QT_ENABLE_HIGHDPI_SCALING=0
-          export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=none
-          export QSG_RENDER_LOOP=basic
-          export QT_AUTO_SCREEN_SCALE_FACTOR=0
-          export LIBGL_ALWAYS_SOFTWARE=1
-          export LIBGL_DRI3_DISABLE=1
-          export QT_X11_NO_MITSHM=1
-          export QT_SCALE_FACTOR=1
-          export GVFS_DISABLE_FUSE=1
-          export GIO_USE_VFS=local
-          export GTK_CSD=0
-          export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
-          export LANG=C.UTF-8
-          export LC_ALL=C.UTF-8
-          export APPIMAGE_EXTRACT_AND_RUN=1
-          export KEYRING_HOME="$RUNNER_TEMP/keyring"
-          mkdir -p "$KEYRING_HOME"
-          export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
-          export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
-          export PYTHONNOUSERSITE=0
-          export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
-          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
-          export GSETTINGS_BACKEND=dconf
-          # Start gnome-keyring-daemon and unlock with empty password
-          eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
-          export SSH_AUTH_SOCK
-
-          # Create simple pkexec wrapper - zenity fails on Ubuntu 24.04
-          # Exit code 127 suggests missing runtime dependencies even when zenity is installed
-          # Use direct sudo pass-through to prevent AT-SPI tree breakage
-          mkdir -p "$RUNNER_TEMP/bin"
-          cat << 'PKEXEC_WRAPPER' > "$RUNNER_TEMP/bin/pkexec"
-          #!/bin/bash
-          # Direct pass-through to sudo (GitHub Actions has passwordless sudo)
-          exec /usr/bin/sudo "\$@"
-          PKEXEC_WRAPPER
-          chmod +x "$RUNNER_TEMP/bin/pkexec"
-          export PATH="$RUNNER_TEMP/bin:$PATH"
-
-          # Ensure dbus session is available
-          dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
-          # Set accessibility and enable debugging for better AT-SPI stability
-          gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
-          gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
-          # Start AT-SPI services and wait for them to initialize (suppress logs)
-          /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
-          /usr/libexec/at-spi2-registryd 2>/dev/null &
-          # Wait for AT-SPI to be fully ready (increased to 18s for reliability on slower runners)
-          sleep 18
-          # Verify AT-SPI services are running
-          pgrep -f "at-spi-bus-launcher" >/dev/null || echo "⚠️  AT-SPI bus launcher not running"
-          pgrep -f "at-spi2-registryd" >/dev/null || echo "⚠️  AT-SPI registryd not running"
-          export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
-          # Ensure the test password is visible to the AppImage subprocesses
-          export NATIVE_AUTHENTICATION_PASSWORD="123456"
-          # Dogtail configuration for CI stability (exported for Python tests)
-          export DOGTAIL_SEARCH_TIMEOUT=120
-          export DOGTAIL_SEARCH_BACKOFF=1.5
-          # Update dbus activation environment with all necessary variables including dogtail config
-          dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH DOGTAIL_SEARCH_TIMEOUT DOGTAIL_SEARCH_BACKOFF
-          export QT_QUICK_BACKEND=software
-          export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
-          export QT_OPENGL=software
-          export QT_XCB_GL_INTEGRATION=none
-          export LIBGL_ALWAYS_SOFTWARE=1
-          export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
-          export QTWEBENGINE_DISABLE_SANDBOX=1
-          export QTWEBENGINE_NO_SANDBOX=1
-          export QT_DISABLE_WINDOW_TRANSPARENCY=1
-          export GDK_SYNCHRONIZE=1
-          export __GLX_VENDOR_LIBRARY_NAME=mesa
-          sleep 3  # Increased to 3s for better UI stability
-          poetry run single-test ${{ matrix.test_file }}.py
-          # poetry run single-test test_rgb20_channel_tx.py
-          '
-
-      - name: Post-test cleanup
-        if: always()
-        run: |
-          echo "🧹 Cleaning up after test..."
-
-          # Kill test processes
-          pkill -9 -f "iriswallet.*AppImage" 2>/dev/null || true
-          pkill -9 -f "rgb-lightning-node" 2>/dev/null || true
-
-          # Stop docker containers with longer timeout for graceful shutdown
-          docker compose -f e2e_tests/compose.yaml stop --timeout 10 2>/dev/null || true
-
-          # Wait for ports to be released (critical ports)
-          CRITICAL_PORTS=(3000 50001 18443)
-          for port in "${CRITICAL_PORTS[@]}"; do
-            ELAPSED=0
-            while ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; do
-              if [ $ELAPSED -ge 10 ]; then
-                echo "⚠️  Port $port still bound after 10s, force releasing..."
-                fuser -k $port/tcp 2>/dev/null || true
-                break
-              fi
-              sleep 1
-              ELAPSED=$((ELAPSED + 1))
-            done
-          done
-
-          # Sync filesystem to ensure all writes complete
-          sync
-          sleep 1
-
-          echo "✅ Post-test cleanup complete"
-
-      - name: Stop recording
-        if: ${{ always() || cancelled() }}
-        run: |
-          if [ -f /tmp/ffmpeg_pid.txt ]; then
-            PID=$(cat /tmp/ffmpeg_pid.txt || true)
-            if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
-              kill "$PID" || true
-            fi
-          fi
-
-      - name: Upload video recording
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.test_file }}-video-recording
-          path: /tmp/${{ matrix.test_file }}_recording.mp4
-          retention-days: 30
-          if-no-files-found: ignore
-
-      - name: Save internally-built AppImages to cache
-        if: always() && steps.cache-appimages.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: e2e_tests/applications
-          key: appimages-v3-${{ runner.os }}-${{ hashFiles('src/version.py') }}
-
-  cleanup-cache:
-    name: Cleanup test caches
-    runs-on: ubuntu-latest
-    needs: e2e-dogtail
-    if: always()
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Delete AppImages cache
-        continue-on-error: true
-        run: |
-          # Delete AppImages cache using GitHub CLI
-          VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          CACHE_KEY="appimages-v4-${{ runner.os }}-${VERSION}"
-
-          gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
-            | jq -r '.actions_caches[].id' \
-            | xargs -I {} gh api \
-                --method DELETE \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "/repos/${{ github.repository }}/actions/caches/{}" || true
-        env:
-          GH_TOKEN: ${{ github.token }}
+  # lint:
+  #   name: Lint & static checks
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Python 3.12.3
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12.3"
+  #         cache: "pip"
+
+  #     - name: Install system build dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           gobject-introspection \
+  #           libgirepository1.0-dev \
+  #           libcairo2-dev \
+  #           libffi-dev \
+  #           build-essential \
+  #           python3-dev \
+  #           meson \
+  #           ninja-build \
+  #           pkg-config \
+  #           gir1.2-gtk-3.0
+
+  #     - name: Cache Poetry dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/pypoetry
+  #         key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
+  #     - name: Install Python dependencies (project)
+  #       uses: ./.github/actions/install-python-dependencies
+
+  #     - name: Generate config.py
+  #       run: |
+  #         cd src/utils
+  #         python generate_config.py
+
+  #     - name: Compile QT resources
+  #       run: |
+  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+
+  #     - name: Code quality checks
+  #       run: |
+  #         pip install pre-commit
+  #         pre-commit run --all-files --show-diff-on-failure
+
+  # unit-tests:
+  #   name: Unit tests
+  #   runs-on: ubuntu-22.04
+  #   env:
+  #     QT_QPA_PLATFORM: offscreen
+  #     TZ: Asia/Kolkata
+  #     PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Python 3.12.3 environment
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12.3"
+  #         cache: "pip"
+
+  #     - name: Install required system dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           libxcb-cursor0 \
+  #           libegl1 \
+  #           libgl1 \
+  #           ruby-dev \
+  #           build-essential \
+  #           libgirepository1.0-dev \
+  #           python3-dev \
+  #           libfuse2 \
+  #           gobject-introspection \
+  #           meson \
+  #           ninja-build \
+  #           pkg-config \
+  #           libcairo2-dev \
+  #           libffi-dev
+  #         sudo gem install fpm -f
+
+  #     - name: Generate config.py
+  #       run: |
+  #         cd src/utils
+  #         python generate_config.py
+
+  #     - name: Preinstall keyring backends (system Python)
+  #       run: |
+  #         pip install keyring keyrings.alt
+
+  #     - name: Cache Poetry dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/pypoetry
+  #         key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
+  #     - name: Install Python dependencies
+  #       uses: ./.github/actions/install-python-dependencies
+
+  #     - name: Install keyring backends in Poetry venv
+  #       run: |
+  #         poetry run pip install keyring keyrings.alt
+
+  #     - name: Set KEYRING_HOME env
+  #       run: |
+  #         echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
+
+  #     - name: Ensure keyring storage directory exists
+  #       run: |
+  #         mkdir -p "$KEYRING_HOME"
+
+  #     - name: Compile QT resources
+  #       run: |
+  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+
+  #     - name: Run unit tests (fail if coverage < 90%)
+  #       run: |
+  #         poetry run pytest -v --maxfail=1 \
+  #           --cov=src \
+  #           --cov-fail-under=90 \
+  #           unit_tests/tests
+
+  # e2e-dogtail:
+  #   name: E2E Dogtail tests
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 120
+  #   strategy:
+  #     max-parallel: 1
+  #     fail-fast: false
+  #     matrix:
+  #       test_file:
+  #         - test_keyring_dialog
+  #         - test_receive_and_send_bitcoin
+  #         - test_create_and_close_channel
+  #         - test_login_app_auth
+  #         - test_ask_auth_for_imp_operations
+  #         - test_settings
+  #         - test_btc_channel_tx
+  #         - test_rgb20_channel_tx
+  #         - test_help
+  #         - test_about
+  #         - test_backup_and_restore
+  #         - test_send_and_receive_rgb20_asset
+  #         - test_send_and_receive_rgb25_asset
+  #         - test_hide_exhausted_asset
+  #         - test_fail_transfer
+  #         - test_issue_rgb20_asset
+  #         - test_issue_rgb25_asset
+  #         - test_view_unspent
+  #         - test_refresh_transfer
+  #   env:
+  #     DISPLAY: :99
+  #     QT_IM_MODULE: virtualkeyboard
+  #     CI: "true"
+
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Python 3.12.3
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12.3"
+  #         cache: "pip"
+
+  #     - name: Install required system dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           xvfb \
+  #           x11-apps \
+  #           xauth \
+  #           openbox \
+  #           dbus-x11 \
+  #           policykit-1-gnome \
+  #           lxqt-policykit \
+  #           at-spi2-core \
+  #           gnome-keyring \
+  #           python3-secretstorage \
+  #           libatk-bridge2.0-0 \
+  #           libxcb-cursor0 \
+  #           libxkbcommon-x11-0 \
+  #           libxkbcommon0 \
+  #           libxcb1 \
+  #           libxcb-xinerama0 \
+  #           libxcb-xfixes0 \
+  #           libxcb-randr0 \
+  #           libxcb-icccm4 \
+  #           libxcb-image0 \
+  #           libxcb-keysyms1 \
+  #           libxcb-render-util0 \
+  #           libxcb-shape0 \
+  #           libxcb-shm0 \
+  #           libxcb-glx0 \
+  #           libxcb-render0 \
+  #           libxcb-present0 \
+  #           libxcb-dri3-0 \
+  #           libxcb-xinput0 \
+  #           libx11-xcb1 \
+  #           libxrender1 \
+  #           libxcomposite1 \
+  #           libxi6 \
+  #           libxtst6 \
+  #           libxrandr2 \
+  #           libxdamage1 \
+  #           libxext6 \
+  #           libfontconfig1 \
+  #           libdrm2 \
+  #           libegl1 \
+  #           libgl1 \
+  #           libopengl0 \
+  #           libglu1-mesa \
+  #           libglx-mesa0 \
+  #           libglvnd0 \
+  #           libgles2 \
+  #           libgtk-3-0 \
+  #           gir1.2-gtk-3.0 \
+  #           gir1.2-atspi-2.0 \
+  #           python3-gi \
+  #           xdg-desktop-portal \
+  #           xdg-desktop-portal-gtk \
+  #           qt6-gtk-platformtheme \
+  #           fonts-dejavu-core \
+  #           adwaita-icon-theme \
+  #           shared-mime-info \
+  #           libgl1-mesa-dri \
+  #           mesa-utils \
+  #           libgirepository1.0-dev \
+  #           meson \
+  #           gobject-introspection \
+  #           ninja-build \
+  #           gsettings-desktop-schemas \
+  #           dconf-cli \
+  #           dconf-service \
+  #           xclip \
+  #           wmctrl \
+  #           libdbus-1-3 \
+  #           libglib2.0-0 \
+  #           libnss3 \
+  #           libxss1 \
+  #           libatk1.0-0 \
+  #           libxcb-util1 \
+  #           ruby-dev \
+  #           build-essential \
+  #           libgbm1 \
+  #           libosmesa6 \
+  #           mesa-utils-extra \
+  #           libfuse2 \
+  #           scrot ffmpeg
+  #         sudo gem install fpm -f
+
+  #     - name: Setup env for GUI testing
+  #       run: |
+  #         echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
+  #         echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
+
+  #     - name: Preinstall keyring backends (system Python)
+  #       run: |
+  #         pip install keyring keyrings.alt
+
+  #     - name: Cache Poetry dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/pypoetry
+  #         key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
+  #     - name: Install Python dependencies
+  #       uses: ./.github/actions/install-python-dependencies
+
+  #     - name: Install keyring backends in Poetry venv
+  #       run: |
+  #         poetry run pip install keyring keyrings.alt
+
+  #     - name: Start Xvfb & openbox
+  #       run: |
+  #         XAUTH="$RUNNER_TEMP/.Xauthority"
+  #         touch "$XAUTH"; echo "XAUTHORITY=$XAUTH" >> $GITHUB_ENV
+  #         xauth -f "$XAUTH" add :99 . $(mcookie)
+
+  #         Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
+  #         sleep 4
+  #         openbox & sleep 3
+
+  #     - name: Get RGB Lightning Node commit hash
+  #       id: ln-commit
+  #       run: |
+  #         COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #         echo "hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+  #         echo "RGB Lightning Node commit: $COMMIT_HASH"
+
+  #     - name: Cache RGB Lightning Node binary
+  #       id: cache-ln-node
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ln_node_binary
+  #         key: ln-node-${{ runner.os }}-${{ steps.ln-commit.outputs.hash }}
+
+  #     - name: Build RGB Lightning Node binary
+  #       if: steps.cache-ln-node.outputs.cache-hit != 'true'
+  #       uses: ./.github/actions/build-rln-node
+
+  #     - name: Add rgb-lightning-node to PATH
+  #       run: |
+  #         chmod +x ln_node_binary/rgb-lightning-node
+  #         echo "$GITHUB_WORKSPACE/ln_node_binary" >> $GITHUB_PATH
+
+  #     - name: Compile QT resources
+  #       run: |
+  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+
+  #     - name: Ensure E2E scripts are executable
+  #       run: |
+  #         chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
+
+  #     - name: Cache AppImages
+  #       id: cache-appimages
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: e2e_tests/applications
+  #         key: appimages-v4-${{ runner.os }}-${{ hashFiles('src/version.py') }}
+
+  #     # - name: Download AppImages from Releases
+  #     #   if: steps.cache-appimages.outputs.cache-hit != 'true'
+  #     #   env:
+  #     #     GH_TOKEN: ${{ github.token }}
+  #     #   run: |
+  #     #     set -euo pipefail
+  #     #     VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #     #     APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #     #     APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #     #     APPDIR=e2e_tests/applications
+  #     #     mkdir -p "$APPDIR"
+  #     #     sudo apt-get update && sudo apt-get install -y gh
+  #     #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+  #     #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
+  #     #     chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
+
+  #     - name: Prepare runtime Python deps for AppImage
+  #       run: |
+  #         RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
+  #         mkdir -p "$RUNTIME_PYDEPS"
+  #         python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
+  #         echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
+
+  #     - name: Ensure clean state before regtest
+  #       run: |
+  #         echo "🧹 Cleaning up previous test resources..."
+
+  #         # Stop any running Docker containers from previous matrix jobs
+  #         docker ps -q | xargs -r docker kill 2>/dev/null || true
+  #         docker compose -f e2e_tests/compose.yaml down --remove-orphans --timeout 5 2>/dev/null || true
+
+  #         # Kill lingering AppImage processes
+  #         pkill -9 -f "iriswallet.*AppImage" 2>/dev/null || true
+
+  #         # Kill lingering RGB lightning node processes
+  #         pkill -9 -f "rgb-lightning-node" 2>/dev/null || true
+
+  #         # Wait for ports to be released (max 30 seconds)
+  #         PORTS=(3000 50001 18443)
+  #         for port in "${PORTS[@]}"; do
+  #           ELAPSED=0
+  #           while ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; do
+  #             if [ $ELAPSED -ge 30 ]; then
+  #               echo "⚠️  Port $port still bound after 30s, force killing..."
+  #               fuser -k $port/tcp 2>/dev/null || true
+  #               sleep 2
+  #               break
+  #             fi
+  #             echo "⏳ Waiting for port $port to be released... (${ELAPSED}s)"
+  #             sleep 1
+  #             ELAPSED=$((ELAPSED + 1))
+  #           done
+
+  #           # Verify port is actually free
+  #           if ! ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; then
+  #             echo "✅ Port $port confirmed free"
+  #           else
+  #             echo "❌ Port $port still in use after cleanup!"
+  #             exit 1
+  #           fi
+  #         done
+
+  #         # Clean data directories
+  #         rm -rf e2e_tests/data{core,index,ldk0,ldk1,ldk2} || true
+
+  #         # Clean keyring storage
+  #         rm -rf "$RUNNER_TEMP/keyring"/* || true
+
+  #         # Clean application data
+  #         rm -rf ~/.local/share/iriswallet_* 2>/dev/null || true
+  #         rm -rf ~/.local/share/python_keyring 2>/dev/null || true
+
+  #         # Wait for filesystem sync and verify
+  #         sync
+  #         sleep 3
+
+  #         echo "✅ Cleanup verified, ready for regtest"
+
+  #     - name: Start regtest services
+  #       run: poetry run regtest-start
+
+  #     - name: Configure Qt for accurate Dogtail positioning
+  #       run: |
+  #         # Qt applications use window effects and platform themes that can cause click offsets
+  #         # Disable these for accurate Dogtail element positioning
+  #         echo "QT_STYLE_OVERRIDE=Fusion" >> $GITHUB_ENV
+  #         echo "QT_QPA_PLATFORMTHEME=" >> $GITHUB_ENV
+  #         echo "QT_ENABLE_HIGHDPI_SCALING=0" >> $GITHUB_ENV
+  #         echo "QT_AUTO_SCREEN_SCALE_FACTOR=0" >> $GITHUB_ENV
+  #         # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
+  #         echo "GTK_CSD=0" >> $GITHUB_ENV
+
+  #     - name: Start screen recording (background)
+  #       run: |
+  #         ffmpeg -y -f x11grab -r 30 -video_size 1920x1080 -i :99 \
+  #           -vcodec libx264 -preset ultrafast /tmp/${{ matrix.test_file }}_recording.mp4 \
+  #           > /dev/null 2> /tmp/ffmpeg_errors.log &
+  #         # Save PID only if ffmpeg started
+  #         echo $! > /tmp/ffmpeg_pid.txt || true
+
+  #     - name: Run E2E Dogtail Test
+  #       env:
+  #         CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  #         PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  #         CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  #         BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
+  #         BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
+  #         GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
+  #         QT_QPA_PLATFORM: xcb
+  #         APPIMAGE_EXTRACT_AND_RUN: "1"
+  #         # Dogtail configuration for CI stability - optimized for faster failure detection
+  #         DOGTAIL_SEARCH_TIMEOUT: "120"
+  #         DOGTAIL_SEARCH_BACKOFF: "1.5"
+  #       run: |
+  #         cd src/utils
+  #         python generate_config.py
+  #         cd ../../
+  #         dbus-run-session -- bash -lc '
+  #         rm -rf ~/.local/share/python_keyring
+  #         mkdir -p "$XDG_RUNTIME_DIR/keyring"
+  #         export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
+  #         set -euo pipefail
+  #         export DISPLAY=:99
+  #         export LIBGL_DEBUG=verbose
+  #         export MESA_DEBUG=1
+  #         export GALLIUM_DRIVER=llvmpipe
+  #         export NO_AT_BRIDGE=0
+  #         export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+  #         export QT_ACCESSIBILITY=1
+  #         export GTK_MODULES=atk-bridge
+  #         export GDK_BACKEND=x11
+  #         export QT_QPA_PLATFORM=xcb
+  #         export QT_DISABLE_WINDOW_TRANSPARENCY=1
+  #         export XLIB_SKIP_ARGB_VISUALS=1
+  #         export XDG_CURRENT_DESKTOP=GNOME
+  #         export QT_QPA_PLATFORMTHEME=""
+  #         export QT_STYLE_OVERRIDE=Fusion
+  #         export QT_ENABLE_HIGHDPI_SCALING=0
+  #         export QT_OPENGL=software
+  #         export QT_XCB_GL_INTEGRATION=none
+  #         export QSG_RENDER_LOOP=basic
+  #         export QT_AUTO_SCREEN_SCALE_FACTOR=0
+  #         export LIBGL_ALWAYS_SOFTWARE=1
+  #         export LIBGL_DRI3_DISABLE=1
+  #         export QT_X11_NO_MITSHM=1
+  #         export QT_SCALE_FACTOR=1
+  #         export GVFS_DISABLE_FUSE=1
+  #         export GIO_USE_VFS=local
+  #         export GTK_CSD=0
+  #         export XAUTHORITY="${XAUTHORITY:-$RUNNER_TEMP/.Xauthority}"
+  #         export LANG=C.UTF-8
+  #         export LC_ALL=C.UTF-8
+  #         export APPIMAGE_EXTRACT_AND_RUN=1
+  #         export KEYRING_HOME="$RUNNER_TEMP/keyring"
+  #         mkdir -p "$KEYRING_HOME"
+  #         export PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring
+  #         export PYTHONPATH="$RUNNER_TEMP/pydeps:$PYTHONPATH"
+  #         export PYTHONNOUSERSITE=0
+  #         export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
+  #         mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+  #         export GSETTINGS_BACKEND=dconf
+  #         # Start gnome-keyring-daemon and unlock with empty password
+  #         eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
+  #         export SSH_AUTH_SOCK
+
+  #         # Create simple pkexec wrapper - zenity fails on Ubuntu 24.04
+  #         # Exit code 127 suggests missing runtime dependencies even when zenity is installed
+  #         # Use direct sudo pass-through to prevent AT-SPI tree breakage
+  #         mkdir -p "$RUNNER_TEMP/bin"
+  #         cat << 'PKEXEC_WRAPPER' > "$RUNNER_TEMP/bin/pkexec"
+  #         #!/bin/bash
+  #         # Direct pass-through to sudo (GitHub Actions has passwordless sudo)
+  #         exec /usr/bin/sudo "\$@"
+  #         PKEXEC_WRAPPER
+  #         chmod +x "$RUNNER_TEMP/bin/pkexec"
+  #         export PATH="$RUNNER_TEMP/bin:$PATH"
+
+  #         # Ensure dbus session is available
+  #         dbus-update-activation-environment --systemd DISPLAY XAUTHORITY SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID 2>/dev/null || true
+  #         # Set accessibility and enable debugging for better AT-SPI stability
+  #         gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
+  #         gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
+  #         # Start AT-SPI services and wait for them to initialize (suppress logs)
+  #         /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
+  #         /usr/libexec/at-spi2-registryd 2>/dev/null &
+  #         # Wait for AT-SPI to be fully ready (increased to 18s for reliability on slower runners)
+  #         sleep 18
+  #         # Verify AT-SPI services are running
+  #         pgrep -f "at-spi-bus-launcher" >/dev/null || echo "⚠️  AT-SPI bus launcher not running"
+  #         pgrep -f "at-spi2-registryd" >/dev/null || echo "⚠️  AT-SPI registryd not running"
+  #         export PATH="$GITHUB_WORKSPACE/ln_node_binary:$PATH"
+  #         # Ensure the test password is visible to the AppImage subprocesses
+  #         export NATIVE_AUTHENTICATION_PASSWORD="123456"
+  #         # Dogtail configuration for CI stability (exported for Python tests)
+  #         export DOGTAIL_SEARCH_TIMEOUT=120
+  #         export DOGTAIL_SEARCH_BACKOFF=1.5
+  #         # Update dbus activation environment with all necessary variables including dogtail config
+  #         dbus-update-activation-environment DISPLAY XAUTHORITY QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON NO_AT_BRIDGE GTK_MODULES GDK_BACKEND PYTHON_KEYRING_BACKEND KEYRING_HOME APPIMAGE_EXTRACT_AND_RUN PATH DOGTAIL_SEARCH_TIMEOUT DOGTAIL_SEARCH_BACKOFF
+  #         export QT_QUICK_BACKEND=software
+  #         export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu --enable-software-rasterizer --in-process-gpu --use-gl=swiftshader --single-process"
+  #         export QT_OPENGL=software
+  #         export QT_XCB_GL_INTEGRATION=none
+  #         export LIBGL_ALWAYS_SOFTWARE=1
+  #         export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+  #         export QTWEBENGINE_DISABLE_SANDBOX=1
+  #         export QTWEBENGINE_NO_SANDBOX=1
+  #         export QT_DISABLE_WINDOW_TRANSPARENCY=1
+  #         export GDK_SYNCHRONIZE=1
+  #         export __GLX_VENDOR_LIBRARY_NAME=mesa
+  #         sleep 3  # Increased to 3s for better UI stability
+  #         poetry run single-test ${{ matrix.test_file }}.py
+  #         # poetry run single-test test_rgb20_channel_tx.py
+  #         '
+
+  #     - name: Post-test cleanup
+  #       if: always()
+  #       run: |
+  #         echo "🧹 Cleaning up after test..."
+
+  #         # Kill test processes
+  #         pkill -9 -f "iriswallet.*AppImage" 2>/dev/null || true
+  #         pkill -9 -f "rgb-lightning-node" 2>/dev/null || true
+
+  #         # Stop docker containers with longer timeout for graceful shutdown
+  #         docker compose -f e2e_tests/compose.yaml stop --timeout 10 2>/dev/null || true
+
+  #         # Wait for ports to be released (critical ports)
+  #         CRITICAL_PORTS=(3000 50001 18443)
+  #         for port in "${CRITICAL_PORTS[@]}"; do
+  #           ELAPSED=0
+  #           while ss -HOlnt "sport = :$port" 2>/dev/null | grep -q .; do
+  #             if [ $ELAPSED -ge 10 ]; then
+  #               echo "⚠️  Port $port still bound after 10s, force releasing..."
+  #               fuser -k $port/tcp 2>/dev/null || true
+  #               break
+  #             fi
+  #             sleep 1
+  #             ELAPSED=$((ELAPSED + 1))
+  #           done
+  #         done
+
+  #         # Sync filesystem to ensure all writes complete
+  #         sync
+  #         sleep 1
+
+  #         echo "✅ Post-test cleanup complete"
+
+  #     - name: Stop recording
+  #       if: ${{ always() || cancelled() }}
+  #       run: |
+  #         if [ -f /tmp/ffmpeg_pid.txt ]; then
+  #           PID=$(cat /tmp/ffmpeg_pid.txt || true)
+  #           if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+  #             kill "$PID" || true
+  #           fi
+  #         fi
+
+  #     - name: Upload video recording
+  #       if: failure()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ${{ matrix.test_file }}-video-recording
+  #         path: /tmp/${{ matrix.test_file }}_recording.mp4
+  #         retention-days: 30
+  #         if-no-files-found: ignore
+
+  #     - name: Save internally-built AppImages to cache
+  #       if: always() && steps.cache-appimages.outputs.cache-hit != 'true'
+  #       uses: actions/cache/save@v4
+  #       with:
+  #         path: e2e_tests/applications
+  #         key: appimages-v3-${{ runner.os }}-${{ hashFiles('src/version.py') }}
+
+  # cleanup-cache:
+  #   name: Cleanup test caches
+  #   runs-on: ubuntu-latest
+  #   needs: e2e-dogtail
+  #   if: always()
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Delete AppImages cache
+  #       continue-on-error: true
+  #       run: |
+  #         # Delete AppImages cache using GitHub CLI
+  #         VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+  #         CACHE_KEY="appimages-v4-${{ runner.os }}-${VERSION}"
+
+  #         gh api \
+  #           -H "Accept: application/vnd.github+json" \
+  #           -H "X-GitHub-Api-Version: 2022-11-28" \
+  #           "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
+  #           | jq -r '.actions_caches[].id' \
+  #           | xargs -I {} gh api \
+  #               --method DELETE \
+  #               -H "Accept: application/vnd.github+json" \
+  #               -H "X-GitHub-Api-Version: 2022-11-28" \
+  #               "/repos/${{ github.repository }}/actions/caches/{}" || true
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
 
       # - name: Delete LN node cache
       #   continue-on-error: true
@@ -656,16 +656,16 @@ jobs:
       #   env:
       #     GH_TOKEN: ${{ github.token }}
 
-  # delete_artifacts:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Delete all old artifacts
-  #     env:
-  #       GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
-  #       REPO: ${{ github.repository }}
-  #     run: |
-  #       artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
-  #       for artifact in $artifacts; do
-  #         echo "Deleting artifact: $artifact"
-  #         gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
-  #       done
+  delete_artifacts:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Delete all old artifacts
+      env:
+        GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
+        REPO: ${{ github.repository }}
+      run: |
+        artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
+        for artifact in $artifacts; do
+          echo "Deleting artifact: $artifact"
+          gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
+        done
