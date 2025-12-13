@@ -40,7 +40,7 @@ class KeyringDialogBoxPageObjects(BaseOperations):
             roleName='push button', name=KEYRING_MNEMONIC_COPY_BUTTON,
         )
         self.keyring_mnemonic_value_label = lambda: self.keyring_dialog().child(
-            roleName='label', name=KEYRING_MNEMONIC_VALUE_LABEL,
+            roleName='label', description=KEYRING_MNEMONIC_VALUE_LABEL,
         )
         self.keyring_mnemonics_frame = lambda: self.keyring_dialog().child(
             roleName='frame', name=KEYRING_MNEMONICS_FRAME,
@@ -52,7 +52,7 @@ class KeyringDialogBoxPageObjects(BaseOperations):
             roleName='frame', name=KEYRING_PASSWORD_FRAME,
         )
         self.keyring_password_value_label = lambda: self.keyring_dialog().child(
-            roleName='label', name=KEYRING_PASSWORD_VALUE_LABEL,
+            roleName='label', description=KEYRING_PASSWORD_VALUE_LABEL,
         )
         self.keyring_check_box = lambda: self.keyring_dialog().child(
             roleName='check box', name=SAVE_CREDENTIALS_CHECK_BOX,
