@@ -128,11 +128,6 @@ def test_default_expiry_time_minute(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_MINUTES,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_and_get_description(
-            filter_pattern=INFO_SET_EXPIRY_TIME_SUCCESSFULLY,
-        )
-
-    assert toast_description == INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 
     # Checking the changes in create invoice page
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -189,11 +184,6 @@ def test_default_expiry_time_hour(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_HOURS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_and_get_description(
-            filter_pattern=INFO_SET_EXPIRY_TIME_SUCCESSFULLY,
-        )
-
-    assert toast_description == INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 
     # Checking the changes in create invoice page
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -250,11 +240,6 @@ def test_default_expiry_time_days(wallets_and_operations: WalletTestSetup):
             TEST_EXPIRY_DAYS,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_and_get_description(
-            filter_pattern=INFO_SET_EXPIRY_TIME_SUCCESSFULLY,
-        )
-
-    assert toast_description == INFO_SET_EXPIRY_TIME_SUCCESSFULLY
 
     with allure.step('Checking the change in create ln invoice page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()

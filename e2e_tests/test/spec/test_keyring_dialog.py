@@ -37,9 +37,9 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
-        MNEMONIC = wallets_and_operations.first_page_operations.do_get_copied_address()
+        MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.get_keyring_mnemonic_value()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
-        PASSWORD = wallets_and_operations.first_page_operations.do_get_copied_address()
+        PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.get_keyring_password_value()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
         if getattr(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.keyring_check_box(), 'checked', None) is False:
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
