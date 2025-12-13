@@ -171,7 +171,7 @@ class BaseOperations:
                     )
 
             element.grabFocus()
-            time.sleep(1)
+            time.sleep(0.5)
             if element_role in ('push button', 'button') and not element_name in ['Next', 'Try another way', 'Continue']:
                 element.queryAction().doAction(0)
             else:
