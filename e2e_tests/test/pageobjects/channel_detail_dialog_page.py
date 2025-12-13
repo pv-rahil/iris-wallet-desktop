@@ -63,7 +63,9 @@ class ChannelDetailDialogPageObjects(BaseOperations):
         Returns:
             The result of the click action or None if the button is not displayed.
         """
-        return self.do_click(self.copy_button()) if self.do_is_displayed(self.copy_button()) else None
+        if self.do_is_displayed(self.copy_button()):
+            return self.copy_button().click()
+        return None
 
     def click_close_channel_button(self):
         """

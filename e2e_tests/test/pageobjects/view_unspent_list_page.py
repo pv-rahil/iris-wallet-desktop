@@ -41,7 +41,9 @@ class ViewUnspentListPageObjects(BaseOperations):
         Returns:
             The result of the click action or None if the element is not displayed.
         """
-        return self.do_click(self.unspent_frame()) if self.do_is_displayed(self.unspent_frame()) else None
+        if self.do_is_displayed(self.unspent_frame()):
+            return self.unspent_frame().click()
+        return None
 
     def get_unspent_utxo_asset_id(self, asset_id):
         """
