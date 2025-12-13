@@ -121,7 +121,9 @@ class AboutPageObjects(BaseOperations):
 
     def click_node_pubkey_button(self):
         """Clicks the node pubkey copy button"""
-        return self.do_click(self.node_pubkey_copy_button()) if self.do_is_displayed(self.node_pubkey_copy_button()) else None
+        if self.do_is_displayed(self.node_pubkey_copy_button()):
+            return self.node_pubkey_copy_button().click()
+        return False
 
     def click_ln_peer_listening_port_copy_button(self):
         """Clicks the ln peer listening port copy button"""
