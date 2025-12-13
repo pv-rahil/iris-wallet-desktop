@@ -39,9 +39,9 @@ def test_login_app_toggle_button_on(test_environment, wallets_and_operations: Wa
     with allure.step('Toggle the login app auth button to on and restart the application'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
-        if wallets_and_operations.first_page_operations.wait_for_toggle_state(
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button,
-            expected_checked=False,
+            expected_checked=True,
             timeout=5,
         ):
             wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
@@ -87,9 +87,9 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
 
         wallets_and_operations.first_page_operations.enter_native_password()
 
-        if wallets_and_operations.first_page_operations.wait_for_toggle_state(
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button,
-            expected_checked=True,
+            expected_checked=False,
             timeout=5,
         ):
             wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()

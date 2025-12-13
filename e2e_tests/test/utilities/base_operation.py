@@ -18,11 +18,6 @@ from dotenv import load_dotenv
 from Xlib import display
 from Xlib import X
 
-from accessible_constant import OPTION_1_FRAME
-from accessible_constant import OPTION_2_FRAME
-from accessible_constant import RECEIVE_BITCOIN_BUTTON
-from accessible_constant import SEND_ASSET_BUTTON
-from accessible_constant import SEND_BITCOIN_BUTTON
 from accessible_constant import TOASTER_DESCRIPTION
 from e2e_tests.test.utilities.dogtail_config import get_default_timeout
 from e2e_tests.test.utilities.dogtail_config import is_ci_environment
@@ -175,11 +170,9 @@ class BaseOperations:
                         f"proceeding with click anyway (may fail)",
                     )
 
-            if element_role not in ['push button', 'button', 'panel'] and \
-                    element_name not in [SEND_BITCOIN_BUTTON, SEND_ASSET_BUTTON, RECEIVE_BITCOIN_BUTTON, OPTION_1_FRAME, OPTION_2_FRAME]:
-                element.grabFocus()
+            element.grabFocus()
             time.sleep(0.1)
-            if element_role in ('push button', 'button'):
+            if element_role in ('push button', 'button') and not element_name in ['Next', 'Try another way', 'Continue']:
                 element.queryAction().doAction(0)
             else:
                 element.click()
@@ -187,25 +180,6 @@ class BaseOperations:
             # Update the click time AFTER the click, using the current time
             # This ensures debounce works correctly for subsequent clicks
             self._last_click_times[element_key] = time.time() * 1000
-
-            # Add post-click wait to allow event propagation and prevent double-action
-            # This is critical in CI where AT-SPI events can be processed multiple times
-            if is_ci_environment():
-                if element_role == 'panel' and element_name in [OPTION_1_FRAME, OPTION_2_FRAME]:
-                    post_click_delay = 0.8
-                elif element_role in ['push button', 'button']:
-                    post_click_delay = 0.5  # All buttons get post-click delay in CI
-                else:
-                    post_click_delay = 0.3
-                print(
-                    f"[CI CLICK] Waiting {post_click_delay}s after clicking '{
-                        element_name
-                    }'...",
-                )
-                time.sleep(post_click_delay)
-            elif element_role == 'panel' and element_name in [OPTION_1_FRAME, OPTION_2_FRAME]:
-                # Only panel elements get delay outside CI
-                time.sleep(0.3)
 
             print(
                 f"[CLICK] Successfully clicked '{
@@ -514,28 +488,7 @@ class BaseOperations:
         )
         return False
 
-    def _should_grab_focus(self, role_name, name):
-        """
-        Determine if grabFocus should be called on the element.
-
-        Args:
-            role_name (str): The role of the element.
-            name (str): The name of the element.
-
-        Returns:
-            bool: True if grabFocus should be called, False otherwise.
-        """
-        excluded_roles = ['push button', 'button', 'panel']
-        excluded_names = [
-            SEND_BITCOIN_BUTTON,
-            SEND_ASSET_BUTTON,
-            RECEIVE_BITCOIN_BUTTON,
-            OPTION_1_FRAME,
-            OPTION_2_FRAME,
-        ]
-        return role_name not in excluded_roles and name not in excluded_names
-
-    def _get_first_ready_element(self, elements, role_name, name):
+    def _get_first_ready_element(self, elements):
         """
         Get the first element from a list that is showing and sensitive.
 
@@ -549,8 +502,7 @@ class BaseOperations:
         """
         for element in elements:
             if element.showing and element.sensitive:
-                if self._should_grab_focus(role_name, name):
-                    element.grabFocus()
+                element.grabFocus()
                 return element
         return None
 
@@ -558,7 +510,6 @@ class BaseOperations:
         self,
         element,
         role_name,
-        name,
         identifier,
         timeout,
         attempt,
@@ -593,11 +544,6 @@ class BaseOperations:
             # Access element properties to ensure it's not stale
             _ = element.name
             _ = element.showing
-
-            # Grab focus if needed
-            if self._should_grab_focus(role_name, name):
-                element.grabFocus()
-                time.sleep(0.2)  # Allow focus to settle
 
             self._log_search_attempt(
                 role_name,
@@ -705,7 +651,6 @@ class BaseOperations:
                         validated_element = self._validate_and_return_element(
                             element,
                             role_name,
-                            name,
                             identifier,
                             timeout,
                             attempt,
@@ -812,9 +757,7 @@ class BaseOperations:
                 )
 
                 if elements:
-                    element = self._get_first_ready_element(
-                        elements, role_name, name,
-                    )
+                    element = self._get_first_ready_element(elements)
                     if element:
                         return element
 
