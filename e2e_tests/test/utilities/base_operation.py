@@ -912,6 +912,7 @@ class BaseOperations:
                     print(
                         f"[TOGGLE STATE] Attempt {attempt}: Element not found",
                     )
+                element.click()
                 time.sleep(0.5)  # Check every 500ms
             except Exception as e:
                 print(f"[TOGGLE STATE] Attempt {attempt} error: {e}")
