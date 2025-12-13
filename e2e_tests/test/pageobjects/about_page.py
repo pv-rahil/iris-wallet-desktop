@@ -125,31 +125,45 @@ class AboutPageObjects(BaseOperations):
 
     def click_ln_peer_listening_port_copy_button(self):
         """Clicks the ln peer listening port copy button"""
-        return self.do_click(self.ln_peer_listening_port_copy_button()) if self.do_is_displayed(self.ln_peer_listening_port_copy_button()) else None
+        if self.do_is_displayed(self.ln_peer_listening_port_copy_button()):
+            return self.ln_peer_listening_port_copy_button().click()
+        return False
 
     def click_bitcoind_host_copy_button(self):
         """Clicks on the bitcoind host copy button"""
-        return self.do_click(self.bitcoind_host_copy_button()) if self.do_is_displayed(self.bitcoind_host_copy_button()) else None
+        if self.do_is_displayed(self.bitcoind_host_copy_button()):
+            return self.bitcoind_host_copy_button().click()
+        return False
 
     def click_bitcoind_port_copy_button(self):
         """Clicks on the bitcoind port copy button"""
-        return self.do_click(self.bitcoind_port_copy_button()) if self.do_is_displayed(self.bitcoind_port_copy_button()) else None
+        if self.do_is_displayed(self.bitcoind_port_copy_button()):
+            return self.bitcoind_port_copy_button().click()
+        return False
 
     def click_announce_address_copy_button(self):
         """Clicks on Announce address copy button"""
-        return self.do_click(self.announce_address_copy_button()) if self.do_is_displayed(self.announce_address_copy_button()) else None
+        if self.do_is_displayed(self.announce_address_copy_button()):
+            return self.announce_address_copy_button().click()
+        return False
 
     def click_announce_alias_copy_button(self):
         """Clicks on Announce alias copy button"""
-        return self.do_click(self.announce_alias_copy_button()) if self.do_is_displayed(self.announce_alias_copy_button()) else None
+        if self.do_is_displayed(self.announce_alias_copy_button()):
+            return self.announce_alias_copy_button().click()
+        return False
 
     def click_indexer_url_copy_button(self):
         """Clicks on Indexer url copy button"""
-        return self.do_click(self.indexer_url_copy_button()) if self.do_is_displayed(self.indexer_url_copy_button()) else None
+        if self.do_is_displayed(self.indexer_url_copy_button()):
+            return self.indexer_url_copy_button().click()
+        return False
 
     def click_rgb_proxy_url_copy_button(self):
         """Clicks on RGB proxy url copy button"""
-        return self.do_click(self.rgb_proxy_url_copy_button()) if self.do_is_displayed(self.rgb_proxy_url_copy_button()) else None
+        if self.do_is_displayed(self.rgb_proxy_url_copy_button()):
+            return self.rgb_proxy_url_copy_button().click()
+        return False
 
     def click_download_debug_log(self):
         """Clicks on the download debug log button"""
