@@ -241,7 +241,7 @@ MNEMONIC_FRAME = 'mnemonic_frame'
 # Keyring dialog box
 KEYRING_DIALOG_BOX = 'keyring_dialog_box'
 KEYRING_MNEMONICS_FRAME = 'keyring_mnemonics_frame'
-KEYRING_MNEMONIC_COPY_BUTTON = 'keyring_copy_button'
+KEYRING_MNEMONIC_COPY_BUTTON = 'keyring_mnemonic_copy_button'
 KEYRING_PASSWORD_FRAME = 'keyring_password_frame'
 KEYRING_PASSWORD_COPY_BUTTON = 'keyring_password_copy_button'
 KEYRING_PASSWORD_VALUE_LABEL = 'keyring_password_value_label'
@@ -266,16 +266,6 @@ KEYRING_TOGGLE_BUTTON = 'keyring_toggle_button'
 HIDE_EXHAUSTED_ASSETS_TOGGLE = 'hide_exhausted_assets_toggle'
 ASK_AUTH_FOR_IMPORTANT_QUESTION_TOGGLE = 'ask_auth_for_important_question_toggle'
 ASK_AUTH_FOR_APP_LOGIN_TOGGLE = 'ask_auth_for_app_login_toggle'
-
-# Keyring dialog box
-KEYRING_DIALOG_BOX = 'keyring_dialog_box'
-KEYRING_MNEMONICS_FRAME = 'keyring_mnemonics_frame'
-KEYRING_COPY_BUTTON = 'keyring_copy_button'
-KEYRING_PASSWORD_FRAME = 'keyring_password_frame'
-KEYRING_PASSWORD_COPY_BUTTON = 'keyring_password_copy_button'
-KEYRING_PASSWORD_VALUE_LABEL = 'keyring_password_value_label'
-KEYRING_MNEMONIC_VALUE_LABEL = 'keyring_mnemonic_value_label'
-
 
 # Fungibles page
 FUNGIBLES_SCROLL_WIDGETS = 'fungibles_scroll_widget'
