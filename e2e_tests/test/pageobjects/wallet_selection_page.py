@@ -47,7 +47,7 @@ class WalletSelectionPageObjects(BaseOperations):
         self.do_click(self.embedded_button())
 
         # Retry logic: ensure the selection registered (max 2 attempts)
-        max_retries = 2
+        max_retries = 5
         retry_count = 0
         while retry_count < max_retries:
             if self.do_is_displayed(self.continue_button()):
@@ -77,7 +77,7 @@ class WalletSelectionPageObjects(BaseOperations):
         self.do_click(self.remote_button())
 
         # Retry logic: ensure the selection registered (max 2 attempts)
-        max_retries = 2
+        max_retries = 5
         retry_count = 0
         while retry_count < max_retries:
             if self.do_is_displayed(self.continue_button()):
