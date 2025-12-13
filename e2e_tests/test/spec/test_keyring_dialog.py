@@ -46,9 +46,9 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
         for _ in range(3):
             if wallets_and_operations.first_page_operations.do_is_displayed(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.keyring_dialog()):
                 wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
-        if wallets_and_operations.first_page_operations.wait_for_toggle_state(
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
-            expected_checked=True,
+            expected_checked=False,
             timeout=5,
         ):
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
@@ -95,6 +95,19 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup):
             PASSWORD,
         )
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=True,
+            timeout=5,
+        ):
+            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
+                MNEMONIC,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+                PASSWORD,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
         # Wait for toggle state to update (AT-SPI needs time to sync)
         assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
