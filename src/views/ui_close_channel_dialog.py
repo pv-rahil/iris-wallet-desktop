@@ -116,7 +116,6 @@ class CloseChannelDialog(QDialog):
         )
         self.close_channel_continue_button.setMinimumSize(QSize(80, 35))
         self.close_channel_continue_button.setMaximumSize(QSize(80, 35))
-        self.close_channel_continue_button.setDefault(True)
 
         self.close_channel_horizontal_button_layout.addWidget(
             self.close_channel_continue_button,

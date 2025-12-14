@@ -3,9 +3,6 @@ Channel detail dialog page objects module.
 """
 from __future__ import annotations
 
-import os
-
-from dogtail.rawinput import keyCombo
 from dogtail.tree import root
 
 from accessible_constant import CLOSE_CHANNEL_CONTINUE_BUTTON
@@ -56,8 +53,5 @@ class CloseChannelDialogPageObjects(BaseOperations):
         """
         continue_button = self.continue_button()
         if self.do_is_displayed(continue_button):
-            if os.getenv('CI'):
-                keyCombo('enter')
-                return True
             return self.do_click(continue_button)
         return None

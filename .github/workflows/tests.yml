@@ -334,22 +334,6 @@ jobs:
           path: e2e_tests/applications
           key: appimages-v4-${{ runner.os }}-${{ hashFiles('src/version.py') }}
 
-      # - name: Download AppImages from Releases
-      #   if: steps.cache-appimages.outputs.cache-hit != 'true'
-      #   env:
-      #     GH_TOKEN: ${{ github.token }}
-      #   run: |
-      #     set -euo pipefail
-      #     VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     APPDIR=e2e_tests/applications
-      #     mkdir -p "$APPDIR"
-      #     sudo apt-get update && sudo apt-get install -y gh
-      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP1_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-      #     gh release download --repo "$GITHUB_REPOSITORY" --pattern "iriswallet_${APP2_NAME}-${VERSION}-x86_64.AppImage" -D "$APPDIR"
-      #     chmod +x "$APPDIR"/iriswallet_*-${VERSION}-x86_64.AppImage
-
       - name: Prepare runtime Python deps for AppImage
         run: |
           RUNTIME_PYDEPS="$RUNNER_TEMP/pydeps"
@@ -656,16 +640,16 @@ jobs:
       #   env:
       #     GH_TOKEN: ${{ github.token }}
 
-  # delete_artifacts:
-  #   runs-on: ubuntu-24.04
-  #   steps:
-  #   - name: Delete all old artifacts
-  #     env:
-  #       GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
-  #       REPO: ${{ github.repository }}
-  #     run: |
-  #       artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
-  #       for artifact in $artifacts; do
-  #         echo "Deleting artifact: $artifact"
-  #         gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
-  #       done
+  delete_artifacts:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Delete all old artifacts
+      env:
+        GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
+        REPO: ${{ github.repository }}
+      run: |
+        artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
+        for artifact in $artifacts; do
+          echo "Deleting artifact: $artifact"
+          gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
+        done

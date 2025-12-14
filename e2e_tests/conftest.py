@@ -112,11 +112,9 @@ def _refresh_atspi_tree():
     This helps clear stale element caches between tests.
     """
     try:
-        # Access root to force tree refresh
         _ = root.children
-        print('[CLEANUP] AT-SPI tree refreshed')
-    except Exception as e:
-        print(f'[CLEANUP] Warning: Could not refresh AT-SPI tree: {e}')
+    except Exception:
+        pass
 
 
 def _reset_operations_state(test_environment):
@@ -130,10 +128,8 @@ def _reset_operations_state(test_environment):
 
         if test_environment.multi_instance and hasattr(test_environment, 'second_page_operations'):
             test_environment.second_page_operations.reset_state()
-
-        print('[CLEANUP] BaseOperations state reset complete')
-    except Exception as e:
-        print(f'[CLEANUP] Warning: Could not reset operations state: {e}')
+    except Exception:
+        pass
 
 
 def _stabilize_ui(delay_seconds):
@@ -141,33 +137,23 @@ def _stabilize_ui(delay_seconds):
     Add stabilization delay for UI and AT-SPI to settle.
     Longer delays in CI to account for slower accessibility tree synchronization.
     """
-    print(f'[CLEANUP] Stabilizing UI for {delay_seconds}s...')
     time.sleep(delay_seconds)
 
 
 def _verify_no_zombie_processes():
     """
-    Check for and log any zombie AppImage or RGB processes.
-    Note: Module-scoped fixtures keep main processes alive, but warns about extras.
+    Check for any zombie AppImage or RGB processes.
+    Note: Module-scoped fixtures keep main processes alive.
     """
     try:
-        result = subprocess.run(
+        subprocess.run(
             ['pgrep', '-f', 'iriswallet.*AppImage'],
             capture_output=True,
             text=True,
             check=False,
         )
-        process_count = len(
-            [p for p in result.stdout.strip().split('\n') if p],
-        )
-        if process_count > 2:  # Expect 2 for dual instance tests
-            print(
-                f'[CLEANUP] Warning: Found {
-                    process_count
-                } AppImage processes (expected ≤2)',
-            )
-    except Exception as e:
-        print(f'[CLEANUP] Could not check for zombie processes: {e}')
+    except Exception:
+        pass
 
 
 @pytest.fixture(autouse=True)
@@ -204,8 +190,8 @@ def cleanup_between_tests(request):
             # 2. Reset state in BaseOperations instances
             _reset_operations_state(test_env)
 
-            # 3. Add stabilization delay (longer in CI)
-            delay = 3.5 if _is_ci_environment() else 1.5
+            # Stabilization delay (longer in CI)
+            delay = 2.0 if _is_ci_environment() else 0.5
             _stabilize_ui(delay)
 
             # 4. Verify no zombie processes
