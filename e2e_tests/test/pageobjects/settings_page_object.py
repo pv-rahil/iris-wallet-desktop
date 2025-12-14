@@ -163,13 +163,13 @@ class SettingsPageObjects(BaseOperations):
 
     def click_specify_announce_address_frame(self):
         """Click on the announce address frame"""
-        return self.click_frame_until_input_box_appears(self.specify_announce_address_frame)
+        return self.click_frame_until_input_box_appears(self.specify_announce_address_frame())
 
     # Announce Alias
 
     def click_specify_announce_alias(self):
         """Click on the announce alias frame"""
-        return self.click_frame_until_input_box_appears(self.specify_announce_alias_frame)
+        return self.click_frame_until_input_box_appears(self.specify_announce_alias_frame())
 
     # Combo box
 

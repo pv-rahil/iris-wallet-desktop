@@ -5,8 +5,12 @@ from __future__ import annotations
 import allure
 import pytest
 
+from accessible_constant import BITCOIND_RPC_HOST_REGTEST
+from accessible_constant import BITCOIND_RPC_PORT_REGTEST
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_APPLICATION_URL
+from accessible_constant import INDEXER_URL_REGTEST
+from accessible_constant import PROXY_ENDPOINT_REGTEST
 from accessible_constant import TEST_ANNOUNCE_ADDRESS
 from accessible_constant import TEST_ANNOUNCE_ALIAS
 from accessible_constant import TOASTER_DESCRIPTION
@@ -15,10 +19,6 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
 from e2e_tests.test.utilities.translation_utils import TranslationManager
-from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
-from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
-from src.utils.constant import INDEXER_URL_REGTEST
-from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.error_message import ERROR_UNABLE_TO_SET_INDEXER_URL
 from src.utils.error_message import ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
 from src.utils.info_message import INFO_SET_ENDPOINT_SUCCESSFULLY
