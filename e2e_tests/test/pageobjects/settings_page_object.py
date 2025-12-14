@@ -96,6 +96,12 @@ class SettingsPageObjects(BaseOperations):
             role_name='text', name=INPUT_BOX_NAME,
         )
 
+    def get_input_box_value(self):
+        """Returns the value of the input box."""
+        if self.do_is_displayed(self.input_box()):
+            return self.input_box().description
+        return None
+
     def clear_input_box(self):
         """Clears the input box."""
         return self.do_clear_text(self.input_box()) if self.do_is_displayed(self.input_box()) else None

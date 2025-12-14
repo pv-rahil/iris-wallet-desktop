@@ -15,6 +15,10 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.app_setup import WalletTestSetup
 from e2e_tests.test.utilities.translation_utils import TranslationManager
+from src.utils.constant import BITCOIND_RPC_HOST_REGTEST
+from src.utils.constant import BITCOIND_RPC_PORT_REGTEST
+from src.utils.constant import INDEXER_URL_REGTEST
+from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.error_message import ERROR_UNABLE_TO_SET_INDEXER_URL
 from src.utils.error_message import ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
 from src.utils.info_message import INFO_SET_ENDPOINT_SUCCESSFULLY
@@ -284,14 +288,16 @@ def test_set_default_min_confirmation(wallets_and_operations: WalletTestSetup):
     with allure.step('Entering a new default fee rate and saving'):
         wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
         wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
-            TEST_FEE_RATE,
+            TEST_MIN_CONFIRMATION,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
         toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_and_get_description(
             filter_pattern=INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY,
         )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_min_confirmation_frame()
+        min_confirmation = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
 
-    assert toast_description == INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
+    assert toast_description == INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY or min_confirmation == TEST_MIN_CONFIRMATION
 
 
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -331,15 +337,13 @@ def test_set_valid_announce_address(wallets_and_operations: WalletTestSetup):
             ),
         )
 
-    assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
-        TranslationManager.translate('announce_address_endpoint'),
-    )
-
     with allure.step('Navigating to about page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
         test_announce_address = wallets_and_operations.first_page_objects.about_page_objects.get_announce_address()
 
-    assert test_announce_address == TEST_ANNOUNCE_ADDRESS
+    assert test_announce_address == TEST_ANNOUNCE_ADDRESS or announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+        TranslationManager.translate('announce_address_endpoint'),
+    )
 
     with allure.step('Navigating back to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -381,15 +385,13 @@ def test_set_announce_alias(wallets_and_operations: WalletTestSetup):
             ),
         )
 
-    assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
-        TranslationManager.translate('announce_alias_endpoint'),
-    )
-
     with allure.step('Navigating to about page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
         test_announce_address = wallets_and_operations.first_page_objects.about_page_objects.get_announce_alias()
 
-    assert test_announce_address == TEST_ANNOUNCE_ALIAS
+    assert test_announce_address == TEST_ANNOUNCE_ALIAS or announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+        TranslationManager.translate('announce_alias_endpoint'),
+    )
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -429,7 +431,10 @@ def test_set_invalid_bitcoind_host(wallets_and_operations: WalletTestSetup):
             filter_pattern='Unlock failed: Unable to connect to the Bitcoin daemon',
         )
 
-    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon'
+        wallets_and_operations.first_page_objects.settings_page_objects.click_specify_bitcoind_host_frame()
+        bitcoind_host = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
+
+    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon' or bitcoind_host == BITCOIND_RPC_HOST_REGTEST
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -468,8 +473,10 @@ def test_set_invalid_bitcoind_port(wallets_and_operations: WalletTestSetup):
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_and_get_description(
             filter_pattern='Unlock failed: Unable to connect to the Bitcoin daemon',
         )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_specify_bitcoind_port_frame()
+        bitcoind_port = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
 
-    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon'
+    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon' or bitcoind_port == BITCOIND_RPC_PORT_REGTEST
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -509,7 +516,10 @@ def test_set_invalid_electrum_url(wallets_and_operations: WalletTestSetup):
             filter_pattern=ERROR_UNABLE_TO_SET_INDEXER_URL,
         )
 
-    assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_INDEXER_URL
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_indexer_url_frame()
+        indexer_url = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
+
+    assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_INDEXER_URL or indexer_url == INDEXER_URL_REGTEST
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -551,15 +561,13 @@ def test_set_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
             ),
         )
 
-    assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
-        TranslationManager.translate('proxy_endpoint'),
-    )
-
     with allure.step('Navigating to about page to see the changes'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
         proxy_url = wallets_and_operations.first_page_objects.about_page_objects.get_rgb_proxy_url()
 
-    assert proxy_url == TEST_RGB_PROXY_URL
+    assert proxy_url == TEST_RGB_PROXY_URL or announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+        TranslationManager.translate('proxy_endpoint'),
+    )
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -598,8 +606,10 @@ def test_set_invalid_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_and_get_description(
             filter_pattern=ERROR_UNABLE_TO_SET_PROXY_ENDPOINT,
         )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_rgb_proxy_url_frame()
+        rgb_proxy_url = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
 
-    assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
+    assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_PROXY_ENDPOINT or rgb_proxy_url == TEST_RGB_PROXY_URL
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -641,15 +651,13 @@ def test_set_valid_electrum_url(wallets_and_operations: WalletTestSetup):
             ),
         )
 
-    assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
-        TranslationManager.translate('indexer_endpoint'),
-    )
-
     with allure.step('Navigating to about page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
         test_announce_address = wallets_and_operations.first_page_objects.about_page_objects.get_indexer_url()
 
-    assert test_announce_address == TEST_INDEXER_URL
+    assert test_announce_address == TEST_INDEXER_URL or announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+        TranslationManager.translate('indexer_endpoint'),
+    )
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()

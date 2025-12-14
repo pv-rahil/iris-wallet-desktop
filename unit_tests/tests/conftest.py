@@ -47,3 +47,18 @@ def mock_qthread_start(mocker):
         self.run()
 
     mocker.patch.object(QThread, 'start', mock_start_wrapper)
+
+
+@pytest.fixture(autouse=True)
+def mock_toast_manager(mocker):
+    """
+    Automatically mock ToastManager methods to prevent 'Main window not set' errors.
+
+    ToastManager requires a main window to be set before creating toasts,
+    which is not available in unit tests. This fixture mocks all toast methods
+    to prevent the ValueError from being raised during tests.
+    """
+    mocker.patch('src.views.components.toast.ToastManager.error')
+    mocker.patch('src.views.components.toast.ToastManager.success')
+    mocker.patch('src.views.components.toast.ToastManager.info')
+    mocker.patch('src.views.components.toast.ToastManager.warning')

@@ -48,47 +48,70 @@ class ToasterPageObjects(BaseOperations):
             role_name='push button', name=TOASTER_CLOSE_BUTTON,
         )
 
-    def wait_for_toaster(self, timeout=10, poll_interval=0.2):
+    def wait_for_toaster(self, timeout=15, poll_interval=0.2):
         """
         Wait for toaster to appear in AT-SPI tree with aggressive polling.
         Captures the description IMMEDIATELY to avoid disappearance issues.
 
         Args:
-            timeout (int): Maximum seconds to wait. Default 10s local, 15s CI.
-            poll_interval (float): Seconds between polls. Default 0.2s.
+            timeout (int): Maximum seconds to wait. Default 15s for CI.
+            poll_interval (float): Seconds between polls. Default 0.2s for aggressive detection.
 
         Returns:
             tuple: (toaster_element, description_text) if found, (None, None) otherwise.
+                   Description is captured immediately to prevent race conditions.
         """
+
         if is_ci_environment():
-            timeout = 15
+            timeout = 20
 
         start_time = time.time()
+        attempt = 0
+
+        print(
+            f"[TOASTER] Waiting for toaster (timeout={timeout}s, poll_interval={
+                poll_interval
+            }s)...",
+        )
 
         while time.time() - start_time < timeout:
+            attempt += 1
             try:
+                # Search AT-SPI tree directly for toaster panel
                 toasters = self.application.findChildren(
                     lambda node: node.roleName == 'panel'
                     and node.name == TOASTER_FRAME,
                 )
 
                 if toasters:
+                    # Check if any toaster is actually showing
                     for toaster in toasters:
                         if toaster.showing:
+                            # IMMEDIATELY capture description before toaster can disappear
                             description = self._extract_description_immediately(
                                 toaster,
                             )
+                            elapsed = time.time() - start_time
+                            print(
+                                f"[TOASTER] Found toaster after {attempt} attempts ({elapsed:.2f}s), description: {
+                                    description
+                                }",
+                            )
+                            # Return both element and description
                             return (toaster, description)
-            except Exception:
-                pass
+            except Exception as e:
+                if attempt % 10 == 0:  # Log every 10th attempt to avoid spam
+                    print(f"[TOASTER] Attempt {attempt}: {e}")
 
             time.sleep(poll_interval)
 
-        return (None, None)
+        print(f"[TOASTER] Timeout after {attempt} attempts ({timeout}s)")
+        return (None, None)  # Return tuple for consistency
 
     def _extract_description_immediately(self, toaster_element):
         """
         Extract description from toaster IMMEDIATELY to prevent race conditions.
+        This is called as soon as the toaster is found, before it can disappear.
 
         Args:
             toaster_element: The toaster panel element.
@@ -97,24 +120,27 @@ class ToasterPageObjects(BaseOperations):
             str: Description text if found, None otherwise.
         """
         try:
+            # Find description labels within this specific toaster
             descriptions = toaster_element.findChildren(
                 lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
             )
 
             if descriptions:
+                # Get the last one(most recent)
                 last_desc = descriptions[-1]
                 text = last_desc.name if hasattr(last_desc, 'name') else None
                 if text:
                     return text
 
+            # Fallback: try to get any label text from the toaster
             labels = toaster_element.findChildren(
                 lambda node: node.roleName == 'label' and node.name,
             )
-            if labels and len(labels) > 1:
+            if labels and len(labels) > 1:  # Skip title, get description
                 return labels[-1].name
 
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[TOASTER] Failed to extract description immediately: {e}")
 
         return None
 
@@ -132,7 +158,8 @@ class ToasterPageObjects(BaseOperations):
         try:
             self.do_click(toaster_element)
             return (toaster_element, description)
-        except Exception:
+        except Exception as e:
+            print(f'[TOASTER] Failed to click toaster: {e}')
             return (False, None)
 
     def click_and_get_description(self, filter_pattern=None):
@@ -149,6 +176,7 @@ class ToasterPageObjects(BaseOperations):
         if not toaster_element:
             return None
 
+        # Apply filter if needed
         if filter_pattern and description:
             if filter_pattern not in description:
                 return None
@@ -201,12 +229,14 @@ class ToasterPageObjects(BaseOperations):
         # Legacy path: try to get description from the specific toaster we have
         for attempt in range(max_retries):
             try:
+                # Try to get description from this specific toaster
                 text = self._get_description_from_toaster(
                     toaster_element, filter_pattern,
                 )
                 if text:
                     return text
 
+                # On last attempt, try fallback search
                 if attempt == max_retries - 1:
                     text = self._fallback_description_search(filter_pattern)
                     if text:
@@ -215,6 +245,7 @@ class ToasterPageObjects(BaseOperations):
             except Exception:
                 pass
 
+            # Small delay before retry
             if attempt < max_retries - 1:
                 time.sleep(0.2)
 
@@ -238,12 +269,14 @@ class ToasterPageObjects(BaseOperations):
         if not descriptions:
             return None
 
+        # Get the last description (most recent)
         last_desc = descriptions[-1]
         text = last_desc.name if hasattr(last_desc, 'name') else None
 
         if not text:
             return None
 
+        # Apply filter if provided
         if filter_pattern and filter_pattern not in text:
             return None
 
@@ -266,6 +299,7 @@ class ToasterPageObjects(BaseOperations):
         if not matches:
             return None
 
+        # Filter matches if pattern is provided
         if filter_pattern:
             matches = [
                 m for m in matches if m.name and filter_pattern in m.name
@@ -274,6 +308,7 @@ class ToasterPageObjects(BaseOperations):
         if not matches:
             return None
 
+        # Pick the LAST matched node (most recent toaster)
         last_node = matches[-1]
         if last_node.name:
             return last_node.name

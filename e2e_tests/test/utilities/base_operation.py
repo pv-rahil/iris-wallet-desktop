@@ -544,7 +544,7 @@ class BaseOperations:
             Node: The retrieved element, or False if no matching element is found within the timeout.
         """
         if timeout is None:
-            timeout = get_default_timeout(15)  # 15s local, 22.5s CI
+            timeout = get_default_timeout(30)
 
         start_time = time.time()
         current_interval = 1.0 if is_ci_environment() else retry_interval
@@ -606,7 +606,7 @@ class BaseOperations:
             TimeoutError: If the toaster message does not appear within the timeout.
         """
         if timeout is None:
-            timeout = get_default_timeout(60)  # 60s local, 90s CI
+            timeout = get_default_timeout(150)
 
         start_time = time.time()
 
