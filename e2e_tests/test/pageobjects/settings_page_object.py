@@ -121,55 +121,55 @@ class SettingsPageObjects(BaseOperations):
     # Default Fee Rate
     def click_default_fee_rate_frame(self):
         """Click on the default fee rate frame"""
-        return self.do_click(self.default_fee_rate_frame()) if self.do_is_displayed(self.default_fee_rate_frame()) else None
+        return self.click_frame_until_input_box_appears(self.default_fee_rate_frame())
 
     # Default Expiry Time
 
     def click_default_exp_time_frame(self):
         """Click on the default expiry time frame"""
-        return self.do_click(self.default_exp_time_frame()) if self.do_is_displayed(self.default_exp_time_frame()) else None
+        return self.click_frame_until_input_box_appears(self.default_exp_time_frame())
 
     # Minimum Confirmation
 
     def click_set_min_confirmation_frame(self):
         """Click on the set minimum confirmation frame"""
-        return self.do_click(self.set_min_confirmation_frame()) if self.do_is_displayed(self.set_min_confirmation_frame()) else None
+        return self.click_frame_until_input_box_appears(self.set_min_confirmation_frame())
 
     # Indexer URL
 
     def click_set_indexer_url_frame(self):
         """Click on the indexer URL frame"""
-        return self.do_click(self.specify_indexer_url_frame()) if self.do_is_displayed(self.specify_indexer_url_frame()) else None
+        return self.click_frame_until_input_box_appears(self.specify_indexer_url_frame())
 
     # RGB Proxy URL
 
     def click_set_rgb_proxy_url_frame(self):
         """Click on the RGB proxy URL frame"""
-        return self.do_click(self.specify_rgb_proxy_url_frame()) if self.do_is_displayed(self.specify_rgb_proxy_url_frame()) else None
+        return self.click_frame_until_input_box_appears(self.specify_rgb_proxy_url_frame())
 
     # Bitcoind Host
 
     def click_specify_bitcoind_host_frame(self):
         """Click on the bitcoind host frame"""
-        return self.do_click(self.specify_bitcoind_host_frame()) if self.do_is_displayed(self.specify_bitcoind_host_frame()) else None
+        return self.click_frame_until_input_box_appears(self.specify_bitcoind_host_frame())
 
     # Bitcoind Port
 
     def click_specify_bitcoind_port_frame(self):
         """Click on the bitcoind port frame"""
-        return self.do_click(self.specify_bitcoind_port_frame()) if self.do_is_displayed(self.specify_bitcoind_port_frame()) else None
+        return self.click_frame_until_input_box_appears(self.specify_bitcoind_port_frame())
 
     # Announce Address
 
     def click_specify_announce_address_frame(self):
         """Click on the announce address frame"""
-        return self.do_click(self.specify_announce_address_frame()) if self.do_is_displayed(self.specify_announce_address_frame()) else None
+        return self.click_frame_until_input_box_appears(self.specify_announce_address_frame)
 
     # Announce Alias
 
     def click_specify_announce_alias(self):
         """Click on the announce alias frame"""
-        return self.do_click(self.specify_announce_alias_frame()) if self.do_is_displayed(self.specify_announce_alias_frame()) else None
+        return self.click_frame_until_input_box_appears(self.specify_announce_alias_frame)
 
     # Combo box
 
@@ -208,3 +208,20 @@ class SettingsPageObjects(BaseOperations):
         if os.getenv('CI') == 'true':
             os.environ['PYTHON_KEYRING_BACKEND'] = 'keyrings.alt.file.PlaintextKeyring'
             keyring.set_keyring(PlaintextKeyring())
+
+    def click_frame_until_input_box_appears(self, frame):
+        """Click on the frame until the input box appears"""
+        if not self.do_is_displayed(frame):
+            return False
+        self.do_click(self.frame())
+
+        max_retries = 5
+        retry_count = 0
+        while retry_count < max_retries:
+            if self.do_is_displayed(self.input_box()):
+                return True
+            self.do_click(self.frame())
+            retry_count += 1
+
+        # Final check after retries
+        return self.do_is_displayed(self.input_box())
