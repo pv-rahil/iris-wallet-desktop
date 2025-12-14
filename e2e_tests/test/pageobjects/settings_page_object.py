@@ -213,14 +213,14 @@ class SettingsPageObjects(BaseOperations):
         """Click on the frame until the input box appears"""
         if not self.do_is_displayed(frame):
             return False
-        self.do_click(self.frame())
+        self.do_click(frame)
 
         max_retries = 5
         retry_count = 0
         while retry_count < max_retries:
             if self.do_is_displayed(self.input_box()):
                 return True
-            self.do_click(self.frame())
+            self.do_click(frame)
             retry_count += 1
 
         # Final check after retries
