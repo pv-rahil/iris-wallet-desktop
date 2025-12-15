@@ -688,3 +688,15 @@ jobs:
         with:
           github_token: ${{ github.token }}
           publish_dir: gh-pages
+
+      - name: Delete uploaded artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Delete allure-results artifacts to save storage
+          artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[] | select(.name | startswith("allure-results-")) | .id')
+          for artifact in $artifacts; do
+            echo "Deleting artifact: $artifact"
+            gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact" || true
+          done
