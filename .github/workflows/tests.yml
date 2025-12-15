@@ -248,7 +248,10 @@ jobs:
             libosmesa6 \
             mesa-utils-extra \
             libfuse2 \
-            scrot ffmpeg
+            scrot ffmpeg \
+            libcairo2-dev \
+            pkg-config \
+            python3-dev
           sudo gem install fpm -f
 
       - name: Setup env for GUI testing
