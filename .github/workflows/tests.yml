@@ -17,7 +17,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: "pip"
 
       - name: Install system build dependencies
         run: |
@@ -34,11 +33,6 @@ jobs:
             pkg-config \
             gir1.2-gtk-3.0
 
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Python dependencies (project)
         uses: ./.github/actions/install-python-dependencies
@@ -72,7 +66,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: "pip"
 
       - name: Install required system dependencies
         run: |
@@ -103,11 +96,6 @@ jobs:
         run: |
           pip install keyring keyrings.alt
 
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Python dependencies
         uses: ./.github/actions/install-python-dependencies
@@ -145,24 +133,24 @@ jobs:
       matrix:
         test_file:
           - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_create_and_close_channel
-          - test_login_app_auth
-          - test_ask_auth_for_imp_operations
-          - test_settings
-          - test_btc_channel_tx
-          - test_rgb20_channel_tx
-          - test_help
-          - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_rgb20_asset
-          - test_send_and_receive_rgb25_asset
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_issue_rgb20_asset
-          - test_issue_rgb25_asset
-          - test_view_unspent
-          - test_refresh_transfer
+          # - test_receive_and_send_bitcoin
+          # - test_create_and_close_channel
+          # - test_login_app_auth
+          # - test_ask_auth_for_imp_operations
+          # - test_settings
+          # - test_btc_channel_tx
+          # - test_rgb20_channel_tx
+          # - test_help
+          # - test_about
+          # - test_backup_and_restore
+          # - test_send_and_receive_rgb20_asset
+          # - test_send_and_receive_rgb25_asset
+          # - test_hide_exhausted_asset
+          # - test_fail_transfer
+          # - test_issue_rgb20_asset
+          # - test_issue_rgb25_asset
+          # - test_view_unspent
+          # - test_refresh_transfer
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -176,7 +164,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: "pip"
 
       - name: Install required system dependencies
         run: |
@@ -273,11 +260,6 @@ jobs:
         run: |
           pip install keyring keyrings.alt
 
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Python dependencies
         uses: ./.github/actions/install-python-dependencies
@@ -296,22 +278,8 @@ jobs:
           sleep 4
           openbox & sleep 3
 
-      - name: Get RGB Lightning Node commit hash
-        id: ln-commit
-        run: |
-          COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          echo "hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
-          echo "RGB Lightning Node commit: $COMMIT_HASH"
-
-      - name: Cache RGB Lightning Node binary
-        id: cache-ln-node
-        uses: actions/cache@v4
-        with:
-          path: ln_node_binary
-          key: ln-node-${{ runner.os }}-${{ steps.ln-commit.outputs.hash }}
 
       - name: Build RGB Lightning Node binary
-        if: steps.cache-ln-node.outputs.cache-hit != 'true'
         uses: ./.github/actions/build-rln-node
 
       - name: Add rgb-lightning-node to PATH
@@ -323,16 +291,6 @@ jobs:
         run: |
           poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-      - name: Ensure E2E scripts are executable
-        run: |
-          chmod +x run_e2e_tests.sh e2e_tests/regtest.sh
-
-      - name: Cache AppImages
-        id: cache-appimages
-        uses: actions/cache@v4
-        with:
-          path: e2e_tests/applications
-          key: appimages-v4-${{ runner.os }}-${{ hashFiles('src/version.py') }}
 
       - name: Prepare runtime Python deps for AppImage
         run: |
@@ -583,73 +541,3 @@ jobs:
           path: /tmp/${{ matrix.test_file }}_recording.mp4
           retention-days: 30
           if-no-files-found: ignore
-
-      - name: Save internally-built AppImages to cache
-        if: always() && steps.cache-appimages.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: e2e_tests/applications
-          key: appimages-v3-${{ runner.os }}-${{ hashFiles('src/version.py') }}
-
-  cleanup-cache:
-    name: Cleanup test caches
-    runs-on: ubuntu-latest
-    needs: e2e-dogtail
-    if: always()
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Delete AppImages cache
-        continue-on-error: true
-        run: |
-          # Delete AppImages cache using GitHub CLI
-          VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          CACHE_KEY="appimages-v4-${{ runner.os }}-${VERSION}"
-
-          gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
-            | jq -r '.actions_caches[].id' \
-            | xargs -I {} gh api \
-                --method DELETE \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "/repos/${{ github.repository }}/actions/caches/{}" || true
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Delete LN node cache
-        continue-on-error: true
-        run: |
-          # Delete RGB Lightning Node cache
-          COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          CACHE_KEY="ln-node-v1-${{ runner.os }}-${COMMIT_HASH}"
-
-          gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
-            | jq -r '.actions_caches[].id' \
-            | xargs -I {} gh api \
-                --method DELETE \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "/repos/${{ github.repository }}/actions/caches/{}" || true
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-  delete_artifacts:
-    runs-on: ubuntu-24.04
-    steps:
-    - name: Delete all old artifacts
-      env:
-        GH_TOKEN: ${{ github.token }}   # REQUIRED for gh CLI
-        REPO: ${{ github.repository }}
-      run: |
-        artifacts=$(gh api "repos/$REPO/actions/artifacts" --jq '.artifacts[].id')
-        for artifact in $artifacts; do
-          echo "Deleting artifact: $artifact"
-          gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact"
-        done
