@@ -282,8 +282,8 @@ jobs:
           openbox & sleep 3
 
 
-      # - name: Build RGB Lightning Node binary
-      #   uses: ./.github/actions/build-rln-node
+      - name: Build RGB Lightning Node binary
+        uses: ./.github/actions/build-rln-node
 
       - name: Add rgb-lightning-node to PATH
         run: |
