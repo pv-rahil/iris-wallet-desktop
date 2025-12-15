@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
-      max-parallel: 1
+      # max-parallel: 1
       fail-fast: false
       matrix:
         test_file:
@@ -620,25 +620,25 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      # - name: Delete LN node cache
-      #   continue-on-error: true
-      #   run: |
-      #     # Delete RGB Lightning Node cache
-      #     COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-      #     CACHE_KEY="ln-node-v1-${{ runner.os }}-${COMMIT_HASH}"
+      - name: Delete LN node cache
+        continue-on-error: true
+        run: |
+          # Delete RGB Lightning Node cache
+          COMMIT_HASH=$(grep 'CURRENT_RLN_NODE_COMMIT' ./src/utils/constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          CACHE_KEY="ln-node-v1-${{ runner.os }}-${COMMIT_HASH}"
 
-      #     gh api \
-      #       -H "Accept: application/vnd.github+json" \
-      #       -H "X-GitHub-Api-Version: 2022-11-28" \
-      #       "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
-      #       | jq -r '.actions_caches[].id' \
-      #       | xargs -I {} gh api \
-      #           --method DELETE \
-      #           -H "Accept: application/vnd.github+json" \
-      #           -H "X-GitHub-Api-Version: 2022-11-28" \
-      #           "/repos/${{ github.repository }}/actions/caches/{}" || true
-      #   env:
-      #     GH_TOKEN: ${{ github.token }}
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/caches?key=${CACHE_KEY}" \
+            | jq -r '.actions_caches[].id' \
+            | xargs -I {} gh api \
+                --method DELETE \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/repos/${{ github.repository }}/actions/caches/{}" || true
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   delete_artifacts:
     runs-on: ubuntu-24.04
