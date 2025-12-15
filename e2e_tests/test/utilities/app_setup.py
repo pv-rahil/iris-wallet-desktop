@@ -82,11 +82,18 @@ class TestEnvironment:
         app1_data = actual_path.replace(APP_NAME, FIRST_APPLICATION_PATH)
         app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
 
+        # Get ln_node_binary directory path
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        )
+        ln_binary_dir = os.path.join(project_root, 'ln_node_binary')
+
         delete_app_data(app1_data)
-        delete_app_data('dataldk0')
+        delete_app_data(os.path.join(ln_binary_dir, 'dataldk0'))
+
         if self.multi_instance:
             delete_app_data(app2_data)
-            delete_app_data('dataldk1')
+            delete_app_data(os.path.join(ln_binary_dir, 'dataldk1'))
 
     def start_rgb_lightning_nodes(self):
         """Starts two RGB lightning nodes when wallet mode is 'remote'."""
@@ -111,8 +118,15 @@ class TestEnvironment:
         Returns:
             subprocess.Popen: The process object.
         """
+        # Use local rgb-lightning-node binary from ln_node_binary directory
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        )
+        ln_binary_dir = os.path.join(project_root, 'ln_node_binary')
+        ln_binary_path = os.path.join(ln_binary_dir, 'rgb-lightning-node')
+
         command = [
-            'rgb-lightning-node',
+            ln_binary_path,
             data_dir,
             '--daemon-listening-port',
             str(daemon_port),
@@ -121,7 +135,7 @@ class TestEnvironment:
             '--network',
             'regtest',
         ]
-        process = subprocess.Popen(command)
+        process = subprocess.Popen(command, cwd=ln_binary_dir)
         return process
 
     def _ensure_rgb_ports_available(self, timeout=15):
