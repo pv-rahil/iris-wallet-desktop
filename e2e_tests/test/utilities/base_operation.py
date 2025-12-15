@@ -109,7 +109,7 @@ class BaseOperations:
 
             element.grabFocus()
             time.sleep(0.2 if not is_ci_environment() else 0.5)
-            if element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue']:
+            if element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue'] and is_ci_environment():
                 element.queryAction().doAction(0)
             else:
                 element.click()
