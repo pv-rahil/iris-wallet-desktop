@@ -455,6 +455,9 @@ jobs:
       actions: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download embedded Allure results
         uses: actions/download-artifact@v4
         with:
@@ -502,7 +505,7 @@ jobs:
           fi
 
           # Create index page with links to both reports
-          cp .github/workflows/allure-index.html gh-pages/index.html
+          cp .github/pages/allure-index.html gh-pages/index.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
