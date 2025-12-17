@@ -7,12 +7,12 @@ from pathlib import Path
 import allure
 import pytest
 
-from accessible_constant import BITCOIND_RPC_HOST_REGTEST
-from accessible_constant import BITCOIND_RPC_PORT_REGTEST
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_APPLICATION_URL
-from accessible_constant import INDEXER_URL_REGTEST
-from accessible_constant import PROXY_ENDPOINT_REGTEST
+from accessible_constant import LOCAL_BITCOIND_RPC_HOST_REGTEST
+from accessible_constant import LOCAL_BITCOIND_RPC_PORT_REGTEST
+from accessible_constant import LOCAL_INDEXER_URL_REGTEST
+from accessible_constant import LOCAL_PROXY_ENDPOINT_REGTEST
 from accessible_constant import TEST_ANNOUNCE_ADDRESS
 from accessible_constant import TEST_ANNOUNCE_ALIAS
 from e2e_tests.test.utilities.app_setup import test_environment
@@ -62,7 +62,7 @@ def test_bitcoind_host_info(wallets_and_operations: WalletTestSetup):
 
         assert bitcoind_host in (
             copied_bitcoind_host,
-            BITCOIND_RPC_HOST_REGTEST,
+            LOCAL_BITCOIND_RPC_HOST_REGTEST,
         )
 
 
@@ -77,7 +77,7 @@ def test_bitcoind_port_info(wallets_and_operations: WalletTestSetup):
 
         assert bitcoind_port in (
             copied_bitcoind_port,
-            BITCOIND_RPC_PORT_REGTEST,
+            LOCAL_BITCOIND_RPC_PORT_REGTEST,
         )
 
 
@@ -90,7 +90,7 @@ def test_indexer_info(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.about_page_objects.click_indexer_url_copy_button()
         copied_indexer_url = wallets_and_operations.first_page_objects.about_page_objects.do_get_copied_address()
 
-        assert indexer_url in (copied_indexer_url, INDEXER_URL_REGTEST)
+        assert indexer_url in (copied_indexer_url, LOCAL_INDEXER_URL_REGTEST)
 
 
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -102,7 +102,10 @@ def test_rgb_proxy_info(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.about_page_objects.click_rgb_proxy_url_copy_button()
         copied_rgb_proxy_url = wallets_and_operations.first_page_objects.about_page_objects.do_get_copied_address()
 
-        assert rgb_proxy_url in (copied_rgb_proxy_url, PROXY_ENDPOINT_REGTEST)
+        assert rgb_proxy_url in (
+            copied_rgb_proxy_url,
+            LOCAL_PROXY_ENDPOINT_REGTEST,
+        )
 
 
 @pytest.mark.parametrize('test_environment', [False], indirect=True)

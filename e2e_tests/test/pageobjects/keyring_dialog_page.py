@@ -80,9 +80,7 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Returns:
             bool: True if the click is successful, False otherwise.
         """
-        if self.do_is_displayed(self.keyring_mnemonic_copy_button()):
-            return self.do_click(self.keyring_mnemonic_copy_button())
-        return False
+        return self.do_click(self.keyring_mnemonic_copy_button()) if self.do_is_displayed(self.keyring_mnemonic_copy_button()) else None
 
     def get_keyring_mnemonic_value(self):
         """
@@ -100,9 +98,7 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Returns:
             bool: True if the click is successful, False otherwise.
         """
-        if self.do_is_displayed(self.keyring_password_copy_button()):
-            return self.do_click(self.keyring_password_copy_button())
-        return False
+        return self.do_click(self.keyring_password_copy_button()) if self.do_is_displayed(self.keyring_password_copy_button()) else None
 
     def get_keyring_password_value(self):
         """

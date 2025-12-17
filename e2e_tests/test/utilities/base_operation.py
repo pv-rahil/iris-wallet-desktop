@@ -1,4 +1,3 @@
-# pylint: disable=unused-import,too-many-arguments,too-many-statements,too-many-branches,too-many-lines
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -7,7 +6,6 @@ from __future__ import annotations
 import os
 import re
 import time
-from datetime import datetime
 
 import pyperclip
 from dogtail.rawinput import keyCombo
@@ -417,6 +415,57 @@ class BaseOperations:
         except Exception:
             return None
 
+    def _handle_circuit_breaker_check(self, role_name, identifier):
+        """
+        Check and handle circuit breaker state.
+
+        Args:
+            role_name: The role of the element being searched
+            identifier: Name or description of the element
+
+        Raises:
+            RuntimeError: If circuit breaker triggers and recovery fails
+        """
+        if not self._should_break_circuit():
+            return
+
+        # Attempt AT-SPI recovery before failing
+        if self._refresh_atspi_tree():
+            self._reset_circuit_breaker()
+        else:
+            error_msg = f"Circuit breaker triggered for {
+                role_name
+            } '{identifier}'"
+            raise RuntimeError(error_msg)
+
+    def _handle_window_switch_delay(self):
+        """Apply delay after window switch for AT-SPI synchronization."""
+        if getattr(self, '_just_switched_window', False):
+            initial_delay = 1.5 if is_ci_environment() else 0.3
+            time.sleep(initial_delay)
+            self._just_switched_window = False
+
+    def _should_exit_retry_loop(self, attempt, max_retries, role_name, identifier):
+        """
+        Check if we should exit the retry loop based on max_retries.
+
+        Args:
+            attempt: Current attempt number
+            max_retries: Maximum retries allowed
+            role_name: Role of the element
+            identifier: Name or description
+
+        Returns:
+            bool: True if should exit, False if should continue
+        """
+        if max_retries and attempt >= max_retries:
+            print(
+                f"[MAX RETRIES] Reached max retries ({max_retries}) "
+                f"for {role_name} '{identifier}'",
+            )
+            return True
+        return False
+
     def perform_action_on_element(
         self,
         role_name,
@@ -441,24 +490,13 @@ class BaseOperations:
         Raises:
             RuntimeError: If circuit breaker is triggered after consecutive failures.
         """
-        # Check circuit breaker
-        if self._should_break_circuit():
-            identifier = name if name else description
+        identifier = name if name else description
 
-            # Attempt AT-SPI recovery before failing
-            if self._refresh_atspi_tree():
-                self._reset_circuit_breaker()
-            else:
-                error_msg = f"Circuit breaker triggered for {
-                    role_name
-                } '{identifier}'"
-                raise RuntimeError(error_msg)
+        # Check circuit breaker and attempt recovery if needed
+        self._handle_circuit_breaker_check(role_name, identifier)
 
-        # If we just switched windows, use enhanced retry strategy
-        if getattr(self, '_just_switched_window', False):
-            initial_delay = 1.5 if is_ci_environment() else 0.3
-            time.sleep(initial_delay)
-            self._just_switched_window = False
+        # Apply delay if we just switched windows
+        self._handle_window_switch_delay()
 
         if timeout is None:
             timeout = get_default_timeout(10)  # 10s local, 15s CI
@@ -488,19 +526,14 @@ class BaseOperations:
                         continue
 
             except Exception as e:
-                # Log the exception with more details for debugging
                 print(
-                    f"""[RETRY {attempt}] Finding {role_name} '{identifier}': {e}
-                      """,
+                    f"[RETRY {attempt}] Finding {
+                        role_name
+                    } '{identifier}': {e}",
                 )
 
             # Check if we should exit early (max_retries)
-            if max_retries and attempt >= max_retries:
-                print(
-                    f"""[MAX RETRIES] Reached max retries (
-                      {max_retries}) for {role_name} '{identifier}'
-                      """,
-                )
+            if self._should_exit_retry_loop(attempt, max_retries, role_name, identifier):
                 break
 
             # Exponential backoff
@@ -515,9 +548,9 @@ class BaseOperations:
             self._consecutive_failures = 0
 
         print(
-            f"""[WARN] Element not found after {
+            f"[WARN] Element not found after {
                 timeout
-            }s and {attempt} attempts""",
+            }s and {attempt} attempts",
         )
 
         return False

@@ -5,12 +5,12 @@ from __future__ import annotations
 import allure
 import pytest
 
-from accessible_constant import BITCOIND_RPC_HOST_REGTEST
-from accessible_constant import BITCOIND_RPC_PORT_REGTEST
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_APPLICATION_URL
-from accessible_constant import INDEXER_URL_REGTEST
-from accessible_constant import PROXY_ENDPOINT_REGTEST
+from accessible_constant import LOCAL_BITCOIND_RPC_HOST_REGTEST
+from accessible_constant import LOCAL_BITCOIND_RPC_PORT_REGTEST
+from accessible_constant import LOCAL_INDEXER_URL_REGTEST
+from accessible_constant import LOCAL_PROXY_ENDPOINT_REGTEST
 from accessible_constant import TEST_ANNOUNCE_ADDRESS
 from accessible_constant import TEST_ANNOUNCE_ALIAS
 from accessible_constant import TOASTER_DESCRIPTION
@@ -81,10 +81,8 @@ def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        wallets_and_operations.first_page_features.send_features.retry_send_dialog(
-            transfer_type='bitcoin',
-        )
-    new_default_fee_rate = wallets_and_operations.first_page_objects.send_asset_page_objects.get_fee_rate_text()
+        wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_on_chain_button()
+        new_default_fee_rate = wallets_and_operations.first_page_objects.send_asset_page_objects.get_fee_rate_text()
 
     assert new_default_fee_rate == TEST_FEE_RATE
 
@@ -129,9 +127,7 @@ def test_default_expiry_time_minute(wallets_and_operations: WalletTestSetup):
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
     wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
     wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
-    wallets_and_operations.first_page_features.receive_features.retry_receive_dialog(
-        transfer_type='lightning',
-    )
+    wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_lightning_button()
 
     # Getting the expiry time
     expiry_time = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_amount()
@@ -181,9 +177,7 @@ def test_default_expiry_time_hour(wallets_and_operations: WalletTestSetup):
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
     wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
     wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
-    wallets_and_operations.first_page_features.receive_features.retry_receive_dialog(
-        transfer_type='lightning',
-    )
+    wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_lightning_button()
 
     # Getting the expiry time
     expiry_time = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_amount()
@@ -233,9 +227,7 @@ def test_default_expiry_time_days(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
-        wallets_and_operations.first_page_features.receive_features.retry_receive_dialog(
-            transfer_type='lightning',
-        )
+        wallets_and_operations.first_page_objects.wallet_transfer_page_objects.click_lightning_button()
 
     # Getting the expiry time
     expiry_time = wallets_and_operations.first_page_objects.create_ln_invoice_page_objects.get_expiry_amount()
@@ -402,7 +394,7 @@ def test_set_invalid_bitcoind_host(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.settings_page_objects.click_specify_bitcoind_host_frame()
         bitcoind_host = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
 
-    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon' or bitcoind_host == BITCOIND_RPC_HOST_REGTEST
+    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon' or bitcoind_host == LOCAL_BITCOIND_RPC_HOST_REGTEST
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -440,7 +432,7 @@ def test_set_invalid_bitcoind_port(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.settings_page_objects.click_specify_bitcoind_port_frame()
         bitcoind_port = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
 
-    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon' or bitcoind_port == BITCOIND_RPC_PORT_REGTEST
+    assert announce_add_toast_desc == 'Unlock failed: Unable to connect to the Bitcoin daemon' or bitcoind_port == LOCAL_BITCOIND_RPC_PORT_REGTEST
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
@@ -479,7 +471,7 @@ def test_set_invalid_electrum_url(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.settings_page_objects.click_set_indexer_url_frame()
         indexer_url = wallets_and_operations.first_page_objects.settings_page_objects.get_input_box_value()
 
-    assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_INDEXER_URL or indexer_url == INDEXER_URL_REGTEST
+    assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_INDEXER_URL or indexer_url == LOCAL_INDEXER_URL_REGTEST
 
     with allure.step('Navigating to fungibles page'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
