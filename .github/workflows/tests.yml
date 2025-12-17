@@ -465,12 +465,46 @@ jobs:
           path: allure-results-embedded
           merge-multiple: true
 
+      - name: Delete embedded artifacts after download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          echo "Deleting embedded allure-results artifacts..."
+          artifacts=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.name | startswith("allure-results-embedded-")) | "\(.id) \(.name)"')
+          if [ -n "$artifacts" ]; then
+            echo "$artifacts" | while read -r artifact_id artifact_name; do
+              echo "Deleting $artifact_name (ID: $artifact_id)..."
+              gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact_id" || echo "Failed to delete $artifact_id"
+            done
+          else
+            echo "No embedded artifacts found to delete"
+          fi
+
       - name: Download remote Allure results
         uses: actions/download-artifact@v4
         with:
           pattern: allure-results-remote-*
           path: allure-results-remote
           merge-multiple: true
+
+      - name: Delete remote artifacts after download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          echo "Deleting remote allure-results artifacts..."
+          artifacts=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.name | startswith("allure-results-remote-")) | "\(.id) \(.name)"')
+          if [ -n "$artifacts" ]; then
+            echo "$artifacts" | while read -r artifact_id artifact_name; do
+              echo "Deleting $artifact_name (ID: $artifact_id)..."
+              gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact_id" || echo "Failed to delete $artifact_id"
+            done
+          else
+            echo "No remote artifacts found to delete"
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -512,53 +546,3 @@ jobs:
         with:
           github_token: ${{ github.token }}
           publish_dir: gh-pages
-
-      - name: Delete uploaded artifacts from current run
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          # Wait for all artifacts to be uploaded before deletion
-          echo "Waiting for all artifacts to be uploaded..."
-          MAX_RETRIES=12  # 12 retries * 10 seconds = 2 minutes max wait
-          RETRY_COUNT=0
-
-          # Calculate expected artifact count (2 per test file: embedded + remote)
-          EXPECTED_COUNT=$((2 * $(echo "${{ toJson(matrix.test_file) }}" | jq -r '. | length')))
-          echo "Expected $EXPECTED_COUNT artifacts (2 per test file)"
-
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            artifacts=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.name | startswith("allure-results-")) | .id')
-            CURRENT_COUNT=$(echo "$artifacts" | wc -l)
-
-            echo "Found $CURRENT_COUNT artifacts (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
-
-            if [ "$CURRENT_COUNT" -ge "$EXPECTED_COUNT" ]; then
-              echo "✅ All artifacts uploaded!"
-              break
-            fi
-
-            echo "Waiting 10 seconds for more artifacts..."
-            sleep 10
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-          done
-
-          # Now delete the artifacts
-          echo "Fetching artifacts to delete..."
-          artifacts=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.name | startswith("allure-results-")) | "\(.id) \(.name)"')
-
-          if [ -z "$artifacts" ]; then
-            echo "No allure-results artifacts found for this run"
-            exit 0
-          fi
-
-          echo "Found artifacts to delete:"
-          echo "$artifacts"
-
-          echo "$artifacts" | while read -r artifact_id artifact_name; do
-            echo "Deleting artifact $artifact_name (ID: $artifact_id)..."
-            gh api --method DELETE "repos/$REPO/actions/artifacts/$artifact_id" || echo "Failed to delete $artifact_id"
-          done
-
-          echo "Artifact cleanup complete"
