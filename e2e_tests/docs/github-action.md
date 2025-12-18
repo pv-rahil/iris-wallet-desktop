@@ -1,6 +1,6 @@
 ## GitHub Actions Workflow
 
-The GitHub Actions workflow automates the testing process using **Dogtail** for E2E GUI automation and **pytest** for unit tests. It also runs code quality checks (pylint, ruff) and publishes test reports to GitHub Pages.
+The GitHub Actions workflow automates the testing process using **Dogtail** for E2E GUI automation and **pytest** for unit tests. It also runs code quality checks and publishes test reports to GitHub Pages.
 
 ### Automated Execution
 
