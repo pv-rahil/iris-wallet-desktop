@@ -230,9 +230,8 @@ def test_start_node_for_embedded_option(mock_logger, wallet_transfer_selection_v
 
 
 @patch('src.utils.logging.logger.error')
-def test_on_error_of_unlock_node(mock_logger, wallet_transfer_selection_view_model):
-    """Test on_error_of_unlock_node method"""
-    # Test with CommonException
+def test_on_error_of_unlock_node_common_exception(mock_logger, wallet_transfer_selection_view_model):
+    """Test on_error_of_unlock_node method with CommonException"""
     with patch('src.views.components.toast.ToastManager.error') as mock_toast:
         custom_error = CommonException('Custom error message')
         wallet_transfer_selection_view_model.on_error_of_unlock_node(
@@ -240,7 +239,10 @@ def test_on_error_of_unlock_node(mock_logger, wallet_transfer_selection_view_mod
         )
         mock_toast.assert_called_once_with(description='Custom error message')
 
-    # Test with generic Exception
+
+@patch('src.utils.logging.logger.error')
+def test_on_error_of_unlock_node_generic_exception(mock_logger, wallet_transfer_selection_view_model):
+    """Test on_error_of_unlock_node method with generic Exception"""
     with patch('src.views.components.toast.ToastManager.error') as mock_toast:
         generic_error = Exception('Generic error')
         wallet_transfer_selection_view_model.on_error_of_unlock_node(
