@@ -20,7 +20,7 @@ The workflow performs the following checks:
 2. **E2E Tests**: GUI automation tests using Dogtail (AT-SPI) on actual AppImage build
 3. **Code Quality**: Code quality checks for formatting, type checking, and spell checking
 4. **Coverage**: HTML coverage reports generated and published
-5. **Allure Reports**: Detailed test execution reports with screenshots
+5. **Allure Reports**: Detailed test execution reports
 
 ### Required Secrets
 
@@ -46,4 +46,3 @@ After each workflow run, the following reports are published to GitHub Pages:
   - Embedded mode: `https://<username>.github.io/<repo>/embedded/`
   - Remote mode: `https://<username>.github.io/<repo>/remote/`
 - **Coverage Reports**: Code coverage showing which parts are tested at `https://<username>.github.io/<repo>/coverage/`
-- **Test Videos**: E2E test recordings saved as artifacts (downloadable from workflow run)
