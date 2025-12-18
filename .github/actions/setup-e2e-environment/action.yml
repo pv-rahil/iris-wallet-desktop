@@ -70,7 +70,7 @@ runs:
         cat <<'"'"'PKEXEC_WRAPPER'"'"' > "$RUNNER_TEMP/bin/pkexec"
         #!/bin/bash
         # Direct pass-through to sudo (GitHub Actions has passwordless sudo)
-        exec /usr/bin/sudo "\$@"
+        exec /usr/bin/sudo "$@"
         PKEXEC_WRAPPER
         chmod +x "$RUNNER_TEMP/bin/pkexec"
         export PATH="$RUNNER_TEMP/bin:$PATH"
