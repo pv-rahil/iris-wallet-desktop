@@ -40,8 +40,10 @@ The workflow requires the following secrets (configured in repository settings):
 
 ### Test Reports
 
-After each workflow run:
+After each workflow run, the following reports are published to GitHub Pages:
 
-- **Allure Reports**: Published to GitHub Pages at `https://<username>.github.io/<repo>/allure-report/`
-- **Coverage Reports**: Available in workflow artifacts
-- **Test Videos**: E2E test recordings saved as artifacts
+- **Allure Reports**: Detailed test execution reports with screenshots
+  - Embedded mode: `https://<username>.github.io/<repo>/embedded/`
+  - Remote mode: `https://<username>.github.io/<repo>/remote/`
+- **Coverage Reports**: Code coverage showing which parts are tested at `https://<username>.github.io/<repo>/coverage/`
+- **Test Videos**: E2E test recordings saved as artifacts (downloadable from workflow run)
