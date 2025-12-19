@@ -14,6 +14,45 @@ from dogtail.tree import root
 from accessible_constant import DEFAULT_WALLET_MODES
 from src.model.enums.enums_model import WalletType
 
+# Constants for formatting
+BANNER_WIDTH = 80
+BANNER_SEPARATOR = '=' * BANNER_WIDTH
+ERROR_PREVIEW_LENGTH = 200
+
+# Timing constants
+CI_STABILIZATION_DELAY = 2.0
+LOCAL_STABILIZATION_DELAY = 0.5
+
+
+def _print_banner(emoji: str, message: str, test_name: str = '') -> None:
+    """
+    Print a formatted banner for test events.
+
+    Args:
+        emoji: Emoji to display
+        message: Message to display
+        test_name: Optional test name to append
+    """
+    full_message = f"{message}: {test_name}" if test_name else message
+    print(f"\n{BANNER_SEPARATOR}")
+    print(f"{emoji} {full_message}")
+    print(f"{BANNER_SEPARATOR}\n")
+
+
+def _print_test_result(status_emoji: str, status: str, test_name: str, error_text: str = '') -> None:
+    """
+    Print a test result message.
+
+    Args:
+        status_emoji: Emoji representing the status
+        status: Status text (PASSED, FAILED, SKIPPED)
+        test_name: Name of the test
+        error_text: Optional error message for failed tests
+    """
+    print(f"{status_emoji} {status}: {test_name}")
+    if error_text:
+        print(f"   Error: {error_text[:ERROR_PREVIEW_LENGTH]}...")
+
 
 def pytest_addoption(parser):
     """
@@ -59,10 +98,7 @@ def wallet_mode(request):
 def pytest_runtest_setup(item):
     """Skip tests based on wallet mode and print test start."""
     # Print test start banner
-    test_name = item.nodeid
-    print(f"\n{'='*80}")
-    print(f"🧪 STARTING TEST: {test_name}")
-    print(f"{'='*80}\n")
+    _print_banner('🧪', 'STARTING TEST', item.nodeid)
 
     wallet_mode = item.config.getoption('--wallet-mode')
 
@@ -81,10 +117,7 @@ def pytest_runtest_setup(item):
 
 def pytest_runtest_teardown(item):
     """Print test completion banner."""
-    test_name = item.nodeid
-    print(f"\n{'='*80}")
-    print(f"✅ COMPLETED TEST: {test_name}")
-    print(f"{'='*80}\n")
+    _print_banner('✅', 'COMPLETED TEST', item.nodeid)
 
 
 def pytest_runtest_logreport(report):
@@ -92,13 +125,11 @@ def pytest_runtest_logreport(report):
     if report.when == 'call':
         test_name = report.nodeid
         if report.passed:
-            print(f"✅ PASSED: {test_name}")
+            _print_test_result('✅', 'PASSED', test_name)
         elif report.failed:
-            print(f"❌ FAILED: {test_name}")
-            # First 200 chars of error
-            print(f"   Error: {report.longreprtext[:200]}...")
+            _print_test_result('❌', 'FAILED', test_name, report.longreprtext)
         elif report.skipped:
-            print(f"⏭️  SKIPPED: {test_name}")
+            _print_test_result('⏭️', 'SKIPPED', test_name)
 
 
 def _is_ci_environment():
@@ -180,9 +211,7 @@ def cleanup_between_tests(request):
         if 'test_environment' in request.fixturenames:
             test_env = request.getfixturevalue('test_environment')
 
-            print('\n' + '='*80)
-            print('🧹 CLEANUP: Running inter-test cleanup')
-            print('='*80)
+            _print_banner('🧹', 'CLEANUP', 'Running inter-test cleanup')
 
             # 1. Refresh AT-SPI tree to clear stale element caches
             _refresh_atspi_tree()
@@ -191,14 +220,13 @@ def cleanup_between_tests(request):
             _reset_operations_state(test_env)
 
             # Stabilization delay (longer in CI)
-            delay = 2.0 if _is_ci_environment() else 0.5
+            delay = CI_STABILIZATION_DELAY if _is_ci_environment() else LOCAL_STABILIZATION_DELAY
             _stabilize_ui(delay)
 
             # 4. Verify no zombie processes
             _verify_no_zombie_processes()
 
-            print('✅ CLEANUP: Complete')
-            print('='*80 + '\n')
+            _print_banner('✅', 'CLEANUP', 'Complete')
     except Exception as e:
         # Don't fail tests if cleanup has issues
         print(f'[CLEANUP] Warning: Cleanup encountered an error: {e}')
