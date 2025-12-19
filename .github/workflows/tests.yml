@@ -8,7 +8,7 @@ on:
 jobs:
   lint:
     name: Lint & static checks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,7 +33,6 @@ jobs:
             pkg-config \
             gir1.2-gtk-3.0
 
-
       - name: Install Python dependencies (project)
         uses: ./.github/actions/install-python-dependencies
 
@@ -53,7 +52,7 @@ jobs:
 
   unit-tests:
     name: Unit tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       QT_QPA_PLATFORM: offscreen
       TZ: Asia/Kolkata
@@ -96,7 +95,6 @@ jobs:
         run: |
           pip install keyring keyrings.alt
 
-
       - name: Install Python dependencies
         uses: ./.github/actions/install-python-dependencies
 
@@ -132,7 +130,6 @@ jobs:
           path: coverage-report/
           retention-days: 7
           if-no-files-found: ignore
-
 
   e2e-dogtail:
     name: E2E Dogtail tests
@@ -187,7 +184,6 @@ jobs:
         run: |
           pip install keyring keyrings.alt
 
-
       - name: Install Python dependencies
         uses: ./.github/actions/install-python-dependencies
 
@@ -204,7 +200,6 @@ jobs:
           Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
           sleep 4
           openbox & sleep 3
-
 
       - name: Build RGB Lightning Node binary
         uses: ./.github/actions/build-rln-node
