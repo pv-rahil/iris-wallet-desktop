@@ -149,6 +149,41 @@ ensure_applications_exist() {
     fi
 }
 
+# Helper function to print test suite header
+print_test_header() {
+    local test_name=$1
+    local test_path=$2
+    local wallet_mode=$3
+
+    echo "========================================"
+    echo "Test Suite: $test_name"
+    echo "Path      : $test_path"
+    echo "Mode      : $wallet_mode"
+    echo "========================================"
+}
+
+# Helper function to print failure message
+print_failure() {
+    local test_name=$1
+    local wallet_mode=$2
+
+    echo ""
+    echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+    echo "✗ FAILED: $test_name in ${wallet_mode^^} mode"
+    echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+    echo ""
+}
+
+# Helper function to print summary failure message
+print_summary_failure() {
+    local wallet_mode=$1
+
+    echo ""
+    echo "════════════════════════════════════════"
+    echo "One or more test suites FAILED in ${wallet_mode^^} mode"
+    echo "════════════════════════════════════════"
+}
+
 run_e2e_tests() {
     local wallet_mode=$1
     local results_dir="allure-results-${wallet_mode}"
@@ -162,40 +197,21 @@ run_e2e_tests() {
     if [[ "$RUN_ALL" == true ]]; then
         echo "Running full test suite (per-file)..."
         for test_file in "${TEST_FILES[@]}"; do
-            echo "========================================"
-            echo "Test Suite: $(basename "$test_file")"
-            echo "Path      : $test_file"
-            echo "Mode      : $wallet_mode"
-            echo "========================================"
+            print_test_header "$(basename "$test_file")" "$test_file" "$wallet_mode"
             if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-mode "$wallet_mode"; then
-                echo ""
-                echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
-                echo "✗ FAILED: $(basename "$test_file") in ${wallet_mode^^} mode"
-                echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
-                echo ""
+                print_failure "$(basename "$test_file")" "$wallet_mode"
                 EXIT_CODE=1
             fi
         done
 
         if [[ $EXIT_CODE -ne 0 ]]; then
-            echo ""
-            echo "════════════════════════════════════════"
-            echo "One or more test suites FAILED in ${wallet_mode^^} mode"
-            echo "════════════════════════════════════════"
+            print_summary_failure "$wallet_mode"
             exit $EXIT_CODE
         fi
     elif [[ -n "$TEST_FILE" ]]; then
-        echo "========================================"
-        echo "Test Suite: $TEST_FILE"
-        echo "Path      : $TESTS_DIR/$TEST_FILE"
-        echo "Mode      : $wallet_mode"
-        echo "========================================"
+        print_test_header "$TEST_FILE" "$TESTS_DIR/$TEST_FILE" "$wallet_mode"
         if ! pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-mode "$wallet_mode"; then
-            echo ""
-            echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
-            echo "✗ FAILED: $TEST_FILE in ${wallet_mode^^} mode"
-            echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
-            echo ""
+            print_failure "$TEST_FILE" "$wallet_mode"
             exit 1
         fi
     else

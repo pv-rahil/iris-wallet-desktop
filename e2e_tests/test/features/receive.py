@@ -31,7 +31,7 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
             self.wallet_transfer_page_objects.click_lightning_button()
 
         if transfer_type == 'lightning' and self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):
-            self.create_ln_invoice_page_objects.asset_amount().click()
+            self.do_click(self.create_ln_invoice_page_objects.asset_amount())
 
         # Handle additional input for Lightning
         if transfer_type == 'lightning' and self.do_is_displayed(self.create_ln_invoice_page_objects.asset_amount()):

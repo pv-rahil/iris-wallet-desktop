@@ -38,11 +38,7 @@ class CloseChannelDialogPageObjects(BaseOperations):
         Returns:
             The result of the click action or None if the dialog is not displayed.
         """
-        # Cache element reference to avoid stale element issues from multiple AT-SPI queries
-        dialog = self.close_channel_dialog()
-        if self.do_is_displayed(dialog):
-            return self.do_click(dialog)
-        return None
+        return self.do_click(self.close_channel_dialog()) if self.do_is_displayed(self.close_channel_dialog()) else None
 
     def click_continue_button(self):
         """
@@ -51,7 +47,4 @@ class CloseChannelDialogPageObjects(BaseOperations):
         Returns:
             The result of the click action or None if the button is not displayed.
         """
-        continue_button = self.continue_button()
-        if self.do_is_displayed(continue_button):
-            return self.do_click(continue_button)
-        return None
+        return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
