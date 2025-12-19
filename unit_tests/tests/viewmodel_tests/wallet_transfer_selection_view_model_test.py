@@ -23,6 +23,14 @@ def wallet_transfer_selection_view_model(mocker):
     """Fixture for WalletTransferSelectionViewModel"""
     mock_page_navigation = mocker.Mock()
     mock_splash_view_model = mocker.Mock()
+
+    # Mock LnNodeServerManager to prevent Qt signal connection
+    mock_ln_node_manager = mocker.Mock()
+    mocker.patch(
+        'src.viewmodels.wallet_and_transfer_selection_viewmodel.LnNodeServerManager.get_instance',
+        return_value=mock_ln_node_manager,
+    )
+
     return WalletTransferSelectionViewModel(mock_page_navigation, mock_splash_view_model)
 
 
