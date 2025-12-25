@@ -1,0 +1,12 @@
+"Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
+"passed","Thu Dec 25 11:33:40 UTC 2025","Thu Dec 25 11:34:42 UTC 2025","61906","test.spec","test_keyring_dialog","","","","test_keyring_option[False]","
+    Test the keyring option by restarting the app and verifying the keyring toggle button state.
+
+    :param wallets_and_operations: The wallets and operations fixture.
+    "
+"passed","Thu Dec 25 11:32:23 UTC 2025","Thu Dec 25 11:33:38 UTC 2025","75024","test.spec","test_keyring_dialog","","","","test_keyring_dialog[False]","
+    Test the keyring dialog functionality by restarting the application within the same test.
+
+    :param test_environment: The test environment fixture.
+    :param wallets_and_operations: The wallets and operations fixture.
+    "
