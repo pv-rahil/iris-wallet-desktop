@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/views/ui_sidebar.py: 100%</title>
+    <title>Coverage for src/views/ui_sidebar.py: 95%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_58284776.png">
     <link rel="stylesheet" href="style_cb_a5a05ca4.css" type="text/css">
     <script src="coverage_html_cb_bcae5fc4.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;views&#8201;/&#8201;ui_sidebar.py</b>:
-            <span class="pc_cov">100%</span>
+            <span class="pc_cov">95%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">127 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">127<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">121<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">6<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_f0b93e8365e7aa7d_ui_splash_screen_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.0">coverage.py v7.13.0</a>,
-            created at 2025-12-25 09:13 +0530
+            created at 2025-12-25 11:02 +0530
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -293,11 +293,11 @@
     <p class="pln"><span class="n"><a id="t211" href="#t211">211</a></span><span class="t">        <span class="str">"""Retranslate the UI elements."""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t212" href="#t212">212</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">network</span> <span class="op">=</span> <span class="nam">SettingRepository</span><span class="op">.</span><span class="nam">get_wallet_network</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t213" href="#t213">213</a></span><span class="t">        <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">network</span> <span class="op">==</span> <span class="nam">NetworkEnumModel</span><span class="op">.</span><span class="nam">MAINNET</span><span class="op">.</span><span class="nam">value</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">iris_wallet_text</span><span class="op">.</span><span class="nam">setText</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t215" href="#t215">215</a></span><span class="t">                <span class="nam">QCoreApplication</span><span class="op">.</span><span class="nam">translate</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">                    <span class="nam">IRIS_WALLET_TRANSLATIONS_CONTEXT</span><span class="op">,</span> <span class="str">'iris_wallet'</span><span class="op">,</span> <span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">                <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t218" href="#t218">218</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">iris_wallet_text</span><span class="op">.</span><span class="nam">setText</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t215" href="#t215">215</a></span><span class="t">                <span class="nam">QCoreApplication</span><span class="op">.</span><span class="nam">translate</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">                    <span class="nam">IRIS_WALLET_TRANSLATIONS_CONTEXT</span><span class="op">,</span> <span class="str">'iris_wallet'</span><span class="op">,</span> <span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">                <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t218" href="#t218">218</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t219" href="#t219">219</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t220" href="#t220">220</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">iris_wallet_text</span><span class="op">.</span><span class="nam">setText</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t221" href="#t221">221</a></span><span class="t">                <span class="fst">f'</span><span class="op">{</span><span class="nam">QCoreApplication</span><span class="op">.</span><span class="nam">translate</span><span class="op">(</span><span class="nam">IRIS_WALLET_TRANSLATIONS_CONTEXT</span><span class="op">,</span> <span class="str">"iris_wallet"</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span><span class="op">}</span><span class="fst"> </span><span class="op">{</span>&nbsp;</span><span class="r"></span></p>
@@ -316,21 +316,21 @@
     <p class="pln"><span class="n"><a id="t234" href="#t234">234</a></span><span class="t">        <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t235" href="#t235">235</a></span><span class="t"><span class="str">        Get the translation key of the checked sidebar button.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t236" href="#t236">236</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t237" href="#t237">237</a></span><span class="t">        <span class="nam">buttons</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">backup</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t239" href="#t239">239</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">help</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t240" href="#t240">240</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">view_unspent_list</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t241" href="#t241">241</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">faucet</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t242" href="#t242">242</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">channel_management</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t243" href="#t243">243</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">my_fungibles</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t244" href="#t244">244</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">my_collectibles</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t245" href="#t245">245</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">settings</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t246" href="#t246">246</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">about</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t247" href="#t247">247</a></span><span class="t">        <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">        <span class="key">for</span> <span class="nam">button</span> <span class="key">in</span> <span class="nam">buttons</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">            <span class="key">if</span> <span class="nam">button</span><span class="op">.</span><span class="nam">isChecked</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t250" href="#t250">250</a></span><span class="t">                <span class="key">return</span> <span class="nam">button</span><span class="op">.</span><span class="nam">get_translation_key</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t251" href="#t251">251</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t237" href="#t237">237</a></span><span class="t">        <span class="nam">buttons</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">backup</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t239" href="#t239">239</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">help</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t240" href="#t240">240</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">view_unspent_list</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t241" href="#t241">241</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">faucet</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t242" href="#t242">242</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">channel_management</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t243" href="#t243">243</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">my_fungibles</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t244" href="#t244">244</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">my_collectibles</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t245" href="#t245">245</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">settings</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t246" href="#t246">246</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">about</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t247" href="#t247">247</a></span><span class="t">        <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">        <span class="key">for</span> <span class="nam">button</span> <span class="key">in</span> <span class="nam">buttons</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">            <span class="key">if</span> <span class="nam">button</span><span class="op">.</span><span class="nam">isChecked</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t250" href="#t250">250</a></span><span class="t">                <span class="key">return</span> <span class="nam">button</span><span class="op">.</span><span class="nam">get_translation_key</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t251" href="#t251">251</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -340,7 +340,7 @@
             <a class="nav" href="z_f0b93e8365e7aa7d_ui_splash_screen_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.0">coverage.py v7.13.0</a>,
-            created at 2025-12-25 09:13 +0530
+            created at 2025-12-25 11:02 +0530
         </p>
     </div>
 </footer>
