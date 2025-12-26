@@ -126,10 +126,9 @@ def test_on_success_lock(ln_endpoint_vm, mock_page_navigation):
     mock_page_navigation.enter_wallet_password_page.assert_called_once()
 
 
-@patch('src.viewmodels.ln_endpoint_view_model.ToastManager')
 @patch('src.viewmodels.ln_endpoint_view_model.logger')
 @patch('src.viewmodels.ln_endpoint_view_model.QCoreApplication')
-def test_on_error_wallet_not_initialized(mock_qcore, mock_logger, mock_toast_manager, mock_page_navigation):
+def test_on_error_wallet_not_initialized(mock_qcore, mock_logger, mock_page_navigation, mocker):
     """Test the on_error method when error is ERROR_NODE_WALLET_NOT_INITIALIZED"""
     ln_endpoint_vm = LnEndpointViewModel(page_navigation=mock_page_navigation)
     ln_endpoint_vm.stop_loading_message = MagicMock()
@@ -137,6 +136,11 @@ def test_on_error_wallet_not_initialized(mock_qcore, mock_logger, mock_toast_man
     # Mock translate to return 'not_initialized'
     mock_qcore.translate.return_value = 'not_initialized'
     error = CommonException('not_initialized')
+
+    # Get reference to the mocked ToastManager.info
+    toast_info_mock = mocker.patch(
+        'src.views.components.toast.ToastManager.info',
+    )
 
     ln_endpoint_vm.on_error(error)
 
@@ -149,7 +153,7 @@ def test_on_error_wallet_not_initialized(mock_qcore, mock_logger, mock_toast_man
     )
 
     # Verify ToastManager call
-    mock_toast_manager.info.assert_called_once_with(
+    toast_info_mock.assert_called_once_with(
         description='not_initialized',
     )
 
@@ -161,12 +165,16 @@ def test_on_error_wallet_not_initialized(mock_qcore, mock_logger, mock_toast_man
     )
 
 
-@patch('src.viewmodels.ln_endpoint_view_model.ToastManager')
-def test_on_error_lock(mock_toast_manager, ln_endpoint_vm):
+def test_on_error_lock(ln_endpoint_vm, mocker):
     """Test the on_error_lock method."""
     # Setup
     ln_endpoint_vm.stop_loading_message = MagicMock()
     error = CommonException('test error message')
+
+    # Get reference to the mocked ToastManager.error
+    toast_error_mock = mocker.patch(
+        'src.views.components.toast.ToastManager.error',
+    )
 
     # Call the method
     ln_endpoint_vm.on_error_lock(error)
@@ -175,7 +183,7 @@ def test_on_error_lock(mock_toast_manager, ln_endpoint_vm):
     ln_endpoint_vm.stop_loading_message.emit.assert_called_once_with(False)
 
     # Verify ToastManager call
-    mock_toast_manager.error.assert_called_once_with(
+    toast_error_mock.assert_called_once_with(
         description='test error message',
     )
 
