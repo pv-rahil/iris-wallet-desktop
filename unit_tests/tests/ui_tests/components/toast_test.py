@@ -8,21 +8,9 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
-from PySide6.QtWidgets import QApplication
 
 from src.model.enums.enums_model import ToastPreset
 from src.views.components.toast import ToastManager
-
-
-@pytest.fixture(scope='session', autouse=True)
-def toast_app():
-    """Ensure QApplication is initialized."""
-    if not QApplication.instance():
-        app = QApplication([])
-        yield app
-        app.quit()
-    else:
-        yield QApplication.instance()
 
 
 @pytest.fixture

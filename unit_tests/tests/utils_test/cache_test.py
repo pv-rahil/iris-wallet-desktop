@@ -141,10 +141,14 @@ def test_invalidate_all_cache(mock_connect_db):
 
 @patch('src.utils.cache.Cache._connect_db')
 @patch('src.utils.cache.pickle.dumps')
-def test_update_cache(mock_pickle_dumps, mock_connect_db):
+@patch('src.utils.cache.time.time')
+def test_update_cache(mock_time, mock_pickle_dumps, mock_connect_db):
     """Test updating cache."""
     mock_conn = MagicMock()
     mock_cursor = mock_conn.cursor.return_value
+
+    fixed_timestamp = 1767102125
+    mock_time.return_value = fixed_timestamp
 
     mock_pickle_dumps.return_value = b'serialized_data'
 
@@ -157,7 +161,7 @@ def test_update_cache(mock_pickle_dumps, mock_connect_db):
         assert 'INSERT OR REPLACE INTO cache' in call_args[0]
         assert 'VALUES (?, ?, ?, 0)' in call_args[0]
         assert call_args[1] == (
-            'test_key', b'serialized_data', int(time.time()),
+            'test_key', b'serialized_data', fixed_timestamp,
         )
 
 
