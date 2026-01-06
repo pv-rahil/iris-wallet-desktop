@@ -1,55 +1,64 @@
 "Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
-"passed","Tue Jan 06 08:12:43 UTC 2026","Tue Jan 06 08:17:26 UTC 2026","282767","test.spec","test_hide_exhausted_asset","","","","test_hide_exhausted_asset_on","Test for hiding exhausted asset"
-"passed","Tue Jan 06 08:18:26 UTC 2026","Tue Jan 06 08:21:24 UTC 2026","177658","test.spec","test_receive_and_send_bitcoin","","","","test_receive_and_send_bitcoin","Test receiving and sending bitcoin."
-"passed","Tue Jan 06 08:15:26 UTC 2026","Tue Jan 06 08:22:37 UTC 2026","431561","test.spec","test_nia_channel_tx","","","","test_send_and_receive_with_correct_invoice_for_nia","Test sending and receiving with correct invoice for NIA"
-"passed","Tue Jan 06 08:42:40 UTC 2026","Tue Jan 06 08:44:09 UTC 2026","89490","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_cfa_off","Issuing NIA asset with ask auth for important operations off"
-"passed","Tue Jan 06 08:15:53 UTC 2026","Tue Jan 06 08:21:43 UTC 2026","350435","test.spec","test_refresh_transfer","","","","test_refresh_transfer","Test for refresh transfer"
-"passed","Tue Jan 06 08:24:41 UTC 2026","Tue Jan 06 08:26:38 UTC 2026","116615","test.spec","test_settings","","","","test_set_default_fee_rate[False]","Test setting a default fee rate
+"passed","Tue Jan 06 15:10:51 UTC 2026","Tue Jan 06 15:15:12 UTC 2026","261382","test.spec","test_send_and_receive_cfa_asset","","","","test_send_cfa_with_expired_invoice","Test send cfa asset with expired invoice"
+"passed","Tue Jan 06 15:36:40 UTC 2026","Tue Jan 06 15:37:49 UTC 2026","68772","test.spec","test_settings","","","","test_set_invalid_electrum_url[False]","Test setting an invalid electrum URL
 
-    Tests that a user can:
-    1. Navigate to settings
-    2. Set a new default fee rate
-    3. Verify the fee rate is saved and applied
+    Tests that when a user:
+    1. Navigates to settings
+    2. Attempts to set an invalid electrum URL
+    3. The system shows appropriate error message
     "
-"passed","Tue Jan 06 08:16:32 UTC 2026","Tue Jan 06 08:18:24 UTC 2026","111911","test.spec","test_receive_and_send_bitcoin","","","","test_send_bitcoin_with_zero_balance","Test sending bitcoin with zero balance."
-"passed","Tue Jan 06 08:14:02 UTC 2026","Tue Jan 06 08:14:52 UTC 2026","50463","test.spec","test_issue_nia_asset","","","","test_issue_nia_with_sufficient_sats_and_utxo[False]","
-    Test nia asset issuance with sufficient sats and utxo.
-    "
-"passed","Tue Jan 06 08:12:45 UTC 2026","Tue Jan 06 08:16:25 UTC 2026","220131","test.spec","test_send_and_receive_nia_asset","","","","test_send_nia_with_expired_invoice","Test send nia asset with expired invoice"
-"skipped","Tue Jan 06 08:22:41 UTC 2026","Tue Jan 06 08:22:41 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_restore","
-    This test case is used to restore the wallet from the backup.
-    "
-"passed","Tue Jan 06 08:11:09 UTC 2026","Tue Jan 06 08:12:11 UTC 2026","62228","test.spec","test_keyring_dialog","","","","test_keyring_option[False]","
-    Test the keyring option by restarting the app and verifying the keyring toggle button state.
-
-    :param wallets_and_operations: The wallets and operations fixture.
-    "
-"passed","Tue Jan 06 08:09:06 UTC 2026","Tue Jan 06 08:10:32 UTC 2026","86367","test.spec","test_login_app_auth","","","","test_login_app_toggle_button_on[False]","
-    Test the login app toggle button functionality.
-
-    This test case creates first wallet,
-    toggles the login app auth button to on, and restarts the application.
-
-    Args:
-        test_environment: The test environment setup.
-        wallets_and_operations: The wallets and operations setup.
-
-    Returns:
-        None
-    "
-"passed","Tue Jan 06 08:32:51 UTC 2026","Tue Jan 06 08:34:16 UTC 2026","85742","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_nia_on","Sending NIA asset with ask auth for important operations on"
-"passed","Tue Jan 06 08:09:53 UTC 2026","Tue Jan 06 08:11:07 UTC 2026","74506","test.spec","test_keyring_dialog","","","","test_keyring_dialog[False]","
+"passed","Tue Jan 06 15:09:01 UTC 2026","Tue Jan 06 15:10:16 UTC 2026","74912","test.spec","test_keyring_dialog","","","","test_keyring_dialog[False]","
     Test the keyring dialog functionality by restarting the application within the same test.
 
     :param test_environment: The test environment fixture.
     :param wallets_and_operations: The wallets and operations fixture.
     "
-"passed","Tue Jan 06 08:13:20 UTC 2026","Tue Jan 06 08:14:55 UTC 2026","95117","test.spec","test_issue_cfa_asset","","","","test_issue_cfa_with_sufficient_sats_and_no_utxo[False]","
+"passed","Tue Jan 06 15:11:11 UTC 2026","Tue Jan 06 15:15:50 UTC 2026","278896","test.spec","test_hide_exhausted_asset","","","","test_hide_exhausted_asset_on","Test for hiding exhausted asset"
+"passed","Tue Jan 06 15:15:54 UTC 2026","Tue Jan 06 15:16:08 UTC 2026","13557","test.spec","test_about","","","","test_download_debug_log[False]","Test for downloading debug logs"
+"passed","Tue Jan 06 15:31:29 UTC 2026","Tue Jan 06 15:32:03 UTC 2026","34340","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_nia_on","Issuing NIA asset with ask auth for important operations on"
+"passed","Tue Jan 06 15:14:54 UTC 2026","Tue Jan 06 15:15:52 UTC 2026","58531","test.spec","test_about","","","","test_announce_alias_info[False]","Test asserting announce alias info"
+"passed","Tue Jan 06 15:37:51 UTC 2026","Tue Jan 06 15:39:08 UTC 2026","77316","test.spec","test_settings","","","","test_set_rgb_proxy_url[False]","Test setting a valid RGB proxy URL
+
+    Tests that a user can:
+    1. Navigate to settings
+    2. Set a valid RGB proxy URL
+    3. Verify the URL is saved correctly
+    "
+"passed","Tue Jan 06 15:34:35 UTC 2026","Tue Jan 06 15:35:36 UTC 2026","60421","test.spec","test_settings","","","","test_set_invalid_bitcoind_host[False]","Test setting an invalid bitcoind host
+
+    Tests that when a user:
+    1. Navigates to settings
+    2. Attempts to set an invalid bitcoind host
+    3. The system shows appropriate error message
+    "
+"passed","Tue Jan 06 15:33:36 UTC 2026","Tue Jan 06 15:34:33 UTC 2026","57253","test.spec","test_settings","","","","test_set_announce_alias[False]","Test setting an announce alias
+
+    Tests that a user can:
+    1. Navigate to settings
+    2. Set an announce alias
+    3. Verify the alias is saved correctly
+    "
+"passed","Tue Jan 06 15:12:43 UTC 2026","Tue Jan 06 15:14:29 UTC 2026","105674","test.spec","test_issue_cfa_asset","","","","test_issue_cfa_with_sufficient_sats_and_no_utxo[False]","
     Test issuing cfa asset with sufficient sats but no utxo.
     "
-"passed","Tue Jan 06 08:10:57 UTC 2026","Tue Jan 06 08:12:02 UTC 2026","65164","test.spec","test_about","","","","test_node_info[False]","Test asserting node info"
-"passed","Tue Jan 06 08:12:04 UTC 2026","Tue Jan 06 08:12:08 UTC 2026","4342","test.spec","test_about","","","","test_bitcoind_host_info[False]","Test asserting bitcoind host info"
-"passed","Tue Jan 06 08:26:40 UTC 2026","Tue Jan 06 08:28:02 UTC 2026","81976","test.spec","test_settings","","","","test_default_expiry_time_minute[False]","
+"passed","Tue Jan 06 15:31:51 UTC 2026","Tue Jan 06 15:32:35 UTC 2026","44090","test.spec","test_settings","","","","test_set_default_min_confirmation[False]","Test for setting default minimum confirmation"
+"passed","Tue Jan 06 15:13:28 UTC 2026","Tue Jan 06 15:13:33 UTC 2026","4346","test.spec","test_about","","","","test_bitcoind_host_info[False]","Test asserting bitcoind host info"
+"passed","Tue Jan 06 15:07:43 UTC 2026","Tue Jan 06 15:09:19 UTC 2026","96716","test.spec","test_view_unspent","","","","test_view_unspent_list[False]","
+    Test view unspent list.
+    "
+"skipped","Tue Jan 06 15:21:12 UTC 2026","Tue Jan 06 15:21:12 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_restore_asset","
+    This test case is used to restore the wallet from the backup.
+    "
+"passed","Tue Jan 06 15:29:51 UTC 2026","Tue Jan 06 15:31:49 UTC 2026","117234","test.spec","test_settings","","","","test_default_expiry_time_days[False]","
+    Test setting a default expiry time in days for lightning invoices.
+
+    Tests that a user can:
+    1. Navigate to settings
+    2. Set a new default expiry time in days
+    3. Verify the expiry time is saved and applied
+    "
+"passed","Tue Jan 06 15:41:54 UTC 2026","Tue Jan 06 15:43:25 UTC 2026","91836","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_cfa_off","Issuing NIA asset with ask auth for important operations off"
+"passed","Tue Jan 06 15:26:57 UTC 2026","Tue Jan 06 15:28:17 UTC 2026","80345","test.spec","test_settings","","","","test_default_expiry_time_minute[False]","
     Test setting a default expiry time in minutes for lightning invoices.
 
     Tests that a user can:
@@ -57,7 +66,10 @@
     2. Set a new default expiry time in minutes
     3. Verify the expiry time is saved and applied
     "
-"passed","Tue Jan 06 08:10:34 UTC 2026","Tue Jan 06 08:10:46 UTC 2026","12308","test.spec","test_login_app_auth","","","","test_login_app_with_authentication[False]","
+"passed","Tue Jan 06 15:38:48 UTC 2026","Tue Jan 06 15:39:40 UTC 2026","52282","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_nia_off","Issuing NIA asset with ask auth for important operations off"
+"passed","Tue Jan 06 15:39:42 UTC 2026","Tue Jan 06 15:41:52 UTC 2026","129333","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_nia_off","Sending NIA asset with ask auth for important operations off"
+"passed","Tue Jan 06 15:13:54 UTC 2026","Tue Jan 06 15:14:52 UTC 2026","57850","test.spec","test_about","","","","test_announce_address_info[False]","Test asserting announce address info"
+"passed","Tue Jan 06 15:08:39 UTC 2026","Tue Jan 06 15:08:51 UTC 2026","12269","test.spec","test_login_app_auth","","","","test_login_app_with_authentication[False]","
     Test the login app with authentication functionality.
 
     This test case types the login password, asserts the state of the toggle button,
@@ -70,100 +82,28 @@
     Returns:
         None
     "
-"passed","Tue Jan 06 08:12:10 UTC 2026","Tue Jan 06 08:12:15 UTC 2026","4358","test.spec","test_about","","","","test_bitcoind_port_info[False]","Test asserting bitcoind port info"
-"passed","Tue Jan 06 08:34:19 UTC 2026","Tue Jan 06 08:35:15 UTC 2026","56882","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_cfa_on","Issuing CFA asset with ask auth for important operations on"
-"passed","Tue Jan 06 08:11:11 UTC 2026","Tue Jan 06 08:12:35 UTC 2026","83990","test.spec","test_issue_nia_asset","","","","test_issue_nia_without_sufficient_sats[False]","
-    Test nia asset issuance without sufficient sats.
-    "
-"passed","Tue Jan 06 08:34:30 UTC 2026","Tue Jan 06 08:36:01 UTC 2026","90603","test.spec","test_settings","","","","test_set_invalid_bitcoind_host[False]","Test setting an invalid bitcoind host
+"passed","Tue Jan 06 15:35:38 UTC 2026","Tue Jan 06 15:36:38 UTC 2026","60430","test.spec","test_settings","","","","test_set_invalid_bitcoind_port[False]","Test setting an invalid bitcoind port
 
     Tests that when a user:
     1. Navigates to settings
-    2. Attempts to set an invalid bitcoind host
+    2. Attempts to set an invalid bitcoind port
     3. The system shows appropriate error message
     "
-"passed","Tue Jan 06 08:09:34 UTC 2026","Tue Jan 06 08:12:02 UTC 2026","148142","test.spec","test_fail_transfer","","","","test_fail_transfer[False]","Test for fail transfer"
-"passed","Tue Jan 06 08:29:35 UTC 2026","Tue Jan 06 08:31:23 UTC 2026","107545","test.spec","test_settings","","","","test_default_expiry_time_days[False]","
-    Test setting a default expiry time in days for lightning invoices.
-
-    Tests that a user can:
-    1. Navigate to settings
-    2. Set a new default expiry time in days
-    3. Verify the expiry time is saved and applied
-    "
-"passed","Tue Jan 06 08:40:18 UTC 2026","Tue Jan 06 08:41:48 UTC 2026","90076","test.spec","test_settings","","","","test_set_invalid_rgb_proxy_url[False]","Test setting an invalid RGB proxy URL
-
-    Tests that when a user:
-    1. Navigates to settings
-    2. Attempts to set an invalid RGB proxy URL
-    3. The system shows appropriate error message
-    "
-"passed","Tue Jan 06 08:14:31 UTC 2026","Tue Jan 06 08:14:45 UTC 2026","13745","test.spec","test_about","","","","test_download_debug_log[False]","Test for downloading debug logs"
-"passed","Tue Jan 06 08:27:22 UTC 2026","Tue Jan 06 08:32:12 UTC 2026","289257","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_bitcoin_on","Test for hiding exhausted asset"
-"passed","Tue Jan 06 08:32:14 UTC 2026","Tue Jan 06 08:32:49 UTC 2026","34994","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_nia_on","Issuing NIA asset with ask auth for important operations on"
-"passed","Tue Jan 06 08:40:32 UTC 2026","Tue Jan 06 08:42:38 UTC 2026","125667","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_nia_off","Sending NIA asset with ask auth for important operations off"
-"passed","Tue Jan 06 08:16:27 UTC 2026","Tue Jan 06 08:18:11 UTC 2026","103415","test.spec","test_send_and_receive_nia_asset","","","","test_send_and_receive_nia_asset_operation","Test send and receive operation for nia asset"
-"passed","Tue Jan 06 08:37:14 UTC 2026","Tue Jan 06 08:38:28 UTC 2026","73968","test.spec","test_settings","","","","test_set_invalid_electrum_url[False]","Test setting an invalid electrum URL
-
-    Tests that when a user:
-    1. Navigates to settings
-    2. Attempts to set an invalid electrum URL
-    3. The system shows appropriate error message
-    "
-"passed","Tue Jan 06 08:11:38 UTC 2026","Tue Jan 06 08:13:18 UTC 2026","100727","test.spec","test_issue_cfa_asset","","","","test_issue_cfa_without_sufficient_sats[False]","
-    Test issuing cfa asset without sufficient sats.
-    "
-"skipped","Tue Jan 06 08:22:41 UTC 2026","Tue Jan 06 08:22:41 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_backup","
-    Test the backup page functionality.
-    This test case covers the following scenarios:
-    - Create a embedded wallet
-    - Configure backup
-    - Take a backup of wallet
-    "
-"passed","Tue Jan 06 08:13:22 UTC 2026","Tue Jan 06 08:19:05 UTC 2026","342325","test.spec","test_create_and_close_channel","","","","test_create_channel_with_actual_value","Test creating channel with actual value."
-"passed","Tue Jan 06 08:13:30 UTC 2026","Tue Jan 06 08:14:29 UTC 2026","59838","test.spec","test_about","","","","test_announce_alias_info[False]","Test asserting announce alias info"
-"passed","Tue Jan 06 08:33:23 UTC 2026","Tue Jan 06 08:34:28 UTC 2026","65033","test.spec","test_settings","","","","test_set_announce_alias[False]","Test setting an announce alias
-
-    Tests that a user can:
-    1. Navigate to settings
-    2. Set an announce alias
-    3. Verify the alias is saved correctly
-    "
-"skipped","Tue Jan 06 08:22:41 UTC 2026","Tue Jan 06 08:22:41 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_transfer_btc_and_asset","
-    Scenario:
-    - Launch two apps (A and B) and fund both wallets
-    - In wallet A: issue NIA and send to wallet B (amount 20)
-    - In wallet B: issue CFA and send to wallet A (amount 25)
-    - Send BTC from A to B
-    - Backup wallet A, restart env, restore wallet A
-    - Assert wallet A shows received CFA and sent NIA, and BTC history reflects send
-    "
-"passed","Tue Jan 06 08:37:07 UTC 2026","Tue Jan 06 08:39:37 UTC 2026","149733","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_bitcoin_off","test native auth for important operations (send btc) off"
-"passed","Tue Jan 06 08:21:26 UTC 2026","Tue Jan 06 08:24:11 UTC 2026","165434","test.spec","test_receive_and_send_bitcoin","","","","test_send_bitcoin_with_custom_fee_rate","Test sending bitcoin with a custom fee rate."
-"passed","Tue Jan 06 08:17:28 UTC 2026","Tue Jan 06 08:17:53 UTC 2026","25055","test.spec","test_hide_exhausted_asset","","","","test_hide_exhausted_asset_off","Test for hiding exhausted asset"
-"passed","Tue Jan 06 08:35:17 UTC 2026","Tue Jan 06 08:37:05 UTC 2026","107695","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_cfa_on","Sending CFA asset with ask auth for important operations on"
-"passed","Tue Jan 06 08:44:11 UTC 2026","Tue Jan 06 08:46:45 UTC 2026","153840","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_cfa_off","Sending CFA asset with ask auth for important operations off"
-"passed","Tue Jan 06 08:12:17 UTC 2026","Tue Jan 06 08:12:21 UTC 2026","4388","test.spec","test_about","","","","test_indexer_info[False]","Test asserting indexer info"
-"passed","Tue Jan 06 08:39:39 UTC 2026","Tue Jan 06 08:40:30 UTC 2026","51084","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_nia_off","Issuing NIA asset with ask auth for important operations off"
-"passed","Tue Jan 06 08:24:14 UTC 2026","Tue Jan 06 08:25:10 UTC 2026","56358","test.spec","test_receive_and_send_bitcoin","","","","test_send_bitcoin_with_invalid_invoice","Test sending bitcoin with an invalid invoice."
-"passed","Tue Jan 06 08:31:25 UTC 2026","Tue Jan 06 08:32:15 UTC 2026","50137","test.spec","test_settings","","","","test_set_default_min_confirmation[False]","Test for setting default minimum confirmation"
-"passed","Tue Jan 06 08:28:04 UTC 2026","Tue Jan 06 08:29:33 UTC 2026","89266","test.spec","test_settings","","","","test_default_expiry_time_hour[False]","
-    Test setting a default expiry time in hours for lightning invoices.
-
-    Tests that a user can:
-    1. Navigate to settings
-    2. Set a new default expiry time in hours
-    3. Verify the expiry time is saved and applied
-    "
-"passed","Tue Jan 06 08:12:23 UTC 2026","Tue Jan 06 08:12:28 UTC 2026","4426","test.spec","test_about","","","","test_rgb_proxy_info[False]","Test asserting RGB proxy info"
-"passed","Tue Jan 06 08:12:51 UTC 2026","Tue Jan 06 08:17:09 UTC 2026","257897","test.spec","test_send_and_receive_cfa_asset","","","","test_send_cfa_with_expired_invoice","Test send cfa asset with expired invoice"
-"passed","Tue Jan 06 08:14:57 UTC 2026","Tue Jan 06 08:16:01 UTC 2026","63125","test.spec","test_issue_cfa_asset","","","","test_issue_cfa_with_sufficient_sats_and_utxo[False]","
+"passed","Tue Jan 06 15:14:31 UTC 2026","Tue Jan 06 15:15:44 UTC 2026","73296","test.spec","test_issue_cfa_asset","","","","test_issue_cfa_with_sufficient_sats_and_utxo[False]","
     Test issuing cfa asset with sufficient sats and utxo.
     "
-"passed","Tue Jan 06 08:12:37 UTC 2026","Tue Jan 06 08:14:00 UTC 2026","82569","test.spec","test_issue_nia_asset","","","","test_issue_nia_with_sufficient_sats_and_no_utxo[False]","
-    Test nia asset issuance with sufficient sats and no utxo.
+"passed","Tue Jan 06 15:34:30 UTC 2026","Tue Jan 06 15:36:16 UTC 2026","106812","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_cfa_on","Sending CFA asset with ask auth for important operations on"
+"passed","Tue Jan 06 15:07:56 UTC 2026","Tue Jan 06 15:10:24 UTC 2026","148046","test.spec","test_fail_transfer","","","","test_fail_transfer[False]","Test for fail transfer"
+"passed","Tue Jan 06 15:15:14 UTC 2026","Tue Jan 06 15:16:43 UTC 2026","88852","test.spec","test_send_and_receive_cfa_asset","","","","test_send_and_receive_cfa_asset_operation","Test send and receive operation for cfa asset"
+"skipped","Tue Jan 06 15:21:12 UTC 2026","Tue Jan 06 15:21:12 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_restore","
+    This test case is used to restore the wallet from the backup.
     "
-"skipped","Tue Jan 06 08:22:41 UTC 2026","Tue Jan 06 08:22:41 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_mnemonic_and_backup_configure","
+"passed","Tue Jan 06 15:32:37 UTC 2026","Tue Jan 06 15:33:34 UTC 2026","57358","test.spec","test_settings","","","","test_set_valid_announce_address[False]","Testing with an invalid announce address"
+"passed","Tue Jan 06 15:20:21 UTC 2026","Tue Jan 06 15:21:00 UTC 2026","38512","test.spec","test_nia_channel_tx","","","","test_create_wrong_amount_invoice","
+    Test case to create wrong ln invoice with insufficient amount
+    "
+"passed","Tue Jan 06 15:13:48 UTC 2026","Tue Jan 06 15:13:52 UTC 2026","4406","test.spec","test_about","","","","test_rgb_proxy_info[False]","Test asserting RGB proxy info"
+"skipped","Tue Jan 06 15:21:12 UTC 2026","Tue Jan 06 15:21:12 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_mnemonic_and_backup_configure","
     Test the mnemonic and backup configuration functionality.
     This test case covers the following scenarios:
     - Create a embedded wallet
@@ -173,10 +113,72 @@
     :param wallets_and_operations: WalletTestSetup instance
     :return: None
     "
-"passed","Tue Jan 06 08:22:39 UTC 2026","Tue Jan 06 08:23:18 UTC 2026","38657","test.spec","test_nia_channel_tx","","","","test_create_wrong_amount_invoice","
-    Test case to create wrong ln invoice with insufficient amount
+"passed","Tue Jan 06 15:18:24 UTC 2026","Tue Jan 06 15:19:05 UTC 2026","41698","test.spec","test_create_and_close_channel","","","","test_create_channel_with_wrong_node_uri","
+    Test the creation of a channel with a wrong node URI.
     "
-"passed","Tue Jan 06 08:12:47 UTC 2026","Tue Jan 06 08:18:33 UTC 2026","345675","test.spec","test_btc_channel_tx","","","","test_send_and_receive_with_correct_invoice_for_btc","
+"passed","Tue Jan 06 15:13:36 UTC 2026","Tue Jan 06 15:14:26 UTC 2026","49931","test.spec","test_issue_nia_asset","","","","test_issue_nia_with_sufficient_sats_and_utxo[False]","
+    Test nia asset issuance with sufficient sats and utxo.
+    "
+"passed","Tue Jan 06 15:15:52 UTC 2026","Tue Jan 06 15:16:20 UTC 2026","28024","test.spec","test_hide_exhausted_asset","","","","test_hide_exhausted_asset_off","Test for hiding exhausted asset"
+"passed","Tue Jan 06 15:33:32 UTC 2026","Tue Jan 06 15:34:28 UTC 2026","55871","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_issue_cfa_on","Issuing CFA asset with ask auth for important operations on"
+"passed","Tue Jan 06 15:32:05 UTC 2026","Tue Jan 06 15:33:30 UTC 2026","84524","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_nia_on","Sending NIA asset with ask auth for important operations on"
+"skipped","Tue Jan 06 15:21:12 UTC 2026","Tue Jan 06 15:21:12 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_transfer_btc_and_asset","
+    Scenario:
+    - Launch two apps (A and B) and fund both wallets
+    - In wallet A: issue NIA and send to wallet B (amount 20)
+    - In wallet B: issue CFA and send to wallet A (amount 25)
+    - Send BTC from A to B
+    - Backup wallet A, restart env, restore wallet A
+    - Assert wallet A shows received CFA and sent NIA, and BTC history reflects send
+    "
+"passed","Tue Jan 06 15:40:31 UTC 2026","Tue Jan 06 15:42:20 UTC 2026","108924","test.spec","test_settings","","","","test_set_valid_electrum_url[False]","Test setting a valid electrum URL
+
+    Tests that a user can:
+    1. Navigate to settings
+    2. Set a valid electrum URL
+    3. Verify the URL is saved correctly
+    "
+"passed","Tue Jan 06 15:13:35 UTC 2026","Tue Jan 06 15:13:39 UTC 2026","4367","test.spec","test_about","","","","test_bitcoind_port_info[False]","Test asserting bitcoind port info"
+"passed","Tue Jan 06 15:28:20 UTC 2026","Tue Jan 06 15:29:49 UTC 2026","89874","test.spec","test_settings","","","","test_default_expiry_time_hour[False]","
+    Test setting a default expiry time in hours for lightning invoices.
+
+    Tests that a user can:
+    1. Navigate to settings
+    2. Set a new default expiry time in hours
+    3. Verify the expiry time is saved and applied
+    "
+"passed","Tue Jan 06 15:10:45 UTC 2026","Tue Jan 06 15:12:09 UTC 2026","84068","test.spec","test_issue_nia_asset","","","","test_issue_nia_without_sufficient_sats[False]","
+    Test nia asset issuance without sufficient sats.
+    "
+"passed","Tue Jan 06 15:43:27 UTC 2026","Tue Jan 06 15:46:04 UTC 2026","156980","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_cfa_off","Sending CFA asset with ask auth for important operations off"
+"passed","Tue Jan 06 15:13:08 UTC 2026","Tue Jan 06 15:20:19 UTC 2026","431252","test.spec","test_nia_channel_tx","","","","test_send_and_receive_with_correct_invoice_for_nia","Test sending and receiving with correct invoice for NIA"
+"passed","Tue Jan 06 15:12:11 UTC 2026","Tue Jan 06 15:13:34 UTC 2026","82839","test.spec","test_issue_nia_asset","","","","test_issue_nia_with_sufficient_sats_and_no_utxo[False]","
+    Test nia asset issuance with sufficient sats and no utxo.
+    "
+"passed","Tue Jan 06 15:10:18 UTC 2026","Tue Jan 06 15:11:20 UTC 2026","62320","test.spec","test_keyring_dialog","","","","test_keyring_option[False]","
+    Test the keyring option by restarting the app and verifying the keyring toggle button state.
+
+    :param wallets_and_operations: The wallets and operations fixture.
+    "
+"passed","Tue Jan 06 15:26:39 UTC 2026","Tue Jan 06 15:31:27 UTC 2026","287582","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_bitcoin_on","Test for hiding exhausted asset"
+"passed","Tue Jan 06 15:13:41 UTC 2026","Tue Jan 06 15:13:46 UTC 2026","4390","test.spec","test_about","","","","test_indexer_info[False]","Test asserting indexer info"
+"passed","Tue Jan 06 15:07:30 UTC 2026","Tue Jan 06 15:08:37 UTC 2026","67554","test.spec","test_login_app_auth","","","","test_login_app_toggle_button_on[False]","
+    Test the login app toggle button functionality.
+
+    This test case creates first wallet,
+    toggles the login app auth button to on, and restarts the application.
+
+    Args:
+        test_environment: The test environment setup.
+        wallets_and_operations: The wallets and operations setup.
+
+    Returns:
+        None
+    "
+"passed","Tue Jan 06 15:36:18 UTC 2026","Tue Jan 06 15:38:46 UTC 2026","147468","test.spec","test_ask_auth_for_imp_operations","","","","test_ask_auth_for_imp_question_send_bitcoin_off","test native auth for important operations (send btc) off"
+"passed","Tue Jan 06 15:15:41 UTC 2026","Tue Jan 06 15:17:27 UTC 2026","105239","test.spec","test_send_and_receive_nia_asset","","","","test_send_and_receive_nia_asset_operation","Test send and receive operation for nia asset"
+"passed","Tue Jan 06 15:07:04 UTC 2026","Tue Jan 06 15:08:36 UTC 2026","92092","test.spec","test_help","","","","test_help_page[False]","Test help page"
+"passed","Tue Jan 06 15:11:45 UTC 2026","Tue Jan 06 15:17:32 UTC 2026","346511","test.spec","test_btc_channel_tx","","","","test_send_and_receive_with_correct_invoice_for_btc","
     Test sending and receiving with correct invoice.
 
     This test case creates embedded wallets, funds them, gets the node URI, creates a channel,
@@ -188,37 +190,35 @@
     Returns:
         None
     "
-"skipped","Tue Jan 06 08:22:41 UTC 2026","Tue Jan 06 08:22:41 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_restore_asset","
-    This test case is used to restore the wallet from the backup.
-    "
-"passed","Tue Jan 06 08:12:30 UTC 2026","Tue Jan 06 08:13:28 UTC 2026","57931","test.spec","test_about","","","","test_announce_address_info[False]","Test asserting announce address info"
-"passed","Tue Jan 06 08:09:11 UTC 2026","Tue Jan 06 08:11:06 UTC 2026","115129","test.spec","test_view_unspent","","","","test_view_unspent_list[False]","
-    Test view unspent list.
-    "
-"passed","Tue Jan 06 08:32:17 UTC 2026","Tue Jan 06 08:33:21 UTC 2026","63871","test.spec","test_settings","","","","test_set_valid_announce_address[False]","Testing with an invalid announce address"
-"passed","Tue Jan 06 08:17:11 UTC 2026","Tue Jan 06 08:18:40 UTC 2026","88333","test.spec","test_send_and_receive_cfa_asset","","","","test_send_and_receive_cfa_asset_operation","Test send and receive operation for cfa asset"
-"passed","Tue Jan 06 08:19:07 UTC 2026","Tue Jan 06 08:19:46 UTC 2026","39198","test.spec","test_create_and_close_channel","","","","test_create_channel_with_wrong_node_uri","
-    Test the creation of a channel with a wrong node URI.
-    "
-"passed","Tue Jan 06 08:41:50 UTC 2026","Tue Jan 06 08:43:37 UTC 2026","106440","test.spec","test_settings","","","","test_set_valid_electrum_url[False]","Test setting a valid electrum URL
+"passed","Tue Jan 06 15:11:58 UTC 2026","Tue Jan 06 15:15:39 UTC 2026","221539","test.spec","test_send_and_receive_nia_asset","","","","test_send_nia_with_expired_invoice","Test send nia asset with expired invoice"
+"passed","Tue Jan 06 15:24:40 UTC 2026","Tue Jan 06 15:26:55 UTC 2026","134998","test.spec","test_settings","","","","test_set_default_fee_rate[False]","Test setting a default fee rate
 
     Tests that a user can:
     1. Navigate to settings
-    2. Set a valid electrum URL
-    3. Verify the URL is saved correctly
+    2. Set a new default fee rate
+    3. Verify the fee rate is saved and applied
     "
-"passed","Tue Jan 06 08:36:03 UTC 2026","Tue Jan 06 08:37:12 UTC 2026","68987","test.spec","test_settings","","","","test_set_invalid_bitcoind_port[False]","Test setting an invalid bitcoind port
+"passed","Tue Jan 06 15:12:32 UTC 2026","Tue Jan 06 15:18:22 UTC 2026","350214","test.spec","test_create_and_close_channel","","","","test_create_channel_with_actual_value","Test creating channel with actual value."
+"passed","Tue Jan 06 15:22:00 UTC 2026","Tue Jan 06 15:22:55 UTC 2026","55319","test.spec","test_receive_and_send_bitcoin","","","","test_send_bitcoin_with_invalid_invoice","Test sending bitcoin with an invalid invoice."
+"passed","Tue Jan 06 15:12:21 UTC 2026","Tue Jan 06 15:13:26 UTC 2026","65215","test.spec","test_about","","","","test_node_info[False]","Test asserting node info"
+"passed","Tue Jan 06 15:39:10 UTC 2026","Tue Jan 06 15:40:29 UTC 2026","78547","test.spec","test_settings","","","","test_set_invalid_rgb_proxy_url[False]","Test setting an invalid RGB proxy URL
 
     Tests that when a user:
     1. Navigates to settings
-    2. Attempts to set an invalid bitcoind port
+    2. Attempts to set an invalid RGB proxy URL
     3. The system shows appropriate error message
     "
-"passed","Tue Jan 06 08:08:42 UTC 2026","Tue Jan 06 08:10:12 UTC 2026","90370","test.spec","test_help","","","","test_help_page[False]","Test help page"
-"passed","Tue Jan 06 08:38:30 UTC 2026","Tue Jan 06 08:40:16 UTC 2026","106626","test.spec","test_settings","","","","test_set_rgb_proxy_url[False]","Test setting a valid RGB proxy URL
-
-    Tests that a user can:
-    1. Navigate to settings
-    2. Set a valid RGB proxy URL
-    3. Verify the URL is saved correctly
+"passed","Tue Jan 06 15:14:25 UTC 2026","Tue Jan 06 15:16:16 UTC 2026","111401","test.spec","test_receive_and_send_bitcoin","","","","test_send_bitcoin_with_zero_balance","Test sending bitcoin with zero balance."
+"passed","Tue Jan 06 15:11:00 UTC 2026","Tue Jan 06 15:12:41 UTC 2026","101432","test.spec","test_issue_cfa_asset","","","","test_issue_cfa_without_sufficient_sats[False]","
+    Test issuing cfa asset without sufficient sats.
     "
+"passed","Tue Jan 06 15:19:15 UTC 2026","Tue Jan 06 15:21:58 UTC 2026","162817","test.spec","test_receive_and_send_bitcoin","","","","test_send_bitcoin_with_custom_fee_rate","Test sending bitcoin with a custom fee rate."
+"passed","Tue Jan 06 15:16:18 UTC 2026","Tue Jan 06 15:19:13 UTC 2026","174596","test.spec","test_receive_and_send_bitcoin","","","","test_receive_and_send_bitcoin","Test receiving and sending bitcoin."
+"skipped","Tue Jan 06 15:21:12 UTC 2026","Tue Jan 06 15:21:12 UTC 2026","0","test.spec","test_backup_and_restore","","","","test_backup","
+    Test the backup page functionality.
+    This test case covers the following scenarios:
+    - Create a embedded wallet
+    - Configure backup
+    - Take a backup of wallet
+    "
+"passed","Tue Jan 06 15:10:59 UTC 2026","Tue Jan 06 15:15:53 UTC 2026","294043","test.spec","test_refresh_transfer","","","","test_refresh_transfer","Test for refresh transfer"
