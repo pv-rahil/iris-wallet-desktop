@@ -11,8 +11,11 @@ from __future__ import annotations
 
 import rgb_lib
 from rgb_lib import RgbLibError
+from src.flavour import __app_name_suffix__
 
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletSignatureType
+from src.utils.constant import MULTISIG_BRIDGE_URL,MULTISIG_1_TOKEN,MULTISIG_2_TOKEN,MULTISIG_3_TOKEN
 from src.utils.custom_exception import CommonException
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
@@ -25,18 +28,21 @@ class ColoredWallet:
     loading/saving of initialization data.
 
     Attributes:
-        wallet (rgb_lib.Wallet): The active RGB wallet instance.
+        wallet (rgb_lib.Wallet | rgb_lib.MultisigWallet): The active RGB wallet instance.
         online (rgb_lib.Online): The current online session.
     """
 
     def __init__(self):
-        self._wallet: rgb_lib.Wallet | None = None
+        self._wallet: rgb_lib.Wallet | rgb_lib.MultisigWallet | None = None
         self.online_wallet: rgb_lib.Online | None = None
+        self.is_multisig = (
+                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            )
 
     @property
-    def wallet(self) -> rgb_lib.Wallet:
+    def wallet(self) -> rgb_lib.Wallet | rgb_lib.MultisigWallet:
         """
-        Returns the initialized wallet instance.
+        Returns the initialized wallet instance (standard or multisig).
 
         Raises:
             RuntimeError: If the wallet is not yet set.
@@ -45,8 +51,8 @@ class ColoredWallet:
             raise CommonException('Wallet not initialized')
         return self._wallet
 
-    def set_wallet(self, wallet: rgb_lib.Wallet):
-        """Sets the wallet instance."""
+    def set_wallet(self, wallet: rgb_lib.Wallet | rgb_lib.MultisigWallet):
+        """Sets the wallet instance (standard or multisig)."""
         self._wallet = wallet
 
     @property
@@ -75,7 +81,11 @@ class ColoredWallet:
                     SettingRepository.get_wallet_network(),
                 )
                 indexer_url = get_bitcoin_config(network, '').indexer_url
-                self.online_wallet = self._wallet.go_online(False, indexer_url)
+                if self.is_multisig:
+                    bridge_token = self.get_multisig_bridge_token()
+                    self.online_wallet = self._wallet.go_online(indexer_url, MULTISIG_BRIDGE_URL, bridge_token)
+                else:
+                    self.online_wallet = self._wallet.go_online(False, indexer_url)
             except Exception as exc:
                 logger.error(
                     'Failed to go online: %s, Message: %s',
@@ -115,6 +125,20 @@ class ColoredWallet:
                         'original_exception': str(exc),
                     },
                 ) from exc
+
+    def get_multisig_bridge_token(self):
+        """This is a temporary function make sure to remove it after development"""
+        # Re-import to get the updated value (set by bootstrap.py at runtime)
+        app_suffix = __app_name_suffix__        
+        if app_suffix == "multisig_1":
+            bridge_token = MULTISIG_1_TOKEN
+        elif app_suffix == "multisig_2":
+            bridge_token = MULTISIG_2_TOKEN
+        elif app_suffix == "multisig_3":
+            bridge_token = MULTISIG_3_TOKEN
+        else:
+            raise CommonException(f"Unknown app_name_suffix: {app_suffix}")
+        return bridge_token
 
 
 colored_wallet: ColoredWallet = ColoredWallet()

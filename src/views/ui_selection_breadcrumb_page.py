@@ -19,6 +19,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.selection_page_model import SelectionPageModel
 from src.views.components.selection_breadcrumb_widget import BreadcrumbBar
@@ -47,6 +48,22 @@ class SelectionBreadcrumbWidget(QWidget):
         )
         self.current_index = getattr(self._view_model, 'current_index', 0)
         self.steps = [
+            {
+                'logo': ':/assets/online.png',
+                'title': 'standard_type_wallet',
+                'widget': SelectionPage(
+                    view_model=self._view_model,
+                    params=SelectionPageModel(
+                        title='select_wallet_signature_type',
+                        logo_1_path=':/assets/standard_wallet.png',
+                        logo_1_title=WalletSignatureType.STANDARD_TYPE_WALLET.value,
+                        logo_1_info='standard_wallet_info',
+                        logo_2_path=':/assets/multi_sig_wallet.png',
+                        logo_2_title=WalletSignatureType.MULTI_SIG_WALLET.value,
+                        logo_2_info='multi_sig_info',
+                    ),
+                ),
+            },
             {
                 'logo': ':/assets/online.png',
                 'title': 'online',
@@ -188,6 +205,9 @@ class SelectionBreadcrumbWidget(QWidget):
         self.steps[3]['widget'].continue_button.clicked.connect(
             lambda: self.handle_continue(3),
         )
+        self.steps[4]['widget'].continue_button.clicked.connect(
+            lambda: self.handle_continue(4),
+        )
 
         self.update_breadcrumbs()
 
@@ -195,9 +215,27 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         Returns the list of step indices for the current flow (offline or online).
         """
-        if self.selected_titles and self.selected_titles[0] == WalletType.OFFLINE_TYPE_WALLET.value:
-            return [0, 2, 3]
-        return [0, 1, 2, 3]
+        wallet_mode = self._get_selected_title_for_step(1)
+        if wallet_mode == WalletType.OFFLINE_TYPE_WALLET.value:
+            flow = [0, 1, 3, 4]
+        else:
+            flow = [0, 1, 2, 3, 4]
+        return flow
+
+    def _get_selected_title_for_step(self, step_index: int) -> str | None:
+        """
+        Helper to fetch the selected title corresponding to a specific step index
+        from `selected_step_indices`.
+        """
+        if not self.selected_step_indices:
+            return None
+        try:
+            idx_in_breadcrumbs = self.selected_step_indices.index(step_index)
+        except ValueError:
+            return None
+        if idx_in_breadcrumbs < len(self.selected_titles):
+            return self.selected_titles[idx_in_breadcrumbs]
+        return None
 
     def update_breadcrumbs(self):
         """
@@ -285,13 +323,17 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         Get the breadcrumb index for the given step index, accounting for offline mode mapping.
         """
-        if self.selected_titles and self.selected_titles[0] == WalletType.OFFLINE_TYPE_WALLET.value:
+        wallet_mode = self._get_selected_title_for_step(1)
+        if wallet_mode == WalletType.OFFLINE_TYPE_WALLET.value:
+            # Breadcrumbs order in offline: [0, 1, 3, 4]
             if step_idx == 0:
                 return 0
-            if step_idx == 2:
+            if step_idx == 1:
                 return 1
             if step_idx == 3:
                 return 2
+            if step_idx == 4:
+                return 3
         return step_idx
 
     def handle_continue(self, idx):
@@ -301,50 +343,105 @@ class SelectionBreadcrumbWidget(QWidget):
         """
         page = self.steps[idx]['widget']
         selected = page.selected_frame
-        if selected == page.params.logo_1_title:
-            logo = page.params.logo_1_path
-            title = page.params.logo_1_title
-        else:
-            logo = page.params.logo_2_path
-            title = page.params.logo_2_title
+
+        # Determine selected logo and title
+        logo, title = (
+            (page.params.logo_1_path, page.params.logo_1_title)
+            if selected == page.params.logo_1_title
+            else (page.params.logo_2_path, page.params.logo_2_title)
+        )
+
+        # Update selection state
         self._reset_state_after_selection_change(idx, title, logo)
-        if idx == 0:
-            if title == WalletType.OFFLINE_TYPE_WALLET.value:
-                self.current_index = 2
-                SettingRepository.set_wallet_access_type(None)
-                SettingRepository.remove_setting('wallet_access_type')
-            else:
-                self.current_index = idx + 1
-            self.steps[self.current_index]['widget'].reset_selection()
-            self.update_breadcrumbs()
-        elif idx == 1:
-            if title == WalletAccessType.WATCH_ONLY.value:
-                self._show_watch_only_flow()
-            else:
-                self.current_index = idx + 1
-                self.steps[self.current_index]['widget'].reset_selection()
-                self.update_breadcrumbs()
-        else:
-            if idx + 1 < len(self.steps):
-                self.current_index = 3 if self.selected_titles[
-                    0
-                ] == WalletType.OFFLINE_TYPE_WALLET.value and idx == 2 else idx + 1
-                self.steps[self.current_index]['widget'].reset_selection()
-                self.update_breadcrumbs()
-            else:
-                self._show_final_summary_flow()
+
+        # Step handlers
+        step_handlers = {
+            0: self._handle_step_0_signature_type,
+            1: self._handle_step_1_wallet_mode,
+            2: self._handle_step_2_security_type,
+        }
+
+        handler = step_handlers.get(idx, self._handle_remaining_flow)
+        handler(title, idx)
+
+        # Persist breadcrumbs and view model state
         if (idx != 1 or title != WalletAccessType.WATCH_ONLY.value) and idx != len(self.steps) - 1:
             self.update_breadcrumbs()
+
         self._view_model.selected_logos = self.selected_logos
         self._view_model.selected_titles = self.selected_titles
         self._view_model.selected_step_indices = self.selected_step_indices
         self._view_model.current_index = self.current_index
+
+    # --- Helper methods ---
+
+    def _handle_step_0_signature_type(self, title, idx):
+        """Handle signature type selection (step 0)."""
+        if title == WalletSignatureType.STANDARD_TYPE_WALLET.value:
+            SettingRepository.set_wallet_signature_type(
+                WalletSignatureType.STANDARD_TYPE_WALLET,
+            )
+        else:
+            SettingRepository.set_wallet_signature_type(
+                WalletSignatureType.MULTI_SIG_WALLET,
+            )
+
+        self.current_index = idx + 1
+        self.steps[self.current_index]['widget'].reset_selection()
+        self.update_breadcrumbs()
+
+    def _handle_step_1_wallet_mode(self, title, _):
+        """Handle wallet mode selection (step 1)."""
+        if title == WalletType.OFFLINE_TYPE_WALLET.value:
+            # Skip security type in offline mode
+            self.current_index = 3
+            SettingRepository.set_wallet_access_type(None)
+            SettingRepository.remove_setting('wallet_access_type')
+        else:
+            self.current_index = 2
+
+        self.steps[self.current_index]['widget'].reset_selection()
+        self.update_breadcrumbs()
+
+    def _handle_step_2_security_type(self, title, idx):
+        """Handle security type selection (step 2)."""
+        if title == WalletAccessType.WATCH_ONLY.value:
+            self._show_watch_only_flow()
+        else:
+            self.current_index = idx + 1
+            self.steps[self.current_index]['widget'].reset_selection()
+            self.update_breadcrumbs()
+
+    def _handle_remaining_flow(self, _, idx):
+        """Handle steps beyond the standard flow."""
+        flow_indices = self.get_flow_step_indices()
+        try:
+            pos_in_flow = flow_indices.index(idx)
+        except ValueError:
+            pos_in_flow = -1
+
+        if 0 <= pos_in_flow < len(flow_indices) - 1:
+            self.current_index = flow_indices[pos_in_flow + 1]
+            self.steps[self.current_index]['widget'].reset_selection()
+            self.update_breadcrumbs()
+        else:
+            self._show_final_summary_flow()
 
     def _show_final_summary_flow(self):
         """
         Show the final wallet mode summary dialog and handle navigation after summary.
         Applies blur effect and navigates to the appropriate page based on user input and wallet configuration.
         """
+        key_storage = SettingRepository.get_key_storage_type()
+        entry_type = SettingRepository.get_wallet_entry_type()
+        # If Multi-sig was selected at the first step, navigate to a dedicated page
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        if is_multisig and entry_type == WalletEntryType.CREATE:
+            self._view_model.page_navigation.multisig_setup_page()
+            return
+
+        # Default flow (standard): show wallet summary dialog
         self.update_breadcrumbs()
 
         # Apply initial blur for the summary dialog
@@ -377,6 +474,11 @@ class SelectionBreadcrumbWidget(QWidget):
         Show the watch-only wallet dialog flow, including xpub/fingerprint input and summary.
         Handles blur effect and navigation to welcome page if completed.
         """
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        if is_multisig:
+            self._view_model.page_navigation.multisig_setup_page()
+            return
         self.update_breadcrumbs()
         blur = QGraphicsBlurEffect()
         blur.setBlurRadius(10)
@@ -418,12 +520,15 @@ class SelectionBreadcrumbWidget(QWidget):
             widget.selected_frame = None
             widget.on_click_frame(widget.params.logo_1_title, False)
             widget.on_click_frame(widget.params.logo_2_title, False)
-            if i == 1:
+            if i == 0:
+                SettingRepository.set_wallet_signature_type(None)
+                SettingRepository.remove_setting('wallet_signature_type')
+            elif i == 2:
                 SettingRepository.set_wallet_access_type(None)
                 SettingRepository.remove_setting('wallet_access_type')
-            elif i == 2:
+            elif i == 3:
                 SettingRepository.set_wallet_entry_type(None)
                 SettingRepository.remove_setting('wallet_entry_type')
-            elif i == 3:
+            elif i == 4:
                 SettingRepository.set_key_storage_type(None)
                 SettingRepository.remove_setting('key_storage_type')

@@ -18,7 +18,7 @@ from rgb_lib import Invoice
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import Transfer
-from rgb_lib import TransferResult
+from rgb_lib import OperationResult
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -266,7 +266,7 @@ def test_send_begin_with_session(mock_get_session, mock_recipient_cls, mock_wall
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_send_end_with_session_and_cache(mock_get_session, mock_wallet, mock_cache):
     """Test send_end invalidates cache and deletes psbt in session."""
-    send_result = MagicMock(spec=TransferResult)
+    send_result = MagicMock(spec=OperationResult)
     mock_wallet.send_end.return_value = send_result
     svc = MagicMock()
     mock_get_session.return_value = svc
@@ -286,7 +286,7 @@ def test_send_end_with_session_and_cache(mock_get_session, mock_wallet, mock_cac
 def test_send_asset(mock_wallet, mock_cache):
     """Test send_asset method"""
     # Setup
-    mock_send_result = MagicMock(spec=TransferResult)
+    mock_send_result = MagicMock(spec=OperationResult)
     mock_wallet.send.return_value = mock_send_result
 
     with patch('src.data.repository.rgb_repository.Recipient') as mock_recipient_class:

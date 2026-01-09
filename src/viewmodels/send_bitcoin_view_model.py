@@ -10,6 +10,7 @@ from PySide6.QtCore import Signal
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.common_operations_repository import CommonOperationRepository
+from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import SendBtcRequestModel
 from src.model.btc_model import SendBtcResponseModel
@@ -18,11 +19,13 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_BITCOIN_SENT
+from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.logging import logger
@@ -127,7 +130,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.send_button_clicked.emit(True)
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-        if is_hw and is_online:
+        if is_hw and is_online or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTISIG:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
@@ -151,6 +154,25 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.send_button_clicked.emit(True)
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
+            return
+
+        is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        if is_hw and is_online:
+            self.hw_dialog_update.emit(
+                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+            )
+
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTISIG:
+            self.run_in_thread(
+                CommonOperationRepository.sign_psbt,
+                {
+                    'args': [unsigned_psbt],
+                    'callback': self.on_multisig_psbt_signed,
+                    'error_callback': self.on_error,
+                },
+            )
         else:
             self.run_in_thread(
                 CommonOperationRepository.sign_and_finalize_psbt,
@@ -161,6 +183,39 @@ class SendBitcoinViewModel(QObject, ThreadManager):
                 },
             )
 
+    def on_multisig_psbt_signed(self, signed_psbt: str):
+        """
+        Callback after multisig PSBT is signed (partially).
+        Now post to bridge.
+        """
+        self.hw_dialog_update.emit(
+            INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
+        )
+        self.run_in_thread(
+            BtcRepository.post_send_btc,
+            {
+                'args': [signed_psbt],
+                'callback': self.on_success_multisig_post,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_success_multisig_post(self, _=None):
+        """Handle success of multisig post"""
+        # Close the dialog
+        self.hw_dialog_update.emit(None, PsbtStatus.SUCCESS)
+        
+        ToastManager.success('Operation posted to multisig bridge.')
+        
+        # Sync with bridge again as requested
+        self.run_in_thread(
+            RgbRepository.sync_with_bridge,
+            {
+                'callback': lambda _: self._page_navigation.bitcoin_page(),
+                'error_callback': lambda _: self._page_navigation.bitcoin_page(), 
+            }
+        )
+
     def on_psbt_signed_and_finalized(self, finalized_psbt: str):
         """
         Callback after PSBT is signed and finalized.
@@ -168,6 +223,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         """
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+        
         if is_hw and is_online:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,

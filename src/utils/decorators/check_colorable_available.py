@@ -16,6 +16,7 @@ from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
@@ -51,13 +52,15 @@ def create_utxos(num: int) -> None:
         key_storage_type = SettingRepository.get_key_storage_type()
         wallet_type = SettingRepository.get_wallet_type()
         wallet_access_type = SettingRepository.get_wallet_access_type()
+        wallet_signature_type = SettingRepository.get_wallet_signature_type()
         create_utxos_model = CreateUtxosRequestModel(
             online=colored_wallet.online,
             fee_rate=default_fee_rate.fee_rate,
             num=num,
         )
         if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
-                or wallet_access_type == WalletAccessType.WATCH_ONLY:
+                or wallet_access_type == WalletAccessType.WATCH_ONLY \
+                or wallet_signature_type == WalletSignatureType.MULTI_SIG_WALLET:
             raise CommonException('NoAvailableUtxos')
         colored_wallet.wallet.create_utxos(
             online=create_utxos_model.online, up_to=False,
@@ -82,7 +85,8 @@ def create_utxos(num: int) -> None:
         raise CommonException('Unable to connect to wallet') from exc
     except Exception as exc:
         if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
-                or wallet_access_type == WalletAccessType.WATCH_ONLY:
+                or wallet_access_type == WalletAccessType.WATCH_ONLY \
+                or wallet_signature_type == WalletSignatureType.MULTI_SIG_WALLET:
             raise exc
         logger.error(
             'Exception occurred at Decorator: %s, Message: %s',
@@ -119,8 +123,10 @@ def check_colorable_available(required_utxos: int = 2) -> Callable[..., Any]:
                     key_storage_type = SettingRepository.get_key_storage_type()
                     wallet_type = SettingRepository.get_wallet_type()
                     wallet_access_type = SettingRepository.get_wallet_access_type()
+                    wallet_signature_type = SettingRepository.get_wallet_signature_type()
                     if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
-                            or wallet_access_type == WalletAccessType.WATCH_ONLY:
+                            or wallet_access_type == WalletAccessType.WATCH_ONLY \
+                            or wallet_signature_type == WalletSignatureType.MULTI_SIG_WALLET:
                         raise CommonException('NoAvailableUtxos') from exc
                     create_utxos(num=needed)
                     return method(*args, **kwargs)

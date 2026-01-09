@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from rgb_lib import Keys
+from rgb_lib import MultisigKeys
 from rgb_lib import RgbLibError
+from rgb_lib import SinglesigKeys
 from rgb_lib import Wallet
 
 from src.data.repository.colored_wallet import colored_wallet
@@ -14,6 +16,7 @@ from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -24,6 +27,7 @@ from src.utils.error_message import ERROR_KEYRING_STORE_NOT_ACCESSIBLE
 from src.utils.error_message import ERROR_UNABLE_GET_MNEMONIC
 from src.utils.error_message import ERROR_UNABLE_TO_GET_HASHED_MNEMONIC
 from src.utils.handle_exception import handle_exceptions
+from src.utils.helpers import build_keys_from_data
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import hash_mnemonic
 from src.utils.keyring_storage import set_value
@@ -54,8 +58,11 @@ class CommonOperationService:
             key_storage_type = SettingRepository.get_key_storage_type()
             is_watch_only = security_type == WalletAccessType.WATCH_ONLY
             is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
+            is_multisig = (
+                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            )
 
-            response: Keys | None = None
+            response: SinglesigKeys | MultisigKeys | None = None
             wallet: Wallet | None = None
 
             if is_watch_only or is_hardware_wallet:
@@ -72,37 +79,42 @@ class CommonOperationService:
                         'Watch-only wallet xpubs and fingerprint not found. Please set up watch-only wallet first.',
                     )
 
-                # Create a Keys object for hardware or watch-only wallets using stored values
-                response = Keys(
+                # Build keys using stored xpubs (no mnemonic for watch-only/hardware)
+                response = build_keys_from_data(
                     account_xpub_vanilla=account_xpub_vanilla,
                     account_xpub_colored=account_xpub_colored,
-                    mnemonic=None,
                     master_fingerprint=master_fingerprint,
-                    xpub=None,
+                    mnemonic=None,
                 )
 
                 wallet = CommonOperationRepository.unlock(
                     WalletRequestModel(
                         data_dir=app_paths.app_path, bitcoin_network=network,
-                        account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored,
-                        mnemonic=None, master_fingerprint=master_fingerprint,
+                        keys=response,
                     ),
                 )
             else:
-                # For regular wallets, generate new keys
-                response = CommonOperationRepository.init(
+                # For regular wallets (not watch-only/hardware), generate new keys
+                generated_keys = CommonOperationRepository.init(
                     InitRequestModel(password=password, network=network),
+                )
+
+                # Build keys using generated data
+                response = build_keys_from_data(
+                    account_xpub_vanilla=generated_keys.account_xpub_vanilla,
+                    account_xpub_colored=generated_keys.account_xpub_colored,
+                    master_fingerprint=generated_keys.master_fingerprint,
+                    mnemonic=generated_keys.mnemonic,
                 )
 
                 wallet = CommonOperationRepository.unlock(
                     WalletRequestModel(
-                        data_dir=app_paths.app_path, bitcoin_network=network,
-                        account_xpub_vanilla=response.account_xpub_vanilla,
-                        account_xpub_colored=response.account_xpub_colored,
-                        mnemonic=response.mnemonic, master_fingerprint=response.master_fingerprint,
+                        data_dir=app_paths.app_path,
+                        bitcoin_network=network,
+                        keys=response,
                     ),
                 )
-                mnemonic_store.decrypted_mnemonic = response.mnemonic
+                mnemonic_store.decrypted_mnemonic = generated_keys.mnemonic
 
             colored_wallet.set_wallet(wallet)
             return response, password
@@ -133,7 +145,7 @@ class CommonOperationService:
             ) == KeyStorageType.HARDWARE_WALLET
 
             if is_watch_only or is_hardware_only:
-                # For watch-only wallets, use None mnemonic
+                # For watch-only/hardware wallets, use None mnemonic
                 decrypted_mnemonic = None
             else:
                 # For regular wallets, decrypt mnemonic from file
@@ -141,11 +153,19 @@ class CommonOperationService:
                     password=password, path=app_paths.mnemonic_file_path,
                 )
 
+            # Build keys using the helper method
+            keys = build_keys_from_data(
+                account_xpub_vanilla=account_xpub_vanilla,
+                account_xpub_colored=account_xpub_colored,
+                master_fingerprint=master_fingerprint,
+                mnemonic=decrypted_mnemonic,
+            )
+
             response: UnlockResponseModel = CommonOperationRepository.unlock(
                 WalletRequestModel(
-                    data_dir=app_paths.app_path, bitcoin_network=network,
-                    account_xpub_vanilla=account_xpub_vanilla, account_xpub_colored=account_xpub_colored,
-                    mnemonic=decrypted_mnemonic, master_fingerprint=master_fingerprint,
+                    data_dir=app_paths.app_path,
+                    bitcoin_network=network,
+                    keys=keys,
                 ),
             )
             return response

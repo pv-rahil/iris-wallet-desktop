@@ -131,7 +131,7 @@ class RGBAssetTransactionDetail(QWidget):
         )
         self.vertical_layout_tx_detail_frame.setSpacing(8)
         self.vertical_layout_tx_detail_frame.setObjectName('verticalLayout')
-        self.vertical_layout_tx_detail_frame.setContentsMargins(19, 25, -1, 25)
+        self.vertical_layout_tx_detail_frame.setContentsMargins(19, 25, -1, 12)
         self.tx_id_label = QLabel(self.transaction_detail_frame)
         self.tx_id_label.setObjectName('tx_id_label')
         self.tx_id_label.setMinimumSize(QSize(295, 20))
@@ -240,7 +240,6 @@ class RGBAssetTransactionDetail(QWidget):
         self.vertical_layout_tx_detail_frame.addWidget(
             self.consignment_endpoints_value,
         )
-        self.consignment_file_horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
         self.consignment_file_label = QLabel(self.transaction_detail_frame)
         self.consignment_file_label.setObjectName(
@@ -424,8 +423,8 @@ class RGBAssetTransactionDetail(QWidget):
             self.rgb_asset_single_transaction_detail_widget.setMaximumHeight(
                 450,
             )
-            self.transaction_detail_frame.setMinimumHeight(230)
-            self.transaction_detail_frame.setMaximumHeight(230)
+            self.transaction_detail_frame.setMinimumHeight(250)
+            self.transaction_detail_frame.setMaximumHeight(250)
             self.grid_layout.addWidget(self.wallet_logo, 0, 0, 1, 1)
             self.vertical_spacer = QSpacerItem(
                 40, 250, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred,

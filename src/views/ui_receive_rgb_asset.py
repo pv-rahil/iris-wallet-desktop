@@ -124,6 +124,10 @@ class ReceiveRGBAssetWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_created.connect(
             self.handle_receive_cfa_utxo_created,
         )
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.connect(
+            self.handle_psbt_posted_to_bridge,
+        )
+
 
     def close_button_navigation(self):
         """
@@ -209,6 +213,17 @@ class ReceiveRGBAssetWidget(QWidget):
             if dlg.isVisible():
                 dlg.accept()
                 self.generate_invoice()
+
+    def handle_psbt_posted_to_bridge(self):
+        """Handle PSBT posted to bridge (multisig initiator). Close dialog and navigate."""
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.disconnect()
+        dlg = HardwareWalletOperationDialog.get_instance(parent=self)
+        if dlg.isVisible():
+            dlg.accept()
+        
+        ToastManager.success('Operation posted to multisig bridge.')
+        self.close_button_navigation()
+
 
     def handle_receive_asset(self):
         """ handle receive asset"""

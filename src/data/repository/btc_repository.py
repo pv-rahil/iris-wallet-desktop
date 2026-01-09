@@ -29,7 +29,8 @@ class BtcRepository:
     def get_address() -> AddressResponseModel:
         """Get a Bitcoin address."""
         with repository_custom_context():
-            data = colored_wallet.wallet.get_address()
+            online_kwargs = {'online': colored_wallet.online} if colored_wallet.is_multisig else {}
+            data = colored_wallet.wallet.get_address(**online_kwargs)
             return AddressResponseModel(address=data)
 
     @staticmethod
@@ -144,3 +145,23 @@ class BtcRepository:
             if cache is not None:
                 cache.invalidate_cache()
             return data
+
+    @staticmethod
+    def post_create_utxos(signed_psbt: str) -> None:
+        """Post the signed create_utxos PSBT to the multisig bridge for other cosigners."""
+        with repository_custom_context():
+            data = colored_wallet.wallet.post_create_utxos(
+                online=colored_wallet.online,
+                psbt=signed_psbt,
+            )
+            print('---------',data)
+            return data
+
+    @staticmethod
+    def post_send_btc(signed_psbt: str) -> None:
+        """Post the signed send_btc PSBT to the multisig bridge for other cosigners."""
+        with repository_custom_context():
+            colored_wallet.wallet.post_send_btc(
+                online=colored_wallet.online,
+                psbt=signed_psbt,
+            )

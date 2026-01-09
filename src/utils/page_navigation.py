@@ -399,11 +399,19 @@ class PageNavigation:
         error_report_dialog = ErrorReportDialog()
         error_report_dialog.exec()
 
-    def broadcast_transaction_page(self, from_sidebar: bool = False):
-        """This method display the help page."""
+    def broadcast_transaction_page(self, pending_operation: object = None, from_sidebar: bool = False):
+        """
+        Navigate to the broadcast transaction page.
+
+        Args:
+           pending_operation (object, optional): Pending multisig operation to sign.
+           from_sidebar (bool): Whether navigation is from sidebar.
+        """
         self.current_stack = {
             'name': 'BroadcastTransactionWidget',
-            'widget': self.pages['BroadcastTransactionWidget'](self._ui.view_model, from_sidebar),
+            'widget': self.pages['BroadcastTransactionWidget'](
+                self._ui.view_model, from_sidebar, pending_operation,
+            ),
         }
         self.navigate_and_toggle(False)
 

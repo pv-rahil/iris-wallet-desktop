@@ -9,7 +9,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
-from rgb_lib import TransferResult
+from rgb_lib import OperationResult
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
@@ -19,6 +19,7 @@ from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
@@ -29,6 +30,7 @@ from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_ISSUED
+from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.worker import ThreadManager
@@ -194,7 +196,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_success_inflate(self, response: TransferResult) -> None:
+    def on_success_inflate(self, response: OperationResult) -> None:
         """Handle success response of IFA second issuance."""
         ToastManager.success(
             description=INFO_ASSET_ISSUED.format(response.txid),
@@ -232,11 +234,26 @@ class IssueIFAViewModel(QObject, ThreadManager):
 
     def on_success_inflate_begin(self, response: str) -> None:
         """Handle success response of IFA second issuance."""
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+            self.unsigned_psbt.emit(response)
+            return
+
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
             hardware_client_store.set_rgb_mode(True)
+
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTISIG:
+            self.run_in_thread(
+                CommonOperationRepository.sign_psbt,
+                {
+                    'args': [response],
+                    'callback': self.on_multisig_psbt_signed,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
             self.run_in_thread(
                 CommonOperationRepository.sign_and_finalize_psbt,
                 {
@@ -245,8 +262,23 @@ class IssueIFAViewModel(QObject, ThreadManager):
                     'error_callback': self.on_error,
                 },
             )
-        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-            self.unsigned_psbt.emit(response)
+
+    def on_multisig_psbt_signed(self, signed_psbt: str):
+        """
+        Callback after multisig PSBT is signed (partially).
+        Now post to bridge.
+        """
+        self.hw_dialog_update.emit(
+            INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
+        )
+        self.run_in_thread(
+            RgbRepository.post_inflation,
+            {
+                'args': [signed_psbt, self.asset_id, int(self.amount)],
+                'callback': self.on_success_multisig_post,
+                'error_callback': self.on_error,
+            },
+        )
 
     def on_psbt_signed_and_finalized_success(self, finalized_psbt: str):
         """
@@ -257,6 +289,20 @@ class IssueIFAViewModel(QObject, ThreadManager):
             INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,
         )
         self.inflate_end(finalized_psbt)
+
+    def on_success_multisig_post(self, _=None):
+        """Handle success of multisig post"""
+        self.hw_dialog_update.emit(None, PsbtStatus.SUCCESS)
+        ToastManager.success('Operation posted to multisig bridge.')
+
+        # Sync with bridge again and finish
+        self.run_in_thread(
+            RgbRepository.sync_with_bridge,
+            {
+                'callback': lambda _: self.secondary_issuance_success.emit(),
+                'error_callback': lambda _: self.secondary_issuance_success.emit(),
+            }
+        )
 
     def inflate_end(self, signed_psbt: str):
         """

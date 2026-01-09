@@ -46,6 +46,10 @@ def network_configure():
     # Set the network for the Bitcoin network module
     bitcoin_network.__network__ = args.network
 
+    # Set the app name suffix if provided
+    if args.app_name:
+        bitcoin_network.__app_name_suffix__ = args.app_name
+
     # Return the parsed arguments so that they can be used elsewhere
     return args
 

@@ -58,6 +58,7 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
+from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -562,6 +563,9 @@ class IssueIFAWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_created.connect(
             self.handle_ifa_utxo_created,
         )
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.connect(
+            self.handle_psbt_posted_to_bridge,
+        )
         # Show UTXO-creation PSBT for hardware-online, watch-only, and offline wallets
         self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
             self.show_ifa_psbt_page,
@@ -988,6 +992,18 @@ class IssueIFAWidget(QWidget):
         self.issue_ifa_btn.stop_loading()
         if not ifa_hw_dialog.isVisible():
             ifa_hw_dialog.show()
+
+    def handle_psbt_posted_to_bridge(self):
+        """Handle PSBT posted to bridge (multisig initiator)."""
+        # Close dialog
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.disconnect()
+        ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
+        if ifa_hw_dialog.isVisible():
+            ifa_hw_dialog.accept()
+
+        # Notify and navigate
+        ToastManager.success('Operation posted to multisig bridge.')
+        self._view_model.page_navigation.inflatable_asset_page()
 
     def handle_ifa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""

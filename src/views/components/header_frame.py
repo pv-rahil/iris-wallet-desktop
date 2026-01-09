@@ -31,6 +31,7 @@ from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.utils.common_utils import get_current_wallet_mode_config
@@ -290,6 +291,13 @@ class HeaderFrame(QFrame, QObject):
                 self.handle_sync_process_ended,
             )
         self.update_psbt_info()
+        # Connect multisig pending operations signal
+        self.header_frame_view_model.pending_operations_ready.connect(
+            self.on_pending_operations_ready,
+        )
+        # Store pending operations for multisig
+        self._pending_ops_count = 0
+        self._pending_ops = []
 
     def retranslate_ui(self):
         """Retranslate the UI elements."""
@@ -459,7 +467,15 @@ class HeaderFrame(QFrame, QObject):
         if self.psbt_info_frame.isVisible():
             frame_rect = self.psbt_info_frame.geometry()
             if frame_rect.contains(event.pos()):
-                self.page_navigation.broadcast_transaction_page_signal.emit()
+                # For multisig, navigate to broadcast page with pending ops
+                if self._is_multisig() and self._pending_ops:
+                    # Pass the first pending operation to broadcast page
+                    self.page_navigation.broadcast_transaction_page_signal.emit(
+                        self._pending_ops[0],
+                    )
+                else:
+                    self.page_navigation.broadcast_transaction_page_signal.emit(None)
+
 
         # Call the parent method to ensure other click functionality works
         super().mousePressEvent(event)
@@ -559,12 +575,20 @@ class HeaderFrame(QFrame, QObject):
         """Determine PSBT drafts of interest based on wallet type and update the banner.
         - Watch-only wallet: show signed drafts (ready to broadcast)
         - Offline wallet: show unsigned drafts (need signing)
+        - Multisig wallet: sync with bridge to get pending operations
         Otherwise: hide the banner.
         """
         access_type = SettingRepository.get_wallet_access_type()
         wallet_type = SettingRepository.get_wallet_type()
+        signature_type = SettingRepository.get_wallet_signature_type()
 
         label_text = ''
+
+        # For multisig wallets, trigger bridge sync (async)
+        if signature_type == WalletSignatureType.MULTI_SIG_WALLET:
+            self.header_frame_view_model.sync_multisig_bridge()
+            # Banner will be updated by on_pending_operations_ready callback
+            return
 
         wallet_service = WalletDataService.get_session()
         if access_type == WalletAccessType.WATCH_ONLY:
@@ -590,6 +614,25 @@ class HeaderFrame(QFrame, QObject):
             count = 0
 
         if count > 0:
+            self.psbt_info_label.setText(label_text)
+            self.psbt_info_frame.setToolTip(label_text)
+            self.psbt_info_frame.show()
+        else:
+            self.psbt_info_frame.hide()
+
+    def _is_multisig(self) -> bool:
+        """Check if current wallet is multisig."""
+        return SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+
+    def on_pending_operations_ready(self, pending_ops: list):
+        """Handle pending operations from multisig bridge sync."""
+        self._pending_ops = pending_ops or []
+        self._pending_ops_count = len(self._pending_ops)
+        if self._pending_ops_count > 0:
+            # Use same format as offline sign label
+            label_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
+            ).format(self._pending_ops_count)
             self.psbt_info_label.setText(label_text)
             self.psbt_info_frame.setToolTip(label_text)
             self.psbt_info_frame.show()

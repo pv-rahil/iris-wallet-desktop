@@ -20,16 +20,23 @@ from PySide6.QtGui import QColor
 from PySide6.QtGui import QPainter
 from PySide6.QtGui import QPixmap
 from rgb_lib import BitcoinNetwork
+from rgb_lib import Cosigner
+from rgb_lib import MultisigKeys
+from rgb_lib import SinglesigKeys
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.build_app_path import app_paths
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import INDEXER_URL_MAINNET
 from src.utils.constant import INDEXER_URL_REGTEST
 from src.utils.constant import INDEXER_URL_TESTNET
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import PROXY_ENDPOINT_MAINNET
 from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
@@ -281,6 +288,8 @@ def get_bitcoin_network_from_enum(network: NetworkEnumModel | BitcoinNetwork) ->
     mapping = {
         NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
         NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
+        NetworkEnumModel.TESTNET4: BitcoinNetwork.TESTNET4,
+        NetworkEnumModel.SIGNET: BitcoinNetwork.SIGNET,
         NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
     }
 
@@ -334,3 +343,65 @@ def read_rgb_lib_version_file(file_name: str) -> str:
         return 'unknown'
     except OSError as e:
         raise RuntimeError(f"Failed to read version file: {e}") from e
+
+
+def build_keys_from_data(
+    account_xpub_vanilla: str,
+    account_xpub_colored: str,
+    master_fingerprint: str,
+    mnemonic: str | None = None,
+    vanilla_keychain: int | None = None,
+) -> SinglesigKeys | MultisigKeys:
+    """Build SinglesigKeys or MultisigKeys based on wallet signature type."""
+    is_multisig = (
+        SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+    )
+    
+    if is_multisig:
+        # Build MultisigKeys
+        m, n = SettingRepository.get_multisig_config()
+        if not m or not n:
+            raise CommonException('Multisig configuration not set.')
+        
+        # Retrieve stored cosigners (cosigners 2, 3, ..., N)
+        cosigners_data = SettingRepository.get_cosigners()
+        if len(cosigners_data) != (n - 1):
+            raise CommonException(
+                f'Expected {n-1} cosigners, found {len(cosigners_data)}.'
+            )
+        
+        # Build cosigners list: start with self (cosigner 1)
+        cosigners = [
+            Cosigner(
+                account_xpub_vanilla=account_xpub_vanilla,
+                account_xpub_colored=account_xpub_colored,
+                vanilla_keychain=vanilla_keychain,
+                master_fingerprint=master_fingerprint
+            )
+        ]
+        
+        # Add other cosigners from stored data
+        for c in cosigners_data:
+            cosigners.append(
+                Cosigner(
+                    account_xpub_vanilla=c[ACCOUNT_XPUB_VANILLA],
+                    account_xpub_colored=c[ACCOUNT_XPUB_COLORED],
+                    vanilla_keychain=c.get('vanilla_keychain'),
+                    master_fingerprint=c[MASTER_FINGERPRINT]
+                )
+            )
+        
+        return MultisigKeys(
+            cosigners=cosigners,
+            threshold_colored=m,
+            threshold_vanilla=m,
+        )
+    else:
+        # Build SinglesigKeys
+        return SinglesigKeys(
+            mnemonic=mnemonic,
+            account_xpub_vanilla=account_xpub_vanilla,
+            account_xpub_colored=account_xpub_colored,
+            master_fingerprint=master_fingerprint,
+            vanilla_keychain=vanilla_keychain if vanilla_keychain is not None else 1
+        )

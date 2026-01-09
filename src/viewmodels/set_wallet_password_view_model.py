@@ -23,7 +23,7 @@ from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
 from src.model.set_wallet_password_model import SetWalletPasswordModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_COLORED, TEMP_MULTISIG_MNEMONIC
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import MASTER_FINGERPRINT
@@ -39,7 +39,7 @@ from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
 from src.views.components.message_box import MessageBox
-
+from src.model.enums.enums_model import WalletSignatureType
 
 class SetWalletPasswordViewModel(QObject, ThreadManager):
     """This class represents the activities of the set wallet password page."""
@@ -152,23 +152,41 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
 
                 if not (is_watch_only or is_hardware_wallet):
-                    # Only encrypt and save mnemonic for non-watch-only and non-hardware wallets
-                    encrypted_mnemonic = mnemonic_store.encrypt(
-                        password=password, mnemonic=wallet_response.mnemonic,
+                    # Check if this is a multisig wallet
+                    is_multisig = (
+                        SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
                     )
-                    local_store.write_to_file(
-                        file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
-                    )
+                    
+                    if is_multisig:
+                        # For multisig wallets, get mnemonic from temp storage
+                        mnemonic_to_encrypt = local_store.get_value(TEMP_MULTISIG_MNEMONIC)
+                    else:
+                        # For single-sig wallets, get mnemonic from wallet_response
+                        mnemonic_to_encrypt = wallet_response.mnemonic
+                    if mnemonic_to_encrypt:
+                        # Encrypt and save mnemonic
+                        encrypted_mnemonic = mnemonic_store.encrypt(
+                            password=password, mnemonic=mnemonic_to_encrypt,
+                        )
+                        local_store.write_to_file(
+                            file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
+                        )
 
-                local_store.set_value(
-                    ACCOUNT_XPUB_VANILLA, wallet_response.account_xpub_vanilla,
-                )
-                local_store.set_value(
-                    ACCOUNT_XPUB_COLORED, wallet_response.account_xpub_colored,
-                )
-                local_store.set_value(
-                    MASTER_FINGERPRINT, wallet_response.master_fingerprint,
-                )
+                        # Clear temporary mnemonic from local_store (if it was multisig)
+                        if is_multisig:
+                            local_store.remove_key(TEMP_MULTISIG_MNEMONIC)
+
+
+                if not is_multisig:
+                    local_store.set_value(
+                        ACCOUNT_XPUB_VANILLA, wallet_response.account_xpub_vanilla,
+                    )
+                    local_store.set_value(
+                        ACCOUNT_XPUB_COLORED, wallet_response.account_xpub_colored,
+                    )
+                    local_store.set_value(
+                        MASTER_FINGERPRINT, wallet_response.master_fingerprint,
+                    )
                 is_password_stored = set_value(
                     WALLET_PASSWORD_KEY, self.password, network.value,
                 )
@@ -182,7 +200,7 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                     else:
                         keyring_warning_dialog = KeyringErrorDialog(
                             KeyringDialogModel(
-                                mnemonic=wallet_response.mnemonic,
+                                mnemonic=mnemonic_to_encrypt,
                                 password=self.password,
                                 navigate_to=self.forward_to_fungibles_page,
                             ),

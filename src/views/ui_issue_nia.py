@@ -42,6 +42,7 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
+from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -351,6 +352,10 @@ class IssueNIAWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_created.connect(
             self.handle_nia_utxo_created,
         )
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.connect(
+            self.handle_psbt_posted_to_bridge,
+        )
+
         self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
             self.show_nia_psbt_page,
         )
@@ -494,6 +499,18 @@ class IssueNIAWidget(QWidget):
         self.issue_nia_btn.stop_loading()
         if not nia_hw_dialog.isVisible():
             nia_hw_dialog.show()
+
+    def handle_psbt_posted_to_bridge(self):
+        """Handle PSBT posted to bridge (multisig initiator)."""
+        # Close dialog
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.disconnect()
+        nia_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
+        if nia_hw_dialog.isVisible():
+            nia_hw_dialog.accept()
+
+        # Notify and navigate
+        ToastManager.success('Operation posted to multisig bridge.')
+        self._view_model.page_navigation.fungibles_asset_page()
 
     def handle_nia_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""

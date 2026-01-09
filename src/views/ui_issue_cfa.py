@@ -46,6 +46,7 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
+from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -398,6 +399,10 @@ class IssueCFAWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_created.connect(
             self.handle_cfa_utxo_created,
         )
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.connect(
+            self.handle_psbt_posted_to_bridge,
+        )
+
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
             self.handle_cfa_hw_dialog_update,
         )
@@ -520,6 +525,18 @@ class IssueCFAWidget(QWidget):
             self.issue_cfa_button.stop_loading()
             if not cfa_hw_dialog.isVisible():
                 cfa_hw_dialog.show()
+
+    def handle_psbt_posted_to_bridge(self):
+        """Handle PSBT posted to bridge (multisig initiator)."""
+        # Close dialog
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.disconnect()
+        cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
+        if cfa_hw_dialog.isVisible():
+            cfa_hw_dialog.accept()
+        
+        # Notify and navigate
+        ToastManager.success('Operation posted to multisig bridge.')
+        self._view_model.page_navigation.collectibles_asset_page()
 
     def handle_cfa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation."""

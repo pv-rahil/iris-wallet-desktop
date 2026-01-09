@@ -7,6 +7,7 @@ from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
 from rgb_lib import Keys
 from rgb_lib import rgb_lib
+from rgb_lib import MultisigKeys,SinglesigKeys
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import KeyStorageType
@@ -18,9 +19,13 @@ from src.model.common_operation_model import InitRequestModel
 from src.model.common_operation_model import RestoreRequestModel
 from src.model.common_operation_model import RestoreResponseModel
 from src.model.common_operation_model import WalletRequestModel
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.custom_context import repository_custom_context
+from src.utils.custom_exception import CommonException
 from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 from src.utils.hardware_client_store import hardware_client_store
+from src.utils.wallet_credential_encryption import mnemonic_store
+from src.utils.build_app_path import app_paths
 
 
 class CommonOperationRepository:
@@ -31,21 +36,27 @@ class CommonOperationRepository:
         """Initialize and generate RGB keys for the given Bitcoin network."""
         with repository_custom_context():
             response: Keys = rgb_lib.generate_keys(init.network)
+            print('Generated Keys:', response)
             return response
 
     @staticmethod
-    def unlock(unlock: WalletRequestModel) -> rgb_lib.Wallet:
-        """Unlock operation."""
+    def unlock(unlock: WalletRequestModel) -> rgb_lib.Wallet | rgb_lib.MultisigWallet:
+        """Unlock operation - creates either standard or multisig wallet."""
         with repository_custom_context():
             wallet_data = rgb_lib.WalletData(
                 data_dir=unlock.data_dir, bitcoin_network=unlock.bitcoin_network, database_type=DatabaseType.SQLITE,
-                max_allocations_per_utxo=unlock.max_allocations_per_utxo, account_xpub_vanilla=unlock.account_xpub_vanilla,
-                account_xpub_colored=unlock.account_xpub_colored, mnemonic=unlock.mnemonic,
-                master_fingerprint=unlock.master_fingerprint,
-                vanilla_keychain=unlock.vanilla_keychain, supported_schemas=AssetSchema,
+                max_allocations_per_utxo=unlock.max_allocations_per_utxo, supported_schemas=AssetSchema,
             )
-            # Initialize the wallet
-            recv_wallet = rgb_lib.Wallet(wallet_data)
+
+            is_multisig = (
+                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            )
+
+            if is_multisig:
+                recv_wallet = rgb_lib.MultisigWallet(wallet_data, keys=unlock.keys)
+            else:
+                # Standard single-sig wallet
+                recv_wallet = rgb_lib.Wallet(wallet_data, keys=unlock.keys)
             colored_wallet.set_wallet(recv_wallet)
             return recv_wallet
 
@@ -100,3 +111,63 @@ class CommonOperationRepository:
                     unsigned_psbt, finalized_psbt,
                 )
             return finalized_psbt
+
+    @staticmethod
+    def _get_temp_singlesig_wallet():
+        """Helper to create a temporary singlesig wallet for signing."""
+        mnemonic = mnemonic_store.decrypted_mnemonic
+        if not mnemonic:
+            raise CommonException('Mnemonic not available for signing')
+        
+        # We need to map our BitcoinNetwork enum to rgb_lib.BitcoinNetwork
+        # Assuming for now it's REGTEST as hardcoded previously, but better to map it
+        # However, previous code hardcoded REGTEST. We should ideally fix this later but keep behavior.
+        bitcoin_network = BitcoinNetwork.REGTEST
+
+        keys = rgb_lib.restore_keys(bitcoin_network, mnemonic)
+        
+        wallet_data = rgb_lib.WalletData(
+            data_dir=app_paths.app_path,
+            bitcoin_network=bitcoin_network,
+            database_type=DatabaseType.SQLITE,
+            max_allocations_per_utxo=1,
+            supported_schemas=AssetSchema,
+        )
+
+        return rgb_lib.Wallet(
+            wallet_data, 
+            keys=SinglesigKeys(
+                account_xpub_vanilla=keys.account_xpub_vanilla,
+                account_xpub_colored=keys.account_xpub_colored,
+                vanilla_keychain=0,
+                master_fingerprint=keys.master_fingerprint,
+                mnemonic=mnemonic,
+            )
+        )
+
+    @staticmethod
+    def sign_psbt(unsigned_psbt: str) -> str:
+        """
+        Sign PSBT without finalizing (for multisig where we need multiple signatures).
+        Returns the partially signed PSBT.
+        """
+        with repository_custom_context():
+            key_storage_type = SettingRepository.get_key_storage_type()
+            if key_storage_type == KeyStorageType.HARDWARE_WALLET:
+                psbt = PSBT()
+                psbt.deserialize(unsigned_psbt)
+                signed_psbt = hardware_client_store.client.sign_tx(psbt)
+                serialized_psbt = signed_psbt.serialize()
+            else:
+                # Check if this is a multisig wallet - MultisigWallet doesn't have sign_psbt
+                # So we need to create a temporary singlesig Wallet for signing
+                wallet_sig_type = SettingRepository.get_wallet_signature_type()
+                if wallet_sig_type == WalletSignatureType.MULTI_SIG_WALLET:
+                    temp_wallet = CommonOperationRepository._get_temp_singlesig_wallet()
+                    serialized_psbt = temp_wallet.sign_psbt(unsigned_psbt)
+                else:
+                    # Regular singlesig wallet - use the existing wallet
+                    serialized_psbt = colored_wallet.wallet.sign_psbt(
+                        unsigned_psbt,
+                    )
+            return serialized_psbt

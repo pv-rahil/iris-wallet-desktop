@@ -55,7 +55,7 @@ class BroadcastTransactionWidget(QWidget):
     Widget for broadcasting signed transactions (PSBTs) in the application.
     """
 
-    def __init__(self, view_model, from_sidebar: bool = False):
+    def __init__(self, view_model, from_sidebar: bool = False, pending_operation: object = None):
         """
         Initialize the BroadcastTransactionWidget.
         """
@@ -66,6 +66,8 @@ class BroadcastTransactionWidget(QWidget):
         )
         self.view_model: MainViewModel = view_model
         self.from_sidebar = from_sidebar
+        self.pending_operation = pending_operation
+
         self.setStyleSheet(
             load_stylesheet(
                 'views/qss/broadcast_transaction_style.qss',
@@ -425,8 +427,9 @@ class BroadcastTransactionWidget(QWidget):
             self.btn_import.clicked.connect(self._on_import_psbt)
             self.btn_export.clicked.connect(self._on_export_psbt)
             self.btn_combine.clicked.connect(self._on_combine_psbts)
+            # For multisig signer: sign and post back to bridge
             self.broadcast_button.clicked.connect(
-                self._on_finalized_psbt_ready,
+                self._on_sign_and_post_multisig,
             )
             # Show Export after our wallet signs successfully
             self.view_model.broadcast_transaction_view_model.finalized_psbt.connect(
@@ -629,6 +632,23 @@ class BroadcastTransactionWidget(QWidget):
             self.btn_import.setEnabled(False)
             self.broadcast_button.setEnabled(False)
 
+    def _on_sign_and_post_multisig(self):
+        """Sign the PSBT and post back to the multisig bridge."""
+        psbt = self.broadcast_transaction_input.toPlainText().strip()
+        if not psbt:
+            ToastManager.error(description='No PSBT to sign')
+            return
+        
+        # Get the operation index for posting back
+        operation_idx = None
+        if self.pending_operation:
+            operation_idx = getattr(self.pending_operation, 'operation_idx', None)
+        
+        # Call the viewmodel to sign and post
+        self.view_model.broadcast_transaction_view_model.sign_and_post_multisig(
+            psbt, operation_idx,
+        )
+
     # ----- Multisig helpers -----
     def _update_signature_progress(self):
         """Update the signature progress label for multisig (e.g., 1 of 3)."""
@@ -768,10 +788,35 @@ class BroadcastTransactionWidget(QWidget):
             self.handle_button_enable()
 
     def _load_psbts_for_signing(self) -> None:
-        """Populate the PSBT input from stored unsigned drafts.
-        Reuse the existing method selector and label as a PSBT selector when
-        broadcasting is not permitted (sign-only mode).
-        """
+        """Populate the PSBT input from stored unsigned drafts or passed operation."""
+        # For multisig, use the pending operation passed from navigation
+        if self.is_multisig:
+            if self.pending_operation:
+                # Extract PSBT from the pending operation
+                op = self.pending_operation
+                # OperationInfo has operation field which contains the PSBT
+                operation = getattr(op, 'operation', None)
+                if operation is not None:
+                    # Extract psbt from the operation
+                    psbt = getattr(operation, 'psbt', None)
+                    if psbt:
+                        self.method_selector_label.hide()
+                        self.method_selector.hide()
+                        self.broadcast_transaction_input.setPlainText(psbt)
+                        self.broadcast_transaction_input.setReadOnly(True)
+                        # Store operation info for later use (sign + post)
+                        self._current_operation = op
+                        self.handle_button_enable()
+                        return
+
+            # No pending operations passed
+            self.method_selector_label.hide()
+            self.method_selector.hide()
+            self.broadcast_transaction_input.clear()
+            self.broadcast_button.setEnabled(False)
+            return
+
+        # Standard offline wallet flow - load from local DB
         try:
             wallet_service = WalletDataService.get_session()
             drafts = wallet_service.list_psbt(

@@ -26,3 +26,12 @@ services:
     image: ghcr.io/rgb-tools/rgb-proxy-server:0.3.0
     ports:
       - 3000:3000
+
+  rgb-multisig-bridge:
+    image: rgb-multisig-bridge:latest
+    command: /usr/bridge --daemon-listening-port 8141
+    ports:
+      - 8141:8141
+    volumes:
+      - ./bridge:/usr/bridge
+      - ./bridge/rgb-multisig-bridge/config.toml:/usr/bridge/rgb-multisig-bridge/config.toml:ro

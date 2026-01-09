@@ -9,7 +9,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
-from rgb_lib import TransferResult
+from rgb_lib import OperationResult
 
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
@@ -128,7 +128,7 @@ def test_secondary_issuance_flow(mock_auth, mock_run, mock_inflate, _mock_toast_
     vm.secondary_issuance('aid', 7, 2, 1)
 
     # Simulate emitted success from worker -> on_success_inflate
-    res = MagicMock(spec=TransferResult)
+    res = MagicMock(spec=OperationResult)
     res.txid = 'tx123'
     vm.on_success_inflate(res)
 

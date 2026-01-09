@@ -11,6 +11,8 @@ class NetworkEnumModel(str, Enum):
     REGTEST = 'regtest'
     MAINNET = 'mainnet'
     TESTNET = 'testnet'
+    TESTNET4 = 'testnet4'
+    SIGNET = 'signet'
 
 
 class TransactionStatusEnumModel(str, Enum):

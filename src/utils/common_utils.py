@@ -63,10 +63,12 @@ from src.views.components.toast import ToastManager
 
 
 def copy_text(widget) -> None:
-    """This method copies the text from the QLabel or QPlainTextEdit to the clipboard."""
+    """This method copies the text from the QLabel, QLineEdit, or QPlainTextEdit to the clipboard."""
     try:
         # Determine the type of widget and get the text accordingly
         if isinstance(widget, QLabel):
+            text = widget.text()
+        elif isinstance(widget, QLineEdit):
             text = widget.text()
         elif isinstance(widget, QPlainTextEdit):
             text = widget.toPlainText()

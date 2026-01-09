@@ -2272,5 +2272,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>download</source>
         <translation>Download</translation>
     </message>
+    <message>
+        <source>invalid_amount_zero</source>
+        <translation>Invalid amount. Amount cannot be zero</translation>
+    </message>
 </context>
 </TS>

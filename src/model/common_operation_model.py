@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 from rgb_lib import BitcoinNetwork
+from rgb_lib import SinglesigKeys
+from rgb_lib import MultisigKeys
 
 from src.model.btc_model import OfflineAsset
 from src.model.rgb_model import GetAssetResponseModel
@@ -50,11 +52,7 @@ class WalletRequestModel(BaseModel):
     data_dir: str
     bitcoin_network: BitcoinNetwork
     max_allocations_per_utxo: int = MAX_ALLOCATIONS_PER_UTXO
-    account_xpub_vanilla: str
-    account_xpub_colored: str
-    mnemonic: str | None
-    master_fingerprint: str
-    vanilla_keychain: int | None = None
+    keys:SinglesigKeys | MultisigKeys
 
     class Config:
         """Pydantic configuration class allowing arbitrary types."""

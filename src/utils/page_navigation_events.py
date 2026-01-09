@@ -42,7 +42,7 @@ class PageNavigationEventManager(QObject):
     faucets_page_signal = Signal()
     help_page_signal = Signal()
     error_report_signal = Signal()
-    broadcast_transaction_page_signal = Signal()
+    broadcast_transaction_page_signal = Signal(object)
     receive_asset_page_signal = Signal(object)
     detect_usb_dialog_box = Signal(bool)
     refresh_transfer_result_dialog_signal = Signal(object)

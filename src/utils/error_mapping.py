@@ -83,6 +83,7 @@ ERROR_MAPPING = {
     'CannotFinalizePsbt': 'cannot_finalize_psbt',
     'FingerprintMismatch': 'fingerprint_mismatch',
     'InvalidFingerprint': 'invalid_fingerprint',
+    'InvalidAmountZero': 'invalid_amount_zero',
     # hwilib error
     'HWWError': 'hardware_wallet_error',
     'NoPasswordError': 'hardware_wallet_no_password',

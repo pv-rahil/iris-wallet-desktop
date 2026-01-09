@@ -34,3 +34,4 @@ INFO_SIGN_FROM_HARDWARE_WALLET = 'Please sign the transaction from the hardware 
 INFO_TX_BROADCAST = 'Your transaction is being broadcast to the network...'
 INFO_PSBT_SIGN_SUCCESSFULLY = 'PSBT signed successfully'
 INFO_CONSIGNMENT_SAVED_SUCCESSFULLY = 'Saved to: {}'
+INFO_POST_TO_BRIDGE = "Posting PSBT to multisig bridge…"

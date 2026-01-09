@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
-from rgb_lib import TransferResult
+from rgb_lib import OperationResult
+from rgb_lib import RespondToOperation
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.common_operations_repository import CommonOperationRepository
@@ -168,8 +169,73 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_success_inflate_end(self, response: TransferResult):
+    def on_success_inflate_end(self, response: OperationResult):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
         ToastManager.success(description=INFO_ASSET_SENT.format(response.txid))
+
+    # ========== Multisig Signer Flow ==========
+
+    def sign_and_post_multisig(self, unsigned_psbt: str, operation_idx: int | None):
+        """Sign PSBT and post back to multisig bridge."""
+        self.is_loading.emit(True)
+        # Store operation_idx for use in callback
+        self._multisig_operation_idx = operation_idx
+        self.run_in_thread(
+            CommonOperationRepository.sign_psbt,
+            {
+                'args': [unsigned_psbt],
+                'callback': self._on_multisig_sign_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def _on_multisig_sign_success(self, signed_psbt: str):
+        """After signing, post the signed PSBT back to the bridge."""
+        operation_idx = getattr(self, '_multisig_operation_idx', None)
+
+        # SIGNER FLOW: Existing operation, so we are responding
+        response = RespondToOperation.ACK(signed_psbt)
+        
+        # Post back to bridge using respond_to_operation
+        self.run_in_thread(
+            RgbRepository.respond_to_operation,
+            {
+                'args': [operation_idx, response],
+                'callback': self._on_multisig_post_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def _on_multisig_post_success(self, result):
+        """Handle successful post to bridge."""
+        self.is_loading.emit(False)
+        self.tx_broadcasted.emit(True)        
+        # Result is an Operation enum variant or int (if from post_create_utxos?)
+        # post_create_utxos returns int (operation_idx) or similar? 
+        # Actually RgbRepository.post_create_utxos likely returns the operation index or Operation object?
+        
+        res_str = str(result)
+        # Check for Initiator success (might be just an ID or object)
+        # Check for Signer success (Operation enum)
+        if 'CREATE_UTXOS_COMPLETED' in res_str:
+            ToastManager.success(description='Operation completed and finalized!')
+        elif 'CREATE_UTXOS_PENDING' in res_str:
+            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+        elif 'SEND_BTC_COMPLETED' in res_str:
+            ToastManager.success(description='Bitcoin sent successfully!')
+        elif 'SEND_BTC_PENDING' in res_str:
+            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+        elif 'INFLATION_COMPLETED' in res_str:
+            ToastManager.success(description='Asset issued/inflated successfully!')
+        elif 'INFLATION_PENDING' in res_str:
+            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+        elif 'SEND_COMPLETED' in res_str:  # For Asset Send
+            ToastManager.success(description='Asset sent successfully!')
+        elif 'SEND_PENDING' in res_str:    # For Asset Send
+            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+        else:
+            # Generic success for initiator or other cases
+            ToastManager.success(description='Operation posted to bridge successfully.')
+            logger.info('Multisig post result: %s', res_str)

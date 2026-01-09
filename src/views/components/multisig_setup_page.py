@@ -24,13 +24,21 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
+from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.model.common_operation_model import InitRequestModel
 from src.model.enums.enums_model import WalletAccessType
+from src.utils.local_store import local_store
 from src.utils.common_utils import copy_text
-from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT, TEMP_MULTISIG_MNEMONIC
+from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
+from src.utils.constant import MASTER_FINGERPRINT
+from src.utils.constant import VANILLA_KEYCHAIN
 from src.utils.helpers import load_stylesheet
 from src.views.components.buttons import PrimaryButton
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.utils.helpers import get_bitcoin_network_from_enum
 
 
 class MultisigSetupPage(QWidget):
@@ -225,30 +233,30 @@ class MultisigSetupPage(QWidget):
         self.row2.setContentsMargins(0, 0, 0, 0)
         self.row2.setSpacing(12)
 
-        self.fp_display, _ = self._create_wallet_detail_field(
+        self.fp_display, self.fp_value_widget = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'),
-            'f23a7c1d',
+            '',
         )
-        self.keychain_display, _ = self._create_wallet_detail_field(
+        self.keychain_display, self.keychain_value_widget = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'),
-            'xpub keychain (demo)',
+            '',
         )
         self.row1.addLayout(self.fp_display)
         self.row1.addLayout(self.keychain_display)
         self.r_v.addLayout(self.row1)
 
         # Row 2: Derivation path | Account XPUB (vanilla)
-        self.path_display, _ = self._create_wallet_detail_field(
+        self.path_display, self.path_value_widget = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'),
-            'm/48\'/0\'/0\'/2\'',
+            '',
         )
-        self.xpub_vanilla_display, _ = self._create_wallet_detail_field(
+        self.xpub_vanilla_display, self.xpub_vanilla_value_widget = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'),
-            'xpub6CUGRUonZS...',
+            '',
         )
         self.row2.addLayout(self.path_display)
         self.row2.addLayout(self.xpub_vanilla_display)
@@ -258,10 +266,10 @@ class MultisigSetupPage(QWidget):
         self.row3 = QHBoxLayout()
         self.row3.setContentsMargins(0, 0, 0, 0)
         self.row3.setSpacing(12)
-        self.xpub_colored_display, _ = self._create_wallet_detail_field(
+        self.xpub_colored_display, self.xpub_colored_value_widget = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'),
-            'xpub6CUGRUonZS...',
+            '',
         )
         self.row3.addLayout(self.xpub_colored_display)
         self.r_v.addLayout(self.row3)
@@ -455,6 +463,32 @@ class MultisigSetupPage(QWidget):
         self._threshold_locked = True
 
         SettingRepository.set_multisig_config(m, n)
+        
+        # Generate wallet keys for non-watch-only wallets
+        if not self._is_watch_only:
+            try:
+                # Get the current network from SettingRepository
+                network = get_bitcoin_network_from_enum(
+                    SettingRepository.get_wallet_network()
+                )
+                
+                # Generate keys
+                keys = CommonOperationRepository.init(
+                    InitRequestModel(password="", network=network)
+                )
+                
+                # Store the keys data in local_store
+                local_store.set_value(MASTER_FINGERPRINT, keys.master_fingerprint)
+                local_store.set_value(ACCOUNT_XPUB_VANILLA, keys.account_xpub_vanilla)
+                local_store.set_value(ACCOUNT_XPUB_COLORED, keys.account_xpub_colored)
+                
+                # Store mnemonic temporarily under a special key
+                # It will be encrypted and saved to file when user sets password
+                local_store.set_value(TEMP_MULTISIG_MNEMONIC, keys.mnemonic)
+                
+            except Exception as e:
+                # Log error but continue - fields will just be empty
+                print(f"Error generating wallet keys: {e}")
 
         # Clear any existing rows
         for (row_w, _l, _le, _err) in self.cosigner_rows:
@@ -494,6 +528,7 @@ class MultisigSetupPage(QWidget):
                 )
             else:
                 # Show review page as Step 2 of 3
+                self._populate_wallet_review_fields()  # Populate with actual data
                 self.review_frame.show()
                 self.cos_frame.hide()
                 self._current_step = 2
@@ -506,7 +541,8 @@ class MultisigSetupPage(QWidget):
                 )
         elif self._current_step == 2:
             if self._is_watch_only:
-                # In 2-step flow, continue finishes
+                # In 2-step flow, save cosigners before finishing
+                self._save_cosigners_data()
                 self._view_model.page_navigation.welcome_page()
             else:
                 # Move to cosigners (Step 3)
@@ -527,7 +563,58 @@ class MultisigSetupPage(QWidget):
                     ),
                 )
         elif self._current_step == 3:
+            # Save cosigner data before navigating away
+            self._save_cosigners_data()
             self._view_model.page_navigation.welcome_page()
+    
+    def _populate_wallet_review_fields(self):
+        """Populate wallet review fields with actual wallet data from local_store."""
+        # Get wallet data from local_store
+        master_fp = local_store.get_value(MASTER_FINGERPRINT) or ''
+        account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA) or ''
+        account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED) or ''
+        
+        # For derivation path, use the standard multisig path
+        # TODO: Get actual derivation path if stored
+        derivation_path = "m/48'/0'/0'/2'"
+        
+        # For keychain, get it or default to 0
+        keychain = local_store.get_value(VANILLA_KEYCHAIN)
+        keychain_str = str(keychain) if keychain is not None else '0'
+        
+        # Update the QLineEdit widgets
+        self.fp_value_widget.setText(master_fp)
+        self.keychain_value_widget.setText(keychain_str)
+        self.path_value_widget.setText(derivation_path)
+        self.xpub_vanilla_value_widget.setText(account_xpub_vanilla)
+        self.xpub_colored_value_widget.setText(account_xpub_colored)
+
+    def _save_cosigners_data(self):
+        """Collect and save all cosigner data from the UI."""
+        cosigners_data = []
+        
+        for i, (row_w, _label, _xpub, _err) in enumerate(self.cosigner_rows, start=2):
+            fp = row_w.fp_input.text().strip()
+            vanilla_xpub = row_w.vanilla_xpub_input.text().strip()
+            colored_xpub = row_w.colored_xpub_input.text().strip()
+            keychain_text = row_w.keychain_input.text().strip()
+            
+            # Parse keychain as int if provided
+            keychain = None
+            if keychain_text and keychain_text.isdigit():
+                keychain = int(keychain_text)
+            
+            cosigner_dict = {
+                'index': i,
+                MASTER_FINGERPRINT: fp,
+                ACCOUNT_XPUB_VANILLA: vanilla_xpub,
+                ACCOUNT_XPUB_COLORED: colored_xpub,
+                VANILLA_KEYCHAIN: keychain
+            }
+            cosigners_data.append(cosigner_dict)
+        
+        # Save to SettingRepository
+        SettingRepository.set_cosigners(cosigners_data)
 
     def _go_back(self):
         if self._current_step == 2:

@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import json
 
 import src.flavour as bitcoin_network
 from src.model.enums.enums_model import KeyStorageType
@@ -461,6 +462,46 @@ class SettingRepository:
                 'multisig_total_signers', value_type=int,
             )
             return required, total
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def set_cosigners(cosigners_data: list[dict]) -> bool:
+        """
+        Store cosigner information for multisig wallet.
+        
+        Args:
+            cosigners_data: List of dicts, each containing:
+                - master_fingerprint: str
+                - account_xpub_vanilla: str
+                - account_xpub_colored: str
+                - vanilla_keychain: int | None
+                - (optional) index: int
+        
+        Returns:
+            bool: True if stored successfully
+        """
+        try:
+            cosigners_json = json.dumps(cosigners_data)
+            local_store.set_value('multisig_cosigners', cosigners_json)
+            stored = local_store.get_value('multisig_cosigners')
+            return stored == cosigners_json
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_cosigners() -> list[dict]:
+        """
+        Retrieve stored cosigner information.
+        
+        Returns:
+            List of cosigner dicts, empty list if none stored
+        """
+        try:
+            cosigners_json = local_store.get_value('multisig_cosigners')
+            if not cosigners_json:
+                return []
+            return json.loads(cosigners_json)
         except Exception as exe:
             return handle_exceptions(exe)
 

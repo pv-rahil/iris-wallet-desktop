@@ -16,6 +16,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.model.setting_model import DefaultFeeRate
@@ -24,6 +25,7 @@ from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
+from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
@@ -37,6 +39,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     hw_dialog_update = Signal(str, object)
     utxo_created = Signal(bool)
     unsigned_psbt = Signal(str)
+    psbt_posted_to_bridge = Signal()
 
     def __init__(self, parent=None):
         """
@@ -46,6 +49,10 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         super().__init__(parent)
         self.param: CreateUtxosRequestModel = None
         self.current_purpose: str | None = None
+
+    def _is_multisig(self) -> bool:
+        """Check if current wallet is multisig."""
+        return SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
 
     def create_utxos_begin(self, purpose: str | None = None, num: int = NO_OF_UTXO):
         """
@@ -70,13 +77,50 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
     def on_utxo_begin_done(self, unsigned_psbt):
         """Callback when unsigned PSBT is created. Updates dialog and starts signing process."""
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
+        SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET or self._is_multisig():
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
-            self.sign_and_finalize_psbt(unsigned_psbt)
+            if self._is_multisig():
+                self.sign_psbt_for_multisig(unsigned_psbt)
+            else:
+                self.sign_and_finalize_psbt(unsigned_psbt)
         else:
             self.unsigned_psbt.emit(unsigned_psbt)
+
+    def sign_psbt_for_multisig(self, unsigned_psbt):
+        """
+        Sign the PSBT for multisig wallet (partial signature, not finalized).
+        """
+        self.run_in_thread(
+            CommonOperationRepository.sign_psbt,
+            {
+                'args': [unsigned_psbt],
+                'callback': self.on_multisig_psbt_signed,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_multisig_psbt_signed(self, signed_psbt):
+        """
+        Post signed PSBT to multisig bridge for other signers to approve.
+        """
+        self.hw_dialog_update.emit(
+            INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
+        )
+        self.run_in_thread(
+            BtcRepository.post_create_utxos,
+            {
+                'args': [signed_psbt],
+                'callback': self.on_psbt_posted_to_bridge,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_psbt_posted_to_bridge(self):
+        """Callback when PSBT is posted to bridge. Emits signal for UI to show waiting state."""
+        self.psbt_posted_to_bridge.emit()
 
     def sign_and_finalize_psbt(self, unsigned_psbt):
         """

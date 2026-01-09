@@ -11,10 +11,12 @@ from PySide6.QtCore import Signal
 from rgb_lib import RgbLibError
 
 from src.data.repository.colored_wallet import colored_wallet
+from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
@@ -51,6 +53,8 @@ class HeaderFrameViewModel(QObject, ThreadManager):
     network_status_signal = Signal(bool)
     sync_process_started = Signal()
     sync_process_ended = Signal(str)
+    # Multisig: emits list of pending operations from bridge
+    pending_operations_ready = Signal(list)
 
     def __init__(self):
         super().__init__()
@@ -65,6 +69,10 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         # Start network checking
         self.timer.start()
+
+    def _is_multisig(self) -> bool:
+        """Check if current wallet is multisig."""
+        return SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
 
     def start_network_check(self):
         """Start a new network check using a separate thread."""
@@ -157,3 +165,38 @@ class HeaderFrameViewModel(QObject, ThreadManager):
         except Exception as exc:
             logger.error('Failed to sync wallet: %s', exc)
             ToastManager.error(description=str(exc))
+
+    # ========== Multisig Bridge Sync ==========
+
+    def sync_multisig_bridge(self):
+        """Sync with multisig bridge to get pending operations for review."""
+        if not self._is_multisig():
+            return
+        self.run_in_thread(
+            RgbRepository.sync_with_bridge,
+            {
+                'args': [],
+                'callback': self.on_multisig_sync_done,
+                'error_callback': self.on_multisig_sync_error,
+            },
+        )
+
+    def on_multisig_sync_done(self, operation_info):
+        """Handle successful bridge sync. Emits pending operations list."""
+        # operation_info is a single OperationInfo object when there's a pending operation
+        # It has fields: operation_idx, initiator_xpub, operation
+        pending_ops = []
+        if operation_info is not None:
+            # It's a single OperationInfo, wrap it in a list
+            pending_ops = [operation_info]
+            print('operation found')
+        else:
+            print('no operation found')
+        self.pending_operations_ready.emit(pending_ops)
+
+    def on_multisig_sync_error(self, error: Exception):
+        """Handle bridge sync error."""
+        logger.error('Failed to sync with multisig bridge: %s', error)
+        # Emit empty list on error
+        self.pending_operations_ready.emit([])
+

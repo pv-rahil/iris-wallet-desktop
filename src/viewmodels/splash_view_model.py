@@ -7,6 +7,7 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
+from rgb_lib import rgb_lib,BitcoinNetwork
 
 import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository
@@ -28,6 +29,7 @@ from src.utils.error_message import ERROR_NATIVE_AUTHENTICATION
 from src.utils.error_message import ERROR_PASSWORD_INCORRECT
 from src.utils.error_message import ERROR_RGB_LIB_INCOMPATIBILITY
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.helpers import build_keys_from_data
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_WALLET_RESET
 from src.utils.keyring_storage import get_value
@@ -155,6 +157,7 @@ class SplashViewModel(QObject, ThreadManager):
                         decrypted_mnemonic = mnemonic_store.decrypt(
                             password=wallet_password, path=app_paths.mnemonic_file_path,
                         )
+                        print(rgb_lib.restore_keys(BitcoinNetwork.REGTEST,decrypted_mnemonic))
 
                     self.splash_screen_message.emit(
                         QCoreApplication.translate(
@@ -165,19 +168,24 @@ class SplashViewModel(QObject, ThreadManager):
                     network = get_bitcoin_network_from_enum(
                         bitcoin_network.__network__,
                     )
-                    account_xpub_vanilla = local_store.get_value(
-                        ACCOUNT_XPUB_VANILLA,
+                    account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA)
+                    account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
+                    master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
+                    
+                    # Build keys using the helper method (handles both single-sig and multisig)
+                    keys = build_keys_from_data(
+                        account_xpub_vanilla=account_xpub_vanilla,
+                        account_xpub_colored=account_xpub_colored,
+                        master_fingerprint=master_fingerprint,
+                        mnemonic=decrypted_mnemonic,
                     )
-                    account_xpub_colored = local_store.get_value(
-                        ACCOUNT_XPUB_COLORED,
-                    )
-                    master_fingerprint = local_store.get_value(
-                        MASTER_FINGERPRINT,
-                    )
+                    
                     wallet = WalletRequestModel(
-                        data_dir=app_paths.app_path, bitcoin_network=network, account_xpub_vanilla=account_xpub_vanilla,
-                        account_xpub_colored=account_xpub_colored, mnemonic=decrypted_mnemonic, master_fingerprint=master_fingerprint,
+                        data_dir=app_paths.app_path,
+                        bitcoin_network=network,
+                        keys=keys,
                     )
+                    
                     self.run_in_thread(
                         CommonOperationRepository.unlock, {
                             'args': [wallet],
