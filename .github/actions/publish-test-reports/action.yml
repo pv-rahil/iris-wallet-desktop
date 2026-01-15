@@ -38,12 +38,18 @@ runs:
         echo "$PWD/allure-2.24.0/bin" >> $GITHUB_PATH
       shell: bash
 
-    - name: Generate reports
-      run: ./.github/scripts/generate-reports.sh
+
+    - name: Generate reports (versioned + latest)
       shell: bash
+      env:
+        RUN_ID: ${{ github.run_id }}
+        COMMIT_SHA: ${{ github.sha }}
+      run: ./.github/scripts/generate-reports.sh
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: site
 
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ github.token }}
-        publish_dir: gh-pages
+      uses: actions/deploy-pages@v4
