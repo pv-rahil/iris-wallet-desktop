@@ -46,21 +46,20 @@ fi
 cp .github/pages/allure-index.html "$SITE_DIR/index.html"
 
 # Create runs index page
-RUNS_INDEX="$SITE_DIR/runs/index.html"
-mkdir -p "$SITE_DIR/runs"
+RUN_INDEX="$RUN_DIR/index.html"
 
 {
   echo "<!DOCTYPE html>"
-  echo "<html><head><meta charset='utf-8'><title>Test Runs</title></head><body>"
-  echo "<h1>Historical Test Runs</h1>"
+  echo "<html><head><meta charset='utf-8'><title>Run $RUN_ID</title></head><body>"
+  echo "<h1>Test Run $RUN_ID</h1>"
   echo "<ul>"
-  for d in $(ls -dt "$SITE_DIR/runs"/* 2>/dev/null | grep -v index.html); do
-    RUN_NAME=$(basename "$d")
-    echo "<li><a href=\"./$RUN_NAME/\">Run $RUN_NAME</a></li>"
-  done
+  echo "<li><a href='./embedded/'>Embedded Mode</a></li>"
+  echo "<li><a href='./remote/'>Remote Mode</a></li>"
+  echo "<li><a href='./coverage/'>Coverage Report</a></li>"
   echo "</ul>"
-  echo "<p><a href=\"../\">← Back to main page</a></p>"
+  echo "<p><a href='../'>← Back to all runs</a></p>"
+  echo "<p><a href='../../'>← Back to main page</a></p>"
   echo "</body></html>"
-} > "$RUNS_INDEX"
+} > "$RUN_INDEX"
 
 echo "✅ Reports generated successfully"
