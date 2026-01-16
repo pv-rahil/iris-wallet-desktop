@@ -45,6 +45,27 @@ fi
 # Create index page with links to all reports
 cp .github/pages/allure-index.html "$SITE_DIR/index.html"
 
+RUNS_INDEX="$SITE_DIR/runs/index.html"
+mkdir -p "$SITE_DIR/runs"
+
+{
+  echo "<!DOCTYPE html>"
+  echo "<html lang='en'>"
+  echo "<head><meta charset='UTF-8'><title>All Test Runs</title></head>"
+  echo "<body>"
+  echo "<h1>Historical Test Runs</h1>"
+  echo "<ul>"
+
+  for d in $(ls -dt "$SITE_DIR/runs"/*/ 2>/dev/null); do
+    RUN_NAME=$(basename "$d")
+    echo "<li><a href=\"./$RUN_NAME/\">Run $RUN_NAME</a></li>"
+  done
+
+  echo "</ul>"
+  echo "<p><a href=\"../\">← Back to main page</a></p>"
+  echo "</body></html>"
+} > "$RUNS_INDEX"
+
 # Create runs index page
 RUN_INDEX="$RUN_DIR/index.html"
 
