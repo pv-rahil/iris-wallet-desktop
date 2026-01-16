@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 import keyring
+from dogtail.rawinput import pressKey
 from keyrings.alt.file import PlaintextKeyring
 
 from accessible_constant import ASK_AUTH_FOR_APP_LOGIN_TOGGLE
@@ -197,7 +198,9 @@ class SettingsPageObjects(BaseOperations):
 
     def click_hide_exhausted_asset_toggle_button(self):
         """Click on the Hide exhausted asset toggle button"""
-        return self.do_click(self.hide_exhausted_asset_toggle_button()) if self.do_is_displayed(self.hide_exhausted_asset_toggle_button()) else None
+        if self.do_is_displayed(self.hide_exhausted_asset_toggle_button()):
+            self.hide_exhausted_asset_toggle_button().grabFocus()
+            pressKey('space')
 
     def click_ask_auth_imp_question(self):
         """Click on the ask auth imp question toggle button"""
