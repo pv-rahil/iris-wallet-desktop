@@ -11,7 +11,7 @@ LATEST_DIR="$SITE_DIR/latest"
 
 mkdir -p "$RUN_DIR" "$LATEST_DIR"
 
-# ---------- Embedded report ----------
+# Generate embedded report
 if [ -d "allure-results-embedded" ] && [ "$(ls -A allure-results-embedded 2>/dev/null)" ]; then
   allure generate allure-results-embedded --clean -o "$RUN_DIR/embedded"
   allure generate allure-results-embedded --clean -o "$LATEST_DIR/embedded"
@@ -21,7 +21,7 @@ else
   cp "$RUN_DIR/embedded/index.html" "$LATEST_DIR/embedded/index.html"
 fi
 
-# ---------- Remote report ----------
+# Generate remote report
 if [ -d "allure-results-remote" ] && [ "$(ls -A allure-results-remote 2>/dev/null)" ]; then
   allure generate allure-results-remote --clean -o "$RUN_DIR/remote"
   allure generate allure-results-remote --clean -o "$LATEST_DIR/remote"
@@ -31,7 +31,7 @@ else
   cp "$RUN_DIR/remote/index.html" "$LATEST_DIR/remote/index.html"
 fi
 
-# ---------- Coverage ----------
+# Copy coverage report
 if [ -d "coverage-report" ] && [ "$(ls -A coverage-report 2>/dev/null)" ]; then
   cp -r coverage-report "$RUN_DIR/coverage"
   rm -rf "$LATEST_DIR/coverage"
@@ -42,10 +42,7 @@ else
   cp "$RUN_DIR/coverage/index.html" "$LATEST_DIR/coverage/index.html"
 fi
 
-# ---------- Main index ----------
+# Create index page with links to all reports
 cp .github/pages/allure-index.html "$SITE_DIR/index.html"
-
-# ---------- Optional: keep only last 10 runs ----------
-ls -dt "$SITE_DIR/runs"/* 2>/dev/null | tail -n +11 | xargs rm -rf || true
 
 echo "✅ Reports generated successfully"
