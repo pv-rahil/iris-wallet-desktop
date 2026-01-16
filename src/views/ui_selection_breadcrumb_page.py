@@ -438,7 +438,8 @@ class SelectionBreadcrumbWidget(QWidget):
         is_multisig = SettingRepository.get_wallet_signature_type(
         ) == WalletSignatureType.MULTI_SIG_WALLET
         if is_multisig and entry_type == WalletEntryType.CREATE:
-            self._view_model.page_navigation.multisig_setup_page()
+            # Navigate to Set Password page first for multisig
+            self._view_model.page_navigation.set_wallet_password_page()
             return
 
         # Default flow (standard): show wallet summary dialog

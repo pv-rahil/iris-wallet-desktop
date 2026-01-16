@@ -29,7 +29,9 @@ from accessible_constant import PASSWORD_SUGGESTION_BUTTON
 from accessible_constant import PASSWORD_VISIBILITY_BUTTON
 from accessible_constant import SET_WALLET_PASSWORD_CLOSE_BUTTON
 from accessible_constant import SET_WALLET_PASSWORD_PROCEED_BUTTON
+from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import SYNCING_CHAIN_LABEL_TIMER
 from src.utils.helpers import load_stylesheet
@@ -471,7 +473,15 @@ class SetWalletPasswordWidget(QWidget):
 
     def close_navigation(self):
         """This method handled close button navigation"""
-        self._view_model.page_navigation.welcome_page()
+        # For multisig, go back to selection page
+        is_multisig = (
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
+        )
+        if is_multisig:
+            self._view_model.page_navigation.selection_page()
+        else:
+            self._view_model.page_navigation.welcome_page()
 
     def show_password_validation_label(self, message):
         """This method handled password validation."""

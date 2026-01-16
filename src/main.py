@@ -111,7 +111,12 @@ def main():
         if wallet.is_wallet_initialized:
             PAGE_NAVIGATION.splash_screen_page()
         else:
-            PAGE_NAVIGATION.term_and_condition_page()
+            # Check for restored setup state
+            last_page = SettingRepository.get_last_page()
+            if last_page == 'MultisigSetupPage':
+                PAGE_NAVIGATION.multisig_setup_page()
+            else:
+                PAGE_NAVIGATION.term_and_condition_page()
         view.show()
         sys.exit(app.exec())
     except Exception as exc:

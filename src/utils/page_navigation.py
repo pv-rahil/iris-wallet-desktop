@@ -4,6 +4,7 @@ logic for the application's pages.
 """
 from __future__ import annotations
 
+from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import SelectionPageModel
@@ -222,6 +223,17 @@ class PageNavigation:
                 'widget': self.pages[page_name](self._ui.view_model),
             }
             self.navigate_and_toggle(show_sidebar)
+
+            # Application State Persistence:
+            # If navigating to a standard dashboard page, clear/update the last_page
+            # We specifically want to persist MultisigSetupPage, so if we move AWAY from it
+            # to a main page, we should likely clear the 'last_page' setting or set it to 'dashboard'
+            # For now, let's treat any navigation via this generic method as a signal to clear "MultisigSetupPage" state
+            # unless we decide to persist ALL pages. The request was specific to MultisigSetup.
+            current_last_page = SettingRepository.get_last_page()
+            if current_last_page == 'MultisigSetupPage' and page_name != 'MultisigSetupPage':
+                SettingRepository.set_last_page(None)
+
         else:
             logger.error('Page %s not found.', page_name)
 
@@ -261,6 +273,8 @@ class PageNavigation:
             'widget': MultisigSetupPage(self._ui.view_model),
         }
         self.navigate_and_toggle(False)
+        # Persistence: Save state
+        SettingRepository.set_last_page('MultisigSetupPage')
 
     def welcome_page(self):
         """This method display the welcome page."""

@@ -33,6 +33,7 @@ from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import TokenSymbol
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DraftAsset
 from src.model.rgb_model import RgbAssetPageLoadModel
@@ -94,6 +95,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         ) == WalletAccessType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
+        self.is_multisig_wallet = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         self.fungible_frame = None
         self.vertical_layout_fungible_frame = None
         self.grid_layout_fungible_frame = None
@@ -286,7 +289,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 name=f"{d.get('name')} (Draft)",
                 ticker=d.get('ticker'),
             )
-            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or self.is_multisig_wallet:
                 self.create_fungible_card(draft_asset)
 
         for asset in self._view_model.main_asset_view_model.assets.nia:
@@ -490,6 +493,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
     def refresh_asset(self):
         """This method start the render timer and perform the fungible asset list refresh"""
         self.render_timer.start()
+        self.title_frame.update_psbt_info()
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )

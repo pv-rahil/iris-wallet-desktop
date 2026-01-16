@@ -3,10 +3,10 @@
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
-import json
 
 import src.flavour as bitcoin_network
 from src.model.enums.enums_model import KeyStorageType
@@ -469,7 +469,7 @@ class SettingRepository:
     def set_cosigners(cosigners_data: list[dict]) -> bool:
         """
         Store cosigner information for multisig wallet.
-        
+
         Args:
             cosigners_data: List of dicts, each containing:
                 - master_fingerprint: str
@@ -477,7 +477,7 @@ class SettingRepository:
                 - account_xpub_colored: str
                 - vanilla_keychain: int | None
                 - (optional) index: int
-        
+
         Returns:
             bool: True if stored successfully
         """
@@ -493,7 +493,7 @@ class SettingRepository:
     def get_cosigners() -> list[dict]:
         """
         Retrieve stored cosigner information.
-        
+
         Returns:
             List of cosigner dicts, empty list if none stored
         """
@@ -724,6 +724,23 @@ class SettingRepository:
             handle_exceptions(exc)
 
     @staticmethod
+    def get_bridge_token() -> str | None:
+        """Get the bridge token."""
+        try:
+            return local_store.get_value('bridge_token')
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def set_bridge_token(token: str) -> bool:
+        """Set the bridge token."""
+        try:
+            local_store.set_value('bridge_token', token)
+            return True
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
     def set_transaction_type(tx_type: str) -> bool:
         """Set the transaction type."""
         try:
@@ -735,5 +752,26 @@ class SettingRepository:
             if local_store.get_value('transaction_type') == (tx_type if tx_type else None):
                 return True
             return False
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def set_last_page(page_name: str | None) -> bool:
+        """
+        Set the last visited page identifier.
+        """
+        try:
+            local_store.set_value('last_page', page_name)
+            return True
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_last_page() -> str | None:
+        """
+        Get the last visited page identifier.
+        """
+        try:
+            return local_store.get_value('last_page')
         except Exception as exe:
             return handle_exceptions(exe)

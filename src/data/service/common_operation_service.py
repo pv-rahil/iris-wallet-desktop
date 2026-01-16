@@ -16,7 +16,6 @@ from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletSignatureType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -58,9 +57,6 @@ class CommonOperationService:
             key_storage_type = SettingRepository.get_key_storage_type()
             is_watch_only = security_type == WalletAccessType.WATCH_ONLY
             is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
-            is_multisig = (
-                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
-            )
 
             response: SinglesigKeys | MultisigKeys | None = None
             wallet: Wallet | None = None

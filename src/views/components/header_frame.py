@@ -35,11 +35,15 @@ from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.utils.common_utils import get_current_wallet_mode_config
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MASTER_XPUB
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.helpers import load_stylesheet
 from src.utils.keyring_storage import get_value
+from src.utils.local_store import local_store
+from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.usb_detector import USBDetector
 from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
@@ -299,6 +303,9 @@ class HeaderFrame(QFrame, QObject):
         self._pending_ops_count = 0
         self._pending_ops = []
 
+        # Connect refresh button to update PSBT info (fix for lag)
+        self.refresh_page_button.clicked.connect(self.update_psbt_info)
+
     def retranslate_ui(self):
         """Retranslate the UI elements."""
         self.title_name.setText(
@@ -474,8 +481,9 @@ class HeaderFrame(QFrame, QObject):
                         self._pending_ops[0],
                     )
                 else:
-                    self.page_navigation.broadcast_transaction_page_signal.emit(None)
-
+                    self.page_navigation.broadcast_transaction_page_signal.emit(
+                        None,
+                    )
 
         # Call the parent method to ensure other click functionality works
         super().mousePressEvent(event)
@@ -626,7 +634,20 @@ class HeaderFrame(QFrame, QObject):
 
     def on_pending_operations_ready(self, pending_ops: list):
         """Handle pending operations from multisig bridge sync."""
-        self._pending_ops = pending_ops or []
+        all_ops = pending_ops or []
+
+        # Filter filters:
+        # 1. Hide if I am initiator
+        filtered_ops = []
+        if all_ops:
+            local_xpub = local_store.get_value(MASTER_XPUB)
+            for op in all_ops:
+                initiator = getattr(op, 'initiator_xpub', None)
+                if initiator and local_xpub and initiator == local_xpub:
+                    continue
+                filtered_ops.append(op)
+
+        self._pending_ops = filtered_ops
         self._pending_ops_count = len(self._pending_ops)
         if self._pending_ops_count > 0:
             # Use same format as offline sign label

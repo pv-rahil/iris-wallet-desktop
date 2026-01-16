@@ -18,10 +18,14 @@ from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MASTER_XPUB
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
+from src.utils.constant import SIGNED_TXIDS
+from src.utils.custom_exception import CommonException
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
+from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.usb_sync_manager import USBSyncManager
 from src.utils.worker import ThreadManager
@@ -55,6 +59,8 @@ class HeaderFrameViewModel(QObject, ThreadManager):
     sync_process_ended = Signal(str)
     # Multisig: emits list of pending operations from bridge
     pending_operations_ready = Signal(list)
+    # Assuming this signal exists or needs to be added
+    is_loading = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -169,29 +175,81 @@ class HeaderFrameViewModel(QObject, ThreadManager):
     # ========== Multisig Bridge Sync ==========
 
     def sync_multisig_bridge(self):
-        """Sync with multisig bridge to get pending operations for review."""
+        """Sync with multisig bridge to check for pending operations."""
         if not self._is_multisig():
             return
+        self.is_loading.emit(True)
         self.run_in_thread(
-            RgbRepository.sync_with_bridge,
+            self._sync_and_filter,
             {
                 'args': [],
                 'callback': self.on_multisig_sync_done,
+                # Assuming on_error is on_multisig_sync_error
                 'error_callback': self.on_multisig_sync_error,
             },
         )
 
+    def _sync_and_filter(self):
+        """Syncs with bridge and filters out locally signed operations."""
+        ops = RgbRepository.sync_with_bridge()
+        if not ops:
+            return []
+
+        # Ensure we have a list to iterate
+        op_list = ops if isinstance(ops, list) else [ops]
+
+        filtered = []
+        signed_txids = local_store.get_value(SIGNED_TXIDS) or []
+
+        # If signed_txids is not a list (corruption safety), treat as empty
+        if not isinstance(signed_txids, list):
+            signed_txids = []
+
+        for op in op_list:
+            try:
+                # Get this wallet's XPUB to check if we're the initiator
+                our_xpub = local_store.get_value(MASTER_XPUB)
+
+                # Filter out operations initiated by this wallet (we already signed during creation)
+                if our_xpub and hasattr(op, 'initiator_xpub') and op.initiator_xpub == our_xpub:
+                    continue
+
+                # Filter out COMPLETED operations (nothing to do)
+                op_class_name = op.operation.__class__.__name__
+                if 'COMPLETED' in op_class_name:
+                    continue
+
+                # Filter out operations this signer already responded to
+                if hasattr(op.operation, 'status') and hasattr(op.operation.status, 'my_response'):
+                    if op.operation.status.my_response:
+                        continue
+
+                # For PSBT operations, check if we already signed via TXID
+                if hasattr(op.operation, 'psbt'):
+                    details = RgbRepository.inspect_psbt(op.operation.psbt)
+                    if details and hasattr(details, 'txid') and details.txid in signed_txids:
+                        # We already signed this one
+                        continue
+
+                filtered.append(op)
+            except Exception as e:
+                logger.error(f"Error inspecting PSBT for filtering: {e}")
+                # Use safe fallback: include it if we can't verify
+                filtered.append(op)
+
+        return filtered
+
     def on_multisig_sync_done(self, operation_info):
         """Handle successful bridge sync. Emits pending operations list."""
-        # operation_info is a single OperationInfo object when there's a pending operation
-        # It has fields: operation_idx, initiator_xpub, operation
+        # operation_info is a list of filtered operations (or single obj if from legacy path, but we changed it)
         pending_ops = []
-        if operation_info is not None:
-            # It's a single OperationInfo, wrap it in a list
-            pending_ops = [operation_info]
-            print('operation found')
+        if operation_info:
+            if isinstance(operation_info, list):
+                pending_ops = operation_info
+            else:
+                pending_ops = [operation_info]
         else:
-            print('no operation found')
+            print('No operation found')
         self.pending_operations_ready.emit(pending_ops)
 
     def on_multisig_sync_error(self, error: Exception):
@@ -199,4 +257,3 @@ class HeaderFrameViewModel(QObject, ThreadManager):
         logger.error('Failed to sync with multisig bridge: %s', error)
         # Emit empty list on error
         self.pending_operations_ready.emit([])
-

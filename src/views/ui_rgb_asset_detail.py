@@ -42,6 +42,7 @@ from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
@@ -605,7 +606,9 @@ class RGBAssetDetailWidget(QWidget):
         try:
             if asset_type == AssetSchema.IFA or asset_type == str(AssetSchema.IFA.value):
                 access_type = SettingRepository.get_wallet_access_type()
-                if access_type == WalletAccessType.WATCH_ONLY:
+                is_multisig = SettingRepository.get_wallet_signature_type(
+                ) == WalletSignatureType.MULTI_SIG_WALLET
+                if access_type == WalletAccessType.WATCH_ONLY or is_multisig:
                     svc = WalletDataService.get_session()
                     if svc is not None:
                         drafts = svc.list_ifa_secondary_drafts(

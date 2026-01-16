@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import rgb_lib
 from rgb_lib import RgbLibError
-from src.flavour import __app_name_suffix__
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletSignatureType
-from src.utils.constant import MULTISIG_BRIDGE_URL,MULTISIG_1_TOKEN,MULTISIG_2_TOKEN,MULTISIG_3_TOKEN
+from src.utils.biscuit_auth import generate_and_store_token
+from src.utils.constant import MULTISIG_BRIDGE_URL
 from src.utils.custom_exception import CommonException
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
@@ -36,8 +36,9 @@ class ColoredWallet:
         self._wallet: rgb_lib.Wallet | rgb_lib.MultisigWallet | None = None
         self.online_wallet: rgb_lib.Online | None = None
         self.is_multisig = (
-                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
-            )
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
+        )
 
     @property
     def wallet(self) -> rgb_lib.Wallet | rgb_lib.MultisigWallet:
@@ -71,6 +72,7 @@ class ColoredWallet:
             RuntimeError: If the wallet is not initialized.
         """
         if self.online_wallet is None:
+            print('going online')
             if self._wallet is None:
                 raise CommonException(
                     'Wallet must be initialized before going online.',
@@ -81,11 +83,15 @@ class ColoredWallet:
                     SettingRepository.get_wallet_network(),
                 )
                 indexer_url = get_bitcoin_config(network, '').indexer_url
-                if self.is_multisig:
-                    bridge_token = self.get_multisig_bridge_token()
-                    self.online_wallet = self._wallet.go_online(indexer_url, MULTISIG_BRIDGE_URL, bridge_token)
+                if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+                    token = generate_and_store_token()
+                    self.online_wallet = self._wallet.go_online(
+                        indexer_url, MULTISIG_BRIDGE_URL, token,
+                    )
                 else:
-                    self.online_wallet = self._wallet.go_online(False, indexer_url)
+                    self.online_wallet = self._wallet.go_online(
+                        False, indexer_url,
+                    )
             except Exception as exc:
                 logger.error(
                     'Failed to go online: %s, Message: %s',
@@ -110,7 +116,19 @@ class ColoredWallet:
         """
         if self._wallet:
             try:
-                self.online_wallet = self._wallet.go_online(True, indexer_url)
+                if self.is_multisig:
+                    token = generate_and_store_token()
+                    if not token:
+                        raise CommonException(
+                            'Failed to generate bridge token. Check debug logs for details.',
+                        )
+                    self.online_wallet = self._wallet.go_online(
+                        indexer_url, MULTISIG_BRIDGE_URL, token,
+                    )
+                else:
+                    self.online_wallet = self._wallet.go_online(
+                        True, indexer_url,
+                    )
             except RgbLibError.InvalidIndexer:
                 raise
             except Exception as exc:
@@ -125,20 +143,6 @@ class ColoredWallet:
                         'original_exception': str(exc),
                     },
                 ) from exc
-
-    def get_multisig_bridge_token(self):
-        """This is a temporary function make sure to remove it after development"""
-        # Re-import to get the updated value (set by bootstrap.py at runtime)
-        app_suffix = __app_name_suffix__        
-        if app_suffix == "multisig_1":
-            bridge_token = MULTISIG_1_TOKEN
-        elif app_suffix == "multisig_2":
-            bridge_token = MULTISIG_2_TOKEN
-        elif app_suffix == "multisig_3":
-            bridge_token = MULTISIG_3_TOKEN
-        else:
-            raise CommonException(f"Unknown app_name_suffix: {app_suffix}")
-        return bridge_token
 
 
 colored_wallet: ColoredWallet = ColoredWallet()

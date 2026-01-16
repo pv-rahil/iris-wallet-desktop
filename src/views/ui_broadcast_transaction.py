@@ -39,8 +39,11 @@ from src.model.enums.enums_model import WalletSignatureType
 from src.utils.common_utils import close_button_navigation
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.constant import MASTER_XPUB
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import load_stylesheet
+from src.utils.local_store import local_store
+from src.utils.logging import logger
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -79,6 +82,7 @@ class BroadcastTransactionWidget(QWidget):
         ) == WalletSignatureType.MULTI_SIG_WALLET
         # Minimum characters to consider PSBT input valid for enabling Sign button
         self.min_psbt_len = 80
+        self.is_initiator_of_pending = False
 
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
@@ -283,6 +287,71 @@ class BroadcastTransactionWidget(QWidget):
             self.horizontal_layout_1,
         )
 
+        # Inspection Details Frame (Multisig only)
+        if self.is_multisig:
+            self.inspection_frame = QFrame(self.broadcast_transaction_widget)
+            self.inspection_frame.setObjectName('inspection_frame')
+            self.inspection_frame.setFrameShape(QFrame.StyledPanel)
+            self.inspection_frame.setFrameShadow(QFrame.Raised)
+            self.inspection_frame.hide()  # Initially hidden
+
+            self.inspect_layout = QVBoxLayout(self.inspection_frame)
+            self.inspect_layout.setContentsMargins(10, 10, 10, 10)
+            self.inspect_layout.setSpacing(5)
+
+            # Detail Rows
+            def create_detail_row(label_text, value_id):
+                row_layout = QHBoxLayout()
+                lbl = QLabel(label_text, self.inspection_frame)
+                lbl.setStyleSheet('color: #b0b0b0;')  # Dimmer text for label
+                val = QLabel('', self.inspection_frame)
+                val.setObjectName(value_id)
+                val.setStyleSheet('color: white; font-weight: bold;')
+                row_layout.addWidget(lbl)
+                row_layout.addWidget(val)
+                row_layout.addStretch()
+                return row_layout, val
+
+            # TxID
+            row_txid, self.val_txid = create_detail_row(
+                'Transaction ID:', 'val_txid',
+            )
+            self.inspect_layout.addLayout(row_txid)
+
+            # Inputs / Outputs
+            row_io = QHBoxLayout()
+            lbl_in = QLabel('Inputs:', self.inspection_frame)
+            lbl_in.setStyleSheet('color: #b0b0b0;')
+            self.val_inputs = QLabel('', self.inspection_frame)
+            self.val_inputs.setStyleSheet('color: white; font-weight: bold;')
+
+            lbl_out = QLabel('Outputs:', self.inspection_frame)
+            lbl_out.setStyleSheet('color: #b0b0b0;')
+            self.val_outputs = QLabel('', self.inspection_frame)
+            self.val_outputs.setStyleSheet('color: white; font-weight: bold;')
+
+            row_io.addWidget(lbl_in)
+            row_io.addWidget(self.val_inputs)
+            row_io.addSpacing(20)
+            row_io.addWidget(lbl_out)
+            row_io.addWidget(self.val_outputs)
+            row_io.addStretch()
+            self.inspect_layout.addLayout(row_io)
+
+            # Fee
+            row_fee, self.val_fee = create_detail_row('Fee (sats):', 'val_fee')
+            self.inspect_layout.addLayout(row_fee)
+
+            # Signature Count (Editable/Display)
+            # User asked: "we can update the sign count also"
+            # We'll display it, and maybe if they meant "update" as in "refresh", we handled that via inspection.
+            row_sig, self.val_sigs = create_detail_row(
+                'Signatures:', 'val_sigs',
+            )
+            self.inspect_layout.addLayout(row_sig)
+
+            self.vertical_layout.addWidget(self.inspection_frame)
+
         self.broadcast_button_horizontal_layout = QHBoxLayout()
         self.broadcast_button_horizontal_layout.setObjectName(
             'broadcast_button_horizontal_layout',
@@ -435,6 +504,10 @@ class BroadcastTransactionWidget(QWidget):
             self.view_model.broadcast_transaction_view_model.finalized_psbt.connect(
                 self._on_finalized_psbt_ready,
             )
+        # Connect inspection result signal
+        self.view_model.broadcast_transaction_view_model.psbt_inspection_ready.connect(
+            self._handle_psbt_inspection_result,
+        )
 
     def retranslate_ui(self):
         """
@@ -638,12 +711,14 @@ class BroadcastTransactionWidget(QWidget):
         if not psbt:
             ToastManager.error(description='No PSBT to sign')
             return
-        
+
         # Get the operation index for posting back
         operation_idx = None
         if self.pending_operation:
-            operation_idx = getattr(self.pending_operation, 'operation_idx', None)
-        
+            operation_idx = getattr(
+                self.pending_operation, 'operation_idx', None,
+            )
+
         # Call the viewmodel to sign and post
         self.view_model.broadcast_transaction_view_model.sign_and_post_multisig(
             psbt, operation_idx,
@@ -654,7 +729,8 @@ class BroadcastTransactionWidget(QWidget):
         """Update the signature progress label for multisig (e.g., 1 of 3)."""
         _, total = SettingRepository.get_multisig_config()
         current_psbt = self.broadcast_transaction_input.toPlainText().strip()
-        if not current_psbt:
+
+        if not current_psbt or len(current_psbt) < self.min_psbt_len:
             total_disp = total if total is not None else '?'
             self.sign_status_label.setText(
                 QCoreApplication.translate(
@@ -664,8 +740,104 @@ class BroadcastTransactionWidget(QWidget):
             )
             self.btn_export.setEnabled(False)
             self.btn_combine.setEnabled(False)
+            if hasattr(self, 'inspection_frame'):
+                self.inspection_frame.hide()
             return
-        self._on_signature_count_ready(1)
+
+        # Perform inspection if valid length
+        if self.is_multisig:
+            self.view_model.broadcast_transaction_view_model.inspect_psbt(
+                current_psbt,
+            )
+
+    def _handle_psbt_inspection_result(self, details):
+        """Handle the async PSBT inspection result from the signal."""
+        try:
+            # Print formatted inspection results
+            if details:
+                print('=' * 80)
+                print('PSBT INSPECTION RESULT:')
+                print('=' * 80)
+                print(f"TXID:             {getattr(details, 'txid', 'N/A')}")
+                print(f"Signature Count:  {
+                      getattr(details, 'signature_count', 0)
+                }")
+                print(f"Fee:              {
+                      getattr(details, 'fee_sat', 0):,
+                } sats")
+                print()
+
+                # Show input details
+                inputs = getattr(details, 'inputs', [])
+                print(f"INPUTS ({len(inputs)}):")
+                print('-' * 80)
+                if inputs:
+                    for idx, inp in enumerate(inputs, 1):
+                        outpoint = getattr(inp, 'outpoint', None)
+                        amount_sat = getattr(inp, 'amount_sat', 0)
+                        if outpoint:
+                            txid = getattr(outpoint, 'txid', 'N/A')
+                            vout = getattr(outpoint, 'vout', 'N/A')
+                            print(f"  Input #{idx}:")
+                            print(f"    Outpoint:  {txid}:{vout}")
+                            print(f"    Amount:    {amount_sat:,} sats")
+                        else:
+                            print(f"  Input #{idx}: {amount_sat:,} sats")
+                else:
+                    print('  (None)')
+
+                total_input = getattr(details, 'total_input_sat', 0)
+                print(f"  TOTAL INPUT:     {total_input:,} sats")
+                print()
+
+                # Show output details
+                outputs = getattr(details, 'outputs', [])
+                print(f"OUTPUTS ({len(outputs)}):")
+                print('-' * 80)
+                if outputs:
+                    for idx, out in enumerate(outputs, 1):
+                        address = getattr(out, 'address', None)
+                        amount_sat = getattr(out, 'amount_sat', 0)
+                        is_mine = getattr(out, 'is_mine', False)
+                        is_op_return = getattr(out, 'is_op_return', False)
+
+                        print(f"  Output #{idx}:")
+                        if is_op_return:
+                            print(f"    Type:      OP_RETURN")
+                        else:
+                            print(f"    Address:   {address or 'N/A'}")
+                        print(f"    Amount:    {amount_sat:,} sats")
+                        if is_mine:
+                            print(f"    Owner:     ✓ Mine (change)")
+                        print()
+                else:
+                    print('  (None)')
+
+                total_output = getattr(details, 'total_output_sat', 0)
+                print(f"  TOTAL OUTPUT:    {total_output:,} sats")
+                print('=' * 80)
+
+            if details:
+                self.inspection_frame.show()
+                # Populate details (safely accessing attributes)
+                self.val_txid.setText(str(getattr(details, 'txid', 'N/A')))
+                self.val_inputs.setText(
+                    str(len(getattr(details, 'inputs', []))),
+                )
+                self.val_outputs.setText(
+                    str(len(getattr(details, 'outputs', []))),
+                )
+                self.val_fee.setText(f"{getattr(details, 'fee_sat', 0)} sats")
+
+                # Update signature counts
+                sig_count = getattr(details, 'signature_count', 0)
+                self.val_sigs.setText(str(sig_count))
+            else:
+                self.inspection_frame.hide()
+        except Exception as e:
+            logger.error('Error handling PSBT inspection result: %s', str(e))
+            self.inspection_frame.hide()
+            print(f"Inspection error: {e}")
 
     def _on_signature_count_ready(self, count: int):
         _, total = SettingRepository.get_multisig_config()
@@ -698,6 +870,10 @@ class BroadcastTransactionWidget(QWidget):
                         'sign_psbt',
                     ),
                 )
+                if self.is_initiator_of_pending:
+                    self.broadcast_button.hide()
+                else:
+                    self.broadcast_button.show()
 
     def _on_import_psbt(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -796,6 +972,11 @@ class BroadcastTransactionWidget(QWidget):
                 op = self.pending_operation
                 # OperationInfo has operation field which contains the PSBT
                 operation = getattr(op, 'operation', None)
+                initiator_xpub = getattr(op, 'initiator_xpub', None)
+                local_xpub = local_store.get_value(MASTER_XPUB)
+                if initiator_xpub and local_xpub and initiator_xpub == local_xpub:
+                    self.is_initiator_of_pending = True
+
                 if operation is not None:
                     # Extract psbt from the operation
                     psbt = getattr(operation, 'psbt', None)

@@ -52,19 +52,21 @@ def test_close_button_calls_selection_page(widget_watch_only: MultisigSetupPage,
 def test_watch_only_flow_threshold_confirm_and_finish(widget_watch_only: MultisigSetupPage, vm, mocker):
     """Watch-only: Step1 -> Step2 (cosigners) -> finish navigates to welcome page."""
     # Set M and N
-    widget_watch_only.n_input.setText('3')
-    widget_watch_only.m_input.setText('2')
+    widget_watch_only.total_signer_input.setText('3')
+    widget_watch_only.required_signer_input.setText('2')
 
     # Spy on config set
-    set_cfg = mocker.patch('src.views.components.multisig_setup_page.SettingRepository.set_multisig_config')
+    set_cfg = mocker.patch(
+        'src.views.components.multisig_setup_page.SettingRepository.set_multisig_config',
+    )
 
     # Step 1 -> confirm threshold -> Step 2 cosigner list
     widget_watch_only.continue_button.click()
     widget_watch_only.parent().update() if widget_watch_only.parent() else None
 
     # After confirming threshold, inputs locked and cosigners created (n-1 rows from 2..n)
-    assert widget_watch_only.m_input.isEnabled() is False
-    assert widget_watch_only.n_input.isEnabled() is False
+    assert widget_watch_only.required_signer_input.isEnabled() is False
+    assert widget_watch_only.total_signer_input.isEnabled() is False
     assert len(widget_watch_only.cosigner_rows) == 2  # for 2 and 3
     set_cfg.assert_called_once_with(2, 3)
 
@@ -75,9 +77,11 @@ def test_watch_only_flow_threshold_confirm_and_finish(widget_watch_only: Multisi
 
 def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage, vm, mocker):
     """With private key: Step1 -> Step2(review) -> Step3(cosigners) -> finish, and Back behavior resets config on returning to step1."""
-    widget_with_privkey.n_input.setText('2')
-    widget_with_privkey.m_input.setText('2')
-    set_cfg = mocker.patch('src.views.components.multisig_setup_page.SettingRepository.set_multisig_config')
+    widget_with_privkey.total_signer_input.setText('2')
+    widget_with_privkey.required_signer_input.setText('2')
+    set_cfg = mocker.patch(
+        'src.views.components.multisig_setup_page.SettingRepository.set_multisig_config',
+    )
 
     # Step 1 -> Step 2 (review visible, cos hidden)
     widget_with_privkey.continue_button.click()
@@ -104,13 +108,18 @@ def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage
     with patch('src.views.components.multisig_setup_page.load_stylesheet', return_value=''), \
             patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY):
         w = MultisigSetupPage(vm)
-    w.n_input.setText('2')
-    w.m_input.setText('2')
-    set_cfg = mocker.patch('src.views.components.multisig_setup_page.SettingRepository.set_multisig_config')
+    w.total_signer_input.setText('2')
+    w.required_signer_input.setText('2')
+    set_cfg = mocker.patch(
+        'src.views.components.multisig_setup_page.SettingRepository.set_multisig_config',
+    )
     w.show()
     w.continue_button.click()
     # Back from Step 2 -> Step 1
     w._go_back()
     # It may have been called first with (2,2) during confirm, then (None,None) on back
-    assert any(args == ((None, None),) or args == (None, None) for args, _ in set_cfg.call_args_list)
+    assert any(
+        args == ((None, None),) or args == (None, None)
+        for args, _ in set_cfg.call_args_list
+    )
     w.close()

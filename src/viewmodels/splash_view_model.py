@@ -7,7 +7,8 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
-from rgb_lib import rgb_lib,BitcoinNetwork
+from rgb_lib import BitcoinNetwork
+from rgb_lib import rgb_lib
 
 import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository
@@ -157,8 +158,6 @@ class SplashViewModel(QObject, ThreadManager):
                         decrypted_mnemonic = mnemonic_store.decrypt(
                             password=wallet_password, path=app_paths.mnemonic_file_path,
                         )
-                        print(rgb_lib.restore_keys(BitcoinNetwork.REGTEST,decrypted_mnemonic))
-
                     self.splash_screen_message.emit(
                         QCoreApplication.translate(
                             IRIS_WALLET_TRANSLATIONS_CONTEXT, 'wait_for_wallet_to_unlock', None,
@@ -168,10 +167,16 @@ class SplashViewModel(QObject, ThreadManager):
                     network = get_bitcoin_network_from_enum(
                         bitcoin_network.__network__,
                     )
-                    account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA)
-                    account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
-                    master_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
-                    
+                    account_xpub_vanilla = local_store.get_value(
+                        ACCOUNT_XPUB_VANILLA,
+                    )
+                    account_xpub_colored = local_store.get_value(
+                        ACCOUNT_XPUB_COLORED,
+                    )
+                    master_fingerprint = local_store.get_value(
+                        MASTER_FINGERPRINT,
+                    )
+
                     # Build keys using the helper method (handles both single-sig and multisig)
                     keys = build_keys_from_data(
                         account_xpub_vanilla=account_xpub_vanilla,
@@ -179,13 +184,13 @@ class SplashViewModel(QObject, ThreadManager):
                         master_fingerprint=master_fingerprint,
                         mnemonic=decrypted_mnemonic,
                     )
-                    
+
                     wallet = WalletRequestModel(
                         data_dir=app_paths.app_path,
                         bitcoin_network=network,
                         keys=keys,
                     )
-                    
+
                     self.run_in_thread(
                         CommonOperationRepository.unlock, {
                             'args': [wallet],

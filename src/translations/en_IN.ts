@@ -2190,7 +2190,7 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>total_cosigners_help</source>
-        <translation>Total number of participants in the multisig wallet (2-15)</translation>
+        <translation>Total number of participants in the multisig wallet (3-15)</translation>
     </message>
     <message>
         <source>required_signatures_label</source>

@@ -40,6 +40,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
@@ -82,6 +83,8 @@ class IssueIFAWidget(QWidget):
         ) == WalletType.ONLINE_TYPE_WALLET
         self.is_watch_only = SettingRepository.get_wallet_access_type(
         ) == WalletAccessType.WATCH_ONLY
+        self.is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         self.asset_transactions: ListTransferAssetWithBalanceResponseModel | None = None
         self.value_of_default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
         self._retry_after_utxo_inflate = False
@@ -787,6 +790,7 @@ class IssueIFAWidget(QWidget):
         fee_text = self.inflatables_fee_rate_input.text() or FEE_RATE
         svc = WalletDataService.get_session()
         if svc is not None and self.params is not None:
+            active = None
             if self.from_draft and self.draft_id is not None:
                 svc.set_active_secondary_draft(
                     int(self.draft_id), self.params.asset_id,
@@ -809,11 +813,12 @@ class IssueIFAWidget(QWidget):
                         svc.set_active_secondary_draft(
                             int(draft_id), self.params.asset_id,
                         )
+                        self.draft_id = draft_id
+                        self.from_draft = True
                 else:
                     svc.set_active_secondary_draft(
                         int(active.get('id')), self.params.asset_id,
                     )
-
             existing_unsigned = None
             drafts = svc.list_psbt(False) or []
             for p in drafts:
@@ -822,8 +827,8 @@ class IssueIFAWidget(QWidget):
                     break
             if existing_unsigned:
                 self.show_inflate_psbt_page(existing_unsigned)
-            return
-        if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only:
+                return
+        if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only or self.is_multisig:
             self._view_model.issue_ifa_asset_view_model.secondary_issuance_begin(
                 asset_id=self.params.asset_id,
                 amount=int(amount_to_issue),
@@ -995,6 +1000,10 @@ class IssueIFAWidget(QWidget):
 
     def handle_psbt_posted_to_bridge(self):
         """Handle PSBT posted to bridge (multisig initiator)."""
+        # Only handle if the current purpose matches IFA issuing
+        current_purpose = self._view_model.utxo_creation_view_model.current_purpose
+        if current_purpose not in ['issue_asset', 'inflate_asset']:
+            return
         # Close dialog
         self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.disconnect()
         ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
@@ -1076,13 +1085,15 @@ class IssueIFAWidget(QWidget):
         """handle ifa issue"""
         self._view_model.issue_ifa_asset_view_model.utxo_creation_started.disconnect()
         inflatables_wallet_service = WalletDataService.get_session()
-        if inflatables_wallet_service and not self.secondary_issuance:
+        if inflatables_wallet_service:
             unsigned_psbts = inflatables_wallet_service.list_psbt(
                 signed=False,
             )
+            # Check for existing PSBT based on purpose
+            target_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset'
             existing_inflatables_psbt = next(
                 (
-                    p for p in unsigned_psbts if p.get('purpose') == 'issue_asset'
+                    p for p in unsigned_psbts if p.get('purpose') == target_purpose
                 ), None,
             )
             if existing_inflatables_psbt and existing_inflatables_psbt.get('psbt'):

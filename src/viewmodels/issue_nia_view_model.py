@@ -76,7 +76,7 @@ class IssueNIAViewModel(QObject, ThreadManager):
         ToastManager.error(description=description)
 
     def on_issue_click(self, short_identifier: str, asset_name: str, amount: str):
-        """"
+        """
         Executes the set_wallet_password method in a separate thread.
         This method starts a thread to execute the issue_nia function with the provided arguments.
         It emits a signal to indicate loading state and defines a callback for when the operation is successful.

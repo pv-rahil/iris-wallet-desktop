@@ -18,8 +18,8 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletType
 from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
@@ -244,7 +244,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
             )
             hardware_client_store.set_rgb_mode(True)
 
-        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTISIG:
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.run_in_thread(
                 CommonOperationRepository.sign_psbt,
                 {
@@ -301,7 +301,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
             {
                 'callback': lambda _: self.secondary_issuance_success.emit(),
                 'error_callback': lambda _: self.secondary_issuance_success.emit(),
-            }
+            },
         )
 
     def inflate_end(self, signed_psbt: str):

@@ -494,6 +494,7 @@ class CollectiblesAssetWidget(QWidget):
     def trigger_render_and_refresh(self):
         """This method start the render timer and perform the collectible asset list refresh"""
         self.render_timer.start()
+        self.collectible_header_frame.update_psbt_info()
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )

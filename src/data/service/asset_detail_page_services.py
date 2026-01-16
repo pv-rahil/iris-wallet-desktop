@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from rgb_lib import Assignment
 from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
 
@@ -50,6 +51,7 @@ class AssetDetailPageService:
             balance: Balance = RgbRepository.get_asset_balance(
                 AssetIdModel(asset_id=list_transfers_request_model.asset_id),
             )
+            print(balance, 'BALANCE IN SERVICE')
 
             if transactions:
                 for transaction in transactions:
@@ -142,6 +144,25 @@ class AssetDetailPageService:
             return handle_exceptions(exc)
 
     @staticmethod
+    def _get_amount_from_assignments(assignments: list) -> int | None:
+        """Helper to get amount from assignment."""
+        if not assignments:
+            return None
+
+        # Check specifically for FUNGIBLE assignment first
+        for assignment in assignments:
+            if isinstance(assignment, Assignment.FUNGIBLE) and hasattr(assignment, 'amount') and assignment.amount is not None:
+                return assignment.amount
+
+        # Fallback: check other assignments that might have amount if FUNGIBLE not found
+        # (Though user said 'get fungible object always', so maybe strict is better?)
+        for assignment in assignments:
+            if hasattr(assignment, 'amount') and assignment.amount is not None:
+                return assignment.amount
+
+        return None
+
+    @staticmethod
     def assign_transfer_status(transaction: TransferAsset):
         """
         Assign transfer statuses and amount status based on transaction kind.
@@ -149,23 +170,22 @@ class AssetDetailPageService:
         # Assign transfer statuses based on the transaction kind
         if transaction.kind == TransferKind.ISSUANCE:
             transaction.transfer_Status = TransferStatusEnumModel.INTERNAL
-            if transaction.assignments and len(transaction.assignments) > 0:
-                transaction.amount_status = f'+{
-                    str(transaction.assignments[0].amount)
-                }'
+            amount = AssetDetailPageService._get_amount_from_assignments(
+                transaction.assignments,
+            )
+            if amount is not None:
+                transaction.amount_status = f'+{str(amount)}'
+
         elif transaction.kind in (
             TransferKind.RECEIVE_BLIND,
             TransferKind.RECEIVE_WITNESS,
         ):
             transaction.transfer_Status = TransferStatusEnumModel.RECEIVED
-            amount_val = None
-            if (
-                transaction.assignments
-                and len(transaction.assignments) > 0
-                and transaction.assignments[0].amount is not None
-            ):
-                amount_val = transaction.assignments[0].amount
-            elif (
+            amount_val = AssetDetailPageService._get_amount_from_assignments(
+                transaction.assignments,
+            )
+
+            if amount_val is None and (
                 transaction.requested_assignment
                 and transaction.requested_assignment.amount is not None
             ):

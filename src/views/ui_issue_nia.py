@@ -502,6 +502,9 @@ class IssueNIAWidget(QWidget):
 
     def handle_psbt_posted_to_bridge(self):
         """Handle PSBT posted to bridge (multisig initiator)."""
+        # Only handle if the current purpose matches NIA issuing
+        if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_nia':
+            return
         # Close dialog
         self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.disconnect()
         nia_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
@@ -546,7 +549,7 @@ class IssueNIAWidget(QWidget):
                 return
         # Compute missing UTXOs (required = 3) and create only those
         current = get_unspent_utxo_count()
-        needed = 3 - max(0, current - 1)
+        needed = 1 - current
         needed = needed if needed > 0 else 1
         self._view_model.utxo_creation_view_model.create_utxos_begin(
             'issue_asset_nia', needed,

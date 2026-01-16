@@ -21,9 +21,10 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.set_wallet_password_model import SetWalletPasswordModel
 from src.utils.build_app_path import app_paths
-from src.utils.constant import ACCOUNT_XPUB_COLORED, TEMP_MULTISIG_MNEMONIC
+from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import MASTER_FINGERPRINT
@@ -32,6 +33,7 @@ from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.handle_exception import CommonException
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
@@ -39,7 +41,7 @@ from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
 from src.views.components.message_box import MessageBox
-from src.model.enums.enums_model import WalletSignatureType
+
 
 class SetWalletPasswordViewModel(QObject, ThreadManager):
     """This class represents the activities of the set wallet password page."""
@@ -106,15 +108,38 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
             return
         if password == confirm_password:
             self.password = password
-            self.is_loading.emit(True)
-            self.run_in_thread(
-                CommonOperationService.initialize_wallet,
-                {
-                    'args': [str(password)],
-                    'callback': partial(self.on_success, password=password),
-                    'error_callback': self.on_error,
-                },
+
+            # Check if multisig wallet
+            is_multisig = (
+                SettingRepository.get_wallet_signature_type(
+                ) == WalletSignatureType.MULTI_SIG_WALLET
             )
+
+            if is_multisig:
+                # For multisig, just store password and navigate to multisig setup
+                # Keys will be generated in MultisigSetupPage
+                network = get_bitcoin_network_from_enum(
+                    SettingRepository.get_wallet_network(),
+                )
+                is_password_stored: bool = set_value(
+                    WALLET_PASSWORD_KEY, password, network.value,
+                )
+                if is_password_stored:
+                    SettingRepository.set_keyring_status(status=False)
+                    self._page_navigation.multisig_setup_page()
+                else:
+                    validation('Failed to store password securely.')
+            else:
+                # For single-sig, initialize wallet as normal
+                self.is_loading.emit(True)
+                self.run_in_thread(
+                    CommonOperationService.initialize_wallet,
+                    {
+                        'args': [str(password)],
+                        'callback': partial(self.on_success, password=password),
+                        'error_callback': self.on_error,
+                    },
+                )
         else:
             validation('Passwords must be the same!')
             print('Passwords do not match')
@@ -154,28 +179,23 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                 if not (is_watch_only or is_hardware_wallet):
                     # Check if this is a multisig wallet
                     is_multisig = (
-                        SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+                        SettingRepository.get_wallet_signature_type(
+                        ) == WalletSignatureType.MULTI_SIG_WALLET
                     )
-                    
-                    if is_multisig:
-                        # For multisig wallets, get mnemonic from temp storage
-                        mnemonic_to_encrypt = local_store.get_value(TEMP_MULTISIG_MNEMONIC)
-                    else:
+
+                    # For multisig wallets, mnemonic is already encrypted in MultisigSetupPage
+                    # Only encrypt for single-sig wallets here
+                    if not is_multisig:
                         # For single-sig wallets, get mnemonic from wallet_response
                         mnemonic_to_encrypt = wallet_response.mnemonic
-                    if mnemonic_to_encrypt:
-                        # Encrypt and save mnemonic
-                        encrypted_mnemonic = mnemonic_store.encrypt(
-                            password=password, mnemonic=mnemonic_to_encrypt,
-                        )
-                        local_store.write_to_file(
-                            file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
-                        )
-
-                        # Clear temporary mnemonic from local_store (if it was multisig)
-                        if is_multisig:
-                            local_store.remove_key(TEMP_MULTISIG_MNEMONIC)
-
+                        if mnemonic_to_encrypt:
+                            # Encrypt and save mnemonic
+                            encrypted_mnemonic = mnemonic_store.encrypt(
+                                password=password, mnemonic=mnemonic_to_encrypt,
+                            )
+                            local_store.write_to_file(
+                                file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
+                            )
 
                 if not is_multisig:
                     local_store.set_value(
@@ -192,7 +212,11 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                 )
                 if is_password_stored:
                     SettingRepository.set_keyring_status(status=False)
-                    self.forward_to_fungibles_page()
+                    # For multisig, navigate to multisig setup page
+                    if is_multisig:
+                        self._page_navigation.multisig_setup_page()
+                    else:
+                        self.forward_to_fungibles_page()
                 else:
                     # For watch-only or hardware wallets, we don't have a mnemonic to show in the dialog
                     if is_watch_only or is_hardware_wallet:

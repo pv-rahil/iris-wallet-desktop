@@ -32,6 +32,7 @@ from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import UnspentsListResponseModel
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import BALANCE_KEY
@@ -63,6 +64,8 @@ class WalletDataService:
         ) == WalletAccessType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
+        self.is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
 
     @staticmethod
     def _initialize_service() -> WalletDataService | None:
@@ -75,7 +78,8 @@ class WalletDataService:
         try:
             access_type = SettingRepository.get_wallet_access_type()
             wallet_type = SettingRepository.get_wallet_type()
-            if access_type == WalletAccessType.WATCH_ONLY or wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+            sign_type = SettingRepository.get_wallet_signature_type()
+            if access_type == WalletAccessType.WATCH_ONLY or wallet_type == WalletType.OFFLINE_TYPE_WALLET or sign_type == WalletSignatureType.MULTI_SIG_WALLET:
                 if not os.path.exists(app_paths.wallet_data_folder_path):
                     os.makedirs(
                         app_paths.wallet_data_folder_path,
@@ -229,7 +233,7 @@ class WalletDataService:
 
     def upsert_draft_issue_asset(self, issue_asset_draft_model: IssueAssetDraftModel) -> None:
         """Insert or replace a draft issue asset row."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return
         with self._db_lock:
             try:
@@ -252,7 +256,7 @@ class WalletDataService:
 
     def list_draft_issue_assets(self) -> list[dict]:
         """Return all draft issue assets with minimal metadata."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return []
         with self._db_lock:
             try:
@@ -281,7 +285,7 @@ class WalletDataService:
 
     def delete_draft_issue_asset(self, draft_id: str) -> bool:
         """Delete a draft issue asset row by ID."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return False
         with self._db_lock:
             try:
@@ -339,7 +343,7 @@ class WalletDataService:
     # -------- Secondary issuance drafts (IFA inflate) --------
     def add_ifa_secondary_draft_meta(self, asset_id: str, asset_name: str | None, amount: int | None) -> int | None:
         """Add a secondary draft meta."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return None
         with self._db_lock:
             try:
@@ -357,7 +361,7 @@ class WalletDataService:
 
     def attach_inflate_psbt_to_secondary_draft(self, asset_id: str, psbt_base64: str) -> str | None:
         """Attach a PSBT to a secondary draft."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return None
         psbt_id = self._psbt_id(psbt_base64)
         with self._db_lock:
@@ -384,7 +388,7 @@ class WalletDataService:
 
     def list_ifa_secondary_drafts(self, asset_id: str) -> list[dict]:
         """List all secondary drafts for a given asset."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return []
         with self._db_lock:
             try:
@@ -409,7 +413,7 @@ class WalletDataService:
 
     def set_active_secondary_draft(self, draft_id: int, asset_id: str) -> None:
         """Set a secondary draft as active."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return
         with self._db_lock:
             try:
@@ -432,7 +436,7 @@ class WalletDataService:
 
     def get_active_secondary_draft_for_asset(self, asset_id: str) -> dict | None:
         """Get the active secondary draft for a given asset."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return None
         with self._db_lock:
             try:

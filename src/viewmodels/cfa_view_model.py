@@ -23,6 +23,7 @@ from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FailTransferRequestModel
 from src.model.rgb_model import FailTransferResponseModel
@@ -40,6 +41,7 @@ from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
+from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_REFRESH_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
@@ -77,6 +79,7 @@ class CFAViewModel(QObject, ThreadManager):
         self.min_confirmation = None
         self.assignment = None
         self.txn_list = []
+        self.current_send_request = None
 
     def get_cfa_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: Enum) -> None:
         """Retrieve CFA asset list."""
@@ -297,6 +300,9 @@ class CFAViewModel(QObject, ThreadManager):
             fee_rate=fee_rate,
             min_confirmations=min_confirmation,
         )
+        # Store request for multisig post_send step
+        self.current_send_request = request
+
         self.run_in_thread(
             RgbRepository.send_begin,
             {
@@ -317,16 +323,54 @@ class CFAViewModel(QObject, ThreadManager):
             )
             self.send_cfa_button_clicked.emit(True)
             hardware_client_store.set_rgb_mode(True)
-            self.run_in_thread(
-                CommonOperationRepository.sign_and_finalize_psbt,
-                {
-                    'args': [unsigned_psbt],
-                    'callback': self.on_psbt_signed_and_finalized_success,
-                    'error_callback': self.on_error,
-                },
-            )
+
+            if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+                self.run_in_thread(
+                    CommonOperationRepository.sign_psbt,
+                    {
+                        'args': [unsigned_psbt],
+                        'callback': self.on_multisig_psbt_signed,
+                        'error_callback': self.on_error,
+                    },
+                )
+            else:
+                self.run_in_thread(
+                    CommonOperationRepository.sign_and_finalize_psbt,
+                    {
+                        'args': [unsigned_psbt],
+                        'callback': self.on_psbt_signed_and_finalized_success,
+                        'error_callback': self.on_error,
+                    },
+                )
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
+
+    def on_multisig_psbt_signed(self, signed_psbt: str):
+        """Post signed PSBT and recipient map to bridge."""
+        if not hasattr(self, 'current_send_request') or not self.current_send_request:
+            self.on_error(
+                CommonException(
+                    'Send request details missing for multisig post.',
+                ),
+            )
+            return
+
+        self.hw_dialog_update.emit(
+            INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
+        )
+        self.run_in_thread(
+            RgbRepository.post_send,
+            {
+                'args': [signed_psbt, self.current_send_request],
+                'callback': self.on_multisig_post_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def on_multisig_post_success(self, _):
+        """Handle success after posting to bridge."""
+        # Auto-sync is handled by RgbRepository decorator on post_send
+        self.on_success_cfa(SendAssetResponseModel(txid='multisig_pending'))
 
     def on_psbt_signed_and_finalized_success(self, finalized_psbt: str):
         """

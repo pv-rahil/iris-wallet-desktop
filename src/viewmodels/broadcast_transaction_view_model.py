@@ -18,11 +18,13 @@ from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.rgb_model import SendAssetResponseModel
+from src.utils.constant import SIGNED_TXIDS
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
+from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
 from src.views.components.hw_device_selection_dialog import HWDeviceSelectionDialog
@@ -39,6 +41,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     finalized_psbt = Signal(str)
     signature_count_ready = Signal(int)
     combined_psbt_ready = Signal(str)
+    psbt_inspection_ready = Signal(object)
+    rgb_transfer_inspection_ready = Signal(object)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
@@ -192,12 +196,31 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         )
 
     def _on_multisig_sign_success(self, signed_psbt: str):
-        """After signing, post the signed PSBT back to the bridge."""
+        """After signing, inspect to get TXID, then post back to the bridge."""
+        # Store for use in next steps
+        self._current_signed_psbt = signed_psbt
+
+        # INSPECT newly signed PSBT to get TXID for filtering later
+        self.run_in_thread(
+            RgbRepository.inspect_psbt,
+            {
+                'args': [signed_psbt],
+                'callback': self._on_signed_psbt_inspected,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def _on_signed_psbt_inspected(self, details):
+        """Got inspection details, extract TXID and proceed to post."""
+        # Extract and store TXID for saving later
+        self._current_signed_txid = getattr(details, 'txid', None)
+
         operation_idx = getattr(self, '_multisig_operation_idx', None)
+        signed_psbt = getattr(self, '_current_signed_psbt', '')
 
         # SIGNER FLOW: Existing operation, so we are responding
         response = RespondToOperation.ACK(signed_psbt)
-        
+
         # Post back to bridge using respond_to_operation
         self.run_in_thread(
             RgbRepository.respond_to_operation,
@@ -211,31 +234,91 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def _on_multisig_post_success(self, result):
         """Handle successful post to bridge."""
         self.is_loading.emit(False)
-        self.tx_broadcasted.emit(True)        
+        self.tx_broadcasted.emit(True)
+
+        # Save signature record to local store to hide it from header
+        txid = getattr(self, '_current_signed_txid', None)
+        if txid:
+            logger.info(f"Saving signed TXID to local_store: {txid}")
+            existing_txids = local_store.get_value(SIGNED_TXIDS) or []
+            if isinstance(existing_txids, list):
+                if txid not in existing_txids:
+                    existing_txids.append(txid)
+                    local_store.set_value(SIGNED_TXIDS, existing_txids)
+            else:
+                # Fallback if corrupted or different type
+                local_store.set_value(SIGNED_TXIDS, [txid])
         # Result is an Operation enum variant or int (if from post_create_utxos?)
-        # post_create_utxos returns int (operation_idx) or similar? 
+        # post_create_utxos returns int (operation_idx) or similar?
         # Actually RgbRepository.post_create_utxos likely returns the operation index or Operation object?
-        
+
         res_str = str(result)
+        print('-'*100, res_str)  # For debugging
         # Check for Initiator success (might be just an ID or object)
         # Check for Signer success (Operation enum)
         if 'CREATE_UTXOS_COMPLETED' in res_str:
-            ToastManager.success(description='Operation completed and finalized!')
+            ToastManager.success(
+                description='Operation completed and finalized!',
+            )
         elif 'CREATE_UTXOS_PENDING' in res_str:
-            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+            ToastManager.success(
+                description='Signed successfully. Waiting for other signers.',
+            )
         elif 'SEND_BTC_COMPLETED' in res_str:
             ToastManager.success(description='Bitcoin sent successfully!')
         elif 'SEND_BTC_PENDING' in res_str:
-            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+            ToastManager.success(
+                description='Signed successfully. Waiting for other signers.',
+            )
         elif 'INFLATION_COMPLETED' in res_str:
-            ToastManager.success(description='Asset issued/inflated successfully!')
+            ToastManager.success(
+                description='Asset issued/inflated successfully!',
+            )
         elif 'INFLATION_PENDING' in res_str:
-            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+            ToastManager.success(
+                description='Signed successfully. Waiting for other signers.',
+            )
         elif 'SEND_COMPLETED' in res_str:  # For Asset Send
             ToastManager.success(description='Asset sent successfully!')
         elif 'SEND_PENDING' in res_str:    # For Asset Send
-            ToastManager.success(description='Signed successfully. Waiting for other signers.')
+            ToastManager.success(
+                description='Signed successfully. Waiting for other signers.',
+            )
         else:
             # Generic success for initiator or other cases
-            ToastManager.success(description='Operation posted to bridge successfully.')
+            ToastManager.success(
+                description='Operation posted to bridge successfully.',
+            )
             logger.info('Multisig post result: %s', res_str)
+
+    def inspect_psbt(self, psbt: str):
+        """Inspect PSBT for review details."""
+        self.run_in_thread(
+            RgbRepository.inspect_psbt,
+            {
+                'args': [psbt],
+                'callback': self._on_inspect_psbt_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def inspect_rgb_transfer(self, consignment: str, psbt: str):
+        """Inspect RGB transfer for review details."""
+        self.run_in_thread(
+            RgbRepository.inspect_rgb_transfer,
+            {
+                'args': [consignment, psbt],
+                'callback': self._on_inspect_rgb_transfer_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def _on_inspect_psbt_success(self, result):
+        """Handle success message for inspect psbt"""
+        self.is_loading.emit(False)
+        self.psbt_inspection_ready.emit(result)
+
+    def _on_inspect_rgb_transfer_success(self, result):
+        """Handle success message for inspect rgb transfer"""
+        self.is_loading.emit(False)
+        self.rgb_transfer_inspection_ready.emit(result)

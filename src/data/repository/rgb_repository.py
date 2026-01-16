@@ -8,16 +8,16 @@ from rgb_lib import Assets
 from rgb_lib import AssetUda
 from rgb_lib import Balance
 from rgb_lib import Invoice
+from rgb_lib import Operation
+from rgb_lib import OperationInfo
+from rgb_lib import OperationResult
+from rgb_lib import PsbtInspection
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import RefreshedTransfer
-from rgb_lib import Transfer
-from rgb_lib import OperationResult
-from rgb_lib import OperationInfo
-from rgb_lib import Operation
 from rgb_lib import RespondToOperation
-from rgb_lib import PsbtInspection
 from rgb_lib import RgbInspectionResult
+from rgb_lib import Transfer
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.service.wallet_data_service import WalletDataService
@@ -39,6 +39,7 @@ from src.model.rgb_model import SendBeginRequestModel
 from src.model.rgb_model import SendBeginResult
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
+from src.utils.decorators.auto_sync_multisig import auto_sync_multisig
 from src.utils.decorators.check_colorable_available import check_colorable_available
 
 
@@ -75,6 +76,7 @@ class RgbRepository:
             return data
 
     @staticmethod
+    @auto_sync_multisig(before=True, after=False)
     def refresh_transfer(asset_id=None) -> dict[int, RefreshedTransfer]:
         """Refresh transfers."""
         with repository_custom_context():
@@ -88,10 +90,13 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
+    @auto_sync_multisig()
     def rgb_invoice(invoice: RgbInvoiceRequestModel) -> ReceiveData:
         """Get RGB invoice."""
         with repository_custom_context():
-            online_kwargs = {'online': colored_wallet.online} if colored_wallet.is_multisig else {}
+            online_kwargs = {
+                'online': colored_wallet.online,
+            } if colored_wallet.is_multisig else {}
             data: ReceiveData = colored_wallet.wallet.blind_receive(
                 **online_kwargs,
                 asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
@@ -104,6 +109,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
+    @auto_sync_multisig()
     def send_asset(asset_detail: SendAssetRequestModel) -> OperationResult:
         """Send asset."""
         with repository_custom_context():
@@ -126,6 +132,7 @@ class RgbRepository:
             return data
 
     @staticmethod
+    @auto_sync_multisig()
     def get_assets(filter_asset_request_model: FilterAssetRequestModel) -> Assets:
         """Get assets."""
         with repository_custom_context():
@@ -139,10 +146,13 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
+    @auto_sync_multisig()
     def issue_asset_nia(asset: IssueAssetNiaRequestModel) -> AssetNia:
         """Issue asset."""
         with repository_custom_context():
-            online_kwargs = {'online': colored_wallet.online} if colored_wallet.is_multisig else {}
+            online_kwargs = {
+                'online': colored_wallet.online,
+            } if colored_wallet.is_multisig else {}
             data: AssetNia = colored_wallet.wallet.issue_asset_nia(
                 **online_kwargs,
                 ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
@@ -154,10 +164,13 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
+    @auto_sync_multisig()
     def issue_asset_cfa(asset: IssueAssetCfaRequestModel) -> AssetCfa:
         """Issue asset."""
         with repository_custom_context():
-            online_kwargs = {'online': colored_wallet.online} if colored_wallet.is_multisig else {}
+            online_kwargs = {
+                'online': colored_wallet.online,
+            } if colored_wallet.is_multisig else {}
             data: AssetCfa = colored_wallet.wallet.issue_asset_cfa(
                 **online_kwargs,
                 details=asset.ticker, name=asset.name,
@@ -170,10 +183,13 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
+    @auto_sync_multisig()
     def issue_asset_uda(asset: IssueAssetUdaRequestModel) -> AssetUda:
         """Issue asset."""
         with repository_custom_context():
-            online_kwargs = {'online': colored_wallet.online} if colored_wallet.is_multisig else {}
+            online_kwargs = {
+                'online': colored_wallet.online,
+            } if colored_wallet.is_multisig else {}
             data: AssetUda = colored_wallet.wallet.issue_asset_uda(
                 **online_kwargs,
                 details=asset.ticker, name=asset.name, ticker=asset.ticker,
@@ -186,13 +202,16 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available(required_utxos=3)
+    @auto_sync_multisig()
     def issue_asset_ifa(asset: IssueAssetIfaRequestModel) -> AssetIfa:
         """Issue asset."""
         with repository_custom_context():
-            online_kwargs = {'online': colored_wallet.online} if colored_wallet.is_multisig else {}
+            online_kwargs = {
+                'online': colored_wallet.online,
+            } if colored_wallet.is_multisig else {}
             data: AssetIfa = colored_wallet.wallet.issue_asset_ifa(
                 **online_kwargs,
-                ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=[0],
+                ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
                 inflation_amounts=asset.inflation_amounts, replace_rights_num=1, reject_list_url=None,
             )
             cache = Cache.get_cache_session()
@@ -201,6 +220,7 @@ class RgbRepository:
             return data
 
     @staticmethod
+    @auto_sync_multisig()
     def fail_transfer(transfer: FailTransferRequestModel) -> FailTransferResponseModel:
         """Mark the specified transfer as failed."""
         with repository_custom_context():
@@ -214,6 +234,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
+    @auto_sync_multisig(before=True, after=False)
     def send_begin(detail: SendBeginRequestModel) -> SendBeginResult:
         """Create psbt for send rgb asset"""
         with repository_custom_context():
@@ -235,6 +256,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
+    @auto_sync_multisig()
     def send_end(detail: BroadcastPsbtRequestModel) -> OperationResult:
         """broadcast signed psbt of send rgb asset"""
         with repository_custom_context():
@@ -251,6 +273,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available(required_utxos=3)
+    @auto_sync_multisig()
     def inflate(detail: InflateRequestModel) -> OperationResult:
         """Inflate asset."""
         with repository_custom_context():
@@ -265,6 +288,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available(required_utxos=3)
+    @auto_sync_multisig(before=True, after=False)
     def inflate_begin(detail: InflateRequestModel) -> str:
         """Create psbt for inflate rgb asset"""
         with repository_custom_context():
@@ -278,6 +302,7 @@ class RgbRepository:
             return psbt
 
     @staticmethod
+    @auto_sync_multisig()
     def inflate_end(signed_psbt: str) -> OperationResult:
         """broadcast signed psbt of inflate rgb asset"""
         with repository_custom_context():
@@ -293,18 +318,27 @@ class RgbRepository:
                 wallet_service.delete_secondary_draft_by_psbt(signed_psbt)
             return data
 
-
     @staticmethod
-    def post_send(signed_psbt: str, consignment: str) -> None:
-        """Post the signed RGB send PSBT + consignment to the multisig bridge."""
+    @auto_sync_multisig()
+    def post_send(signed_psbt: str, asset_detail: SendBeginRequestModel) -> None:
+        """Post the signed RGB send PSBT + recipient map to the multisig bridge."""
         with repository_custom_context():
+            recipient = Recipient(
+                recipient_id=asset_detail.recipient_id,
+                witness_data=None,
+                assignment=asset_detail.assignment,
+                transport_endpoints=asset_detail.transport_endpoints,
+            )
+            recipient_map = {asset_detail.asset_id: [recipient]}
+
             colored_wallet.wallet.post_send(
                 online=colored_wallet.online,
                 signed_psbt=signed_psbt,
-                consignment=consignment,
+                recipient_map=recipient_map,
             )
 
     @staticmethod
+    @auto_sync_multisig()
     def post_inflation(signed_psbt: str, asset_id: str, amount: int) -> None:
         """Post the signed inflation PSBT to the multisig bridge."""
         with repository_custom_context():
@@ -325,7 +359,8 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def respond_to_operation(operation_idx: int, respond_to_operation: RespondToOperation)->Operation:
+    @auto_sync_multisig()
+    def respond_to_operation(operation_idx: int, respond_to_operation: RespondToOperation) -> Operation:
         """Respond to a pending operation with a signed PSBT."""
         with repository_custom_context():
             data = colored_wallet.wallet.respond_to_operation(
@@ -346,17 +381,19 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def inspect_psbt(psbt: str)->PsbtInspection:
+    def inspect_psbt(psbt: str) -> PsbtInspection:
         """Inspect PSBT details."""
         with repository_custom_context():
-            data : PsbtInspection = colored_wallet.wallet.inspect_psbt(psbt=psbt)
+            data: PsbtInspection = colored_wallet.wallet.inspect_psbt(
+                psbt=psbt,
+            )
             return data
 
     @staticmethod
     def inspect_rgb_transfer(consignment: str, psbt: str) -> RgbInspectionResult:
         """Inspect RGB transfer details."""
         with repository_custom_context():
-            data : RgbInspectionResult = colored_wallet.wallet.inspect_rgb_transfer(
+            data: RgbInspectionResult = colored_wallet.wallet.inspect_rgb_transfer(
                 consignment=consignment,
                 psbt=psbt,
             )

@@ -6,8 +6,9 @@ from rgb_lib import AssetSchema
 from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
 from rgb_lib import Keys
+from rgb_lib import MultisigKeys
 from rgb_lib import rgb_lib
-from rgb_lib import MultisigKeys,SinglesigKeys
+from rgb_lib import SinglesigKeys
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import KeyStorageType
@@ -20,12 +21,12 @@ from src.model.common_operation_model import RestoreRequestModel
 from src.model.common_operation_model import RestoreResponseModel
 from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import WalletSignatureType
+from src.utils.build_app_path import app_paths
 from src.utils.custom_context import repository_custom_context
 from src.utils.custom_exception import CommonException
 from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.wallet_credential_encryption import mnemonic_store
-from src.utils.build_app_path import app_paths
 
 
 class CommonOperationRepository:
@@ -36,7 +37,7 @@ class CommonOperationRepository:
         """Initialize and generate RGB keys for the given Bitcoin network."""
         with repository_custom_context():
             response: Keys = rgb_lib.generate_keys(init.network)
-            print('Generated Keys:', response)
+
             return response
 
     @staticmethod
@@ -49,11 +50,14 @@ class CommonOperationRepository:
             )
 
             is_multisig = (
-                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+                SettingRepository.get_wallet_signature_type(
+                ) == WalletSignatureType.MULTI_SIG_WALLET
             )
 
             if is_multisig:
-                recv_wallet = rgb_lib.MultisigWallet(wallet_data, keys=unlock.keys)
+                recv_wallet = rgb_lib.MultisigWallet(
+                    wallet_data, keys=unlock.keys,
+                )
             else:
                 # Standard single-sig wallet
                 recv_wallet = rgb_lib.Wallet(wallet_data, keys=unlock.keys)
@@ -118,14 +122,14 @@ class CommonOperationRepository:
         mnemonic = mnemonic_store.decrypted_mnemonic
         if not mnemonic:
             raise CommonException('Mnemonic not available for signing')
-        
+
         # We need to map our BitcoinNetwork enum to rgb_lib.BitcoinNetwork
         # Assuming for now it's REGTEST as hardcoded previously, but better to map it
         # However, previous code hardcoded REGTEST. We should ideally fix this later but keep behavior.
         bitcoin_network = BitcoinNetwork.REGTEST
 
         keys = rgb_lib.restore_keys(bitcoin_network, mnemonic)
-        
+
         wallet_data = rgb_lib.WalletData(
             data_dir=app_paths.app_path,
             bitcoin_network=bitcoin_network,
@@ -135,14 +139,14 @@ class CommonOperationRepository:
         )
 
         return rgb_lib.Wallet(
-            wallet_data, 
+            wallet_data,
             keys=SinglesigKeys(
                 account_xpub_vanilla=keys.account_xpub_vanilla,
                 account_xpub_colored=keys.account_xpub_colored,
                 vanilla_keychain=0,
                 master_fingerprint=keys.master_fingerprint,
                 mnemonic=mnemonic,
-            )
+            ),
         )
 
     @staticmethod

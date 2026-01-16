@@ -32,6 +32,7 @@ from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DraftAsset
 from src.model.rgb_model import RgbAssetPageLoadModel
@@ -94,6 +95,8 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         ) == WalletAccessType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
+        self.is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         self.priv = config.privileges
         self.vertical_layout_inflatable_frame = None
         self.grid_layout_inflatable_frame = None
@@ -122,7 +125,8 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.issue_button_in_header = False
         if hasattr(self.inflatables_header_title_frame, 'set_action_button_visible'):
             self.inflatables_header_title_frame.set_action_button_visible(
-                False, override=True)
+                False, override=True,
+            )
         else:
             self.inflatables_header_title_frame.action_button.setVisible(False)
 
@@ -323,7 +327,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
                 name=f"{d.get('name')} (Draft)",
                 ticker=d.get('ticker'),
             )
-            if self.is_watch_only:
+            if self.is_watch_only or self.is_multisig:
                 self.create_inflatable_card(inflatables_draft_asset)
         self._has_inflatable_drafts = has_drafts
 
@@ -368,7 +372,8 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         # hide header button (lock via header API if available)
         if hasattr(self.inflatables_header_title_frame, 'set_action_button_visible'):
             self.inflatables_header_title_frame.set_action_button_visible(
-                False, override=True)
+                False, override=True,
+            )
         else:
             self.inflatables_header_title_frame.action_button.setVisible(False)
         self.issue_button_in_header = False
@@ -383,7 +388,8 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             self.inflatable_frame_card.hide()
         wrapper = QFrame(self.inflatable_widget)
         wrapper.setStyleSheet(
-            'QFrame{border:none; background: transparent;} QLabel{background:transparent;}')
+            'QFrame{border:none; background: transparent;} QLabel{background:transparent;}',
+        )
         wrapper.setFixedWidth(680)
         wrapper.setFixedHeight(200)
         lay = QVBoxLayout(wrapper)
@@ -393,9 +399,11 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         title.setStyleSheet('color:#fff; font:600 20px "Inter"; border:none;')
         lay.addWidget(title, 0, Qt.AlignHCenter)
         sub = QLabel(
-            "You haven't issued any assets yet. Create your first inflatable asset to get started.")
+            "You haven't issued any assets yet. Create your first inflatable asset to get started.",
+        )
         sub.setStyleSheet(
-            'color: rgba(255,255,255,0.75); font: 14px "Inter"; border:none;')
+            'color: rgba(255,255,255,0.75); font: 14px "Inter"; border:none;',
+        )
         sub.setWordWrap(True)
         sub.setAlignment(Qt.AlignHCenter)
         sub.setFixedWidth(560)
@@ -403,8 +411,11 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         btn = PrimaryButton('Issue New Inflatable')
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setFixedWidth(200)
-        btn.clicked.connect(lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-            self._view_model.page_navigation.issue_ifa_page))
+        btn.clicked.connect(
+            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                self._view_model.page_navigation.issue_ifa_page,
+            ),
+        )
         if not self.is_offline_wallet:
             lay.addWidget(btn, 0, Qt.AlignHCenter)
         # Build a dedicated vertical layout with top/bottom stretches to position card higher (like collectibles)
@@ -412,9 +423,11 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self._empty_state_layout.setContentsMargins(0, 0, 0, 0)
         self._empty_state_layout.setSpacing(0)
         self._empty_top_spacer = QSpacerItem(
-            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
+        )
         self._empty_bottom_spacer = QSpacerItem(
-            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
+        )
         self._empty_state_layout.addItem(self._empty_top_spacer)
         self._empty_state_layout.addWidget(wrapper, 0, Qt.AlignHCenter)
         self._empty_state_layout.addItem(self._empty_bottom_spacer)
@@ -439,7 +452,8 @@ class InflatableAssetWidget(QWidget, ThreadManager):
                 if w is not None:
                     w.setParent(None)
             self.vertical_layout_inflatable_2.removeItem(
-                self._empty_state_layout)
+                self._empty_state_layout,
+            )
             self._empty_state_layout = None
         self._empty_top_spacer = None
         self._empty_bottom_spacer = None
@@ -453,13 +467,16 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         # Show header action button if issued assets or drafts exist
         issued_count = len(self._view_model.main_asset_view_model.assets.ifa)
         show_action = (
-            issued_count > 0) or self._has_inflatable_drafts or not self.is_offline_wallet
+            issued_count > 0
+        ) or self._has_inflatable_drafts or not self.is_offline_wallet
         if hasattr(self.inflatables_header_title_frame, 'set_action_button_visible'):
             self.inflatables_header_title_frame.set_action_button_visible(
-                show_action, override=True)
+                show_action, override=True,
+            )
         else:
             self.inflatables_header_title_frame.action_button.setVisible(
-                show_action)
+                show_action,
+            )
         self.issue_button_in_header = show_action
 
     def create_inflatable_card(self, asset, img_path=None):

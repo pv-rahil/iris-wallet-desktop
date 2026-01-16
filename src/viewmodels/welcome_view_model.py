@@ -8,13 +8,17 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import KeyringDialogModel
 from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
+from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTORE_COMPLETED
+from src.utils.keyring_storage import get_value
 from src.utils.keyring_storage import set_value
 from src.utils.usb_sync_manager import USBSyncManager
 from src.utils.worker import ThreadManager
@@ -37,7 +41,43 @@ class WelcomeViewModel(QObject, ThreadManager):
 
     def on_create_click(self):
         """This method handles the wallet creation process."""
-        self._page_navigation.set_wallet_password_page()
+        network = get_bitcoin_network_from_enum(
+            SettingRepository.get_wallet_network(),
+        )
+        password = get_value(
+            WALLET_PASSWORD_KEY, network.value,
+        )
+        is_multisig = (
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
+        )
+
+        if is_multisig:
+            self.create_button_clicked.emit(True)
+            self.run_in_thread(
+                CommonOperationService.initialize_wallet,
+                {
+                    'args': [password],
+                    'callback': self._on_multisig_wallet_initialized,
+                    'error_callback': self._on_multisig_init_error,
+                },
+            )
+        else:
+            self._page_navigation.set_wallet_password_page()
+
+    def _on_multisig_wallet_initialized(self, response):
+        """Handle successful multisig wallet initialization."""
+        self.create_button_clicked.emit(False)
+        SettingRepository.set_wallet_initialized()
+        SettingRepository.set_rgb_lib_version(CURRENT_RGB_LIB_VERSION)
+        self._page_navigation.fungibles_asset_page()
+
+    def _on_multisig_init_error(self, error):
+        """Handle multisig wallet initialization error."""
+        self.create_button_clicked.emit(False)
+        ToastManager.error(
+            str(error.message if hasattr(error, 'message') else error),
+        )
 
     def restore_offline_wallet(self, usb_drive: USBDrive, master_fingerprint: str, data: KeyringDialogModel):
         """This method handles the offline wallet restore process."""
