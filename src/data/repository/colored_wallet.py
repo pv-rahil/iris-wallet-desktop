@@ -72,7 +72,6 @@ class ColoredWallet:
             RuntimeError: If the wallet is not initialized.
         """
         if self.online_wallet is None:
-            print('going online')
             if self._wallet is None:
                 raise CommonException(
                     'Wallet must be initialized before going online.',

@@ -177,46 +177,29 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
 
                 if not (is_watch_only or is_hardware_wallet):
-                    # Check if this is a multisig wallet
-                    is_multisig = (
-                        SettingRepository.get_wallet_signature_type(
-                        ) == WalletSignatureType.MULTI_SIG_WALLET
+                    # Only encrypt and save mnemonic for non-watch-only and non-hardware wallets
+                    encrypted_mnemonic = mnemonic_store.encrypt(
+                        password=password, mnemonic=wallet_response.mnemonic,
+                    )
+                    local_store.write_to_file(
+                        file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
                     )
 
-                    # For multisig wallets, mnemonic is already encrypted in MultisigSetupPage
-                    # Only encrypt for single-sig wallets here
-                    if not is_multisig:
-                        # For single-sig wallets, get mnemonic from wallet_response
-                        mnemonic_to_encrypt = wallet_response.mnemonic
-                        if mnemonic_to_encrypt:
-                            # Encrypt and save mnemonic
-                            encrypted_mnemonic = mnemonic_store.encrypt(
-                                password=password, mnemonic=mnemonic_to_encrypt,
-                            )
-                            local_store.write_to_file(
-                                file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted_mnemonic,
-                            )
-
-                if not is_multisig:
-                    local_store.set_value(
-                        ACCOUNT_XPUB_VANILLA, wallet_response.account_xpub_vanilla,
-                    )
-                    local_store.set_value(
-                        ACCOUNT_XPUB_COLORED, wallet_response.account_xpub_colored,
-                    )
-                    local_store.set_value(
-                        MASTER_FINGERPRINT, wallet_response.master_fingerprint,
-                    )
+                local_store.set_value(
+                    ACCOUNT_XPUB_VANILLA, wallet_response.account_xpub_vanilla,
+                )
+                local_store.set_value(
+                    ACCOUNT_XPUB_COLORED, wallet_response.account_xpub_colored,
+                )
+                local_store.set_value(
+                    MASTER_FINGERPRINT, wallet_response.master_fingerprint,
+                )
                 is_password_stored = set_value(
                     WALLET_PASSWORD_KEY, self.password, network.value,
                 )
                 if is_password_stored:
                     SettingRepository.set_keyring_status(status=False)
-                    # For multisig, navigate to multisig setup page
-                    if is_multisig:
-                        self._page_navigation.multisig_setup_page()
-                    else:
-                        self.forward_to_fungibles_page()
+                    self.forward_to_fungibles_page()
                 else:
                     # For watch-only or hardware wallets, we don't have a mnemonic to show in the dialog
                     if is_watch_only or is_hardware_wallet:
@@ -224,7 +207,7 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
                     else:
                         keyring_warning_dialog = KeyringErrorDialog(
                             KeyringDialogModel(
-                                mnemonic=mnemonic_to_encrypt,
+                                mnemonic=wallet_response.mnemonic,
                                 password=self.password,
                                 navigate_to=self.forward_to_fungibles_page,
                             ),

@@ -1,6 +1,6 @@
 /* Multisig Setup Page Styles (page, not dialog) */
 
-/* Card container (reuse Issue CFA card palette) */
+/* Card container */
 QWidget#ms_page_card {
     background: transparent;
     background-color: rgb(3, 11, 37);

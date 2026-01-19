@@ -760,11 +760,8 @@ class BroadcastTransactionWidget(QWidget):
                 print('=' * 80)
                 print(f"TXID:             {getattr(details, 'txid', 'N/A')}")
                 print(f"Signature Count:  {
-                      getattr(details, 'signature_count', 0)
-                }")
-                print(f"Fee:              {
-                      getattr(details, 'fee_sat', 0):,
-                } sats")
+                      getattr(details, 'signature_count', 0)}")
+                print(f"Fee:{getattr(details, 'fee_sat', 0):,} sats")
                 print()
 
                 # Show input details

@@ -2276,5 +2276,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>invalid_amount_zero</source>
         <translation>Invalid amount. Amount cannot be zero</translation>
     </message>
+    <message>
+        <source>master_xpub</source>
+        <translation>Master XPUB</translation>
+    </message>
 </context>
 </TS>
