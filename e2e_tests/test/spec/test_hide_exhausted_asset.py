@@ -89,7 +89,7 @@ def test_hide_exhausted_asset_off(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.settings_page_objects.click_hide_exhausted_asset_toggle_button()
         if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
             wallets_and_operations.first_page_objects.settings_page_objects.hide_exhausted_asset_toggle_button,
-            expected_checked=True,
+            expected_checked=False,
             timeout=5,
         ):
             wallets_and_operations.first_page_objects.settings_page_objects.click_hide_exhausted_asset_toggle_button()
