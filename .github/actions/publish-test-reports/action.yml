@@ -38,7 +38,6 @@ runs:
         echo "$PWD/allure-2.24.0/bin" >> $GITHUB_PATH
       shell: bash
 
-
     - name: Generate reports
       shell: bash
       env:
