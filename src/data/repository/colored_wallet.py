@@ -35,9 +35,15 @@ class ColoredWallet:
     def __init__(self):
         self._wallet: rgb_lib.Wallet | rgb_lib.MultisigWallet | None = None
         self.online_wallet: rgb_lib.Online | None = None
-        self.is_multisig = (
-            SettingRepository.get_wallet_signature_type(
-            ) == WalletSignatureType.MULTI_SIG_WALLET
+
+    @property
+    def is_multisig(self) -> bool:
+        """Returns True if the wallet is configured as multisig."""
+        if self._wallet:
+            return isinstance(self._wallet, rgb_lib.MultisigWallet)
+        return (
+            SettingRepository.get_wallet_signature_type() ==
+            WalletSignatureType.MULTI_SIG_WALLET
         )
 
     @property
@@ -85,7 +91,7 @@ class ColoredWallet:
                 if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
                     token = generate_and_store_token()
                     self.online_wallet = self._wallet.go_online(
-                        indexer_url, MULTISIG_BRIDGE_URL, token,
+                        False,indexer_url, MULTISIG_BRIDGE_URL, token,
                     )
                 else:
                     self.online_wallet = self._wallet.go_online(

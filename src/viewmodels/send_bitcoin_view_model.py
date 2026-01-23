@@ -25,6 +25,7 @@ from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_BITCOIN_SENT
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
@@ -205,7 +206,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         # Close the dialog
         self.hw_dialog_update.emit(None, PsbtStatus.SUCCESS)
         
-        ToastManager.success('Operation posted to multisig bridge.')
+        ToastManager.success(INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
         
         # Sync with bridge again as requested
         self.run_in_thread(

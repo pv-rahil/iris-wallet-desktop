@@ -20,7 +20,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtGui import QPainter
 from PySide6.QtGui import QPixmap
 from rgb_lib import BitcoinNetwork
-from rgb_lib import Cosigner
+from rgb_lib import CosignerData
 from rgb_lib import MultisigKeys
 from rgb_lib import SinglesigKeys
 
@@ -372,7 +372,7 @@ def build_keys_from_data(
         
         # Build cosigners list: start with self (cosigner 1)
         cosigners = [
-            Cosigner(
+            CosignerData(
                 account_xpub_vanilla=account_xpub_vanilla,
                 account_xpub_colored=account_xpub_colored,
                 vanilla_keychain=vanilla_keychain,
@@ -383,7 +383,7 @@ def build_keys_from_data(
         # Add other cosigners from stored data
         for c in cosigners_data:
             cosigners.append(
-                Cosigner(
+                CosignerData(
                     account_xpub_vanilla=c[ACCOUNT_XPUB_VANILLA],
                     account_xpub_colored=c[ACCOUNT_XPUB_COLORED],
                     vanilla_keychain=c.get('vanilla_keychain'),

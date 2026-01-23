@@ -83,6 +83,7 @@ class BroadcastTransactionWidget(QWidget):
         # Minimum characters to consider PSBT input valid for enabling Sign button
         self.min_psbt_len = 80
         self.is_initiator_of_pending = False
+        self.is_psbt_validated = False  # Strict validation flag
 
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
@@ -220,13 +221,7 @@ class BroadcastTransactionWidget(QWidget):
         self.horizontal_layout_2.addWidget(self.method_selector_label)
         self.horizontal_layout_2.addWidget(self.method_selector)
         self.horizontal_layout_2.addStretch(1)  # Keep combobox left-aligned
-        # For multisig, selector stays hidden and shouldn't add extra gaps
-        if self.is_multisig:
-            # In multisig, completely skip adding this hidden selector row
-            # to prevent it from reserving vertical space.
-            self.horizontal_layout_2.setContentsMargins(0, 0, 0, 0)
-        else:
-            self.vertical_layout.addLayout(self.horizontal_layout_2)
+        self.vertical_layout.addLayout(self.horizontal_layout_2)
 
         # No toolbar under title in this design
 
@@ -293,62 +288,88 @@ class BroadcastTransactionWidget(QWidget):
             self.inspection_frame.setObjectName('inspection_frame')
             self.inspection_frame.setFrameShape(QFrame.StyledPanel)
             self.inspection_frame.setFrameShadow(QFrame.Raised)
+            self.inspection_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             self.inspection_frame.hide()  # Initially hidden
 
             self.inspect_layout = QVBoxLayout(self.inspection_frame)
             self.inspect_layout.setContentsMargins(10, 10, 10, 10)
             self.inspect_layout.setSpacing(5)
+            self.inspect_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
             # Detail Rows
             def create_detail_row(label_text, value_id):
                 row_layout = QHBoxLayout()
+                row_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
                 lbl = QLabel(label_text, self.inspection_frame)
                 lbl.setStyleSheet('color: #b0b0b0;')  # Dimmer text for label
-                val = QLabel('', self.inspection_frame)
+                val = QLabel(self.inspection_frame)
                 val.setObjectName(value_id)
+                val.setWordWrap(True)
                 val.setStyleSheet('color: white; font-weight: bold;')
+                # Align text within labels to the top-left
+                lbl.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+                val.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+                # Ensure the value label can take remaining width and wrap
+                lbl.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+                val.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                val.setMinimumWidth(0)
                 row_layout.addWidget(lbl)
                 row_layout.addWidget(val)
-                row_layout.addStretch()
+                # Give the value column priority for space to allow wrapping
+                row_layout.setStretch(0, 0)
+                row_layout.setStretch(1, 1)
                 return row_layout, val
-
-            # TxID
             row_txid, self.val_txid = create_detail_row(
-                'Transaction ID:', 'val_txid',
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_id_label',
+                ), 'val_txid',
             )
             self.inspect_layout.addLayout(row_txid)
+            # Make long values user-selectable
+            self.val_txid.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            self.val_txid.setTextFormat(Qt.TextFormat.RichText)
 
-            # Inputs / Outputs
-            row_io = QHBoxLayout()
-            lbl_in = QLabel('Inputs:', self.inspection_frame)
-            lbl_in.setStyleSheet('color: #b0b0b0;')
-            self.val_inputs = QLabel('', self.inspection_frame)
-            self.val_inputs.setStyleSheet('color: white; font-weight: bold;')
+            # Amount (Sent)
+            row_amt, self.val_amount = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'amount_to_send_label',
+                ), 'val_amount',
+            )
+            self.inspect_layout.addLayout(row_amt)
 
-            lbl_out = QLabel('Outputs:', self.inspection_frame)
-            lbl_out.setStyleSheet('color: #b0b0b0;')
-            self.val_outputs = QLabel('', self.inspection_frame)
-            self.val_outputs.setStyleSheet('color: white; font-weight: bold;')
-
-            row_io.addWidget(lbl_in)
-            row_io.addWidget(self.val_inputs)
-            row_io.addSpacing(20)
-            row_io.addWidget(lbl_out)
-            row_io.addWidget(self.val_outputs)
-            row_io.addStretch()
-            self.inspect_layout.addLayout(row_io)
+            # Destination
+            row_dest, self.val_destination = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'destination_label',
+                ), 'val_destination',
+            )
+            self.inspect_layout.addLayout(row_dest)
+            self.val_destination.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            self.val_destination.setTextFormat(Qt.TextFormat.RichText)
 
             # Fee
-            row_fee, self.val_fee = create_detail_row('Fee (sats):', 'val_fee')
+            row_fee, self.val_fee = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fee_sats_label',
+                ), 'val_fee',
+            )
             self.inspect_layout.addLayout(row_fee)
 
-            # Signature Count (Editable/Display)
-            # User asked: "we can update the sign count also"
-            # We'll display it, and maybe if they meant "update" as in "refresh", we handled that via inspection.
+            # Signature Count
             row_sig, self.val_sigs = create_detail_row(
-                'Signatures:', 'val_sigs',
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signatures_label',
+                ), 'val_sigs',
             )
             self.inspect_layout.addLayout(row_sig)
+
+            # RGB Transfer details (if available)
+            row_rgb, self.val_rgb = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'rgb_transfer_label',
+                ), 'val_rgb_transfer',
+            )
+            self.inspect_layout.addLayout(row_rgb)
 
             self.vertical_layout.addWidget(self.inspection_frame)
 
@@ -392,17 +413,24 @@ class BroadcastTransactionWidget(QWidget):
             self.btn_export.setMinimumHeight(40)
             self.btn_export.setEnabled(False)
 
-            self.btn_combine = PrimaryButton()
-            self.btn_combine.setFixedWidth(175)
-            self.btn_combine.setMinimumHeight(40)
-            self.btn_combine.setEnabled(False)
+            self.btn_clear = PrimaryButton()
+            self.btn_clear.setFixedWidth(175)
+            self.btn_clear.setMinimumHeight(40)
+            self.btn_clear.setEnabled(False)
+            self.btn_clear.hide()
+
+            # Reject/NACK button for multisig reviewers
+            self.btn_reject = PrimaryButton()
+            self.btn_reject.setFixedWidth(175)
+            self.btn_reject.setMinimumHeight(40)
 
             self.broadcast_button.setFixedWidth(175)
             self.broadcast_button.setMinimumHeight(40)
 
             self.actions_center_row.addWidget(self.btn_import)
             self.actions_center_row.addWidget(self.btn_export)
-            self.actions_center_row.addWidget(self.btn_combine)
+            self.actions_center_row.addWidget(self.btn_clear)
+            self.actions_center_row.addWidget(self.btn_reject)
             self.actions_center_row.addWidget(self.broadcast_button)
             self.vertical_layout.addLayout(self.actions_center_row)
 
@@ -495,7 +523,8 @@ class BroadcastTransactionWidget(QWidget):
         if self.is_multisig:
             self.btn_import.clicked.connect(self._on_import_psbt)
             self.btn_export.clicked.connect(self._on_export_psbt)
-            self.btn_combine.clicked.connect(self._on_combine_psbts)
+            self.btn_clear.clicked.connect(self._on_clear_psbt)
+            self.btn_reject.clicked.connect(self._on_reject_operation)
             # For multisig signer: sign and post back to bridge
             self.broadcast_button.clicked.connect(
                 self._on_sign_and_post_multisig,
@@ -507,6 +536,10 @@ class BroadcastTransactionWidget(QWidget):
         # Connect inspection result signal
         self.view_model.broadcast_transaction_view_model.psbt_inspection_ready.connect(
             self._handle_psbt_inspection_result,
+        )
+        # RGB transfer inspection result
+        self.view_model.broadcast_transaction_view_model.rgb_transfer_inspection_ready.connect(
+            self._handle_rgb_transfer_inspection_result,
         )
 
     def retranslate_ui(self):
@@ -566,9 +599,14 @@ class BroadcastTransactionWidget(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'export',
                 ),
             )
-            self.btn_combine.setText(
+            self.btn_clear.setText(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'combine',
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'clear_all',
+                ),
+            )
+            self.btn_reject.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reject',
                 ),
             )
             self.broadcast_button.setText(
@@ -696,7 +734,13 @@ class BroadcastTransactionWidget(QWidget):
             )
             self.broadcast_button.setEnabled(has_input and method_ok)
         else:
-            self.broadcast_button.setEnabled(has_input)
+            # Signer flow
+            if self.is_multisig:
+                # Strict validation: must have input AND be validated by inspection
+                self.broadcast_button.setEnabled(has_input and self.is_psbt_validated)
+                self.btn_reject.setEnabled(has_input and self.is_psbt_validated)
+            else:
+                self.broadcast_button.setEnabled(has_input)
 
     def _on_finalized_psbt_ready(self):
         """Our wallet has signed successfully; allow exporting the signed PSBT."""
@@ -724,9 +768,25 @@ class BroadcastTransactionWidget(QWidget):
             psbt, operation_idx,
         )
 
+    def _on_reject_operation(self):
+        """Reject the pending operation (NACK) without signing."""
+        operation_idx = None
+        if self.pending_operation:
+            operation_idx = getattr(self.pending_operation, 'operation_idx', None)
+        if operation_idx is None and hasattr(self, '_current_operation'):
+            operation_idx = getattr(self._current_operation, 'operation_idx', None)
+        if operation_idx is None:
+            ToastManager.error(description='Operation not found to reject')
+            return
+        self.view_model.broadcast_transaction_view_model.respond_nack(operation_idx)
+
     # ----- Multisig helpers -----
     def _update_signature_progress(self):
         """Update the signature progress label for multisig (e.g., 1 of 3)."""
+        # Reset validation state whenever text changes
+        self.is_psbt_validated = False
+        self.handle_button_enable()
+
         _, total = SettingRepository.get_multisig_config()
         current_psbt = self.broadcast_transaction_input.toPlainText().strip()
 
@@ -739,10 +799,25 @@ class BroadcastTransactionWidget(QWidget):
                 ).format(0, total_disp),
             )
             self.btn_export.setEnabled(False)
-            self.btn_combine.setEnabled(False)
+            # Enable import if cleared
+            self.btn_import.setEnabled(True)
+            self.btn_import.show()
+            self.btn_clear.setEnabled(False)
+            self.btn_clear.hide()
+            # Allow editing when no valid PSBT present
+            self.broadcast_transaction_input.setReadOnly(False)
+
             if hasattr(self, 'inspection_frame'):
                 self.inspection_frame.hide()
             return
+
+        # Has PSBT content: Hide Import, Show Clear
+        if self.is_multisig:
+            self.btn_import.hide()
+            self.btn_clear.show()
+            self.btn_clear.setEnabled(True)
+            # Lock input once content is present until user clears
+            self.broadcast_transaction_input.setReadOnly(True)
 
         # Perform inspection if valid length
         if self.is_multisig:
@@ -753,88 +828,106 @@ class BroadcastTransactionWidget(QWidget):
     def _handle_psbt_inspection_result(self, details):
         """Handle the async PSBT inspection result from the signal."""
         try:
-            # Print formatted inspection results
-            if details:
-                print('=' * 80)
-                print('PSBT INSPECTION RESULT:')
-                print('=' * 80)
-                print(f"TXID:             {getattr(details, 'txid', 'N/A')}")
-                print(f"Signature Count:  {
-                      getattr(details, 'signature_count', 0)}")
-                print(f"Fee:{getattr(details, 'fee_sat', 0):,} sats")
-                print()
-
-                # Show input details
-                inputs = getattr(details, 'inputs', [])
-                print(f"INPUTS ({len(inputs)}):")
-                print('-' * 80)
-                if inputs:
-                    for idx, inp in enumerate(inputs, 1):
-                        outpoint = getattr(inp, 'outpoint', None)
-                        amount_sat = getattr(inp, 'amount_sat', 0)
-                        if outpoint:
-                            txid = getattr(outpoint, 'txid', 'N/A')
-                            vout = getattr(outpoint, 'vout', 'N/A')
-                            print(f"  Input #{idx}:")
-                            print(f"    Outpoint:  {txid}:{vout}")
-                            print(f"    Amount:    {amount_sat:,} sats")
-                        else:
-                            print(f"  Input #{idx}: {amount_sat:,} sats")
-                else:
-                    print('  (None)')
-
-                total_input = getattr(details, 'total_input_sat', 0)
-                print(f"  TOTAL INPUT:     {total_input:,} sats")
-                print()
-
-                # Show output details
-                outputs = getattr(details, 'outputs', [])
-                print(f"OUTPUTS ({len(outputs)}):")
-                print('-' * 80)
-                if outputs:
-                    for idx, out in enumerate(outputs, 1):
-                        address = getattr(out, 'address', None)
-                        amount_sat = getattr(out, 'amount_sat', 0)
-                        is_mine = getattr(out, 'is_mine', False)
-                        is_op_return = getattr(out, 'is_op_return', False)
-
-                        print(f"  Output #{idx}:")
-                        if is_op_return:
-                            print(f"    Type:      OP_RETURN")
-                        else:
-                            print(f"    Address:   {address or 'N/A'}")
-                        print(f"    Amount:    {amount_sat:,} sats")
-                        if is_mine:
-                            print(f"    Owner:     ✓ Mine (change)")
-                        print()
-                else:
-                    print('  (None)')
-
-                total_output = getattr(details, 'total_output_sat', 0)
-                print(f"  TOTAL OUTPUT:    {total_output:,} sats")
-                print('=' * 80)
 
             if details:
                 self.inspection_frame.show()
-                # Populate details (safely accessing attributes)
-                self.val_txid.setText(str(getattr(details, 'txid', 'N/A')))
-                self.val_inputs.setText(
-                    str(len(getattr(details, 'inputs', []))),
-                )
-                self.val_outputs.setText(
-                    str(len(getattr(details, 'outputs', []))),
-                )
-                self.val_fee.setText(f"{getattr(details, 'fee_sat', 0)} sats")
+                # Mark validated
+                self.is_psbt_validated = True
+                self.handle_button_enable()
 
-                # Update signature counts
+                # LOGIC: Calculate simplified details
+                txid_text = str(getattr(details, 'txid', 'N/A'))
+                self.val_txid.setText(self._breakable_html(txid_text, 8))
+
+                outputs = getattr(details, 'outputs', [])
+                # Exclude Mine AND OP_RETURN
+                external_outputs = [
+                    o for o in outputs 
+                    if not getattr(o, 'is_mine', False) and not getattr(o, 'is_op_return', False)
+                ]
+
+                # 1. Amount
+                if external_outputs:
+                    total_sent = sum(getattr(o, 'amount_sat', 0) for o in external_outputs)
+                    self.val_amount.setText(f"{total_sent:,} sats")
+                else:
+                    # All outputs are mine or op_return?
+                    self.val_amount.setText(
+                        QCoreApplication.translate(
+                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'self_transfer',
+                        ),
+                    )
+
+                # 2. Destination
+                if len(external_outputs) == 1:
+                    addr = getattr(external_outputs[0], 'address', 'Unknown')
+                    addr_str = str(addr)
+                    self.val_destination.setText(self._breakable_html(addr_str, 6))
+                    self.val_destination.setToolTip(addr_str)
+                elif len(external_outputs) > 1:
+                    self.val_destination.setText(
+                        QCoreApplication.translate(
+                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'recipients_count',
+                        ).format(len(external_outputs)),
+                    )
+                else:
+                    self.val_destination.setText(
+                        QCoreApplication.translate(
+                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'internal_change',
+                        ),
+                    )
+
+                # 3. Fee & Signatures (Standard)
+                self.val_fee.setText(f"{getattr(details, 'fee_sat', 0):,} sats")
+
                 sig_count = getattr(details, 'signature_count', 0)
                 self.val_sigs.setText(str(sig_count))
+                # Also update the main status chip
+                self._on_signature_count_ready(sig_count)
             else:
                 self.inspection_frame.hide()
+                self.is_psbt_validated = False
+                self.handle_button_enable()
         except Exception as e:
             logger.error('Error handling PSBT inspection result: %s', str(e))
             self.inspection_frame.hide()
-            print(f"Inspection error: {e}")
+            self.is_psbt_validated = False
+            self.handle_button_enable()
+
+
+    def _handle_rgb_transfer_inspection_result(self, rgb_details):
+        """Handle the async RGB transfer inspection result from the signal."""
+        try:
+            if not hasattr(self, 'val_rgb'):
+                return
+            if rgb_details:
+                # Render any summary text representation
+                text = str(rgb_details)
+                self.val_rgb.setText(self._breakable_html(text, 12))
+                self.val_rgb.setToolTip(text)
+                if hasattr(self, 'inspection_frame'):
+                    self.inspection_frame.show()
+            else:
+                self.val_rgb.setText('')
+        except Exception as e:
+            logger.error('Error handling RGB transfer inspection: %s', str(e))
+
+    def _breakable_html(self, text: str, group: int = 8) -> str:
+        """Return HTML string with zero-width break opportunities every `group` characters.
+        Keeps display wrapping without visible separators. Uses RichText on QLabel.
+        """
+        if not text:
+            return ''
+        try:
+            # Avoid altering short texts or those with whitespace
+            if len(text) <= group:
+                return f"<span>{text}</span>"
+            chunks = [text[i:i+group] for i in range(0, len(text), group)]
+            # &#8203; is zero-width space; allows wrapping anywhere between chunks
+            safe = '&#8203;'.join(chunks)
+            return f"<span>{safe}</span>"
+        except Exception:
+            return f"<span>{text}</span>"
 
     def _on_signature_count_ready(self, count: int):
         _, total = SettingRepository.get_multisig_config()
@@ -845,10 +938,8 @@ class BroadcastTransactionWidget(QWidget):
                 'signature_count',
             ).format(count, total_disp),
         )
-        # show combine only when at least 1 signature exists
+        # When collected signatures reach required threshold, flip button text to Broadcast
         if self.is_multisig:
-            self.btn_combine.setEnabled(count > 0)
-            # When collected signatures reach required threshold, flip button text to Broadcast
             required, _ = SettingRepository.get_multisig_config()
             needed = int(required) if required is not None else None
             if needed is not None and count >= needed:
@@ -869,8 +960,10 @@ class BroadcastTransactionWidget(QWidget):
                 )
                 if self.is_initiator_of_pending:
                     self.broadcast_button.hide()
+                    self.btn_reject.hide()
                 else:
                     self.broadcast_button.show()
+                    self.btn_reject.show()
 
     def _on_import_psbt(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -913,6 +1006,38 @@ class BroadcastTransactionWidget(QWidget):
                 preset=ToastPreset.ERROR,
                 description=f'Failed to write PSBT file: {e}',
             )
+
+    def _on_clear_psbt(self):
+        """Clear the current PSBT and reset UI state."""
+        self.broadcast_transaction_input.clear()
+        self.broadcast_transaction_input.setReadOnly(False)
+        if hasattr(self, 'inspection_frame'):
+            self.inspection_frame.hide()
+
+        # Reset labels
+        _, total = SettingRepository.get_multisig_config()
+        total_disp = total if total is not None else '?'
+        self.sign_status_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'signature_count',
+            ).format(0, total_disp),
+        )
+
+        # Update buttons
+        self.btn_import.setEnabled(True)
+        self.btn_import.show()
+        self.btn_clear.setEnabled(False)
+        self.btn_clear.hide()
+        self.btn_export.setEnabled(False)
+        self.broadcast_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'sign_psbt',
+            ),
+        )
+        # Re-show sign button if hidden
+        self.broadcast_button.show()
 
     def _on_combine_psbts(self):
         # Get the base PSBT from the text area
@@ -984,6 +1109,15 @@ class BroadcastTransactionWidget(QWidget):
                         self.broadcast_transaction_input.setReadOnly(True)
                         # Store operation info for later use (sign + post)
                         self._current_operation = op
+                        # If RGB consignment present, inspect transfer details as well
+                        consignment = getattr(operation, 'consignment', None)
+                        if consignment:
+                            self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
+                                consignment, psbt,
+                            )
+                        # Show Reject for non-initiators reviewing
+                        if not self.is_initiator_of_pending:
+                            self.btn_reject.show()
                         self.handle_button_enable()
                         return
 

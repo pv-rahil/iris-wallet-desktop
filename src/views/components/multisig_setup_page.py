@@ -9,6 +9,7 @@ import re
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
+from PySide6.QtCore import QStandardPaths
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
@@ -19,7 +20,6 @@ from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QLineEdit
-from PySide6.QtWidgets import QMessageBox
 from PySide6.QtWidgets import QPushButton
 from PySide6.QtWidgets import QScrollArea
 from PySide6.QtWidgets import QSizePolicy
@@ -46,23 +46,24 @@ from src.utils.constant import VANILLA_KEYCHAIN
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import load_stylesheet
-from src.utils.keyring_storage import get_value as keyring_get
+from src.utils.keyring_storage import get_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
+from src.views.components.toast import ToastManager
+
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.wallet_credential_encryption import mnemonic_store
-from src.views.components.buttons import PrimaryButton
+from src.views.components.buttons import PrimaryButton, SecondaryButton
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
 class CosignerDetailCard(ClickableFrame):
     """Card widget for displaying/editing a single cosigner's details."""
 
-    def __init__(self, index, parent=None, is_editable=True):
+    def __init__(self, index, parent=None):
         super().__init__(parent=parent)
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.index = index
-        self.is_editable = is_editable
 
         # UI Elements
         self.fp_input = None
@@ -72,6 +73,11 @@ class CosignerDetailCard(ClickableFrame):
         self.string_input = None
         self.import_btn = None
         self.content_widget = None
+        
+        # Data storage for validation
+        self.vanilla_xpub_str = None
+        self.colored_xpub_str = None
+
         # Connect click signal from ClickableFrame to toggle
         self.clicked.connect(
             lambda _id, _name, _path,
@@ -91,8 +97,8 @@ class CosignerDetailCard(ClickableFrame):
         header_layout.setContentsMargins(0, 0, 0, 0)
 
         # Arrow Indicator (Visual only, state tracked by is_expanded)
-        self.is_expanded = True
-        self.arrow_lbl = QLabel('▼')
+        self.is_expanded = False
+        self.arrow_lbl = QLabel('▶')
         self.arrow_lbl.setStyleSheet(
             'font-weight: bold; font-size: 16px; color: #666C81;',
         )
@@ -108,23 +114,69 @@ class CosignerDetailCard(ClickableFrame):
         header_layout.addWidget(title)
 
         header_layout.addStretch()
+
+        # Import Button (Moved to Header)
+        self.import_btn = PrimaryButton()
+        self.import_btn.setIcon(QIcon(':/assets/import.png'))
+        self.import_btn.setIconSize(QSize(18, 18))
+        self.import_btn.setLayoutDirection(Qt.RightToLeft)
+        self.import_btn.setFixedSize(QSize(100, 36))
+        self.import_btn.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor),
+        )
+        self.import_btn.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'import',
+            ) + ' ',
+        )
+        header_layout.addWidget(self.import_btn)
+
+        # Reset Button (Hidden by default, shown when valid data is present)
+        self.reset_btn = SecondaryButton()
+        self.reset_btn.setIcon(QIcon(':/assets/x_cross.png'))
+        self.reset_btn.setIconSize(QSize(18, 18))
+        self.reset_btn.setLayoutDirection(Qt.RightToLeft)
+        self.reset_btn.setFixedSize(QSize(100, 36))
+        self.reset_btn.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor),
+        )
+        self.reset_btn.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reset',
+            ) + ' ',
+        )
+        self.reset_btn.setVisible(False)
+        header_layout.addWidget(self.reset_btn)
+
         layout.addLayout(header_layout)
 
-        # --- Content Section (Collapsible) ---
         self.content_widget = QWidget()
+        self.content_widget.setVisible(False)  # Collapsed by default
         content_layout = QVBoxLayout(self.content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(16)
+
+        # Row 0: String Input
+        self.string_field, self.string_input = self._create_field(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cosigner_details',
+            ), 'Paste cosigner details here', editable=True,
+        )
+        content_layout.addLayout(self.string_field)
 
         # Row 1: Fingerprint | Keychain
         row1 = QHBoxLayout()
         row1.setSpacing(16)
 
         self.fp_field, self.fp_input = self._create_field(
-            'master_fingerprint', 'e.g., a1b2c3d4',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint',
+            ), 'e.g., a1b2c3d4',
         )
         self.keychain_field, self.keychain_input = self._create_field(
-            'keychain', '0',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain',
+            ), '0',
         )
 
         row1.addLayout(self.fp_field)
@@ -133,125 +185,69 @@ class CosignerDetailCard(ClickableFrame):
 
         # Row 2: Vanilla XPUB
         self.vanilla_field, self.vanilla_xpub_input = self._create_field(
-            'account_xpub_vanilla', 'xpub...',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla',
+            ), 'xpub...',
         )
         content_layout.addLayout(self.vanilla_field)
 
         # Row 3: Colored XPUB
         self.colored_field, self.colored_xpub_input = self._create_field(
-            'account_xpub_colored', 'xpub...',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored',
+            ), 'xpub...',
         )
         content_layout.addLayout(self.colored_field)
 
-        # Hidden String Input
-        if self.is_editable:
-            self.string_field, self.string_input = self._create_field(
-                'Cosigner String', 'Paste cosigner string here', editable=True,
-            )
-            content_layout.addLayout(self.string_field)
-
         layout.addWidget(self.content_widget)
 
-        # --- Footer Section (Import Button) ---
-        if self.is_editable:
-            footer_layout = QHBoxLayout()
-            footer_layout.setContentsMargins(0, 0, 0, 0)
-            footer_layout.addStretch()  # Push button to right
+        # Error Label (Moved to bottom)
+        self.error_label = QLabel()
+        self.error_label.setObjectName('ms_error')
+        self.error_label.setVisible(False)
+        layout.addWidget(self.error_label)
 
-            self.import_btn = PrimaryButton()
-            self.import_btn.setIcon(QIcon(':/assets/get_faucets.png'))
-            self.import_btn.setLayoutDirection(Qt.RightToLeft)
-            self.import_btn.setFixedSize(QSize(100, 36))
-            self.import_btn.setCursor(
-                QCursor(Qt.CursorShape.PointingHandCursor),
-            )
-            footer_layout.addWidget(self.import_btn)
-            self.import_btn.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'import',
-                ) + ' ',
-            )
+    def show_error(self, message):
+        """Show error message on the card."""
+        self.error_label.setText(message)
+        self.error_label.setVisible(True)
 
-            content_layout.addLayout(footer_layout)
+    def clear_error(self):
+        """Clear error message from the card."""
+        self.error_label.clear()
+        self.error_label.setVisible(False)
+
+    def set_collapsible(self, collapsible: bool):
+        """Enable or disable collapsibility."""
+        self._collapsible = collapsible
+        if not collapsible:
+            self.arrow_lbl.hide()
+            self.setCursor(QCursor(Qt.ArrowCursor))
+            if not self.is_expanded:
+                self.is_expanded = True
+                self.content_widget.setVisible(True)
+        else:
+            self.arrow_lbl.show()
+            self.setCursor(QCursor(Qt.PointingHandCursor))
 
     def toggle_content(self):
         """Toggle visibility of the content widget."""
+        if hasattr(self, '_collapsible') and not self._collapsible:
+            return
+
         self.is_expanded = not self.is_expanded
         self.content_widget.setVisible(self.is_expanded)
         self.arrow_lbl.setText('▼' if self.is_expanded else '▶')
 
     def _create_field(self, title_key, placeholder, editable=False):
         """Helper to create a standard labeled input field with optional copy button."""
-        title_text = title_key
-        if '_' in title_key or title_key.islower():
-            title_text = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, title_key,
-            )
-            if not title_text:
-                title_text = title_key
-
         layout = QVBoxLayout()
         layout.setSpacing(8)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        lbl = QLabel(title_text)
-        lbl.setObjectName('ms_label')
-        layout.addWidget(lbl)
-
-        input_container = QWidget()
-        input_layout = QHBoxLayout(input_container)
-        input_layout.setContentsMargins(0, 0, 0, 0)
-        input_layout.setSpacing(0)
-
-        inp = QLineEdit()
-        inp.setObjectName('ms_input')
-        inp.setPlaceholderText(placeholder)
-        inp.setFixedHeight(40)
-        inp.setFrame(False)  # Important for specific styling
-
-        if not editable:
-            inp.setReadOnly(True)
-            inp.setCursor(QCursor(Qt.CursorShape.ForbiddenCursor))
-
-        input_layout.addWidget(inp)
-
-        if not editable:
-            # Add Copy Button
-            copy_btn = QPushButton()
-            copy_btn.setObjectName('copy_button')
-            copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            copy_btn.setFixedSize(QSize(50, 40))
-            ic = QIcon()
-            ic.addFile(':/assets/copy.png', QSize(), QIcon.Normal, QIcon.Off)
-            copy_btn.setIcon(ic)
-            copy_btn.clicked.connect(lambda: copy_text(inp))
-            input_layout.addWidget(copy_btn)
-        layout.addWidget(input_container)
-        return layout, inp
-
-        self.is_expanded = not self.is_expanded
-        self.content_widget.setVisible(self.is_expanded)
-        self.toggle_btn.setText('▼' if self.is_expanded else '▶')
-
-    def _create_field(self, title_key, placeholder, editable=False):
-        """Helper to create a standard labeled input field."""
-        # Check if title_key is a translation key or raw string
-        # Simple heuristic or try/except, but for now assuming key if not capitalized
-        title_text = title_key
-        if '_' in title_key or title_key.islower():
-            title_text = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, title_key,
-            )
-        # Fallback if empty (meaning likely not a key in this contest)
-            if not title_text:
-                title_text = title_key
-
-        layout = QVBoxLayout()
-        layout.setSpacing(8)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        label = QLabel(title_text)
+        label = QLabel()
         label.setObjectName('form_label')  # Consistent form label style
+        label.setText(title_key[:-1] if title_key.endswith(':') else title_key)
         layout.addWidget(label)
 
         input_container = QHBoxLayout()
@@ -261,26 +257,16 @@ class CosignerDetailCard(ClickableFrame):
         inp = QLineEdit()
         inp.setPlaceholderText(placeholder)
         inp.setFixedHeight(40)
+        inp.setCursorPosition(0)
         inp.setReadOnly(not editable)
+        inp.setObjectName('ms_input')
         if not editable:
-            inp.setObjectName('ms_input')
-            # Add Copy Button
-            copy_btn = QPushButton()
-            copy_btn.setObjectName('copy_button')
-            copy_btn.setFixedSize(QSize(50, 40))
-            copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            copy_btn.setIcon(QIcon(':/assets/copy.png'))
-            copy_btn.clicked.connect(lambda: copy_text(inp))
-            input_container.addWidget(inp)
-            input_container.addWidget(copy_btn)
-        else:
-            inp.setObjectName('ms_input')
-            input_container.addWidget(inp)
+            inp.setCursor(QCursor(Qt.CursorShape.ForbiddenCursor))
+        input_container.addWidget(inp)
 
         layout.addLayout(input_container)
 
         return layout, inp
-
 
 class MultisigSetupPage(QWidget):
     """UI-only Multisig setup page (card), no business logic.
@@ -295,7 +281,7 @@ class MultisigSetupPage(QWidget):
 
         # Retrieve password from keyring (already set in Set Password page)
         network = SettingRepository.get_wallet_network()
-        self._password = keyring_get(WALLET_PASSWORD_KEY, network.value)
+        self._password = get_value(WALLET_PASSWORD_KEY, network.value)
 
         if not self._password:
             # This shouldn't happen in normal flow, but handle it
@@ -392,10 +378,13 @@ class MultisigSetupPage(QWidget):
         info_h = QHBoxLayout(self.info_box)
         info_h.setContentsMargins(14, 10, 14, 10)
         info_h.setSpacing(12)
-        info_badge = QLabel('i')
+        info_badge = QPushButton()
         info_badge.setObjectName('ms_info_badge')
-        info_badge.setFixedSize(22, 22)
-        info_badge.setAlignment(Qt.AlignCenter)
+        info_icon = QIcon(':/assets/info_blue.png')
+        info_badge.setIcon(info_icon)
+        info_badge.setFlat(True)
+        info_badge.setIconSize(QSize(30, 30))
+        info_badge.setFixedSize(30, 30)
         info_h.addWidget(info_badge)
         info_v = QVBoxLayout()
         info_v.setContentsMargins(0, 0, 0, 0)
@@ -419,7 +408,7 @@ class MultisigSetupPage(QWidget):
         total_signer_block.addWidget(self.tot_lbl)
         self.total_signer_input = QLineEdit()
         self.total_signer_input.setObjectName('ms_input')
-        self.total_signer_input.setText('3')
+        self.total_signer_input.setText('2')
         self.total_signer_input.setFixedWidth(700)
         self.total_signer_input.setFixedHeight(40)
         self.total_signer_input.setFrame(False)
@@ -440,7 +429,7 @@ class MultisigSetupPage(QWidget):
         required_signer_block.addWidget(self.req_lbl)
         self.required_signer_input = QLineEdit()
         self.required_signer_input.setObjectName('ms_input')
-        self.required_signer_input.setText('3')
+        self.required_signer_input.setText('2')
         self.required_signer_input.setFixedWidth(700)
         self.required_signer_input.setFixedHeight(40)
         self.required_signer_input.setFrame(False)
@@ -486,13 +475,13 @@ class MultisigSetupPage(QWidget):
         self.row2.setContentsMargins(0, 0, 0, 0)
         self.row2.setSpacing(12)
 
-        self.fp_display, self.fp_value_widget = self._create_wallet_detail_field(
+        self.fp_display, self.fp_value_widget, _ = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint',
             ),
             '',
         )
-        self.keychain_display, self.keychain_value_widget = self._create_wallet_detail_field(
+        self.keychain_display, self.keychain_value_widget, _ = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain',
             ),
@@ -503,13 +492,13 @@ class MultisigSetupPage(QWidget):
         self.r_v.addLayout(self.row1)
 
         # Row 2: Account XPUB (vanilla)
-        self.path_display, self.path_value_widget = self._create_wallet_detail_field(
+        self.path_display, self.path_value_widget, _ = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path',
             ),
             '',
         )
-        self.xpub_vanilla_display, self.xpub_vanilla_value_widget = self._create_wallet_detail_field(
+        self.xpub_vanilla_display, self.xpub_vanilla_value_widget, _ = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla',
             ),
@@ -522,7 +511,7 @@ class MultisigSetupPage(QWidget):
         self.row3 = QHBoxLayout()
         self.row3.setContentsMargins(0, 0, 0, 0)
         self.row3.setSpacing(12)
-        self.xpub_colored_display, self.xpub_colored_value_widget = self._create_wallet_detail_field(
+        self.xpub_colored_display, self.xpub_colored_value_widget, _ = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored',
             ),
@@ -535,22 +524,31 @@ class MultisigSetupPage(QWidget):
         self.row4 = QHBoxLayout()
         self.row4.setContentsMargins(0, 0, 0, 0)
         self.row4.setSpacing(12)
-        self.master_xpub_display, self.master_xpub_value_widget = self._create_wallet_detail_field(
+        self.master_xpub_display, self.master_xpub_value_widget, self.master_xpub_copy_btn = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_xpub',
             ),
             '',
+            show_copy_btn=True,
         )
         self.row4.addLayout(self.master_xpub_display)
         self.r_v.addLayout(self.row4)
+
 
         # Row 5: Cosigner string (new)
         self.row5 = QHBoxLayout()
         self.row5.setContentsMargins(0, 0, 0, 0)
         self.row5.setSpacing(12)
-        self.cosigner_string_display, self.cosigner_string_value_widget = self._create_wallet_detail_field(
-            'Cosigner String',
+        self.cosigner_string_display, self.cosigner_string_value_widget, self.cosigner_string_copy_btn = self._create_wallet_detail_field(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signer_details',
+            ),
             '',
+            show_copy_btn=True,
+            info_text=QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'signer_details_explanation',
+            ),
         )
 
         self.row5.addLayout(self.cosigner_string_display)
@@ -559,13 +557,6 @@ class MultisigSetupPage(QWidget):
         self.r_v.addStretch()
 
         self.v.addWidget(self.review_frame)
-
-        # Creator setup (legacy holder - kept for compatibility, hidden)
-        self.creator = {
-            'mode': None, 'xpub': '',
-            'fingerprint': '', 'derivation': '',
-        }
-        self.creator_ready = False
         self.creator_frame = QFrame(self.card)
         self.creator_frame.setObjectName('capabilities_frame')
         self.creator_frame.hide()
@@ -628,13 +619,9 @@ class MultisigSetupPage(QWidget):
         # Reduce top margin so button sits closer to content
         self.footer.setContentsMargins(0, 4, 35, 12)
         # Back button (hidden on step 1) — match PrimaryButton styling
-        # Validation error label (shown to the left of buttons)
-        self.validation_error = QLabel()
-        self.validation_error.setObjectName('ms_error')
-        self.validation_error.setWordWrap(True)
-        self.validation_error.hide()
         self.export_button = PrimaryButton()
-        self.export_button.setIcon(QIcon(':/assets/upload.png'))
+        self.export_button.setIcon(QIcon(':/assets/export.png'))
+        self.export_button.setIconSize(QSize(18, 18))
         self.export_button.setLayoutDirection(Qt.RightToLeft)
         self.export_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.export_button.setFixedSize(QSize(100, 40))
@@ -648,7 +635,6 @@ class MultisigSetupPage(QWidget):
         self.back_button.clicked.connect(self._go_back)
         # Place buttons on the right with Back to the left of Continue
         self.footer.addStretch()
-        self.footer.addWidget(self.validation_error)
         self.footer.addSpacing(12)
         self.footer.addWidget(self.back_button)
         self.footer.addSpacing(12)
@@ -805,12 +791,10 @@ class MultisigSetupPage(QWidget):
                         ACCOUNT_XPUB_COLORED, keys.account_xpub_colored,
                     )
 
-                    # Encrypt mnemonic IMMEDIATELY with password
                     encrypted = mnemonic_store.encrypt(
                         self._password, keys.mnemonic,
                     )
 
-                    # Save to PERMANENT location
                     local_store.write_to_file(
                         file_name=MNEMONIC_KEY,
                         file_path=app_paths.mnemonic_file_path,
@@ -822,27 +806,88 @@ class MultisigSetupPage(QWidget):
                 print(f"Error generating/loading wallet keys: {e}")
 
         # Clear existing cosigner rows
-        # Remove widgets from layout
         for card in self.cosigner_rows:
             self.cosigners_v.removeWidget(card)
             card.deleteLater()
         self.cosigner_rows.clear()
 
         # Add rows for cosigners 2..N based on total_signer
-        # We assume #1 is "Me" (handled elsewhere or implied? Current UI implies #1 is user, cosigners start at #2?)
-        # Wait, the current logic starts index at 2.
         for i in range(2, n + 1):
             self._add_cosigner_row(i)
 
-        self.validation_error.hide()
         self.continue_button.setEnabled(False)
         self._threshold_locked = True
         self.required_signer_input.setEnabled(False)
         self.total_signer_input.setEnabled(False)
-        # Do NOT show cosigner section yet in the 3-step flow
-        self.cos_frame.hide()
         self._update_summary()
         self._update_continue_enabled()
+
+    def _create_wallet_detail_field(self, title: str, placeholder: str, show_copy_btn: bool = False, info_text: str = None) -> tuple[QGridLayout, QLineEdit, QPushButton]:
+        """
+        Create a wallet detail field with copy button.
+        Used primarily for the Review Frame widgets.
+        """
+        wallet_detail_grid_layout = QGridLayout()
+        wallet_detail_grid_layout.setContentsMargins(0, 0, 0, 0)
+        wallet_detail_grid_layout.setSpacing(10)
+        copy_btn = None
+
+        # Label Row (Label + optional Info Button)
+        label_container = QWidget()
+        label_layout = QHBoxLayout(label_container)
+        label_layout.setContentsMargins(0, 0, 0, 0)
+        label_layout.setSpacing(8)
+
+        wallet_detail_label = QLabel()
+        wallet_detail_label.setObjectName('ms_label')
+        wallet_detail_label.setText(title[:-1] if title.endswith(':') else title)
+        label_layout.addWidget(wallet_detail_label)
+
+        if info_text:
+            info_btn = QPushButton()
+            info_btn.setObjectName('ms_info_button')
+            info_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            info_btn.setFlat(True)
+            info_icon = QIcon(':/assets/info_circle.png')
+            info_btn.setIcon(info_icon)
+            info_btn.setIconSize(QSize(20, 20))
+            info_btn.setFixedSize(QSize(20, 20))
+            info_btn.setToolTip(info_text)
+            label_layout.addWidget(info_btn)
+
+        label_layout.addStretch()
+        wallet_detail_grid_layout.addWidget(label_container, 0, 0)
+
+        wallet_detail_horizontal_layout = QHBoxLayout()
+        wallet_detail_horizontal_layout.setContentsMargins(0, 0, 0, 0)
+        wallet_detail_horizontal_layout.setSpacing(0)
+        wallet_detail_input = QLineEdit()
+        wallet_detail_input.setObjectName('wallet_detail_input')
+        wallet_detail_input.setFixedHeight(40)
+        wallet_detail_input.setReadOnly(True)
+        wallet_detail_input.setCursor(QCursor(Qt.CursorShape.ForbiddenCursor))
+        wallet_detail_input.setFrame(False)
+        wallet_detail_input.setClearButtonEnabled(False)
+        wallet_detail_input.setPlaceholderText(placeholder)
+        wallet_detail_horizontal_layout.addWidget(wallet_detail_input)
+        if show_copy_btn:
+            # tailored style for input when copy button is adjacent
+            wallet_detail_input.setStyleSheet(
+                "border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+            )
+            copy_btn = QPushButton()
+            copy_btn.setObjectName('copy_button')
+            copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            copy_btn.setMinimumSize(QSize(50, 0))
+            copy_btn.setMaximumSize(QSize(50, 40))
+            ic = QIcon()
+            ic.addFile(':/assets/copy.png', QSize(), QIcon.Normal, QIcon.Off)
+            copy_btn.setIcon(ic)
+            wallet_detail_horizontal_layout.addWidget(copy_btn)
+        wallet_detail_grid_layout.addLayout(
+            wallet_detail_horizontal_layout, 1, 0,
+        )
+        return wallet_detail_grid_layout, wallet_detail_input, copy_btn
 
     def _go_next(self):
         if self._current_step == 1:
@@ -910,14 +955,14 @@ class MultisigSetupPage(QWidget):
     def _populate_wallet_review_fields(self):
         """Populate wallet review fields with actual wallet data from local_store."""
         # Get wallet data from local_store
-        master_fp = local_store.get_value(MASTER_FINGERPRINT) or ''
-        master_xpub = local_store.get_value(MASTER_XPUB) or ''
+        master_fp = local_store.get_value(MASTER_FINGERPRINT)
+        master_xpub = local_store.get_value(MASTER_XPUB)
         account_xpub_vanilla = local_store.get_value(
             ACCOUNT_XPUB_VANILLA,
-        ) or ''
+        )
         account_xpub_colored = local_store.get_value(
             ACCOUNT_XPUB_COLORED,
-        ) or ''
+        )
 
         # Use the standard multisig derivation path
         derivation_path = "m/48'/0'/0'/2'"
@@ -930,12 +975,19 @@ class MultisigSetupPage(QWidget):
         self.fp_value_widget.setText(master_fp)
         self.keychain_value_widget.setText(keychain_str)
         self.path_value_widget.setText(derivation_path)
-        self.xpub_vanilla_value_widget.setText(account_xpub_vanilla)
-        self.xpub_vanilla_value_widget.setCursorPosition(0)
-        self.xpub_colored_value_widget.setText(account_xpub_colored)
-        self.xpub_colored_value_widget.setCursorPosition(0)
-        self.master_xpub_value_widget.setText(master_xpub)
-        self.master_xpub_value_widget.setCursorPosition(0)
+
+        self.xpub_vanilla_value_widget.setText(
+            self._truncate_text(account_xpub_vanilla),
+        )
+
+        self.xpub_colored_value_widget.setText(
+            self._truncate_text(account_xpub_colored),
+        )
+
+        self.master_xpub_value_widget.setText(self._truncate_text(master_xpub))
+        self.master_xpub_copy_btn.clicked.connect(
+            lambda: copy_text(master_xpub),
+        )
 
         # Generate and display cosigner string
         try:
@@ -949,34 +1001,43 @@ class MultisigSetupPage(QWidget):
                 vanilla_keychain=keychain_val,
             )
             cosigner_str = Cosigner.from_data(data).cosigner_string()
-            self.cosigner_string_value_widget.setText(cosigner_str)
+            self.cosigner_string_value_widget.setText(
+                cosigner_str,
+            )
             self.cosigner_string_value_widget.setCursorPosition(0)
+            self.cosigner_string_copy_btn.clicked.connect(
+                lambda: copy_text(cosigner_str),
+            )
         except Exception as e:
             logger.error('Failed to generate cosigner string: %s', e)
             self.cosigner_string_value_widget.setText(
                 'Error generating string',
             )
 
+    def _truncate_text(self, text: str) -> str:
+        """Truncate text for display if too long."""
+        if text and len(text) > 40:
+            return text[:25] + '...' + text[-25:]
+        return text
+
     def _save_cosigners_data(self):
         """Collect and save all cosigner data from the UI."""
         cosigners_data = []
 
         for card in self.cosigner_rows:
-            fp = card.fp_input.text().strip()
-            vanilla_xpub = card.vanilla_xpub_input.text().strip()
-            colored_xpub = card.colored_xpub_input.text().strip()
-            keychain_text = card.keychain_input.text().strip()
+            cosigner_string = card.string_input.text().strip()
+            data = Cosigner(cosigner_string).cosigner_data()
 
             # Parse keychain as int if provided
             keychain = None
-            if keychain_text and keychain_text.isdigit():
-                keychain = int(keychain_text)
+            if data.vanilla_keychain and data.vanilla_keychain.isdigit():
+                keychain = int(data.vanilla_keychain)
 
             cosigner_dict = {
                 'index': card.index,
-                MASTER_FINGERPRINT: fp,
-                ACCOUNT_XPUB_VANILLA: vanilla_xpub,
-                ACCOUNT_XPUB_COLORED: colored_xpub,
+                MASTER_FINGERPRINT: data.master_fingerprint,
+                ACCOUNT_XPUB_VANILLA: data.account_xpub_vanilla,
+                ACCOUNT_XPUB_COLORED: data.account_xpub_colored,
                 VANILLA_KEYCHAIN: keychain,
             }
             cosigners_data.append(cosigner_dict)
@@ -1031,13 +1092,21 @@ class MultisigSetupPage(QWidget):
 
     def _add_cosigner_row(self, index: int):
         """Add a row for a cosigner details."""
-        card = CosignerDetailCard(index, self, is_editable=True)
+        card = CosignerDetailCard(index, self)
+
+        # If only one cosigner to add (Total N=2), make card non-collapsible
+        if self._get_total_signer() == 2:
+            card.set_collapsible(False)
 
         # Connect Import Button
         if card.import_btn:
             card.import_btn.clicked.connect(
-                lambda: self._import_cosigner_from_file(card.string_input),
+                lambda: self._import_cosigner_from_file(card),
             )
+
+        # Connect Reset Button
+        if card.reset_btn:
+            card.reset_btn.clicked.connect(card.string_input.clear)
 
         # Connect String Input Parser
         if card.string_input:
@@ -1054,26 +1123,58 @@ class MultisigSetupPage(QWidget):
 
     def _on_cosigner_string_changed(self, text, row_w):
         """Parse cosigner string and populate fields."""
+        row_w.string_input.setCursorPosition(0)
         text = text.strip()
         if not text:
-            # Clear fields? Or keep them? Let's clear to indicate invalid state if needed
-            # But maybe user is just editing.
+            # Clear fields
+            row_w.fp_input.clear()
+            row_w.vanilla_xpub_input.clear()
+            row_w.colored_xpub_input.clear()
+            row_w.keychain_input.clear()
+            # Unlock input
+            row_w.string_input.setReadOnly(False)
+            row_w.import_btn.setVisible(True)
+            row_w.reset_btn.setVisible(False)
+            self._update_continue_enabled()
             return
 
         try:
             data = Cosigner(text).cosigner_data()
             row_w.fp_input.setText(data.master_fingerprint)
-            row_w.vanilla_xpub_input.setText(data.account_xpub_vanilla)
-            row_w.colored_xpub_input.setText(data.account_xpub_colored)
+
+            row_w.vanilla_xpub_input.setText(
+                self._truncate_text(data.account_xpub_vanilla),
+            )
+            row_w.vanilla_xpub_str = data.account_xpub_vanilla
+
+            row_w.colored_xpub_input.setText(
+                self._truncate_text(data.account_xpub_colored),
+            )
+            row_w.colored_xpub_str = data.account_xpub_colored
 
             val = data.vanilla_keychain
             row_w.keychain_input.setText(str(val) if val is not None else '0')
 
             # Check validation
             self._update_continue_enabled()
+
+            # Lock input on success
+            row_w.string_input.setReadOnly(True)
+            row_w.import_btn.setVisible(False)
+            row_w.reset_btn.setVisible(True)
+
         except Exception:
-            # Invalid string, ignore or show error
-            pass
+            # Invalid string, clear fields
+            row_w.fp_input.clear()
+            row_w.vanilla_xpub_input.clear()
+            row_w.colored_xpub_input.clear()
+            row_w.keychain_input.clear()
+            
+            # Ensure input is unlocked
+            row_w.string_input.setReadOnly(False)
+            row_w.import_btn.setVisible(True)
+            row_w.reset_btn.setVisible(False)
+            self._update_continue_enabled()
 
     def _restore_cosigner_inputs(self, cosigners_data: list[dict]):
         """
@@ -1107,12 +1208,15 @@ class MultisigSetupPage(QWidget):
                     )
                 if ACCOUNT_XPUB_VANILLA in data:
                     target_card.vanilla_xpub_input.setText(
-                        data[ACCOUNT_XPUB_VANILLA],
+                        self._truncate_text(data[ACCOUNT_XPUB_VANILLA]),
                     )
+                    target_card.vanilla_xpub_str = data[ACCOUNT_XPUB_VANILLA]
+
                 if ACCOUNT_XPUB_COLORED in data:
                     target_card.colored_xpub_input.setText(
-                        data[ACCOUNT_XPUB_COLORED],
+                        self._truncate_text(data[ACCOUNT_XPUB_COLORED]),
                     )
+                    target_card.colored_xpub_str = data[ACCOUNT_XPUB_COLORED]
 
         # Ensure N/M inputs are disabled
         self.required_signer_input.setEnabled(False)
@@ -1128,17 +1232,8 @@ class MultisigSetupPage(QWidget):
             n = self._get_total_signer()
             m = self._get_required_signer()
             # Enforce 2 ≤ M ≤ N ≤ 15
-            valid = (3 <= n <= 15) and (2 <= m <= n)
+            valid = (2 <= n <= 15) and (2 <= m <= n)
             self.continue_button.setEnabled(valid)
-            # Update error label instead of tooltip
-            if valid:
-                self.validation_error.clear()
-                self.validation_error.hide()
-            else:
-                self.validation_error.setText(
-                    'Enter valid M and N (2 ≤ M ≤ N ≤ 15)',
-                )
-                self.validation_error.show()
             return
 
         # Step 2: Enable Continue only when all cosigner rows are valid (if on cosigner step)
@@ -1153,37 +1248,34 @@ class MultisigSetupPage(QWidget):
 
             # Iterate over Card components
             for card in self.cosigner_rows:
-                txt = card.vanilla_xpub_input.text().strip()
-                ok = self._is_valid_xpub(txt)
-                all_filled &= (txt != '')
-                all_valid &= ok
-                if txt:
-                    if txt in seen:
+                card.clear_error()
+
+                # Validation based on stored attributes (populated by parser)
+                xpub_str = card.vanilla_xpub_str
+
+                if xpub_str:
+                    # Case 1: XPUB is parsed and set
+                    # Check for duplicates
+                    if xpub_str in seen:
+                        card.show_error("Duplicate Cosigner")
                         any_duplicates = True
+                        all_valid = False
                     else:
-                        seen.add(txt)
+                        seen.add(xpub_str)
+                else:
+                    # Case 2: XPUB is NOT set (empty or invalid parse)
+                    all_filled = False
+                    
+                    # If string input has text but xpub is None -> Invalid Parse
+                    if card.string_input.text().strip():
+                        card.show_error("Invalid cosigner details")
+                        all_valid = False
+                        # If invalid, it's also not filled correctly, so all_filled=False stands
 
             enable = all_filled and all_valid and not any_duplicates and (
                 n_rows == n - 1
             )
             self.continue_button.setEnabled(enable)
-
-            # Give quick reason if disabled
-            reason = ''
-            if not enable:
-                if any_duplicates:
-                    reason = 'Remove duplicate cosigner entries'
-                elif not all_filled:
-                    reason = 'Fill all cosigner xpubs'
-                elif not all_valid:
-                    reason = 'One or more xpubs look invalid'
-
-            if reason:
-                self.validation_error.setText(reason)
-                self.validation_error.show()
-            else:
-                self.validation_error.clear()
-                self.validation_error.hide()
         else:
             # Review step or other
             self.continue_button.setEnabled(True)
@@ -1195,17 +1287,6 @@ class MultisigSetupPage(QWidget):
         self._update_continue_enabled()
         self._update_summary()
 
-    def _is_valid_xpub(self, s: str) -> bool:
-        """
-        Check if xpub is valid
-        """
-        if not s:
-            return False
-        # Very relaxed: must contain bracketed section and end token containing 'pub'
-        has_brackets = '[' in s and ']' in s
-        has_pub = bool(re.search(r'[a-zA-Z]pub', s))
-        return has_brackets and has_pub
-
     def _update_summary(self):
         """
         Update summary text and validators
@@ -1213,7 +1294,7 @@ class MultisigSetupPage(QWidget):
         n = self._get_total_signer()
         m = self._get_required_signer()
         # Keep N clamped to 2–15
-        self.total_signer_input.setValidator(QIntValidator(3, 15, self))
+        self.total_signer_input.setValidator(QIntValidator(2, 15, self))
         # Clamp M to 2–min(N,15)
         max_m = max(2, min(n, 15))
         self.required_signer_input.setValidator(QIntValidator(2, max_m, self))
@@ -1236,63 +1317,16 @@ class MultisigSetupPage(QWidget):
                 ).format(m_disp, n_disp),
             )
 
-    def _create_wallet_detail_field(self, title: str, placeholder: str, editable: bool = False) -> tuple[QGridLayout, QLineEdit]:
-        """
-        Create a wallet detail field with copy button.
-        Used primarily for the Review Frame widgets.
-        """
-        wallet_detail_grid_layout = QGridLayout()
-        wallet_detail_grid_layout.setContentsMargins(0, 0, 0, 0)
-        wallet_detail_grid_layout.setSpacing(10)
-        wallet_detail_label = QLabel(title)
-        wallet_detail_label.setObjectName('ms_label')
-        wallet_detail_grid_layout.addWidget(wallet_detail_label, 0, 0)
-        wallet_detail_horizontal_layout = QHBoxLayout()
-        wallet_detail_horizontal_layout.setContentsMargins(0, 0, 0, 0)
-        wallet_detail_horizontal_layout.setSpacing(0)
-        wallet_detail_input = QLineEdit()
-        wallet_detail_input.setObjectName('wallet_detail_input')
-        wallet_detail_input.setFixedHeight(40)
-        wallet_detail_input.setReadOnly(not editable)
-        wallet_detail_input.setFrame(False)
-        wallet_detail_input.setClearButtonEnabled(False)
-        wallet_detail_input.setPlaceholderText(placeholder)
-        wallet_detail_horizontal_layout.addWidget(wallet_detail_input)
-        if not editable:
-            wallet_detail_input.setStyleSheet("""
-                    padding-left: 10px;
-                    font: 15px "Inter";
-                    color: rgb(102, 108, 129);
-                    background-color: rgb(36, 44, 70);
-                    border: none;
-                    border-radius: 4px;
-                    border-top-right-radius: 0px;
-                    border-bottom-right-radius: 0px;
-                """)
-            wallet_detail_input.setCursor(
-                QCursor(Qt.CursorShape.ForbiddenCursor),
-            )
-            copy_btn = QPushButton()
-            copy_btn.setObjectName('copy_button')
-            copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            copy_btn.setMinimumSize(QSize(50, 0))
-            copy_btn.setMaximumSize(QSize(50, 40))
-            ic = QIcon()
-            ic.addFile(':/assets/copy.png', QSize(), QIcon.Normal, QIcon.Off)
-            copy_btn.setIcon(ic)
-            copy_btn.clicked.connect(lambda: copy_text(wallet_detail_input))
-            wallet_detail_horizontal_layout.addWidget(copy_btn)
-        wallet_detail_grid_layout.addLayout(
-            wallet_detail_horizontal_layout, 1, 0,
-        )
-        return wallet_detail_grid_layout, wallet_detail_input
-
     def _export_cosigner_to_file(self):
         """Export cosigner string to a text file."""
+        # Get Downloads directory
+        download_dir = QStandardPaths.writableLocation(
+            QStandardPaths.DownloadLocation,
+        )
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             'Export Cosigner Data',
-            'cosigner.txt',
+            os.path.join(download_dir, 'cosigner.txt'),
             'Text Files (*.txt);;All Files (*)',
         )
 
@@ -1301,25 +1335,27 @@ class MultisigSetupPage(QWidget):
                 cosigner_string = self.cosigner_string_value_widget.text()
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(cosigner_string)
-                QMessageBox.information(
-                    self,
-                    'Success',
-                    'Cosigner data exported successfully!',
+
+                ToastManager.success(
+                    description='Cosigner data exported successfully!',
+                    parent=self,
                 )
             except Exception as e:
                 logger.error('Failed to export cosigner data: %s', e)
-                QMessageBox.critical(
-                    self,
-                    'Error',
-                    f"Failed to export cosigner data: {str(e)}",
+                ToastManager.error(
+                    description=f"Failed to export cosigner data: {str(e)}",
+                    parent=self,
                 )
 
-    def _import_cosigner_from_file(self, target_input):
+    def _import_cosigner_from_file(self, target_card):
         """Import cosigner string from a text file."""
+        downloads_dir = QStandardPaths.writableLocation(
+            QStandardPaths.DownloadLocation
+        )
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             'Import Cosigner Data',
-            '',
+            downloads_dir,
             'Text Files (*.txt);;All Files (*)',
         )
 
@@ -1329,17 +1365,19 @@ class MultisigSetupPage(QWidget):
                     cosigner_string = f.read().strip()
 
                 # Set the text in the input field (which will trigger parsing)
-                target_input.setText(cosigner_string)
+                target_card.string_input.setText(cosigner_string)
+                
+                # Auto-expand if collapsed
+                if not target_card.is_expanded:
+                    target_card.toggle_content()
 
-                QMessageBox.information(
-                    self,
-                    'Success',
-                    'Cosigner data imported successfully!',
+                ToastManager.success(
+                    description='Cosigner data imported successfully!',
+                    parent=self,
                 )
             except Exception as e:
                 logger.error('Failed to import cosigner data: %s', e)
-                QMessageBox.critical(
-                    self,
-                    'Error',
-                    f"Failed to import cosigner data: {str(e)}",
+                ToastManager.error(
+                    description=f"Failed to import cosigner data: {str(e)}",
+                    parent=self,
                 )

@@ -78,6 +78,7 @@ class WelcomeViewModel(QObject, ThreadManager):
         ToastManager.error(
             str(error.message if hasattr(error, 'message') else error),
         )
+        print(error)
 
     def restore_offline_wallet(self, usb_drive: USBDrive, master_fingerprint: str, data: KeyringDialogModel):
         """This method handles the offline wallet restore process."""

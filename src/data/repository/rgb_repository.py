@@ -390,11 +390,12 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def inspect_rgb_transfer(consignment: str, psbt: str) -> RgbInspection:
+    def inspect_rgb_transfer(consignment: list[str], psbt: str, entropy: int) -> RgbInspection:
         """Inspect RGB transfer details."""
         with repository_custom_context():
             data: RgbInspection = colored_wallet.wallet.inspect_rgb_transfer(
                 consignment=consignment,
                 psbt=psbt,
+                entropy=entropy,
             )
             return data

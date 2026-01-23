@@ -118,7 +118,7 @@ QFrame#ms_info_box {
 }
 QLabel#ms_info_badge {
     border-radius:11px;
-    background: rgba(208,211,221,0.18);
+    background: none;
     color:#D0D3DD;
     font-weight:700;
 }

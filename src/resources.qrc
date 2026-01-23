@@ -84,5 +84,7 @@
     <file>assets/white_multi_sig_wallet.png</file>
     <file>assets/standard_wallet.png</file>
     <file>assets/multi_sig_wallet.png</file>
+    <file>assets/export.png</file>
+    <file>assets/import.png</file>
   </qresource>
 </RCC>
