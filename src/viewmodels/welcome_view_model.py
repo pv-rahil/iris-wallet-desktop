@@ -41,9 +41,7 @@ class WelcomeViewModel(QObject, ThreadManager):
 
     def on_create_click(self):
         """This method handles the wallet creation process."""
-        network = get_bitcoin_network_from_enum(
-            SettingRepository.get_wallet_network(),
-        )
+        network = SettingRepository.get_wallet_network()
         password = get_value(
             WALLET_PASSWORD_KEY, network.value,
         )

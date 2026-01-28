@@ -118,9 +118,7 @@ class SetWalletPasswordViewModel(QObject, ThreadManager):
             if is_multisig:
                 # For multisig, just store password and navigate to multisig setup
                 # Keys will be generated in MultisigSetupPage
-                network = get_bitcoin_network_from_enum(
-                    SettingRepository.get_wallet_network(),
-                )
+                network = SettingRepository.get_wallet_network()
                 is_password_stored: bool = set_value(
                     WALLET_PASSWORD_KEY, password, network.value,
                 )

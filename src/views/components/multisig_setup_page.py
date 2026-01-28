@@ -32,6 +32,7 @@ from rgb_lib import CosignerData
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import InitRequestModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.utils.build_app_path import app_paths
 from src.utils.clickable_frame import ClickableFrame
@@ -49,6 +50,7 @@ from src.utils.helpers import load_stylesheet
 from src.utils.keyring_storage import get_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
+from src.views.components.hw_device_selection_dialog import HWDeviceSelectionDialog
 from src.views.components.toast import ToastManager
 
 from src.utils.page_navigation_events import PageNavigationEventManager
@@ -286,7 +288,7 @@ class MultisigSetupPage(QWidget):
         if not self._password:
             # This shouldn't happen in normal flow, but handle it
             logger.error('Multisig setup accessed without password set!')
-            PageNavigationEventManager.get_instance().selection_page_signal.emit()
+            PageNavigationEventManager.get_instance().selection_page_signal.emit(None)
             return
 
         # Continue with UI setup
@@ -757,18 +759,41 @@ class MultisigSetupPage(QWidget):
         self._threshold_locked = True
 
         SettingRepository.set_multisig_config(m, n)
+        
+        # Check for hardware wallet type
+        is_hardware_wallet = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
 
         # Generate wallet keys for non-watch-only wallets
         if not self._is_watch_only:
             try:
+                if is_hardware_wallet:
+                     # Hardware Wallet Flow: Connect and fetch xpubs
+                     dialog = HWDeviceSelectionDialog(
+                         wallet_type='Ledger',  # Defaulting to Ledger as per current support
+                         parent=self, 
+                         is_multisig=True,
+                     )
+                     if dialog.exec():
+                         # Success: local_store is updated by the viewmodel used in dialog
+                         # We can proceed. The mnemonic key won't be set/needed.
+                         print('Hardware wallet connected and keys fetched.')
+                     else:
+                         # User cancelled or failed
+                         # Re-enable inputs
+                         self.required_signer_input.setEnabled(True)
+                         self.total_signer_input.setEnabled(True)
+                         self._threshold_locked = False
+                         SettingRepository.set_multisig_config(None, None)
+                         return
+
                 # Check if mnemonic file already exists (keys already generated)
-                if os.path.exists(app_paths.mnemonic_file_path):
+                elif os.path.exists(app_paths.mnemonic_file_path):
                     # Keys already generated, don't regenerate
                     print(
                         'Keys already exist - skipping generation to preserve mnemonic.',
                     )
                 else:
-                    # Fresh - generate keys
+                    # Fresh hot wallet - generate keys
                     # Get the current network from SettingRepository
                     network = get_bitcoin_network_from_enum(
                         SettingRepository.get_wallet_network(),
@@ -804,6 +829,12 @@ class MultisigSetupPage(QWidget):
                     print('Fresh setup - encrypted and saved mnemonic.')
             except Exception as e:
                 print(f"Error generating/loading wallet keys: {e}")
+                # If error, unlock to allow retry
+                self.required_signer_input.setEnabled(True)
+                self.total_signer_input.setEnabled(True)
+                self._threshold_locked = False
+                SettingRepository.set_multisig_config(None, None)
+                return
 
         # Clear existing cosigner rows
         for card in self.cosigner_rows:

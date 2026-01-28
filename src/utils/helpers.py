@@ -244,7 +244,6 @@ def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
         Exception: If configuration retrieval or processing fails.
     """
     try:
-
         # Network-specific configurations
         config_mapping = {
             BitcoinNetwork.MAINNET: {
@@ -261,7 +260,7 @@ def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
             },
         }
         # Retrieve the appropriate configuration based on the network
-        network_config = config_mapping.get(network) or {}
+        network_config = config_mapping.get(type(network)) or {}
         dynamic_config = {}
         for key, value in network_config.items():
             dynamic_config[key] = SettingRepository.get_config_value(
@@ -286,11 +285,11 @@ def get_bitcoin_network_from_enum(network: NetworkEnumModel | BitcoinNetwork) ->
         return network
 
     mapping = {
-        NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
-        NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
-        NetworkEnumModel.TESTNET4: BitcoinNetwork.TESTNET4,
-        NetworkEnumModel.SIGNET: BitcoinNetwork.SIGNET,
-        NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
+        NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET(),
+        NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET(),
+        NetworkEnumModel.TESTNET4: BitcoinNetwork.TESTNET4(),
+        NetworkEnumModel.SIGNET: BitcoinNetwork.SIGNET(),
+        NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST(),
     }
 
     try:
