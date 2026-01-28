@@ -2190,7 +2190,7 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>total_cosigners_help</source>
-        <translation>Total number of participants in the multisig wallet (3-15)</translation>
+        <translation>Total number of participants in the multisig wallet (2-15)</translation>
     </message>
     <message>
         <source>required_signatures_label</source>
@@ -2275,6 +2275,74 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>invalid_amount_zero</source>
         <translation>Invalid amount. Amount cannot be zero</translation>
+    </message>
+    <message>
+        <source>master_xpub</source>
+        <translation>Master XPUB</translation>
+    </message>
+    <message>
+        <source>keychain</source>
+        <translation>Keychain</translation>
+    </message>
+    <message>
+        <source>signer_details_explanation</source>
+        <translation>This string contains your public key information. Share it with other participants so they can add you as a cosigner.</translation>
+    </message>
+    <message>
+        <source>signer_details</source>
+        <translation>Signer details</translation>
+    </message>
+    <message>
+        <source>cosigner_details</source>
+        <translation>Cosigner details</translation>
+    </message>
+    <message>
+        <source>reset</source>
+        <translation>Reset</translation>
+    </message>
+    <message>
+        <source>transaction_id_label</source>
+        <translation>Transaction ID</translation>
+    </message>
+    <message>
+        <source>amount_to_send_label</source>
+        <translation>Amount to send</translation>
+    </message>
+    <message>
+        <source>destination_label</source>
+        <translation>Destination</translation>
+    </message>
+    <message>
+        <source>fee_sats_label</source>
+        <translation>Fee (sats)</translation>
+    </message>
+    <message>
+        <source>signatures_label</source>
+        <translation>Signatures</translation>
+    </message>
+    <message>
+        <source>rgb_transfer_label</source>
+        <translation>RGB Transfer</translation>
+    </message>
+    <message>
+        <source>self_transfer</source>
+        <translation>Self Transfer</translation>
+    </message>
+    <message>
+        <source>recipients_count</source>
+        <translation>Recipients: {0}</translation>
+    </message>
+    <message>
+        <source>internal_change</source>
+        <translation>Internal Change</translation>
+    </message>
+    <message>
+        <source>clear_all</source>
+        <translation>Clear All</translation>
+    </message>
+    <message>
+        <source>reject</source>
+        <translation>Reject</translation>
     </message>
 </context>
 </TS>

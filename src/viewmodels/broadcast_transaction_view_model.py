@@ -22,6 +22,13 @@ from src.utils.constant import SIGNED_TXIDS
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_BITCOIN_SENT
+from src.utils.info_message import INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY
+from src.utils.info_message import INFO_ASSET_SENT_SUCCESSFULLY
+from src.utils.info_message import INFO_BITCOIN_SENT_SUCCESSFULLY
+from src.utils.info_message import INFO_OPERATION_COMPLETED_AND_FINALIZED
+from src.utils.info_message import INFO_OPERATION_INDEX_MISSING_FOR_NACK
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_BRIDGE_SUCCESSFULLY
+from src.utils.info_message import INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS
 from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.local_store import local_store
@@ -239,7 +246,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         # Save signature record to local store to hide it from header
         txid = getattr(self, '_current_signed_txid', None)
         if txid:
-            logger.info(f"Saving signed TXID to local_store: {txid}")
+            logger.info("Saving signed TXID to local_store: %s", txid)
             existing_txids = local_store.get_value(SIGNED_TXIDS) or []
             if isinstance(existing_txids, list):
                 if txid not in existing_txids:
@@ -248,48 +255,56 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             else:
                 # Fallback if corrupted or different type
                 local_store.set_value(SIGNED_TXIDS, [txid])
-        # Result is an Operation enum variant or int (if from post_create_utxos?)
-        # post_create_utxos returns int (operation_idx) or similar?
-        # Actually RgbRepository.post_create_utxos likely returns the operation index or Operation object?
-
-        res_str = str(result)
-        print('-'*100, res_str)  # For debugging
-        # Check for Initiator success (might be just an ID or object)
-        # Check for Signer success (Operation enum)
-        if 'CREATE_UTXOS_COMPLETED' in res_str:
+        if result.is_create_utxos_completed():
             ToastManager.success(
-                description='Operation completed and finalized!',
+                description=INFO_OPERATION_COMPLETED_AND_FINALIZED,
             )
-        elif 'CREATE_UTXOS_PENDING' in res_str:
+        elif result.is_create_utxos_pending():
             ToastManager.success(
-                description='Signed successfully. Waiting for other signers.',
+                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
             )
-        elif 'SEND_BTC_COMPLETED' in res_str:
-            ToastManager.success(description='Bitcoin sent successfully!')
-        elif 'SEND_BTC_PENDING' in res_str:
+        elif result.is_send_btc_completed():
+            ToastManager.success(description=INFO_BITCOIN_SENT_SUCCESSFULLY)
+        elif result.is_send_btc_pending():
             ToastManager.success(
-                description='Signed successfully. Waiting for other signers.',
+                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
             )
-        elif 'INFLATION_COMPLETED' in res_str:
+        elif result.is_inflation_completed():
             ToastManager.success(
-                description='Asset issued/inflated successfully!',
+                description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY,
             )
-        elif 'INFLATION_PENDING' in res_str:
+        elif result.is_inflation_pending():
             ToastManager.success(
-                description='Signed successfully. Waiting for other signers.',
+                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
             )
-        elif 'SEND_COMPLETED' in res_str:  # For Asset Send
-            ToastManager.success(description='Asset sent successfully!')
-        elif 'SEND_PENDING' in res_str:    # For Asset Send
+        elif result.is_send_completed():  # For Asset Send
+            ToastManager.success(description=INFO_ASSET_SENT_SUCCESSFULLY)
+        elif result.is_send_pending():    # For Asset Send
             ToastManager.success(
-                description='Signed successfully. Waiting for other signers.',
+                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
             )
         else:
             # Generic success for initiator or other cases
             ToastManager.success(
-                description='Operation posted to bridge successfully.',
+                description=INFO_OPERATION_POSTED_TO_BRIDGE_SUCCESSFULLY,
             )
-            logger.info('Multisig post result: %s', res_str)
+            logger.info('Multisig post result: %s', str(result))
+
+    def respond_nack(self, operation_idx: int | None):
+        """NACK a pending operation without signing (human disagrees)."""
+        if operation_idx is None:
+            ToastManager.error(description=INFO_OPERATION_INDEX_MISSING_FOR_NACK)
+            return
+        self.is_loading.emit(True)
+        response = RespondToOperation.NACK()
+        self.run_in_thread(
+            RgbRepository.respond_to_operation,
+            {
+                'args': [operation_idx, response],
+                'callback': self._on_multisig_post_success,
+                'error_callback': self.on_error,
+            },
+        )
 
     def inspect_psbt(self, psbt: str):
         """Inspect PSBT for review details."""

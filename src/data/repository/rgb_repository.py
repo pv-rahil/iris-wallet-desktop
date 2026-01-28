@@ -16,7 +16,7 @@ from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import RefreshedTransfer
 from rgb_lib import RespondToOperation
-from rgb_lib import RgbInspectionResult
+from rgb_lib import PsbtInspection as RgbInspection
 from rgb_lib import Transfer
 
 from src.data.repository.colored_wallet import colored_wallet
@@ -390,11 +390,12 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def inspect_rgb_transfer(consignment: str, psbt: str) -> RgbInspectionResult:
+    def inspect_rgb_transfer(consignment: list[str], psbt: str, entropy: int) -> RgbInspection:
         """Inspect RGB transfer details."""
         with repository_custom_context():
-            data: RgbInspectionResult = colored_wallet.wallet.inspect_rgb_transfer(
+            data: RgbInspection = colored_wallet.wallet.inspect_rgb_transfer(
                 consignment=consignment,
                 psbt=psbt,
+                entropy=entropy,
             )
             return data

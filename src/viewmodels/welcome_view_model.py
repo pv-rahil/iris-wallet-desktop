@@ -41,9 +41,7 @@ class WelcomeViewModel(QObject, ThreadManager):
 
     def on_create_click(self):
         """This method handles the wallet creation process."""
-        network = get_bitcoin_network_from_enum(
-            SettingRepository.get_wallet_network(),
-        )
+        network = SettingRepository.get_wallet_network()
         password = get_value(
             WALLET_PASSWORD_KEY, network.value,
         )
@@ -78,6 +76,7 @@ class WelcomeViewModel(QObject, ThreadManager):
         ToastManager.error(
             str(error.message if hasattr(error, 'message') else error),
         )
+        print(error)
 
     def restore_offline_wallet(self, usb_drive: USBDrive, master_fingerprint: str, data: KeyringDialogModel):
         """This method handles the offline wallet restore process."""

@@ -6,7 +6,6 @@ from rgb_lib import AssetSchema
 from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
 from rgb_lib import Keys
-from rgb_lib import MultisigKeys
 from rgb_lib import rgb_lib
 from rgb_lib import SinglesigKeys
 

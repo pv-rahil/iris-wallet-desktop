@@ -35,9 +35,15 @@ class ColoredWallet:
     def __init__(self):
         self._wallet: rgb_lib.Wallet | rgb_lib.MultisigWallet | None = None
         self.online_wallet: rgb_lib.Online | None = None
-        self.is_multisig = (
-            SettingRepository.get_wallet_signature_type(
-            ) == WalletSignatureType.MULTI_SIG_WALLET
+
+    @property
+    def is_multisig(self) -> bool:
+        """Returns True if the wallet is configured as multisig."""
+        if self._wallet:
+            return isinstance(self._wallet, rgb_lib.MultisigWallet)
+        return (
+            SettingRepository.get_wallet_signature_type() ==
+            WalletSignatureType.MULTI_SIG_WALLET
         )
 
     @property
@@ -72,7 +78,6 @@ class ColoredWallet:
             RuntimeError: If the wallet is not initialized.
         """
         if self.online_wallet is None:
-            print('going online')
             if self._wallet is None:
                 raise CommonException(
                     'Wallet must be initialized before going online.',

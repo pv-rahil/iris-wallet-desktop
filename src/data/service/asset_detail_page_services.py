@@ -51,7 +51,6 @@ class AssetDetailPageService:
             balance: Balance = RgbRepository.get_asset_balance(
                 AssetIdModel(asset_id=list_transfers_request_model.asset_id),
             )
-            print(balance, 'BALANCE IN SERVICE')
 
             if transactions:
                 for transaction in transactions:
