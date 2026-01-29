@@ -25,6 +25,7 @@ from src.utils.custom_context import repository_custom_context
 from src.utils.custom_exception import CommonException
 from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 from src.utils.hardware_client_store import hardware_client_store
+from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.wallet_credential_encryption import mnemonic_store
 
 
@@ -122,16 +123,15 @@ class CommonOperationRepository:
         if not mnemonic:
             raise CommonException('Mnemonic not available for signing')
 
-        # We need to map our BitcoinNetwork enum to rgb_lib.BitcoinNetwork
-        # Assuming for now it's REGTEST as hardcoded previously, but better to map it
-        # However, previous code hardcoded REGTEST. We should ideally fix this later but keep behavior.
-        bitcoin_network = BitcoinNetwork.REGTEST
+        network = get_bitcoin_network_from_enum(
+            SettingRepository.get_wallet_network(),
+        )
 
-        keys = rgb_lib.restore_keys(bitcoin_network, mnemonic)
+        keys = rgb_lib.restore_keys(network, mnemonic)
 
         wallet_data = rgb_lib.WalletData(
             data_dir=app_paths.app_path,
-            bitcoin_network=bitcoin_network,
+            bitcoin_network=network,
             database_type=DatabaseType.SQLITE,
             max_allocations_per_utxo=1,
             supported_schemas=AssetSchema,

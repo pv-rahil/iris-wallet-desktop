@@ -250,7 +250,7 @@ class RgbRepository:
                 fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
             )
             wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
+            if wallet_service is not None and not colored_wallet.is_multisig:
                 wallet_service.add_psbt(psbt, purpose='send_asset')
             return psbt
 
@@ -297,7 +297,7 @@ class RgbRepository:
                 fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
             )
             wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
+            if wallet_service is not None and not colored_wallet.is_multisig:
                 wallet_service.add_psbt(psbt, purpose='inflate_asset')
             return psbt
 
@@ -339,14 +339,13 @@ class RgbRepository:
 
     @staticmethod
     @auto_sync_multisig()
-    def post_inflation(signed_psbt: str, asset_id: str, amount: int) -> None:
+    def post_inflation(signed_psbt: str, asset_id: str) -> None:
         """Post the signed inflation PSBT to the multisig bridge."""
         with repository_custom_context():
             colored_wallet.wallet.post_inflation(
                 online=colored_wallet.online,
                 signed_psbt=signed_psbt,
                 asset_id=asset_id,
-                amount=amount,
             )
 
     @staticmethod
@@ -374,10 +373,17 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def get_last_synced_operation_idx() -> int:
-        """Get the last synced operation index."""
+    def get_my_last_synced_operation_idx() -> int:
+        """Get our wallet's last synced operation index (multisig bridge context)."""
         with repository_custom_context():
-            data: int = colored_wallet.wallet.get_last_synced_operation_idx()
+            data: int = colored_wallet.wallet.get_my_last_synced_operation_idx()
+            return data
+
+    @staticmethod
+    def get_bridge_last_operation_idx() -> int:
+        """Get the bridge's last operation index (authoritative source)."""
+        with repository_custom_context():
+            data: int = colored_wallet.wallet.get_bridge_last_operation_idx()
             return data
 
     @staticmethod

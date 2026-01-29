@@ -28,10 +28,13 @@ from src.model.rgb_model import CreateUtxosRequestModel
 @pytest.fixture
 def mock_wallet():
     """Fixture for mocking the colored wallet"""
-    with patch('src.data.repository.btc_repository.colored_wallet') as mock_colored_wallet:
+    with patch('src.data.repository.btc_repository.colored_wallet') as mock_colored_wallet, \
+            patch('src.utils.decorators.auto_sync_multisig.colored_wallet') as mock_decorator_wallet:
         mock_wallet = MagicMock()
         mock_colored_wallet.wallet = mock_wallet
         mock_colored_wallet.online = True
+        # Disable multisig sync in decorator to avoid sync_with_bridge calls during tests
+        mock_decorator_wallet.is_multisig = False
         yield mock_wallet
 
 

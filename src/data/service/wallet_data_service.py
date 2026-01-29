@@ -151,6 +151,16 @@ class WalletDataService:
             created_at INTEGER
         )
         """
+        create_draft_transfer_table_query = """
+        CREATE TABLE IF NOT EXISTS draft_transfer (
+            asset_id TEXT PRIMARY KEY,
+            recipient_id TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            fee_rate INTEGER NOT NULL,
+            min_confirmation INTEGER NOT NULL,
+            created_at INTEGER
+        )
+        """
         with self._db_lock:
             try:
                 with self.conn:
@@ -158,6 +168,7 @@ class WalletDataService:
                     self.conn.execute(create_psbt_table_query)
                     self.conn.execute(create_draft_issue_asset_table_query)
                     self.conn.execute(create_ifa_secondary_draft_table_query)
+                    self.conn.execute(create_draft_transfer_table_query)
             except sqlite3.Error as exc:
                 logger.error(
                     'Exception occur in wallet-data: %s, Message: %s', type(
@@ -230,6 +241,69 @@ class WalletDataService:
                 'WalletDataService: failed to refresh wallet-data: %s', exc,
             )
             raise
+
+    def upsert_draft_transfer(self, asset_id: str, recipient_id: str, amount: int, fee_rate: float, min_confirmation: int) -> None:
+        """Insert or replace a draft transfer row."""
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
+            return
+        with self._db_lock:
+            try:
+                with self.conn:
+                    self.conn.execute(
+                        'INSERT OR REPLACE INTO draft_transfer (asset_id, recipient_id, amount, fee_rate, min_confirmation) VALUES (?, ?, ?, ?, ?)',
+                        (asset_id, recipient_id, amount, fee_rate, min_confirmation),
+                    )
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: upsert_draft_transfer failed: %s', exc,
+                )
+                raise
+
+    def get_draft_transfer(self, asset_id: str) -> dict | None:
+        """Get a draft transfer by asset ID."""
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
+            return None
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(
+                    'SELECT asset_id, recipient_id, amount, fee_rate, min_confirmation FROM draft_transfer WHERE asset_id = ?',
+                    (asset_id,),
+                )
+                r = cur.fetchone()
+                if not r:
+                    return None
+                return {
+                    'asset_id': r[0],
+                    'recipient_id': r[1],
+                    'amount': int(r[2]),
+                    'fee_rate': float(r[3]),
+                    'min_confirmation': int(r[4]),
+                }
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: get_draft_transfer failed: %s', exc,
+                )
+                raise
+
+    def delete_draft_transfer(self, asset_id: str) -> bool:
+        """Delete a draft transfer by asset ID."""
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
+            return False
+        with self._db_lock:
+            try:
+                with self.conn:
+                    cur = self.conn.execute(
+                        'DELETE FROM draft_transfer WHERE asset_id = ?', (
+                            asset_id,
+                        ),
+                    )
+                return cur.rowcount > 0
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: delete_draft_transfer failed: %s', exc,
+                )
+                raise
 
     def upsert_draft_issue_asset(self, issue_asset_draft_model: IssueAssetDraftModel) -> None:
         """Insert or replace a draft issue asset row."""

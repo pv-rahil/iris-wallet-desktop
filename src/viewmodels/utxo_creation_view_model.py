@@ -23,9 +23,9 @@ from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import NO_OF_UTXO
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
-from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
 from src.views.components.toast import ToastManager
@@ -78,7 +78,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     def on_utxo_begin_done(self, unsigned_psbt):
         """Callback when unsigned PSBT is created. Updates dialog and starts signing process."""
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
-        SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET or self._is_multisig():
+                SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET or self._is_multisig():
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
@@ -174,7 +174,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             'Exception occurred while utxo operation: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET:
+        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET and not self._is_multisig():
             description = error.message if isinstance(
                 error, CommonException,
             ) else ERROR_SOMETHING_WENT_WRONG

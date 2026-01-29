@@ -30,11 +30,14 @@ class BtcRepository:
     def get_address() -> AddressResponseModel:
         """Get a Bitcoin address."""
         with repository_custom_context():
-            online_kwargs = {'online': colored_wallet.online} if colored_wallet.is_multisig else {}
+            online_kwargs = {
+                'online': colored_wallet.online,
+            } if colored_wallet.is_multisig else {}
             data = colored_wallet.wallet.get_address(**online_kwargs)
             return AddressResponseModel(address=data)
 
     @staticmethod
+    @auto_sync_multisig(before=True, after=True)
     def get_btc_balance() -> BalanceResponseModel:
         """Get Bitcoin balance."""
         with repository_custom_context():
@@ -48,6 +51,7 @@ class BtcRepository:
             )
 
     @staticmethod
+    @auto_sync_multisig(before=True, after=True)
     def list_transactions() -> TransactionListResponse:
         """List Bitcoin transactions."""
         with repository_custom_context():
@@ -158,7 +162,6 @@ class BtcRepository:
                 online=colored_wallet.online,
                 psbt=signed_psbt,
             )
-            print('---------',data)
             return data
 
     @staticmethod

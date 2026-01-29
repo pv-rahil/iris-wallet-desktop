@@ -353,32 +353,33 @@ def build_keys_from_data(
 ) -> SinglesigKeys | MultisigKeys:
     """Build SinglesigKeys or MultisigKeys based on wallet signature type."""
     is_multisig = (
-        SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+        SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
     )
-    
+
     if is_multisig:
         # Build MultisigKeys
         m, n = SettingRepository.get_multisig_config()
         if not m or not n:
             raise CommonException('Multisig configuration not set.')
-        
+
         # Retrieve stored cosigners (cosigners 2, 3, ..., N)
         cosigners_data = SettingRepository.get_cosigners()
         if len(cosigners_data) != (n - 1):
             raise CommonException(
-                f'Expected {n-1} cosigners, found {len(cosigners_data)}.'
+                f'Expected {n-1} cosigners, found {len(cosigners_data)}.',
             )
-        
+
         # Build cosigners list: start with self (cosigner 1)
         cosigners = [
             CosignerData(
                 account_xpub_vanilla=account_xpub_vanilla,
                 account_xpub_colored=account_xpub_colored,
                 vanilla_keychain=vanilla_keychain,
-                master_fingerprint=master_fingerprint
-            )
+                master_fingerprint=master_fingerprint,
+            ),
         ]
-        
+
         # Add other cosigners from stored data
         for c in cosigners_data:
             cosigners.append(
@@ -386,21 +387,21 @@ def build_keys_from_data(
                     account_xpub_vanilla=c[ACCOUNT_XPUB_VANILLA],
                     account_xpub_colored=c[ACCOUNT_XPUB_COLORED],
                     vanilla_keychain=c.get('vanilla_keychain'),
-                    master_fingerprint=c[MASTER_FINGERPRINT]
-                )
+                    master_fingerprint=c[MASTER_FINGERPRINT],
+                ),
             )
-        
+
         return MultisigKeys(
             cosigners=cosigners,
             threshold_colored=m,
             threshold_vanilla=m,
         )
-    else:
-        # Build SinglesigKeys
-        return SinglesigKeys(
-            mnemonic=mnemonic,
-            account_xpub_vanilla=account_xpub_vanilla,
-            account_xpub_colored=account_xpub_colored,
-            master_fingerprint=master_fingerprint,
-            vanilla_keychain=vanilla_keychain if vanilla_keychain is not None else 1
-        )
+
+    # Build SinglesigKeys
+    return SinglesigKeys(
+        mnemonic=mnemonic,
+        account_xpub_vanilla=account_xpub_vanilla,
+        account_xpub_colored=account_xpub_colored,
+        master_fingerprint=master_fingerprint,
+        vanilla_keychain=vanilla_keychain if vanilla_keychain is not None else 1,
+    )

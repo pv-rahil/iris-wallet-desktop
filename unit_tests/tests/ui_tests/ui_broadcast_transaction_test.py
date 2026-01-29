@@ -76,11 +76,15 @@ def widget_sign(qt_app, vm_mock, privileges_sign):
     """Provide a widget instance configured for sign-only mode."""
     with patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config') as cfg, \
             patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value=''), \
-            patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance') as get_hw:
+            patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance') as get_hw, \
+            patch('src.views.ui_broadcast_transaction.SettingRepository') as setting_repo:
         cfg.return_value = MagicMock(privileges=privileges_sign)
         hw = MagicMock()
         hw.isVisible.return_value = False
         get_hw.return_value = hw
+
+        # Force single-sig to test standard psbt loading flow
+        setting_repo.get_wallet_signature_type.return_value = 'SINGLE_SIG_WALLET'
 
         w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
         yield w

@@ -131,7 +131,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.send_button_clicked.emit(True)
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-        if is_hw and is_online or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTISIG:
+        if is_hw and is_online or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
@@ -165,7 +165,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
 
-        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTISIG:
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.run_in_thread(
                 CommonOperationRepository.sign_psbt,
                 {
@@ -205,16 +205,16 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         """Handle success of multisig post"""
         # Close the dialog
         self.hw_dialog_update.emit(None, PsbtStatus.SUCCESS)
-        
+
         ToastManager.success(INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
-        
+
         # Sync with bridge again as requested
         self.run_in_thread(
             RgbRepository.sync_with_bridge,
             {
                 'callback': lambda _: self._page_navigation.bitcoin_page(),
-                'error_callback': lambda _: self._page_navigation.bitcoin_page(), 
-            }
+                'error_callback': lambda _: self._page_navigation.bitcoin_page(),
+            },
         )
 
     def on_psbt_signed_and_finalized(self, finalized_psbt: str):
@@ -224,7 +224,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         """
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-        
+
         if is_hw and is_online:
             self.hw_dialog_update.emit(
                 INFO_TX_BROADCAST, PsbtStatus.BROADCASTING,

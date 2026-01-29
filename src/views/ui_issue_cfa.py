@@ -47,6 +47,7 @@ from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -538,7 +539,7 @@ class IssueCFAWidget(QWidget):
             cfa_hw_dialog.accept()
 
         # Notify and navigate
-        ToastManager.success('Operation posted to multisig bridge.')
+        ToastManager.success(INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
         self._view_model.page_navigation.collectibles_asset_page()
 
     def handle_cfa_utxo_created(self, status: bool):

@@ -25,6 +25,7 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.toast import ToastManager
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 
 
 class ReceiveRGBAssetWidget(QWidget):
@@ -128,7 +129,6 @@ class ReceiveRGBAssetWidget(QWidget):
             self.handle_psbt_posted_to_bridge,
         )
 
-
     def close_button_navigation(self):
         """
         Navigate to the specified page when the close button is clicked.
@@ -220,10 +220,9 @@ class ReceiveRGBAssetWidget(QWidget):
         dlg = HardwareWalletOperationDialog.get_instance(parent=self)
         if dlg.isVisible():
             dlg.accept()
-        
-        ToastManager.success('Operation posted to multisig bridge.')
-        self.close_button_navigation()
 
+        ToastManager.success(INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
+        self.close_button_navigation()
 
     def handle_receive_asset(self):
         """ handle receive asset"""

@@ -248,15 +248,14 @@ class RGBAssetTransactionDetail(QWidget):
         self.consignment_file_label.setMinimumSize(QSize(295, 40))
         self.consignment_file_label.setMaximumSize(QSize(295, 40))
 
-
         self.download_consignment_button = PrimaryButton()
         self.download_consignment_button.setFixedSize(QSize(150, 40))
 
         self.vertical_layout_tx_detail_frame.addWidget(
-            self.consignment_file_label
+            self.consignment_file_label,
         )
         self.vertical_layout_tx_detail_frame.addWidget(
-            self.download_consignment_button
+            self.download_consignment_button,
         )
 
         self.rgb_transaction_layout.addWidget(

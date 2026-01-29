@@ -22,7 +22,6 @@ from src.utils.constant import MASTER_XPUB
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
 from src.utils.constant import SIGNED_TXIDS
-from src.utils.custom_exception import CommonException
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.local_store import local_store
@@ -233,7 +232,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
                 filtered.append(op)
             except Exception as e:
-                logger.error(f"Error inspecting PSBT for filtering: {e}")
+                logger.error('Error inspecting PSBT for filtering: %s', e)
                 # Use safe fallback: include it if we can't verify
                 filtered.append(op)
 

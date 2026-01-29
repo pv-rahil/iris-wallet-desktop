@@ -50,12 +50,12 @@ from src.utils.helpers import load_stylesheet
 from src.utils.keyring_storage import get_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger
-from src.views.components.hw_device_selection_dialog import HWDeviceSelectionDialog
-from src.views.components.toast import ToastManager
-
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.wallet_credential_encryption import mnemonic_store
-from src.views.components.buttons import PrimaryButton, SecondaryButton
+from src.views.components.buttons import PrimaryButton
+from src.views.components.buttons import SecondaryButton
+from src.views.components.hw_device_selection_dialog import HWDeviceSelectionDialog
+from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -75,7 +75,7 @@ class CosignerDetailCard(ClickableFrame):
         self.string_input = None
         self.import_btn = None
         self.content_widget = None
-        
+
         # Data storage for validation
         self.vanilla_xpub_str = None
         self.colored_xpub_str = None
@@ -269,6 +269,7 @@ class CosignerDetailCard(ClickableFrame):
         layout.addLayout(input_container)
 
         return layout, inp
+
 
 class MultisigSetupPage(QWidget):
     """UI-only Multisig setup page (card), no business logic.
@@ -536,7 +537,6 @@ class MultisigSetupPage(QWidget):
         self.row4.addLayout(self.master_xpub_display)
         self.r_v.addLayout(self.row4)
 
-
         # Row 5: Cosigner string (new)
         self.row5 = QHBoxLayout()
         self.row5.setContentsMargins(0, 0, 0, 0)
@@ -759,32 +759,33 @@ class MultisigSetupPage(QWidget):
         self._threshold_locked = True
 
         SettingRepository.set_multisig_config(m, n)
-        
+
         # Check for hardware wallet type
-        is_hardware_wallet = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+        is_hardware_wallet = SettingRepository.get_key_storage_type(
+        ) == KeyStorageType.HARDWARE_WALLET
 
         # Generate wallet keys for non-watch-only wallets
         if not self._is_watch_only:
             try:
                 if is_hardware_wallet:
-                     # Hardware Wallet Flow: Connect and fetch xpubs
-                     dialog = HWDeviceSelectionDialog(
-                         wallet_type='Ledger',  # Defaulting to Ledger as per current support
-                         parent=self, 
-                         is_multisig=True,
-                     )
-                     if dialog.exec():
-                         # Success: local_store is updated by the viewmodel used in dialog
-                         # We can proceed. The mnemonic key won't be set/needed.
-                         print('Hardware wallet connected and keys fetched.')
-                     else:
-                         # User cancelled or failed
-                         # Re-enable inputs
-                         self.required_signer_input.setEnabled(True)
-                         self.total_signer_input.setEnabled(True)
-                         self._threshold_locked = False
-                         SettingRepository.set_multisig_config(None, None)
-                         return
+                    # Hardware Wallet Flow: Connect and fetch xpubs
+                    dialog = HWDeviceSelectionDialog(
+                        wallet_type='Ledger',  # Defaulting to Ledger as per current support
+                        parent=self,
+                        is_multisig=True,
+                    )
+                    if dialog.exec():
+                        # Success: local_store is updated by the viewmodel used in dialog
+                        # We can proceed. The mnemonic key won't be set/needed.
+                        print('Hardware wallet connected and keys fetched.')
+                    else:
+                        # User cancelled or failed
+                        # Re-enable inputs
+                        self.required_signer_input.setEnabled(True)
+                        self.total_signer_input.setEnabled(True)
+                        self._threshold_locked = False
+                        SettingRepository.set_multisig_config(None, None)
+                        return
 
                 # Check if mnemonic file already exists (keys already generated)
                 elif os.path.exists(app_paths.mnemonic_file_path):
@@ -871,7 +872,9 @@ class MultisigSetupPage(QWidget):
 
         wallet_detail_label = QLabel()
         wallet_detail_label.setObjectName('ms_label')
-        wallet_detail_label.setText(title[:-1] if title.endswith(':') else title)
+        wallet_detail_label.setText(
+            title[:-1] if title.endswith(':') else title,
+        )
         label_layout.addWidget(wallet_detail_label)
 
         if info_text:
@@ -904,7 +907,7 @@ class MultisigSetupPage(QWidget):
         if show_copy_btn:
             # tailored style for input when copy button is adjacent
             wallet_detail_input.setStyleSheet(
-                "border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+                'border-top-right-radius: 0px; border-bottom-right-radius: 0px;',
             )
             copy_btn = QPushButton()
             copy_btn.setObjectName('copy_button')
@@ -921,6 +924,7 @@ class MultisigSetupPage(QWidget):
         return wallet_detail_grid_layout, wallet_detail_input, copy_btn
 
     def _go_next(self):
+        self.continue_button.setEnabled(False)  # Debounce
         if self._current_step == 1:
             self._on_confirm_threshold()
             self.threshold_frame.hide()
@@ -1108,6 +1112,12 @@ class MultisigSetupPage(QWidget):
             self._current_step = 2
             self.card.setMinimumSize(QSize(770, 670))
             self.card.setMaximumSize(QSize(770, 670))
+            self._update_continue_enabled()
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                ),
+            )
 
     def _get_required_signer(self) -> int:
         try:
@@ -1200,7 +1210,7 @@ class MultisigSetupPage(QWidget):
             row_w.vanilla_xpub_input.clear()
             row_w.colored_xpub_input.clear()
             row_w.keychain_input.clear()
-            
+
             # Ensure input is unlocked
             row_w.string_input.setReadOnly(False)
             row_w.import_btn.setVisible(True)
@@ -1288,7 +1298,7 @@ class MultisigSetupPage(QWidget):
                     # Case 1: XPUB is parsed and set
                     # Check for duplicates
                     if xpub_str in seen:
-                        card.show_error("Duplicate Cosigner")
+                        card.show_error('Duplicate Cosigner')
                         any_duplicates = True
                         all_valid = False
                     else:
@@ -1296,10 +1306,10 @@ class MultisigSetupPage(QWidget):
                 else:
                     # Case 2: XPUB is NOT set (empty or invalid parse)
                     all_filled = False
-                    
+
                     # If string input has text but xpub is None -> Invalid Parse
                     if card.string_input.text().strip():
-                        card.show_error("Invalid cosigner details")
+                        card.show_error('Invalid cosigner details')
                         all_valid = False
                         # If invalid, it's also not filled correctly, so all_filled=False stands
 
@@ -1381,7 +1391,7 @@ class MultisigSetupPage(QWidget):
     def _import_cosigner_from_file(self, target_card):
         """Import cosigner string from a text file."""
         downloads_dir = QStandardPaths.writableLocation(
-            QStandardPaths.DownloadLocation
+            QStandardPaths.DownloadLocation,
         )
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -1397,7 +1407,7 @@ class MultisigSetupPage(QWidget):
 
                 # Set the text in the input field (which will trigger parsing)
                 target_card.string_input.setText(cosigner_string)
-                
+
                 # Auto-expand if collapsed
                 if not target_card.is_expanded:
                     target_card.toggle_content()

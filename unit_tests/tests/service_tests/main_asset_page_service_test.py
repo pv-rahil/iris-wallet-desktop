@@ -12,6 +12,7 @@ from src.data.service.main_asset_page_service import MainAssetPageDataService
 from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import FilterAssetRequestModel
+from src.model.rgb_model import GetAssetResponseModel
 from src.model.setting_model import IsHideExhaustedAssetEnabled
 from unit_tests.repository_fixture.btc_repository_mock import mock_get_btc_balance
 from unit_tests.repository_fixture.rgb_repository_mock import mock_get_asset
@@ -97,11 +98,9 @@ def test_get_assets(
 @patch('src.data.service.main_asset_page_service.RgbRepository.get_assets')
 def test_get_all_assets_flattens_and_handles_none(mock_get_assets):
     """get_all_assets should flatten lists and handle None gracefully."""
-    from src.model.rgb_model import GetAssetResponseModel
     # Build a response with mixed lists and None
     response = MagicMock(spec=GetAssetResponseModel)
     a1 = MagicMock(asset_id='n1')
-    a2 = MagicMock(asset_id='c1')
     a3 = MagicMock(asset_id='u1')
     a4 = MagicMock(asset_id='i1')
     response.nia = [a1]

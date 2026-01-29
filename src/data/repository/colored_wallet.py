@@ -91,7 +91,7 @@ class ColoredWallet:
                 if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
                     token = generate_and_store_token()
                     self.online_wallet = self._wallet.go_online(
-                        False,indexer_url, MULTISIG_BRIDGE_URL, token,
+                        False, indexer_url, MULTISIG_BRIDGE_URL, token,
                     )
                 else:
                     self.online_wallet = self._wallet.go_online(

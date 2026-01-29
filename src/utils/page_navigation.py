@@ -328,9 +328,13 @@ class PageNavigation:
         }
         self.navigate_and_toggle(False)
 
-    def send_cfa_page(self):
+    def send_cfa_page(self, draft_data=None):
         """This method display the send CFA page."""
-        self.navigate_to_page('SendCFA')
+        self.current_stack = {
+            'name': 'SendCFA',
+            'widget': self.pages['SendCFA'](self._ui.view_model, draft_data),
+        }
+        self.navigate_and_toggle(False)
 
     def receive_cfa_page(self, params):
         """This method display the receive CFA asset page."""

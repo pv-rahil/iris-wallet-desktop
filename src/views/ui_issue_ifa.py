@@ -61,6 +61,7 @@ from src.views.components.buttons import PrimaryButton
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 
 
 class IssueIFAWidget(QWidget):
@@ -1011,7 +1012,7 @@ class IssueIFAWidget(QWidget):
             ifa_hw_dialog.accept()
 
         # Notify and navigate
-        ToastManager.success('Operation posted to multisig bridge.')
+        ToastManager.success(INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
         self._view_model.page_navigation.inflatable_asset_page()
 
     def handle_ifa_utxo_created(self, status: bool):

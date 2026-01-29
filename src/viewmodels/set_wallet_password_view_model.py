@@ -33,7 +33,6 @@ from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.handle_exception import CommonException
-from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
 from src.utils.logging import logger

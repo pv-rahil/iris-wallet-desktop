@@ -15,10 +15,10 @@ from rgb_lib import AssetUda
 from rgb_lib import Assignment
 from rgb_lib import Balance
 from rgb_lib import Invoice
+from rgb_lib import OperationResult
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import Transfer
-from rgb_lib import OperationResult
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel

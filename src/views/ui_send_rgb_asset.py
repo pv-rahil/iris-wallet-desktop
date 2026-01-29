@@ -26,6 +26,7 @@ from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.setting_model import DefaultFeeRate
@@ -40,12 +41,13 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.send_asset import SendAssetWidget
 from src.views.components.toast import ToastManager
+from src.data.service.wallet_data_service import WalletDataService
 
 
 class SendRGBAssetWidget(QWidget):
     """This class represents all the UI elements of the send RGB assets page."""
 
-    def __init__(self, view_model):
+    def __init__(self, view_model, draft_data=None):
         self.render_timer = RenderTimer(task_name='RGBSendAsset Rendering')
         super().__init__()
         self._view_model: MainViewModel = view_model
@@ -64,12 +66,22 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_asset_page.fee_rate_value.setText(
             str(self.value_of_default_fee_rate.fee_rate),
         )
+        if draft_data:
+            recipient = draft_data.get('recipient_id')
+            amount = draft_data.get('amount')
+            if recipient:
+                self.send_rgb_asset_page.asset_address_input.setText(recipient)
+            if amount:
+                self.send_rgb_asset_page.amount_input.setText(f"{amount:,}")
+
         key_storage_type = SettingRepository.get_key_storage_type()
         self.is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
         self.is_online_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.ONLINE_TYPE_WALLET
         self.is_watch_only = SettingRepository.get_wallet_access_type(
         ) == WalletAccessType.WATCH_ONLY
+        self.is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         self._hw_operation_dialog = None
         self._retry_after_utxo = False
 
@@ -136,6 +148,12 @@ class SendRGBAssetWidget(QWidget):
         self._view_model.utxo_creation_view_model.utxo_created.connect(
             self._on_utxo_created_and_retry,
         )
+        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.connect(
+            self._on_utxo_posted_to_bridge,
+        )
+        self._view_model.cfa_view_model.post_to_bridge.connect(
+            self._on_post_to_bridge,
+        )
 
     def refresh_asset(self):
         """This method handle the refresh asset on send asset page"""
@@ -188,7 +206,7 @@ class SendRGBAssetWidget(QWidget):
                 amount=int(amount),
             )
             try:
-                if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only:
+                if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only or self.is_multisig:
                     self._view_model.cfa_view_model.send_begin(
                         decoded_rgb_invoice.recipient_id, decoded_rgb_invoice.transport_endpoints, fee_rate, default_min_confirmation.min_confirmation,
                         assignment,
@@ -386,22 +404,39 @@ class SendRGBAssetWidget(QWidget):
         )
         if dialog_type == PsbtStatus.ERROR and message:
             if ('NoAvailableUtxos' in message) or (ERROR_NOT_ENOUGH_UNCOLORED in message):
+                # Save draft transfer if UTXOs missing, to avoid manual re-entry
+                try:
+                    amount_str = self.send_rgb_asset_page.amount_input.text().replace(
+                        ',', '',
+                    )
+                    amount = int(amount_str) if amount_str else 0
+                    WalletDataService.get_session().upsert_draft_transfer(
+                        asset_id=self.asset_id,
+                        recipient_id=self.send_rgb_asset_page.asset_address_input.text(),
+                        amount=amount,
+                        fee_rate=SettingCardRepository.get_default_fee_rate().fee_rate,
+                        min_confirmation=SettingRepository.get_min_confirmation().min_confirmation,
+                    )
+                except Exception as e:
+                    print(f"Failed to save draft: {e}")
+
                 # Ask user to open correct Bitcoin app before UTXO creation
-                network = SettingRepository.get_wallet_network()
-                expected_btc_app = 'Bitcoin' if network == NetworkEnumModel.MAINNET else 'Bitcoin Test'
-                guidance_msg = f"Please open '{
-                    expected_btc_app
-                }' on your Ledger and click Continue."
-                # Configure dialog as a blocking confirmation
-                self.send_rgb_hw_dialog.set_loading(guidance_msg)
-                self.send_rgb_hw_dialog.done_button.setText('Continue')
-                self.send_rgb_hw_dialog.done_button.setVisible(True)
-                self.send_rgb_hw_dialog.cancel_button.setVisible(True)
-                if not self.send_rgb_hw_dialog.isVisible():
-                    self.send_rgb_hw_dialog.show()
-                result = self.send_rgb_hw_dialog.exec()
-                if result != QDialog.Accepted:
-                    return
+                if self.is_hardware_wallet:
+                    network = SettingRepository.get_wallet_network()
+                    expected_btc_app = 'Bitcoin' if network == NetworkEnumModel.MAINNET else 'Bitcoin Test'
+                    guidance_msg = f"Please open '{
+                        expected_btc_app
+                    }' on your Ledger and click Continue."
+                    # Configure dialog as a blocking confirmation
+                    self.send_rgb_hw_dialog.set_loading(guidance_msg)
+                    self.send_rgb_hw_dialog.done_button.setText('Continue')
+                    self.send_rgb_hw_dialog.done_button.setVisible(True)
+                    self.send_rgb_hw_dialog.cancel_button.setVisible(True)
+                    if not self.send_rgb_hw_dialog.isVisible():
+                        self.send_rgb_hw_dialog.show()
+                    result = self.send_rgb_hw_dialog.exec()
+                    if result != QDialog.Accepted:
+                        return
                 self._retry_after_utxo = True
                 self._view_model.utxo_creation_view_model.create_utxos_begin(
                     purpose='send_rgb',
@@ -457,3 +492,24 @@ class SendRGBAssetWidget(QWidget):
             if result != QDialog.Accepted:
                 return
         self.send_rgb_asset_button()
+
+    def _on_utxo_posted_to_bridge(self):
+        """Handle signal when UTXO creation PSBT is posted to bridge (Multisig)."""
+        if self.send_rgb_hw_dialog:
+            self.send_rgb_hw_dialog.accept()
+
+        msg = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'utxo_creation_psbt_posted',
+        )
+        if 'utxo_creation_psbt_posted' in msg:
+            msg = "UTXO Creation PSBT posted to multisig bridge. Please sign and broadcast it before sending asset."
+
+        ToastManager.success(description=msg)
+        # Redirect users back to the asset page (fungible/collectible list)
+        self.rgb_asset_page_navigation()
+
+    def _on_post_to_bridge(self):
+        """Handle signal when PSBT is posted to bridge (Multisig)."""
+        if self.send_rgb_hw_dialog:
+            self.send_rgb_hw_dialog.accept()

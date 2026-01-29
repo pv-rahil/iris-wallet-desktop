@@ -2344,5 +2344,25 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>reject</source>
         <translation>Reject</translation>
     </message>
+    <message>
+        <source>min_confirmations</source>
+        <translation>Min Confirmations</translation>
+    </message>
+    <message>
+        <source>entropy</source>
+        <translation>Entropy</translation>
+    </message>
+    <message>
+        <source>is_donation</source>
+        <translation>Donation</translation>
+    </message>
+    <message>
+        <source>consignment_paths</source>
+        <translation>Consignment Paths</translation>
+    </message>
+    <message>
+        <source>min_conf_abbr</source>
+        <translation>Min Conf.</translation>
+    </message>
 </context>
 </TS>

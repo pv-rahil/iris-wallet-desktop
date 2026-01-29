@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes, too-many-statements, too-many-branches
+# pylint: disable=too-many-instance-attributes, too-many-statements, too-many-branches, too-many-lines
 """
 Widget for broadcasting signed transactions (PSBTs) in the application.
 """
@@ -84,6 +84,7 @@ class BroadcastTransactionWidget(QWidget):
         self.min_psbt_len = 80
         self.is_initiator_of_pending = False
         self.is_psbt_validated = False  # Strict validation flag
+        self._current_operation = None
 
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
@@ -282,55 +283,82 @@ class BroadcastTransactionWidget(QWidget):
             self.horizontal_layout_1,
         )
 
-        # Inspection Details Frame (Multisig only)
+        # Inspection Details Frame (Multisig only): Show only TXID and Amount
         if self.is_multisig:
             self.inspection_frame = QFrame(self.broadcast_transaction_widget)
             self.inspection_frame.setObjectName('inspection_frame')
             self.inspection_frame.setFrameShape(QFrame.StyledPanel)
             self.inspection_frame.setFrameShadow(QFrame.Raised)
-            self.inspection_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-            self.inspection_frame.hide()  # Initially hidden
+            self.inspection_frame.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
+            )
+            self.inspection_frame.hide()
 
             self.inspect_layout = QVBoxLayout(self.inspection_frame)
             self.inspect_layout.setContentsMargins(10, 10, 10, 10)
             self.inspect_layout.setSpacing(5)
             self.inspect_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-            # Detail Rows
             def create_detail_row(label_text, value_id):
                 row_layout = QHBoxLayout()
                 row_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
                 lbl = QLabel(label_text, self.inspection_frame)
-                lbl.setStyleSheet('color: #b0b0b0;')  # Dimmer text for label
+                lbl.setStyleSheet('color: #b0b0b0;')
                 val = QLabel(self.inspection_frame)
                 val.setObjectName(value_id)
                 val.setWordWrap(True)
                 val.setStyleSheet('color: white; font-weight: bold;')
-                # Align text within labels to the top-left
-                lbl.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-                val.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-                # Ensure the value label can take remaining width and wrap
-                lbl.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
-                val.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                lbl.setAlignment(
+                    Qt.AlignmentFlag.AlignTop |
+                    Qt.AlignmentFlag.AlignLeft,
+                )
+                val.setAlignment(
+                    Qt.AlignmentFlag.AlignTop |
+                    Qt.AlignmentFlag.AlignLeft,
+                )
+                lbl.setSizePolicy(
+                    QSizePolicy.Policy.Minimum,
+                    QSizePolicy.Policy.Preferred,
+                )
+                val.setSizePolicy(
+                    QSizePolicy.Policy.Expanding,
+                    QSizePolicy.Policy.Preferred,
+                )
                 val.setMinimumWidth(0)
                 row_layout.addWidget(lbl)
                 row_layout.addWidget(val)
-                # Give the value column priority for space to allow wrapping
                 row_layout.setStretch(0, 0)
                 row_layout.setStretch(1, 1)
-                return row_layout, val
-            row_txid, self.val_txid = create_detail_row(
+                return row_layout, lbl, val
+
+            row_txid, self.lbl_txid, self.val_txid = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_id_label',
                 ), 'val_txid',
             )
             self.inspect_layout.addLayout(row_txid)
-            # Make long values user-selectable
             self.val_txid.setTextInteractionFlags(Qt.TextSelectableByMouse)
             self.val_txid.setTextFormat(Qt.TextFormat.RichText)
 
-            # Amount (Sent)
-            row_amt, self.val_amount = create_detail_row(
+            # Asset ID (for multisig RGB operations like inflation)
+            row_asset, self.lbl_asset_id, self.val_asset_id = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_id_label',
+                ), 'val_asset_id',
+            )
+            self.inspect_layout.addLayout(row_asset)
+            self.val_asset_id.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            self.val_asset_id.setTextFormat(Qt.TextFormat.RichText)
+
+            # Inflation Amount (units) for IFA secondary issuance
+            row_infl_amt, self.lbl_inflation_amount, self.val_inflation_amount = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation_amount_label',
+                ), 'val_inflation_amount',
+            )
+            self.inspect_layout.addLayout(row_infl_amt)
+
+            row_amt, self.lbl_amount, self.val_amount = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'amount_to_send_label',
                 ), 'val_amount',
@@ -338,38 +366,32 @@ class BroadcastTransactionWidget(QWidget):
             self.inspect_layout.addLayout(row_amt)
 
             # Destination
-            row_dest, self.val_destination = create_detail_row(
+            row_dest, self.lbl_destination, self.val_destination = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'destination_label',
                 ), 'val_destination',
             )
             self.inspect_layout.addLayout(row_dest)
-            self.val_destination.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            self.val_destination.setTextInteractionFlags(
+                Qt.TextSelectableByMouse,
+            )
             self.val_destination.setTextFormat(Qt.TextFormat.RichText)
 
             # Fee
-            row_fee, self.val_fee = create_detail_row(
+            row_fee, self.lbl_fee, self.val_fee = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fee_sats_label',
                 ), 'val_fee',
             )
             self.inspect_layout.addLayout(row_fee)
 
-            # Signature Count
-            row_sig, self.val_sigs = create_detail_row(
+            # Size
+            row_size, self.lbl_size, self.val_size = create_detail_row(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signatures_label',
-                ), 'val_sigs',
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'size_vbytes_label',
+                ), 'val_size',
             )
-            self.inspect_layout.addLayout(row_sig)
-
-            # RGB Transfer details (if available)
-            row_rgb, self.val_rgb = create_detail_row(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'rgb_transfer_label',
-                ), 'val_rgb_transfer',
-            )
-            self.inspect_layout.addLayout(row_rgb)
+            self.inspect_layout.addLayout(row_size)
 
             self.vertical_layout.addWidget(self.inspection_frame)
 
@@ -540,6 +562,10 @@ class BroadcastTransactionWidget(QWidget):
         # RGB transfer inspection result
         self.view_model.broadcast_transaction_view_model.rgb_transfer_inspection_ready.connect(
             self._handle_rgb_transfer_inspection_result,
+        )
+        # Connect pending operation result
+        self.view_model.broadcast_transaction_view_model.pending_operation_ready.connect(
+            self._on_pending_operation_ready,
         )
 
     def retranslate_ui(self):
@@ -737,8 +763,12 @@ class BroadcastTransactionWidget(QWidget):
             # Signer flow
             if self.is_multisig:
                 # Strict validation: must have input AND be validated by inspection
-                self.broadcast_button.setEnabled(has_input and self.is_psbt_validated)
-                self.btn_reject.setEnabled(has_input and self.is_psbt_validated)
+                self.broadcast_button.setEnabled(
+                    has_input and self.is_psbt_validated,
+                )
+                self.btn_reject.setEnabled(
+                    has_input and self.is_psbt_validated,
+                )
             else:
                 self.broadcast_button.setEnabled(has_input)
 
@@ -772,13 +802,19 @@ class BroadcastTransactionWidget(QWidget):
         """Reject the pending operation (NACK) without signing."""
         operation_idx = None
         if self.pending_operation:
-            operation_idx = getattr(self.pending_operation, 'operation_idx', None)
+            operation_idx = getattr(
+                self.pending_operation, 'operation_idx', None,
+            )
         if operation_idx is None and hasattr(self, '_current_operation'):
-            operation_idx = getattr(self._current_operation, 'operation_idx', None)
+            operation_idx = getattr(
+                self._current_operation, 'operation_idx', None,
+            )
         if operation_idx is None:
             ToastManager.error(description='Operation not found to reject')
             return
-        self.view_model.broadcast_transaction_view_model.respond_nack(operation_idx)
+        self.view_model.broadcast_transaction_view_model.respond_nack(
+            operation_idx,
+        )
 
     # ----- Multisig helpers -----
     def _update_signature_progress(self):
@@ -828,62 +864,91 @@ class BroadcastTransactionWidget(QWidget):
     def _handle_psbt_inspection_result(self, details):
         """Handle the async PSBT inspection result from the signal."""
         try:
-
+            print(f"PSBT Inspection Result: {details}")
             if details:
+                for output in details.outputs:
+                    print(f"Address: {output.address}")
+
                 self.inspection_frame.show()
                 # Mark validated
                 self.is_psbt_validated = True
                 self.handle_button_enable()
 
-                # LOGIC: Calculate simplified details
-                txid_text = str(getattr(details, 'txid', 'N/A'))
+                # LOGIC: Populate TXID, Amount (only if > 0), Destination (only if single), Fee, Size
+                txid_text = details.txid
                 self.val_txid.setText(self._breakable_html(txid_text, 8))
 
-                outputs = getattr(details, 'outputs', [])
-                # Exclude Mine AND OP_RETURN
+                outputs = details.outputs
                 external_outputs = [
-                    o for o in outputs 
-                    if not getattr(o, 'is_mine', False) and not getattr(o, 'is_op_return', False)
+                    o for o in outputs
+                    if not o.is_mine and not o.is_op_return
                 ]
 
-                # 1. Amount
-                if external_outputs:
-                    total_sent = sum(getattr(o, 'amount_sat', 0) for o in external_outputs)
+                # Amount: show only if > 0
+                total_sent = sum(o.amount_sat for o in external_outputs)
+                show_amount = total_sent > 0
+                self.lbl_amount.setVisible(show_amount)
+                self.val_amount.setVisible(show_amount)
+                if show_amount:
                     self.val_amount.setText(f"{total_sent:,} sats")
                 else:
-                    # All outputs are mine or op_return?
-                    self.val_amount.setText(
-                        QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'self_transfer',
-                        ),
-                    )
+                    self.val_amount.clear()
 
-                # 2. Destination
-                if len(external_outputs) == 1:
-                    addr = getattr(external_outputs[0], 'address', 'Unknown')
-                    addr_str = str(addr)
-                    self.val_destination.setText(self._breakable_html(addr_str, 6))
-                    self.val_destination.setToolTip(addr_str)
-                elif len(external_outputs) > 1:
-                    self.val_destination.setText(
-                        QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'recipients_count',
-                        ).format(len(external_outputs)),
-                    )
-                else:
-                    self.val_destination.setText(
-                        QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'internal_change',
-                        ),
-                    )
+                # Destination(s): show if there is at least one external recipient
+                if hasattr(self, 'lbl_destination') and hasattr(self, 'val_destination'):
+                    if len(external_outputs) >= 1:
+                        self.lbl_destination.setVisible(True)
+                        self.val_destination.setVisible(True)
+                        # Build multi-line display of recipients and amounts
+                        lines = []
+                        for o in external_outputs:
+                            addr = str(o.address)
+                            amt = getattr(o, 'amount_sat', None)
+                            amt_str = f"{amt:,} sats" if isinstance(amt, int) else ""
+                            lines.append(f"{addr}  —  {amt_str}")
+                        text = '\n'.join(lines)
+                        # Use breakable HTML for long addresses
+                        html_lines = [self._breakable_html(line, 6) for line in lines]
+                        self.val_destination.setText('<br/>'.join(html_lines))
+                        self.val_destination.setToolTip(text)
+                    else:
+                        self.lbl_destination.setVisible(False)
+                        self.val_destination.setVisible(False)
+                        self.val_destination.clear()
 
-                # 3. Fee & Signatures (Standard)
-                self.val_fee.setText(f"{getattr(details, 'fee_sat', 0):,} sats")
+                # Fee: show if available (>=0)
+                fee_sat = details.fee_sat
+                if hasattr(self, 'lbl_fee') and hasattr(self, 'val_fee'):
+                    if isinstance(fee_sat, int) and fee_sat >= 0:
+                        self.lbl_fee.setVisible(True)
+                        self.val_fee.setVisible(True)
+                        self.val_fee.setText(f"{fee_sat:,} sats")
+                    else:
+                        self.lbl_fee.setVisible(False)
+                        self.val_fee.setVisible(False)
+                        self.val_fee.clear()
 
-                sig_count = getattr(details, 'signature_count', 0)
-                self.val_sigs.setText(str(sig_count))
-                # Also update the main status chip
+                # Size: show if available
+                size_vbytes = details.size_vbytes
+                if hasattr(self, 'lbl_size') and hasattr(self, 'val_size'):
+                    if isinstance(size_vbytes, int) and size_vbytes > 0:
+                        self.lbl_size.setVisible(True)
+                        self.val_size.setVisible(True)
+                        self.val_size.setText(f"{size_vbytes} vB")
+                    else:
+                        self.lbl_size.setVisible(False)
+                        self.val_size.setVisible(False)
+                        self.val_size.clear()
+
+                # Update signature progress chip internally (no extra labels)
+                sig_count = details.signature_count
                 self._on_signature_count_ready(sig_count)
+
+                # TRIGGER BRIDGE SYNC to see if this PSBT matches a pending operation
+                # This enables us to get Rich Details (Entropy, Min Conf, Voting) from the bridge
+                if self.is_multisig:
+                    self.view_model.broadcast_transaction_view_model.fetch_pending_operation()
+
             else:
                 self.inspection_frame.hide()
                 self.is_psbt_validated = False
@@ -894,6 +959,32 @@ class BroadcastTransactionWidget(QWidget):
             self.is_psbt_validated = False
             self.handle_button_enable()
 
+    def _on_pending_operation_ready(self, op_info):
+        """
+        Callback when bridge sync returns a pending operation (or None).
+        We check if this operation matches the PSBT we are currently inspecting.
+        """
+        if not op_info:
+            return
+
+        current_psbt = self.broadcast_transaction_input.toPlainText().strip()
+        if not current_psbt:
+            return
+
+        operation = getattr(op_info, 'operation', None)
+        if not operation:
+            return
+
+        # Check if this operation's PSBT matches current input
+        op_psbt = getattr(operation, 'psbt', None)
+
+        # If strings match, we found our operation!
+        if op_psbt and op_psbt == current_psbt:
+            # Store it as if it was passed via navigation
+            self._current_operation = operation
+
+            # Use helper to enrich UI
+            self._update_ui_with_operation_details(operation, current_psbt)
 
     def _handle_rgb_transfer_inspection_result(self, rgb_details):
         """Handle the async RGB transfer inspection result from the signal."""
@@ -1093,15 +1184,17 @@ class BroadcastTransactionWidget(QWidget):
                 # Extract PSBT from the pending operation
                 op = self.pending_operation
                 # OperationInfo has operation field which contains the PSBT
-                operation = getattr(op, 'operation', None)
-                initiator_xpub = getattr(op, 'initiator_xpub', None)
+                operation = op.operation
+                initiator_xpub = op.initiator_xpub
                 local_xpub = local_store.get_value(MASTER_XPUB)
                 if initiator_xpub and local_xpub and initiator_xpub == local_xpub:
                     self.is_initiator_of_pending = True
 
                 if operation is not None:
-                    # Extract psbt from the operation
+                    # Extract details based on operation type
+                    # using getattr with default is safer/cleaner than hasattr for optional fields on variant types
                     psbt = getattr(operation, 'psbt', None)
+
                     if psbt:
                         self.method_selector_label.hide()
                         self.method_selector.hide()
@@ -1109,12 +1202,10 @@ class BroadcastTransactionWidget(QWidget):
                         self.broadcast_transaction_input.setReadOnly(True)
                         # Store operation info for later use (sign + post)
                         self._current_operation = op
-                        # If RGB consignment present, inspect transfer details as well
-                        consignment = getattr(operation, 'consignment', None)
-                        if consignment:
-                            self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
-                                consignment, psbt,
-                            )
+
+                        # Use helper to enrich UI
+                        self._update_ui_with_operation_details(operation, psbt)
+
                         # Show Reject for non-initiators reviewing
                         if not self.is_initiator_of_pending:
                             self.btn_reject.show()
@@ -1288,3 +1379,94 @@ class BroadcastTransactionWidget(QWidget):
 
         self.method_selector.currentIndexChanged.connect(on_index_changed)
         on_index_changed(0)
+
+    def _update_ui_with_operation_details(self, operation, psbt_str):
+        """Helper to update UI with rich details from an Operation object."""
+        # Ensure we have the unwrapped operation
+
+        op_details = getattr(operation, 'details', None)
+
+        min_confirmations = None
+        consignment_paths = None
+        entropy = None
+        is_donation = None
+        asset_id = None
+        infl_amount = None
+
+        if op_details:
+            min_confirmations = getattr(op_details, 'min_confirmations', None)
+            consignment_paths = getattr(op_details, 'consignment_paths', None)
+            entropy = getattr(op_details, 'entropy', None)
+            is_donation = getattr(op_details, 'is_donation', None)
+            asset_id = getattr(op_details, 'asset_id', None)
+            infl_amount = getattr(op_details, 'amount', None)
+
+        # Update RGB Inspection
+        if consignment_paths:
+            self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
+                consignment_paths, psbt_str, entropy,
+            )
+
+        # Update Text Details
+        rgb_info_parts = []
+        if hasattr(self, 'val_rgb') and self.val_rgb.text():
+            rgb_info_parts.append(self.val_rgb.text())
+
+        # Avoid duplication if re-running
+        current_text = self.val_rgb.text() if hasattr(self, 'val_rgb') else ''
+
+        extras = []
+        if min_confirmations is not None:
+            label = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'min_confirmations',
+            )
+            extras.append(f"{label}: {min_confirmations}")
+        if entropy is not None:
+            label = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'entropy',
+            )
+            extras.append(f"{label}: {entropy}")
+        if is_donation is not None:
+            label = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'is_donation',
+            )
+            val_str = 'Yes' if is_donation else 'No'
+            extras.append(f"{label}: {val_str}")
+
+        if extras:
+            new_lines = [line for line in extras if line not in current_text]
+            if new_lines:
+                full_text = current_text + '\n' + \
+                    '\n'.join(new_lines) if current_text else '\n'.join(
+                        new_lines,
+                    )
+                if hasattr(self, 'val_rgb'):
+                    self.val_rgb.setText(full_text)
+                    self.val_rgb.setToolTip(full_text)
+                if hasattr(self, 'inspection_frame'):
+                    self.inspection_frame.show()
+
+        # Populate Asset ID and Inflation Amount fields when available
+        try:
+            if hasattr(self, 'lbl_asset_id') and hasattr(self, 'val_asset_id'):
+                if asset_id:
+                    self.lbl_asset_id.setVisible(True)
+                    self.val_asset_id.setVisible(True)
+                    self.val_asset_id.setText(self._breakable_html(str(asset_id), 8))
+                    self.val_asset_id.setToolTip(str(asset_id))
+                else:
+                    self.lbl_asset_id.setVisible(False)
+                    self.val_asset_id.setVisible(False)
+                    self.val_asset_id.clear()
+
+            if hasattr(self, 'lbl_inflation_amount') and hasattr(self, 'val_inflation_amount'):
+                if isinstance(infl_amount, int) and infl_amount >= 0:
+                    self.lbl_inflation_amount.setVisible(True)
+                    self.val_inflation_amount.setVisible(True)
+                    self.val_inflation_amount.setText(f"{infl_amount:,}")
+                else:
+                    self.lbl_inflation_amount.setVisible(False)
+                    self.val_inflation_amount.setVisible(False)
+                    self.val_inflation_amount.clear()
+        except Exception:
+            pass

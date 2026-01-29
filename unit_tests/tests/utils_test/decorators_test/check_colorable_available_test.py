@@ -163,7 +163,9 @@ def test_decorator_gating_on_insufficient_slots_raises_no_available(mock_key, mo
     mock_access.return_value = WalletAccessType.WATCH_ONLY
 
     # Method raises InsufficientAllocationSlots
-    mock_method = MagicMock(side_effect=RgbLibError.InsufficientAllocationSlots())
+    mock_method = MagicMock(
+        side_effect=RgbLibError.InsufficientAllocationSlots(),
+    )
 
     @check_colorable_available()
     def decorated_method():

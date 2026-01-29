@@ -7,8 +7,6 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
-from rgb_lib import BitcoinNetwork
-from rgb_lib import rgb_lib
 
 import src.flavour as bitcoin_network
 from src.data.repository.common_operations_repository import CommonOperationRepository

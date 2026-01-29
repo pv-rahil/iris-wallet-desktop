@@ -1356,7 +1356,9 @@ def test_set_wallet_signature_type_success(mock_local_store):
     from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.get_value.return_value = WalletSignatureType.STANDARD_TYPE_WALLET.value
 
-    res = SettingRepository.set_wallet_signature_type(WalletSignatureType.STANDARD_TYPE_WALLET)
+    res = SettingRepository.set_wallet_signature_type(
+        WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
 
     assert res is True
     mock_local_store.set_value.assert_called_once_with(
@@ -1373,7 +1375,9 @@ def test_set_wallet_signature_type_none_success(mock_local_store):
     res = SettingRepository.set_wallet_signature_type(None)
 
     assert res is True
-    mock_local_store.set_value.assert_called_once_with('wallet_signature_type', None)
+    mock_local_store.set_value.assert_called_once_with(
+        'wallet_signature_type', None,
+    )
     mock_local_store.get_value.assert_called_once_with('wallet_signature_type')
 
 
@@ -1382,7 +1386,9 @@ def test_set_wallet_signature_type_failure(mock_local_store):
     from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.get_value.return_value = 'DIFFERENT'
 
-    res = SettingRepository.set_wallet_signature_type(WalletSignatureType.STANDARD_TYPE_WALLET)
+    res = SettingRepository.set_wallet_signature_type(
+        WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
 
     assert res is False
     mock_local_store.set_value.assert_called_once_with(
@@ -1396,7 +1402,9 @@ def test_set_wallet_signature_type_exception(mock_local_store, mock_handle_excep
     from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.set_value.side_effect = Exception('x')
 
-    res = SettingRepository.set_wallet_signature_type(WalletSignatureType.STANDARD_TYPE_WALLET)
+    res = SettingRepository.set_wallet_signature_type(
+        WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
 
     assert res == 'Error handled'
 
@@ -1440,7 +1448,9 @@ def test_set_multisig_config_success(mock_local_store):
     res = SettingRepository.set_multisig_config(req, tot)
 
     assert res is True
-    mock_local_store.set_value.assert_any_call('multisig_required_signers', req)
+    mock_local_store.set_value.assert_any_call(
+        'multisig_required_signers', req,
+    )
     mock_local_store.set_value.assert_any_call('multisig_total_signers', tot)
     assert mock_local_store.get_value.call_count == 2
 
@@ -1472,8 +1482,12 @@ def test_get_multisig_config_values(mock_local_store):
 
     assert res == (2, 4)
     # Ensure value_type=int is used
-    mock_local_store.get_value.assert_any_call('multisig_required_signers', value_type=int)
-    mock_local_store.get_value.assert_any_call('multisig_total_signers', value_type=int)
+    mock_local_store.get_value.assert_any_call(
+        'multisig_required_signers', value_type=int,
+    )
+    mock_local_store.get_value.assert_any_call(
+        'multisig_total_signers', value_type=int,
+    )
 
 
 def test_get_multisig_config_none(mock_local_store):

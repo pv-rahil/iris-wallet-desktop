@@ -16,6 +16,7 @@ from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -29,6 +30,7 @@ from src.utils.handle_exception import handle_exceptions
 from src.utils.helpers import build_keys_from_data
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import hash_mnemonic
+from src.utils.keyring_storage import get_value
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
 from src.utils.wallet_credential_encryption import mnemonic_store
@@ -57,11 +59,21 @@ class CommonOperationService:
             key_storage_type = SettingRepository.get_key_storage_type()
             is_watch_only = security_type == WalletAccessType.WATCH_ONLY
             is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
+            is_multisig = SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
 
             response: SinglesigKeys | MultisigKeys | None = None
             wallet: Wallet | None = None
 
-            if is_watch_only or is_hardware_wallet:
+            if is_watch_only or is_hardware_wallet or is_multisig:
+                mnemonic = None
+                if is_multisig:
+                    wallet_password: str = get_value(
+                        WALLET_PASSWORD_KEY, stored_network.value,
+                    )
+                    mnemonic = mnemonic_store.decrypt(
+                        password=wallet_password, path=app_paths.mnemonic_file_path,
+                    )
                 account_xpub_colored = local_store.get_value(
                     ACCOUNT_XPUB_COLORED,
                 )
@@ -80,7 +92,7 @@ class CommonOperationService:
                     account_xpub_vanilla=account_xpub_vanilla,
                     account_xpub_colored=account_xpub_colored,
                     master_fingerprint=master_fingerprint,
-                    mnemonic=None,
+                    mnemonic=mnemonic,
                 )
 
                 wallet = CommonOperationRepository.unlock(

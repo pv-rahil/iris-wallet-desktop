@@ -69,17 +69,14 @@ def generate_and_store_token() -> str:
         if not private_key_path:
             print(f"DEBUG: private-key-file not found in {possible_paths}")
             logger.warning(
-                f"private-key-file not found in {
-                    possible_paths}. Cannot generate token.",
+                'private-key-file not found in %s. Cannot generate token.',
+                possible_paths,
             )
             return None
 
         # 4. Run biscuit CLI
         # Command: echo 'owner_xpub("XPUB");' | biscuit generate --private-key-file <path> -
-        print(f"DEBUG: Generating biscuit token for xpub: {
-              master_xpub
-              } with key {private_key_path}")
-        logger.info(f"Generating biscuit token for xpub: {master_xpub}...")
+        logger.info('Generating biscuit token for xpub: %s...', master_xpub)
 
         # Determine executable path - assuming 'biscuit' is in PATH
         binary = 'biscuit'
@@ -110,10 +107,8 @@ def generate_and_store_token() -> str:
             return None
 
     except subprocess.CalledProcessError as e:
-        print(f"DEBUG: Failed to run biscuit command: {e.stderr}")
-        logger.error(f"Failed to run biscuit command: {e.stderr}")
+        logger.error('Failed to run biscuit command: %s', e.stderr)
         return None
     except Exception as e:
-        print(f"DEBUG: Error during biscuit token generation: {e}")
-        logger.error(f"Error during biscuit token generation: {e}")
+        logger.error('Error during biscuit token generation: %s', e)
         return None

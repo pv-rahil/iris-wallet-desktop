@@ -30,6 +30,7 @@ from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_ISSUED
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
@@ -274,7 +275,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.run_in_thread(
             RgbRepository.post_inflation,
             {
-                'args': [signed_psbt, self.asset_id, int(self.amount)],
+                'args': [signed_psbt, self.asset_id],
                 'callback': self.on_success_multisig_post,
                 'error_callback': self.on_error,
             },
@@ -293,7 +294,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
     def on_success_multisig_post(self, _=None):
         """Handle success of multisig post"""
         self.hw_dialog_update.emit(None, PsbtStatus.SUCCESS)
-        ToastManager.success('Operation posted to multisig bridge.')
+        ToastManager.success(INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
 
         # Sync with bridge again and finish
         self.run_in_thread(

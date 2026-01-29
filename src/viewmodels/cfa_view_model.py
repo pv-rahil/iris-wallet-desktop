@@ -41,6 +41,7 @@ from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_REFRESH_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
@@ -62,6 +63,7 @@ class CFAViewModel(QObject, ThreadManager):
     stop_loading = Signal(bool)
     hw_dialog_update = Signal(object, Enum)
     unsigned_psbt = Signal(str)
+    post_to_bridge = Signal(bool)
 
     def __init__(self, page_navigation: Any) -> None:
         super().__init__()
@@ -121,9 +123,16 @@ class CFAViewModel(QObject, ThreadManager):
             self.hw_dialog_update.emit(
                 None, PsbtStatus.SUCCESS,
             )
-        ToastManager.success(
-            description=INFO_ASSET_SENT.format(tx_id.txid),
-        )
+
+        # Check for multisig pending status via wallet type and response
+        is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+        if is_multisig:
+            self.post_to_bridge.emit(True)
+            ToastManager.success(description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
+        else:
+            ToastManager.success(
+                description=INFO_ASSET_SENT.format(tx_id.txid),
+            )
 
         if self.asset_type == AssetSchema.CFA:
             self._page_navigation.collectibles_asset_page()
@@ -136,7 +145,9 @@ class CFAViewModel(QObject, ThreadManager):
         """Handle error for sending CFA asset."""
         self.is_loading.emit(False)
         self.send_cfa_button_clicked.emit(False)
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or (
+            isinstance(error, CommonException) and error.message == 'NoAvailableUtxos'
+        ):
             self.hw_dialog_update.emit(
                 str(error), PsbtStatus.ERROR,
             )
@@ -324,24 +335,24 @@ class CFAViewModel(QObject, ThreadManager):
             self.send_cfa_button_clicked.emit(True)
             hardware_client_store.set_rgb_mode(True)
 
-            if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-                self.run_in_thread(
-                    CommonOperationRepository.sign_psbt,
-                    {
-                        'args': [unsigned_psbt],
-                        'callback': self.on_multisig_psbt_signed,
-                        'error_callback': self.on_error,
-                    },
-                )
-            else:
-                self.run_in_thread(
-                    CommonOperationRepository.sign_and_finalize_psbt,
-                    {
-                        'args': [unsigned_psbt],
-                        'callback': self.on_psbt_signed_and_finalized_success,
-                        'error_callback': self.on_error,
-                    },
-                )
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            self.run_in_thread(
+                CommonOperationRepository.sign_psbt,
+                {
+                    'args': [unsigned_psbt],
+                    'callback': self.on_multisig_psbt_signed,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
+            self.run_in_thread(
+                CommonOperationRepository.sign_and_finalize_psbt,
+                {
+                    'args': [unsigned_psbt],
+                    'callback': self.on_psbt_signed_and_finalized_success,
+                    'error_callback': self.on_error,
+                },
+            )
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
 

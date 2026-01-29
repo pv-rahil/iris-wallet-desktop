@@ -20,6 +20,7 @@ from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import FEE_RATE
@@ -30,6 +31,7 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.send_asset import SendAssetWidget
+from src.utils.helpers import get_bitcoin_network_from_enum
 
 
 class SendBitcoinWidget(QWidget):
@@ -56,6 +58,10 @@ class SendBitcoinWidget(QWidget):
         ) == WalletType.ONLINE_TYPE_WALLET
         self.is_watch_only_wallet = SettingRepository.get_wallet_access_type(
         ) == WalletAccessType.WATCH_ONLY
+        # Treat multisig wallets with PSBT begin/sign flow
+        self.is_multisig_wallet = (
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+        )
         layout = QVBoxLayout()
         layout.addWidget(self.send_bitcoin_page)
         self.setLayout(layout)
@@ -131,7 +137,7 @@ class SendBitcoinWidget(QWidget):
         address = self.send_bitcoin_page.asset_address_value.text()
         amount = self.send_bitcoin_page.asset_amount_value.text()
         fee = self.send_bitcoin_page.fee_rate_value.text() or FEE_RATE
-        if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only_wallet:
+        if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only_wallet or self.is_multisig_wallet:
             self._view_model.send_bitcoin_view_model.send_btc_begin(
                 address, amount, fee,
             )
@@ -240,11 +246,9 @@ class SendBitcoinWidget(QWidget):
             return
 
         try:
-            network_enum = SettingRepository.get_wallet_network()
-            network_value = BitcoinNetwork[network_enum.value.upper()]
-
+            network_enum = get_bitcoin_network_from_enum(SettingRepository.get_wallet_network())
             # Validate the Bitcoin address
-            Address(address, network_value)
+            Address(address, network_enum)
 
             # Hide validation label if the address is valid
             self.send_bitcoin_page.asset_address_validation_label.hide()

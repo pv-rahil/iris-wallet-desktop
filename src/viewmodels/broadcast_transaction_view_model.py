@@ -20,17 +20,17 @@ from src.model.enums.enums_model import PsbtStatus
 from src.model.rgb_model import SendAssetResponseModel
 from src.utils.constant import SIGNED_TXIDS
 from src.utils.custom_exception import CommonException
-from src.utils.info_message import INFO_ASSET_SENT
-from src.utils.info_message import INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY
+from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_ASSET_SENT_SUCCESSFULLY
+from src.utils.info_message import INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_BITCOIN_SENT_SUCCESSFULLY
 from src.utils.info_message import INFO_OPERATION_COMPLETED_AND_FINALIZED
 from src.utils.info_message import INFO_OPERATION_INDEX_MISSING_FOR_NACK
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_BRIDGE_SUCCESSFULLY
-from src.utils.info_message import INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS
 from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS
 from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
@@ -50,10 +50,14 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     combined_psbt_ready = Signal(str)
     psbt_inspection_ready = Signal(object)
     rgb_transfer_inspection_ready = Signal(object)
+    pending_operation_ready = Signal(object)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
         self._page_navigation = page_navigation
+        self._multisig_operation_idx: int | None = None
+        self._current_signed_psbt: str | None = None
+        self._current_signed_txid: str | None = None
 
     def send_end(self, signed_psbt: str):
         """
@@ -246,7 +250,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         # Save signature record to local store to hide it from header
         txid = getattr(self, '_current_signed_txid', None)
         if txid:
-            logger.info("Saving signed TXID to local_store: %s", txid)
+            logger.info('Saving signed TXID to local_store: %s', txid)
             existing_txids = local_store.get_value(SIGNED_TXIDS) or []
             if isinstance(existing_txids, list):
                 if txid not in existing_txids:
@@ -255,34 +259,30 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             else:
                 # Fallback if corrupted or different type
                 local_store.set_value(SIGNED_TXIDS, [txid])
-        if result.is_create_utxos_completed():
+        # Combine pending checks to reduce complexity
+        is_pending = (
+            result.is_create_utxos_pending() or
+            result.is_send_btc_pending() or
+            result.is_inflation_pending() or
+            result.is_send_pending()
+        )
+
+        if is_pending:
+            ToastManager.success(
+                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
+            )
+        elif result.is_create_utxos_completed():
             ToastManager.success(
                 description=INFO_OPERATION_COMPLETED_AND_FINALIZED,
             )
-        elif result.is_create_utxos_pending():
-            ToastManager.success(
-                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
-            )
         elif result.is_send_btc_completed():
             ToastManager.success(description=INFO_BITCOIN_SENT_SUCCESSFULLY)
-        elif result.is_send_btc_pending():
-            ToastManager.success(
-                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
-            )
         elif result.is_inflation_completed():
             ToastManager.success(
                 description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY,
             )
-        elif result.is_inflation_pending():
-            ToastManager.success(
-                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
-            )
-        elif result.is_send_completed():  # For Asset Send
+        elif result.is_send_completed():
             ToastManager.success(description=INFO_ASSET_SENT_SUCCESSFULLY)
-        elif result.is_send_pending():    # For Asset Send
-            ToastManager.success(
-                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
-            )
         else:
             # Generic success for initiator or other cases
             ToastManager.success(
@@ -293,7 +293,9 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def respond_nack(self, operation_idx: int | None):
         """NACK a pending operation without signing (human disagrees)."""
         if operation_idx is None:
-            ToastManager.error(description=INFO_OPERATION_INDEX_MISSING_FOR_NACK)
+            ToastManager.error(
+                description=INFO_OPERATION_INDEX_MISSING_FOR_NACK,
+            )
             return
         self.is_loading.emit(True)
         response = RespondToOperation.NACK()
@@ -317,13 +319,24 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def inspect_rgb_transfer(self, consignment: str, psbt: str):
+    def inspect_rgb_transfer(self, consignment: str, psbt: str, entropy: int):
         """Inspect RGB transfer for review details."""
         self.run_in_thread(
             RgbRepository.inspect_rgb_transfer,
             {
-                'args': [consignment, psbt],
+                'args': [consignment, psbt, entropy],
                 'callback': self._on_inspect_rgb_transfer_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    def fetch_pending_operation(self):
+        """Fetch pending operation from bridge to check against current PSBT."""
+        self.run_in_thread(
+            RgbRepository.sync_with_bridge,
+            {
+                'args': [],
+                'callback': self._on_fetch_pending_operation_success,
                 'error_callback': self.on_error,
             },
         )
@@ -337,3 +350,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle success message for inspect rgb transfer"""
         self.is_loading.emit(False)
         self.rgb_transfer_inspection_ready.emit(result)
+
+    def _on_fetch_pending_operation_success(self, result):
+        """Handle success message for fetch pending operation"""
+        self.pending_operation_ready.emit(result)
