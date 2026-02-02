@@ -96,6 +96,7 @@ class RGBAssetDetailWidget(QWidget):
             NetworkEnumModel.REGTEST.value: ':/assets/regtest_bitcoin.png',
             NetworkEnumModel.TESTNET.value: ':/assets/testnet_bitcoin.png',
         }
+        self.secondary_issuance = None
         self.__loading_translucent_screen = LoadingTranslucentScreen(self)
         self.asset_type = params.asset_type
         self.image_path = params.image_path

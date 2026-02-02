@@ -27,7 +27,7 @@ from src.utils.info_message import INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_BITCOIN_SENT_SUCCESSFULLY
 from src.utils.info_message import INFO_OPERATION_COMPLETED_AND_FINALIZED
 from src.utils.info_message import INFO_OPERATION_INDEX_MISSING_FOR_NACK
-from src.utils.info_message import INFO_OPERATION_POSTED_TO_BRIDGE_SUCCESSFULLY
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS
@@ -82,6 +82,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def on_error(self, error: CommonException) -> None:
         """Handle error for broadcasting psbt."""
+        print(error)
         self.is_loading.emit(False)
         ToastManager.error(description=error.message)
         logger.error(
@@ -286,7 +287,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         else:
             # Generic success for initiator or other cases
             ToastManager.success(
-                description=INFO_OPERATION_POSTED_TO_BRIDGE_SUCCESSFULLY,
+                description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE,
             )
             logger.info('Multisig post result: %s', str(result))
 
@@ -319,7 +320,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def inspect_rgb_transfer(self, consignment: str, psbt: str, entropy: int):
+    def inspect_rgb_transfer(self, consignment: list[str], psbt: str, entropy: int):
         """Inspect RGB transfer for review details."""
         self.run_in_thread(
             RgbRepository.inspect_rgb_transfer,
@@ -348,6 +349,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def _on_inspect_rgb_transfer_success(self, result):
         """Handle success message for inspect rgb transfer"""
+        # print("result", result)
         self.is_loading.emit(False)
         self.rgb_transfer_inspection_ready.emit(result)
 

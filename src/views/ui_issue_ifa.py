@@ -797,14 +797,12 @@ class IssueIFAWidget(QWidget):
                     int(self.draft_id), self.params.asset_id,
                 )
             else:
+                amt_text = amount_to_issue or ''
+                pref_amt = int(amt_text) if amt_text.strip().isdigit() else None
                 active = svc.get_active_secondary_draft_for_asset(
                     self.params.asset_id,
                 )
-                if active is None:
-                    amt_text = amount_to_issue or ''
-                    pref_amt = int(
-                        amt_text,
-                    ) if amt_text.strip().isdigit() else None
+                if active is None or active.get('amount') != pref_amt:
                     draft_id = svc.add_ifa_secondary_draft_meta(
                         asset_id=self.params.asset_id,
                         asset_name=self.params.asset_name,
@@ -1005,8 +1003,9 @@ class IssueIFAWidget(QWidget):
         current_purpose = self._view_model.utxo_creation_view_model.current_purpose
         if current_purpose not in ['issue_asset', 'inflate_asset']:
             return
+        if not self.isVisible():
+            return
         # Close dialog
-        self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.disconnect()
         ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
         if ifa_hw_dialog.isVisible():
             ifa_hw_dialog.accept()
@@ -1020,9 +1019,10 @@ class IssueIFAWidget(QWidget):
         purpose = self._view_model.utxo_creation_view_model.current_purpose
         if purpose not in ('issue_asset', 'inflate_asset'):
             return
-        if status:
-            self._view_model.utxo_creation_view_model.utxo_created.disconnect()
+        if not self.isVisible() or not status:
+            return
 
+        if status:
             ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(
                 parent=self,
             )
@@ -1084,7 +1084,8 @@ class IssueIFAWidget(QWidget):
 
     def handle_ifa_issue(self):
         """handle ifa issue"""
-        self._view_model.issue_ifa_asset_view_model.utxo_creation_started.disconnect()
+        if not self.isVisible():
+            return
         inflatables_wallet_service = WalletDataService.get_session()
         if inflatables_wallet_service:
             unsigned_psbts = inflatables_wallet_service.list_psbt(

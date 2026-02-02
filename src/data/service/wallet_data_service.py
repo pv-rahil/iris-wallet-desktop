@@ -60,12 +60,21 @@ class WalletDataService:
         self._db_lock = threading.Lock()
         self.conn: sqlite3.Connection = self._connect_db()
         self._create_tables()
-        self.is_watch_only = SettingRepository.get_wallet_access_type(
-        ) == WalletAccessType.WATCH_ONLY
-        self.is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
-        self.is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
+
+    @property
+    def is_watch_only(self) -> bool:
+        """Return True if wallet is watch-only."""
+        return SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+
+    @property
+    def is_offline_wallet(self) -> bool:
+        """Return True if wallet is offline."""
+        return SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+
+    @property
+    def is_multisig(self) -> bool:
+        """Return True if wallet is multisig."""
+        return SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
 
     @staticmethod
     def _initialize_service() -> WalletDataService | None:
@@ -181,7 +190,7 @@ class WalletDataService:
         """
         Get a secondary draft by ID.
         """
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return None
         with self._db_lock:
             try:
@@ -534,7 +543,7 @@ class WalletDataService:
 
     def get_latest_active_secondary_draft(self) -> dict | None:
         """Get the most recent active secondary draft across all assets, if any."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return None
         with self._db_lock:
             try:
@@ -557,7 +566,7 @@ class WalletDataService:
 
     def delete_ifa_secondary_draft(self, draft_id: int) -> bool:
         """Delete a secondary draft by its ID."""
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return False
         with self._db_lock:
             try:
@@ -578,7 +587,7 @@ class WalletDataService:
         """Delete secondary issuance draft row by attached psbt content (unsigned/signed base64).
         Returns True if a row was deleted.
         """
-        if not (self.is_watch_only or self.is_offline_wallet):
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return False
         psbt_id = self._psbt_id(psbt_base64)
         with self._db_lock:

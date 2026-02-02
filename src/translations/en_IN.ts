@@ -2301,42 +2301,6 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Reset</translation>
     </message>
     <message>
-        <source>transaction_id_label</source>
-        <translation>Transaction ID</translation>
-    </message>
-    <message>
-        <source>amount_to_send_label</source>
-        <translation>Amount to send</translation>
-    </message>
-    <message>
-        <source>destination_label</source>
-        <translation>Destination</translation>
-    </message>
-    <message>
-        <source>fee_sats_label</source>
-        <translation>Fee (sats)</translation>
-    </message>
-    <message>
-        <source>signatures_label</source>
-        <translation>Signatures</translation>
-    </message>
-    <message>
-        <source>rgb_transfer_label</source>
-        <translation>RGB Transfer</translation>
-    </message>
-    <message>
-        <source>self_transfer</source>
-        <translation>Self Transfer</translation>
-    </message>
-    <message>
-        <source>recipients_count</source>
-        <translation>Recipients: {0}</translation>
-    </message>
-    <message>
-        <source>internal_change</source>
-        <translation>Internal Change</translation>
-    </message>
-    <message>
         <source>clear_all</source>
         <translation>Clear All</translation>
     </message>
@@ -2344,25 +2308,47 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>reject</source>
         <translation>Reject</translation>
     </message>
+
+    <!-- Sign PSBT details UI translations -->
+    <message>
+        <source>transaction_details_title</source>
+        <translation>Transaction Details</translation>
+    </message>
+    <message>
+        <source>transaction_id_label</source>
+        <translation>Transaction ID:</translation>
+    </message>
+    <message>
+        <source>asset_id_label</source>
+        <translation>Asset ID:</translation>
+    </message>
+    <message>
+        <source>amount_field_label</source>
+        <translation>Amount:</translation>
+    </message>
+    <message>
+        <source>transfer_type_label</source>
+        <translation>Type:</translation>
+    </message>
     <message>
         <source>min_confirmations</source>
-        <translation>Min Confirmations</translation>
+        <translation>Confirmations:</translation>
     </message>
     <message>
-        <source>entropy</source>
-        <translation>Entropy</translation>
+        <source>fee_sats_label</source>
+        <translation>Network Fee (sats):</translation>
     </message>
     <message>
-        <source>is_donation</source>
-        <translation>Donation</translation>
+        <source>destination_label</source>
+        <translation>Destination(s):</translation>
     </message>
     <message>
-        <source>consignment_paths</source>
-        <translation>Consignment Paths</translation>
+        <source>transfer</source>
+        <translation>Transfer</translation>
     </message>
     <message>
-        <source>min_conf_abbr</source>
-        <translation>Min Conf.</translation>
+        <source>inflation</source>
+        <translation>Inflation</translation>
     </message>
 </context>
 </TS>

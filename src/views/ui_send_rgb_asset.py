@@ -31,6 +31,7 @@ from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NOT_ENOUGH_UNCOLORED
 from src.utils.error_message import ERROR_SEND_ASSET
@@ -66,13 +67,6 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_asset_page.fee_rate_value.setText(
             str(self.value_of_default_fee_rate.fee_rate),
         )
-        if draft_data:
-            recipient = draft_data.get('recipient_id')
-            amount = draft_data.get('amount')
-            if recipient:
-                self.send_rgb_asset_page.asset_address_input.setText(recipient)
-            if amount:
-                self.send_rgb_asset_page.amount_input.setText(f"{amount:,}")
 
         key_storage_type = SettingRepository.get_key_storage_type()
         self.is_hardware_wallet = key_storage_type == KeyStorageType.HARDWARE_WALLET
@@ -90,9 +84,18 @@ class SendRGBAssetWidget(QWidget):
         self.setLayout(layout)
         self.set_originating_page(self._view_model.cfa_view_model.asset_type)
         self.setup_ui_connection()
-        self.handle_button_enabled()
         self.set_asset_balance()
+        self.handle_button_enabled()
         self.handle_spendable_balance_validation()
+
+        if draft_data:
+            self.asset_id = draft_data.get('asset_id')
+            recipient = draft_data.get('recipient_id')
+            amount = draft_data.get('amount')
+            if recipient:
+                self.send_rgb_asset_page.asset_address_value.setText(recipient)
+            if amount:
+                self.send_rgb_asset_page.asset_amount_value.setText(f"{amount:,}")
         self.sidebar = None
         self.__loading_translucent_screen = LoadingTranslucentScreen(
             parent=self, description_text='Loading',
@@ -399,6 +402,8 @@ class SendRGBAssetWidget(QWidget):
 
     def handle_send_rgb_hw_dialog_update(self, message: str | None, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
+        if not self.isVisible():
+            return
         self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
@@ -406,16 +411,12 @@ class SendRGBAssetWidget(QWidget):
             if ('NoAvailableUtxos' in message) or (ERROR_NOT_ENOUGH_UNCOLORED in message):
                 # Save draft transfer if UTXOs missing, to avoid manual re-entry
                 try:
-                    amount_str = self.send_rgb_asset_page.amount_input.text().replace(
-                        ',', '',
-                    )
-                    amount = int(amount_str) if amount_str else 0
                     WalletDataService.get_session().upsert_draft_transfer(
-                        asset_id=self.asset_id,
-                        recipient_id=self.send_rgb_asset_page.asset_address_input.text(),
-                        amount=amount,
+                        asset_id=self._view_model.cfa_view_model.asset_id,
+                        recipient_id=self.send_rgb_asset_page.asset_address_value.text(),
+                        amount=int(self.send_rgb_asset_page.asset_amount_value.text()),
                         fee_rate=SettingCardRepository.get_default_fee_rate().fee_rate,
-                        min_confirmation=SettingRepository.get_min_confirmation().min_confirmation,
+                        min_confirmation=SettingCardRepository.get_default_min_confirmation().min_confirmation,
                     )
                 except Exception as e:
                     print(f"Failed to save draft: {e}")
@@ -495,17 +496,13 @@ class SendRGBAssetWidget(QWidget):
 
     def _on_utxo_posted_to_bridge(self):
         """Handle signal when UTXO creation PSBT is posted to bridge (Multisig)."""
+        current_purpose = self._view_model.utxo_creation_view_model.current_purpose
+        if current_purpose != 'send_rgb' or not self.isVisible():
+            return
+
         if self.send_rgb_hw_dialog:
             self.send_rgb_hw_dialog.accept()
-
-        msg = QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT,
-            'utxo_creation_psbt_posted',
-        )
-        if 'utxo_creation_psbt_posted' in msg:
-            msg = "UTXO Creation PSBT posted to multisig bridge. Please sign and broadcast it before sending asset."
-
-        ToastManager.success(description=msg)
+        ToastManager.success(description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
         # Redirect users back to the asset page (fungible/collectible list)
         self.rgb_asset_page_navigation()
 

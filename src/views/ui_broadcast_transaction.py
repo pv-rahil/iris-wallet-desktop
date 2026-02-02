@@ -10,6 +10,7 @@ from enum import Enum
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QComboBox
@@ -23,6 +24,7 @@ from PySide6.QtWidgets import QPlainTextEdit
 from PySide6.QtWidgets import QPushButton
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
+from PySide6.QtWidgets import QScrollArea
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
@@ -51,6 +53,7 @@ from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.views.components.loading_screen import LoadingTranslucentScreen
 
 
 class BroadcastTransactionWidget(QWidget):
@@ -78,6 +81,11 @@ class BroadcastTransactionWidget(QWidget):
         )
         config = get_current_wallet_mode_config()
         self.priv = config.privileges
+        # Inspection state (to avoid partial renders)
+        self._psbt_details = None
+        self._rgb_details = None
+        self._op_details_ready = False
+        self._inspection_epoch = 0
         self.is_multisig = SettingRepository.get_wallet_signature_type(
         ) == WalletSignatureType.MULTI_SIG_WALLET
         # Minimum characters to consider PSBT input valid for enabling Sign button
@@ -85,9 +93,17 @@ class BroadcastTransactionWidget(QWidget):
         self.is_initiator_of_pending = False
         self.is_psbt_validated = False  # Strict validation flag
         self._current_operation = None
+        # Avoid repeated inspections on the same PSBT
+        self._last_inspected_psbt: str | None = None
+        self._rgb_expected: bool = False
+        self._is_inflation_context: bool = False
 
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
+        # Center main widget horizontally with equal side columns
+        self.grid_layout.setColumnStretch(0, 1)
+        self.grid_layout.setColumnStretch(1, 1)
+        self.grid_layout.setColumnStretch(2, 1)
         self.wallet_logo_frame = WalletLogoFrame(self)
         self.grid_layout.addWidget(self.wallet_logo_frame, 0, 0, 1, 1)
 
@@ -102,10 +118,16 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_widget.setObjectName(
             'broadcast_transaction_widget',
         )
-        # Wider card for multisig to match reference
+        # Base and expanded sizes for multisig flow
+        self._base_card_size_ms = QSize(800, 520)
+        self._expanded_card_size_ms = QSize(800, 800)
+        self._base_input_size_ms = (747, 130)
+        self._expanded_input_size_ms = (960, 96)
+
+        # Apply initial/base dimensions
         if self.is_multisig:
-            self.broadcast_transaction_widget.setMinimumSize(QSize(800, 520))
-            self.broadcast_transaction_widget.setMaximumSize(QSize(800, 520))
+            self.broadcast_transaction_widget.setMinimumSize(self._base_card_size_ms)
+            self.broadcast_transaction_widget.setMaximumSize(self._base_card_size_ms)
         else:
             self.broadcast_transaction_widget.setMinimumSize(QSize(630, 450))
             self.broadcast_transaction_widget.setMaximumSize(QSize(630, 450))
@@ -116,12 +138,16 @@ class BroadcastTransactionWidget(QWidget):
             self.vertical_layout.setContentsMargins(22, 12, 22, 16)
         self.vertical_layout.addSpacing(10)
 
+        # Loading overlay (matches other pages): covers the card while inspections run
+        self._loading_overlay = LoadingTranslucentScreen(parent=self, description_text='Loading')
+        self._loading_overlay.stop()
+
         self.broadcast_transaction_title_layout = QHBoxLayout()
         self.broadcast_transaction_title_layout.setObjectName(
             'broadcast_transaction_title_layout',
         )
         self.broadcast_transaction_title_layout.setContentsMargins(
-            22, -1, 28, -1,
+            22, -1, 22, -1,
         )
         # Multisig: no logo/icon in title per request
 
@@ -247,6 +273,8 @@ class BroadcastTransactionWidget(QWidget):
             self.sign_status_label.setFixedHeight(50)
             self.desc_status_row.addWidget(self.sign_status_label)
             self.vertical_layout.addLayout(self.desc_status_row)
+            # Hide the chip until a PSBT is inspected and details are valid
+            self.sign_status_label.hide()
 
         self.horizontal_layout_1 = QHBoxLayout()
         # Ensure input aligns to card margins exactly
@@ -262,18 +290,27 @@ class BroadcastTransactionWidget(QWidget):
             BROADCAST_TRANSACTION_PSBT_INPUT,
         )
         if self.is_multisig:
-            # Wider/taller input matching layout proportion and expand horizontally
-            self.broadcast_transaction_input.setFixedWidth(747)
-            self.broadcast_transaction_input.setMaximumHeight(200)
+            # For multisig, let input expand to available width and keep a compact height
+            self.broadcast_transaction_input.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed,
+            )
+            self.broadcast_transaction_input.setMaximumHeight(self._base_input_size_ms[1])
             self.broadcast_transaction_input.setPlaceholderText(
                 'cHNidP8BAH8CAAAAAe...',
             )
         else:
-            self.broadcast_transaction_input.setMinimumSize(QSize(550, 50))
-            self.broadcast_transaction_input.setMaximumSize(QSize(550, 155))
-        self.broadcast_transaction_input.setStyleSheet(
-            load_stylesheet('views/qss/scrollbar.qss'),
+            self.broadcast_transaction_input.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed,
+            )
+            self.broadcast_transaction_input.setMinimumHeight(50)
+            self.broadcast_transaction_input.setMaximumHeight(155)
+        # Base styling (no font override). We will apply compact monospace font
+        # only when multisig PSBT is validated and details are showing.
+        self._psbt_input_base_style = (
+            load_stylesheet('views/qss/scrollbar.qss') +
+            '\nQPlainTextEdit#broadcast_transaction_input { border: none; border-radius: 12px; padding: 12px; background-color: rgba(255,255,255,0.06); }'
         )
+        self.broadcast_transaction_input.setStyleSheet(self._psbt_input_base_style)
         self.horizontal_spacer_1 = QSpacerItem(
             40, 20, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum,
         )
@@ -287,111 +324,158 @@ class BroadcastTransactionWidget(QWidget):
         if self.is_multisig:
             self.inspection_frame = QFrame(self.broadcast_transaction_widget)
             self.inspection_frame.setObjectName('inspection_frame')
-            self.inspection_frame.setFrameShape(QFrame.StyledPanel)
-            self.inspection_frame.setFrameShadow(QFrame.Raised)
+            self.inspection_frame.setFrameShape(QFrame.NoFrame)
+            self.inspection_frame.setFrameShadow(QFrame.Plain)
             self.inspection_frame.setSizePolicy(
                 QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
             )
             self.inspection_frame.hide()
 
-            self.inspect_layout = QVBoxLayout(self.inspection_frame)
-            self.inspect_layout.setContentsMargins(10, 10, 10, 10)
-            self.inspect_layout.setSpacing(5)
-            self.inspect_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            self.inspect_outer_layout = QVBoxLayout(self.inspection_frame)
+            # Revert to original margins for classic (no-scroll) design
+            self.inspect_outer_layout.setContentsMargins(0, 0, 0, 0)
+            self.inspect_outer_layout.setSpacing(0)
+
+            # Lightweight loading label shown while PSBT inspection runs
+            self.inspect_loading = QLabel(self.inspection_frame)
+            self.inspect_loading.setObjectName('inspect_loading')
+            self.inspect_loading.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'loading',
+                ),
+            )
+            self.inspect_loading.setAlignment(
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
+            )
+            self.inspect_loading.hide()
+            self.inspect_outer_layout.addWidget(self.inspect_loading)
+
+            # Section title
+            self.details_title = QLabel(self.inspection_frame)
+            self.details_title.setObjectName('details_title')
+            self.details_title.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_details_title',
+                ),
+            )
+            # Let global theme control colors; just add a bit of spacing
+            self.details_title.setStyleSheet('padding: 12px 6px;')
+            self.inspect_outer_layout.addWidget(self.details_title)
+
+            self.details_card = QFrame(self.inspection_frame)
+            self.details_card.setObjectName('inspection_card')
+            self.details_card.setStyleSheet(
+                'QFrame#inspection_card { border: none; border-radius: 12px; background-color: rgba(255,255,255,0.08); }'
+            )
+            # Ensure absolutely no native frame border is drawn
+            self.details_card.setFrameShape(QFrame.NoFrame)
+            self.details_card.setFrameShadow(QFrame.Plain)
+
+            # Grid layout with 2 columns to mimic the shared mock
+            self.inspect_grid = QGridLayout(self.details_card)
+            # Slightly increased spacing for better visual rhythm
+            self.inspect_grid.setContentsMargins(20, 16, 20, 20)
+            self.inspect_grid.setHorizontalSpacing(18)
+            self.inspect_grid.setVerticalSpacing(32)
+
+            # Revert to classic (no-scroll) details card
+            self.inspect_outer_layout.addWidget(self.details_card)
 
             def create_detail_row(label_text, value_id):
-                row_layout = QHBoxLayout()
-                row_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-                lbl = QLabel(label_text, self.inspection_frame)
-                lbl.setStyleSheet('color: #b0b0b0;')
-                val = QLabel(self.inspection_frame)
+                tile = QFrame(self.details_card)
+                tile.setObjectName('tile_frame')
+                # Individual tile cards: rounded, subtle background, no border
+                tile.setStyleSheet(
+                    'QFrame#tile_frame { border: none; border-radius: 12px; background-color: rgba(255,255,255,0.06); }'
+                )
+                tile.setMinimumHeight(100)
+                tile_layout = QVBoxLayout(tile)
+                tile_layout.setContentsMargins(16, 12, 16, 12)
+                tile_layout.setSpacing(6)
+                lbl = QLabel(label_text, tile)
+                val = QLabel(tile)
                 val.setObjectName(value_id)
                 val.setWordWrap(True)
-                val.setStyleSheet('color: white; font-weight: bold;')
-                lbl.setAlignment(
-                    Qt.AlignmentFlag.AlignTop |
-                    Qt.AlignmentFlag.AlignLeft,
-                )
-                val.setAlignment(
-                    Qt.AlignmentFlag.AlignTop |
-                    Qt.AlignmentFlag.AlignLeft,
-                )
-                lbl.setSizePolicy(
-                    QSizePolicy.Policy.Minimum,
-                    QSizePolicy.Policy.Preferred,
-                )
-                val.setSizePolicy(
-                    QSizePolicy.Policy.Expanding,
-                    QSizePolicy.Policy.Preferred,
-                )
+                lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                val.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                lbl.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+                val.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
                 val.setMinimumWidth(0)
-                row_layout.addWidget(lbl)
-                row_layout.addWidget(val)
-                row_layout.setStretch(0, 0)
-                row_layout.setStretch(1, 1)
-                return row_layout, lbl, val
+                tile_layout.addWidget(lbl)
+                tile_layout.addWidget(val)
+                return tile, lbl, val
 
-            row_txid, self.lbl_txid, self.val_txid = create_detail_row(
+            self.tile_txid, self.lbl_txid, self.val_txid = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_id_label',
                 ), 'val_txid',
             )
-            self.inspect_layout.addLayout(row_txid)
-            self.val_txid.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            self.val_txid.setTextFormat(Qt.TextFormat.RichText)
+            # TXID spans two columns in the first row
+            self.inspect_grid.addWidget(self.tile_txid, 0, 0, 1, 2)
+            self.val_txid.setTextFormat(Qt.TextFormat.PlainText)
 
             # Asset ID (for multisig RGB operations like inflation)
-            row_asset, self.lbl_asset_id, self.val_asset_id = create_detail_row(
+            self.tile_asset, self.lbl_asset_id, self.val_asset_id = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_id_label',
                 ), 'val_asset_id',
             )
-            self.inspect_layout.addLayout(row_asset)
-            self.val_asset_id.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            self.val_asset_id.setTextFormat(Qt.TextFormat.RichText)
+            # Asset ID spans row 2 across two columns (destination is hidden in RGB contexts)
+            self.inspect_grid.addWidget(self.tile_asset, 2, 0, 1, 2)
+            self.val_asset_id.setTextFormat(Qt.TextFormat.PlainText)
+            self.val_asset_id.setWordWrap(False)
 
-            # Inflation Amount (units) for IFA secondary issuance
-            row_infl_amt, self.lbl_inflation_amount, self.val_inflation_amount = create_detail_row(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation_amount_label',
-                ), 'val_inflation_amount',
-            )
-            self.inspect_layout.addLayout(row_infl_amt)
+            # Hide until we have RGB details
+            self.tile_asset.hide()
 
-            row_amt, self.lbl_amount, self.val_amount = create_detail_row(
+            self.tile_amount, self.lbl_amount, self.val_amount = create_detail_row(
                 QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'amount_to_send_label',
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'amount_field_label',
                 ), 'val_amount',
             )
-            self.inspect_layout.addLayout(row_amt)
+            # Amount in row 1, column 0
+            self.inspect_grid.addWidget(self.tile_amount, 1, 0)
+
+            # Transfer Type (RGB send vs inflation)
+            self.tile_ttype, self.lbl_transfer_type, self.val_transfer_type = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transfer_type_label',
+                ), 'val_transfer_type',
+            )
+            # Place Transfer Type on row 3, column 0 (pairs with Confirmations on 3,1)
+            self.inspect_grid.addWidget(self.tile_ttype, 3, 0)
+            # Hide initially; shown when RGB inspection is available
+            self.tile_ttype.hide()
+
+            # Min Confirmations (RGB send/inflation context)
+            self.tile_minconf, self.lbl_min_conf, self.val_min_conf = create_detail_row(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'min_confirmations',
+                ), 'val_min_conf',
+            )
+            # Place Confirmations on row 3, column 1 (pairs with Type)
+            self.inspect_grid.addWidget(self.tile_minconf, 3, 1)
+            self.tile_minconf.hide()
 
             # Destination
-            row_dest, self.lbl_destination, self.val_destination = create_detail_row(
+            self.tile_destination, self.lbl_destination, self.val_destination = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'destination_label',
                 ), 'val_destination',
             )
-            self.inspect_layout.addLayout(row_dest)
-            self.val_destination.setTextInteractionFlags(
-                Qt.TextSelectableByMouse,
-            )
-            self.val_destination.setTextFormat(Qt.TextFormat.RichText)
+            # Destinations in row 2 spanning two columns
+            self.inspect_grid.addWidget(self.tile_destination, 2, 0, 1, 2)
+            self.val_destination.setTextFormat(Qt.TextFormat.PlainText)
 
             # Fee
-            row_fee, self.lbl_fee, self.val_fee = create_detail_row(
+            self.tile_fee, self.lbl_fee, self.val_fee = create_detail_row(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fee_sats_label',
                 ), 'val_fee',
             )
-            self.inspect_layout.addLayout(row_fee)
+            # Fee aligns with Amount in row 1, column 1
+            self.inspect_grid.addWidget(self.tile_fee, 1, 1)
 
-            # Size
-            row_size, self.lbl_size, self.val_size = create_detail_row(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'size_vbytes_label',
-                ), 'val_size',
-            )
-            self.inspect_layout.addLayout(row_size)
 
             self.vertical_layout.addWidget(self.inspection_frame)
 
@@ -423,30 +507,30 @@ class BroadcastTransactionWidget(QWidget):
         # Centered actions row (multisig only)
         if self.is_multisig:
             self.actions_center_row = QHBoxLayout()
-            self.actions_center_row.setContentsMargins(0, 14, 5, 8)
+            self.actions_center_row.setContentsMargins(0, 14, 0, 8)
             self.actions_center_row.setSpacing(16)
             self.actions_center_row.addStretch(1)
             self.btn_import = PrimaryButton()
-            self.btn_import.setFixedWidth(175)
+            self.btn_import.setFixedWidth(160)
             self.btn_import.setMinimumHeight(40)
 
             self.btn_export = PrimaryButton()
-            self.btn_export.setFixedWidth(175)
+            self.btn_export.setFixedWidth(160)
             self.btn_export.setMinimumHeight(40)
             self.btn_export.setEnabled(False)
 
             self.btn_clear = PrimaryButton()
-            self.btn_clear.setFixedWidth(175)
+            self.btn_clear.setFixedWidth(160)
             self.btn_clear.setMinimumHeight(40)
             self.btn_clear.setEnabled(False)
             self.btn_clear.hide()
 
             # Reject/NACK button for multisig reviewers
             self.btn_reject = PrimaryButton()
-            self.btn_reject.setFixedWidth(175)
+            self.btn_reject.setFixedWidth(160)
             self.btn_reject.setMinimumHeight(40)
 
-            self.broadcast_button.setFixedWidth(175)
+            self.broadcast_button.setFixedWidth(160)
             self.broadcast_button.setMinimumHeight(40)
 
             self.actions_center_row.addWidget(self.btn_import)
@@ -454,6 +538,7 @@ class BroadcastTransactionWidget(QWidget):
             self.actions_center_row.addWidget(self.btn_clear)
             self.actions_center_row.addWidget(self.btn_reject)
             self.actions_center_row.addWidget(self.broadcast_button)
+            self.actions_center_row.addStretch(1)
             self.vertical_layout.addLayout(self.actions_center_row)
 
         # Prepare PSBT storage for optional signing flow
@@ -464,19 +549,20 @@ class BroadcastTransactionWidget(QWidget):
             self._psbt_signed_items: list[dict] = []
 
         self.grid_layout.addWidget(
-            self.broadcast_transaction_widget, 1, 1, 2, 2,
+            self.broadcast_transaction_widget, 1, 1, 1, 1,
         )
-        self.enter_ln_invoice_horizontal_spacer_2 = QSpacerItem(
-            49, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
+        # Symmetric side spacers in the same row to keep the card perfectly centered
+        self.enter_ln_invoice_horizontal_spacer_left = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
-        self.grid_layout.addItem(
-            self.enter_ln_invoice_horizontal_spacer_2, 1, 3, 1, 1,
-        )
-        self.enter_ln_invoice_horizontal_spacer_1 = QSpacerItem(
-            257, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
+        self.enter_ln_invoice_horizontal_spacer_right = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
         self.grid_layout.addItem(
-            self.enter_ln_invoice_horizontal_spacer_1, 2, 0, 1, 1,
+            self.enter_ln_invoice_horizontal_spacer_left, 1, 0, 1, 1,
+        )
+        self.grid_layout.addItem(
+            self.enter_ln_invoice_horizontal_spacer_right, 1, 2, 1, 1,
         )
         self.enter_ln_invoice_vertical_spacer_2 = QSpacerItem(
             20, 3, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
@@ -506,6 +592,8 @@ class BroadcastTransactionWidget(QWidget):
                     'signature_count',
                 ).format(0, total_disp),
             )
+            # Ensure chip is hidden until a valid PSBT is inspected
+            self.sign_status_label.hide()
 
         # Load PSBTs AFTER widgets exist
         if not self.from_sidebar:
@@ -567,6 +655,99 @@ class BroadcastTransactionWidget(QWidget):
         self.view_model.broadcast_transaction_view_model.pending_operation_ready.connect(
             self._on_pending_operation_ready,
         )
+        # Trigger inspection when user pastes/types a PSBT (sidebar or not)
+        self.broadcast_transaction_input.textChanged.connect(self._on_psbt_text_changed)
+
+    def _apply_base_sizes(self):
+        """Apply base card/input sizes for multisig."""
+        if not self.is_multisig:
+            return
+        try:
+            self.broadcast_transaction_widget.setMinimumSize(self._base_card_size_ms)
+            self.broadcast_transaction_widget.setMaximumSize(self._base_card_size_ms)
+            self.broadcast_transaction_input.setFixedWidth(self._base_input_size_ms[0])
+            self.broadcast_transaction_input.setMaximumHeight(self._base_input_size_ms[1])
+            # Revert to base styling (no compact monospace) when collapsing
+            self.broadcast_transaction_input.setStyleSheet(self._psbt_input_base_style)
+        except Exception:
+            pass
+
+    def _apply_expanded_sizes(self):
+        """Apply expanded card/input sizes for multisig when PSBT details exist."""
+        if not self.is_multisig:
+            return
+        try:
+            self.broadcast_transaction_widget.setMinimumSize(self._expanded_card_size_ms)
+            self.broadcast_transaction_widget.setMaximumSize(self._expanded_card_size_ms)
+            # Fill width; keep compact fixed height so it doesn't feel bulky
+            self.broadcast_transaction_input.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed,
+            )
+            self.broadcast_transaction_input.setFixedHeight(self._expanded_input_size_ms[1])
+        except Exception:
+            pass
+
+    def _on_psbt_text_changed(self):
+        """Auto-trigger inspection and sizing when the user pastes/types a PSBT."""
+        psbt_text = self.broadcast_transaction_input.toPlainText().strip()
+        if not self.is_multisig:
+            return
+        if psbt_text and len(psbt_text) >= self.min_psbt_len:
+            # Do NOT expand yet; keep base size while loading
+            if self.is_multisig:
+                self.inspection_frame.hide()
+                self.details_title.hide()
+                self.sign_status_label.hide()
+                self._loading_overlay.start()
+                self._loading_overlay.make_parent_disabled_during_loading(True)
+
+            # New epoch for this paste
+            self._inspection_epoch += 1
+            self._psbt_details = None
+            self._rgb_details = None
+            # Default: do not expect RGB unless a pending operation later sets it
+            self._rgb_expected = False
+            self._op_details_ready = False
+            # Try to kick off an inspection if available
+            if hasattr(self.view_model.broadcast_transaction_view_model, 'inspect_psbt'):
+                self.view_model.broadcast_transaction_view_model.inspect_psbt(psbt_text)
+        else:
+            # Collapse when cleared
+            self._apply_base_sizes()
+            self.inspection_frame.hide()
+            self.details_title.hide()
+            self.inspect_loading.hide()
+            self.sign_status_label.hide()
+            self._loading_overlay.stop()
+            self._loading_overlay.make_parent_disabled_during_loading(False)
+
+    def _render_inspection_if_ready(self):
+        """Show Transaction Details only when required data is ready."""
+        if self._psbt_details is None:
+            return
+        # In multisig, only wait for RGB if it is actually expected for this PSBT
+        if self.is_multisig and self._rgb_expected and self._rgb_details is None:
+            return
+        # Ignore if user cleared/changed PSBT meanwhile
+        current_psbt = self.broadcast_transaction_input.toPlainText().strip()
+        if not current_psbt or len(current_psbt) < self.min_psbt_len:
+            return
+        self.inspection_frame.show()
+        self.details_title.show()
+        self.details_card.show()
+        self.is_psbt_validated = True
+        self.handle_button_enable()
+        if self.is_multisig:
+            self.sign_status_label.show()
+            self._apply_expanded_sizes()
+            # Now that info frame is visible, apply compact input font
+            self.broadcast_transaction_input.setStyleSheet(
+                self._psbt_input_base_style +
+                '\nQPlainTextEdit#broadcast_transaction_input { font: 12px "JetBrains Mono", monospace; }'
+            )
+        # Hide loader once details are visible
+        self._loading_overlay.stop()
+        self._loading_overlay.make_parent_disabled_during_loading(False)
 
     def retranslate_ui(self):
         """
@@ -787,11 +968,7 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         # Get the operation index for posting back
-        operation_idx = None
-        if self.pending_operation:
-            operation_idx = getattr(
-                self.pending_operation, 'operation_idx', None,
-            )
+        operation_idx = self.pending_operation.operation_idx if self.pending_operation else None
 
         # Call the viewmodel to sign and post
         self.view_model.broadcast_transaction_view_model.sign_and_post_multisig(
@@ -802,13 +979,11 @@ class BroadcastTransactionWidget(QWidget):
         """Reject the pending operation (NACK) without signing."""
         operation_idx = None
         if self.pending_operation:
-            operation_idx = getattr(
-                self.pending_operation, 'operation_idx', None,
-            )
-        if operation_idx is None and hasattr(self, '_current_operation'):
-            operation_idx = getattr(
-                self._current_operation, 'operation_idx', None,
-            )
+            operation_idx = self.pending_operation.operation_idx
+        elif self._current_operation:
+            # _current_operation is the inner Operation (no operation_idx)
+            # Fall back to pending_operation if available
+            pass
         if operation_idx is None:
             ToastManager.error(description='Operation not found to reject')
             return
@@ -843,8 +1018,7 @@ class BroadcastTransactionWidget(QWidget):
             # Allow editing when no valid PSBT present
             self.broadcast_transaction_input.setReadOnly(False)
 
-            if hasattr(self, 'inspection_frame'):
-                self.inspection_frame.hide()
+            self.inspection_frame.hide()
             return
 
         # Has PSBT content: Hide Import, Show Clear
@@ -855,109 +1029,320 @@ class BroadcastTransactionWidget(QWidget):
             # Lock input once content is present until user clears
             self.broadcast_transaction_input.setReadOnly(True)
 
-        # Perform inspection if valid length
         if self.is_multisig:
-            self.view_model.broadcast_transaction_view_model.inspect_psbt(
-                current_psbt,
+            # Check for a matching pending operation context
+            if self._current_operation:
+                # _current_operation is the inner Operation object (extracted from OperationInfo)
+                # We verify if the PSBT text matches strictly
+                if self._current_operation.psbt == current_psbt:
+                    self._trigger_inspection(self._current_operation, current_psbt)
+                    return
+
+    def _trigger_inspection(self, operation, psbt_text: str):
+        """
+        Helper to trigger the inspection.
+        We always use inspect_psbt to get the standard Bitcoin details (TXID, Fee, etc.).
+        RGB details are populated directly from the operation context via _update_ui_with_operation_details.
+        """
+        # Debounce repeated inspections for the same PSBT
+        if isinstance(self._last_inspected_psbt, str) and self._last_inspected_psbt == psbt_text:
+            return
+        self._last_inspected_psbt = psbt_text
+        # Always inspect PSBT for BTC details
+        self.view_model.broadcast_transaction_view_model.inspect_psbt(
+            psbt_text,
+        )
+        op = getattr(operation, "details", None)
+
+        # If we have consignment paths, inspect RGB strictly for Asset ID/Amount
+        consignment_paths = getattr(op, 'consignment_paths', None) if op is not None else None
+        self._rgb_expected = bool(consignment_paths)
+        if self._rgb_expected:
+            self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
+                consignment_paths, psbt_text, op.entropy,
             )
+        else:
+            # No RGB consignment (e.g., InflationDetails). If inflation fields exist, populate directly.
+            asset_id = getattr(op, 'asset_id', None) if op is not None else None
+            amount = getattr(op, 'amount', None) if op is not None else None
+            min_conf = getattr(op, 'min_confirmations', None) if op is not None else None
+            self._is_inflation_context = bool(asset_id is not None or amount is not None or min_conf is not None)
+            if self._is_inflation_context:
+                try:
+                    if asset_id is not None:
+                        self.lbl_asset_id.setVisible(True)
+                        self.val_asset_id.setVisible(True)
+                        self.val_asset_id.setText(str(asset_id))
+                        self.val_asset_id.setToolTip(str(asset_id))
+                        if hasattr(self, 'tile_asset'):
+                            self.tile_asset.show()
+                    if isinstance(amount, int) and amount > 0:
+                        self.lbl_amount.setVisible(True)
+                        self.val_amount.setVisible(True)
+                        self.val_amount.setText(f"{amount:,}")
+                        if hasattr(self, 'tile_amount'):
+                            self.tile_amount.show()
+                    if isinstance(min_conf, int):
+                        self.lbl_min_conf.setVisible(True)
+                        self.val_min_conf.setVisible(True)
+                        self.val_min_conf.setText(str(min_conf))
+                        if hasattr(self, 'tile_minconf'):
+                            self.tile_minconf.show()
+                    # Explicitly show transfer type for inflation path
+                    if hasattr(self, 'tile_ttype'):
+                        self.tile_ttype.show()
+                        self.lbl_transfer_type.setVisible(True)
+                        self.val_transfer_type.setVisible(True)
+                        t_text = QCoreApplication.translate(
+                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation',
+                        )
+                        self.val_transfer_type.setText(t_text if t_text else 'inflation')
+                except Exception:
+                    pass
+            # Render immediately without waiting for RGB
+            self._render_inspection_if_ready()
 
     def _handle_psbt_inspection_result(self, details):
-        """Handle the async PSBT inspection result from the signal."""
-        try:
-            print(f"PSBT Inspection Result: {details}")
-            if details:
-                for output in details.outputs:
-                    print(f"Address: {output.address}")
-
-                self.inspection_frame.show()
-                # Mark validated
-                self.is_psbt_validated = True
-                self.handle_button_enable()
-
-                # LOGIC: Populate TXID, Amount (only if > 0), Destination (only if single), Fee, Size
-                txid_text = details.txid
-                self.val_txid.setText(self._breakable_html(txid_text, 8))
-
-                outputs = details.outputs
-                external_outputs = [
-                    o for o in outputs
-                    if not o.is_mine and not o.is_op_return
-                ]
-
-                # Amount: show only if > 0
-                total_sent = sum(o.amount_sat for o in external_outputs)
-                show_amount = total_sent > 0
-                self.lbl_amount.setVisible(show_amount)
-                self.val_amount.setVisible(show_amount)
-                if show_amount:
-                    self.val_amount.setText(f"{total_sent:,} sats")
-                else:
-                    self.val_amount.clear()
-
-                # Destination(s): show if there is at least one external recipient
-                if hasattr(self, 'lbl_destination') and hasattr(self, 'val_destination'):
-                    if len(external_outputs) >= 1:
-                        self.lbl_destination.setVisible(True)
-                        self.val_destination.setVisible(True)
-                        # Build multi-line display of recipients and amounts
-                        lines = []
-                        for o in external_outputs:
-                            addr = str(o.address)
-                            amt = getattr(o, 'amount_sat', None)
-                            amt_str = f"{amt:,} sats" if isinstance(amt, int) else ""
-                            lines.append(f"{addr}  —  {amt_str}")
-                        text = '\n'.join(lines)
-                        # Use breakable HTML for long addresses
-                        html_lines = [self._breakable_html(line, 6) for line in lines]
-                        self.val_destination.setText('<br/>'.join(html_lines))
-                        self.val_destination.setToolTip(text)
-                    else:
-                        self.lbl_destination.setVisible(False)
-                        self.val_destination.setVisible(False)
-                        self.val_destination.clear()
-
-                # Fee: show if available (>=0)
-                fee_sat = details.fee_sat
-                if hasattr(self, 'lbl_fee') and hasattr(self, 'val_fee'):
-                    if isinstance(fee_sat, int) and fee_sat >= 0:
-                        self.lbl_fee.setVisible(True)
-                        self.val_fee.setVisible(True)
-                        self.val_fee.setText(f"{fee_sat:,} sats")
-                    else:
-                        self.lbl_fee.setVisible(False)
-                        self.val_fee.setVisible(False)
-                        self.val_fee.clear()
-
-                # Size: show if available
-                size_vbytes = details.size_vbytes
-                if hasattr(self, 'lbl_size') and hasattr(self, 'val_size'):
-                    if isinstance(size_vbytes, int) and size_vbytes > 0:
-                        self.lbl_size.setVisible(True)
-                        self.val_size.setVisible(True)
-                        self.val_size.setText(f"{size_vbytes} vB")
-                    else:
-                        self.lbl_size.setVisible(False)
-                        self.val_size.setVisible(False)
-                        self.val_size.clear()
-
-                # Update signature progress chip internally (no extra labels)
-                sig_count = details.signature_count
-                self._on_signature_count_ready(sig_count)
-
-                # TRIGGER BRIDGE SYNC to see if this PSBT matches a pending operation
-                # This enables us to get Rich Details (Entropy, Min Conf, Voting) from the bridge
-                if self.is_multisig:
-                    self.view_model.broadcast_transaction_view_model.fetch_pending_operation()
-
-            else:
-                self.inspection_frame.hide()
-                self.is_psbt_validated = False
-                self.handle_button_enable()
-        except Exception as e:
-            logger.error('Error handling PSBT inspection result: %s', str(e))
+        """
+        Handle the async PSBT inspection result from the signal.
+        Populates TXID, Amount, Destination, Fee, Size from PsbtInspection.
+        """
+        if not details:
             self.inspection_frame.hide()
+            if hasattr(self, 'details_title'):
+                self.details_title.hide()
             self.is_psbt_validated = False
             self.handle_button_enable()
+            if self.is_multisig:
+                self.sign_status_label.hide()
+                self._apply_base_sizes()
+            return
+
+        self._psbt_details = details
+        self._render_inspection_if_ready()
+        # Now that details are visible, apply compact monospace font to input
+        if self.is_multisig:
+            self.broadcast_transaction_input.setStyleSheet(
+                self._psbt_input_base_style +
+                '\nQPlainTextEdit#broadcast_transaction_input { font: 12px "JetBrains Mono", monospace; }'
+            )
+
+        # TXID
+        self.val_txid.setText(details.txid)
+
+        # In inflation context, do not recompute Amount/Destination using BTC-only heuristics.
+        # Keep prefilled RGB inflation amount and hide Destination.
+        if getattr(self, '_is_inflation_context', False):
+            # Hide destination tile explicitly
+            self.lbl_destination.setVisible(False)
+            self.val_destination.setVisible(False)
+            if hasattr(self, 'tile_destination'):
+                self.tile_destination.hide()
+            # Also ensure Asset/Amount/MinConf are present from operation details
+            try:
+                op = getattr(self._current_operation, 'details', None)
+                if op is not None:
+                    asset_id = getattr(op, 'asset_id', None)
+                    amount = getattr(op, 'amount', None)
+                    min_conf = getattr(op, 'min_confirmations', None)
+                    if asset_id is not None:
+                        self.lbl_asset_id.setVisible(True)
+                        self.val_asset_id.setVisible(True)
+                        self.val_asset_id.setText(str(asset_id))
+                        if hasattr(self, 'tile_asset'):
+                            self.tile_asset.show()
+                    if isinstance(amount, int) and amount > 0:
+                        self.lbl_amount.setVisible(True)
+                        self.val_amount.setVisible(True)
+                        self.val_amount.setText(f"{amount:,}")
+                        if hasattr(self, 'tile_amount'):
+                            self.tile_amount.show()
+                    if isinstance(min_conf, int):
+                        self.lbl_min_conf.setVisible(True)
+                        self.val_min_conf.setVisible(True)
+                        self.val_min_conf.setText(str(min_conf))
+                        if hasattr(self, 'tile_minconf'):
+                            self.tile_minconf.show()
+            except Exception:
+                pass
+            # Ensure transfer type is visible as 'Inflation'
+            try:
+                if hasattr(self, 'tile_ttype'):
+                    self.tile_ttype.show()
+                    self.lbl_transfer_type.setVisible(True)
+                    self.val_transfer_type.setVisible(True)
+                    t_text = QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation',
+                    )
+                    self.val_transfer_type.setText(t_text if t_text else 'Inflation')
+            except Exception:
+                pass
+            # Show/update fee only
+            fee_sat = getattr(details, 'fee_sat', None)
+            if isinstance(fee_sat, int) and fee_sat >= 0:
+                self.lbl_fee.setVisible(True)
+                self.val_fee.setVisible(True)
+                self.val_fee.setText(f"{fee_sat:,} sats")
+                if hasattr(self, 'tile_fee'):
+                    self.tile_fee.show()
+            else:
+                self.lbl_fee.setVisible(False)
+                self.val_fee.setVisible(False)
+                self.val_fee.clear()
+                if hasattr(self, 'tile_fee'):
+                    self.tile_fee.hide()
+            # Update signature status and exit early
+            self._on_signature_count_ready(details.signature_count)
+            if self.is_multisig:
+                self.view_model.broadcast_transaction_view_model.fetch_pending_operation()
+            return
+
+        self.lbl_amount.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'amount_field_label',
+            ),
+        )
+
+        # BTC-only path: ensure Asset ID tile is hidden to avoid overlap with Destination row
+        try:
+            if hasattr(self, 'tile_asset'):
+                self.tile_asset.hide()
+            if hasattr(self, 'lbl_asset_id'):
+                self.lbl_asset_id.setVisible(False)
+            if hasattr(self, 'val_asset_id'):
+                self.val_asset_id.setVisible(False)
+        except Exception:
+            pass
+
+        # External outputs and recipients derivation using inputs (multiset-aware)
+        outputs = details.outputs
+        inputs = getattr(details, 'inputs', []) or []
+        spend_outputs = [o for o in outputs if not o.is_op_return]
+        for o in outputs:
+            print(o)
+        for i in inputs:
+            print(i)
+        input_amount_counts = {}
+        for i in inputs:
+            amt = getattr(i, 'amount_sat', None)
+            if isinstance(amt, int):
+                input_amount_counts[amt] = input_amount_counts.get(amt, 0) + 1
+
+        def exclude_matches(candidates):
+            remaining = dict(input_amount_counts)
+            derived = []
+            for o in candidates:
+                amt = getattr(o, 'amount_sat', None)
+                if isinstance(amt, int) and remaining.get(amt, 0) > 0:
+                    # Treat as internal: consume a matching input amount
+                    remaining[amt] -= 1
+                else:
+                    derived.append(o)
+            return derived
+
+        # First, try non-mine outputs after excluding input-matching amounts
+        non_mine_outputs = [o for o in spend_outputs if not o.is_mine]
+        recipients = exclude_matches(non_mine_outputs)
+        # If nothing left (e.g., wallet marked all outputs mine), fall back to all spendable outputs
+        if len(recipients) == 0:
+            recipients = exclude_matches(spend_outputs)
+        # Change outputs can be approximated as the rest
+        recipient_ids = set(id(o) for o in recipients)
+
+        # Amount: prefer PSBT model's amount if provided, else compute from external outputs
+        total_sent = sum(o.amount_sat for o in recipients)
+
+        model_amount = None
+        try:
+            model_amount = details.amount_sat
+        except Exception:
+            try:
+                model_amount = details.amount
+            except Exception:
+                model_amount = None
+
+        # Prefer recipient amounts: if exactly one recipient, show that; else show sum; fall back to model amount
+        effective_amount = None
+        if len(recipients) == 1:
+            only = recipients[0]
+            amt = getattr(only, 'amount_sat', None)
+            if isinstance(amt, int) and amt > 0:
+                effective_amount = amt
+        elif isinstance(total_sent, int) and total_sent > 0:
+            effective_amount = total_sent
+        elif isinstance(model_amount, int) and model_amount > 0:
+            effective_amount = model_amount
+
+        # Final fallback for BTC sends (per vout=1 hint): use input amount where outpoint.vout == 1 if present
+        if effective_amount is None:
+            try:
+                for i in inputs:
+                    outpoint = getattr(i, 'outpoint', None)
+                    vout = getattr(outpoint, 'vout', None) if outpoint is not None else None
+                    if vout == 1:
+                        amt = getattr(i, 'amount_sat', None)
+                        if isinstance(amt, int) and amt > 0:
+                            effective_amount = amt
+                            break
+            except Exception:
+                pass
+
+        show_amount = effective_amount is not None
+        self.lbl_amount.setVisible(show_amount)
+        self.val_amount.setVisible(show_amount)
+        if hasattr(self, 'tile_amount'):
+            self.tile_amount.setVisible(show_amount)
+        if show_amount:
+            self.val_amount.setText(f"{effective_amount:,} sats")
+        else:
+            self.val_amount.clear()
+
+        # Destination address: only show addresses whose amount doesn't match any input amount
+        if len(recipients) >= 1:
+            # Show label and value like other tiles; force label to 'Destination address'
+            self.lbl_destination.setText('Destination address')
+            self.lbl_destination.setVisible(True)
+            self.val_destination.setVisible(True)
+            if hasattr(self, 'tile_destination'):
+                self.tile_destination.show()
+            lines = []
+            for o in recipients:
+                addr = str(o.address)
+                lines.append(addr)
+            text = '\n'.join(lines)
+            self.val_destination.setText(text)
+            self.val_destination.setToolTip(text)
+        else:
+            # No external recipients: hide the Destinations tile to avoid clutter
+            self.lbl_destination.setVisible(False)
+            self.val_destination.setVisible(False)
+            self.val_destination.clear()
+            if hasattr(self, 'tile_destination'):
+                self.tile_destination.hide()
+
+        # Fee: show if available (>=0)
+        fee_sat = details.fee_sat
+        if isinstance(fee_sat, int) and fee_sat >= 0:
+            self.lbl_fee.setVisible(True)
+            self.val_fee.setVisible(True)
+            self.val_fee.setText(f"{fee_sat:,} sats")
+
+            if hasattr(self, 'tile_fee'):
+                self.tile_fee.show()
+        else:
+            self.lbl_fee.setVisible(False)
+            self.val_fee.setVisible(False)
+            self.val_fee.clear()
+            if hasattr(self, 'tile_fee'):
+                self.tile_fee.hide()
+
+
+        # Update signature progress
+        self._on_signature_count_ready(details.signature_count)
+
+        # Trigger bridge sync to get rich details (Entropy, Min Conf, Voting)
+        if self.is_multisig:
+            self.view_model.broadcast_transaction_view_model.fetch_pending_operation()
 
     def _on_pending_operation_ready(self, op_info):
         """
@@ -971,54 +1356,139 @@ class BroadcastTransactionWidget(QWidget):
         if not current_psbt:
             return
 
-        operation = getattr(op_info, 'operation', None)
+        operation = op_info.operation
         if not operation:
             return
 
-        # Check if this operation's PSBT matches current input
-        op_psbt = getattr(operation, 'psbt', None)
+        op_psbt = operation.psbt
 
         # If strings match, we found our operation!
         if op_psbt and op_psbt == current_psbt:
-            # Store it as if it was passed via navigation
+            # Store the inner Operation object
             self._current_operation = operation
-
-            # Use helper to enrich UI
-            self._update_ui_with_operation_details(operation, current_psbt)
+            # Avoid stacking multiple inspections for the same PSBT
+            if not (isinstance(self._last_inspected_psbt, str) and self._last_inspected_psbt == current_psbt and self._psbt_details is not None):
+                # Trigger inspection explicitly now that we have the context
+                self._trigger_inspection(operation, current_psbt)
 
     def _handle_rgb_transfer_inspection_result(self, rgb_details):
-        """Handle the async RGB transfer inspection result from the signal."""
-        try:
-            if not hasattr(self, 'val_rgb'):
-                return
-            if rgb_details:
-                # Render any summary text representation
-                text = str(rgb_details)
-                self.val_rgb.setText(self._breakable_html(text, 12))
-                self.val_rgb.setToolTip(text)
-                if hasattr(self, 'inspection_frame'):
-                    self.inspection_frame.show()
-            else:
-                self.val_rgb.setText('')
-        except Exception as e:
-            logger.error('Error handling RGB transfer inspection: %s', str(e))
-
-    def _breakable_html(self, text: str, group: int = 8) -> str:
-        """Return HTML string with zero-width break opportunities every `group` characters.
-        Keeps display wrapping without visible separators. Uses RichText on QLabel.
         """
-        if not text:
-            return ''
+        Handle the async RGB transfer inspection result from the signal.
+        Populates Asset ID and Amount from RgbInspection.
+        """
+        if not rgb_details:
+            return
+
+        self._rgb_details = rgb_details
+        # Always hide Destination in RGB contexts (send/inflation) to avoid row conflicts
         try:
-            # Avoid altering short texts or those with whitespace
-            if len(text) <= group:
-                return f"<span>{text}</span>"
-            chunks = [text[i:i+group] for i in range(0, len(text), group)]
-            # &#8203; is zero-width space; allows wrapping anywhere between chunks
-            safe = '&#8203;'.join(chunks)
-            return f"<span>{safe}</span>"
+            if hasattr(self, 'tile_destination'):
+                self.tile_destination.hide()
+            if hasattr(self, 'lbl_destination'):
+                self.lbl_destination.setVisible(False)
+            if hasattr(self, 'val_destination'):
+                self.val_destination.setVisible(False)
         except Exception:
-            return f"<span>{text}</span>"
+            pass
+        operations = rgb_details.operations
+        if not operations:
+            # Still trigger a render attempt; card stays hidden until both ready
+            self._render_inspection_if_ready()
+            return
+
+        # Take the first operation (usually one per transfer)
+        op_info = operations[0]
+        asset_id = op_info.asset_id
+
+        # Calculate amounts from fungible assignments
+        send_amount = 0
+        total_inflation_amount = 0
+        for transition in op_info.transitions:
+            for output in transition.outputs:
+                assignment = output.assignment
+                if assignment and assignment.is_FUNGIBLE():
+                    amt = assignment.amount
+                    total_inflation_amount += amt
+                    if not output.is_ours:
+                        send_amount += amt
+
+        # Update Asset ID label
+        if asset_id:
+            self.lbl_asset_id.setVisible(True)
+            self.val_asset_id.setVisible(True)
+            self.val_asset_id.setText(str(asset_id))
+            self.val_asset_id.setToolTip(str(asset_id))
+            if hasattr(self, 'tile_asset'):
+                self.tile_asset.show()
+            # In RGB context, ensure Destination stays hidden so Asset ID occupies full row
+            if hasattr(self, 'tile_destination'):
+                self.tile_destination.hide()
+            # Also hide inner widgets to avoid flicker
+            if hasattr(self, 'lbl_destination'):
+                self.lbl_destination.setVisible(False)
+            if hasattr(self, 'val_destination'):
+                self.val_destination.setVisible(False)
+        else:
+            if hasattr(self, 'tile_asset'):
+                self.tile_asset.hide()
+
+
+        # Update Amount label (single label for both send and inflation)
+        amount_value = 0
+        if send_amount > 0:
+            amount_value = send_amount
+        elif total_inflation_amount > 0:
+            amount_value = total_inflation_amount
+
+        if amount_value > 0:
+            self.lbl_amount.setVisible(True)
+            self.lbl_amount.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'amount_field_label',
+                ),
+            )
+            self.val_amount.setVisible(True)
+            self.val_amount.setText(f"{amount_value:,}")
+            if hasattr(self, 'tile_amount'):
+                self.tile_amount.show()
+
+        # Update Transfer Type value (only when we have RGB details)
+        transfer_value_key = None
+        if send_amount > 0:
+            transfer_value_key = 'transfer'
+        elif total_inflation_amount > 0:
+            transfer_value_key = 'inflation'
+
+        if transfer_value_key is not None:
+            self.lbl_transfer_type.setVisible(True)
+            self.val_transfer_type.setVisible(True)
+            t_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, transfer_value_key,
+            )
+            self.val_transfer_type.setText(t_text if t_text else transfer_value_key)
+            if hasattr(self, 'tile_ttype'):
+                self.tile_ttype.show()
+        else:
+            if hasattr(self, 'tile_ttype'):
+                self.tile_ttype.hide()
+
+        # Min confirmations: dedicated row from pending operation details if available
+        op_details = self._current_operation.details if self._current_operation is not None else None
+        if op_details is not None:
+            min_confirmations = op_details.min_confirmations
+            if min_confirmations is not None and hasattr(self, 'lbl_min_conf'):
+                self.lbl_min_conf.setVisible(True)
+                self.val_min_conf.setVisible(True)
+                self.val_min_conf.setText("{} Required".format(min_confirmations))
+                if hasattr(self, 'tile_minconf'):
+                    self.tile_minconf.show()
+            else:
+                if hasattr(self, 'tile_minconf'):
+                    self.tile_minconf.hide()
+
+        # After RGB processing, try to render if PSBT is also ready
+        self._render_inspection_if_ready()
+
 
     def _on_signature_count_ready(self, count: int):
         _, total = SettingRepository.get_multisig_config()
@@ -1029,32 +1499,20 @@ class BroadcastTransactionWidget(QWidget):
                 'signature_count',
             ).format(count, total_disp),
         )
-        # When collected signatures reach required threshold, flip button text to Broadcast
+        # Multisig: always keep the primary action as 'Sign PSBT' (never flip to Broadcast)
         if self.is_multisig:
-            required, _ = SettingRepository.get_multisig_config()
-            needed = int(required) if required is not None else None
-            if needed is not None and count >= needed:
-                # Show Broadcast text
-                self.broadcast_button.setText(
-                    QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                        'broadcast_transaction',
-                    ),
-                )
+            self.broadcast_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                    'sign_psbt',
+                ),
+            )
+            if self.is_initiator_of_pending:
+                self.broadcast_button.hide()
+                self.btn_reject.hide()
             else:
-                # Keep Sign PSBT text
-                self.broadcast_button.setText(
-                    QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                        'sign_psbt',
-                    ),
-                )
-                if self.is_initiator_of_pending:
-                    self.broadcast_button.hide()
-                    self.btn_reject.hide()
-                else:
-                    self.broadcast_button.show()
-                    self.btn_reject.show()
+                self.broadcast_button.show()
+                self.btn_reject.show()
 
     def _on_import_psbt(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -1102,8 +1560,12 @@ class BroadcastTransactionWidget(QWidget):
         """Clear the current PSBT and reset UI state."""
         self.broadcast_transaction_input.clear()
         self.broadcast_transaction_input.setReadOnly(False)
-        if hasattr(self, 'inspection_frame'):
-            self.inspection_frame.hide()
+        self.inspection_frame.hide()
+        if hasattr(self, 'details_title'):
+            self.details_title.hide()
+        if self.is_multisig:
+            self.sign_status_label.hide()
+            self._apply_base_sizes()
 
         # Reset labels
         _, total = SettingRepository.get_multisig_config()
@@ -1191,9 +1653,7 @@ class BroadcastTransactionWidget(QWidget):
                     self.is_initiator_of_pending = True
 
                 if operation is not None:
-                    # Extract details based on operation type
-                    # using getattr with default is safer/cleaner than hasattr for optional fields on variant types
-                    psbt = getattr(operation, 'psbt', None)
+                    psbt = operation.psbt
 
                     if psbt:
                         self.method_selector_label.hide()
@@ -1201,10 +1661,11 @@ class BroadcastTransactionWidget(QWidget):
                         self.broadcast_transaction_input.setPlainText(psbt)
                         self.broadcast_transaction_input.setReadOnly(True)
                         # Store operation info for later use (sign + post)
-                        self._current_operation = op
+                        # We store the inner Operation object for consistency
+                        self._current_operation = operation
 
-                        # Use helper to enrich UI
-                        self._update_ui_with_operation_details(operation, psbt)
+                        # Trigger inspection immediately (Load Flow)
+                        self._trigger_inspection(operation, psbt)
 
                         # Show Reject for non-initiators reviewing
                         if not self.is_initiator_of_pending:
@@ -1380,93 +1841,3 @@ class BroadcastTransactionWidget(QWidget):
         self.method_selector.currentIndexChanged.connect(on_index_changed)
         on_index_changed(0)
 
-    def _update_ui_with_operation_details(self, operation, psbt_str):
-        """Helper to update UI with rich details from an Operation object."""
-        # Ensure we have the unwrapped operation
-
-        op_details = getattr(operation, 'details', None)
-
-        min_confirmations = None
-        consignment_paths = None
-        entropy = None
-        is_donation = None
-        asset_id = None
-        infl_amount = None
-
-        if op_details:
-            min_confirmations = getattr(op_details, 'min_confirmations', None)
-            consignment_paths = getattr(op_details, 'consignment_paths', None)
-            entropy = getattr(op_details, 'entropy', None)
-            is_donation = getattr(op_details, 'is_donation', None)
-            asset_id = getattr(op_details, 'asset_id', None)
-            infl_amount = getattr(op_details, 'amount', None)
-
-        # Update RGB Inspection
-        if consignment_paths:
-            self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
-                consignment_paths, psbt_str, entropy,
-            )
-
-        # Update Text Details
-        rgb_info_parts = []
-        if hasattr(self, 'val_rgb') and self.val_rgb.text():
-            rgb_info_parts.append(self.val_rgb.text())
-
-        # Avoid duplication if re-running
-        current_text = self.val_rgb.text() if hasattr(self, 'val_rgb') else ''
-
-        extras = []
-        if min_confirmations is not None:
-            label = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'min_confirmations',
-            )
-            extras.append(f"{label}: {min_confirmations}")
-        if entropy is not None:
-            label = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'entropy',
-            )
-            extras.append(f"{label}: {entropy}")
-        if is_donation is not None:
-            label = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'is_donation',
-            )
-            val_str = 'Yes' if is_donation else 'No'
-            extras.append(f"{label}: {val_str}")
-
-        if extras:
-            new_lines = [line for line in extras if line not in current_text]
-            if new_lines:
-                full_text = current_text + '\n' + \
-                    '\n'.join(new_lines) if current_text else '\n'.join(
-                        new_lines,
-                    )
-                if hasattr(self, 'val_rgb'):
-                    self.val_rgb.setText(full_text)
-                    self.val_rgb.setToolTip(full_text)
-                if hasattr(self, 'inspection_frame'):
-                    self.inspection_frame.show()
-
-        # Populate Asset ID and Inflation Amount fields when available
-        try:
-            if hasattr(self, 'lbl_asset_id') and hasattr(self, 'val_asset_id'):
-                if asset_id:
-                    self.lbl_asset_id.setVisible(True)
-                    self.val_asset_id.setVisible(True)
-                    self.val_asset_id.setText(self._breakable_html(str(asset_id), 8))
-                    self.val_asset_id.setToolTip(str(asset_id))
-                else:
-                    self.lbl_asset_id.setVisible(False)
-                    self.val_asset_id.setVisible(False)
-                    self.val_asset_id.clear()
-
-            if hasattr(self, 'lbl_inflation_amount') and hasattr(self, 'val_inflation_amount'):
-                if isinstance(infl_amount, int) and infl_amount >= 0:
-                    self.lbl_inflation_amount.setVisible(True)
-                    self.val_inflation_amount.setVisible(True)
-                    self.val_inflation_amount.setText(f"{infl_amount:,}")
-                else:
-                    self.lbl_inflation_amount.setVisible(False)
-                    self.val_inflation_amount.setVisible(False)
-                    self.val_inflation_amount.clear()
-        except Exception:
-            pass

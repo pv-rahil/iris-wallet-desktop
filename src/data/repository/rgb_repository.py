@@ -367,6 +367,7 @@ class RgbRepository:
                 operation_idx=operation_idx,
                 respond_to_operation=respond_to_operation,
             )
+            print("-"*100,data)
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
@@ -400,7 +401,7 @@ class RgbRepository:
         """Inspect RGB transfer details."""
         with repository_custom_context():
             data: RgbInspection = colored_wallet.wallet.inspect_rgb_transfer(
-                consignment=consignment,
+                consignment_paths=consignment,
                 psbt=psbt,
                 entropy=entropy,
             )

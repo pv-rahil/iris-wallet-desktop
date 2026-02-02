@@ -179,7 +179,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
             return
         self.is_loading.emit(True)
         self.run_in_thread(
-            self._sync_and_filter,
+            RgbRepository.sync_with_bridge,
             {
                 'args': [],
                 'callback': self.on_multisig_sync_done,
@@ -187,56 +187,6 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                 'error_callback': self.on_multisig_sync_error,
             },
         )
-
-    def _sync_and_filter(self):
-        """Syncs with bridge and filters out locally signed operations."""
-        ops = RgbRepository.sync_with_bridge()
-        if not ops:
-            return []
-
-        # Ensure we have a list to iterate
-        op_list = ops if isinstance(ops, list) else [ops]
-
-        filtered = []
-        signed_txids = local_store.get_value(SIGNED_TXIDS) or []
-
-        # If signed_txids is not a list (corruption safety), treat as empty
-        if not isinstance(signed_txids, list):
-            signed_txids = []
-
-        for op in op_list:
-            try:
-                # Get this wallet's XPUB to check if we're the initiator
-                our_xpub = local_store.get_value(MASTER_XPUB)
-
-                # Filter out operations initiated by this wallet (we already signed during creation)
-                if our_xpub and hasattr(op, 'initiator_xpub') and op.initiator_xpub == our_xpub:
-                    continue
-
-                # Filter out COMPLETED operations (nothing to do)
-                op_class_name = op.operation.__class__.__name__
-                if 'COMPLETED' in op_class_name:
-                    continue
-
-                # Filter out operations this signer already responded to
-                if hasattr(op.operation, 'status') and hasattr(op.operation.status, 'my_response'):
-                    if op.operation.status.my_response:
-                        continue
-
-                # For PSBT operations, check if we already signed via TXID
-                if hasattr(op.operation, 'psbt'):
-                    details = RgbRepository.inspect_psbt(op.operation.psbt)
-                    if details and hasattr(details, 'txid') and details.txid in signed_txids:
-                        # We already signed this one
-                        continue
-
-                filtered.append(op)
-            except Exception as e:
-                logger.error('Error inspecting PSBT for filtering: %s', e)
-                # Use safe fallback: include it if we can't verify
-                filtered.append(op)
-
-        return filtered
 
     def on_multisig_sync_done(self, operation_info):
         """Handle successful bridge sync. Emits pending operations list."""

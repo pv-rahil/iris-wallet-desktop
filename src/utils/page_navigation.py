@@ -224,12 +224,6 @@ class PageNavigation:
             }
             self.navigate_and_toggle(show_sidebar)
 
-            # Application State Persistence:
-            # If navigating to a standard dashboard page, clear/update the last_page
-            # We specifically want to persist MultisigSetupPage, so if we move AWAY from it
-            # to a main page, we should likely clear the 'last_page' setting or set it to 'dashboard'
-            # For now, let's treat any navigation via this generic method as a signal to clear "MultisigSetupPage" state
-            # unless we decide to persist ALL pages. The request was specific to MultisigSetup.
             current_last_page = SettingRepository.get_last_page()
             if current_last_page == 'MultisigSetupPage' and page_name != 'MultisigSetupPage':
                 SettingRepository.set_last_page(None)
