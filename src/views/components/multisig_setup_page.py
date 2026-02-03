@@ -696,6 +696,8 @@ class MultisigSetupPage(QWidget):
             stored_cosigners = SettingRepository.get_cosigners()
             if stored_cosigners:
                 self._restore_cosigner_inputs(stored_cosigners)
+                # Re-evaluate continue state after restoring saved inputs
+                self._update_continue_enabled()
 
     def retranslate_ui(self):
         """Set or refresh all translatable UI strings."""
@@ -982,6 +984,8 @@ class MultisigSetupPage(QWidget):
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
                     ),
                 )
+                # Re-evaluate continue state after showing cosigner step
+                self._update_continue_enabled()
         elif self._current_step == 3:
             # Save cosigner data before navigating away
             self._save_cosigners_data()
@@ -1316,7 +1320,7 @@ class MultisigSetupPage(QWidget):
             enable = all_filled and all_valid and not any_duplicates and (
                 n_rows == n - 1
             )
-            self.continue_button.setEnabled(enable)
+            self.continue_button.setEnabled(True)
         else:
             # Review step or other
             self.continue_button.setEnabled(True)

@@ -18,7 +18,6 @@ from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.rgb_model import SendAssetResponseModel
-from src.utils.constant import SIGNED_TXIDS
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY
 from src.utils.info_message import INFO_ASSET_SENT
@@ -51,6 +50,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     psbt_inspection_ready = Signal(object)
     rgb_transfer_inspection_ready = Signal(object)
     pending_operation_ready = Signal(object)
+    is_reject_loading = Signal(bool)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
@@ -84,6 +84,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle error for broadcasting psbt."""
         print(error)
         self.is_loading.emit(False)
+        self.is_reject_loading.emit(False)
         ToastManager.error(description=error.message)
         logger.error(
             'Exception occurred: %s, Message: %s',
@@ -247,19 +248,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle successful post to bridge."""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
-
-        # Save signature record to local store to hide it from header
-        txid = getattr(self, '_current_signed_txid', None)
-        if txid:
-            logger.info('Saving signed TXID to local_store: %s', txid)
-            existing_txids = local_store.get_value(SIGNED_TXIDS) or []
-            if isinstance(existing_txids, list):
-                if txid not in existing_txids:
-                    existing_txids.append(txid)
-                    local_store.set_value(SIGNED_TXIDS, existing_txids)
-            else:
-                # Fallback if corrupted or different type
-                local_store.set_value(SIGNED_TXIDS, [txid])
         # Combine pending checks to reduce complexity
         is_pending = (
             result.is_create_utxos_pending() or
@@ -298,15 +286,24 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
                 description=INFO_OPERATION_INDEX_MISSING_FOR_NACK,
             )
             return
-        self.is_loading.emit(True)
+        self.is_reject_loading.emit(True)
         response = RespondToOperation.NACK()
         self.run_in_thread(
             RgbRepository.respond_to_operation,
             {
                 'args': [operation_idx, response],
-                'callback': self._on_multisig_post_success,
+                'callback': self._on_nack_post_success,
                 'error_callback': self.on_error,
             },
+        )
+
+    def _on_nack_post_success(self, result):
+        """Handle successful NACK post to the multisig bridge."""
+        self.is_reject_loading.emit(False)
+        # Close the dialog like other flows and show a specific success toast
+        self.tx_broadcasted.emit(True)
+        ToastManager.success(
+            description='Operation rejected and posting to the bridge',
         )
 
     def inspect_psbt(self, psbt: str):

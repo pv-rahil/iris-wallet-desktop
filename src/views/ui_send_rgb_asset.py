@@ -205,6 +205,7 @@ class SendRGBAssetWidget(QWidget):
             decoded_rgb_invoice: InvoiceData = RgbRepository.decode_invoice(
                 DecodeRgbInvoiceRequestModel(invoice=provided_invoice),
             )
+            amount = int(amount.replace(",", ""))
             assignment = type(decoded_rgb_invoice.assignment)(
                 amount=int(amount),
             )
