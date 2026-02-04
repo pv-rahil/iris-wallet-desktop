@@ -145,7 +145,8 @@ class IssueIFAViewModel(QObject, ThreadManager):
             if getattr(error, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)
                 return
-        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET:
+        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET and \
+            SettingRepository.get_wallet_signature_type() != WalletSignatureType.MULTI_SIG_WALLET:
             description = error.message if isinstance(
                 error, CommonException,
             ) else ERROR_SOMETHING_WENT_WRONG

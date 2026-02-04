@@ -347,6 +347,7 @@ class RgbRepository:
                 signed_psbt=signed_psbt,
                 asset_id=asset_id,
             )
+            print(data)
 
     @staticmethod
     def sync_with_bridge() -> OperationInfo:
@@ -367,7 +368,6 @@ class RgbRepository:
                 operation_idx=operation_idx,
                 respond_to_operation=respond_to_operation,
             )
-            print("-"*100,data)
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()

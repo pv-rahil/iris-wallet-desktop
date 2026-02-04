@@ -2086,7 +2086,7 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>sign_psbt_detection_label</source>
-        <translation>{0} transaction detected waiting to be signed</translation>
+        <translation>{0} transaction detected — waiting to sign</translation>
     </message>
     <message>
         <source>refresh_transfer_title</source>

@@ -158,11 +158,10 @@ class BtcRepository:
     def post_create_utxos(signed_psbt: str) -> None:
         """Post the signed create_utxos PSBT to the multisig bridge for other cosigners."""
         with repository_custom_context():
-            data = colored_wallet.wallet.post_create_utxos(
+            colored_wallet.wallet.post_create_utxos(
                 online=colored_wallet.online,
                 psbt=signed_psbt,
             )
-            return data
 
     @staticmethod
     @auto_sync_multisig()

@@ -6,8 +6,12 @@ from rgb_lib import AssetSchema
 from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
 from rgb_lib import Keys
-from rgb_lib import rgb_lib
 from rgb_lib import SinglesigKeys
+from rgb_lib import generate_keys
+from rgb_lib import Wallet
+from rgb_lib import MultisigWallet
+from rgb_lib import WalletData
+from rgb_lib import restore_keys
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import KeyStorageType
@@ -36,15 +40,15 @@ class CommonOperationRepository:
     def init(init: InitRequestModel) -> Keys:
         """Initialize and generate RGB keys for the given Bitcoin network."""
         with repository_custom_context():
-            response: Keys = rgb_lib.generate_keys(init.network)
+            response: Keys = generate_keys(init.network)
 
             return response
 
     @staticmethod
-    def unlock(unlock: WalletRequestModel) -> rgb_lib.Wallet | rgb_lib.MultisigWallet:
+    def unlock(unlock: WalletRequestModel) -> Wallet | MultisigWallet:
         """Unlock operation - creates either standard or multisig wallet."""
         with repository_custom_context():
-            wallet_data = rgb_lib.WalletData(
+            wallet_data = WalletData(
                 data_dir=unlock.data_dir, bitcoin_network=unlock.bitcoin_network, database_type=DatabaseType.SQLITE,
                 max_allocations_per_utxo=unlock.max_allocations_per_utxo, supported_schemas=AssetSchema,
             )
@@ -55,12 +59,12 @@ class CommonOperationRepository:
             )
 
             if is_multisig:
-                recv_wallet = rgb_lib.MultisigWallet(
+                recv_wallet = MultisigWallet(
                     wallet_data, keys=unlock.keys,
                 )
             else:
                 # Standard single-sig wallet
-                recv_wallet = rgb_lib.Wallet(wallet_data, keys=unlock.keys)
+                recv_wallet = Wallet(wallet_data, keys=unlock.keys)
             colored_wallet.set_wallet(recv_wallet)
             return recv_wallet
 
@@ -77,7 +81,7 @@ class CommonOperationRepository:
     def restore(restore: RestoreRequestModel) -> RestoreResponseModel:
         """Restore operation."""
         with repository_custom_context():
-            rgb_lib.restore_backup(
+            restore_backup(
                 backup_path=restore.backup_path,
                 password=restore.password, data_dir=restore.data_dir,
             )
@@ -87,7 +91,7 @@ class CommonOperationRepository:
     def restore_keys(bitcoin_network: BitcoinNetwork, mnemonic: str) -> Keys:
         """Restore keys operation."""
         with repository_custom_context():
-            restore_keys = rgb_lib.restore_keys(bitcoin_network, mnemonic)
+            restore_keys = restore_keys(bitcoin_network, mnemonic)
             return restore_keys
 
     @staticmethod
@@ -127,9 +131,9 @@ class CommonOperationRepository:
             SettingRepository.get_wallet_network(),
         )
 
-        keys = rgb_lib.restore_keys(network, mnemonic)
+        keys = restore_keys(network, mnemonic)
 
-        wallet_data = rgb_lib.WalletData(
+        wallet_data = WalletData(
             data_dir=app_paths.app_path,
             bitcoin_network=network,
             database_type=DatabaseType.SQLITE,
@@ -137,7 +141,7 @@ class CommonOperationRepository:
             supported_schemas=AssetSchema,
         )
 
-        return rgb_lib.Wallet(
+        return Wallet(
             wallet_data,
             keys=SinglesigKeys(
                 account_xpub_vanilla=keys.account_xpub_vanilla,

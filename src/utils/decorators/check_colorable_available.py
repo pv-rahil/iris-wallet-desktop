@@ -61,7 +61,6 @@ def create_utxos(num: int) -> None:
         if (key_storage_type == KeyStorageType.HARDWARE_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET) \
                 or wallet_access_type == WalletAccessType.WATCH_ONLY \
                 or wallet_signature_type == WalletSignatureType.MULTI_SIG_WALLET:
-            print("Hardware wallet or watch only or multisig")
             raise CommonException('NoAvailableUtxos')
         colored_wallet.wallet.create_utxos(
             online=create_utxos_model.online, up_to=False,

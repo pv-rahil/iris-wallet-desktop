@@ -9,8 +9,10 @@ It behaves similarly to the `app_paths` pattern used for file paths.
 """
 from __future__ import annotations
 
-import rgb_lib
 from rgb_lib import RgbLibError
+from rgb_lib import Wallet
+from rgb_lib import MultisigWallet
+from rgb_lib import Online
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletSignatureType
@@ -28,26 +30,26 @@ class ColoredWallet:
     loading/saving of initialization data.
 
     Attributes:
-        wallet (rgb_lib.Wallet | rgb_lib.MultisigWallet): The active RGB wallet instance.
-        online (rgb_lib.Online): The current online session.
+        wallet (Wallet | MultisigWallet): The active RGB wallet instance.
+        online (Online): The current online session.
     """
 
     def __init__(self):
-        self._wallet: rgb_lib.Wallet | rgb_lib.MultisigWallet | None = None
-        self.online_wallet: rgb_lib.Online | None = None
+        self._wallet: Wallet | MultisigWallet | None = None
+        self.online_wallet: Online | None = None
 
     @property
     def is_multisig(self) -> bool:
         """Returns True if the wallet is configured as multisig."""
         if self._wallet:
-            return isinstance(self._wallet, rgb_lib.MultisigWallet)
+            return isinstance(self._wallet, MultisigWallet)
         return (
             SettingRepository.get_wallet_signature_type() ==
             WalletSignatureType.MULTI_SIG_WALLET
         )
 
     @property
-    def wallet(self) -> rgb_lib.Wallet | rgb_lib.MultisigWallet:
+    def wallet(self) -> Wallet | MultisigWallet:
         """
         Returns the initialized wallet instance (standard or multisig).
 
@@ -58,12 +60,12 @@ class ColoredWallet:
             raise CommonException('Wallet not initialized')
         return self._wallet
 
-    def set_wallet(self, wallet: rgb_lib.Wallet | rgb_lib.MultisigWallet):
+    def set_wallet(self, wallet: Wallet | MultisigWallet):
         """Sets the wallet instance (standard or multisig)."""
         self._wallet = wallet
 
     @property
-    def online(self) -> rgb_lib.Online:
+    def online(self) -> Online:
         """
         Lazily initializes and returns the online session for the current wallet.
 
@@ -72,7 +74,7 @@ class ColoredWallet:
         Subsequent calls return the already-initialized session.
 
         Returns:
-            rgb_lib.Online: The active online session.
+            Online: The active online session.
 
         Raises:
             RuntimeError: If the wallet is not initialized.
