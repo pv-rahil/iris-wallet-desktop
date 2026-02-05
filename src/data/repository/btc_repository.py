@@ -37,7 +37,7 @@ class BtcRepository:
             return AddressResponseModel(address=data)
 
     @staticmethod
-    @auto_sync_multisig(before=True, after=True)
+    @auto_sync_multisig()
     def get_btc_balance() -> BalanceResponseModel:
         """Get Bitcoin balance."""
         with repository_custom_context():
@@ -51,7 +51,7 @@ class BtcRepository:
             )
 
     @staticmethod
-    @auto_sync_multisig(before=True, after=True)
+    @auto_sync_multisig()
     def list_transactions() -> TransactionListResponse:
         """List Bitcoin transactions."""
         with repository_custom_context():
@@ -61,6 +61,7 @@ class BtcRepository:
             return TransactionListResponse(transactions=data)
 
     @staticmethod
+    @auto_sync_multisig()
     def list_unspents(param: UnspentListRequestModel) -> UnspentsListResponseModel:
         """List unspent Bitcoin."""
         with repository_custom_context():
@@ -93,7 +94,7 @@ class BtcRepository:
             return EstimateFeeResponse(fee_rate=data)
 
     @staticmethod
-    @auto_sync_multisig(before=True, after=False)
+    @auto_sync_multisig()
     def send_btc_begin(param: SendBtcRequestModel) -> str:
         """Creates psbt for bitcoin."""
         with repository_custom_context():
@@ -125,7 +126,7 @@ class BtcRepository:
             return SendBtcResponseModel(tx_id=data)
 
     @staticmethod
-    @auto_sync_multisig(before=True, after=False)
+    @auto_sync_multisig()
     def create_utxos_begin(param: CreateUtxosRequestModel, purpose: str | None = None) -> str:
         """Creates colorable utxo psbt."""
         with repository_custom_context():

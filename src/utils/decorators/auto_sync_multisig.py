@@ -12,7 +12,7 @@ from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
 
 
-def auto_sync_multisig(before: bool = False, after: bool = True) -> Callable[..., Any]:
+def auto_sync_multisig() -> Callable[..., Any]:
     """
     Decorator to automatically sync with the multisig bridge before and/or after the method execution
     if the current wallet is a multisig wallet.
@@ -24,7 +24,7 @@ def auto_sync_multisig(before: bool = False, after: bool = True) -> Callable[...
         @wraps(method)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Sync before execution
-            if before and colored_wallet.is_multisig:
+            if colored_wallet.is_multisig:
                 try:
                     logger.info('Auto-syncing multisig wallet (before)...')
                     colored_wallet.wallet.sync_with_bridge(
@@ -40,23 +40,6 @@ def auto_sync_multisig(before: bool = False, after: bool = True) -> Callable[...
                     ) from exc
 
             result = method(*args, **kwargs)
-
-            # Sync after execution
-            if after and colored_wallet.is_multisig:
-                try:
-                    logger.info('Auto-syncing multisig wallet (after)...')
-                    colored_wallet.wallet.sync_with_bridge(
-                        online=colored_wallet.online,
-                    )
-                except Exception as exc:
-                    logger.error(
-                        'Failed to auto-sync multisig wallet (after): %s',
-                        exc,
-                    )
-                    raise CommonException(
-                        'Failed to sync with bridge after operation',
-                    ) from exc
-
             return result
         return wrapper
     return decorator

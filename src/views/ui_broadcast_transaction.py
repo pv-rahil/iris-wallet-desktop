@@ -33,17 +33,15 @@ from accessible_constant import BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON
 from accessible_constant import BROADCAST_TRANSACTION_PSBT_INPUT
 from accessible_constant import SIGN_PSBT_PAGE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
-from src.data.service.wallet_data_service import WalletDataService
+from src.data.service.broadcast_transaction_service import BroadcastTransactionService
+from src.data.service.broadcast_transaction_service import PsbtDraftItem
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletSignatureType
 from src.utils.common_utils import close_button_navigation
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import MASTER_XPUB
-from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import load_stylesheet
-from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
@@ -561,13 +559,13 @@ class BroadcastTransactionWidget(QWidget):
 
         # Prepare PSBT storage for optional signing flow
         if self.is_multisig:
-            self._psbt_items: list[dict] = []
+            self._psbt_items: list[PsbtDraftItem] = []
         # Prepare PSBT storage for broadcast flow
         if self.priv.can_broadcast_psbt:
-            self._psbt_signed_items: list[dict] = []
+            self._psbt_signed_items: list[PsbtDraftItem] = []
 
         # Always hide Export in this flow (not needed now)
-        if hasattr(self, 'btn_export'):
+        if self.is_multisig:
             try:
                 self.btn_export.hide()
                 self.btn_export.setEnabled(False)
@@ -684,6 +682,12 @@ class BroadcastTransactionWidget(QWidget):
         self.view_model.broadcast_transaction_view_model.pending_operation_ready.connect(
             self._on_pending_operation_ready,
         )
+        self.view_model.broadcast_transaction_view_model.psbts_loaded.connect(
+            self._on_psbts_loaded,
+        )
+        self.method_selector.currentIndexChanged.connect(
+            self._on_method_selector_index_changed,
+        )
         # Trigger inspection when user pastes/types a PSBT (sidebar or not)
         self.broadcast_transaction_input.textChanged.connect(self._on_psbt_text_changed)
         self.view_model.broadcast_transaction_view_model.is_reject_loading.connect(
@@ -755,9 +759,7 @@ class BroadcastTransactionWidget(QWidget):
             # Default: do not expect RGB unless a pending operation later sets it
             self._rgb_expected = False
             self._op_details_ready = False
-            # Try to kick off an inspection if available
-            if hasattr(self.view_model.broadcast_transaction_view_model, 'inspect_psbt'):
-                self.view_model.broadcast_transaction_view_model.inspect_psbt(psbt_text)
+            self.view_model.broadcast_transaction_view_model.inspect_psbt(psbt_text)
         else:
             # Collapse when cleared
             self._apply_base_sizes()
@@ -873,15 +875,7 @@ class BroadcastTransactionWidget(QWidget):
         """
         Broadcast the signed PSBT using the selected method.
         """
-        signed_psbt = self.broadcast_transaction_input.toPlainText().strip()
-        purpose = None
-
-        if signed_psbt.startswith('psbt:'):
-            parts = signed_psbt.split(':', 2)
-            if len(parts) == 3:  # Format: psbt:<purpose>:<psbt>
-                purpose, signed_psbt = parts[1], parts[2]
-            elif len(parts) == 2:  # Format: psbt:<psbt>
-                signed_psbt = parts[1]
+        psbt_text = self.broadcast_transaction_input.toPlainText().strip()
 
         confirmation_dialog = ConfirmationDialog(
             message=QCoreApplication.translate(
@@ -895,38 +889,15 @@ class BroadcastTransactionWidget(QWidget):
         if not confirmation_dialog.exec() == QDialog.Accepted:
             return
 
-        if self.priv.can_broadcast_psbt:
-            if purpose is None and self._psbt_signed_items:
-                idx = self.method_selector.currentIndex() if self.method_selector.isVisible() else 0
-                if 0 <= idx < len(self._psbt_signed_items):
-                    purpose = self._psbt_signed_items[idx].get('purpose')
+        items = self._psbt_signed_items if self.priv.can_broadcast_psbt else self._psbt_items
+        idx = self.method_selector.currentIndex() if self.method_selector.isVisible() else -1
+        selector_purpose = BroadcastTransactionService.selected_purpose(items, idx)
 
-            purpose_map = {
-                'send_btc': self.view_model.broadcast_transaction_view_model.send_btc_end,
-                'send_asset': self.view_model.broadcast_transaction_view_model.send_end,
-                'inflate_asset': self.view_model.broadcast_transaction_view_model.inflate_end,
-            }
-
-            handler = purpose_map.get(
-                purpose, self.view_model.broadcast_transaction_view_model.create_utxos_end,
-            )
-            handler(signed_psbt)
-
-        else:
-            # Determine purpose similarly for sign-only mode to set RGB mode
-            if purpose is None and self._psbt_items:
-                idx = self.method_selector.currentIndex() if self.method_selector.isVisible() else 0
-                if 0 <= idx < len(self._psbt_items):
-                    purpose = self._psbt_items[idx].get('purpose')
-
-            # Enable RGB mode only for RGB asset signing; BTC/UTXO default to False
-            hardware_client_store.set_rgb_mode(
-                purpose in ('send_asset', 'inflate_asset'),
-            )
-
-            self.view_model.broadcast_transaction_view_model.sign_and_finalize_psbt(
-                signed_psbt,
-            )
+        self.view_model.broadcast_transaction_view_model.execute_psbt_action(
+            psbt_text=psbt_text,
+            selector_purpose=selector_purpose,
+            can_broadcast=self.priv.can_broadcast_psbt,
+        )
 
     def on_success_sent_navigation(self):
         """
@@ -937,43 +908,58 @@ class BroadcastTransactionWidget(QWidget):
     def _cleanup_secondary_draft_if_any(self, *_):
         """Delete the latest active IFA secondary draft (watch-only/offline)."""
         try:
-            svc = WalletDataService.get_session()
-            if svc is None:
-                return
-            # Prefer precise cleanup by PSBT content if available, and guard by purpose
             psbt_text = self.broadcast_transaction_input.toPlainText().strip()
-            purpose = None
-            if psbt_text.startswith('psbt:'):
-                parts = psbt_text.split(':', 2)
-                if len(parts) == 3:
-                    purpose, _psbt_only = parts[1], parts[2]
-                elif len(parts) == 2:
-                    _psbt_only = parts[1]
-                else:
-                    _psbt_only = psbt_text
-            else:
-                _psbt_only = psbt_text
-
-            # If purpose is known and not inflate, do nothing
-            if purpose is not None and purpose != 'inflate_asset':
-                return
-
-            # First, try exact delete by PSBT content
-            if _psbt_only:
-                try:
-                    if svc.delete_secondary_draft_by_psbt(_psbt_only):
-                        return
-                except Exception:
-                    pass
-
-            # If purpose explicitly 'inflate_asset', fallback to deleting latest active draft
-            if purpose == 'inflate_asset':
-                latest = svc.get_latest_active_secondary_draft()
-                if isinstance(latest, dict) and latest.get('id') is not None:
-                    svc.delete_ifa_secondary_draft(int(latest['id']))
+            BroadcastTransactionService.cleanup_secondary_draft_if_any(psbt_text)
         except Exception:
-            # Silent best-effort cleanup
             pass
+
+    def _on_psbts_loaded(self, items: list[PsbtDraftItem]) -> None:
+        self.method_selector.hide()
+        self.method_selector_label.hide()
+
+        if self.priv.can_broadcast_psbt:
+            self._psbt_signed_items = items
+            label_key = 'select_psbt_for_broadcast'
+        else:
+            self._psbt_items = items
+            label_key = 'select_psbt_for_sign'
+
+        if len(items) == 0:
+            self.handle_button_enable()
+            return
+
+        if len(items) == 1:
+            self._programmatic_psbt_set = True
+            self.broadcast_transaction_input.setPlainText(items[0].psbt)
+            self.broadcast_transaction_input.setReadOnly(True)
+            self.handle_button_enable()
+            return
+
+        self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
+        self.method_selector_label.show()
+        self.method_selector.show()
+        self.method_selector_label.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                label_key,
+            ),
+        )
+
+        self.method_selector.blockSignals(True)
+        self.method_selector.clear()
+        self.method_selector.addItems(BroadcastTransactionService.selector_titles(items))
+        self.method_selector.blockSignals(False)
+        self._on_method_selector_index_changed(0)
+        self.handle_button_enable()
+
+    def _on_method_selector_index_changed(self, idx: int) -> None:
+        items = self._psbt_signed_items if self.priv.can_broadcast_psbt else self._psbt_items
+        if idx < 0 or idx >= len(items):
+            return
+        self._programmatic_psbt_set = True
+        self.broadcast_transaction_input.setPlainText(items[idx].psbt)
+        self.broadcast_transaction_input.setReadOnly(True)
+        self.handle_button_enable()
 
     def handle_button_enable(self):
         """
@@ -1019,7 +1005,6 @@ class BroadcastTransactionWidget(QWidget):
 
         # Get the operation index for posting back
         operation_idx = self.pending_operation.operation_idx if self.pending_operation else None
-        print('operation_idx:', operation_idx,self.pending_operation)
 
         # Call the viewmodel to sign and post
         self.view_model.broadcast_transaction_view_model.sign_and_post_multisig(
@@ -1103,68 +1088,67 @@ class BroadcastTransactionWidget(QWidget):
         self.view_model.broadcast_transaction_view_model.inspect_psbt(
             psbt_text,
         )
-        op = getattr(operation, "details", None)
+        op_ctx = BroadcastTransactionService.operation_details_context(operation)
 
-        # If we have consignment paths, inspect RGB strictly for Asset ID/Amount
-        consignment_paths = getattr(op, 'consignment_paths', None) if op is not None else None
+        consignment_paths = op_ctx.consignment_paths
         self._rgb_expected = bool(consignment_paths)
         if self._rgb_expected:
             self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
-                consignment_paths, psbt_text, op.entropy,
+                consignment_paths,
+                psbt_text,
+                op_ctx.entropy if op_ctx.entropy is not None else 0,
             )
-        else:
-            # No RGB consignment (e.g., InflationDetails). If inflation fields exist, populate directly.
-            asset_id = getattr(op, 'asset_id', None) if op is not None else None
-            amount = getattr(op, 'amount', None) if op is not None else None
-            min_conf = getattr(op, 'min_confirmations', None) if op is not None else None
-            self._is_inflation_context = bool(asset_id is not None or amount is not None or min_conf is not None)
-            if self._is_inflation_context:
+            return
+
+        self._is_inflation_context = bool(
+            op_ctx.asset_id is not None
+            or op_ctx.amount is not None
+            or op_ctx.min_confirmations is not None
+        )
+        if self._is_inflation_context:
+            if op_ctx.asset_id is not None:
+                self.lbl_asset_id.setVisible(True)
+                self.val_asset_id.setVisible(True)
+                self.val_asset_id.setText(self._wrap_to_two_lines(str(op_ctx.asset_id)))
+                self.tile_asset.show()
+
+            if isinstance(op_ctx.amount, int) and op_ctx.amount > 0:
+                self.lbl_amount.setVisible(True)
+                self.val_amount.setVisible(True)
+                self.val_amount.setText(f"{op_ctx.amount:,}")
                 try:
-                    if asset_id is not None:
-                        self.lbl_asset_id.setVisible(True)
-                        self.val_asset_id.setVisible(True)
-                        self.val_asset_id.setText(self._wrap_to_two_lines(str(asset_id)))
-                        if hasattr(self, 'tile_asset'):
-                            self.tile_asset.show()
-                    if isinstance(amount, int) and amount > 0:
-                        self.lbl_amount.setVisible(True)
-                        self.val_amount.setVisible(True)
-                        self.val_amount.setText(f"{amount:,}")
-                        try:
-                            self.val_amount.setStyleSheet('color: #10B981; font-weight: 700;')
-                        except Exception:
-                            pass
-                        if hasattr(self, 'tile_amount'):
-                            self.tile_amount.show()
-                    if isinstance(min_conf, int):
-                        self.lbl_min_conf.setVisible(True)
-                        self.val_min_conf.setVisible(True)
-                        self.val_min_conf.setText(str(min_conf))
-                        if hasattr(self, 'tile_minconf'):
-                            self.tile_minconf.show()
-                    # Explicitly show transfer type for inflation path
-                    if hasattr(self, 'tile_ttype'):
-                        self.tile_ttype.show()
-                        self.lbl_transfer_type.setVisible(True)
-                        self.val_transfer_type.setVisible(True)
-                        t_text = QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation',
-                        )
-                        self.val_transfer_type.setText(t_text if t_text else 'inflation')
+                    self.val_amount.setStyleSheet('color: #10B981; font-weight: 700;')
                 except Exception:
                     pass
-            # Render immediately without waiting for RGB
-            self._render_inspection_if_ready()
+                self.tile_amount.show()
+
+            if isinstance(op_ctx.min_confirmations, int):
+                self.lbl_min_conf.setVisible(True)
+                self.val_min_conf.setVisible(True)
+                self.val_min_conf.setText(str(op_ctx.min_confirmations))
+                self.tile_minconf.show()
+
+            self.tile_ttype.show()
+            self.lbl_transfer_type.setVisible(True)
+            self.val_transfer_type.setVisible(True)
+            t_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation',
+            )
+            self.val_transfer_type.setText(t_text if t_text else 'inflation')
+
+        self._render_inspection_if_ready()
 
     def _handle_psbt_inspection_result(self, details):
         """
         Handle the async PSBT inspection result from the signal.
         Populates TXID, Amount, Destination, Fee, Size from PsbtInspection.
         """
+        if not self.is_multisig:
+            return
+
         if not details:
             self.inspection_frame.hide()
-            if hasattr(self, 'details_title'):
-                self.details_title.hide()
+            self.details_title.hide()
             self.is_psbt_validated = False
             self.handle_button_enable()
             if self.is_multisig:
@@ -1186,65 +1170,32 @@ class BroadcastTransactionWidget(QWidget):
 
         # In inflation context, do not recompute Amount/Destination using BTC-only heuristics.
         # Keep prefilled RGB inflation amount and hide Destination.
-        if getattr(self, '_is_inflation_context', False):
+        if self._is_inflation_context:
             # Hide destination tile explicitly
             self.lbl_destination.setVisible(False)
             self.val_destination.setVisible(False)
-            if hasattr(self, 'tile_destination'):
-                self.tile_destination.hide()
-            # Also ensure Asset/Amount/MinConf are present from operation details
-            try:
-                op = getattr(self._current_operation, 'details', None)
-                if op is not None:
-                    asset_id = getattr(op, 'asset_id', None)
-                    amount = getattr(op, 'amount', None)
-                    min_conf = getattr(op, 'min_confirmations', None)
-                    if asset_id is not None:
-                        self.lbl_asset_id.setVisible(True)
-                        self.val_asset_id.setVisible(True)
-                        self.val_asset_id.setText(str(asset_id))
-                        if hasattr(self, 'tile_asset'):
-                            self.tile_asset.show()
-                    if isinstance(amount, int) and amount > 0:
-                        self.lbl_amount.setVisible(True)
-                        self.val_amount.setVisible(True)
-                        self.val_amount.setText(f"{amount:,}")
-                        if hasattr(self, 'tile_amount'):
-                            self.tile_amount.show()
-                    if isinstance(min_conf, int):
-                        self.lbl_min_conf.setVisible(True)
-                        self.val_min_conf.setVisible(True)
-                        self.val_min_conf.setText(str(min_conf))
-                        if hasattr(self, 'tile_minconf'):
-                            self.tile_minconf.show()
-            except Exception:
-                pass
+            self.tile_destination.hide()
+
             # Ensure transfer type is visible as 'Inflation'
-            try:
-                if hasattr(self, 'tile_ttype'):
-                    self.tile_ttype.show()
-                    self.lbl_transfer_type.setVisible(True)
-                    self.val_transfer_type.setVisible(True)
-                    t_text = QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation',
-                    )
-                    self.val_transfer_type.setText(t_text if t_text else 'Inflation')
-            except Exception:
-                pass
+            self.tile_ttype.show()
+            self.lbl_transfer_type.setVisible(True)
+            self.val_transfer_type.setVisible(True)
+            t_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'inflation',
+            )
+            self.val_transfer_type.setText(t_text if t_text else 'Inflation')
             # Show/update fee only
-            fee_sat = getattr(details, 'fee_sat', None)
+            fee_sat = details.fee_sat
             if isinstance(fee_sat, int) and fee_sat >= 0:
                 self.lbl_fee.setVisible(True)
                 self.val_fee.setVisible(True)
                 self.val_fee.setText(f"{fee_sat:,} sats")
-                if hasattr(self, 'tile_fee'):
-                    self.tile_fee.show()
+                self.tile_fee.show()
             else:
                 self.lbl_fee.setVisible(False)
                 self.val_fee.setVisible(False)
                 self.val_fee.clear()
-                if hasattr(self, 'tile_fee'):
-                    self.tile_fee.hide()
+                self.tile_fee.hide()
             # Update signature status and exit early
             self._on_signature_count_ready(details.signature_count)
             if self.is_multisig:
@@ -1258,69 +1209,48 @@ class BroadcastTransactionWidget(QWidget):
         )
 
         # BTC-only path: ensure Asset ID tile is hidden and we'll show Destination instead
-        try:
-            if hasattr(self, 'tile_asset'):
-                self.tile_asset.hide()
-            if hasattr(self, 'lbl_asset_id'):
-                self.lbl_asset_id.setVisible(False)
-            if hasattr(self, 'val_asset_id'):
-                self.val_asset_id.setVisible(False)
-        except Exception:
-            pass
+        self.tile_asset.hide()
+        self.lbl_asset_id.setVisible(False)
+        self.val_asset_id.setVisible(False)
 
         # BTC-only: do not render Amount in this card. Hide amount tile entirely.
-        try:
-            if hasattr(self, 'tile_amount'):
-                self.tile_amount.hide()
-            self.lbl_amount.setVisible(False)
-            self.val_amount.setVisible(False)
-            self.val_amount.clear()
-        except Exception:
-            pass
+        self.tile_amount.hide()
+        self.lbl_amount.setVisible(False)
+        self.val_amount.setVisible(False)
+        self.val_amount.clear()
 
         # Transfer Type (BTC-only): show only once pending operation classification arrives
-        try:
-            if hasattr(self, 'tile_ttype'):
-                pending_key = getattr(self, '_pending_transfer_type', None)
-                if pending_key in ('internal', 'btc_transfer'):
-                    self.tile_ttype.show()
-                    self.lbl_transfer_type.setVisible(True)
-                    self.val_transfer_type.setVisible(True)
-                    t_text = QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, pending_key,
-                    )
-                    fallback = 'Internal' if pending_key == 'internal' else 'BTC transfer'
-                    self.val_transfer_type.setText(t_text if t_text else fallback)
-                else:
-                    self.tile_ttype.hide()
-                    self.lbl_transfer_type.setVisible(False)
-                    self.val_transfer_type.setVisible(False)
-        except Exception:
-            pass
+        pending_key = self._pending_transfer_type
+        if pending_key in ('internal', 'btc_transfer'):
+            self.tile_ttype.show()
+            self.lbl_transfer_type.setVisible(True)
+            self.val_transfer_type.setVisible(True)
+            t_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, pending_key,
+            )
+            fallback = 'Internal' if pending_key == 'internal' else 'BTC transfer'
+            self.val_transfer_type.setText(t_text if t_text else fallback)
+        else:
+            self.tile_ttype.hide()
+            self.lbl_transfer_type.setVisible(False)
+            self.val_transfer_type.setVisible(False)
 
         # BTC-only: hide Destination tile entirely.
         self.lbl_destination.setVisible(False)
         self.val_destination.setVisible(False)
         self.val_destination.clear()
-        if hasattr(self, 'tile_destination'):
-            self.tile_destination.hide()
+        self.tile_destination.hide()
 
         # BTC-only: layout compaction and ordering (do NOT affect RGB send/inflation flows)
-        try:
-            is_btc_only = not getattr(self, '_rgb_expected', False) and not getattr(self, '_is_inflation_context', False)
-            if is_btc_only:
-                self.broadcast_transaction_widget.setFixedHeight(660)
-                # TXID spans full width in first row
-                if hasattr(self, 'tile_txid'):
-                    self.inspect_grid.addWidget(self.tile_txid, 0, 0, 1, 2)
-                    self.val_txid.setText(details.txid)
-                # Type (left) and Fee (right) on second row
-                if hasattr(self, 'tile_ttype'):
-                    self.inspect_grid.addWidget(self.tile_ttype, 1, 0, 1, 1)
-                if hasattr(self, 'tile_fee'):
-                    self.inspect_grid.addWidget(self.tile_fee, 1, 1, 1, 1)
-        except Exception:
-            pass
+        is_btc_only = (not self._rgb_expected) and (not self._is_inflation_context)
+        if is_btc_only:
+            self.broadcast_transaction_widget.setFixedHeight(660)
+            # TXID spans full width in first row
+            self.inspect_grid.addWidget(self.tile_txid, 0, 0, 1, 2)
+            self.val_txid.setText(details.txid)
+            # Type (left) and Fee (right) on second row
+            self.inspect_grid.addWidget(self.tile_ttype, 1, 0, 1, 1)
+            self.inspect_grid.addWidget(self.tile_fee, 1, 1, 1, 1)
 
         # Fee: show if available (>=0)
         fee_sat = details.fee_sat
@@ -1333,27 +1263,19 @@ class BroadcastTransactionWidget(QWidget):
             except Exception:
                 pass
 
-            if hasattr(self, 'tile_fee'):
-                self.tile_fee.show()
+            self.tile_fee.show()
         else:
             self.lbl_fee.setVisible(False)
             self.val_fee.setVisible(False)
             self.val_fee.clear()
-            if hasattr(self, 'tile_fee'):
-                self.tile_fee.hide()
+            self.tile_fee.hide()
 
 
         # In BTC-only path, hide confirmations/min-conf row if present
-        try:
-            if hasattr(self, 'tile_minconf'):
-                self.tile_minconf.hide()
-            if hasattr(self, 'lbl_min_conf'):
-                self.lbl_min_conf.setVisible(False)
-            if hasattr(self, 'val_min_conf'):
-                self.val_min_conf.setVisible(False)
-                self.val_min_conf.clear()
-        except Exception:
-            pass
+        self.tile_minconf.hide()
+        self.lbl_min_conf.setVisible(False)
+        self.val_min_conf.setVisible(False)
+        self.val_min_conf.clear()
 
         # Update signature progress
         self._on_signature_count_ready(details.signature_count)
@@ -1367,6 +1289,9 @@ class BroadcastTransactionWidget(QWidget):
         Callback when bridge sync returns a pending operation (or None).
         We check if this operation matches the PSBT we are currently inspecting.
         """
+        if not self.is_multisig:
+            return
+
         if not op_info:
             return
 
@@ -1374,11 +1299,12 @@ class BroadcastTransactionWidget(QWidget):
         if not current_psbt:
             return
 
-        operation = op_info.operation
-        if not operation:
+        pending = BroadcastTransactionService.multisig_pending_context(op_info)
+        if pending is None:
             return
 
-        op_psbt = operation.psbt
+        operation = pending.operation
+        op_psbt = pending.psbt
 
         # If strings match, we found our operation!
         if op_psbt and op_psbt == current_psbt:
@@ -1389,59 +1315,27 @@ class BroadcastTransactionWidget(QWidget):
                 self.pending_operation = op_info
             except Exception:
                 pass
-            # Classify transfer type by details class name if available
-            try:
-                details_obj = getattr(operation, 'details', None)
-                self._pending_transfer_type = None
-                names = []
-                if details_obj is not None:
-                    names.append(type(details_obj).__name__)
-                # Always include the enum variant name as a fallback, e.g. CREATE_UTXOS_TO_REVIEW
-                try:
-                    names.append(type(operation).__name__)
-                except Exception:
-                    pass
-
-                for n in names:
-                    if not isinstance(n, str):
-                        continue
-                    if 'CreateUtxo' in n or 'CreateUtxos' in n or 'CREATE_UTXOS' in n:
-                        self._pending_transfer_type = 'internal'
-                        break
-                    if 'SendBtc' in n or 'SEND_BTC' in n:
-                        self._pending_transfer_type = 'btc_transfer'
-                        break
-                    if 'Inflation' in n or 'INFLATION' in n or 'Issue' in n or 'ISSUE' in n:
-                        self._pending_transfer_type = 'inflation'
-                        break
-                    if 'Send' in n and 'Btc' not in n and 'SEND_' in n:
-                        self._pending_transfer_type = 'asset_transfer'
-                        break
-            except Exception:
-                pass
+            self._pending_transfer_type = BroadcastTransactionService.operation_transfer_type_key(operation)
 
             # If PSBT details are already on screen, update transfer type label immediately
-            try:
-                if self._psbt_details is not None and hasattr(self, 'val_transfer_type'):
-                    key = self._pending_transfer_type
-                    remap = key if key in ('internal', 'btc_transfer', 'inflation', 'asset_transfer') else None
-                    if remap is not None:
-                        t_text = QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, remap,
-                        )
-                        fallback = {
-                            'internal': 'Internal',
-                            'btc_transfer': 'BTC transfer',
-                            'inflation': 'Inflation',
-                            'asset_transfer': 'Asset transfer',
-                        }.get(remap, remap)
-                        self.val_transfer_type.setText(fallback)
-                        if hasattr(self, 'tile_ttype'):
-                            self.tile_ttype.show()
-                        self.lbl_transfer_type.setVisible(True)
-                        self.val_transfer_type.setVisible(True)
-            except Exception:
-                pass
+            if self._psbt_details is not None:
+                key = self._pending_transfer_type
+                remap = key if key in ('internal', 'btc_transfer', 'inflation', 'asset_transfer') else None
+                if remap is not None:
+                    _ = QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, remap,
+                    )
+                    fallback_map = {
+                        'internal': 'Internal',
+                        'btc_transfer': 'BTC transfer',
+                        'inflation': 'Inflation',
+                        'asset_transfer': 'Asset transfer',
+                    }
+                    fallback = fallback_map[remap] if remap in fallback_map else remap
+                    self.val_transfer_type.setText(fallback)
+                    self.tile_ttype.show()
+                    self.lbl_transfer_type.setVisible(True)
+                    self.val_transfer_type.setVisible(True)
             # Avoid stacking multiple inspections for the same PSBT
             if not (isinstance(self._last_inspected_psbt, str) and self._last_inspected_psbt == current_psbt and self._psbt_details is not None):
                 # Trigger inspection explicitly now that we have the context
@@ -1454,20 +1348,17 @@ class BroadcastTransactionWidget(QWidget):
         Handle the async RGB transfer inspection result from the signal.
         Populates Asset ID and Amount from RgbInspection.
         """
+        if not self.is_multisig:
+            return
+
         if not rgb_details:
             return
 
         self._rgb_details = rgb_details
         # Always hide Destination in RGB contexts (send/inflation) to avoid row conflicts
-        try:
-            if hasattr(self, 'tile_destination'):
-                self.tile_destination.hide()
-            if hasattr(self, 'lbl_destination'):
-                self.lbl_destination.setVisible(False)
-            if hasattr(self, 'val_destination'):
-                self.val_destination.setVisible(False)
-        except Exception:
-            pass
+        self.tile_destination.hide()
+        self.lbl_destination.setVisible(False)
+        self.val_destination.setVisible(False)
         operations = rgb_details.operations
         if not operations:
             # Still trigger a render attempt; card stays hidden until both ready
@@ -1496,19 +1387,14 @@ class BroadcastTransactionWidget(QWidget):
             self.val_asset_id.setVisible(True)
             self.val_asset_id.setText(self._wrap_to_two_lines(str(asset_id)))
             self.val_asset_id.setToolTip(str(asset_id))
-            if hasattr(self, 'tile_asset'):
-                self.tile_asset.show()
+            self.tile_asset.show()
             # In RGB context, ensure Destination stays hidden so Asset ID occupies full row
-            if hasattr(self, 'tile_destination'):
-                self.tile_destination.hide()
+            self.tile_destination.hide()
             # Also hide inner widgets to avoid flicker
-            if hasattr(self, 'lbl_destination'):
-                self.lbl_destination.setVisible(False)
-            if hasattr(self, 'val_destination'):
-                self.val_destination.setVisible(False)
+            self.lbl_destination.setVisible(False)
+            self.val_destination.setVisible(False)
         else:
-            if hasattr(self, 'tile_asset'):
-                self.tile_asset.hide()
+            self.tile_asset.hide()
 
 
         # Update Amount label (single label for both send and inflation)
@@ -1528,11 +1414,10 @@ class BroadcastTransactionWidget(QWidget):
             self.val_amount.setVisible(True)
             self.val_amount.setText(f"{amount_value:,}")
             self.val_amount.setStyleSheet('color: #10B981; font-weight: 700;')
-            if hasattr(self, 'tile_amount'):
-                self.tile_amount.show()
+            self.tile_amount.show()
 
         # Update Transfer Type value (prefer pending operation mapping if available)
-        transfer_value_key = getattr(self, '_pending_transfer_type', None)
+        transfer_value_key = self._pending_transfer_type
         if transfer_value_key is None:
             if send_amount > 0:
                 transfer_value_key = 'asset_transfer'
@@ -1552,26 +1437,23 @@ class BroadcastTransactionWidget(QWidget):
                 'btc_transfer': 'BTC transfer',
                 'internal': 'Internal',
             }
-            self.val_transfer_type.setText(fallback_map.get(transfer_value_key, transfer_value_key))
-            if hasattr(self, 'tile_ttype'):
-                self.tile_ttype.show()
+            fallback = fallback_map[transfer_value_key] if transfer_value_key in fallback_map else transfer_value_key
+            self.val_transfer_type.setText(fallback)
+            self.tile_ttype.show()
         else:
-            if hasattr(self, 'tile_ttype'):
-                self.tile_ttype.hide()
+            self.tile_ttype.hide()
 
         # Min confirmations: dedicated row from pending operation details if available
         op_details = self._current_operation.details if self._current_operation is not None else None
         if op_details is not None:
             min_confirmations = op_details.min_confirmations
-            if min_confirmations is not None and hasattr(self, 'lbl_min_conf'):
+            if min_confirmations is not None:
                 self.lbl_min_conf.setVisible(True)
                 self.val_min_conf.setVisible(True)
                 self.val_min_conf.setText(str(min_confirmations))
-                if hasattr(self, 'tile_minconf'):
-                    self.tile_minconf.show()
+                self.tile_minconf.show()
             else:
-                if hasattr(self, 'tile_minconf'):
-                    self.tile_minconf.hide()
+                self.tile_minconf.hide()
 
         # After RGB processing, try to render if PSBT is also ready
         self._render_inspection_if_ready()
@@ -1648,8 +1530,7 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_input.clear()
         self.broadcast_transaction_input.setReadOnly(False)
         self.inspection_frame.hide()
-        if hasattr(self, 'details_title'):
-            self.details_title.hide()
+        self.details_title.hide()
         if self.is_multisig:
             self.sign_status_label.hide()
             self._apply_base_sizes()
@@ -1741,37 +1622,22 @@ class BroadcastTransactionWidget(QWidget):
         """Populate the PSBT input from stored unsigned drafts or passed operation."""
         # For multisig, use the pending operation passed from navigation
         if self.is_multisig:
-            if self.pending_operation:
-                # Extract PSBT from the pending operation
-                op = self.pending_operation
-                # OperationInfo has operation field which contains the PSBT
-                operation = op.operation
-                initiator_xpub = op.initiator_xpub
-                local_xpub = local_store.get_value(MASTER_XPUB)
-                if initiator_xpub and local_xpub and initiator_xpub == local_xpub:
-                    self.is_initiator_of_pending = True
-
-                if operation is not None:
-                    psbt = operation.psbt
-
-                    if psbt:
-                        self.method_selector_label.hide()
-                        self.method_selector.hide()
-                        self._programmatic_psbt_set = True
-                        self.broadcast_transaction_input.setPlainText(psbt)
-                        self.broadcast_transaction_input.setReadOnly(True)
-                        # Store operation info for later use (sign + post)
-                        # We store the inner Operation object for consistency
-                        self._current_operation = operation
-
-                        # Trigger inspection immediately (Load Flow)
-                        self._trigger_inspection(operation, psbt)
-
-                        # Show Reject for non-initiators reviewing
-                        if not self.is_initiator_of_pending:
-                            self.btn_reject.show()
-                        self.handle_button_enable()
-                        return
+            pending = BroadcastTransactionService.multisig_pending_context(self.pending_operation)
+            if pending is not None:
+                self.is_initiator_of_pending = pending.is_initiator
+                psbt = pending.psbt
+                operation = pending.operation
+                self.method_selector_label.hide()
+                self.method_selector.hide()
+                self._programmatic_psbt_set = True
+                self.broadcast_transaction_input.setPlainText(psbt)
+                self.broadcast_transaction_input.setReadOnly(True)
+                self._current_operation = operation
+                self._trigger_inspection(operation, psbt)
+                if not self.is_initiator_of_pending:
+                    self.btn_reject.show()
+                self.handle_button_enable()
+                return
 
             # No pending operations passed
             self.method_selector_label.hide()
@@ -1780,71 +1646,7 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_button.setEnabled(False)
             return
 
-        # Standard offline wallet flow - load from local DB
-        try:
-            wallet_service = WalletDataService.get_session()
-            drafts = wallet_service.list_psbt(
-                False,
-            ) if wallet_service is not None else []
-        except Exception:
-            drafts = []
-
-        self._psbt_items = drafts or []
-        count = len(self._psbt_items)
-
-        # 0 PSBTs: hide selector, clear input, disable button
-        if count == 0:
-            self.method_selector_label.hide()
-            self.method_selector.hide()
-            self.broadcast_transaction_input.clear()
-            self.broadcast_button.setEnabled(False)
-            return
-
-        # 1 PSBT: hide selector, set text, enable button
-        if count == 1:
-            self.method_selector_label.hide()
-            self.method_selector.hide()
-            self._programmatic_psbt_set = True
-            self.broadcast_transaction_input.setPlainText(
-                self._psbt_items[0].get('psbt', ''),
-            )
-            self.broadcast_transaction_input.setReadOnly(True)
-            self.handle_button_enable()
-            return
-
-        # >1 PSBTs: show and populate selector
-        self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
-        self.method_selector_label.show()
-        self.method_selector.show()
-        self.method_selector_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'select_psbt_for_sign',
-            ),
-        )
-
-        self.method_selector.blockSignals(True)
-        self.method_selector.clear()
-        titles = []
-        for item in self._psbt_items:
-            purpose = item.get('purpose') or 'psbt'
-            psbt_id = item.get('id', '')
-            titles.append(f"{purpose} ({psbt_id[:8]})" if psbt_id else purpose)
-        if titles:
-            self.method_selector.addItems(titles)
-        self.method_selector.blockSignals(False)
-
-        def on_index_changed(idx: int):
-            psbt_text = self._psbt_items[idx].get(
-                'psbt', '',
-            ) if 0 <= idx < len(self._psbt_items) else ''
-            self._programmatic_psbt_set = True
-            self.broadcast_transaction_input.setPlainText(psbt_text)
-            self.broadcast_transaction_input.setReadOnly(True)
-            self.handle_button_enable()
-
-        self.method_selector.currentIndexChanged.connect(on_index_changed)
-        on_index_changed(0)
+        self.view_model.broadcast_transaction_view_model.load_psbts(is_signed=False)
 
     def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
@@ -1858,18 +1660,7 @@ class BroadcastTransactionWidget(QWidget):
             if self.hw_dialog.isVisible():
                 self.hw_dialog.accept()
                 # Determine purpose from signed PSBT storage to select the page name
-            page_name = 'NIA page'
-            svc = WalletDataService.get_session()
-            if svc is not None:
-                signed = svc.list_psbt(True) or []
-                match = next(
-                    (p for p in signed if p.get('psbt') == psbt), None,
-                )
-                purpose = match.get('purpose') if isinstance(
-                    match, dict,
-                ) else None
-                if purpose == 'inflate_asset':
-                    page_name = 'IFA secondary issuance'
+            page_name = BroadcastTransactionService.receive_page_name_for_signed_psbt(psbt)
             self.view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(
                     page_name=page_name,
@@ -1881,67 +1672,5 @@ class BroadcastTransactionWidget(QWidget):
         """Populate the PSBT input from stored signed drafts for broadcasting.
         Reuse the same selector as a PSBT selector (no separate widget).
         """
-        try:
-            wallet_service = WalletDataService.get_session()
-            drafts = wallet_service.list_psbt(
-                True,
-            ) if wallet_service is not None else []
-        except Exception:
-            drafts = []
-
-        self._psbt_signed_items = drafts or []
-        count = len(self._psbt_signed_items)
-
-        # 0 PSBTs: hide selector, clear input, disable button
-        if count == 0:
-            self.method_selector_label.hide()
-            self.method_selector.hide()
-            self.handle_button_enable()
-            return
-
-        # 1 PSBT: hide selector, set text, enable button
-        if count == 1:
-            self.method_selector_label.hide()
-            self.method_selector.hide()
-            self._programmatic_psbt_set = True
-            self.broadcast_transaction_input.setPlainText(
-                self._psbt_signed_items[0].get('psbt', ''),
-            )
-            self.broadcast_transaction_input.setReadOnly(True)
-            self.handle_button_enable()
-            return
-
-        # >1 PSBTs: show and populate selector
-        self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
-        self.method_selector_label.show()
-        self.method_selector.show()
-        self.method_selector_label.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                'select_psbt_for_broadcast',
-            ),
-        )
-
-        self.method_selector.blockSignals(True)
-        self.method_selector.clear()
-        titles = []
-        for item in self._psbt_signed_items:
-            purpose = item.get('purpose') or 'psbt'
-            psbt_id = item.get('id', '')
-            titles.append(f"{purpose} ({psbt_id[:8]})" if psbt_id else purpose)
-        if titles:
-            self.method_selector.addItems(titles)
-        self.method_selector.blockSignals(False)
-
-        def on_index_changed(idx: int):
-            psbt_text = self._psbt_signed_items[idx].get(
-                'psbt', '',
-            ) if 0 <= idx < len(self._psbt_signed_items) else ''
-            self._programmatic_psbt_set = True
-            self.broadcast_transaction_input.setPlainText(psbt_text)
-            self.broadcast_transaction_input.setReadOnly(True)
-            self.handle_button_enable()
-
-        self.method_selector.currentIndexChanged.connect(on_index_changed)
-        on_index_changed(0)
+        self.view_model.broadcast_transaction_view_model.load_psbts(is_signed=True)
 

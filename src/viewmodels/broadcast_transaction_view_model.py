@@ -13,6 +13,7 @@ from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
@@ -51,6 +52,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     rgb_transfer_inspection_ready = Signal(object)
     pending_operation_ready = Signal(object)
     is_reject_loading = Signal(bool)
+    psbts_loaded = Signal(list)
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
@@ -58,6 +60,40 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self._multisig_operation_idx: int | None = None
         self._current_signed_psbt: str | None = None
         self._current_signed_txid: str | None = None
+
+    def load_psbts(self, is_signed: bool) -> None:
+        """Load PSBT drafts via service and emit to the UI."""
+
+        def _run():
+            try:
+                items = BroadcastTransactionService.list_psbt_drafts(is_signed)
+                self.psbts_loaded.emit(items)
+            except Exception as exc:
+                self.on_error(CommonException(str(exc)))
+                self.psbts_loaded.emit([])
+
+        self.run_in_thread(_run, {})
+
+    def execute_psbt_action(self, psbt_text: str, selector_purpose: str | None, can_broadcast: bool) -> None:
+        """Execute sign/broadcast flow. Routing decisions are delegated to the service."""
+        parsed = BroadcastTransactionService.parse_psbt_input(psbt_text)
+        purpose = BroadcastTransactionService.resolve_purpose(parsed, selector_purpose)
+        action = BroadcastTransactionService.action_key(can_broadcast=can_broadcast, purpose=purpose)
+
+        if action == "sign":
+            BroadcastTransactionService.set_rgb_mode_for_purpose(purpose)
+            self.sign_and_finalize_psbt(parsed.psbt)
+            return
+        if action == "send_btc":
+            self.send_btc_end(parsed.psbt)
+            return
+        if action == "send_asset":
+            self.send_end(parsed.psbt)
+            return
+        if action == "inflate_asset":
+            self.inflate_end(parsed.psbt)
+            return
+        self.create_utxos_end(parsed.psbt)
 
     def send_end(self, signed_psbt: str):
         """
@@ -225,11 +261,13 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def _on_signed_psbt_inspected(self, details):
         """Got inspection details, extract TXID and proceed to post."""
-        # Extract and store TXID for saving later
-        self._current_signed_txid = getattr(details, 'txid', None)
+        try:
+            self._current_signed_txid = details.txid
+        except AttributeError:
+            self._current_signed_txid = None
 
-        operation_idx = getattr(self, '_multisig_operation_idx', None)
-        signed_psbt = getattr(self, '_current_signed_psbt', '')
+        operation_idx = self._multisig_operation_idx
+        signed_psbt = self._current_signed_psbt or ""
 
         # SIGNER FLOW: Existing operation, so we are responding
         response = RespondToOperation.ACK(signed_psbt)
