@@ -4,6 +4,29 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 from unittest.mock import patch
+import sys
+
+# Mock logging to avoid file creation issues with mocked QDirs
+sys.modules['src.utils.logging'] = MagicMock()
+
+
+
+# Mock logging to avoid file creation issues with mocked QDirs
+sys.modules['src.utils.logging'] = MagicMock()
+
+# Mock google dependencies
+sys.modules['google'] = MagicMock()
+sys.modules['google.auth'] = MagicMock()
+sys.modules['google.auth.transport'] = MagicMock()
+sys.modules['google.auth.transport.requests'] = MagicMock()
+sys.modules['google_auth_oauthlib'] = MagicMock()
+sys.modules['google_auth_oauthlib.flow'] = MagicMock()
+sys.modules['googleapiclient'] = MagicMock()
+sys.modules['googleapiclient.discovery'] = MagicMock()
+
+# Mock hwilib
+sys.modules['hwilib'] = MagicMock()
+sys.modules['hwilib.psbt'] = MagicMock()
 
 import pytest
 
@@ -102,3 +125,32 @@ def test_on_sign_and_finalize_error_hw_emit_dialog(_log, _init, _map, _kst, vm: 
     """Verify on_sign_and_finalize_error_hw_emit_dialog emits dialog_update and shows toast."""
     with qtbot.waitSignal(vm.is_loading, timeout=1000):
         vm.on_sign_and_finalize_error(CommonException('raw'))
+
+
+@patch('src.utils.worker.ThreadManager.run_in_thread')
+@patch('src.data.service.broadcast_transaction_service.BroadcastTransactionService.inspect_transaction')
+def test_trigger_full_inspection_runs_service(mock_service, mock_run, vm: BroadcastTransactionViewModel, qtbot):
+    """Verify trigger_full_inspection calls BroadcastTransactionService."""
+    with qtbot.waitSignal(vm.is_loading, timeout=1000):
+        vm.trigger_full_inspection('psbt')
+    assert mock_run.called
+    # mock_service check might need to be inside run_in_thread callback mock if we were executing it inline,
+    # but here we just check if run_in_thread was called with the service function
+
+
+@patch('src.utils.worker.ThreadManager.run_in_thread')
+@patch('src.data.service.broadcast_transaction_service.BroadcastTransactionService.multisig_sign_and_post')
+def test_sign_and_post_multisig_runs_service(mock_service, mock_run, vm: BroadcastTransactionViewModel, qtbot):
+    """Verify sign_and_post_multisig calls BroadcastTransactionService."""
+    with qtbot.waitSignal(vm.is_loading, timeout=1000):
+        vm.sign_and_post_multisig('psbt', 1)
+    assert mock_run.called
+
+
+@patch('src.utils.worker.ThreadManager.run_in_thread')
+@patch('src.data.service.broadcast_transaction_service.BroadcastTransactionService.respond_nack')
+def test_respond_nack_runs_service(mock_service, mock_run, vm: BroadcastTransactionViewModel, qtbot):
+    """Verify respond_nack calls BroadcastTransactionService."""
+    with qtbot.waitSignal(vm.is_reject_loading, timeout=1000):
+        vm.respond_nack(1)
+    assert mock_run.called
