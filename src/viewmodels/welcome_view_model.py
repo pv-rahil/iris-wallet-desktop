@@ -70,13 +70,10 @@ class WelcomeViewModel(QObject, ThreadManager):
         SettingRepository.set_rgb_lib_version(CURRENT_RGB_LIB_VERSION)
         self._page_navigation.fungibles_asset_page()
 
-    def _on_multisig_init_error(self, error):
+    def _on_multisig_init_error(self, error: CommonException):
         """Handle multisig wallet initialization error."""
         self.create_button_clicked.emit(False)
-        ToastManager.error(
-            str(error.message if hasattr(error, 'message') else error),
-        )
-        print(error)
+        ToastManager.error(error.message)
 
     def restore_offline_wallet(self, usb_drive: USBDrive, master_fingerprint: str, data: KeyringDialogModel):
         """This method handles the offline wallet restore process."""

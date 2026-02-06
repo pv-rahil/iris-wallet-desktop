@@ -2350,5 +2350,17 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>inflation</source>
         <translation>Inflation</translation>
     </message>
+    <message>
+        <source>asset_transfer</source>
+        <translation>Asset transfer</translation>
+    </message>
+    <message>
+        <source>btc_transfer</source>
+        <translation>BTC transfer</translation>
+    </message>
+    <message>
+        <source>internal</source>
+        <translation>Internal</translation>
+    </message>
 </context>
 </TS>

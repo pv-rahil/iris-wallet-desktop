@@ -76,7 +76,7 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @auto_sync_multisig(before=True, after=False)
+    @auto_sync_multisig()
     def refresh_transfer(asset_id=None) -> dict[int, RefreshedTransfer]:
         """Refresh transfers."""
         with repository_custom_context():
@@ -220,7 +220,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @auto_sync_multisig()
     def fail_transfer(transfer: FailTransferRequestModel) -> FailTransferResponseModel:
         """Mark the specified transfer as failed."""
         with repository_custom_context():
@@ -234,7 +233,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
-    @auto_sync_multisig(before=True, after=False)
+    @auto_sync_multisig()
     def send_begin(detail: SendBeginRequestModel) -> SendBeginResult:
         """Create psbt for send rgb asset"""
         with repository_custom_context():
@@ -256,7 +255,6 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available()
-    @auto_sync_multisig()
     def send_end(detail: BroadcastPsbtRequestModel) -> OperationResult:
         """broadcast signed psbt of send rgb asset"""
         with repository_custom_context():
@@ -288,7 +286,7 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available(required_utxos=3)
-    @auto_sync_multisig(before=True, after=False)
+    @auto_sync_multisig()
     def inflate_begin(detail: InflateRequestModel) -> str:
         """Create psbt for inflate rgb asset"""
         with repository_custom_context():
@@ -302,7 +300,6 @@ class RgbRepository:
             return psbt
 
     @staticmethod
-    @auto_sync_multisig()
     def inflate_end(signed_psbt: str) -> OperationResult:
         """broadcast signed psbt of inflate rgb asset"""
         with repository_custom_context():
@@ -347,7 +344,6 @@ class RgbRepository:
                 signed_psbt=signed_psbt,
                 asset_id=asset_id,
             )
-            print(data)
 
     @staticmethod
     def sync_with_bridge() -> OperationInfo:

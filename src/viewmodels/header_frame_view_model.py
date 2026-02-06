@@ -196,8 +196,6 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                 pending_ops = operation_info
             else:
                 pending_ops = [operation_info]
-        else:
-            print('No operation found')
         self.pending_operations_ready.emit(pending_ops)
 
     def on_multisig_sync_error(self, error: Exception):
