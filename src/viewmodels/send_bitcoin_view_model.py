@@ -110,7 +110,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
             'Exception occurred while sending btc: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.hw_dialog_update.emit(
                 str(error), PsbtStatus.ERROR,
             )

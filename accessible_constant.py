@@ -49,13 +49,13 @@ OFFLINE_LOAD_HARDWARE = 'offline_load_hardware'
 
 NAME_TO_STEPS: dict[str, tuple[int, int, int, int]] = {
     # Online
-    ONLINE_WATCH_ONLY: (1, 2, 0, 0),
+    ONLINE_WATCH_ONLY: (1,1, 2, 0, 0),
     ONLINE_CREATE_ON_DEVICE: (1, 1, 1, 1),
     ONLINE_CREATE_HARDWARE: (1, 1, 1, 2),
     ONLINE_LOAD_ON_DEVICE: (1, 1, 2, 1),
     ONLINE_LOAD_HARDWARE: (1, 1, 2, 2),
     # Offline
-    OFFLINE_CREATE_ON_DEVICE: (2, 1, 1, 0),
+    OFFLINE_CREATE_ON_DEVICE: (1,2, 1, 1, 0),
     OFFLINE_CREATE_HARDWARE: (2, 1, 2, 0),
     OFFLINE_LOAD_ON_DEVICE: (2, 2, 1, 0),
     OFFLINE_LOAD_HARDWARE: (2, 2, 2, 0),

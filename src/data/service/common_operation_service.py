@@ -67,12 +67,9 @@ class CommonOperationService:
 
             if is_watch_only or is_hardware_wallet or is_multisig:
                 mnemonic = None
-                if is_multisig:
-                    wallet_password: str = get_value(
-                        WALLET_PASSWORD_KEY, stored_network.value,
-                    )
+                if is_multisig and not is_hardware_wallet:
                     mnemonic = mnemonic_store.decrypt(
-                        password=wallet_password, path=app_paths.mnemonic_file_path,
+                        password=password, path=app_paths.mnemonic_file_path,
                     )
                 account_xpub_colored = local_store.get_value(
                     ACCOUNT_XPUB_COLORED,

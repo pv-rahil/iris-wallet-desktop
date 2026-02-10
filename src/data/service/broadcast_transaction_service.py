@@ -153,25 +153,14 @@ class BroadcastTransactionService:
 
     @staticmethod
     def operation_transfer_type_key(operation: object) -> str | None:
-        try:
-            details = operation.details
-        except AttributeError:
-            details = None
-
-        names: list[str] = []
-        if details is not None:
-            names.append(type(details).__name__)
-        names.append(type(operation).__name__)
-
-        for n in names:
-            if "CreateUtxo" in n or "CreateUtxos" in n or "CREATE_UTXOS" in n:
-                return "internal"
-            if "SendBtc" in n or "SEND_BTC" in n:
-                return "btc_transfer"
-            if "Inflation" in n or "INFLATION" in n or "Issue" in n or "ISSUE" in n:
-                return "inflation"
-            if "Send" in n and "Btc" not in n and "SEND_" in n:
-                return "asset_transfer"
+        if operation.is_inflation_to_review():
+            return "inflation"
+        if operation.is_send_to_review():
+            return "btc_transfer"
+        if operation.is_send_btc_to_review():
+            return "asset_transfer"
+        if operation.is_create_utxos_to_review():
+            return "internal"
         return None
 
     @staticmethod

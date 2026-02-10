@@ -775,3 +775,24 @@ class SettingRepository:
             return local_store.get_value('last_page')
         except Exception as exe:
             return handle_exceptions(exe)
+
+    @staticmethod
+    def set_threshold_confirmed(confirmed: bool) -> bool:
+        """
+        Set whether the multisig threshold has been confirmed.
+        """
+        try:
+            local_store.set_value('threshold_confirmed', confirmed)
+            return True
+        except Exception as exe:
+            return handle_exceptions(exe)
+
+    @staticmethod
+    def get_threshold_confirmed() -> bool:
+        """
+        Get whether the multisig threshold has been confirmed.
+        """
+        try:
+            return local_store.get_value('threshold_confirmed', value_type=bool) or False
+        except Exception as exe:
+            return handle_exceptions(exe)

@@ -94,7 +94,7 @@ class BtcRepository:
             return EstimateFeeResponse(fee_rate=data)
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def send_btc_begin(param: SendBtcRequestModel) -> str:
         """Creates psbt for bitcoin."""
         with repository_custom_context():
@@ -126,7 +126,7 @@ class BtcRepository:
             return SendBtcResponseModel(tx_id=data)
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def create_utxos_begin(param: CreateUtxosRequestModel, purpose: str | None = None) -> str:
         """Creates colorable utxo psbt."""
         with repository_custom_context():
@@ -155,7 +155,7 @@ class BtcRepository:
             return data
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def post_create_utxos(signed_psbt: str) -> None:
         """Post the signed create_utxos PSBT to the multisig bridge for other cosigners."""
         with repository_custom_context():
@@ -165,7 +165,7 @@ class BtcRepository:
             )
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def post_send_btc(signed_psbt: str) -> None:
         """Post the signed send_btc PSBT to the multisig bridge for other cosigners."""
         with repository_custom_context():

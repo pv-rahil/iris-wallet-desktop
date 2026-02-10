@@ -39,18 +39,16 @@ class HWDeviceSelectionDialog(QDialog):
     Handles device enumeration, user selection, error display, and connection logic.
     """
 
-    def __init__(self, wallet_type, parent=None, is_multisig=False):
+    def __init__(self, wallet_type, parent=None):
         """
         Initialize the hardware wallet device selection dialog.
 
         Args:
             wallet_type: The type of wallet (e.g., Ledger, Trezor).
             parent: Optional parent widget.
-            is_multisig: Flag to indicate if this is for multisig setup.
         """
         super().__init__(parent)
         self.wallet_type = wallet_type
-        self.is_multisig = is_multisig
         self._loader_label = None
         self._loader_movie = None
         self._loader_text = None
@@ -279,7 +277,7 @@ class HWDeviceSelectionDialog(QDialog):
         device_path = matched_device['path']
         network = SettingRepository.get_wallet_network()
         self._device_selection_view_model.connect_to_device(
-            device_path, network, self.is_multisig,
+            device_path, network,
         )
 
     def _show_connecting_loader(self):

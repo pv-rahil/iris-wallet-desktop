@@ -232,8 +232,8 @@ class RgbRepository:
             return FailTransferResponseModel(transfers_changed=data)
 
     @staticmethod
+    @auto_sync_multisig(check_pending_ops=True)
     @check_colorable_available()
-    @auto_sync_multisig()
     def send_begin(detail: SendBeginRequestModel) -> SendBeginResult:
         """Create psbt for send rgb asset"""
         with repository_custom_context():
@@ -271,7 +271,6 @@ class RgbRepository:
 
     @staticmethod
     @check_colorable_available(required_utxos=3)
-    @auto_sync_multisig()
     def inflate(detail: InflateRequestModel) -> OperationResult:
         """Inflate asset."""
         with repository_custom_context():
@@ -285,8 +284,8 @@ class RgbRepository:
             return data
 
     @staticmethod
+    @auto_sync_multisig(check_pending_ops=True)
     @check_colorable_available(required_utxos=3)
-    @auto_sync_multisig()
     def inflate_begin(detail: InflateRequestModel) -> str:
         """Create psbt for inflate rgb asset"""
         with repository_custom_context():
@@ -316,7 +315,7 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def post_send(signed_psbt: str, asset_detail: SendBeginRequestModel) -> None:
         """Post the signed RGB send PSBT + recipient map to the multisig bridge."""
         with repository_custom_context():
@@ -335,7 +334,7 @@ class RgbRepository:
             )
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def post_inflation(signed_psbt: str, asset_id: str) -> None:
         """Post the signed inflation PSBT to the multisig bridge."""
         with repository_custom_context():

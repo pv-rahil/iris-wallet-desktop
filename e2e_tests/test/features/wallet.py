@@ -387,7 +387,7 @@ class Wallet(MainPageObjects, BaseOperations):
         """
         Drive the 4-step selection flow using option indices (1 or 2).
         """
-        step1, step2, step3, step4 = resolve_wallet_steps(variant)
+        step1, step2, step3, step4, step5 = resolve_wallet_steps(variant)
         self.do_focus_on_application(application)
         if self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step1)
@@ -403,6 +403,10 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step4)
+            self.selection_page_objects.click_continue_button()
+
+        if self.do_is_displayed(self.selection_page_objects.option_1_button()):
+            self.selection_page_objects.select_option(step5)
             self.selection_page_objects.click_continue_button()
 
         # Handle wallet mode summary dialog if it appears

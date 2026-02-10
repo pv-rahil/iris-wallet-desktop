@@ -689,6 +689,19 @@ class MultisigSetupPage(QWidget):
             self.required_signer_input.setText(str(saved_m))
             self.total_signer_input.setText(str(saved_n))
 
+            # Check if we're returning from hardware wallet setup
+            is_hardware_wallet = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+            if is_hardware_wallet and not self._is_watch_only:
+                # Check if hardware wallet data is available (indicating successful connection)
+                master_fp = local_store.get_value(MASTER_FINGERPRINT)
+                account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA)
+                account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
+                
+                if master_fp and account_xpub_vanilla and account_xpub_colored:
+                    # Hardware wallet was successfully connected, complete the threshold confirmation
+                    self._complete_threshold_confirmation_after_hw_connect(saved_m, saved_n)
+                    return
+
             # If threshold is locked (implied by workflow, though logic here is loose), we should perform confirmation logic
             # or minimally check if we have cosigner data to restore.
             # Ideally, if M/N are set, we might want to prompt user or just auto-lock if complete?
@@ -748,12 +761,63 @@ class MultisigSetupPage(QWidget):
             ),
         )
 
-    def _on_confirm_threshold(self):
+    def _complete_threshold_confirmation_after_hw_connect(self, m: int, n: int):
+        """Complete threshold confirmation after returning from hardware wallet setup."""
+        # Lock threshold inputs
+        self.required_signer_input.setEnabled(False)
+        self.total_signer_input.setEnabled(False)
+        self._threshold_locked = True
+
+        # Clear existing cosigner rows and create new ones
+        for card in self.cosigner_rows:
+            self.cosigners_v.removeWidget(card)
+            card.deleteLater()
+        self.cosigner_rows.clear()
+
+        # Add rows for cosigners 2..N based on total_signer
+        for i in range(2, n + 1):
+            self._add_cosigner_row(i)
+        
+        # Move to step 2 (review page for non-watch-only)
+        self.threshold_frame.hide()
+        self.creator_frame.hide()
+        self.back_button.show()
+        self.close_btn.hide()
+
+        if self._is_watch_only:
+            # Skip review; go directly to cosigners
+            self.cos_frame.show()
+            self._current_step = 2
+            self.card.setMinimumSize(QSize(770, 640))
+            self.card.setMaximumSize(QSize(770, 640))
+            self._update_continue_enabled()
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                ),
+            )
+        else:
+            # Show review page as Step 2 of 3
+            self._populate_wallet_review_fields()  # Populate with actual data
+            self.review_frame.show()
+            self.cos_frame.hide()
+            self._current_step = 2
+            self.export_button.show()  # Show export button on review page
+            self.card.setMinimumSize(QSize(770, 670))
+            self.card.setMaximumSize(QSize(770, 670))
+            self._update_continue_enabled()  # Re-enable the continue button
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                ),
+            )
+
+    def _on_confirm_threshold(self) -> bool:
         """Lock threshold and create exact N cosigner fields."""
         n = self._get_total_signer()
         m = self._get_required_signer()
         if m > n or m < 1 or n < 2:
-            return
+            return False
 
         # Lock threshold inputs
         self.required_signer_input.setEnabled(False)
@@ -770,24 +834,13 @@ class MultisigSetupPage(QWidget):
         if not self._is_watch_only:
             try:
                 if is_hardware_wallet:
-                    # Hardware Wallet Flow: Connect and fetch xpubs
-                    dialog = HWDeviceSelectionDialog(
-                        wallet_type='Ledger',  # Defaulting to Ledger as per current support
-                        parent=self,
-                        is_multisig=True,
-                    )
-                    if dialog.exec():
-                        # Success: local_store is updated by the viewmodel used in dialog
-                        # We can proceed. The mnemonic key won't be set/needed.
-                        print('Hardware wallet connected and keys fetched.')
-                    else:
-                        # User cancelled or failed
-                        # Re-enable inputs
-                        self.required_signer_input.setEnabled(True)
-                        self.total_signer_input.setEnabled(True)
-                        self._threshold_locked = False
-                        SettingRepository.set_multisig_config(None, None)
-                        return
+                    # Hardware Wallet Flow: Navigate to hardware wallet connect page
+                    # Save current state so we can restore it when returning
+                    SettingRepository.set_multisig_config(m, n)
+                    
+                    # Navigate to hardware wallet connect page with multisig flag
+                    self._view_model.page_navigation.hardware_wallet_connect_page(is_multisig=True)
+                    return True  # Return success to allow navigation
 
                 # Check if mnemonic file already exists (keys already generated)
                 elif os.path.exists(app_paths.mnemonic_file_path):
@@ -837,7 +890,7 @@ class MultisigSetupPage(QWidget):
                 self.total_signer_input.setEnabled(True)
                 self._threshold_locked = False
                 SettingRepository.set_multisig_config(None, None)
-                return
+                return False
 
         # Clear existing cosigner rows
         for card in self.cosigner_rows:
@@ -847,7 +900,7 @@ class MultisigSetupPage(QWidget):
 
         # Add rows for cosigners 2..N based on total_signer
         for i in range(2, n + 1):
-            self._add_cosigner_row(i)
+            self._add_cosigner_row(i)        
 
         self.continue_button.setEnabled(False)
         self._threshold_locked = True
@@ -855,6 +908,7 @@ class MultisigSetupPage(QWidget):
         self.total_signer_input.setEnabled(False)
         self._update_summary()
         self._update_continue_enabled()
+        return True
 
     def _create_wallet_detail_field(self, title: str, placeholder: str, show_copy_btn: bool = False, info_text: str = None) -> tuple[QGridLayout, QLineEdit, QPushButton]:
         """
@@ -928,7 +982,11 @@ class MultisigSetupPage(QWidget):
     def _go_next(self):
         self.continue_button.setEnabled(False)  # Debounce
         if self._current_step == 1:
-            self._on_confirm_threshold()
+            confirmed = self._on_confirm_threshold()
+            if not confirmed:
+                self._update_continue_enabled()
+                return
+
             self.threshold_frame.hide()
             self.creator_frame.hide()
             self.back_button.show()
@@ -941,7 +999,6 @@ class MultisigSetupPage(QWidget):
                 self.card.setMinimumSize(QSize(770, 640))
                 self.card.setMaximumSize(QSize(770, 640))
                 self._update_continue_enabled()
-                self._adjust_cosigner_input_widths()
                 self.continue_button.setText(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
@@ -956,6 +1013,7 @@ class MultisigSetupPage(QWidget):
                 self.export_button.show()  # Show export button on review page
                 self.card.setMinimumSize(QSize(770, 670))
                 self.card.setMaximumSize(QSize(770, 670))
+                self._update_continue_enabled()  # Re-enable the continue button
                 self.continue_button.setText(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
@@ -972,6 +1030,7 @@ class MultisigSetupPage(QWidget):
                 self.cos_frame.show()
                 self.export_button.hide()  # Hide export button on cosigner page
                 self._current_step = 3
+                
                 total_singer = self._get_total_signer()
                 if total_singer > 2:
                     self.card.setMinimumSize(QSize(770, 640))

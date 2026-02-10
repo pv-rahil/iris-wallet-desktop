@@ -51,6 +51,7 @@ class HardwareWalletConnectWidget(QWidget):
         super().__init__()
         self._view_model: MainViewModel = view_model
         self._selected_wallet = None
+        self._is_multisig = is_multisig
         self.setObjectName('hardware_wallet_connect_page')
         self.setAccessibleName(HARDWARE_WALLET_CONNECT_PAGE)
         self.setStyleSheet(
@@ -98,7 +99,7 @@ class HardwareWalletConnectWidget(QWidget):
         close_icon = QIcon(':/assets/x_circle.png')
         self.close_btn.setIcon(close_icon)
         self.close_btn.setIconSize(QSize(24, 24))
-        self.close_btn.clicked.connect(lambda: self.handle_close(is_multisig))
+        self.close_btn.clicked.connect(self.handle_close)
         title_close_layout.addWidget(self.close_btn)
         self.card_layout.addLayout(title_close_layout)
 
@@ -314,14 +315,19 @@ class HardwareWalletConnectWidget(QWidget):
                 if restore_dialog.exec() == QDialog.Accepted:
                     self._view_model.page_navigation.welcome_page()
             else:
-                self._view_model.page_navigation.welcome_page()
+                # Check if this is multisig flow
+                if self._is_multisig:
+                    # Navigate back to multisig setup page after successful connection
+                    self._view_model.page_navigation.multisig_setup_page()
+                else:
+                    self._view_model.page_navigation.welcome_page()
 
-    def handle_close(self, is_multisig=False):
+    def handle_close(self):
         """
         Navigate back to selection page if not multisig setup page.
         """
         # Navigate back to selection page (not welcome page)
-        if is_multisig:
+        if self._is_multisig:
             self._view_model.page_navigation.multisig_setup_page()
         else:
             self._view_model.page_navigation.selection_page()

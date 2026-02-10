@@ -147,7 +147,7 @@ class CFAViewModel(QObject, ThreadManager):
         self.send_cfa_button_clicked.emit(False)
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or (
             isinstance(error, CommonException) and error.message == 'NoAvailableUtxos'
-        ):
+        ) or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.hw_dialog_update.emit(
                 str(error), PsbtStatus.ERROR,
             )

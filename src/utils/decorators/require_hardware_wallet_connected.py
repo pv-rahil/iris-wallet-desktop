@@ -14,9 +14,10 @@ from hwilib.devices.ledger import LedgerClient
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.logging import logger
-
+from src.utils.local_store import local_store
 
 def require_hardware_wallet_connected() -> Callable[..., Any]:
     """
@@ -39,8 +40,12 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                     raise RuntimeError(
                         'No hardware wallet device found. Please connect your device.',
                     )
-
-                device_info = devices[0]
+                preferred_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
+                if preferred_fingerprint:
+                    for d in devices:
+                        if d.get('fingerprint') == preferred_fingerprint:
+                            device_info = d
+                            break
                 device_path = device_info.get('path')
                 if not device_path:
                     raise RuntimeError(

@@ -6,40 +6,73 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any
 from typing import Callable
+from rgb_lib import Operation
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
 
 
-def auto_sync_multisig() -> Callable[..., Any]:
+def _is_blocking_operation(op: Operation) -> bool:
     """
-    Decorator to automatically sync with the multisig bridge before and/or after the method execution
-    if the current wallet is a multisig wallet.
+    Check if an operation is blocking (pending or review).
+    """
+    return (
+        op.is_CREATE_UTXOS_TO_REVIEW()
+        or op.is_CREATE_UTXOS_PENDING()
+        or op.is_SEND_BTC_TO_REVIEW()
+        or op.is_SEND_BTC_PENDING()
+        or op.is_SEND_TO_REVIEW()
+        or op.is_SEND_PENDING()
+        or op.is_INFLATION_TO_REVIEW()
+        or op.is_INFLATION_PENDING()
+    )
 
-    :param before: Whether to sync before the method execution (default: False)
-    :param after: Whether to sync after the method execution (default: True)
+
+def auto_sync_multisig(check_pending_ops: bool = False) -> Callable[..., Any]:
     """
+    Decorator to automatically sync with the multisig bridge
+    and block execution if a pending/review operation exists.
+    """
+
     def decorator(method: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(method)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Sync before execution
             if colored_wallet.is_multisig:
                 try:
-                    logger.info('Auto-syncing multisig wallet (before)...')
-                    colored_wallet.wallet.sync_with_bridge(
+                    logger.info("Auto-syncing multisig wallet...")
+                    sync_result = colored_wallet.wallet.sync_with_bridge(
                         online=colored_wallet.online,
                     )
+
+                    # Block if pending/review operation exists
+                    if (
+                        check_pending_ops
+                        and sync_result
+                        and _is_blocking_operation(sync_result.operation)
+                    ):
+                        logger.warning(
+                            "Multisig operation already in progress: %s",
+                            sync_result.operation,
+                        )
+                        raise CommonException(
+                            "A multisig operation is already pending or under review. "
+                            "Please complete it before creating a new PSBT.",
+                        )
+
+                except CommonException:
+                    raise
                 except Exception as exc:
                     logger.error(
-                        'Failed to auto-sync multisig wallet (before): %s',
+                        "Failed to auto-sync multisig wallet: %s",
                         exc,
                     )
                     raise CommonException(
-                        'Failed to sync with bridge',
+                        "Failed to sync with bridge",
                     ) from exc
 
-            result = method(*args, **kwargs)
-            return result
+            return method(*args, **kwargs)
+
         return wrapper
+
     return decorator

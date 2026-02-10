@@ -153,6 +153,7 @@ class CommonOperationRepository:
         )
 
     @staticmethod
+    @require_hardware_wallet_connected()
     def sign_psbt(unsigned_psbt: str) -> str:
         """
         Sign PSBT without finalizing (for multisig where we need multiple signatures).
