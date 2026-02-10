@@ -328,6 +328,10 @@ class CFAViewModel(QObject, ThreadManager):
         Handle the PSBT created by send_begin.
         Run signing and finalization in a background thread.
         """
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+            self.unsigned_psbt.emit(unsigned_psbt)
+            return
+
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
@@ -353,8 +357,6 @@ class CFAViewModel(QObject, ThreadManager):
                     'error_callback': self.on_error,
                 },
             )
-        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-            self.unsigned_psbt.emit(unsigned_psbt)
 
     def on_multisig_psbt_signed(self, signed_psbt: str):
         """Post signed PSBT and recipient map to bridge."""

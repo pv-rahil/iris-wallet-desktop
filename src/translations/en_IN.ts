@@ -1605,6 +1605,14 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Broadcast transaction</translation>
     </message>
     <message>
+        <source>post_to_multisig</source>
+        <translation>Post to Multisig</translation>
+    </message>
+    <message>
+        <source>confirm_post_to_multisig</source>
+        <translation>Are you sure you want to post this PSBT with purpose "{purpose}" to the multisig bridge?</translation>
+    </message>
+    <message>
         <source>select_broadcast_type</source>
         <translation>Select broadcast type</translation>
     </message>

@@ -194,6 +194,8 @@ class CollectiblesAssetWidget(QWidget):
 
     def update_grid_layout(self):
         """Update the grid layout with new number of columns"""
+        if self._view_model.main_asset_view_model.assets is None:
+            return
         num_columns = self.calculate_columns()
         # Build frames list including CFA drafts (identified by file_path in shared drafts table)
         self.frames = []

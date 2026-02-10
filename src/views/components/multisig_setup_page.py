@@ -993,15 +993,17 @@ class MultisigSetupPage(QWidget):
             self.close_btn.hide()
 
             if self._is_watch_only:
-                # Skip review; go directly to cosigners
-                self.cos_frame.show()
+                # Show wallet details input page as Step 2 of 3 using existing review fields
+                self._configure_watch_only_review_fields()
+                self.review_frame.show()
+                self.cos_frame.hide()
                 self._current_step = 2
-                self.card.setMinimumSize(QSize(770, 640))
-                self.card.setMaximumSize(QSize(770, 640))
+                self.card.setMinimumSize(QSize(770, 670))
+                self.card.setMaximumSize(QSize(770, 670))
                 self._update_continue_enabled()
                 self.continue_button.setText(
                     QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
                     ),
                 )
             else:
@@ -1021,9 +1023,33 @@ class MultisigSetupPage(QWidget):
                 )
         elif self._current_step == 2:
             if self._is_watch_only:
-                # In 2-step flow, save cosigners before finishing
-                self._save_cosigners_data()
-                self._view_model.page_navigation.welcome_page()
+                # Save watch-only wallet details from editable fields to local_store, then proceed to cosigners
+                if not self._save_watch_only_review_fields():
+                    self._update_continue_enabled()
+                    return
+                # Move to cosigners (Step 3)
+                self.review_frame.hide()
+                self.cos_frame.show()
+                # Restore export_button and clean up reset_button when leaving watch-only Step 2
+                if hasattr(self, 'reset_button'):
+                    self.footer.replaceWidget(self.reset_button, self.export_button)
+                    self.reset_button.deleteLater()
+                    del self.reset_button
+                self.export_button.hide()  # Hide export button on cosigner page
+                self._current_step = 3
+                total_singer = self._get_total_signer()
+                if total_singer > 2:
+                    self.card.setMinimumSize(QSize(770, 640))
+                    self.card.setMaximumSize(QSize(770, 640))
+                else:
+                    self.card.setMinimumSize(QSize(770, 520))
+                    self.card.setMaximumSize(QSize(770, 520))
+                self.continue_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                    ),
+                )
+                self._update_continue_enabled()
             else:
                 # Move to cosigners (Step 3)
                 self.review_frame.hide()
@@ -1047,8 +1073,120 @@ class MultisigSetupPage(QWidget):
                 self._update_continue_enabled()
         elif self._current_step == 3:
             # Save cosigner data before navigating away
-            self._save_cosigners_data()
+            if not self._save_cosigners_data():
+                self._update_continue_enabled()
+                return
             self._view_model.page_navigation.welcome_page()
+
+    def _configure_watch_only_review_fields(self):
+        """Configure the review frame for watch-only wallet details input using existing fields."""
+        # Ensure review_frame is populated first (creates the widgets)
+        self._populate_wallet_review_fields()
+        self.export_button.hide()
+        # Clear fields to avoid initial empty population errors
+        self.fp_value_widget.clear()
+        self.keychain_value_widget.clear()
+        self.xpub_vanilla_value_widget.clear()
+        self.xpub_colored_value_widget.clear()
+        self.cosigner_string_value_widget.clear()
+        # Reorder layout for watch-only: Signer Details at top, Master xpub second, then others
+        # Remove existing rows from layout
+        self.r_v.removeItem(self.row1)
+        self.r_v.removeItem(self.row2)
+        self.r_v.removeItem(self.row3)
+        self.r_v.removeItem(self.row4)
+        self.r_v.removeItem(self.row5)
+        # Re-add rows in desired order
+        self.r_v.addLayout(self.row5)  # Signer Details (cosigner string) at top
+        self.r_v.addLayout(self.row4)  # Master xpub second
+        self.r_v.addLayout(self.row1)  # Fingerprint and Keychain (Signer Details)
+        self.r_v.addLayout(self.row2)  # Vanilla xpub
+        self.r_v.addLayout(self.row3)  # Colored xpub
+        # Make signer details and master keys writable
+        self.master_xpub_value_widget.setReadOnly(False)
+        self.cosigner_string_value_widget.setReadOnly(False)
+        # Remove copy buttons only in Step 2 for watch-only
+        if hasattr(self, 'master_xpub_copy_btn'):
+            self.master_xpub_copy_btn.hide()
+        if hasattr(self, 'cosigner_string_copy_btn'):
+            self.cosigner_string_copy_btn.hide()
+        # Create a new Reset button with same design as card buttons and replace export_button in footer
+        self.reset_button = SecondaryButton()
+        self.reset_button.setIcon(QIcon(':/assets/x_cross.png'))
+        self.reset_button.setIconSize(QSize(18, 18))
+        self.reset_button.setLayoutDirection(Qt.RightToLeft)
+        self.reset_button.setFixedSize(QSize(100, 36))
+        self.reset_button.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor),
+        )
+        self.reset_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reset',
+            ) + ' ',
+        )
+        self.reset_button.clicked.connect(self._on_watch_only_reset_clicked)
+        # Replace export_button with reset_button in the footer layout
+        self.footer.replaceWidget(self.export_button, self.reset_button)
+        self.export_button.hide()
+        # Connect textChanged to parse cosigner string and enable/disable Continue
+        self.cosigner_string_value_widget.textChanged.connect(self._on_watch_only_cosigner_string_changed)
+        self.master_xpub_value_widget.textChanged.connect(self._update_continue_enabled)
+
+    def _on_watch_only_reset_clicked(self):
+        """Handle Reset button click in watch-only Step 2: clear all fields."""
+        self.fp_value_widget.clear()
+        self.keychain_value_widget.clear()
+        self.xpub_vanilla_value_widget.clear()
+        self.xpub_colored_value_widget.clear()
+        self.master_xpub_value_widget.clear()
+        self.cosigner_string_value_widget.clear()
+        self._update_continue_enabled()
+
+    def _on_watch_only_cosigner_string_changed(self, text):
+        """Parse cosigner string and populate other fields for watch-only Step 2."""
+        text = text.strip()
+        if not text:
+            # Clear fields
+            self.fp_value_widget.clear()
+            self.keychain_value_widget.clear()
+            self.xpub_vanilla_value_widget.clear()
+            self.xpub_colored_value_widget.clear()
+            self._update_continue_enabled()
+            return
+
+        try:
+            data = Cosigner(text).cosigner_data()
+            # Populate in order: Signer Details (fp, keychain) at top
+            self.fp_value_widget.setText(data.master_fingerprint)
+            val = data.vanilla_keychain
+            self.keychain_value_widget.setText(str(val) if val is not None else '')
+            # Then others
+            self.xpub_vanilla_value_widget.setText(data.account_xpub_vanilla)
+            self.xpub_colored_value_widget.setText(data.account_xpub_colored)
+            self._update_continue_enabled()
+        except Exception:
+            # Invalid string; clear populated fields
+            self.fp_value_widget.clear()
+            self.keychain_value_widget.clear()
+            self.xpub_vanilla_value_widget.clear()
+            self.xpub_colored_value_widget.clear()
+            self._update_continue_enabled()
+
+    def _save_watch_only_review_fields(self) -> bool:
+        """Save watch-only wallet details from editable review fields to local_store."""
+        fp = self.fp_value_widget.text().strip()
+        keychain = self.keychain_value_widget.text().strip()
+        vanilla = self.xpub_vanilla_value_widget.text().strip()
+        colored = self.xpub_colored_value_widget.text().strip()
+        master_xpub = self.master_xpub_value_widget.text().strip()
+        if not fp or not vanilla or not colored:
+            return False
+        local_store.set_value(MASTER_FINGERPRINT, fp)
+        local_store.set_value(VANILLA_KEYCHAIN, int(keychain) if keychain.isdigit() else 0)
+        local_store.set_value(ACCOUNT_XPUB_VANILLA, vanilla)
+        local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
+        local_store.set_value(MASTER_XPUB, master_xpub)
+        return True
 
     def _populate_wallet_review_fields(self):
         """Populate wallet review fields with actual wallet data from local_store."""
@@ -1087,30 +1225,31 @@ class MultisigSetupPage(QWidget):
             lambda: copy_text(master_xpub),
         )
 
-        # Generate and display cosigner string
-        try:
-            # keychain is optional int, ensure it's None if not set (though we default to 0 above/in usage)
-            keychain_val = int(keychain) if keychain is not None else 0
+        # Generate and display cosigner string only if not in watch-only Step 2
+        if not self._is_watch_only:
+            try:
+                # keychain is optional int, ensure it's None if not set (though we default to 0 above/in usage)
+                keychain_val = int(keychain) if keychain is not None else 0
 
-            data = CosignerData(
-                master_fingerprint=master_fp,
-                account_xpub_vanilla=account_xpub_vanilla,
-                account_xpub_colored=account_xpub_colored,
-                vanilla_keychain=keychain_val,
-            )
-            cosigner_str = Cosigner.from_data(data).cosigner_string()
-            self.cosigner_string_value_widget.setText(
-                cosigner_str,
-            )
-            self.cosigner_string_value_widget.setCursorPosition(0)
-            self.cosigner_string_copy_btn.clicked.connect(
-                lambda: copy_text(cosigner_str),
-            )
-        except Exception as e:
-            logger.error('Failed to generate cosigner string: %s', e)
-            self.cosigner_string_value_widget.setText(
-                'Error generating string',
-            )
+                data = CosignerData(
+                    master_fingerprint=master_fp,
+                    account_xpub_vanilla=account_xpub_vanilla,
+                    account_xpub_colored=account_xpub_colored,
+                    vanilla_keychain=keychain_val,
+                )
+                cosigner_str = Cosigner.from_data(data).cosigner_string()
+                self.cosigner_string_value_widget.setText(
+                    cosigner_str,
+                )
+                self.cosigner_string_value_widget.setCursorPosition(0)
+                self.cosigner_string_copy_btn.clicked.connect(
+                    lambda: copy_text(cosigner_str),
+                )
+            except Exception as e:
+                logger.error('Failed to generate cosigner string: %s', e)
+                self.cosigner_string_value_widget.setText(
+                    'Error generating string',
+                )
 
     def _truncate_text(self, text: str) -> str:
         """Truncate text for display if too long."""
@@ -1118,13 +1257,25 @@ class MultisigSetupPage(QWidget):
             return text[:25] + '...' + text[-25:]
         return text
 
-    def _save_cosigners_data(self):
-        """Collect and save all cosigner data from the UI."""
+    def _save_cosigners_data(self) -> bool:
+        """Collect and save all cosigner data from the UI.
+
+        Returns:
+            bool: True if saved successfully, False if validation fails.
+        """
         cosigners_data = []
 
         for card in self.cosigner_rows:
+            card.clear_error()
             cosigner_string = card.string_input.text().strip()
-            data = Cosigner(cosigner_string).cosigner_data()
+            if not cosigner_string:
+                card.show_error('Cosigner details required')
+                return False
+            try:
+                data = Cosigner(cosigner_string).cosigner_data()
+            except Exception:
+                card.show_error('Invalid cosigner details')
+                return False
 
             # Parse keychain as int if provided
             keychain = None
@@ -1142,6 +1293,7 @@ class MultisigSetupPage(QWidget):
 
         # Save to SettingRepository
         SettingRepository.set_cosigners(cosigners_data)
+        return True
 
     def _go_back(self):
         if self._current_step == 2:
@@ -1379,7 +1531,7 @@ class MultisigSetupPage(QWidget):
             enable = all_filled and all_valid and not any_duplicates and (
                 n_rows == n - 1
             )
-            self.continue_button.setEnabled(True)
+            self.continue_button.setEnabled(enable)
         else:
             # Review step or other
             self.continue_button.setEnabled(True)

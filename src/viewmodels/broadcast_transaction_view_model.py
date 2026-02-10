@@ -16,7 +16,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import KeyStorageType, WalletType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.rgb_model import SendAssetResponseModel
 from src.utils.custom_exception import CommonException
@@ -116,6 +116,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def on_error(self, error: CommonException) -> None:
         """Handle error for broadcasting psbt."""
+        print(error)
         self.is_loading.emit(False)
         self.is_reject_loading.emit(False)
         ToastManager.error(description=error.message)
@@ -244,6 +245,9 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def _on_multisig_sign_success(self, signed_psbt: str):
         """After signing, inspect to get TXID, then post back to the bridge."""
         # Store for use in next steps
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+            self.finalized_psbt.emit(signed_psbt)
+            return
         self._current_signed_psbt = signed_psbt
 
         # INSPECT newly signed PSBT to get TXID for filtering later
@@ -328,6 +332,58 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             {
                 'args': [operation_idx, response],
                 'callback': self._on_nack_post_success,
+                'error_callback': self.on_error,
+            },
+        )
+
+    # ========== Multisig Watch-Only USB helpers ==========
+
+    def post_psbt_to_bridge_by_purpose(self, purpose: str, signed_psbt: str) -> None:
+        """Initiator flow (watch-only): post a signed PSBT to bridge based on purpose."""
+        if not signed_psbt:
+            self.on_error(CommonException('No PSBT to post'))
+            return
+        self.is_loading.emit(True)
+
+        if purpose == 'send_btc':
+            self.run_in_thread(
+                BtcRepository.post_send_btc,
+                {
+                    'args': [signed_psbt],
+                    'callback': lambda *_: self._on_multisig_post_success(None),
+                    'error_callback': self.on_error,
+                },
+            )
+            return
+
+        if purpose in ['create_utxos', 'issue_asset_nia', 'issue_asset_cfa', 'issue_asset_ifa']:
+            self.run_in_thread(
+                BtcRepository.post_create_utxos,
+                {
+                    'args': [signed_psbt],
+                    'callback': lambda *_: self._on_multisig_post_success(None),
+                    'error_callback': self.on_error,
+                },
+            )
+            return
+
+        self.on_error(CommonException(f'Unsupported purpose: {purpose}'))
+
+    def respond_psbt_to_operation(self, signed_psbt: str, operation_idx: int | None) -> None:
+        """Cosigner flow (watch-only): respond to operation with ACK(signed_psbt)."""
+        if operation_idx is None:
+            self.on_error(CommonException('Operation index missing'))
+            return
+        if not signed_psbt:
+            self.on_error(CommonException('No PSBT to respond with'))
+            return
+        self.is_loading.emit(True)
+        response = RespondToOperation.ACK(signed_psbt)
+        self.run_in_thread(
+            RgbRepository.respond_to_operation,
+            {
+                'args': [operation_idx, response],
+                'callback': self._on_multisig_post_success,
                 'error_callback': self.on_error,
             },
         )

@@ -27,6 +27,7 @@ from src.model.enums.enums_model import LoaderDisplayModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -352,7 +353,11 @@ class WelcomeWidget(QWidget):
 
     def on_create_click(self):
         """This method handle on create button click"""
-        if self.is_watch_only_wallet:
+        is_multisig = (
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
+        )
+        if self.is_watch_only_wallet and not is_multisig:
             blur = QGraphicsBlurEffect()
             blur.setBlurRadius(10)
             self.setGraphicsEffect(blur)

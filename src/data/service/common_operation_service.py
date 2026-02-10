@@ -67,7 +67,7 @@ class CommonOperationService:
 
             if is_watch_only or is_hardware_wallet or is_multisig:
                 mnemonic = None
-                if is_multisig and not is_hardware_wallet:
+                if is_multisig and not is_hardware_wallet and not is_watch_only:
                     mnemonic = mnemonic_store.decrypt(
                         password=password, path=app_paths.mnemonic_file_path,
                     )

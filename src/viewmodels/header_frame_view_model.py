@@ -17,7 +17,9 @@ from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
-from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.model.enums.enums_model import WalletType
+from src.utils.biscuit_auth import generate_and_store_token
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT, MULTISIG_BRIDGE_URL
 from src.utils.constant import MASTER_XPUB
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
@@ -147,8 +149,14 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                     SettingRepository.get_wallet_network(),
                 )
                 indexer_url = get_bitcoin_config(network, '').indexer_url
-                colored_wallet.online_wallet = colored_wallet.wallet.go_online(
-                    False, indexer_url,
+                if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+                    token = generate_and_store_token()
+                    colored_wallet.online_wallet = colored_wallet.wallet.go_online(
+                        False, indexer_url, MULTISIG_BRIDGE_URL, token,
+                    )
+                else:
+                    colored_wallet.online_wallet = colored_wallet.wallet.go_online(
+                        False, indexer_url,
                 )
             self.sync_process_ended.emit('from_usb')
             if not retry:
@@ -175,6 +183,8 @@ class HeaderFrameViewModel(QObject, ThreadManager):
     def sync_multisig_bridge(self):
         """Sync with multisig bridge to check for pending operations."""
         if not self._is_multisig():
+            return
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
             return
         self.is_loading.emit(True)
         self.run_in_thread(

@@ -16,6 +16,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import CreateUtxosRequestModel
@@ -66,6 +67,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             fee_rate=default_fee_rate.fee_rate,
             num=num,
         )
+        print('jjj')
         self.run_in_thread(
             BtcRepository.create_utxos_begin,
             {
@@ -77,6 +79,11 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
     def on_utxo_begin_done(self, unsigned_psbt):
         """Callback when unsigned PSBT is created. Updates dialog and starts signing process."""
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+            print('-'*100)
+            self.unsigned_psbt.emit(unsigned_psbt)
+            return
+
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
                 SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET or self._is_multisig():
             self.hw_dialog_update.emit(

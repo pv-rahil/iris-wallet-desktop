@@ -131,7 +131,10 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.send_button_clicked.emit(True)
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-        if is_hw and is_online or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+        is_watch_only = SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+        if (is_hw and is_online) or (
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET and not is_watch_only
+        ):
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )

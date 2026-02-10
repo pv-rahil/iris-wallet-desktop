@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from src.data.service.wallet_data_service import WalletDataService
+from src.data.repository.setting_repository import SettingRepository
 from src.model.broadcast_transaction_model import MultisigPendingContext
 from src.model.broadcast_transaction_model import PsbtDraftItem
 from src.model.broadcast_transaction_model import PsbtParsed
 from src.model.broadcast_transaction_model import RgbTransferInspectionSummary
+from src.model.enums.enums_model import WalletType
 from src.utils.constant import MASTER_XPUB
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.local_store import local_store
@@ -41,7 +43,7 @@ class BroadcastTransactionService:
 
     @staticmethod
     def parse_psbt_input(text: str) -> PsbtParsed:
-        psbt_text = text.strip()
+        psbt_text = (text or '').strip()
         purpose: str | None = None
 
         if psbt_text.startswith("psbt:"):
@@ -52,7 +54,9 @@ class BroadcastTransactionService:
             elif len(parts) == 2:
                 psbt_text = parts[1]
 
-        return PsbtParsed(psbt=psbt_text.strip(), purpose=purpose)
+        # Base64 PSBTs are sometimes pasted with newlines/spaces; normalize them.
+        normalized_psbt = ''.join(psbt_text.split())
+        return PsbtParsed(psbt=normalized_psbt, purpose=purpose)
 
     @staticmethod
     def resolve_purpose(parsed: PsbtParsed, selector_purpose: str | None) -> str | None:
@@ -144,10 +148,13 @@ class BroadcastTransactionService:
             return None
         if current_psbt is None or current_psbt == "":
             return None
+        current_psbt_only = BroadcastTransactionService.parse_psbt_input(current_psbt).psbt
+        if not current_psbt_only:
+            return None
         pending = BroadcastTransactionService.multisig_pending_context(op_info)
         if pending is None:
             return None
-        if pending.psbt != current_psbt:
+        if pending.psbt != current_psbt_only:
             return None
         return pending
 

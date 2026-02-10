@@ -437,11 +437,6 @@ class SelectionBreadcrumbWidget(QWidget):
         # If Multi-sig was selected at the first step, navigate to a dedicated page
         is_multisig = SettingRepository.get_wallet_signature_type(
         ) == WalletSignatureType.MULTI_SIG_WALLET
-        if is_multisig and entry_type == WalletEntryType.CREATE:
-            # Navigate to Set Password page first for multisig
-            self._view_model.page_navigation.set_wallet_password_page()
-            return
-
         # Default flow (standard): show wallet summary dialog
         self.update_breadcrumbs()
 
@@ -462,6 +457,11 @@ class SelectionBreadcrumbWidget(QWidget):
         key_storage = SettingRepository.get_key_storage_type()
         entry_type = SettingRepository.get_wallet_entry_type()
 
+        if is_multisig and entry_type == WalletEntryType.CREATE:
+            # For multisig creation, summary should come first, then password page.
+            self._view_model.page_navigation.set_wallet_password_page()
+            return
+
         if entry_type == WalletEntryType.CREATE:
             if key_storage == KeyStorageType.HARDWARE_WALLET:
                 self._view_model.page_navigation.hardware_wallet_connect_page()
@@ -478,7 +478,17 @@ class SelectionBreadcrumbWidget(QWidget):
         is_multisig = SettingRepository.get_wallet_signature_type(
         ) == WalletSignatureType.MULTI_SIG_WALLET
         if is_multisig:
-            self._view_model.page_navigation.multisig_setup_page()
+            # For watch-only multisig, show summary first and then continue to password/setup flow.
+            self.update_breadcrumbs()
+            blur = QGraphicsBlurEffect()
+            blur.setBlurRadius(10)
+            self.setGraphicsEffect(blur)
+            dialog = WalletModeSummaryDialog(self)
+            if dialog.exec() == QDialog.Accepted:
+                self.setGraphicsEffect(None)
+                self._view_model.page_navigation.set_wallet_password_page()
+            else:
+                self.setGraphicsEffect(None)
             return
         self.update_breadcrumbs()
         blur = QGraphicsBlurEffect()

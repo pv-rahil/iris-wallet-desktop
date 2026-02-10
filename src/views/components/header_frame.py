@@ -592,12 +592,6 @@ class HeaderFrame(QFrame, QObject):
 
         label_text = ''
 
-        # For multisig wallets, trigger bridge sync (async)
-        if signature_type == WalletSignatureType.MULTI_SIG_WALLET:
-            self.header_frame_view_model.sync_multisig_bridge()
-            # Banner will be updated by on_pending_operations_ready callback
-            return
-
         wallet_service = WalletDataService.get_session()
         if access_type == WalletAccessType.WATCH_ONLY:
             drafts = wallet_service.list_psbt(
@@ -617,6 +611,11 @@ class HeaderFrame(QFrame, QObject):
                 label_text = QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
                 ).format(count)
+        # For online multisig wallets, trigger bridge sync (async)
+        elif signature_type == WalletSignatureType.MULTI_SIG_WALLET and wallet_type == WalletType.ONLINE_TYPE_WALLET:
+            self.header_frame_view_model.sync_multisig_bridge()
+            # Banner will be updated by on_pending_operations_ready callback
+            return
         else:
             drafts = []
             count = 0
@@ -634,20 +633,7 @@ class HeaderFrame(QFrame, QObject):
 
     def on_pending_operations_ready(self, pending_ops: list):
         """Handle pending operations from multisig bridge sync."""
-        all_ops = pending_ops or []
-
-        # Filter filters:
-        # 1. Hide if I am initiator
-        filtered_ops = []
-        if all_ops:
-            local_xpub = local_store.get_value(MASTER_XPUB)
-            for op in all_ops:
-                initiator = getattr(op, 'initiator_xpub', None)
-                if initiator and local_xpub and initiator == local_xpub:
-                    continue
-                filtered_ops.append(op)
-
-        self._pending_ops = filtered_ops
+        self._pending_ops = pending_ops
         self._pending_ops_count = len(self._pending_ops)
         if self._pending_ops_count > 0:
             # Use same format as offline sign label

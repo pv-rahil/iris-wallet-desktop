@@ -167,15 +167,13 @@ class CommonOperationRepository:
                 signed_psbt = hardware_client_store.client.sign_tx(psbt)
                 serialized_psbt = signed_psbt.serialize()
             else:
-                # Check if this is a multisig wallet - MultisigWallet doesn't have sign_psbt
-                # So we need to create a temporary singlesig Wallet for signing
-                wallet_sig_type = SettingRepository.get_wallet_signature_type()
-                if wallet_sig_type == WalletSignatureType.MULTI_SIG_WALLET:
-                    temp_wallet = CommonOperationRepository._get_temp_singlesig_wallet()
-                    serialized_psbt = temp_wallet.sign_psbt(unsigned_psbt)
-                else:
-                    # Regular singlesig wallet - use the existing wallet
-                    serialized_psbt = colored_wallet.wallet.sign_psbt(
-                        unsigned_psbt,
-                    )
+                temp_wallet = CommonOperationRepository._get_temp_singlesig_wallet()
+                serialized_psbt = temp_wallet.sign_psbt(unsigned_psbt)
+
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.mark_psbt_signed(unsigned_psbt, serialized_psbt)
+                wallet_service.update_secondary_draft_psbt_id(
+                    unsigned_psbt, serialized_psbt,
+                )
             return serialized_psbt

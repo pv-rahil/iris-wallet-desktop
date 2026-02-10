@@ -218,6 +218,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
 
     def show_assets(self):
         """This method creates all the fungible assets elements of the main asset page."""
+        if self._view_model.main_asset_view_model.assets is None:
+            return
         for i in reversed(range(self.vertical_layout_3.count())):
             widget = self.vertical_layout_3.itemAt(i).widget()
             if widget is not None:
@@ -289,7 +291,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 name=f"{d.get('name')} (Draft)",
                 ticker=d.get('ticker'),
             )
-            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or self.is_multisig_wallet:
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or self.is_multisig_wallet and not self.is_offline_wallet:
                 self.create_fungible_card(draft_asset)
 
         for asset in self._view_model.main_asset_view_model.assets.nia:

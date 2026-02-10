@@ -9,6 +9,8 @@ from typing import Callable
 from rgb_lib import Operation
 
 from src.data.repository.colored_wallet import colored_wallet
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletType
 from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
 
@@ -39,6 +41,8 @@ def auto_sync_multisig(check_pending_ops: bool = False) -> Callable[..., Any]:
         @wraps(method)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             if colored_wallet.is_multisig:
+                if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+                    return method(*args, **kwargs)
                 try:
                     logger.info("Auto-syncing multisig wallet...")
                     sync_result = colored_wallet.wallet.sync_with_bridge(

@@ -447,6 +447,7 @@ class IssueNIAWidget(QWidget):
             self.create_issue_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
             )
+        print('lllll')
 
         # Call the view model method and pass the text values as arguments
         self._view_model.issue_nia_asset_view_model.on_issue_click(
@@ -546,6 +547,7 @@ class IssueNIAWidget(QWidget):
                 ), None,
             )
             if existing_psbt and existing_psbt.get('psbt'):
+                self._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_nia'
                 self.show_nia_psbt_page(existing_psbt.get('psbt'))
                 return
         # Compute missing UTXOs (required = 3) and create only those

@@ -464,40 +464,37 @@ class USBSyncManager:
             return None
 
     def _restore_wallet_data(self, data: bytes, only_folder: bool = False):
-        """Restore wallet data from ZIP; if only_folder, restore fingerprint and wallet_data only."""
+        """Restore wallet data from ZIP; if only_folder, restore wallet folders + wallet_data only."""
         try:
-            fingerprint_folder = os.path.join(
-                app_paths.app_path, self.master_fingerprint,
-            )
-
-            if only_folder:
-                # Remove only fingerprint folder, keep wallet_data (will be overwritten)
-                if os.path.exists(fingerprint_folder):
-                    shutil.rmtree(fingerprint_folder)
-
             with zipfile.ZipFile(io.BytesIO(data), 'r') as z:
                 if only_folder:
-                    # Restore only fingerprint folder and wallet_data folder
-                    fingerprint_prefix = self.master_fingerprint + '/'
                     wallet_data_prefix = 'wallet-data/'
 
                     for m in z.namelist():
-                        if m.startswith(fingerprint_prefix) or m.startswith(wallet_data_prefix):
-                            target = os.path.join(app_paths.app_path, m)
-                            if m.endswith('/'):
-                                # Create empty directory
-                                os.makedirs(target, exist_ok=True)
-                            else:
-                                # Create parent dirs & restore file
-                                os.makedirs(
-                                    os.path.dirname(
-                                        target,
-                                    ), exist_ok=True,
-                                )
-                                with open(target, 'wb') as f:
-                                    f.write(z.read(m))
+                        # top-level directory name
+                        top = m.split('/', 1)[0]
+
+                        # skip empty entries
+                        if not top:
+                            continue
+
+                        # exclude logs and cache everywhere
+                        if top in ('logs', 'cache'):
+                            continue
+
+                        # allow wallet folders and wallet-data
+                        if top != 'wallet-data' and not m.startswith(top + '/'):
+                            continue
+
+                        target = os.path.join(app_paths.app_path, m)
+
+                        if m.endswith('/'):
+                            os.makedirs(target, exist_ok=True)
+                        else:
+                            os.makedirs(os.path.dirname(target), exist_ok=True)
+                            with open(target, 'wb') as f:
+                                f.write(z.read(m))
                 else:
-                    # Full restore (wallet folder + wallet_data + ini + everything else)
                     z.extractall(app_paths.app_path)
 
         except Exception as exc:
@@ -580,38 +577,46 @@ class USBSyncManager:
             raise
 
     def _add_wallet_folder_to_zip(self, z, wallet_path: str):
-        """Add wallet folder contents to ZIP, excluding logs."""
+        """Add wallet folder contents to ZIP, excluding logs and cache."""
         try:
-            folder = os.path.join(wallet_path, self.master_fingerprint)
-            if not os.path.exists(folder):
-                logger.warning('Wallet folder not found: %s', folder)
-                return
+            for fingerprint in os.listdir(wallet_path):
+                folder = os.path.join(wallet_path, fingerprint)
 
-            z.writestr(self.master_fingerprint + '/', '')
+                if not os.path.isdir(folder):
+                    continue
 
-            for root, dirs, files in os.walk(folder):
-                dirs[:] = [d for d in dirs if d not in ['logs']]
+                # 🚫 skip non-wallet folders at root
+                if fingerprint in ('logs', 'cache'):
+                    continue
 
-                rel_dir = os.path.relpath(root, folder)
-                if rel_dir != '.':
-                    z.writestr(
-                        os.path.join(
-                            self.master_fingerprint, rel_dir,
-                        ) + '/', '',
-                    )
+                z.writestr(fingerprint + '/', '')
 
-                for f in files:
-                    path = os.path.join(root, f)
-                    rel = os.path.relpath(path, folder)
-                    arc = os.path.join(self.master_fingerprint, rel)
+                for root, dirs, files in os.walk(folder):
+                    # 🚫 prevent descending into logs/cache anywhere
+                    dirs[:] = [d for d in dirs if d not in ('logs', 'cache')]
 
-                    info = zipfile.ZipInfo(arc)
-                    info.date_time = datetime.datetime.fromtimestamp(
-                        os.stat(path).st_mtime,
-                    ).timetuple()[:6]
+                    rel_dir = os.path.relpath(root, folder)
+                    if rel_dir != '.':
+                        z.writestr(os.path.join(fingerprint, rel_dir) + '/', '')
 
-                    with open(path, 'rb') as fh:
-                        z.writestr(info, fh.read())
+                    for f in files:
+                        path = os.path.join(root, f)
+                        rel = os.path.relpath(path, folder)
+
+                        # 🚫 extra safety: skip files inside logs/cache
+                        if rel.split(os.sep, 1)[0] in ('logs', 'cache'):
+                            continue
+
+                        arc = os.path.join(fingerprint, rel)
+
+                        info = zipfile.ZipInfo(arc)
+                        info.date_time = datetime.datetime.fromtimestamp(
+                            os.stat(path).st_mtime,
+                        ).timetuple()[:6]
+
+                        with open(path, 'rb') as fh:
+                            z.writestr(info, fh.read())
+
         except Exception as exc:
             logger.error('Failed adding wallet folder to zip: %s', exc)
             raise
