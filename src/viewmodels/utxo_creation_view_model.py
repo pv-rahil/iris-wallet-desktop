@@ -67,7 +67,6 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             fee_rate=default_fee_rate.fee_rate,
             num=num,
         )
-        print('jjj')
         self.run_in_thread(
             BtcRepository.create_utxos_begin,
             {

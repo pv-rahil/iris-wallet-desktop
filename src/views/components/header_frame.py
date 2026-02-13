@@ -591,6 +591,7 @@ class HeaderFrame(QFrame, QObject):
         signature_type = SettingRepository.get_wallet_signature_type()
 
         label_text = ''
+        count = 0
 
         wallet_service = WalletDataService.get_session()
         if access_type == WalletAccessType.WATCH_ONLY:
@@ -602,7 +603,23 @@ class HeaderFrame(QFrame, QObject):
                 label_text = QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
                 ).format(count)
-        elif wallet_type == WalletType.OFFLINE_TYPE_WALLET:
+                # Show banner for locally created PSBTs
+                self.psbt_info_label.setText(label_text)
+                self.psbt_info_frame.setToolTip(label_text)
+                self.psbt_info_frame.show()
+            else:
+                self.psbt_info_frame.hide()
+            
+            # For watch-only multisig: ALSO check bridge for review operations
+            # (even if we have local PSBTs, we want to know about bridge ops too)
+            if signature_type == WalletSignatureType.MULTI_SIG_WALLET:
+                self.header_frame_view_model.sync_multisig_bridge()
+                # Banner will be updated by on_pending_operations_ready callback if review ops found
+                return
+            return
+        
+        # For offline wallets: show unsigned PSBTs needing signature
+        if wallet_type == WalletType.OFFLINE_TYPE_WALLET:
             drafts = wallet_service.list_psbt(
                 False,
             ) if wallet_service is not None else []
@@ -636,10 +653,16 @@ class HeaderFrame(QFrame, QObject):
         self._pending_ops = pending_ops
         self._pending_ops_count = len(self._pending_ops)
         if self._pending_ops_count > 0:
-            # Use same format as offline sign label
-            label_text = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
-            ).format(self._pending_ops_count)
+            # For watch-only wallets: show text indicating offline signature needed
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+                label_text = QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'offline_sign_needed_label', None,
+                ).format(self._pending_ops_count)
+            else:
+                # Use same format as offline sign label for other wallets
+                label_text = QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
+                ).format(self._pending_ops_count)
             self.psbt_info_label.setText(label_text)
             self.psbt_info_frame.setToolTip(label_text)
             self.psbt_info_frame.show()

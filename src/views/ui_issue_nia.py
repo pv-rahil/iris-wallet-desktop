@@ -45,6 +45,7 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
+from src.utils.helpers import check_multisig_pending_operation_guard
 
 
 class IssueNIAWidget(QWidget):
@@ -439,6 +440,9 @@ class IssueNIAWidget(QWidget):
 
     def on_issue_nia_click(self):
         """Handle the click event for issuing a new NIA asset."""
+        if check_multisig_pending_operation_guard(self.issue_nia_btn):
+            return 
+        
         # Retrieve text values from input fields
         short_identifier = self.short_identifier_input.text().upper()
         asset_name = self.asset_name_input.text()
@@ -447,7 +451,6 @@ class IssueNIAWidget(QWidget):
             self.create_issue_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
             )
-        print('lllll')
 
         # Call the view model method and pass the text values as arguments
         self._view_model.issue_nia_asset_view_model.on_issue_click(

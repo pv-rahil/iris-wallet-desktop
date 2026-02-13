@@ -19,6 +19,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtGui import QPainter
 from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QWidget
 from rgb_lib import BitcoinNetwork
 from rgb_lib import CosignerData
 from rgb_lib import MultisigKeys
@@ -45,6 +46,11 @@ from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.custom_exception import CommonException
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.logging import logger
+from PySide6.QtWidgets import QPushButton
+from src.data.repository.colored_wallet import colored_wallet
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletType
+from src.views.components.toast import ToastManager
 
 
 def handle_asset_address(address: str, short_len: int = 12) -> str:
@@ -405,3 +411,87 @@ def build_keys_from_data(
         master_fingerprint=master_fingerprint,
         vanilla_keychain=vanilla_keychain if vanilla_keychain is not None else 1,
     )
+
+def set_widgets_visible(widgets: list[QWidget | None], visible: bool) -> None:
+    """
+    Set the visibility of a list of widgets.
+    """
+    for widget in widgets:
+        if widget is None:
+            continue
+        try:
+            widget.setVisible(visible)
+        except Exception:
+            try:
+                if visible:
+                    widget.show()
+                else:
+                    widget.hide()
+            except Exception:
+                pass
+
+def check_multisig_pending_operation_guard(button=None) -> bool:
+    """
+    Check if a multisig pending/review operation exists and show toast if blocked.
+    
+    This is a UI guard helper (like faucet pattern) that checks bridge sync result
+    and shows a toast to the user if a pending operation exists, preventing them
+    from creating a new PSBT.
+    
+    Args:
+        button: Optional QPushButton to disable when blocked (like faucet loading pattern)
+    
+    Returns:
+        True if operation should be blocked (pending op exists), False otherwise.
+    """    
+    # Skip check for non-multisig or offline wallets
+    if not colored_wallet.is_multisig:
+        return False
+    if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+        return False
+    
+    try:
+        # Sync with bridge to check for pending operations
+        sync_result = colored_wallet.wallet.sync_with_bridge(
+            online=colored_wallet.online,
+        )
+        
+        if sync_result and sync_result.operation:
+            op = sync_result.operation
+            # Check if this is a blocking operation (pending or review)
+            is_blocking = (
+                op.is_CREATE_UTXOS_TO_REVIEW()
+                or op.is_CREATE_UTXOS_PENDING()
+                or op.is_SEND_BTC_TO_REVIEW()
+                or op.is_SEND_BTC_PENDING()
+                or op.is_SEND_TO_REVIEW()
+                or op.is_SEND_PENDING()
+                or op.is_INFLATION_TO_REVIEW()
+                or op.is_INFLATION_PENDING()
+            )
+            
+            if is_blocking:
+                # Disable button if provided (like faucet loading pattern)
+                if button is not None and isinstance(button, QPushButton):
+                    # If button has start_loading method (PrimaryButton/SecondaryButton), use it
+                    if hasattr(button, 'start_loading') and callable(getattr(button, 'start_loading')):
+                        button.start_loading()
+                        # Auto-enable after short delay (like a pulse)
+                        from PySide6.QtCore import QTimer
+                        QTimer.singleShot(500, button.stop_loading)
+                    else:
+                        button.setDisabled(True)
+                        QTimer.singleShot(500, lambda: button.setDisabled(False))
+                
+                ToastManager.error(
+                    description='A multisig transaction is already pending or under review. '
+                              'Please complete it before creating a new transaction.',
+                )
+                return True
+                
+    except Exception as exc:
+        logger.warning('Failed to check multisig pending operations: %s', exc)
+        # Allow operation to proceed on error (fail open)
+        return False
+    
+    return False

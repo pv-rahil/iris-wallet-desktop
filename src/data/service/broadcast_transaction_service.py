@@ -162,10 +162,12 @@ class BroadcastTransactionService:
     def operation_transfer_type_key(operation: object) -> str | None:
         if operation.is_inflation_to_review():
             return "inflation"
+        # RGB send (asset transfer)
         if operation.is_send_to_review():
-            return "btc_transfer"
-        if operation.is_send_btc_to_review():
             return "asset_transfer"
+        # BTC send
+        if operation.is_send_btc_to_review():
+            return "btc_transfer"
         if operation.is_create_utxos_to_review():
             return "internal"
         return None

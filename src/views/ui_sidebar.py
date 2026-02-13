@@ -35,6 +35,7 @@ from src.model.enums.enums_model import WalletSignatureType
 from src.model.selection_page_model import AssetDataModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.helpers import check_multisig_pending_operation_guard
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SidebarButton
@@ -232,11 +233,7 @@ class Sidebar(QWidget):
         )
         self.help.clicked.connect(self._view_model.page_navigation.help_page)
         self.receive_asset_button.clicked.connect(
-            lambda: self._view_model.page_navigation.receive_cfa_page(
-                params=AssetDataModel(
-                    asset_type=self.get_checked_button_translation_key(),
-                ),
-            ),
+            self._on_receive_asset_clicked,
         )
         self.broadcast_transaction.clicked.connect(
             lambda: self._view_model.page_navigation.broadcast_transaction_page(
@@ -324,6 +321,16 @@ class Sidebar(QWidget):
             if button.isChecked():
                 return button.get_translation_key()
         return None
+
+    def _on_receive_asset_clicked(self):
+        """Handle receive asset button click with multisig guard."""
+        if check_multisig_pending_operation_guard(self.receive_asset_button):
+            return
+        self._view_model.page_navigation.receive_cfa_page(
+            params=AssetDataModel(
+                asset_type=self.get_checked_button_translation_key(),
+            ),
+        )
 
     def update_privileges(self, config):
         """

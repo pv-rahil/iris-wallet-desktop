@@ -259,6 +259,12 @@ class CollectiblesAssetWidget(QWidget):
             self.grid_layout = grid_layout
             self.resizeEvent = self.resize_event_called
 
+            # Activate layout immediately to ensure proper sizing for pixmap rendering
+            # This prevents blank thumbnails on first render by forcing layout calc
+            grid_layout.activate()
+            if hasattr(grid_widget, 'layout'):
+                grid_widget.layout().activate()
+
     def create_collectibles_frames(self):
         """Initial setup for the grid layout and scroll area"""
         if not hasattr(self, 'scroll_area'):
@@ -346,7 +352,9 @@ class CollectiblesAssetWidget(QWidget):
 
         if image_path:
             resized_image = resize_image(image_path, 242, 242)
-            image_label.setPixmap(resized_image)
+            if resized_image and not resized_image.isNull():
+                image_label.setPixmap(resized_image)
+                image_label.setScaledContents(True)
 
         form_layout.addRow(image_label)
 

@@ -206,7 +206,71 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                 pending_ops = operation_info
             else:
                 pending_ops = [operation_info]
+        
+        # For watch-only wallets: extract and save review PSBTs to local DB
+        # so they can be transferred to offline wallet via USB sync
+        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+            self._extract_and_save_review_psbts(pending_ops)
+        
         self.pending_operations_ready.emit(pending_ops)
+
+    def _extract_and_save_review_psbts(self, pending_ops: list):
+        """Extract PSBTs from review operations and save to local DB for offline signing."""
+        from src.data.service.wallet_data_service import WalletDataService
+        
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            return
+        
+        for op_info in pending_ops:
+            if op_info is None or not hasattr(op_info, 'operation'):
+                continue
+            
+            operation = op_info.operation
+            if operation is None:
+                continue
+            
+            # Check if this is a review operation needing signature
+            is_review = (
+                hasattr(operation, 'is_create_utxos_to_review') and operation.is_create_utxos_to_review()
+                or hasattr(operation, 'is_send_btc_to_review') and operation.is_send_btc_to_review()
+                or hasattr(operation, 'is_send_to_review') and operation.is_send_to_review()
+                or hasattr(operation, 'is_inflation_to_review') and operation.is_inflation_to_review()
+            )
+            
+            if not is_review:
+                continue
+            
+            # Extract PSBT from operation
+            psbt = getattr(operation, 'psbt', None)
+            if not psbt:
+                continue
+            
+            # Determine purpose from operation type
+            purpose = None
+            if hasattr(operation, 'is_create_utxos_to_review') and operation.is_create_utxos_to_review():
+                purpose = 'create_utxos'
+            elif hasattr(operation, 'is_send_btc_to_review') and operation.is_send_btc_to_review():
+                purpose = 'send_btc'
+            elif hasattr(operation, 'is_send_to_review') and operation.is_send_to_review():
+                purpose = 'send_asset'
+            elif hasattr(operation, 'is_inflation_to_review') and operation.is_inflation_to_review():
+                purpose = 'inflate_asset'
+            
+            if not purpose:
+                continue
+            
+            try:
+                # Check if PSBT already exists to avoid duplicates
+                existing = wallet_service.list_psbt(signed=False)
+                if existing and any(p.get('psbt') == psbt for p in existing):
+                    continue
+                
+                # Save as unsigned PSBT with purpose
+                wallet_service.add_psbt(psbt, signed=False, purpose=purpose)
+                logger.info('Saved review operation PSBT to local DB: purpose=%s', purpose)
+            except Exception as exc:
+                logger.error('Failed to save review PSBT to DB: %s', exc)
 
     def on_multisig_sync_error(self, error: Exception):
         """Handle bridge sync error."""

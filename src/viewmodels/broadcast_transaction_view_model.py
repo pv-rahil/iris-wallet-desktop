@@ -421,6 +421,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def fetch_pending_operation(self):
         """Fetch pending operation from bridge to check against current PSBT."""
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+            return
         self.run_in_thread(
             RgbRepository.sync_with_bridge,
             {

@@ -10,12 +10,12 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 from rgb_lib import Address
-from rgb_lib import BitcoinNetwork
 from rgb_lib import RgbLibError
 
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
@@ -32,6 +32,7 @@ from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.send_asset import SendAssetWidget
 from src.utils.helpers import get_bitcoin_network_from_enum
+from src.utils.helpers import check_multisig_pending_operation_guard
 
 
 class SendBitcoinWidget(QWidget):
@@ -134,13 +135,31 @@ class SendBitcoinWidget(QWidget):
     def send_bitcoin_button(self):
         """Handle the send bitcoin button click event
         and send the bitcoin on the particular address"""
+        if check_multisig_pending_operation_guard(self.send_bitcoin_page.send_btn):
+            return 
+        
         address = self.send_bitcoin_page.asset_address_value.text()
         amount = self.send_bitcoin_page.asset_amount_value.text()
         fee = self.send_bitcoin_page.fee_rate_value.text() or FEE_RATE
         if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only_wallet or self.is_multisig_wallet:
-            self._view_model.send_bitcoin_view_model.send_btc_begin(
-                address, amount, fee,
-            )
+            self._view_model.send_bitcoin_view_model.current_purpose = 'send_btc'
+            existing_psbt = None
+            wallet_service = WalletDataService.get_session()
+            if wallet_service:
+                unsigned_psbts = wallet_service.list_psbt(signed=False)
+                match = next(
+                    (p for p in unsigned_psbts if p.get('purpose') == 'send_btc'),
+                    None,
+                )
+                if match:
+                    existing_psbt = match.get('psbt')
+
+            if existing_psbt:
+                self._view_model.send_bitcoin_view_model.unsigned_psbt.emit(existing_psbt)
+            else:
+                self._view_model.send_bitcoin_view_model.send_btc_begin(
+                    address, amount, fee,
+                )
         else:
             self._view_model.send_bitcoin_view_model.on_send_click(
                 address, amount, fee,

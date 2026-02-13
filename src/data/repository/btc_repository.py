@@ -176,3 +176,6 @@ class BtcRepository:
                 online=colored_wallet.online,
                 psbt=signed_psbt,
             )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_psbt(signed_psbt)

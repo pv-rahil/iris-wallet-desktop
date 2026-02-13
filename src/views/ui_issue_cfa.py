@@ -49,6 +49,7 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.toast import ToastManager
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.utils.helpers import check_multisig_pending_operation_guard
 
 
 class IssueCFAWidget(QWidget):
@@ -443,6 +444,9 @@ class IssueCFAWidget(QWidget):
 
     def on_issue_cfa(self):
         """Issue CFA while issue CFA button clicked"""
+        if check_multisig_pending_operation_guard(self.issue_cfa_button):
+            return 
+        
         asset_description = self.asset_description_input.text()
         asset_name = self.name_of_the_asset_input.text()
         total_supply = self.amount_input.text()
@@ -568,6 +572,7 @@ class IssueCFAWidget(QWidget):
                 ), None,
             )
             if existing_psbt and existing_psbt.get('psbt'):
+                self._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_cfa'
                 self.show_cfa_psbt_page(existing_psbt.get('psbt'))
                 return
         # Compute missing UTXOs (required = 3) and create only those

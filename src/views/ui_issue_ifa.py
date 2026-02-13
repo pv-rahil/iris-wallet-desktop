@@ -62,6 +62,7 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
+from src.utils.helpers import check_multisig_pending_operation_guard
 
 
 class IssueIFAWidget(QWidget):
@@ -737,6 +738,9 @@ class IssueIFAWidget(QWidget):
 
     def on_issue_ifa_click(self):
         """Handle the click event for issuing a new IFA asset."""
+        if check_multisig_pending_operation_guard(self.issue_ifa_btn):
+            return
+        
         # Retrieve text values from input fields
         short_identifier = self.inflatables_short_identifier_input.text().upper()
         asset_name = self.inflatables_asset_name_input.text()
@@ -786,6 +790,9 @@ class IssueIFAWidget(QWidget):
 
     def on_secondary_issuance_click(self):
         """Handle the click event for secondary issuance."""
+        if check_multisig_pending_operation_guard(self.issue_ifa_btn):
+            return
+        
         value_of_default_min_confirmation: DefaultMinConfirmation = SettingCardRepository.get_default_min_confirmation()
         amount_to_issue = self.inflatables_issue_amount_input.text()
         fee_text = self.inflatables_fee_rate_input.text() or FEE_RATE
@@ -825,6 +832,7 @@ class IssueIFAWidget(QWidget):
                     existing_unsigned = p.get('psbt')
                     break
             if existing_unsigned:
+                self._view_model.utxo_creation_view_model.current_purpose = 'inflate_asset'
                 self.show_inflate_psbt_page(existing_unsigned)
                 return
         if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only or self.is_multisig:
@@ -981,7 +989,7 @@ class IssueIFAWidget(QWidget):
                 if not self._prompt_bitcoin_app_and_confirm():
                     return
                 self._retry_after_utxo_inflate = bool(self.secondary_issuance)
-                utxo_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset'
+                utxo_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset_ifa'
                 # Determine only missing UTXOs to create (required = 3)
                 current = get_unspent_utxo_count()
                 needed = 3 - max(0, current - 1)
@@ -1001,7 +1009,7 @@ class IssueIFAWidget(QWidget):
         """Handle PSBT posted to bridge (multisig initiator)."""
         # Only handle if the current purpose matches IFA issuing
         current_purpose = self._view_model.utxo_creation_view_model.current_purpose
-        if current_purpose not in ['issue_asset', 'inflate_asset']:
+        if current_purpose not in ['issue_asset_ifa', 'inflate_asset']:
             return
         if not self.isVisible():
             return
@@ -1017,7 +1025,7 @@ class IssueIFAWidget(QWidget):
     def handle_ifa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
         purpose = self._view_model.utxo_creation_view_model.current_purpose
-        if purpose not in ('issue_asset', 'inflate_asset'):
+        if purpose not in ('issue_asset_ifa', 'inflate_asset'):
             return
         if not self.isVisible() or not status:
             return
@@ -1030,7 +1038,7 @@ class IssueIFAWidget(QWidget):
                 ifa_hw_dialog.accept()
 
             # Resume the correct flow depending on purpose
-            if purpose == 'issue_asset':
+            if purpose == 'issue_asset_ifa':
                 self.on_issue_ifa_click()
             elif purpose == 'inflate_asset':
                 # Before retrying inflate, guide user to open RGB app on Ledger (HW-online only)
@@ -1092,13 +1100,14 @@ class IssueIFAWidget(QWidget):
                 signed=False,
             )
             # Check for existing PSBT based on purpose
-            target_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset'
+            target_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset_ifa'
             existing_inflatables_psbt = next(
                 (
                     p for p in unsigned_psbts if p.get('purpose') == target_purpose
                 ), None,
             )
             if existing_inflatables_psbt and existing_inflatables_psbt.get('psbt'):
+                self._view_model.utxo_creation_view_model.current_purpose = target_purpose
                 self.show_ifa_psbt_page(existing_inflatables_psbt.get('psbt'))
                 return
         # For HW-online, prompt for Bitcoin app first; for others, proceed directly to PSBT creation
@@ -1110,7 +1119,7 @@ class IssueIFAWidget(QWidget):
         needed = 3 - max(0, current - 1)
         needed = needed if needed > 0 else 1
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            purpose='issue_asset', num=needed,
+            purpose='issue_asset_ifa', num=needed,
         )
 
     def show_ifa_psbt_page(self, inflatables_psbt):

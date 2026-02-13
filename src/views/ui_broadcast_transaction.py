@@ -10,7 +10,6 @@ from enum import Enum
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
-from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QComboBox
@@ -43,6 +42,7 @@ from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import close_button_navigation
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.helpers import set_widgets_visible
 from src.utils.helpers import load_stylesheet
 from src.utils.logging import logger
 from src.utils.render_timer import RenderTimer
@@ -739,25 +739,29 @@ class BroadcastTransactionWidget(QWidget):
         }
         return fallback_labels.get(key, key)
 
-    def _get_psbt_purpose_from_storage(self, psbt_text: str) -> str | None:
-        """Get the purpose of a PSBT from database storage."""
+    def _get_psbt_purpose_from_storage(self, psbt_base64: str) -> str | None:
+        """Fetch purpose stored for this PSBT in the local wallet DB (if any)."""
+        psbt_norm = (psbt_base64 or '').strip()
+        if not psbt_norm:
+            return None
         try:
             from src.data.service.wallet_data_service import WalletDataService
             service = WalletDataService.get_session()
             if not service:
                 return None
-            
-            # Check both signed and unsigned PSBTs
-            for signed in [False, True]:
-                psbts = service.list_psbt(signed=signed)
-                for psbt_item in psbts:
-                    if psbt_item.get('psbt') == psbt_text.strip():
-                        purpose = psbt_item.get('purpose')
-                        if purpose:
-                            return purpose
+
+            # Check both unsigned and signed rows.
+            for signed in (0, 1):
+                cur = service.conn.cursor()
+                cur.execute(
+                    'SELECT purpose FROM psbt WHERE signed = ? AND psbt = ? LIMIT 1',
+                    (signed, psbt_norm),
+                )
+                row = cur.fetchone()
+                if row and row[0]:
+                    return row[0]
             return None
-        except Exception as e:
-            print('Error getting PSBT purpose from storage: %s',e)
+        except Exception:
             return None
 
     def _apply_base_sizes(self):
@@ -788,6 +792,17 @@ class BroadcastTransactionWidget(QWidget):
         except Exception:
             pass
 
+    @staticmethod
+    def _supported_multisig_post_purposes() -> set[str]:
+        return {
+            'create_utxos',
+            'send_btc',
+            'issue_asset_nia',
+            'issue_asset_cfa',
+            'issue_asset_ifa',
+            'inflate_asset',
+        }
+
     def _on_psbt_text_changed(self):
         """Auto-trigger inspection and sizing when the user pastes/types a PSBT."""
         if self._programmatic_psbt_set:
@@ -802,9 +817,14 @@ class BroadcastTransactionWidget(QWidget):
         if psbt_body and len(psbt_body) >= self.min_psbt_len:
             # Do NOT expand yet; keep base size while loading
             if self.is_multisig:
-                self.inspection_frame.hide()
-                self.details_title.hide()
-                self.sign_status_label.hide()
+                set_widgets_visible(
+                    [
+                        self.inspection_frame,
+                        self.details_title,
+                        self.sign_status_label,
+                    ],
+                    False
+                )
                 self._loading_overlay.start()
                 self._loading_overlay.make_parent_disabled_during_loading(True)
 
@@ -818,11 +838,16 @@ class BroadcastTransactionWidget(QWidget):
             # Reset context so old tiles don't remain visible while new inspection runs
             self._is_inflation_context = False
             self._pending_transfer_type = None
-            self.tile_asset.hide()
-            self.tile_amount.hide()
-            self.tile_ttype.hide()
-            self.tile_minconf.hide()
-            self.tile_destination.hide()
+            set_widgets_visible(
+                [
+                    self.tile_asset,
+                    self.tile_amount,
+                    self.tile_ttype,
+                    self.tile_minconf,
+                    self.tile_destination,
+                ],
+                False
+            )
             # Inspect should always use raw PSBT base64 (no purpose prefix)
             self.view_model.broadcast_transaction_view_model.inspect_psbt(psbt_body)
 
@@ -839,10 +864,15 @@ class BroadcastTransactionWidget(QWidget):
         else:
             # Collapse when cleared
             self._apply_base_sizes()
-            self.inspection_frame.hide()
-            self.details_title.hide()
-            self.inspect_loading.hide()
-            self.sign_status_label.hide()
+            set_widgets_visible(
+                [
+                    self.inspection_frame,
+                    self.details_title,
+                    self.inspect_loading,
+                    self.sign_status_label,
+                ],
+                False
+            )
             self._loading_overlay.stop()
             self._loading_overlay.make_parent_disabled_during_loading(False)
 
@@ -861,9 +891,14 @@ class BroadcastTransactionWidget(QWidget):
         current_psbt = BroadcastTransactionService.parse_psbt_input(current_text).psbt
         if not current_psbt or len(current_psbt) < self.min_psbt_len:
             return
-        self.inspection_frame.show()
-        self.details_title.show()
-        self.details_card.show()
+        set_widgets_visible(
+            [
+                self.inspection_frame,
+                self.details_title,
+                self.details_card,
+            ],
+            True,
+        )
         self.is_psbt_validated = True
         self.handle_button_enable()
         if self.is_multisig:
@@ -995,8 +1030,7 @@ class BroadcastTransactionWidget(QWidget):
             pass
 
     def _on_psbts_loaded(self, items: list[PsbtDraftItem]) -> None:
-        self.method_selector.hide()
-        self.method_selector_label.hide()
+        set_widgets_visible([self.method_selector, self.method_selector_label],False)
 
         if self.priv.can_broadcast_psbt:
             self._psbt_signed_items = items
@@ -1049,19 +1083,12 @@ class BroadcastTransactionWidget(QWidget):
         text = self.broadcast_transaction_input.toPlainText()
         has_input = bool(text) and (len(text.strip()) >= self.min_psbt_len)
         
-        # Handle Post to Multisig button for multisig wallets
-        # if self.is_multisig:
-        #     purpose, _ = self._parse_purpose_prefixed_psbt(text.strip()) if has_input else (None, None)
-        #     supported_purposes = ['create_utxos', 'send_btc', 'issue_asset_nia', 'issue_asset_cfa', 'issue_asset_ifa']
-        #     can_post = bool(has_input and (purpose in supported_purposes))
-        #     self.broadcast_button.setEnabled(can_post)
-        
         if self.priv.can_broadcast_psbt:
             if self.is_multisig and self.is_watch_only:
                 purpose = None
                 if has_input:
                     purpose, _ = self._parse_purpose_prefixed_psbt(text.strip())
-                supported_purposes = ['create_utxos', 'send_btc', 'issue_asset_nia', 'issue_asset_cfa', 'issue_asset_ifa']
+                supported_purposes = self._supported_multisig_post_purposes()
                 can_post_by_purpose = bool(has_input and (purpose in supported_purposes))
                 # Fallback: try to fetch stored purpose for plain base64 PSBT
                 if not can_post_by_purpose and has_input:
@@ -1083,10 +1110,6 @@ class BroadcastTransactionWidget(QWidget):
         else:
             # Signer flow
             if self.is_multisig:
-                # For offline multisig mode, relax validation requirements
-                # Allow signing if we have valid input and either:
-                # 1. A pending operation exists, OR
-                # 2. We're in offline mode and have a valid PSBT (with or without purpose)
                 offline_mode = (SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or 
                                SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET)
                 has_purpose = False
@@ -1147,22 +1170,6 @@ class BroadcastTransactionWidget(QWidget):
                 return (None, parts[1].strip())
         return (None, text)
 
-    def _get_psbt_purpose_from_storage(self, psbt_base64: str) -> str | None:
-        """Fetch purpose stored for this PSBT in the watch-only DB (if any)."""
-        try:
-            from src.data.service.wallet_data_service import WalletDataService
-            wallet_service = WalletDataService.get_session()
-            if not wallet_service:
-                return None
-            cur = wallet_service.conn.cursor()
-            cur.execute(
-                'SELECT purpose FROM psbt WHERE signed = 1 AND psbt = ? LIMIT 1',
-                (psbt_base64,),
-            )
-            row = cur.fetchone()
-            return row[0] if row and row[0] else None
-        except Exception:
-            return None
 
     def _on_post_or_respond_multisig(self):
         """Watch-only multisig: if PSBT has a purpose prefix, post_*; otherwise respond_to_operation."""
@@ -1213,7 +1220,7 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         # Check if this is a supported purpose for posting
-        supported_purposes = ['create_utxos', 'send_btc', 'issue_asset_nia', 'issue_asset_cfa', 'issue_asset_ifa']
+        supported_purposes = self._supported_multisig_post_purposes()
         if purpose not in supported_purposes:
             ToastManager.error(description=f'Purpose "{purpose}" is not supported for auto-posting')
             return
@@ -1276,19 +1283,19 @@ class BroadcastTransactionWidget(QWidget):
             self.btn_export.setEnabled(False)
             # Enable import if cleared
             self.btn_import.setEnabled(True)
-            self.btn_import.show()
+            set_widgets_visible([self.btn_import], True)
             self.btn_clear.setEnabled(False)
-            self.btn_clear.hide()
+            set_widgets_visible([self.btn_clear], False)
             # Allow editing when no valid PSBT present
             self.broadcast_transaction_input.setReadOnly(False)
 
-            self.inspection_frame.hide()
+            set_widgets_visible([self.inspection_frame], False)
             return
 
         # Has PSBT content: Hide Import, Show Clear
         if self.is_multisig:
-            self.btn_import.hide()
-            self.btn_clear.show()
+            set_widgets_visible([self.btn_import], False)
+            set_widgets_visible([self.btn_clear], True)
             self.btn_clear.setEnabled(True)
             # Lock input once content is present until user clears
             self.broadcast_transaction_input.setReadOnly(True)
@@ -1401,9 +1408,7 @@ class BroadcastTransactionWidget(QWidget):
         self.val_transfer_type.setText(self._get_transfer_type_label('inflation'))
 
         # Hide destination for inflation
-        self.tile_destination.hide()
-        self.lbl_destination.setVisible(False)
-        self.val_destination.setVisible(False)
+        set_widgets_visible([self.tile_destination, self.lbl_destination, self.val_destination], False)
 
     def _handle_psbt_inspection_result(self, details):
         """
@@ -1414,12 +1419,11 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         if details is None:
-            self.inspection_frame.hide()
-            self.details_title.hide()
+            set_widgets_visible([self.inspection_frame, self.details_title], False)
             self.is_psbt_validated = False
             self.handle_button_enable()
             if self.is_multisig:
-                self.sign_status_label.hide()
+                set_widgets_visible([self.sign_status_label], False)
                 self._apply_base_sizes()
             return
 
@@ -1456,21 +1460,15 @@ class BroadcastTransactionWidget(QWidget):
         
         
         if pending_key in ('internal', 'btc_transfer', 'inflation', 'asset_transfer', 'send_btc', 'send_asset', 'create_utxos', 'issue_asset_cfa', 'issue_asset_nia', 'issue_asset_ifa'):
-            self.tile_ttype.show()
-            self.lbl_transfer_type.setVisible(True)
-            self.val_transfer_type.setVisible(True)
+            set_widgets_visible([self.tile_ttype, self.lbl_transfer_type, self.val_transfer_type], True)
             self.val_transfer_type.setText(self._get_transfer_type_label(pending_key))
         else:
-            self.tile_ttype.hide()
-            self.lbl_transfer_type.setVisible(False)
-            self.val_transfer_type.setVisible(False)
+            set_widgets_visible([self.tile_ttype, self.lbl_transfer_type, self.val_transfer_type], False)
 
         # In inflation context, do not recompute Amount/Destination using BTC-only heuristics.
         # Keep prefilled RGB inflation amount and hide Destination.
         if self._is_inflation_context:
-            self.lbl_destination.setVisible(False)
-            self.val_destination.setVisible(False)
-            self.tile_destination.hide()
+            set_widgets_visible([self.lbl_destination, self.val_destination, self.tile_destination], False)
 
         # Show/update fee only
         fee_sat = details.fee_sat
@@ -1499,22 +1497,17 @@ class BroadcastTransactionWidget(QWidget):
 
         # BTC-only path: ensure Asset ID tile is hidden and we'll show Destination instead
         if not (self._rgb_expected or self._is_inflation_context):
-            self.tile_asset.hide()
-            self.lbl_asset_id.setVisible(False)
-            self.val_asset_id.setVisible(False)
+            set_widgets_visible([self.tile_asset, self.lbl_asset_id, self.val_asset_id],False)
 
             # BTC-only: do not render Amount in this card. Hide amount tile entirely.
-            self.tile_amount.hide()
-            self.lbl_amount.setVisible(False)
-            self.val_amount.setVisible(False)
+            set_widgets_visible([self.tile_amount, self.lbl_amount, self.val_amount],False)
             self.val_amount.clear()
 
 
         # BTC-only: hide Destination tile entirely.
-        self.lbl_destination.setVisible(False)
-        self.val_destination.setVisible(False)
+        set_widgets_visible([self.lbl_destination, self.val_destination],False)
         self.val_destination.clear()
-        self.tile_destination.hide()
+        set_widgets_visible([self.tile_destination],False)
 
         # BTC-only: layout compaction and ordering (do NOT affect RGB send/inflation flows)
         is_btc_only = (not self._rgb_expected) and (not self._is_inflation_context)
@@ -1547,9 +1540,7 @@ class BroadcastTransactionWidget(QWidget):
 
         # Hydration of Min Conf / Confirmations
         if not (self._rgb_expected or self._is_inflation_context):
-            self.tile_minconf.hide()
-            self.lbl_min_conf.setVisible(False)
-            self.val_min_conf.setVisible(False)
+            set_widgets_visible([self.tile_minconf, self.lbl_min_conf, self.val_min_conf],False)
             self.val_min_conf.clear()
 
         # Update signature progress
