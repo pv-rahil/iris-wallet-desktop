@@ -31,11 +31,15 @@ from accessible_constant import CFA_UPLOAD_FILE_BUTTON
 from accessible_constant import ISSUE_CFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_CFA_BUTTON
 from src.data.service.wallet_data_service import WalletDataService
+from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import resize_image
+from src.utils.helpers import register_multisig_button
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -49,7 +53,6 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.toast import ToastManager
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-from src.utils.helpers import check_multisig_pending_operation_guard
 
 
 class IssueCFAWidget(QWidget):
@@ -64,6 +67,10 @@ class IssueCFAWidget(QWidget):
         self.from_draft = from_draft
         self.draft_id = draft_id
         self.selected_file_path: str | None = None
+        self.is_multisig_wallet = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('gridLayout')
         self.wallet_logo_frame = WalletLogoFrame()
@@ -374,7 +381,14 @@ class IssueCFAWidget(QWidget):
         self.cfa_close_btn.clicked.connect(
             self.on_close,
         )
-        self.issue_cfa_button.clicked.connect(self.on_issue_cfa)
+        self.issue_cfa_button.clicked.connect(
+            self.on_issue_cfa,
+        )
+        register_multisig_button(
+            self._view_model,
+            self.issue_cfa_button,
+            self.on_issue_cfa,
+        )
         self.upload_file.clicked.connect(self.on_upload_asset_file)
         self._view_model.issue_cfa_asset_view_model.is_loading.connect(
             self.update_loading_state,
@@ -444,9 +458,6 @@ class IssueCFAWidget(QWidget):
 
     def on_issue_cfa(self):
         """Issue CFA while issue CFA button clicked"""
-        if check_multisig_pending_operation_guard(self.issue_cfa_button):
-            return 
-        
         asset_description = self.asset_description_input.text()
         asset_name = self.name_of_the_asset_input.text()
         total_supply = self.amount_input.text()
@@ -461,6 +472,7 @@ class IssueCFAWidget(QWidget):
         self._view_model.issue_cfa_asset_view_model.issue_cfa_asset(
             asset_description, asset_name, total_supply,
         )
+
 
     def on_upload_asset_file(self):
         """This method handled upload asset file operation."""

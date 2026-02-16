@@ -20,6 +20,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtGui import QPainter
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QPushButton
 from rgb_lib import BitcoinNetwork
 from rgb_lib import CosignerData
 from rgb_lib import MultisigKeys
@@ -46,11 +47,10 @@ from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.custom_exception import CommonException
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.logging import logger
-from PySide6.QtWidgets import QPushButton
-from src.data.repository.colored_wallet import colored_wallet
-from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import WalletType
 from src.views.components.toast import ToastManager
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 
 
 def handle_asset_address(address: str, short_len: int = 12) -> str:
@@ -430,68 +430,97 @@ def set_widgets_visible(widgets: list[QWidget | None], visible: bool) -> None:
             except Exception:
                 pass
 
-def check_multisig_pending_operation_guard(button=None) -> bool:
+
+
+def connect_multisig_pending_signal(view_model, update_callback):
     """
-    Check if a multisig pending/review operation exists and show toast if blocked.
-    
-    This is a UI guard helper (like faucet pattern) that checks bridge sync result
-    and shows a toast to the user if a pending operation exists, preventing them
-    from creating a new PSBT.
+    Connects the multisig pending state signal to the provided callback.
     
     Args:
-        button: Optional QPushButton to disable when blocked (like faucet loading pattern)
-    
-    Returns:
-        True if operation should be blocked (pending op exists), False otherwise.
-    """    
-    # Skip check for non-multisig or offline wallets
-    if not colored_wallet.is_multisig:
-        return False
-    if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
-        return False
-    
+        view_model: The view model object (must have header_frame_view_model).
+        update_callback: The method to call when state changes.
+    """
     try:
-        # Sync with bridge to check for pending operations
-        sync_result = colored_wallet.wallet.sync_with_bridge(
-            online=colored_wallet.online,
-        )
-        
-        if sync_result and sync_result.operation:
-            op = sync_result.operation
-            # Check if this is a blocking operation (pending or review)
-            is_blocking = (
-                op.is_CREATE_UTXOS_TO_REVIEW()
-                or op.is_CREATE_UTXOS_PENDING()
-                or op.is_SEND_BTC_TO_REVIEW()
-                or op.is_SEND_BTC_PENDING()
-                or op.is_SEND_TO_REVIEW()
-                or op.is_SEND_PENDING()
-                or op.is_INFLATION_TO_REVIEW()
-                or op.is_INFLATION_PENDING()
+        if view_model:
+            view_model.header_frame_view_model.multisig_pending_state_changed.connect(
+                update_callback
             )
-            
-            if is_blocking:
-                # Disable button if provided (like faucet loading pattern)
-                if button is not None and isinstance(button, QPushButton):
-                    # If button has start_loading method (PrimaryButton/SecondaryButton), use it
-                    if hasattr(button, 'start_loading') and callable(getattr(button, 'start_loading')):
-                        button.start_loading()
-                        # Auto-enable after short delay (like a pulse)
-                        from PySide6.QtCore import QTimer
-                        QTimer.singleShot(500, button.stop_loading)
-                    else:
-                        button.setDisabled(True)
-                        QTimer.singleShot(500, lambda: button.setDisabled(False))
-                
-                ToastManager.error(
-                    description='A multisig transaction is already pending or under review. '
-                              'Please complete it before creating a new transaction.',
-                )
-                return True
-                
-    except Exception as exc:
-        logger.warning('Failed to check multisig pending operations: %s', exc)
-        # Allow operation to proceed on error (fail open)
-        return False
-    
-    return False
+            # Initial update
+            update_callback(
+                view_model.header_frame_view_model.is_multisig_pending
+            )
+    except Exception as e:
+        logger.error(f"Failed to connect multisig pending signal: {e}")
+
+
+def register_multisig_button(
+    view_model,
+    button,
+    normal_handler,
+    pending_handler=None,
+):
+    """
+    Registers a button to automatically react to multisig pending state changes.
+
+    This helper encapsulates the entire setup: checking for multisig wallet type,
+    connecting the signal, and handling the button state updates. It replaces
+    manual connection logic in views.
+
+    Args:
+        view_model: The view model object.
+        button: The QPushButton to manage.
+        normal_handler: The function to call when button is clicked in normal state.
+        pending_handler: Optional. Function to call when pending. Defaults to showing toast.
+    """
+    # Check if this is a relevant wallet type (Multisig and Online)
+    is_multisig = (
+        SettingRepository.get_wallet_signature_type()
+        == WalletSignatureType.MULTI_SIG_WALLET
+    )
+    is_offline = (
+        SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+    )
+
+    if not is_multisig or is_offline:
+        return
+
+    # Default to standard toast if no specific pending handler provided
+    if pending_handler is None:
+        def default_pending_handler():
+            ToastManager.info(
+                description='A multisig transaction is already pending or under review. '
+                'Please complete it before creating a new transaction.',
+            )
+        pending_handler = default_pending_handler
+
+    # Define the callback that will update the button state
+    def state_update_callback(is_pending: bool):
+        if not isinstance(button, QPushButton):
+            return
+
+        if is_pending:
+            # Set pending property to trigger QSS [pending="true"] selector
+            button.setProperty("pending", "true")
+            button.style().polish(button)
+            # Disconnect all existing handlers
+            try:
+                button.clicked.disconnect()
+            except Exception:
+                pass
+            # Connect pending handler
+            button.clicked.connect(pending_handler)
+        else:
+            # Remove pending property to restore normal QSS styling
+            button.setProperty("pending", "false")
+            button.style().polish(button)
+            # Disconnect pending handler
+            try:
+                button.clicked.disconnect(pending_handler)
+            except Exception:
+                pass
+            # Reconnect normal handler if provided
+            if normal_handler is not None:
+                button.clicked.connect(normal_handler)
+
+    # Connect the signal using the existing helper
+    connect_multisig_pending_signal(view_model, state_update_callback)

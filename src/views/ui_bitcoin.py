@@ -46,6 +46,7 @@ from src.views.components.buttons import AssetTransferButton
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.transaction_detail_frame import TransactionDetailFrame
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.utils.helpers import register_multisig_button
 
 
 class BtcWidget(QWidget):
@@ -353,7 +354,13 @@ class BtcWidget(QWidget):
         self._view_model.bitcoin_view_model.loading_finished.connect(
             self.hide_loading_screen,
         )
-
+        
+        register_multisig_button(
+            self._view_model,
+            self.send_asset_btn,
+            self.select_send_transfer_type
+        )
+        
     def handle_asset_frame_click(self, signal_value: TransactionDetailPageModel):
         """
         Handle the click event on an asset frame.
@@ -402,6 +409,8 @@ class BtcWidget(QWidget):
     def select_send_transfer_type(self):
         """This method navigates the send asset page according to the condition"""
         self._view_model.bitcoin_view_model.on_send_bitcoin_click()
+
+
 
     def set_bitcoin_balance(self):
         """This method updates the displayed bitcoin balance in the UI.

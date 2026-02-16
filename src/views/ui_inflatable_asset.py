@@ -49,6 +49,7 @@ from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
+from src.utils.helpers import register_multisig_button
 
 
 class InflatableAssetWidget(QWidget, ThreadManager):
@@ -416,6 +417,13 @@ class InflatableAssetWidget(QWidget, ThreadManager):
                 self._view_model.page_navigation.issue_ifa_page,
             ),
         )
+        register_multisig_button(
+            self._view_model,
+            btn,
+            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                self._view_model.page_navigation.issue_ifa_page,
+            ),
+        )
         if not self.is_offline_wallet:
             lay.addWidget(btn, 0, Qt.AlignHCenter)
         # Build a dedicated vertical layout with top/bottom stretches to position card higher (like collectibles)
@@ -601,6 +609,13 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             self.refresh_inflatables_asset,
         )
         self.inflatables_header_title_frame.action_button.clicked.connect(
+            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                self._view_model.page_navigation.issue_ifa_page,
+            ),
+        )
+        register_multisig_button(
+            self._view_model,
+            self.inflatables_header_title_frame.action_button,
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_ifa_page,
             ),

@@ -33,6 +33,7 @@ from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
+from src.utils.helpers import register_multisig_button
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -45,8 +46,9 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.helpers import check_multisig_pending_operation_guard
-
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 
 class IssueNIAWidget(QWidget):
     """This class represents the UI for issuing NIA assets."""
@@ -65,6 +67,10 @@ class IssueNIAWidget(QWidget):
         )
         self.draft_id = draft_id
         self.from_draft = from_draft
+        self.is_multisig_wallet = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
 
         self.horizontal_spacer_nia_widget = QSpacerItem(
             265,
@@ -339,6 +345,11 @@ class IssueNIAWidget(QWidget):
             self.update_loading_state,
         )
         self.issue_nia_btn.clicked.connect(self.on_issue_nia_click)
+        register_multisig_button(
+            self._view_model,
+            self.issue_nia_btn,
+            self.on_issue_nia_click
+        )
         self._view_model.issue_nia_asset_view_model.is_issued.connect(
             self.asset_issued,
         )
@@ -440,9 +451,6 @@ class IssueNIAWidget(QWidget):
 
     def on_issue_nia_click(self):
         """Handle the click event for issuing a new NIA asset."""
-        if check_multisig_pending_operation_guard(self.issue_nia_btn):
-            return 
-        
         # Retrieve text values from input fields
         short_identifier = self.short_identifier_input.text().upper()
         asset_name = self.asset_name_input.text()
@@ -451,6 +459,7 @@ class IssueNIAWidget(QWidget):
             self.create_issue_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
             )
+        print('lllll')
 
         # Call the view model method and pass the text values as arguments
         self._view_model.issue_nia_asset_view_model.on_issue_click(

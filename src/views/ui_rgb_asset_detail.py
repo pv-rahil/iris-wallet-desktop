@@ -54,7 +54,7 @@ from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
-from src.utils.helpers import check_multisig_pending_operation_guard
+from src.views.components.toast import ToastManager
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import AssetTransferButton
@@ -62,6 +62,7 @@ from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.transaction_detail_frame import TransactionDetailFrame
 from src.views.components.wallet_logo_frame import WalletLogoFrame
+from src.utils.helpers import register_multisig_button
 
 
 class RGBAssetDetailWidget(QWidget):
@@ -485,8 +486,6 @@ class RGBAssetDetailWidget(QWidget):
 
     def select_receive_transfer_type(self):
         """This method navigates receive asset page according to the condition"""
-        if check_multisig_pending_operation_guard(self.receive_rgb_asset):
-            return
         self._view_model.page_navigation.receive_cfa_page(
             params=AssetDataModel(
                 asset_type=self.asset_type, asset_id=self.asset_id_detail.toPlainText(), close_page_navigation=self.asset_type,
@@ -495,8 +494,6 @@ class RGBAssetDetailWidget(QWidget):
 
     def select_send_transfer_type(self):
         """This method navigates the send asset page according to the condition"""
-        if check_multisig_pending_operation_guard(self.send_asset):
-            return
         self._view_model.page_navigation.send_cfa_page()
 
     def setup_ui_connection(self):
@@ -529,6 +526,26 @@ class RGBAssetDetailWidget(QWidget):
                 self.navigate_secondary_issuance,
             )
             self._view_model.main_asset_view_model.get_assets()
+        register_multisig_button(
+            self._view_model,
+            self.send_asset,
+            self.select_send_transfer_type,
+            pending_handler=None
+        )
+        register_multisig_button(
+            self._view_model,
+            self.receive_rgb_asset,
+            self.select_receive_transfer_type,
+            pending_handler=None
+        )
+        
+        if self.asset_type == str(AssetSchema.IFA.value):
+            register_multisig_button(
+                self._view_model,
+                self.secondary_issuance,
+                self.navigate_secondary_issuance,
+                pending_handler=None
+            )
 
     def refresh_transaction(self):
         """Refresh the transaction of the assets"""
@@ -539,11 +556,9 @@ class RGBAssetDetailWidget(QWidget):
 
     def navigate_secondary_issuance(self):
         """Navigate to the secondary issue page prefilled with current asset data."""
-        if check_multisig_pending_operation_guard(self.secondary_issuance):
-            return
         asset_id = self.asset_id_detail.toPlainText()
         if self.asset_type == AssetSchema.IFA and not self.max_amount:
-            self._fetch_ifa_supply(asset_id)
+            self.max_amount = self.max_supply_total_label.text()
         params = RgbAssetPageLoadModel(
             asset_id=asset_id,
             asset_name=self.widget_title_asset_name.text(),

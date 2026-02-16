@@ -331,17 +331,19 @@ class ReceiveAssetWidget(QWidget):
                 if match:
                     display_text = f"psbt:{match.get('purpose')}:{address}"
 
-        # For IFA secondary issuance page, compress QR payload to better fit
-        if self.page_name == 'IFA secondary issuance' and self.psbt:
-            ifa_display_text = base64.b64encode(
+        # Compress QR payload to better fit if it's a PSBT
+        if self.psbt:
+            display_text = base64.b64encode(
                 zlib.compress(display_text.encode()),
             ).decode()
-        qr_image = set_qr_code(
-            str(display_text)if self.page_name !=
-            'IFA secondary issuance' else ifa_display_text,
-        )
-        pixmap = QPixmap.fromImage(qr_image)
-        self.label.setPixmap(pixmap)
+
+        qr_image = set_qr_code(str(display_text))
+        if qr_image:
+            pixmap = QPixmap.fromImage(qr_image)
+            self.label.setPixmap(pixmap)
+        else:
+            self.label.setText("QR Code data too large to display")
+            self.label.setAlignment(Qt.AlignCenter)
         self.receiver_address.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,

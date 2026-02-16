@@ -42,6 +42,7 @@ from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
+from src.utils.helpers import register_multisig_button
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.setting_model import DefaultFeeRate
@@ -62,7 +63,6 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.helpers import check_multisig_pending_operation_guard
 
 
 class IssueIFAWidget(QWidget):
@@ -81,8 +81,8 @@ class IssueIFAWidget(QWidget):
         )
         self.is_hardware_wallet = SettingRepository.get_key_storage_type(
         ) == KeyStorageType.HARDWARE_WALLET
-        self.is_online_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.ONLINE_TYPE_WALLET
+        self.is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
         self.is_watch_only = SettingRepository.get_wallet_access_type(
         ) == WalletAccessType.WATCH_ONLY
         self.is_multisig = SettingRepository.get_wallet_signature_type(
@@ -524,9 +524,7 @@ class IssueIFAWidget(QWidget):
             self.update_loading_state,
         )
         if self.secondary_issuance:
-            self.issue_ifa_btn.clicked.connect(
-                self.on_secondary_issuance_click,
-            )
+            issue_handler = self.on_secondary_issuance_click
             self.inflatables_issue_amount_input.textChanged.connect(
                 self.validate_issuance_amount,
             )
@@ -534,7 +532,18 @@ class IssueIFAWidget(QWidget):
             self.asset_transactions: ListTransferAssetWithBalanceResponseModel = view_model.txn_list
             self.spendable_balance_validation()
         else:
-            self.issue_ifa_btn.clicked.connect(self.on_issue_ifa_click)
+            issue_handler = self.handle_ifa_issue
+            
+        # Connect strictly for non-multisig/offline scenarios (register_multisig_button handles multisig)
+        self.issue_ifa_btn.clicked.connect(
+            issue_handler,
+        )
+            
+        register_multisig_button(
+            self._view_model,
+            self.issue_ifa_btn,
+            issue_handler
+        )
         self._view_model.issue_ifa_asset_view_model.success_page_message.connect(
             self.inflatables_asset_issued,
         )
@@ -738,9 +747,6 @@ class IssueIFAWidget(QWidget):
 
     def on_issue_ifa_click(self):
         """Handle the click event for issuing a new IFA asset."""
-        if check_multisig_pending_operation_guard(self.issue_ifa_btn):
-            return
-        
         # Retrieve text values from input fields
         short_identifier = self.inflatables_short_identifier_input.text().upper()
         asset_name = self.inflatables_asset_name_input.text()
@@ -790,9 +796,6 @@ class IssueIFAWidget(QWidget):
 
     def on_secondary_issuance_click(self):
         """Handle the click event for secondary issuance."""
-        if check_multisig_pending_operation_guard(self.issue_ifa_btn):
-            return
-        
         value_of_default_min_confirmation: DefaultMinConfirmation = SettingCardRepository.get_default_min_confirmation()
         amount_to_issue = self.inflatables_issue_amount_input.text()
         fee_text = self.inflatables_fee_rate_input.text() or FEE_RATE

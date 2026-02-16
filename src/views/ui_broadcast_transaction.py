@@ -732,7 +732,7 @@ class BroadcastTransactionWidget(QWidget):
             'asset_transfer': 'Asset transfer',
             'send_btc': 'Send BTC',
             'send_asset': 'Send Asset',
-            'create_utxos': 'Create UTXOs',
+            'create_utxos': 'Internal',
             'issue_asset_cfa': 'Internal',
             'issue_asset_nia': 'Internal',
             'issue_asset_ifa': 'Internal',

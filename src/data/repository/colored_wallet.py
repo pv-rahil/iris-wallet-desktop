@@ -37,6 +37,7 @@ class ColoredWallet:
     def __init__(self):
         self._wallet: Wallet | MultisigWallet | None = None
         self.online_wallet: Online | None = None
+        self.latest_operation_info = None
 
     @property
     def is_multisig(self) -> bool:

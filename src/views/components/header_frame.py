@@ -50,7 +50,7 @@ from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.usb_sync_dialog import USBSyncDialog
 from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
-
+from src.views.components.toast import ToastManager
 
 class HeaderFrame(QFrame, QObject):
     """

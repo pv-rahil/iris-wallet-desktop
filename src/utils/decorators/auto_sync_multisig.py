@@ -15,7 +15,7 @@ from src.utils.handle_exception import CommonException
 from src.utils.logging import logger
 
 
-def _is_blocking_operation(op: Operation) -> bool:
+def is_blocking_operation(op: Operation) -> bool:
     """
     Check if an operation is blocking (pending or review).
     """
@@ -48,16 +48,17 @@ def auto_sync_multisig(check_pending_ops: bool = False) -> Callable[..., Any]:
                     sync_result = colored_wallet.wallet.sync_with_bridge(
                         online=colored_wallet.online,
                     )
+                    colored_wallet.latest_operation_info = sync_result
 
                     # Block if pending/review operation exists
                     if (
                         check_pending_ops
                         and sync_result
-                        and _is_blocking_operation(sync_result.operation)
+                        and is_blocking_operation(sync_result.operation)
                     ):
                         logger.warning(
                             "Multisig operation already in progress: %s",
-                            sync_result.operation,
+                            sync_result.operation.__class__.__name,
                         )
                         raise CommonException(
                             "A multisig operation is already pending or under review. "

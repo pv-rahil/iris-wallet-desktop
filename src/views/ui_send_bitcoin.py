@@ -32,7 +32,8 @@ from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.send_asset import SendAssetWidget
 from src.utils.helpers import get_bitcoin_network_from_enum
-from src.utils.helpers import check_multisig_pending_operation_guard
+from src.utils.helpers import register_multisig_button
+from src.views.components.toast import ToastManager
 
 
 class SendBitcoinWidget(QWidget):
@@ -87,6 +88,13 @@ class SendBitcoinWidget(QWidget):
         self.send_bitcoin_page.send_btn.clicked.connect(
             self.send_bitcoin_button,
         )
+        
+        # Register the nested send button
+        register_multisig_button(
+            self._view_model,
+            self.send_bitcoin_page.send_btn,
+            self.send_bitcoin_button
+        )
         self.send_bitcoin_page.close_button.clicked.connect(
             self.bitcoin_page_navigation,
         )
@@ -135,9 +143,6 @@ class SendBitcoinWidget(QWidget):
     def send_bitcoin_button(self):
         """Handle the send bitcoin button click event
         and send the bitcoin on the particular address"""
-        if check_multisig_pending_operation_guard(self.send_bitcoin_page.send_btn):
-            return 
-        
         address = self.send_bitcoin_page.asset_address_value.text()
         amount = self.send_bitcoin_page.asset_amount_value.text()
         fee = self.send_bitcoin_page.fee_rate_value.text() or FEE_RATE
@@ -164,6 +169,9 @@ class SendBitcoinWidget(QWidget):
             self._view_model.send_bitcoin_view_model.on_send_click(
                 address, amount, fee,
             )
+
+
+
 
     def update_loading_state(self, is_loading: bool, is_fee_rate_loading: bool = False):
         """Updates the loading state of the send button."""

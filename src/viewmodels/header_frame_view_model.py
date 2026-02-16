@@ -61,12 +61,14 @@ class HeaderFrameViewModel(QObject, ThreadManager):
     pending_operations_ready = Signal(list)
     # Assuming this signal exists or needs to be added
     is_loading = Signal(bool)
+    multisig_pending_state_changed = Signal(bool)
 
     def __init__(self):
         super().__init__()
         self.network_checker = None
         self.password = None
         self.usb_sync_manager = USBSyncManager()
+        self._multisig_pending = False
 
         # Use QTimer in the main thread for network checking
         self.timer = QTimer(self)
@@ -75,6 +77,15 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         # Start network checking
         self.timer.start()
+
+    @property
+    def is_multisig_pending(self) -> bool:
+        return self._multisig_pending
+
+    def _set_multisig_pending(self, pending: bool) -> None:
+        if self._multisig_pending != pending:
+            self._multisig_pending = pending
+            self.multisig_pending_state_changed.emit(pending)
 
     def _is_multisig(self) -> bool:
         """Check if current wallet is multisig."""
@@ -206,6 +217,30 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                 pending_ops = operation_info
             else:
                 pending_ops = [operation_info]
+
+        has_blocking_op = False
+        for op_info in pending_ops:
+            if op_info is None or not hasattr(op_info, 'operation'):
+                continue
+            operation = op_info.operation
+            if operation is None:
+                continue
+
+            is_blocking = (
+                operation.is_CREATE_UTXOS_TO_REVIEW()
+                or operation.is_CREATE_UTXOS_PENDING()
+                or operation.is_SEND_BTC_TO_REVIEW()
+                or operation.is_SEND_BTC_PENDING()
+                or operation.is_SEND_TO_REVIEW()
+                or operation.is_SEND_PENDING()
+                or operation.is_INFLATION_TO_REVIEW()
+                or operation.is_INFLATION_PENDING()
+            )
+            if is_blocking:
+                has_blocking_op = True
+                break
+
+        self._set_multisig_pending(has_blocking_op)
         
         # For watch-only wallets: extract and save review PSBTs to local DB
         # so they can be transferred to offline wallet via USB sync
@@ -275,5 +310,6 @@ class HeaderFrameViewModel(QObject, ThreadManager):
     def on_multisig_sync_error(self, error: Exception):
         """Handle bridge sync error."""
         logger.error('Failed to sync with multisig bridge: %s', error)
+        self._set_multisig_pending(False)
         # Emit empty list on error
         self.pending_operations_ready.emit([])

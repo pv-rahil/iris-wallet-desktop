@@ -103,3 +103,23 @@ QPushButton#transfer_button:disabled{
     color: #959BAE;
     border-radius:6px;
 }
+
+/* Pending state - looks disabled but remains clickable */
+QPushButton#primary_button[pending="true"] {
+    background-color: rgb(64, 143, 125);
+    color:#ddc2c4;
+    font-weight: 600;
+}
+
+QPushButton#secondary_button[pending="true"] {
+    font-weight: 600;
+    border: 1px solid  #3e4d57;
+    color: #3e4d57;
+}
+
+QPushButton#transfer_button[pending="true"]{
+    background-color: #051650;
+    font: 12px "Inter";
+    color: #959BAE;
+    border-radius:6px;
+}

@@ -21,6 +21,7 @@ from src.model.rgb_model import CreateUtxosRequestModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.auto_sync_multisig import auto_sync_multisig
+from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 
 
 class BtcRepository:
@@ -155,27 +156,33 @@ class BtcRepository:
             return data
 
     @staticmethod
-    @auto_sync_multisig(check_pending_ops=True)
+    @auto_sync_multisig()
     def post_create_utxos(signed_psbt: str) -> None:
         """Post the signed create_utxos PSBT to the multisig bridge for other cosigners."""
+        BroadcastTransactionService.validate_multisig_post_condition(signed_psbt, 'create_utxos')
         with repository_custom_context():
             colored_wallet.wallet.post_create_utxos(
-                online=colored_wallet.online,
-                psbt=signed_psbt,
+                online=colored_wallet.online, psbt=signed_psbt,
             )
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.delete_psbt(signed_psbt)
+            wallet_data_service = WalletDataService.get_session()
+            if wallet_data_service is not None:
+                wallet_data_service.delete_psbt(signed_psbt)
+            cache = Cache.get_cache_session()
+            if cache is not None:
+                cache.invalidate_cache()
 
     @staticmethod
-    @auto_sync_multisig(check_pending_ops=True)
+    @auto_sync_multisig()
     def post_send_btc(signed_psbt: str) -> None:
         """Post the signed send_btc PSBT to the multisig bridge for other cosigners."""
+        BroadcastTransactionService.validate_multisig_post_condition(signed_psbt, 'send_btc')
         with repository_custom_context():
             colored_wallet.wallet.post_send_btc(
-                online=colored_wallet.online,
-                psbt=signed_psbt,
+                online=colored_wallet.online, psbt=signed_psbt,
             )
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.delete_psbt(signed_psbt)
+            wallet_data_service = WalletDataService.get_session()
+            if wallet_data_service is not None:
+                wallet_data_service.delete_psbt(signed_psbt)
+            cache = Cache.get_cache_session()
+            if cache is not None:
+                cache.invalidate_cache()

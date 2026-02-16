@@ -89,3 +89,7 @@
     background-color: #2980b9;
     color: white;
 }
+
+#action_button[pending="true"] {
+    color: rgba(5, 173, 134, 1);
+}

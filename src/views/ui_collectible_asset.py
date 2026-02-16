@@ -39,6 +39,7 @@ from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
+from src.utils.helpers import register_multisig_button
 
 
 class CollectiblesAssetWidget(QWidget):
@@ -440,6 +441,13 @@ class CollectiblesAssetWidget(QWidget):
                 self._view_model.page_navigation.issue_cfa_asset_page,
             ),
         )
+        register_multisig_button(
+            self._view_model,
+            btn,
+            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                self._view_model.page_navigation.issue_cfa_asset_page,
+            ),
+        )
         if not self.is_offline_wallet:
             v.addWidget(btn, 0, Qt.AlignHCenter)
         # Add to grid area centered with stretches
@@ -487,6 +495,13 @@ class CollectiblesAssetWidget(QWidget):
             self.trigger_render_and_refresh,
         )
         self.collectible_header_frame.action_button.clicked.connect(
+            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                self._view_model.page_navigation.issue_cfa_asset_page,
+            ),
+        )
+        register_multisig_button(
+            self._view_model,
+            self.collectible_header_frame.action_button,
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_cfa_asset_page,
             ),
