@@ -526,25 +526,38 @@ class RGBAssetDetailWidget(QWidget):
                 self.navigate_secondary_issuance,
             )
             self._view_model.main_asset_view_model.get_assets()
-        register_multisig_button(
-            self._view_model,
-            self.send_asset,
-            self.select_send_transfer_type,
-            pending_handler=None
-        )
-        register_multisig_button(
-            self._view_model,
-            self.receive_rgb_asset,
-            self.select_receive_transfer_type,
-            pending_handler=None
-        )
-        
-        if self.asset_type == str(AssetSchema.IFA.value):
+        if not self.is_multisig:
+            self.send_asset.clicked.connect(
+                self.select_send_transfer_type,
+            )
+            self.receive_rgb_asset.clicked.connect(
+                self.select_receive_transfer_type,
+            )
+        else:
             register_multisig_button(
                 self._view_model,
-                self.secondary_issuance,
-                self.navigate_secondary_issuance,
+                self.send_asset,
+                self.select_send_transfer_type,
                 pending_handler=None
+            )
+            register_multisig_button(
+                self._view_model,
+                self.receive_rgb_asset,
+                self.select_receive_transfer_type,
+                pending_handler=None
+            )
+        
+        if self.asset_type == str(AssetSchema.IFA.value):
+            if not self.is_multisig:
+                self.secondary_issuance.clicked.connect(
+                    self.navigate_secondary_issuance,
+                )
+            else:
+                register_multisig_button(
+                    self._view_model,
+                    self.secondary_issuance,
+                    self.navigate_secondary_issuance,
+                    pending_handler=None
             )
 
     def refresh_transaction(self):

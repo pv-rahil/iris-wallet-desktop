@@ -442,18 +442,20 @@ class CollectiblesAssetWidget(QWidget):
         btn = PrimaryButton('Issue New Collectibles')
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setFixedWidth(200)
-        btn.clicked.connect(
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_cfa_asset_page,
-            ),
-        )
-        register_multisig_button(
-            self._view_model,
-            btn,
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_cfa_asset_page,
-            ),
-        )
+        if not self.is_multisig:
+            btn.clicked.connect(
+                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                    self._view_model.page_navigation.issue_cfa_asset_page,
+                ),
+            )
+        else:
+            register_multisig_button(
+                self._view_model,
+                btn,
+                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                    self._view_model.page_navigation.issue_cfa_asset_page,
+                ),
+            )
         if not self.is_offline_wallet:
             v.addWidget(btn, 0, Qt.AlignHCenter)
         # Add to grid area centered with stretches

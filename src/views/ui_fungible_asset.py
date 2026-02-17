@@ -470,18 +470,20 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.title_frame.refresh_page_button.clicked.connect(
             self.refresh_asset,
         )
-        self.title_frame.action_button.clicked.connect(
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_nia_asset_page,
-            ),
-        )
-        register_multisig_button(
-            self._view_model,
-            self.title_frame.action_button,
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_nia_asset_page,
-            ),
-        )
+        if not self.is_multisig_wallet:
+            self.title_frame.action_button.clicked.connect(
+                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                    self._view_model.page_navigation.issue_nia_asset_page,
+                ),
+            )
+        else:
+            register_multisig_button(
+                self._view_model,
+                self.title_frame.action_button,
+                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                    self._view_model.page_navigation.issue_nia_asset_page,
+                ),
+            )
         self._view_model.main_asset_view_model.loading_started.connect(
             self.show_fungible_loading_screen,
         )

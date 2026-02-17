@@ -381,11 +381,16 @@ class IssueCFAWidget(QWidget):
         self.cfa_close_btn.clicked.connect(
             self.on_close,
         )
-        register_multisig_button(
-            self._view_model,
-            self.issue_cfa_button,
-            self.on_issue_cfa,
-        )
+        if not self.is_multisig_wallet:
+            self.issue_cfa_button.clicked.connect(
+                self.on_issue_cfa,
+            )
+        else:
+            register_multisig_button(
+                self._view_model,
+                self.issue_cfa_button,
+                self.on_issue_cfa,
+            )
         self.upload_file.clicked.connect(self.on_upload_asset_file)
         self._view_model.issue_cfa_asset_view_model.is_loading.connect(
             self.update_loading_state,

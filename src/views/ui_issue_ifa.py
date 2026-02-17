@@ -524,11 +524,16 @@ class IssueIFAWidget(QWidget):
             self.update_loading_state,
         )
         if self.secondary_issuance:
-            register_multisig_button(
-                self._view_model,
-                self.issue_ifa_btn,
-                self.on_secondary_issuance_click,
-            )
+            if not self.is_multisig:
+                self.issue_ifa_btn.clicked.connect(
+                    self.on_secondary_issuance_click,
+                )
+            else:
+                register_multisig_button(
+                    self._view_model,
+                    self.issue_ifa_btn,
+                    self.on_secondary_issuance_click,
+                )
             self.inflatables_issue_amount_input.textChanged.connect(
                 self.validate_issuance_amount,
             )
@@ -536,11 +541,16 @@ class IssueIFAWidget(QWidget):
             self.asset_transactions: ListTransferAssetWithBalanceResponseModel = view_model.txn_list
             self.spendable_balance_validation()
         else:
-            register_multisig_button(
-                self._view_model,
-                self.issue_ifa_btn,
-                self.on_issue_ifa_click,
-            )
+            if not self.is_multisig:
+                self.issue_ifa_btn.clicked.connect(
+                    self.on_issue_ifa_click,
+                )
+            else:
+                register_multisig_button(
+                    self._view_model,
+                    self.issue_ifa_btn,
+                    self.on_issue_ifa_click,
+                )
             
        
         self._view_model.issue_ifa_asset_view_model.success_page_message.connect(

@@ -344,11 +344,16 @@ class IssueNIAWidget(QWidget):
         self._view_model.issue_nia_asset_view_model.issue_button_clicked.connect(
             self.update_loading_state,
         )
-        register_multisig_button(
-            self._view_model,
-            self.issue_nia_btn,
-            self.on_issue_nia_click
-        )
+        if not self.is_multisig_wallet:
+            self.issue_nia_btn.clicked.connect(
+                self.on_issue_nia_click,
+            )
+        else:
+            register_multisig_button(
+                self._view_model,
+                self.issue_nia_btn,
+                self.on_issue_nia_click
+            )
         self._view_model.issue_nia_asset_view_model.is_issued.connect(
             self.asset_issued,
         )
@@ -458,7 +463,6 @@ class IssueNIAWidget(QWidget):
             self.create_issue_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
             )
-        print('lllll')
 
         # Call the view model method and pass the text values as arguments
         self._view_model.issue_nia_asset_view_model.on_issue_click(

@@ -472,17 +472,7 @@ def register_multisig_button(
         normal_handler: The function to call when button is clicked in normal state.
         pending_handler: Optional. Function to call when pending. Defaults to showing toast.
     """
-    # Check if this is a relevant wallet type (Multisig and Online)
-    is_multisig = (
-        SettingRepository.get_wallet_signature_type()
-        == WalletSignatureType.MULTI_SIG_WALLET
-    )
-    is_offline = (
-        SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
-    )
 
-    if not is_multisig or is_offline:
-        return
 
     # Default to standard toast if no specific pending handler provided
     if pending_handler is None:

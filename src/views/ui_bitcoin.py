@@ -35,6 +35,7 @@ from src.model.btc_model import TransactionListResponse
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.common_utils import network_info
@@ -47,6 +48,7 @@ from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.transaction_detail_frame import TransactionDetailFrame
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.utils.helpers import register_multisig_button
+from src.data.repository.setting_repository import SettingRepository
 
 
 class BtcWidget(QWidget):
@@ -354,12 +356,16 @@ class BtcWidget(QWidget):
         self._view_model.bitcoin_view_model.loading_finished.connect(
             self.hide_loading_screen,
         )
-        
-        register_multisig_button(
-            self._view_model,
-            self.send_asset_btn,
-            self.select_send_transfer_type
-        )
+        if SettingRepository.get_wallet_signature_type() != WalletSignatureType.MULTI_SIG_WALLET:
+            self.send_asset_btn.clicked.connect(
+                self.select_send_transfer_type,
+            )
+        else:
+            register_multisig_button(
+                self._view_model,
+                self.send_asset_btn,
+                self.select_send_transfer_type
+            )
         
     def handle_asset_frame_click(self, signal_value: TransactionDetailPageModel):
         """

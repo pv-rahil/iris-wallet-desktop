@@ -10,6 +10,7 @@ from typing import Callable
 from hwilib.commands import enumerate as hwi_enumerate
 from hwilib.common import Chain
 from hwilib.devices.ledger import LedgerClient
+from hwilib.common import CoinType
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
@@ -68,7 +69,7 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                     password=None,
                     expert=True,
                     chain=chain,
-                    is_rgb=is_rgb_mode,
+                    coin_type=CoinType.RGB if is_rgb_mode else CoinType.BTC,
                 )
 
                 hardware_client_store.set_client(client)
