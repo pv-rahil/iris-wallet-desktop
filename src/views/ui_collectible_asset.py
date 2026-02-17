@@ -26,7 +26,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletType
+from src.model.enums.enums_model import WalletType,WalletSignatureType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import format_epoch_time
@@ -126,6 +126,8 @@ class CollectiblesAssetWidget(QWidget):
         ) == WalletAccessType.WATCH_ONLY
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
+        self.is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
 
         self.horizontal_spacer = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
@@ -195,76 +197,80 @@ class CollectiblesAssetWidget(QWidget):
 
     def update_grid_layout(self):
         """Update the grid layout with new number of columns"""
-        if self._view_model.main_asset_view_model.assets is None:
-            return
-        num_columns = self.calculate_columns()
-        # Build frames list including CFA drafts (identified by file_path in shared drafts table)
-        self.frames = []
-        wallet_service = WalletDataService.get_session()
-        if wallet_service is not None:
-            drafts = wallet_service.list_draft_issue_assets()
-            has_drafts = False
-            for d in drafts:
-                fp = d.get('file_path')
-                if not fp:
-                    continue
-                if d.get('inflation_amounts') or d.get('replace_rights_num'):
-                    continue
-                has_drafts = True
-                self.frames.append(self.create_collectible_frame(draft=d))
-            self._has_collectible_drafts = has_drafts
-        # Then append actual issued CFA assets
-        for coll_asset in self._view_model.main_asset_view_model.assets.cfa:
-            self.frames.append(
-                self.create_collectible_frame(coll_asset=coll_asset),
-            )
-        self.total_items = len(self.frames)
+        try:
+            if self._view_model.main_asset_view_model.assets is None:
+                return
+            num_columns = self.calculate_columns()
+            # Build frames list including CFA drafts (identified by file_path in shared drafts table)
+            self.frames = []
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                drafts = wallet_service.list_draft_issue_assets()
+                has_drafts = False
+                for d in drafts:
+                    fp = d.get('file_path')
+                    if not fp:
+                        continue
+                    if d.get('inflation_amounts') or d.get('replace_rights_num'):
+                        continue
+                    if self.is_watch_only or (self.is_multisig and not self.is_offline_wallet):
+                        has_drafts = True
+                        self.frames.append(self.create_collectible_frame(draft=d))
+                self._has_collectible_drafts = has_drafts
+            # Then append actual issued CFA assets
+            for coll_asset in self._view_model.main_asset_view_model.assets.cfa:
+                self.frames.append(
+                    self.create_collectible_frame(coll_asset=coll_asset),
+                )
+            self.total_items = len(self.frames)
 
-        # Show empty state only if there are no issued assets AND no drafts
-        issued_count = len(self._view_model.main_asset_view_model.assets.cfa)
-        if issued_count == 0 and not self._has_collectible_drafts:
-            self._show_empty_collectibles_state()
-            return
-        self._hide_empty_collectibles_state()
+            # Show empty state only if there are no issued assets AND no drafts
+            issued_count = len(self._view_model.main_asset_view_model.assets.cfa)
+            if issued_count == 0 and not self._has_collectible_drafts:
+                self._show_empty_collectibles_state()
+                return
+            self._hide_empty_collectibles_state()
 
-        if hasattr(self, 'scroll_area'):
-            grid_widget = self.scroll_area.widget()
-            grid_layout = grid_widget.layout()
-            grid_layout.setSpacing(40)
+            if hasattr(self, 'scroll_area'):
+                grid_widget = self.scroll_area.widget()
+                grid_layout = grid_widget.layout()
+                grid_layout.setSpacing(40)
 
-            # Clear the existing layout
-            for i in reversed(range(grid_layout.count())):
-                item = grid_layout.itemAt(i)
-                widget = item.widget()
-                if widget is not None:
-                    widget.deleteLater()
-                else:
-                    grid_layout.removeItem(item)
+                # Clear the existing layout
+                for i in reversed(range(grid_layout.count())):
+                    item = grid_layout.itemAt(i)
+                    widget = item.widget()
+                    if widget is not None:
+                        widget.deleteLater()
+                    else:
+                        grid_layout.removeItem(item)
 
-            # Add widgets to the grid layout
-            for index, frame in enumerate(self.frames):
-                row = index // num_columns
-                col = index % num_columns
-                grid_layout.addWidget(frame, row, col)
-            # Add spacers if the last row is not full
-            if self.total_items < 5:
-                remaining_columns = num_columns - \
-                    (self.total_items % num_columns)
-                row = self.total_items // num_columns
-                for col in range(num_columns - remaining_columns, num_columns):
-                    horizontal_spacer = QSpacerItem(
-                        242, 242, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
-                    )
-                    grid_layout.addItem(horizontal_spacer, row, col)
+                # Add widgets to the grid layout
+                for index, frame in enumerate(self.frames):
+                    row = index // num_columns
+                    col = index % num_columns
+                    grid_layout.addWidget(frame, row, col)
+                # Add spacers if the last row is not full
+                if self.total_items < 5:
+                    remaining_columns = num_columns - \
+                        (self.total_items % num_columns)
+                    row = self.total_items // num_columns
+                    for col in range(num_columns - remaining_columns, num_columns):
+                        horizontal_spacer = QSpacerItem(
+                            242, 242, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
+                        )
+                        grid_layout.addItem(horizontal_spacer, row, col)
 
-            self.grid_layout = grid_layout
-            self.resizeEvent = self.resize_event_called
+                self.grid_layout = grid_layout
+                self.resizeEvent = self.resize_event_called
 
-            # Activate layout immediately to ensure proper sizing for pixmap rendering
-            # This prevents blank thumbnails on first render by forcing layout calc
-            grid_layout.activate()
-            if hasattr(grid_widget, 'layout'):
-                grid_widget.layout().activate()
+                # Activate layout immediately to ensure proper sizing for pixmap rendering
+                # This prevents blank thumbnails on first render by forcing layout calc
+                grid_layout.activate()
+                if hasattr(grid_widget, 'layout'):
+                    grid_widget.layout().activate()
+        except Exception as e:
+            logger.error(f"Error in update_grid_layout: {e}")
 
     def create_collectibles_frames(self):
         """Initial setup for the grid layout and scroll area"""
@@ -493,11 +499,6 @@ class CollectiblesAssetWidget(QWidget):
         self._view_model.main_asset_view_model.get_assets()
         self.collectible_header_frame.refresh_page_button.clicked.connect(
             self.trigger_render_and_refresh,
-        )
-        self.collectible_header_frame.action_button.clicked.connect(
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_cfa_asset_page,
-            ),
         )
         register_multisig_button(
             self._view_model,

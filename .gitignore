@@ -39,3 +39,4 @@ allure-results
 .pytest_cache
 
 rgb-multisig-bridge
+private-key-file

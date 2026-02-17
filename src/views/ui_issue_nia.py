@@ -344,7 +344,6 @@ class IssueNIAWidget(QWidget):
         self._view_model.issue_nia_asset_view_model.issue_button_clicked.connect(
             self.update_loading_state,
         )
-        self.issue_nia_btn.clicked.connect(self.on_issue_nia_click)
         register_multisig_button(
             self._view_model,
             self.issue_nia_btn,

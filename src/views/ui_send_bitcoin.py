@@ -84,11 +84,7 @@ class SendBitcoinWidget(QWidget):
         )
         self.send_bitcoin_page.asset_amount_value.textChanged.connect(
             self.handle_button_enabled,
-        )
-        self.send_bitcoin_page.send_btn.clicked.connect(
-            self.send_bitcoin_button,
-        )
-        
+        )        
         # Register the nested send button
         register_multisig_button(
             self._view_model,

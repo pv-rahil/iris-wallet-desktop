@@ -328,7 +328,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
                 name=f"{d.get('name')} (Draft)",
                 ticker=d.get('ticker'),
             )
-            if self.is_watch_only or self.is_multisig:
+            if self.is_watch_only or (self.is_multisig and not self.is_offline_wallet):
                 self.create_inflatable_card(inflatables_draft_asset)
         self._has_inflatable_drafts = has_drafts
 
@@ -607,11 +607,6 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self._view_model.main_asset_view_model.get_assets()
         self.inflatables_header_title_frame.refresh_page_button.clicked.connect(
             self.refresh_inflatables_asset,
-        )
-        self.inflatables_header_title_frame.action_button.clicked.connect(
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_ifa_page,
-            ),
         )
         register_multisig_button(
             self._view_model,

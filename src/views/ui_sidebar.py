@@ -32,6 +32,7 @@ from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletAccessType
 from src.model.selection_page_model import AssetDataModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -52,6 +53,10 @@ class Sidebar(QWidget):
         is_multisig = (
             SettingRepository.get_wallet_signature_type(
             ) == WalletSignatureType.MULTI_SIG_WALLET
+        )
+        is_watch_only = (
+            SettingRepository.get_wallet_access_type(
+            ) == WalletAccessType.WATCH_ONLY
         )
         self.setObjectName('sidebar')
         self.setMinimumSize(QSize(360, 720))
@@ -166,7 +171,7 @@ class Sidebar(QWidget):
         )
         # In multisig, use this grid slot for Sign PSBT instead of Broadcast
         self.broadcast_transaction.setVisible(
-            priv.can_sign_psbt if is_multisig else priv.can_broadcast_psbt,
+            priv.can_sign_psbt if is_multisig and not is_watch_only else priv.can_broadcast_psbt,
         )
         self.broadcast_transaction.setCheckable(False)
         self.grid_layout_sidebar.addWidget(
@@ -255,6 +260,10 @@ class Sidebar(QWidget):
             SettingRepository.get_wallet_signature_type(
             ) == WalletSignatureType.MULTI_SIG_WALLET
         )
+        is_watch_only = (
+            SettingRepository.get_wallet_access_type(
+            ) == WalletAccessType.WATCH_ONLY
+        )
         if self.network == NetworkEnumModel.MAINNET.value:
             self.iris_wallet_text.setText(
                 QCoreApplication.translate(
@@ -268,7 +277,7 @@ class Sidebar(QWidget):
                 }",
             )
         # In multisig we show Sign PSBT in the grid slot instead of Broadcast
-        if is_multisig:
+        if is_multisig and not is_watch_only:
             self.broadcast_transaction.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -338,10 +347,14 @@ class Sidebar(QWidget):
             SettingRepository.get_wallet_signature_type(
             ) == WalletSignatureType.MULTI_SIG_WALLET
         )
+        is_watch_only = (
+            SettingRepository.get_wallet_access_type(
+            ) == WalletAccessType.WATCH_ONLY
+        )
         self.backup.setVisible(priv.can_backup_wallet)
         # In multisig, grid slot becomes Sign PSBT; bottom sign button hidden
         self.broadcast_transaction.setVisible(
-            priv.can_sign_psbt if is_multisig else priv.can_broadcast_psbt,
+            priv.can_sign_psbt if is_multisig and not is_watch_only else priv.can_broadcast_psbt,
         )
         self.receive_asset_button.setVisible(priv.can_receive_asset)
         self.faucet.setVisible(priv.can_use_faucet)

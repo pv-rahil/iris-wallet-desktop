@@ -13,7 +13,6 @@ from src.model.common_operation_model import MainPageDataResponseModel
 from src.model.enums.enums_model import ToastPreset
 from src.utils.cache import Cache
 from src.utils.custom_exception import CommonException
-from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.utils.worker import ThreadManager
 
 
@@ -55,7 +54,6 @@ class MainAssetViewModel(QObject, ThreadManager):
                 self.asset_loaded.emit(True)
                 if is_data_ready:
                     self.loading_finished.emit(True)
-                    BroadcastTransactionService.check_for_pending_multisig_navigation(self)
 
         def on_error(error: CommonException) -> None:
             """This method is used  handle onerror for the main asset page."""

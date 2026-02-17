@@ -54,11 +54,10 @@ def auto_sync_multisig(check_pending_ops: bool = False) -> Callable[..., Any]:
                     if (
                         check_pending_ops
                         and sync_result
-                        and is_blocking_operation(sync_result.operation)
                     ):
                         logger.warning(
                             "Multisig operation already in progress: %s",
-                            sync_result.operation.__class__.__name,
+                            sync_result.operation.__class__.__name__,
                         )
                         raise CommonException(
                             "A multisig operation is already pending or under review. "

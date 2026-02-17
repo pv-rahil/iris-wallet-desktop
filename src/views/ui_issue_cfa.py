@@ -381,9 +381,6 @@ class IssueCFAWidget(QWidget):
         self.cfa_close_btn.clicked.connect(
             self.on_close,
         )
-        self.issue_cfa_button.clicked.connect(
-            self.on_issue_cfa,
-        )
         register_multisig_button(
             self._view_model,
             self.issue_cfa_button,

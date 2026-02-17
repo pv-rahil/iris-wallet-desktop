@@ -953,7 +953,7 @@ class BroadcastTransactionWidget(QWidget):
             )
 
         # Multisig: set subtitle and actions row texts/tooltips via i18n
-        if self.is_multisig:
+        if self.is_multisig :
             self.broadcast_subtitle_label.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT,
@@ -981,11 +981,18 @@ class BroadcastTransactionWidget(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reject',
                 ),
             )
-            self.broadcast_button.setText(
-                QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt',
-                ),
-            )
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+                self.broadcast_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'post_to_multisig',
+                    ),
+                )
+            else:
+                self.broadcast_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt',
+                    ),
+                )
 
     def send_asset(self):
         """

@@ -41,7 +41,6 @@ from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.auto_sync_multisig import auto_sync_multisig
 from src.utils.decorators.check_colorable_available import check_colorable_available
-from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 
 
 class RgbRepository:
@@ -316,10 +315,9 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def post_send(signed_psbt: str, asset_detail: SendBeginRequestModel) -> None:
         """Post the signed RGB send PSBT + recipient map to the multisig bridge."""
-        BroadcastTransactionService.validate_multisig_post_condition(signed_psbt, 'send_asset')
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=asset_detail.recipient_id,
@@ -336,10 +334,9 @@ class RgbRepository:
             )
 
     @staticmethod
-    @auto_sync_multisig()
+    @auto_sync_multisig(check_pending_ops=True)
     def post_inflation(signed_psbt: str, asset_id: str) -> None:
         """Post the signed inflation PSBT to the multisig bridge."""
-        BroadcastTransactionService.validate_multisig_post_condition(signed_psbt, 'inflate_asset')
         with repository_custom_context():
             colored_wallet.wallet.post_inflation(
                 online=colored_wallet.online,
@@ -367,6 +364,7 @@ class RgbRepository:
                 respond_to_operation=respond_to_operation,
             )
             cache = Cache.get_cache_session()
+            print("data", data)
             if cache is not None:
                 cache.invalidate_cache()
             return data

@@ -79,7 +79,6 @@ class UtxoCreationViewModel(QObject, ThreadManager):
     def on_utxo_begin_done(self, unsigned_psbt):
         """Callback when unsigned PSBT is created. Updates dialog and starts signing process."""
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-            print('-'*100)
             self.unsigned_psbt.emit(unsigned_psbt)
             return
 
