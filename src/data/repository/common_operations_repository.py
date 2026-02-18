@@ -5,13 +5,14 @@ from hwilib.psbt import PSBT
 from rgb_lib import AssetSchema
 from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
-from rgb_lib import Keys
-from rgb_lib import SinglesigKeys
 from rgb_lib import generate_keys
-from rgb_lib import Wallet
+from rgb_lib import Keys
 from rgb_lib import MultisigWallet
-from rgb_lib import WalletData
+from rgb_lib import restore_backup
 from rgb_lib import restore_keys
+from rgb_lib import SinglesigKeys
+from rgb_lib import Wallet
+from rgb_lib import WalletData
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.setting_repository import KeyStorageType

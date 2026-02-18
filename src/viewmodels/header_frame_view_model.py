@@ -13,14 +13,17 @@ from rgb_lib import RgbLibError
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.data.service.common_operation_service import CommonOperationService
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.biscuit_auth import generate_and_store_token
-from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT, MULTISIG_BRIDGE_URL
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MASTER_XPUB
+from src.utils.constant import MULTISIG_BRIDGE_URL
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
 from src.utils.helpers import get_bitcoin_config
@@ -80,9 +83,11 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
     @property
     def is_multisig_pending(self) -> bool:
+        """Check if multisig wallet has pending operations."""
         return self._multisig_pending
 
     def _set_multisig_pending(self, pending: bool) -> None:
+        """Set multisig pending state."""
         if self._multisig_pending != pending:
             self._multisig_pending = pending
             self.multisig_pending_state_changed.emit(pending)
@@ -168,7 +173,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                 else:
                     colored_wallet.online_wallet = colored_wallet.wallet.go_online(
                         False, indexer_url,
-                )
+                    )
             self.sync_process_ended.emit('from_usb')
             if not retry:
                 ToastManager.success(
@@ -241,46 +246,112 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                 break
 
         self._set_multisig_pending(has_blocking_op)
-        
+
         # For watch-only wallets: extract and save review PSBTs to local DB
         # so they can be transferred to offline wallet via USB sync
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self._extract_and_save_review_psbts(pending_ops)
-        
+
+        # Trigger inspection of the blocking pending operation (if any) to get its TXID
+        # and store it in global service state
+        self._inspect_and_set_global_pending_state(pending_ops)
+
         self.pending_operations_ready.emit(pending_ops)
 
-    def _extract_and_save_review_psbts(self, pending_ops: list):
-        """Extract PSBTs from review operations and save to local DB for offline signing."""
-        from src.data.service.wallet_data_service import WalletDataService
-        
-        wallet_service = WalletDataService.get_session()
-        if wallet_service is None:
-            return
-        
+    def _inspect_and_set_global_pending_state(self, pending_ops: list):
+        """Find the relevant pending operation, inspect its PSBT to get TXID, and set global state."""
+
+        # Reset state first
+        BroadcastTransactionService.set_pending_operation_state(None, None)
+
+        target_op_info = None
         for op_info in pending_ops:
             if op_info is None or not hasattr(op_info, 'operation'):
                 continue
-            
             operation = op_info.operation
             if operation is None:
                 continue
-            
+            # We care about operations that block new ones (Create UTXOs, Send BTC, Send RGB, Inflation)
+            is_blocking = (
+                operation.is_CREATE_UTXOS_TO_REVIEW() or operation.is_CREATE_UTXOS_PENDING() or
+                operation.is_SEND_BTC_TO_REVIEW() or operation.is_SEND_BTC_PENDING() or
+                operation.is_SEND_TO_REVIEW() or operation.is_SEND_PENDING() or
+                operation.is_INFLATION_TO_REVIEW() or operation.is_INFLATION_PENDING()
+            )
+            if is_blocking:
+                target_op_info = op_info
+                break
+
+        if not target_op_info:
+            return
+
+        # Found a target operation. Inspect its PSBT to get TXID.
+        operation = target_op_info.operation
+        psbt = getattr(operation, 'psbt', None)
+        if not psbt:
+            return
+
+        # Store op info tentatively (without TXID yet)
+        BroadcastTransactionService.set_pending_operation_state(
+            target_op_info, None,
+        )
+
+        # Run inspection in thread
+        self.run_in_thread(
+            RgbRepository.inspect_psbt,
+            {
+                'args': [psbt],
+                'callback': lambda result: self._on_pending_psbt_inspected(result, target_op_info),
+                'error_callback': lambda e: logger.error('Header Pending Inspection Failed: %s', e),
+            },
+        )
+
+    def _on_pending_psbt_inspected(self, result, op_info):
+        """Callback when pending PSBT is inspected."""
+        try:
+            txid = result.txid
+            BroadcastTransactionService.set_pending_operation_state(
+                op_info, txid,
+            )
+            logger.info(
+                'Global pending operation state set with TXID: %s', txid,
+            )
+        except Exception as e:
+            logger.error('Failed to set global pending state: %s', e)
+
+    def _extract_and_save_review_psbts(self, pending_ops: list):
+        """Extract PSBTs from review operations and save to local DB for offline signing."""
+
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            return
+
+        for op_info in pending_ops:
+            if op_info is None or not hasattr(op_info, 'operation'):
+                continue
+
+            operation = op_info.operation
+            if operation is None:
+                continue
+
             # Check if this is a review operation needing signature
             is_review = (
-                hasattr(operation, 'is_create_utxos_to_review') and operation.is_create_utxos_to_review()
+                hasattr(
+                    operation, 'is_create_utxos_to_review',
+                ) and operation.is_create_utxos_to_review()
                 or hasattr(operation, 'is_send_btc_to_review') and operation.is_send_btc_to_review()
                 or hasattr(operation, 'is_send_to_review') and operation.is_send_to_review()
                 or hasattr(operation, 'is_inflation_to_review') and operation.is_inflation_to_review()
             )
-            
+
             if not is_review:
                 continue
-            
+
             # Extract PSBT from operation
             psbt = getattr(operation, 'psbt', None)
             if not psbt:
                 continue
-            
+
             # Determine purpose from operation type
             purpose = None
             if hasattr(operation, 'is_create_utxos_to_review') and operation.is_create_utxos_to_review():
@@ -291,19 +362,21 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                 purpose = 'send_asset'
             elif hasattr(operation, 'is_inflation_to_review') and operation.is_inflation_to_review():
                 purpose = 'inflate_asset'
-            
+
             if not purpose:
                 continue
-            
+
             try:
                 # Check if PSBT already exists to avoid duplicates
                 existing = wallet_service.list_psbt(signed=False)
                 if existing and any(p.get('psbt') == psbt for p in existing):
                     continue
-                
+
                 # Save as unsigned PSBT with purpose
                 wallet_service.add_psbt(psbt, signed=False, purpose=purpose)
-                logger.info('Saved review operation PSBT to local DB: purpose=%s', purpose)
+                logger.info(
+                    'Saved review operation PSBT to local DB: purpose=%s', purpose,
+                )
             except Exception as exc:
                 logger.error('Failed to save review PSBT to DB: %s', exc)
 

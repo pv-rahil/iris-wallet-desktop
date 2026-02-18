@@ -26,20 +26,21 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletType,WalletSignatureType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import format_epoch_time
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import register_multisig_button
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
-from src.utils.helpers import register_multisig_button
 
 
 class CollectiblesAssetWidget(QWidget):
@@ -198,8 +199,6 @@ class CollectiblesAssetWidget(QWidget):
     def update_grid_layout(self):
         """Update the grid layout with new number of columns"""
         try:
-            if self._view_model.main_asset_view_model.assets is None:
-                return
             num_columns = self.calculate_columns()
             # Build frames list including CFA drafts (identified by file_path in shared drafts table)
             self.frames = []
@@ -215,7 +214,9 @@ class CollectiblesAssetWidget(QWidget):
                         continue
                     if self.is_watch_only or (self.is_multisig and not self.is_offline_wallet):
                         has_drafts = True
-                        self.frames.append(self.create_collectible_frame(draft=d))
+                        self.frames.append(
+                            self.create_collectible_frame(draft=d),
+                        )
                 self._has_collectible_drafts = has_drafts
             # Then append actual issued CFA assets
             for coll_asset in self._view_model.main_asset_view_model.assets.cfa:
@@ -225,7 +226,9 @@ class CollectiblesAssetWidget(QWidget):
             self.total_items = len(self.frames)
 
             # Show empty state only if there are no issued assets AND no drafts
-            issued_count = len(self._view_model.main_asset_view_model.assets.cfa)
+            issued_count = len(
+                self._view_model.main_asset_view_model.assets.cfa,
+            )
             if issued_count == 0 and not self._has_collectible_drafts:
                 self._show_empty_collectibles_state()
                 return
@@ -263,12 +266,6 @@ class CollectiblesAssetWidget(QWidget):
 
                 self.grid_layout = grid_layout
                 self.resizeEvent = self.resize_event_called
-
-                # Activate layout immediately to ensure proper sizing for pixmap rendering
-                # This prevents blank thumbnails on first render by forcing layout calc
-                grid_layout.activate()
-                if hasattr(grid_widget, 'layout'):
-                    grid_widget.layout().activate()
         except Exception as e:
             logger.error(f"Error in update_grid_layout: {e}")
 
@@ -359,9 +356,7 @@ class CollectiblesAssetWidget(QWidget):
 
         if image_path:
             resized_image = resize_image(image_path, 242, 242)
-            if resized_image and not resized_image.isNull():
-                image_label.setPixmap(resized_image)
-                image_label.setScaledContents(True)
+            image_label.setPixmap(resized_image)
 
         form_layout.addRow(image_label)
 

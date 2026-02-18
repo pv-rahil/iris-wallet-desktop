@@ -54,7 +54,7 @@ from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
-from src.views.components.toast import ToastManager
+from src.utils.helpers import register_multisig_button
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import AssetTransferButton
@@ -62,7 +62,6 @@ from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.transaction_detail_frame import TransactionDetailFrame
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-from src.utils.helpers import register_multisig_button
 
 
 class RGBAssetDetailWidget(QWidget):
@@ -526,7 +525,8 @@ class RGBAssetDetailWidget(QWidget):
                 self.navigate_secondary_issuance,
             )
             self._view_model.main_asset_view_model.get_assets()
-        if not self.is_multisig:
+        if not SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET:
             self.send_asset.clicked.connect(
                 self.select_send_transfer_type,
             )
@@ -538,17 +538,18 @@ class RGBAssetDetailWidget(QWidget):
                 self._view_model,
                 self.send_asset,
                 self.select_send_transfer_type,
-                pending_handler=None
+                pending_handler=None,
             )
             register_multisig_button(
                 self._view_model,
                 self.receive_rgb_asset,
                 self.select_receive_transfer_type,
-                pending_handler=None
+                pending_handler=None,
             )
-        
+
         if self.asset_type == str(AssetSchema.IFA.value):
-            if not self.is_multisig:
+            if not SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET:
                 self.secondary_issuance.clicked.connect(
                     self.navigate_secondary_issuance,
                 )
@@ -557,8 +558,8 @@ class RGBAssetDetailWidget(QWidget):
                     self._view_model,
                     self.secondary_issuance,
                     self.navigate_secondary_issuance,
-                    pending_handler=None
-            )
+                    pending_handler=None,
+                )
 
     def refresh_transaction(self):
         """Refresh the transaction of the assets"""
@@ -667,7 +668,9 @@ class RGBAssetDetailWidget(QWidget):
                     )
 
                     def on_resume_transfer(_p=None, _data=transfer_draft):
-                        self._view_model.page_navigation.send_cfa_page(draft_data=_data)
+                        self._view_model.page_navigation.send_cfa_page(
+                            draft_data=_data,
+                        )
 
                     draft_frame.click_frame.connect(on_resume_transfer)
                     self.scroll_area_widget_layout.addWidget(

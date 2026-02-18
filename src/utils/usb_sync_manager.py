@@ -468,7 +468,6 @@ class USBSyncManager:
         try:
             with zipfile.ZipFile(io.BytesIO(data), 'r') as z:
                 if only_folder:
-                    wallet_data_prefix = 'wallet-data/'
 
                     for m in z.namelist():
                         # top-level directory name
@@ -586,7 +585,7 @@ class USBSyncManager:
                     continue
 
                 # 🚫 skip non-wallet folders at root
-                if fingerprint in ('logs', 'cache'):
+                if fingerprint in ('logs', 'cache', 'wallet-data'):
                     continue
 
                 z.writestr(fingerprint + '/', '')
@@ -597,7 +596,11 @@ class USBSyncManager:
 
                     rel_dir = os.path.relpath(root, folder)
                     if rel_dir != '.':
-                        z.writestr(os.path.join(fingerprint, rel_dir) + '/', '')
+                        z.writestr(
+                            os.path.join(
+                                fingerprint, rel_dir,
+                            ) + '/', '',
+                        )
 
                     for f in files:
                         path = os.path.join(root, f)

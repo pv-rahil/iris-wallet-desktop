@@ -6,6 +6,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any
 from typing import Callable
+
 from rgb_lib import Operation
 
 from src.data.repository.colored_wallet import colored_wallet
@@ -44,11 +45,10 @@ def auto_sync_multisig(check_pending_ops: bool = False) -> Callable[..., Any]:
                 if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
                     return method(*args, **kwargs)
                 try:
-                    logger.info("Auto-syncing multisig wallet...")
+                    logger.info('Auto-syncing multisig wallet...')
                     sync_result = colored_wallet.wallet.sync_with_bridge(
                         online=colored_wallet.online,
                     )
-                    colored_wallet.latest_operation_info = sync_result
 
                     # Block if pending/review operation exists
                     if (
@@ -56,23 +56,23 @@ def auto_sync_multisig(check_pending_ops: bool = False) -> Callable[..., Any]:
                         and sync_result
                     ):
                         logger.warning(
-                            "Multisig operation already in progress: %s",
+                            'Multisig operation already in progress: %s',
                             sync_result.operation.__class__.__name__,
                         )
                         raise CommonException(
-                            "A multisig operation is already pending or under review. "
-                            "Please complete it before creating a new PSBT.",
+                            'A multisig operation is already pending or under review. '
+                            'Please complete it before creating a new PSBT.',
                         )
 
                 except CommonException:
                     raise
                 except Exception as exc:
                     logger.error(
-                        "Failed to auto-sync multisig wallet: %s",
+                        'Failed to auto-sync multisig wallet: %s',
                         exc,
                     )
                     raise CommonException(
-                        "Failed to sync with bridge",
+                        'Failed to sync with bridge',
                     ) from exc
 
             return method(*args, **kwargs)

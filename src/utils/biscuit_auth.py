@@ -11,7 +11,7 @@ from src.utils.constant import MASTER_XPUB
 from src.utils.logging import logger
 
 
-def generate_and_store_token() -> str:
+def generate_and_store_token() -> str | None:
     """
     Checks if a bridge token exists. If not, attempts to generate one using
     the local private-key-file and the wallet's Master XPUB.

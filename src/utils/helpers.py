@@ -19,8 +19,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtGui import QPainter
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QWidget
 from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QWidget
 from rgb_lib import BitcoinNetwork
 from rgb_lib import CosignerData
 from rgb_lib import MultisigKeys
@@ -48,9 +48,6 @@ from src.utils.custom_exception import CommonException
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.logging import logger
 from src.views.components.toast import ToastManager
-from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 
 
 def handle_asset_address(address: str, short_len: int = 12) -> str:
@@ -412,6 +409,7 @@ def build_keys_from_data(
         vanilla_keychain=vanilla_keychain if vanilla_keychain is not None else 1,
     )
 
+
 def set_widgets_visible(widgets: list[QWidget | None], visible: bool) -> None:
     """
     Set the visibility of a list of widgets.
@@ -431,11 +429,10 @@ def set_widgets_visible(widgets: list[QWidget | None], visible: bool) -> None:
                 pass
 
 
-
 def connect_multisig_pending_signal(view_model, update_callback):
     """
     Connects the multisig pending state signal to the provided callback.
-    
+
     Args:
         view_model: The view model object (must have header_frame_view_model).
         update_callback: The method to call when state changes.
@@ -443,14 +440,14 @@ def connect_multisig_pending_signal(view_model, update_callback):
     try:
         if view_model:
             view_model.header_frame_view_model.multisig_pending_state_changed.connect(
-                update_callback
+                update_callback,
             )
             # Initial update
             update_callback(
-                view_model.header_frame_view_model.is_multisig_pending
+                view_model.header_frame_view_model.is_multisig_pending,
             )
     except Exception as e:
-        logger.error(f"Failed to connect multisig pending signal: {e}")
+        logger.error('Failed to connect multisig pending signal: %s', e)
 
 
 def register_multisig_button(
@@ -473,7 +470,6 @@ def register_multisig_button(
         pending_handler: Optional. Function to call when pending. Defaults to showing toast.
     """
 
-
     # Default to standard toast if no specific pending handler provided
     if pending_handler is None:
         def default_pending_handler():
@@ -490,26 +486,31 @@ def register_multisig_button(
 
         if is_pending:
             # Set pending property to trigger QSS [pending="true"] selector
-            button.setProperty("pending", "true")
+            button.setProperty('pending', 'true')
             button.style().polish(button)
             # Disconnect all existing handlers
             try:
                 button.clicked.disconnect()
-            except Exception:
+            except (TypeError, RuntimeError):
                 pass
             # Connect pending handler
             button.clicked.connect(pending_handler)
         else:
             # Remove pending property to restore normal QSS styling
-            button.setProperty("pending", "false")
+            button.setProperty('pending', 'false')
             button.style().polish(button)
             # Disconnect pending handler
             try:
                 button.clicked.disconnect(pending_handler)
-            except Exception:
+            except (TypeError, RuntimeError):
                 pass
             # Reconnect normal handler if provided
             if normal_handler is not None:
+                # Disconnect normal handler first to avoid duplicates
+                try:
+                    button.clicked.disconnect(normal_handler)
+                except (TypeError, RuntimeError):
+                    pass
                 button.clicked.connect(normal_handler)
 
     # Connect the signal using the existing helper

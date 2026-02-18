@@ -1,20 +1,26 @@
+"""
+Service for handling broadcast transaction operations, including PSBT management,
+multisig coordination, and RGB asset transfers.
+"""
 from __future__ import annotations
 
 from src.data.service.wallet_data_service import WalletDataService
-from src.data.repository.setting_repository import SettingRepository
 from src.model.broadcast_transaction_model import MultisigPendingContext
 from src.model.broadcast_transaction_model import PsbtDraftItem
 from src.model.broadcast_transaction_model import PsbtParsed
 from src.model.broadcast_transaction_model import RgbTransferInspectionSummary
-from src.model.enums.enums_model import WalletType
 from src.utils.constant import MASTER_XPUB
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.local_store import local_store
 
 
 class BroadcastTransactionService:
+    """Service class for managing broadcast transaction logic and PSBT operations."""
+
     @staticmethod
     def list_psbt_drafts(is_signed: bool) -> list[PsbtDraftItem]:
+        """List PSBT drafts from the wallet service."""
+
         wallet_service = WalletDataService.get_session()
         if wallet_service is None:
             return []
@@ -23,31 +29,38 @@ class BroadcastTransactionService:
         for row in rows:
             if not isinstance(row, dict):
                 continue
-            psbt_id = row["id"]
-            psbt = row["psbt"]
-            signed = bool(row["signed"])
-            purpose = row["purpose"]
+            psbt_id = row['id']
+            psbt = row['psbt']
+            signed = bool(row['signed'])
+            purpose = row['purpose']
             items.append(
-                PsbtDraftItem(id=psbt_id, psbt=psbt, signed=signed, purpose=purpose),
+                PsbtDraftItem(
+                    id=psbt_id, psbt=psbt,
+                    signed=signed, purpose=purpose,
+                ),
             )
         return items
 
     @staticmethod
     def selector_titles(items: list[PsbtDraftItem]) -> list[str]:
+        """Generate display titles for the draft items."""
+
         titles: list[str] = []
         for item in items:
-            purpose = item.purpose or "psbt"
+            purpose = item.purpose or 'psbt'
             psbt_id = item.id
             titles.append(f"{purpose} ({psbt_id[:8]})" if psbt_id else purpose)
         return titles
 
     @staticmethod
     def parse_psbt_input(text: str) -> PsbtParsed:
+        """Parse raw PSBT input text (handles psbt: prefix and whitespace)."""
+
         psbt_text = (text or '').strip()
         purpose: str | None = None
 
-        if psbt_text.startswith("psbt:"):
-            parts = psbt_text.split(":", 2)
+        if psbt_text.startswith('psbt:'):
+            parts = psbt_text.split(':', 2)
             if len(parts) == 3:
                 purpose = parts[1] or None
                 psbt_text = parts[2]
@@ -60,6 +73,8 @@ class BroadcastTransactionService:
 
     @staticmethod
     def resolve_purpose(parsed: PsbtParsed, selector_purpose: str | None) -> str | None:
+        """Resolve the purpose of the PSBT."""
+
         if parsed.purpose:
             return parsed.purpose
         if selector_purpose:
@@ -68,41 +83,49 @@ class BroadcastTransactionService:
 
     @staticmethod
     def action_key(can_broadcast: bool, purpose: str | None) -> str:
-        if not can_broadcast:
-            return "sign"
+        """Determine the action key based on broadcast capability and purpose."""
 
-        if purpose == "send_btc":
-            return "send_btc"
-        if purpose == "send_asset":
-            return "send_asset"
-        if purpose == "inflate_asset":
-            return "inflate_asset"
-        return "create_utxos"
+        if not can_broadcast:
+            return 'sign'
+
+        if purpose == 'send_btc':
+            return 'send_btc'
+        if purpose == 'send_asset':
+            return 'send_asset'
+        if purpose == 'inflate_asset':
+            return 'inflate_asset'
+        return 'create_utxos'
 
     @staticmethod
     def selected_purpose(items: list[PsbtDraftItem], idx: int) -> str | None:
+        """Get the purpose of the selected item."""
+
         if idx < 0 or idx >= len(items):
             return None
         return items[idx].purpose
 
     @staticmethod
     def receive_page_name_for_signed_psbt(psbt: str) -> str:
+        """Determine the target page name for a signed PSBT."""
+
         wallet_service = WalletDataService.get_session()
         if wallet_service is None:
-            return "NIA page"
+            return 'NIA page'
         signed = wallet_service.list_psbt(True)
         for row in signed:
             if not isinstance(row, dict):
                 continue
-            if row["psbt"] != psbt:
+            if row['psbt'] != psbt:
                 continue
-            if row["purpose"] == "inflate_asset":
-                return "IFA secondary issuance"
+            if row['purpose'] == 'inflate_asset':
+                return 'IFA secondary issuance'
             break
-        return "NIA page"
+        return 'NIA page'
 
     @staticmethod
     def cleanup_secondary_draft_if_any(psbt_text: str) -> None:
+        """Clean up secondary draft (IFA) if applicable."""
+
         wallet_service = WalletDataService.get_session()
         if wallet_service is None:
             return
@@ -111,22 +134,32 @@ class BroadcastTransactionService:
         purpose = parsed.purpose
         psbt_only = parsed.psbt
 
-        if purpose is not None and purpose != "inflate_asset":
+        if purpose is not None and purpose != 'inflate_asset':
             return
 
         if psbt_only:
             if wallet_service.delete_secondary_draft_by_psbt(psbt_only):
                 return
 
-        if purpose == "inflate_asset":
+        if purpose == 'inflate_asset':
             latest = wallet_service.get_latest_active_secondary_draft()
             if latest is None:
                 return
-            draft_id = int(latest["id"])
+            draft_id = int(latest['id'])
             wallet_service.delete_ifa_secondary_draft(draft_id)
 
     @staticmethod
+    def delete_psbt_draft(psbt_base64: str) -> bool:
+        """Delete a PSBT draft from the database."""
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            return False
+        return wallet_service.delete_psbt(psbt_base64)
+
+    @staticmethod
     def multisig_pending_context(operation_info: object) -> MultisigPendingContext | None:
+        """Create a pending context from operation info."""
+
         if operation_info is None:
             return None
         operation = operation_info.operation
@@ -135,20 +168,26 @@ class BroadcastTransactionService:
             return None
 
         psbt = operation.psbt
-        if psbt is None or psbt == "":
+        if psbt is None or psbt == '':
             return None
 
         local_xpub = local_store.get_value(MASTER_XPUB)
-        is_initiator = bool(initiator_xpub and local_xpub and initiator_xpub == local_xpub)
+        is_initiator = bool(
+            initiator_xpub and local_xpub and initiator_xpub == local_xpub,
+        )
         return MultisigPendingContext(psbt=psbt, is_initiator=is_initiator, operation=operation)
 
     @staticmethod
     def match_pending_operation(op_info: object, current_psbt: str) -> MultisigPendingContext | None:
+        """Match a pending operation with a current PSBT."""
+
         if op_info is None:
             return None
-        if current_psbt is None or current_psbt == "":
+        if current_psbt is None or current_psbt == '':
             return None
-        current_psbt_only = BroadcastTransactionService.parse_psbt_input(current_psbt).psbt
+        current_psbt_only = BroadcastTransactionService.parse_psbt_input(
+            current_psbt,
+        ).psbt
         if not current_psbt_only:
             return None
         pending = BroadcastTransactionService.multisig_pending_context(op_info)
@@ -158,22 +197,56 @@ class BroadcastTransactionService:
             return None
         return pending
 
+    # Global state for pending operation (populated by HeaderFrameViewModel)
+    _pending_operation_info: object | None = None
+    _pending_operation_txid: str | None = None
+
+    @classmethod
+    def set_pending_operation_state(cls, op_info: object, txid: str | None) -> None:
+        """Set the global pending operation state."""
+        cls._pending_operation_info = op_info
+        cls._pending_operation_txid = txid
+
+    @classmethod
+    def get_pending_operation_state(cls) -> tuple[object | None, str | None]:
+        """Get the global pending operation state."""
+        return cls._pending_operation_info, cls._pending_operation_txid
+
+    @staticmethod
+    def match_pending_operation_by_txid(op_info: object, current_psbt_txid: str) -> MultisigPendingContext | None:
+        """Match a pending operation by TXID."""
+
+        if op_info is None or not current_psbt_txid:
+            return None
+        pending = BroadcastTransactionService.multisig_pending_context(op_info)
+        if pending is None:
+            return None
+        # We cannot check TXID here directly without inspection.
+        # Use simple object return; the caller (ViewModel) handles TXID comparison.
+        return pending
+
     @staticmethod
     def operation_transfer_type_key(operation: object) -> str | None:
+        """Determine the transfer type key for an operation."""
+
         if operation.is_inflation_to_review():
-            return "inflation"
+            return 'inflation'
         # RGB send (asset transfer)
         if operation.is_send_to_review():
-            return "asset_transfer"
+            return 'asset_transfer'
         # BTC send
         if operation.is_send_btc_to_review():
-            return "btc_transfer"
+            return 'btc_transfer'
         if operation.is_create_utxos_to_review():
-            return "internal"
+            return 'internal'
         return None
 
     @staticmethod
-    def should_enable_action(has_input: bool, is_multisig: bool, is_psbt_validated: bool, pending_operation_present: bool) -> bool:
+    def should_enable_action(
+        has_input: bool, is_multisig: bool, is_psbt_validated: bool, pending_operation_present: bool,
+    ) -> bool:
+        """Determine if the action button should be enabled."""
+
         if not has_input:
             return False
         if not is_multisig:
@@ -182,10 +255,14 @@ class BroadcastTransactionService:
 
     @staticmethod
     def is_rgb_purpose(purpose: str | None) -> bool:
-        return purpose in ("send_asset", "inflate_asset")
+        """Check if the purpose is related to RGB."""
+
+        return purpose in ('send_asset', 'inflate_asset')
 
     @staticmethod
     def set_rgb_mode_for_purpose(purpose: str | None) -> None:
+        """Set the hardware client RGB mode based on purpose."""
+
         hardware_client_store.set_rgb_mode(
             BroadcastTransactionService.is_rgb_purpose(purpose),
         )
@@ -238,9 +315,9 @@ class BroadcastTransactionService:
         transfer_type_key = pending_transfer_type_key
         if transfer_type_key is None:
             if send_amount > 0:
-                transfer_type_key = "asset_transfer"
+                transfer_type_key = 'asset_transfer'
             elif total_inflation_amount > 0:
-                transfer_type_key = "inflation"
+                transfer_type_key = 'inflation'
 
         return RgbTransferInspectionSummary(
             asset_id=str(asset_id) if asset_id else None,

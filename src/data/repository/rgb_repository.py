@@ -332,6 +332,9 @@ class RgbRepository:
                 signed_psbt=signed_psbt,
                 recipient_map=recipient_map,
             )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_psbt(signed_psbt)
 
     @staticmethod
     @auto_sync_multisig(check_pending_ops=True)
@@ -343,6 +346,9 @@ class RgbRepository:
                 signed_psbt=signed_psbt,
                 asset_id=asset_id,
             )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_psbt(signed_psbt)
 
     @staticmethod
     def sync_with_bridge() -> OperationInfo:
@@ -364,7 +370,6 @@ class RgbRepository:
                 respond_to_operation=respond_to_operation,
             )
             cache = Cache.get_cache_session()
-            print("data", data)
             if cache is not None:
                 cache.invalidate_cache()
             return data

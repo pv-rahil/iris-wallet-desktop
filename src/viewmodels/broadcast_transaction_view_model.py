@@ -16,8 +16,9 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
-from src.model.enums.enums_model import KeyStorageType, WalletType
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import SendAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY
@@ -31,7 +32,6 @@ from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS
-from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
 from src.views.components.hw_device_selection_dialog import HWDeviceSelectionDialog
@@ -58,6 +58,9 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self._multisig_operation_idx: int | None = None
         self._current_signed_psbt: str | None = None
         self._current_signed_txid: str | None = None
+        self._pending_psbt_txid: str | None = None
+        self._pending_op_info: object | None = None
+        self._psbt_to_delete_on_success: str | None = None
 
     def load_psbts(self, is_signed: bool) -> None:
         """Load PSBT drafts via service and emit to the UI."""
@@ -75,20 +78,24 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def execute_psbt_action(self, psbt_text: str, selector_purpose: str | None, can_broadcast: bool) -> None:
         """Execute sign/broadcast flow. Routing decisions are delegated to the service."""
         parsed = BroadcastTransactionService.parse_psbt_input(psbt_text)
-        purpose = BroadcastTransactionService.resolve_purpose(parsed, selector_purpose)
-        action = BroadcastTransactionService.action_key(can_broadcast=can_broadcast, purpose=purpose)
+        purpose = BroadcastTransactionService.resolve_purpose(
+            parsed, selector_purpose,
+        )
+        action = BroadcastTransactionService.action_key(
+            can_broadcast=can_broadcast, purpose=purpose,
+        )
 
-        if action == "sign":
+        if action == 'sign':
             BroadcastTransactionService.set_rgb_mode_for_purpose(purpose)
             self.sign_and_finalize_psbt(parsed.psbt)
             return
-        if action == "send_btc":
+        if action == 'send_btc':
             self.send_btc_end(parsed.psbt)
             return
-        if action == "send_asset":
+        if action == 'send_asset':
             self.send_end(parsed.psbt)
             return
-        if action == "inflate_asset":
+        if action == 'inflate_asset':
             self.inflate_end(parsed.psbt)
             return
         self.create_utxos_end(parsed.psbt)
@@ -226,6 +233,17 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.tx_broadcasted.emit(True)
         ToastManager.success(description=INFO_ASSET_SENT.format(response.txid))
 
+    def _respond_to_multisig_operation(self, operation_idx: int | None, response: RespondToOperation) -> None:
+        """Post an ACK/NACK response for a multisig pending operation."""
+        self.run_in_thread(
+            RgbRepository.respond_to_operation,
+            {
+                'args': [operation_idx, response],
+                'callback': self._on_multisig_post_success,
+                'error_callback': self.on_error,
+            },
+        )
+
     # ========== Multisig Signer Flow ==========
 
     def sign_and_post_multisig(self, unsigned_psbt: str, operation_idx: int | None):
@@ -233,6 +251,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.is_loading.emit(True)
         # Store operation_idx for use in callback
         self._multisig_operation_idx = operation_idx
+        # Store for deletion on success
+        self._psbt_to_delete_on_success = unsigned_psbt
         self.run_in_thread(
             CommonOperationRepository.sign_psbt,
             {
@@ -268,25 +288,30 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             self._current_signed_txid = None
 
         operation_idx = self._multisig_operation_idx
-        signed_psbt = self._current_signed_psbt or ""
+        signed_psbt = self._current_signed_psbt or ''
 
         # SIGNER FLOW: Existing operation, so we are responding
         response = RespondToOperation.ACK(signed_psbt)
-
-        # Post back to bridge using respond_to_operation
-        self.run_in_thread(
-            RgbRepository.respond_to_operation,
-            {
-                'args': [operation_idx, response],
-                'callback': self._on_multisig_post_success,
-                'error_callback': self.on_error,
-            },
-        )
+        self._respond_to_multisig_operation(operation_idx, response)
 
     def _on_multisig_post_success(self, result):
         """Handle successful post to bridge."""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
+
+        if self._psbt_to_delete_on_success:
+            BroadcastTransactionService.delete_psbt_draft(
+                self._psbt_to_delete_on_success,
+            )
+            self._psbt_to_delete_on_success = None
+
+        # Handle case where result is explicitly None (e.g. from post_psbt_to_bridge_by_purpose)
+        if result is None:
+            ToastManager.success(
+                description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE,
+            )
+            return
+
         # Combine pending checks to reduce complexity
         is_pending = (
             result.is_create_utxos_pending() or
@@ -371,22 +396,11 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def respond_psbt_to_operation(self, signed_psbt: str, operation_idx: int | None) -> None:
         """Cosigner flow (watch-only): respond to operation with ACK(signed_psbt)."""
-        if operation_idx is None:
-            self.on_error(CommonException('Operation index missing'))
-            return
-        if not signed_psbt:
-            self.on_error(CommonException('No PSBT to respond with'))
-            return
         self.is_loading.emit(True)
+        # Store for deletion on success
+        self._psbt_to_delete_on_success = signed_psbt
         response = RespondToOperation.ACK(signed_psbt)
-        self.run_in_thread(
-            RgbRepository.respond_to_operation,
-            {
-                'args': [operation_idx, response],
-                'callback': self._on_multisig_post_success,
-                'error_callback': self.on_error,
-            },
-        )
+        self._respond_to_multisig_operation(operation_idx, response)
 
     def _on_nack_post_success(self, result):
         """Handle successful NACK post to the multisig bridge."""
@@ -423,6 +437,16 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Fetch pending operation from bridge to check against current PSBT."""
         if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
             return
+
+        # NEW: Check global state first (populated by Header)
+        global_op_info, global_txid = BroadcastTransactionService.get_pending_operation_state()
+        if global_op_info:
+            self._pending_op_info = global_op_info
+            self._pending_psbt_txid = global_txid
+            self.pending_operation_ready.emit(global_op_info)
+            return
+
+        # Fallback if global state empty (orphan page load?)
         self.run_in_thread(
             RgbRepository.sync_with_bridge,
             {
@@ -443,5 +467,43 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.rgb_transfer_inspection_ready.emit(result)
 
     def _on_fetch_pending_operation_success(self, result):
-        """Handle success message for fetch pending operation"""
+        """
+        Handle success message for fetch pending operation (fallback path).
+        """
+        self._pending_op_info = result
+        if result:
+            # Inspect to get TXID (for fuzzy matching)
+            pending_ctx = BroadcastTransactionService.multisig_pending_context(
+                result,
+            )
+            if pending_ctx and pending_ctx.psbt:
+                self.run_in_thread(
+                    RgbRepository.inspect_psbt,
+                    {
+                        'args': [pending_ctx.psbt],
+                        'callback': self._on_pending_psbt_inspected,
+                        'error_callback': self.on_error,
+                    },
+                )
+                return
+
+        # If no result or no PSBT to inspect, emit immediately
+        self._pending_psbt_txid = None
         self.pending_operation_ready.emit(result)
+
+    def _on_pending_psbt_inspected(self, result):
+        """Callback when the pending operation's PSBT has been inspected."""
+        try:
+            self._pending_psbt_txid = result.txid
+            # Update global state too
+            BroadcastTransactionService.set_pending_operation_state(
+                self._pending_op_info, result.txid,
+            )
+        except Exception:
+            self._pending_psbt_txid = None
+        # Now emit the signal with the original op info
+        self.pending_operation_ready.emit(self._pending_op_info)
+
+    def get_pending_psbt_txid(self) -> str | None:
+        """Return the TXID of the currently pending operation's PSBT."""
+        return self._pending_psbt_txid

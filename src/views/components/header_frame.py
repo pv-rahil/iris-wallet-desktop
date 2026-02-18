@@ -48,9 +48,10 @@ from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.usb_detector import USBDetector
 from src.viewmodels.header_frame_view_model import HeaderFrameViewModel
 from src.views.components.loading_screen import LoadingTranslucentScreen
+from src.views.components.toast import ToastManager
 from src.views.components.usb_sync_dialog import USBSyncDialog
 from src.views.ui_restore_mnemonic import RestoreMnemonicWidget
-from src.views.components.toast import ToastManager
+
 
 class HeaderFrame(QFrame, QObject):
     """
@@ -474,6 +475,13 @@ class HeaderFrame(QFrame, QObject):
         if self.psbt_info_frame.isVisible():
             frame_rect = self.psbt_info_frame.geometry()
             if frame_rect.contains(event.pos()):
+                # Check if this is the "offline sign needed" state
+                if getattr(self, '_psbt_action_mode', '') == 'offline_sign_needed':
+                    ToastManager.info(
+                        'Please sign this transaction using your offline wallet.',
+                    )
+                    return
+
                 # For multisig, navigate to broadcast page with pending ops
                 if self._is_multisig() and self._pending_ops:
                     # Pass the first pending operation to broadcast page
@@ -609,7 +617,7 @@ class HeaderFrame(QFrame, QObject):
                 self.psbt_info_frame.show()
             else:
                 self.psbt_info_frame.hide()
-            
+
             # For watch-only multisig: ALSO check bridge for review operations
             # (even if we have local PSBTs, we want to know about bridge ops too)
             if signature_type == WalletSignatureType.MULTI_SIG_WALLET:
@@ -617,7 +625,7 @@ class HeaderFrame(QFrame, QObject):
                 # Banner will be updated by on_pending_operations_ready callback if review ops found
                 return
             return
-        
+
         # For offline wallets: show unsigned PSBTs needing signature
         if wallet_type == WalletType.OFFLINE_TYPE_WALLET:
             drafts = wallet_service.list_psbt(
@@ -652,10 +660,51 @@ class HeaderFrame(QFrame, QObject):
         """Handle pending operations from multisig bridge sync."""
         self._pending_ops = pending_ops
         self._pending_ops_count = len(self._pending_ops)
+
+        # Reset state
+        self.psbt_info_frame.setEnabled(True)
+        self.psbt_info_frame.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor),
+        )
+        # Clear internal tag
+        self._psbt_action_mode = None
+
         if self._pending_ops_count > 0:
             # For watch-only wallets: show text indicating offline signature needed
             if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-                # Check for both local signed PSBTs and remote pending ops
+                # Check for local signed PSBTs
+                wallet_service = WalletDataService.get_session()
+                drafts = wallet_service.list_psbt(
+                    True,
+                ) if wallet_service is not None else []
+                count = len(drafts) if drafts is not None else 0
+
+                if count > 0:
+                    # If we have signed drafts ready to broadcast, prioritize that action
+                    label_text = QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
+                    ).format(count)
+                else:
+                    # Otherwise, show that we have pending operations that need signing (offline)
+                    # KEEP FRAME ENABLED, but tag it so click shows Toast
+                    label_text = 'Sign Needed (Use Offline Wallet)'
+                    self._psbt_action_mode = 'offline_sign_needed'
+
+                self.psbt_info_label.setText(label_text)
+                self.psbt_info_frame.setToolTip(label_text)
+                self.psbt_info_frame.show()
+            else:
+                # Use same format as offline sign label for other wallets
+                label_text = QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
+                ).format(self._pending_ops_count)
+                self.psbt_info_label.setText(label_text)
+                self.psbt_info_frame.setToolTip(label_text)
+                self.psbt_info_frame.show()
+        else:
+            # No pending operations from bridge.
+            # However, for Watch-Only, we might still have local signed drafts to broadcast.
+            if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
                 wallet_service = WalletDataService.get_session()
                 drafts = wallet_service.list_psbt(
                     True,
@@ -665,19 +714,9 @@ class HeaderFrame(QFrame, QObject):
                     label_text = QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
                     ).format(count)
-                    # Show banner for locally created PSBTs
                     self.psbt_info_label.setText(label_text)
                     self.psbt_info_frame.setToolTip(label_text)
                     self.psbt_info_frame.show()
-                else:
-                    self.psbt_info_frame.hide()
-            else:
-                # Use same format as offline sign label for other wallets
-                label_text = QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
-                ).format(self._pending_ops_count)
-            self.psbt_info_label.setText(label_text)
-            self.psbt_info_frame.setToolTip(label_text)
-            self.psbt_info_frame.show()
-        else:
+                    return
+
             self.psbt_info_frame.hide()
