@@ -5,16 +5,20 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QCoreApplication
+from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 from rgb_lib import AssetSchema
 
 import src.resources_rc
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import Enum
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.selection_page_model import AssetDataModel
 from src.model.setting_model import DefaultProxyEndpoint
 from src.utils.common_utils import copy_text
@@ -24,6 +28,7 @@ from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.receive_asset import ReceiveAssetWidget
+from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.toast import ToastManager
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 
@@ -240,6 +245,19 @@ class ReceiveRGBAssetWidget(QWidget):
         if existing and existing.get('psbt'):
             self.show_receive_cfa_psbt_page(existing.get('psbt'))
         else:
+            # Show confirmation dialog for multisig/watch-only wallets
+            if (
+                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+                or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+            ):
+                dialog = ConfirmationDialog(
+                    message='UTXO creation is required before receiving this asset. '
+                            'This will generate a PSBT that needs to be signed by all cosigners. ',
+                    parent=self,
+                    icon_type='info',
+                )
+                if dialog.exec() != QDialog.Accepted:
+                    return
             self._view_model.utxo_creation_view_model.create_utxos_begin(
                 'receive_asset',
             )

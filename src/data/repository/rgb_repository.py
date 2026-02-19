@@ -249,7 +249,7 @@ class RgbRepository:
                 fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
             )
             wallet_service = WalletDataService.get_session()
-            if wallet_service is not None and not colored_wallet.is_multisig:
+            if wallet_service is not None:
                 wallet_service.add_psbt(psbt, purpose='send_asset')
             return psbt
 
@@ -294,7 +294,7 @@ class RgbRepository:
                 fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
             )
             wallet_service = WalletDataService.get_session()
-            if wallet_service is not None and not colored_wallet.is_multisig:
+            if wallet_service is not None:
                 wallet_service.add_psbt(psbt, purpose='inflate_asset')
             return psbt
 

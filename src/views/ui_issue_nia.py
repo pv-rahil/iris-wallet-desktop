@@ -11,6 +11,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
@@ -42,11 +43,13 @@ from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
+from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 
@@ -570,6 +573,19 @@ class IssueNIAWidget(QWidget):
         current = get_unspent_utxo_count()
         needed = 1 - current
         needed = needed if needed > 0 else 1
+        # Show confirmation dialog for multisig/watch-only wallets
+        if (
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+        ):
+            dialog = ConfirmationDialog(
+                message='UTXO creation is required before issuing this asset. '
+                        'This will generate a PSBT that needs to be signed by all cosigners. ',
+                parent=self,
+                icon_type='info',
+            )
+            if dialog.exec() != QDialog.Accepted:
+                return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
             'issue_asset_nia', needed,
         )

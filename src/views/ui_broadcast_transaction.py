@@ -825,6 +825,7 @@ class BroadcastTransactionWidget(QWidget):
         return {
             'create_utxos',
             'send_btc',
+            'send_asset',
             'issue_asset_nia',
             'issue_asset_cfa',
             'issue_asset_ifa',

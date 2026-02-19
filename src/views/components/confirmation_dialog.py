@@ -54,7 +54,7 @@ class ConfirmationDialog(QDialog):
         dialog_layout = QVBoxLayout(self)
 
         # Header/message area
-        if self.icon_type == 'warning':
+        if self.icon_type == 'warning' or self.icon_type == 'info':
             header_layout = QHBoxLayout()
             header_layout.setObjectName('header_layout')
             header_layout.setContentsMargins(6, 0, 5, 0)
@@ -62,7 +62,10 @@ class ConfirmationDialog(QDialog):
 
             self.icon_label = QLabel(self)
             self.icon_label.setObjectName('icon_label')
-            pixmap = QPixmap(':/assets/warning_yellow.png')
+            if self.icon_type == 'warning':
+                pixmap = QPixmap(':/assets/warning_yellow.png')
+            elif self.icon_type == 'info':
+                pixmap = QPixmap(':/assets/info_blue.png')
             if not pixmap.isNull():
                 self.icon_label.setPixmap(
                     pixmap.scaled(
@@ -84,12 +87,12 @@ class ConfirmationDialog(QDialog):
             header_layout.addWidget(self.message_label)
 
             dialog_layout.addLayout(header_layout)
-
-            # Confirmation checkbox (enables Continue when checked)
-            self.check_box = QCheckBox(self)
-            self.check_box.setObjectName('check_box')
-            self.check_box.setAccessibleName(CONFIRMATION_DIALOG_CHECKBOX)
-            dialog_layout.addWidget(self.check_box)
+            if self.icon_type == 'warning':
+                # Confirmation checkbox (enables Continue when checked)
+                self.check_box = QCheckBox(self)
+                self.check_box.setObjectName('check_box')
+                self.check_box.setAccessibleName(CONFIRMATION_DIALOG_CHECKBOX)
+                dialog_layout.addWidget(self.check_box)
         else:
             self.message_label = QLabel(message, self)
             self.message_label.setObjectName('message_label')

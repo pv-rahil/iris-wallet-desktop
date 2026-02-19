@@ -39,6 +39,7 @@ from src.utils.error_message import ERROR_UNEXPECTED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
+from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.send_asset import SendAssetWidget
 from src.views.components.toast import ToastManager
@@ -440,6 +441,17 @@ class SendRGBAssetWidget(QWidget):
                     if result != QDialog.Accepted:
                         return
                 self._retry_after_utxo = True
+                # Show confirmation dialog for multisig/watch-only wallets
+                if self.is_multisig or self.is_watch_only:
+                    dialog = ConfirmationDialog(
+                        message='UTXO creation is required before sending this asset. '
+                                'This will generate a PSBT that needs to be signed by all cosigners. ',
+                        parent=self,
+                        icon_type='info',
+                    )
+                    if dialog.exec() != QDialog.Accepted:
+                        self._retry_after_utxo = False
+                        return
                 self._view_model.utxo_creation_view_model.create_utxos_begin(
                     purpose='send_rgb',
                 )

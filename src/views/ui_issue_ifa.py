@@ -59,6 +59,7 @@ from src.utils.helpers import load_stylesheet
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
+from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
@@ -1002,6 +1003,19 @@ class IssueIFAWidget(QWidget):
             if ('NoAvailableUtxos' in message) or (ERROR_NOT_ENOUGH_UNCOLORED in message):
                 if not self._prompt_bitcoin_app_and_confirm():
                     return
+                # Show confirmation dialog for multisig/watch-only wallets
+                if (
+                    SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+                    or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+                ):
+                    dialog = ConfirmationDialog(
+                        message='UTXO creation is required before issuing this asset. '
+                                'This will generate a PSBT that needs to be signed by all cosigners. ',
+                        parent=self,
+                        icon_type='info',
+                    )
+                    if dialog.exec() != QDialog.Accepted:
+                        return
                 self._retry_after_utxo_inflate = bool(self.secondary_issuance)
                 utxo_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset_ifa'
                 # Determine only missing UTXOs to create (required = 3)
@@ -1132,6 +1146,19 @@ class IssueIFAWidget(QWidget):
         current = get_unspent_utxo_count()
         needed = 3 - max(0, current - 1)
         needed = needed if needed > 0 else 1
+        # Show confirmation dialog for multisig/watch-only wallets
+        if (
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+        ):
+            dialog = ConfirmationDialog(
+                message='UTXO creation is required before issuing this asset. '
+                        'This will generate a PSBT that needs to be signed by all cosigners. ',
+                parent=self,
+                icon_type='info',
+            )
+            if dialog.exec() != QDialog.Accepted:
+                return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
             purpose='issue_asset_ifa', num=needed,
         )

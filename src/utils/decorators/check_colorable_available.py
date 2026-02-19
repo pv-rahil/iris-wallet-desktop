@@ -33,7 +33,11 @@ def get_unspent_utxo_count() -> int:
         unspents = colored_wallet.wallet.list_unspents(
             online=colored_wallet.online, settled_only=False, skip_sync=False,
         )
-        return len([u for u in unspents if not getattr(u, 'rgb_allocations', None)])
+
+        return len([
+            u for u in unspents
+            if not u.rgb_allocations and u.utxo.colorable
+        ])
     except Exception as exc:
         logger.error(
             'Error getting unspent UTXO count: %s: %s',
@@ -97,7 +101,7 @@ def create_utxos(num: int) -> None:
         ) from exc
 
 
-def check_colorable_available(required_utxos: int = 2) -> Callable[..., Any]:
+def check_colorable_available(required_utxos: int = 1) -> Callable[..., Any]:
     """
     Ensure at least `required_utxos` uncolored UTXOs exist. If insufficient, create only the missing
     count in a single transaction and retry the original method.

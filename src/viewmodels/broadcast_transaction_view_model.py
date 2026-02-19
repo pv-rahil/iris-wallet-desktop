@@ -383,6 +383,28 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             )
             return
 
+        if purpose == 'send_asset':
+            self.run_in_thread(
+                self._post_send_asset_to_bridge,
+                {
+                    'args': [signed_psbt],
+                    'callback': lambda *_: self._on_multisig_post_success(None),
+                    'error_callback': self.on_error,
+                },
+            )
+            return
+
+        if purpose == 'inflate_asset':
+            self.run_in_thread(
+                self._post_inflate_asset_to_bridge,
+                {
+                    'args': [signed_psbt],
+                    'callback': lambda *_: self._on_multisig_post_success(None),
+                    'error_callback': self.on_error,
+                },
+            )
+            return
+
         self.on_error(CommonException(f'Unsupported purpose: {purpose}'))
 
     def respond_psbt_to_operation(self, signed_psbt: str, operation_idx: int | None) -> None:
