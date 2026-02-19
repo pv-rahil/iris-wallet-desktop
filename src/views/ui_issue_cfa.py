@@ -390,6 +390,7 @@ class IssueCFAWidget(QWidget):
                 self._view_model,
                 self.issue_cfa_button,
                 self.on_issue_cfa,
+                check_utxos_first=True,
             )
         self.upload_file.clicked.connect(self.on_upload_asset_file)
         self._view_model.issue_cfa_asset_view_model.is_loading.connect(
@@ -463,8 +464,7 @@ class IssueCFAWidget(QWidget):
         asset_description = self.asset_description_input.text()
         asset_name = self.name_of_the_asset_input.text()
         total_supply = self.amount_input.text()
-        # Create a draft only when starting from fresh inputs
-        if not self.from_draft:
+        if not self.from_draft or get_unspent_utxo_count() == 0:
             self.create_issue_cfa_draft(
                 name=asset_name,
                 description=asset_description,

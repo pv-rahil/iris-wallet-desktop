@@ -629,21 +629,25 @@ class WalletDataService:
 
     @staticmethod
     def _psbt_id(psbt_base64: str) -> str:
-        """Deterministic id for a PSBT payload (sha256 of base64 string)."""
-        return hashlib.sha256(psbt_base64.encode('utf-8')).hexdigest()
+        """Deterministic id for a PSBT payload (sha256 of normalized base64 string)."""
+        # Normalize: remote whitespace to ensure consistent ID
+        normalized = ''.join(psbt_base64.split())
+        return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
 
     def add_psbt(self, psbt_base64: str, signed: bool = False, purpose: str | None = None) -> str | None:
         """Insert or replace a PSBT. Returns its id. Minimal fields only.
         Optionally set a purpose (e.g., 'send_btc', 'create_utxos', 'issue_asset').
         """
         if self.is_watch_only or self.is_offline_wallet:
-            psbt_id = self._psbt_id(psbt_base64)
+            # Also store the normalized version to match the ID
+            normalized_psbt = ''.join(psbt_base64.split())
+            psbt_id = self._psbt_id(normalized_psbt)
             with self._db_lock:
                 try:
                     with self.conn:
                         self.conn.execute(
                             'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose) VALUES (?, ?, ?, ?)',
-                            (psbt_id, psbt_base64, 1 if signed else 0, purpose),
+                            (psbt_id, normalized_psbt, 1 if signed else 0, purpose),
                         )
                     return psbt_id
                 except sqlite3.Error as exc:

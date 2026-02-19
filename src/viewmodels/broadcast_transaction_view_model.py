@@ -60,7 +60,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self._current_signed_txid: str | None = None
         self._pending_psbt_txid: str | None = None
         self._pending_op_info: object | None = None
-        self._psbt_to_delete_on_success: str | None = None
 
     def load_psbts(self, is_signed: bool) -> None:
         """Load PSBT drafts via service and emit to the UI."""
@@ -251,8 +250,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.is_loading.emit(True)
         # Store operation_idx for use in callback
         self._multisig_operation_idx = operation_idx
-        # Store for deletion on success
-        self._psbt_to_delete_on_success = unsigned_psbt
         self.run_in_thread(
             CommonOperationRepository.sign_psbt,
             {
@@ -298,12 +295,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle successful post to bridge."""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
-
-        if self._psbt_to_delete_on_success:
-            BroadcastTransactionService.delete_psbt_draft(
-                self._psbt_to_delete_on_success,
-            )
-            self._psbt_to_delete_on_success = None
 
         # Handle case where result is explicitly None (e.g. from post_psbt_to_bridge_by_purpose)
         if result is None:
@@ -397,8 +388,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def respond_psbt_to_operation(self, signed_psbt: str, operation_idx: int | None) -> None:
         """Cosigner flow (watch-only): respond to operation with ACK(signed_psbt)."""
         self.is_loading.emit(True)
-        # Store for deletion on success
-        self._psbt_to_delete_on_success = signed_psbt
         response = RespondToOperation.ACK(signed_psbt)
         self._respond_to_multisig_operation(operation_idx, response)
 
@@ -503,7 +492,3 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             self._pending_psbt_txid = None
         # Now emit the signal with the original op info
         self.pending_operation_ready.emit(self._pending_op_info)
-
-    def get_pending_psbt_txid(self) -> str | None:
-        """Return the TXID of the currently pending operation's PSBT."""
-        return self._pending_psbt_txid

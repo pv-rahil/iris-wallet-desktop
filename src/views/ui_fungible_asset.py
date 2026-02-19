@@ -459,7 +459,8 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 self._view_model,
                 self.sidebar.receive_asset_button,
                 self.sidebar._on_receive_asset_clicked,
-                pending_handler=None
+                pending_handler=None,
+                check_utxos_first=True,
             )
             
             connect_multisig_pending_signal(
@@ -483,6 +484,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                     self._view_model.page_navigation.issue_nia_asset_page,
                 ),
+                check_utxos_first=True,
             )
         self._view_model.main_asset_view_model.loading_started.connect(
             self.show_fungible_loading_screen,

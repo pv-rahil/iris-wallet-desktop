@@ -149,14 +149,6 @@ class BroadcastTransactionService:
             wallet_service.delete_ifa_secondary_draft(draft_id)
 
     @staticmethod
-    def delete_psbt_draft(psbt_base64: str) -> bool:
-        """Delete a PSBT draft from the database."""
-        wallet_service = WalletDataService.get_session()
-        if wallet_service is None:
-            return False
-        return wallet_service.delete_psbt(psbt_base64)
-
-    @staticmethod
     def multisig_pending_context(operation_info: object) -> MultisigPendingContext | None:
         """Create a pending context from operation info."""
 

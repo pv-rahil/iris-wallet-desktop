@@ -352,7 +352,8 @@ class IssueNIAWidget(QWidget):
             register_multisig_button(
                 self._view_model,
                 self.issue_nia_btn,
-                self.on_issue_nia_click
+                self.on_issue_nia_click,
+                check_utxos_first=True,
             )
         self._view_model.issue_nia_asset_view_model.is_issued.connect(
             self.asset_issued,
@@ -459,7 +460,7 @@ class IssueNIAWidget(QWidget):
         short_identifier = self.short_identifier_input.text().upper()
         asset_name = self.asset_name_input.text()
         amount_to_issue = self.amount_input.text()
-        if not self.from_draft:
+        if not self.from_draft or get_unspent_utxo_count() == 0:
             self.create_issue_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
             )

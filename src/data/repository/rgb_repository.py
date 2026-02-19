@@ -369,6 +369,10 @@ class RgbRepository:
                 operation_idx=operation_idx,
                 respond_to_operation=respond_to_operation,
             )
+            if respond_to_operation.is_ack:
+                wallet_service = WalletDataService.get_session()
+                if wallet_service is not None:
+                    wallet_service.delete_psbt(respond_to_operation.signed_psbt)
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()

@@ -533,6 +533,7 @@ class IssueIFAWidget(QWidget):
                     self._view_model,
                     self.issue_ifa_btn,
                     self.on_secondary_issuance_click,
+                    check_utxos_first=True,
                 )
             self.inflatables_issue_amount_input.textChanged.connect(
                 self.validate_issuance_amount,
@@ -550,6 +551,7 @@ class IssueIFAWidget(QWidget):
                     self._view_model,
                     self.issue_ifa_btn,
                     self.on_issue_ifa_click,
+                    check_utxos_first=True,
                 )
             
        
@@ -788,7 +790,7 @@ class IssueIFAWidget(QWidget):
             return
         inflation_amounts = t - a
         replace_rights_num = self.replace_label_checkbox.isChecked()
-        if not self.from_draft:
+        if not self.from_draft or get_unspent_utxo_count() == 0:
             self.create_issue_inflatables_asset_draft(
                 short_identifier, asset_name, a,
                 inflation_amounts, replace_rights_num,

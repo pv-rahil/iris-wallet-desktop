@@ -423,6 +423,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_ifa_page,
             ),
+            check_utxos_first=True,
         )
         if not self.is_offline_wallet:
             lay.addWidget(btn, 0, Qt.AlignHCenter)
@@ -614,6 +615,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_ifa_page,
             ),
+            check_utxos_first=True,
         )
         self._view_model.main_asset_view_model.loading_started.connect(
             self.show_inflatable_loading_screen,

@@ -450,16 +450,16 @@ class CollectiblesAssetWidget(QWidget):
                 lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                     self._view_model.page_navigation.issue_cfa_asset_page,
                 ),
+                check_utxos_first=True,
             )
         if not self.is_offline_wallet:
             v.addWidget(btn, 0, Qt.AlignHCenter)
         # Add to grid area centered with stretches
         # Clear previous temp items if any
-        self.grid_layout.addItem(
-            QSpacerItem(
-                0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding,
-            ), 0, 0,
+        self._empty_spacer_item = QSpacerItem(
+            0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding,
         )
+        self.grid_layout.addItem(self._empty_spacer_item, 0, 0)
         self.grid_layout.addWidget(wrapper, 1, 1, Qt.AlignCenter)
         self.grid_layout.setRowStretch(0, 1)
         self.grid_layout.setRowStretch(2, 3)
@@ -473,6 +473,17 @@ class CollectiblesAssetWidget(QWidget):
             self.grid_layout.removeWidget(self._empty_state_widget)
             self._empty_state_widget.deleteLater()
             self._empty_state_widget = None
+
+        if hasattr(self, '_empty_spacer_item') and self._empty_spacer_item:
+            self.grid_layout.removeItem(self._empty_spacer_item)
+            self._empty_spacer_item = None
+
+        # Reset stretches to normal
+        self.grid_layout.setRowStretch(0, 0)
+        self.grid_layout.setRowStretch(2, 0)
+        self.grid_layout.setColumnStretch(0, 0)
+        self.grid_layout.setColumnStretch(2, 0)
+
         # Show scroll area again
         if hasattr(self, 'scroll_area'):
             self.scroll_area.show()
@@ -503,6 +514,7 @@ class CollectiblesAssetWidget(QWidget):
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_cfa_asset_page,
             ),
+            check_utxos_first=True,
         )
         self._view_model.main_asset_view_model.loading_started.connect(
             self.show_collectible_asset_loading,
