@@ -250,7 +250,14 @@ class RgbRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.add_psbt(psbt, purpose='send_asset')
+                wallet_service.add_psbt(
+                    psbt,
+                    purpose='send_asset',
+                    asset_id=detail.asset_id,
+                    recipient_id=detail.recipient_id,
+                    transport_endpoints=detail.transport_endpoints,
+                    assignment=detail.assignment,
+                )
             return psbt
 
     @staticmethod
@@ -295,7 +302,11 @@ class RgbRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.add_psbt(psbt, purpose='inflate_asset')
+                wallet_service.add_psbt(
+                    psbt,
+                    purpose='inflate_asset',
+                    asset_id=detail.asset_id,
+                )
             return psbt
 
     @staticmethod

@@ -135,7 +135,11 @@ class WalletDataService:
             id TEXT PRIMARY KEY,           -- sha256 of PSBT base64
             psbt TEXT NOT NULL,            -- PSBT in base64
             signed INTEGER NOT NULL,       -- 0 = unsigned, 1 = signed
-            purpose TEXT                   -- optional context e.g. 'issue_asset', 'send_btc', 'send_rgb', 'create_utxos'
+            purpose TEXT,                  -- optional context e.g. 'issue_asset', 'send_btc', 'send_asset', 'inflate_asset'
+            asset_id TEXT,                 -- optional: RGB asset_id for send/inflate
+            recipient_id TEXT,             -- optional: recipient_id for send_asset
+            transport_endpoints BLOB,      -- optional: pickled list[str]
+            assignment BLOB                -- optional: pickled rgb-lib Assignment
         )
         """
         create_draft_issue_asset_table_query = """
@@ -183,6 +187,94 @@ class WalletDataService:
                     'Exception occur in wallet-data: %s, Message: %s', type(
                         exc,
                     ).__name__, str(exc),
+                )
+                raise
+
+        # Schema migration for existing dbs: add missing columns to psbt table.
+        self._ensure_psbt_context_columns()
+
+    def _ensure_psbt_context_columns(self) -> None:
+        """Ensure optional context columns exist in psbt table."""
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute('PRAGMA table_info(psbt)')
+                cols = {row[1] for row in (cur.fetchall() or [])}
+                desired = {
+                    'asset_id': 'TEXT',
+                    'recipient_id': 'TEXT',
+                    'transport_endpoints': 'BLOB',
+                    'assignment': 'BLOB',
+                }
+                for name, col_type in desired.items():
+                    if name in cols:
+                        continue
+                    self.conn.execute(
+                        f'ALTER TABLE psbt ADD COLUMN {name} {col_type}',
+                    )
+                self.conn.commit()
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: failed to migrate psbt schema: %s', exc,
+                )
+                raise
+
+    def get_asset_id_by_inflate_psbt(self, psbt_base64: str) -> str | None:
+        """Resolve asset_id for an inflate operation based on stored secondary draft metadata."""
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
+            return None
+        psbt_id = self._psbt_id(psbt_base64)
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(
+                    'SELECT asset_id FROM ifa_secondary_draft WHERE psbt_id = ? ORDER BY active_utxo DESC, created_at DESC, id DESC LIMIT 1',
+                    (psbt_id,),
+                )
+                r = cur.fetchone()
+                return r[0] if r else None
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: get_asset_id_by_inflate_psbt failed: %s', exc,
+                )
+                raise
+
+    def get_psbt_context(self, psbt_base64: str) -> dict | None:
+        """Return optional context (purpose + RGB metadata) for a PSBT if present."""
+        if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
+            return None
+        psbt_id = self._psbt_id(psbt_base64)
+        with self._db_lock:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(
+                    'SELECT id, purpose, asset_id, recipient_id, transport_endpoints, assignment FROM psbt WHERE id = ? LIMIT 1',
+                    (psbt_id,),
+                )
+                r = cur.fetchone()
+                if not r:
+                    return None
+
+                try:
+                    endpoints = pickle.loads(r[4]) if r[4] is not None else None
+                except Exception:
+                    endpoints = None
+                try:
+                    assignment = pickle.loads(r[5]) if r[5] is not None else None
+                except Exception:
+                    assignment = None
+
+                return {
+                    'id': r[0],
+                    'purpose': r[1],
+                    'asset_id': r[2],
+                    'recipient_id': r[3],
+                    'transport_endpoints': endpoints,
+                    'assignment': assignment,
+                }
+            except sqlite3.Error as exc:
+                logger.error(
+                    'WalletDataService: get_psbt_context failed: %s', exc,
                 )
                 raise
 
@@ -634,20 +726,46 @@ class WalletDataService:
         normalized = ''.join(psbt_base64.split())
         return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
 
-    def add_psbt(self, psbt_base64: str, signed: bool = False, purpose: str | None = None) -> str | None:
+    def add_psbt(
+        self,
+        psbt_base64: str,
+        signed: bool = False,
+        purpose: str | None = None,
+        asset_id: str | None = None,
+        recipient_id: str | None = None,
+        transport_endpoints: list[str] | None = None,
+        assignment: object | None = None,
+    ) -> str | None:
         """Insert or replace a PSBT. Returns its id. Minimal fields only.
         Optionally set a purpose (e.g., 'send_btc', 'create_utxos', 'issue_asset').
         """
-        if self.is_watch_only or self.is_offline_wallet:
+        if self.is_watch_only or self.is_offline_wallet or self.is_multisig:
             # Also store the normalized version to match the ID
             normalized_psbt = ''.join(psbt_base64.split())
             psbt_id = self._psbt_id(normalized_psbt)
             with self._db_lock:
                 try:
+                    endpoints_blob = pickle.dumps(
+                        transport_endpoints,
+                    ) if transport_endpoints is not None else None
+                    assignment_blob = pickle.dumps(
+                        assignment,
+                    ) if assignment is not None else None
                     with self.conn:
                         self.conn.execute(
                             'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose) VALUES (?, ?, ?, ?)',
                             (psbt_id, normalized_psbt, 1 if signed else 0, purpose),
+                        )
+                        # Store optional context
+                        self.conn.execute(
+                            'UPDATE psbt SET asset_id = ?, recipient_id = ?, transport_endpoints = ?, assignment = ? WHERE id = ?',
+                            (
+                                asset_id,
+                                recipient_id,
+                                endpoints_blob,
+                                assignment_blob,
+                                psbt_id,
+                            ),
                         )
                     return psbt_id
                 except sqlite3.Error as exc:
@@ -660,25 +778,40 @@ class WalletDataService:
         Deletes only that unsigned PSBT and inserts the signed one.
         Returns the new signed PSBT id.
         """
-        if self.is_watch_only or self.is_offline_wallet:
+        if self.is_watch_only or self.is_offline_wallet or self.is_multisig:
             unsigned_id = self._psbt_id(unsigned_psbt_base64)
-            signed_id = self._psbt_id(signed_psbt_base64)
+            normalized_signed_psbt = ''.join((signed_psbt_base64 or '').split())
+            signed_id = self._psbt_id(normalized_signed_psbt)
             with self._db_lock:
                 try:
                     with self.conn:
                         cur = self.conn.execute(
-                            'SELECT purpose FROM psbt WHERE id = ?', (
+                            'SELECT purpose, asset_id, recipient_id, transport_endpoints, assignment FROM psbt WHERE id = ?', (
                                 unsigned_id,
                             ),
                         )
                         row = cur.fetchone()
                         purpose = row[0] if row is not None else None
+                        asset_id = row[1] if row is not None else None
+                        recipient_id = row[2] if row is not None else None
+                        endpoints_blob = row[3] if row is not None else None
+                        assignment_blob = row[4] if row is not None else None
                         self.conn.execute(
                             'DELETE FROM psbt WHERE id = ?', (unsigned_id,),
                         )
                         self.conn.execute(
                             'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose) VALUES (?, ?, ?, ?)',
-                            (signed_id, signed_psbt_base64, 1, purpose),
+                            (signed_id, normalized_signed_psbt, 1, purpose),
+                        )
+                        self.conn.execute(
+                            'UPDATE psbt SET asset_id = ?, recipient_id = ?, transport_endpoints = ?, assignment = ? WHERE id = ?',
+                            (
+                                asset_id,
+                                recipient_id,
+                                endpoints_blob,
+                                assignment_blob,
+                                signed_id,
+                            ),
                         )
                     return signed_id
                 except sqlite3.Error as exc:

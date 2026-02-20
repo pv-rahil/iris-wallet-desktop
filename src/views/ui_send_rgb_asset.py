@@ -44,6 +44,7 @@ from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.send_asset import SendAssetWidget
 from src.views.components.toast import ToastManager
 from src.data.service.wallet_data_service import WalletDataService
+from src.utils.helpers import register_multisig_button
 
 
 class SendRGBAssetWidget(QWidget):
@@ -104,9 +105,16 @@ class SendRGBAssetWidget(QWidget):
 
     def setup_ui_connection(self):
         """Set up connections for UI elements."""
-        self.send_rgb_asset_page.send_btn.clicked.connect(
-            self.send_rgb_asset_button,
-        )
+        if not self.is_multisig:
+            self.send_rgb_asset_page.send_btn.clicked.connect(
+                self.send_rgb_asset_button,
+            )
+        else:
+            register_multisig_button(
+                self._view_model,
+                self.send_rgb_asset_page.send_btn,
+                self.send_rgb_asset_button,
+            )
         self.send_rgb_asset_page.close_button.clicked.connect(
             self.rgb_asset_page_navigation,
         )
@@ -145,6 +153,9 @@ class SendRGBAssetWidget(QWidget):
         )
         self._view_model.cfa_view_model.unsigned_psbt.connect(
             self.show_send_rgb_psbt_page,
+        )
+        self._view_model.utxo_creation_view_model.unsigned_psbt.connect(
+            self._on_utxo_unsigned_psbt,
         )
         self._view_model.utxo_creation_view_model.hw_dialog_update.connect(
             self.handle_send_rgb_hw_dialog_update,
@@ -463,6 +474,13 @@ class SendRGBAssetWidget(QWidget):
         self.send_rgb_hw_dialog.update_dialog(message, dialog_type)
         if not self.send_rgb_hw_dialog.isVisible():
             self.send_rgb_hw_dialog.show()
+
+    def _on_utxo_unsigned_psbt(self, psbt: str):
+        """Navigate to the receive asset page and display the UTXO creation PSBT."""
+        if self._view_model.utxo_creation_view_model.current_purpose != 'send_rgb':
+            return
+        if psbt and self.is_multisig:
+            self.show_send_rgb_psbt_page(psbt)
 
     def show_send_rgb_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""

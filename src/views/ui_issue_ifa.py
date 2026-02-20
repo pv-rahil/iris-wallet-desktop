@@ -1166,6 +1166,8 @@ class IssueIFAWidget(QWidget):
     def show_ifa_psbt_page(self, inflatables_psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
         # Only respond if PSBT relates to IFA UTXO creation purposes
+        if self._view_model.utxo_creation_view_model.current_purpose not in ['issue_asset_ifa', 'inflate_asset']:
+            return
         if inflatables_psbt:
             self._view_model.page_navigation.receive_asset_page(
                 ReceiveAssetModel(

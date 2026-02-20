@@ -14,12 +14,14 @@ from src.data.repository.common_operations_repository import CommonOperationRepo
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import SendAssetResponseModel
+from src.model.rgb_model import SendBeginRequestModel
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY
 from src.utils.info_message import INFO_ASSET_SENT
@@ -372,7 +374,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             )
             return
 
-        if purpose in ['create_utxos', 'issue_asset_nia', 'issue_asset_cfa', 'issue_asset_ifa']:
+        if purpose in ['create_utxos', 'issue_asset_nia', 'issue_asset_cfa', 'issue_asset_ifa', 'send_rgb']:
             self.run_in_thread(
                 BtcRepository.post_create_utxos,
                 {
@@ -412,6 +414,60 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.is_loading.emit(True)
         response = RespondToOperation.ACK(signed_psbt)
         self._respond_to_multisig_operation(operation_idx, response)
+
+    def _post_send_asset_to_bridge(self, signed_psbt: str) -> None:
+        """Initiator flow (watch-only/offline): post signed RGB send PSBT + recipient_map context."""
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            raise CommonException('WalletDataService not available')
+
+        ctx = wallet_service.get_psbt_context(signed_psbt)
+        if not isinstance(ctx, dict):
+            raise CommonException(
+                'Missing send-asset context for this PSBT. Please recreate the send-asset PSBT.',
+            )
+
+        asset_id = ctx.get('asset_id')
+        recipient_id = ctx.get('recipient_id')
+        transport_endpoints = ctx.get('transport_endpoints')
+        assignment = ctx.get('assignment')
+        if not asset_id or not recipient_id or transport_endpoints is None or assignment is None:
+            raise CommonException(
+                'Incomplete send-asset context for this PSBT. Please recreate the send-asset PSBT.',
+            )
+
+        request = SendBeginRequestModel(
+            asset_id=str(asset_id),
+            assignment=assignment,
+            recipient_id=str(recipient_id),
+            transport_endpoints=list(transport_endpoints),
+            fee_rate=0,
+            min_confirmations=0,
+            donation=False,
+        )
+
+        RgbRepository.post_send(signed_psbt, request)
+
+    def _post_inflate_asset_to_bridge(self, signed_psbt: str) -> None:
+        """Initiator flow (watch-only/offline): post signed inflation PSBT + asset_id context."""
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            raise CommonException('WalletDataService not available')
+
+        asset_id = None
+        ctx = wallet_service.get_psbt_context(signed_psbt)
+        if isinstance(ctx, dict):
+            asset_id = ctx.get('asset_id')
+
+        if not asset_id:
+            asset_id = wallet_service.get_asset_id_by_inflate_psbt(signed_psbt)
+
+        if not asset_id:
+            raise CommonException(
+                'Missing inflate-asset context for this PSBT. Please recreate the inflate PSBT.',
+            )
+
+        RgbRepository.post_inflation(signed_psbt, str(asset_id))
 
     def _on_nack_post_success(self, result):
         """Handle successful NACK post to the multisig bridge."""
@@ -514,3 +570,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             self._pending_psbt_txid = None
         # Now emit the signal with the original op info
         self.pending_operation_ready.emit(self._pending_op_info)
+
+
+    def get_pending_psbt_txid(self) -> str | None:
+        """Return the TXID of the currently pending operation's PSBT."""
+        return self._pending_psbt_txid

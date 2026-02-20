@@ -762,6 +762,8 @@ class BroadcastTransactionWidget(QWidget):
             'issue_asset_cfa': 'Internal',
             'issue_asset_nia': 'Internal',
             'issue_asset_ifa': 'Internal',
+            'send_rgb': 'Internal',
+            'inflate_asset': 'Inflate asset',
         }
         return fallback_labels.get(key, key)
 
@@ -830,6 +832,7 @@ class BroadcastTransactionWidget(QWidget):
             'issue_asset_cfa',
             'issue_asset_ifa',
             'inflate_asset',
+            'send_rgb',
         }
 
     def _on_psbt_text_changed(self):
@@ -883,7 +886,7 @@ class BroadcastTransactionWidget(QWidget):
             )
 
             # Fallback transfer-type label derived from purpose until bridge op is known
-            if parsed.purpose in ('send_btc', 'create_utxos', 'send_asset', 'inflate_asset'):
+            if parsed.purpose in ('send_btc', 'create_utxos', 'send_asset', 'inflate_asset', 'send_rgb'):
                 if parsed.purpose == 'send_btc':
                     self._pending_transfer_type = 'btc_transfer'
                 elif parsed.purpose == 'create_utxos':
@@ -892,6 +895,8 @@ class BroadcastTransactionWidget(QWidget):
                     self._pending_transfer_type = 'asset_transfer'
                 elif parsed.purpose == 'inflate_asset':
                     self._pending_transfer_type = 'inflation'
+                elif parsed.purpose == 'send_rgb':
+                    self._pending_transfer_type = 'internal'
         else:
             # Collapse when cleared
             self._apply_base_sizes()
@@ -1475,6 +1480,8 @@ class BroadcastTransactionWidget(QWidget):
                     psbt_body,
                     op_ctx.entropy if op_ctx.entropy is not None else 0,
                 )
+            else:
+                self._handle_send_asset_fallback(op_ctx)
 
         self._render_inspection_if_ready()
 
@@ -1518,6 +1525,53 @@ class BroadcastTransactionWidget(QWidget):
                 self.val_destination,
             ], False,
         )
+
+    def _handle_send_asset_fallback(self, op_ctx):
+        """Handle send asset display manually when no consignment is available."""
+        if not op_ctx or not hasattr(op_ctx, 'recipient_map'):
+            self._render_inspection_if_ready()
+            return
+
+        asset_id_value = None
+        destination_value = None
+        amount_value = 0
+        try:
+            rm = op_ctx.recipient_map
+            if rm and len(rm) > 0:
+                asset_id_value = list(rm.keys())[0]
+                recipients = rm[asset_id_value]
+                if recipients and len(recipients) > 0:
+                    recipient = recipients[0]
+                    destination_value = getattr(recipient, 'recipient_id', None)
+        except Exception:
+            pass
+
+        if asset_id_value:
+            self.lbl_asset_id.setVisible(True)
+            self.val_asset_id.setVisible(True)
+            self.val_asset_id.setText(self._wrap_to_two_lines(str(asset_id_value)))
+            self.val_asset_id.setToolTip(str(asset_id_value))
+            self.tile_asset.show()
+
+        if destination_value:
+            self.lbl_destination.setVisible(True)
+            self.val_destination.setVisible(True)
+            self.val_destination.setText(self._wrap_to_two_lines(str(destination_value)))
+            self.tile_destination.show()
+
+        self.tile_ttype.show()
+        self.lbl_transfer_type.setVisible(True)
+        self.val_transfer_type.setVisible(True)
+        self.val_transfer_type.setText(
+            self._get_transfer_type_label('asset_transfer'),
+        )
+
+        # Hide amount since we couldn't properly extract it without rgb inspection
+        set_widgets_visible([self.tile_amount, self.lbl_amount, self.val_amount], False)
+
+        self.is_psbt_validated = True
+        self._rgb_details = None
+        self._render_inspection_if_ready()
 
     def _handle_psbt_inspection_result(self, details):
         """
@@ -1569,7 +1623,7 @@ class BroadcastTransactionWidget(QWidget):
                     # Default to 'send_btc' for offline multisig if no purpose found
                     pending_key = 'send_btc'
 
-        if pending_key in ('internal', 'btc_transfer', 'inflation', 'asset_transfer', 'send_btc', 'send_asset', 'create_utxos', 'issue_asset_cfa', 'issue_asset_nia', 'issue_asset_ifa'):
+        if pending_key in ('internal', 'btc_transfer', 'inflation', 'asset_transfer', 'send_btc', 'send_asset', 'create_utxos', 'issue_asset_cfa', 'issue_asset_nia', 'issue_asset_ifa', 'send_rgb', 'inflate_asset'):
             set_widgets_visible(
                 [
                     self.tile_ttype, self.lbl_transfer_type,

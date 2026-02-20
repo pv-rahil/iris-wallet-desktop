@@ -572,7 +572,7 @@ class RGBAssetDetailWidget(QWidget):
         """Navigate to the secondary issue page prefilled with current asset data."""
         asset_id = self.asset_id_detail.toPlainText()
         if self.asset_type == AssetSchema.IFA and not self.max_amount:
-            self.max_amount = self.max_supply_total_label.text()
+            self.max_amount = self.max_supply_value.text()
         params = RgbAssetPageLoadModel(
             asset_id=asset_id,
             asset_name=self.widget_title_asset_name.text(),
