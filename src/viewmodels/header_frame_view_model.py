@@ -256,7 +256,25 @@ class HeaderFrameViewModel(QObject, ThreadManager):
         # and store it in global service state
         self._inspect_and_set_global_pending_state(pending_ops)
 
-        self.pending_operations_ready.emit(pending_ops)
+        # Filter pending_ops to only include those that require action from the current wallet
+        actionable_ops = []
+        for op_info in pending_ops:
+            if op_info is None or not hasattr(op_info, 'operation'):
+                continue
+            operation = op_info.operation
+            if operation is None:
+                continue
+            
+            is_to_review = (
+                operation.is_CREATE_UTXOS_TO_REVIEW()
+                or operation.is_SEND_BTC_TO_REVIEW()
+                or operation.is_SEND_TO_REVIEW()
+                or operation.is_INFLATION_TO_REVIEW()
+            )
+            if is_to_review:
+                actionable_ops.append(op_info)
+
+        self.pending_operations_ready.emit(actionable_ops)
 
     def _inspect_and_set_global_pending_state(self, pending_ops: list):
         """Find the relevant pending operation, inspect its PSBT to get TXID, and set global state."""

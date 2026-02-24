@@ -307,9 +307,20 @@ class SendBitcoinWidget(QWidget):
 
     def show_send_bitcoin_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
-        self._view_model.page_navigation.receive_asset_page(
-            ReceiveAssetModel(
-                page_name='send_bitcoin',
-                address_info='psbt_info', psbt=psbt,
-            ),
-        )
+        if not self.isVisible():
+            return
+        if psbt:
+            if self.is_multisig_wallet:
+                ToastManager.success(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
+                    )
+                )
+                self.bitcoin_page_navigation()
+            else:
+                self._view_model.page_navigation.receive_asset_page(
+                    ReceiveAssetModel(
+                        page_name='send_bitcoin',
+                        address_info='psbt_info', psbt=psbt,
+                ),
+            )

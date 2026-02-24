@@ -2370,5 +2370,13 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>internal</source>
         <translation>Internal</translation>
     </message>
+    <message>
+        <source>psbt_created_successfully</source>
+        <translation>PSBT created successfully</translation>
+    </message>
+    <message>
+        <source>psbt_signed_successfully</source>
+        <translation>PSBT signed successfully</translation>
+    </message>
 </context>
 </TS>

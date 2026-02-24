@@ -596,7 +596,10 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 'background-origin: content;',
             )
             # Disconnecting all previous click events
-            self.sidebar.faucet.clicked.disconnect()
+            try:
+                self.sidebar.faucet.clicked.disconnect()
+            except Exception:
+                pass
             self.sidebar.faucet.clicked.connect(
                 self.show_faucet_unavailability_message,
             )

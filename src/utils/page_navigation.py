@@ -201,12 +201,16 @@ class PageNavigation:
     def show_current_page(self):
         """This method toggles the display of the current page."""
         if self.current_stack:
-            page_name = self.current_stack['name']
-            if page_name not in self._ui.stacked_widget.children():
-                self._ui.stacked_widget.addWidget(self.current_stack['widget'])
-            self._ui.stacked_widget.setCurrentWidget(
-                self.current_stack['widget'],
-            )
+            new_widget = self.current_stack['widget']
+            
+            # Remove all existing abandoned widgets to prevent memory leaks and stacked signals
+            while self._ui.stacked_widget.count() > 0:
+                widget_to_remove = self._ui.stacked_widget.widget(0)
+                self._ui.stacked_widget.removeWidget(widget_to_remove)
+                widget_to_remove.deleteLater()
+
+            self._ui.stacked_widget.addWidget(new_widget)
+            self._ui.stacked_widget.setCurrentWidget(new_widget)
         else:
             logger.info('No current stack set.')
 

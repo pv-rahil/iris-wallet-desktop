@@ -2071,6 +2071,8 @@ class BroadcastTransactionWidget(QWidget):
 
     def show_signed_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if not self.isVisible():
+            return
         if psbt:
             if self.hw_dialog.isVisible():
                 self.hw_dialog.accept()
@@ -2078,11 +2080,19 @@ class BroadcastTransactionWidget(QWidget):
             page_name = BroadcastTransactionService.receive_page_name_for_signed_psbt(
                 psbt,
             )
-            self.view_model.page_navigation.receive_asset_page(
-                ReceiveAssetModel(
-                    page_name=page_name,
-                    address_info='psbt_info', psbt=psbt, is_signed=True,
-                ),
+            if self.is_multisig:
+                ToastManager.success(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_signed_successfully',
+                    )
+                )
+                close_button_navigation(self)
+            else:
+                self.view_model.page_navigation.receive_asset_page(
+                    ReceiveAssetModel(
+                        page_name=page_name,
+                        address_info='psbt_info', psbt=psbt, is_signed=True,
+                    ),
             )
 
     def _load_psbts_for_broadcast(self) -> None:

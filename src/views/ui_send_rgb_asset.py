@@ -483,20 +483,30 @@ class SendRGBAssetWidget(QWidget):
             self.show_send_rgb_psbt_page(psbt)
 
     def show_send_rgb_psbt_page(self, psbt):
-        """Navigate to the receive asset page and display the PSBT as a QR code."""
+        """Navigate back and show a success toast for the PSBT."""
+        if not self.isVisible():
+            return
         if self.asset_type == AssetSchema.NIA:
             page_name = 'NIA page'
         elif self.asset_type == AssetSchema.IFA:
             page_name = 'IFA page'
         else:
             page_name = 'CFA page'
-
-        self._view_model.page_navigation.receive_asset_page(
-            ReceiveAssetModel(
-                page_name=page_name,
-                address_info='psbt_info', psbt=psbt,
-            ),
-        )
+        if psbt:
+            if self.is_multisig:
+                ToastManager.success(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
+                    )
+                )
+                self.rgb_asset_page_navigation()
+            else:
+                self._view_model.page_navigation.receive_asset_page(
+                    ReceiveAssetModel(
+                        page_name=page_name,
+                        address_info='psbt_info', psbt=psbt, is_signed=False,
+                    ),
+                )
 
     def _on_utxo_created_and_retry(self, ok: bool):
         """Retry sending after UTXO creation completes from UI flow."""

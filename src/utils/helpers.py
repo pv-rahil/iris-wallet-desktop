@@ -484,6 +484,12 @@ def register_multisig_button(
         if not isinstance(button, QPushButton):
             return
 
+        try:
+            # Test if the underlying C++ object is still alive
+            _ = button.objectName()
+        except RuntimeError:
+            return
+
         if is_pending:
             # Set pending property to trigger QSS [pending="true"] selector
             button.setProperty('pending', 'true')

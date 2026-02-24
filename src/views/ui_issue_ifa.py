@@ -1163,19 +1163,31 @@ class IssueIFAWidget(QWidget):
 
     def show_ifa_psbt_page(self, inflatables_psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if not self.isVisible():
+            return
         # Only respond if PSBT relates to IFA UTXO creation purposes
         if self._view_model.utxo_creation_view_model.current_purpose not in ['issue_asset_ifa', 'inflate_asset']:
             return
         if inflatables_psbt:
-            self._view_model.page_navigation.receive_asset_page(
-                ReceiveAssetModel(
-                    page_name='IFA page',
-                    address_info='psbt_info', psbt=inflatables_psbt, is_signed=False,
-                ),
-            )
+            if self.is_multisig:
+                ToastManager.success(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
+                    )
+                )
+                self._view_model.page_navigation.inflatable_asset_page()
+            else:
+                self._view_model.page_navigation.receive_asset_page(
+                    ReceiveAssetModel(
+                        page_name='IFA page',
+                        address_info='psbt_info', psbt=inflatables_psbt, is_signed=False,
+                    ),
+                )
 
     def show_inflate_psbt_page(self, psbt: str):
         """Display the unsigned PSBT for the inflate transaction itself in offline/watch-only."""
+        if not self.isVisible():
+            return
         if not psbt:
             return
         # Attach psbt to active/last draft so we can clean it up post-broadcast
@@ -1189,11 +1201,19 @@ class IssueIFAWidget(QWidget):
                     )
         except Exception:
             pass
-        self._view_model.page_navigation.receive_asset_page(
-            ReceiveAssetModel(
-                page_name='IFA secondary issuance',
-                address_info='psbt_info', psbt=psbt, is_signed=False,
-            ),
+        if self.is_multisig:
+            ToastManager.success(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
+                )
+            )
+            self._view_model.page_navigation.inflatable_asset_page()
+        else:
+            self._view_model.page_navigation.receive_asset_page(
+                ReceiveAssetModel(
+                    page_name='IFA secondary issuance',
+                    address_info='psbt_info', psbt=psbt, is_signed=False,
+                ),
         )
 
     def create_issue_inflatables_asset_draft(self, ticker, name, amount, inflation_amounts, replace_rights_num):

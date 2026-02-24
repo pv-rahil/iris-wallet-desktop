@@ -651,13 +651,23 @@ class IssueCFAWidget(QWidget):
 
     def show_cfa_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
+        if not self.isVisible():
+            return
         # Only respond if PSBT relates to CFA issuing purpose
         if self._view_model.utxo_creation_view_model.current_purpose != 'issue_asset_cfa':
             return
         if psbt:
-            self._view_model.page_navigation.receive_asset_page(
-                ReceiveAssetModel(
-                    page_name='CFA page',
-                    address_info='psbt_info', psbt=psbt,
-                ),
+            if self.is_multisig_wallet:
+                ToastManager.success(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
+                    )
+                )
+                self.on_close()
+            else:
+                self._view_model.page_navigation.receive_asset_page(
+                    ReceiveAssetModel(
+                        page_name='CFA page',
+                        address_info='psbt_info', psbt=psbt,
+                    ),
             )
