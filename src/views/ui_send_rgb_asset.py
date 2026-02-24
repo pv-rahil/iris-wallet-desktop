@@ -464,7 +464,7 @@ class SendRGBAssetWidget(QWidget):
                         self._retry_after_utxo = False
                         return
                 self._view_model.utxo_creation_view_model.create_utxos_begin(
-                    purpose='send_rgb',
+                    purpose='send_rgb',num=3 if self.is_multisig else 1
                 )
                 return
 

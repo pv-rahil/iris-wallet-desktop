@@ -356,7 +356,6 @@ class IssueNIAWidget(QWidget):
                 self._view_model,
                 self.issue_nia_btn,
                 self.on_issue_nia_click,
-                check_utxos_first=True,
             )
         self._view_model.issue_nia_asset_view_model.is_issued.connect(
             self.asset_issued,

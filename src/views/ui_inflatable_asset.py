@@ -423,7 +423,6 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_ifa_page,
             ),
-            check_utxos_first=True,
         )
         if not self.is_offline_wallet:
             lay.addWidget(btn, 0, Qt.AlignHCenter)
@@ -615,7 +614,6 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_ifa_page,
             ),
-            check_utxos_first=True,
         )
         self._view_model.main_asset_view_model.loading_started.connect(
             self.show_inflatable_loading_screen,
@@ -652,6 +650,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
     def refresh_inflatables_asset(self):
         """This method start the render timer and perform the inflatable asset list refresh"""
         self.render_timer.start()
+        self._view_model.header_frame_view_model.sync_multisig_bridge()
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )

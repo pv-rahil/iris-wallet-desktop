@@ -18,6 +18,7 @@ from rgb_lib import RefreshedTransfer
 from rgb_lib import RespondToOperation
 from rgb_lib import RgbInspection
 from rgb_lib import Transfer
+from rgb_lib.rgb_lib import WitnessData
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.service.wallet_data_service import WalletDataService
@@ -38,6 +39,7 @@ from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendBeginRequestModel
 from src.model.rgb_model import SendBeginResult
 from src.utils.cache import Cache
+from src.utils.constant import UTXO_SIZE_SAT
 from src.utils.custom_context import repository_custom_context
 from src.utils.decorators.auto_sync_multisig import auto_sync_multisig
 from src.utils.decorators.check_colorable_available import check_colorable_available
@@ -97,11 +99,17 @@ class RgbRepository:
             online_kwargs = {
                 'online': colored_wallet.online,
             } if colored_wallet.is_multisig else {}
-            data: ReceiveData = colored_wallet.wallet.blind_receive(
+            if colored_wallet.is_multisig:
+                data: ReceiveData = colored_wallet.wallet.witness_receive(
                 **online_kwargs,
-                asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
-                transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
-            )
+                    asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
+                    transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
+                )
+            else :
+                data: ReceiveData = colored_wallet.wallet.witness_receive(
+                    asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
+                    transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
+                )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
@@ -239,7 +247,7 @@ class RgbRepository:
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=detail.recipient_id,
-                witness_data=None,
+                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT,blinding=None),
                 assignment=detail.assignment,
                 transport_endpoints=detail.transport_endpoints,
             )
@@ -332,7 +340,7 @@ class RgbRepository:
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=asset_detail.recipient_id,
-                witness_data=None,
+                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT,blinding=None),
                 assignment=asset_detail.assignment,
                 transport_endpoints=asset_detail.transport_endpoints,
             )
@@ -346,6 +354,7 @@ class RgbRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.delete_psbt(signed_psbt)
+                wallet_service.delete_draft_transfer(asset_detail.asset_id)
 
     @staticmethod
     @auto_sync_multisig(check_pending_ops=True)
@@ -360,6 +369,7 @@ class RgbRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.delete_psbt(signed_psbt)
+                wallet_service.delete_secondary_draft_by_psbt(signed_psbt)
 
     @staticmethod
     def sync_with_bridge() -> OperationInfo:

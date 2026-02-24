@@ -450,7 +450,6 @@ class CollectiblesAssetWidget(QWidget):
                 lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                     self._view_model.page_navigation.issue_cfa_asset_page,
                 ),
-                check_utxos_first=True,
             )
         if not self.is_offline_wallet:
             v.addWidget(btn, 0, Qt.AlignHCenter)
@@ -514,7 +513,6 @@ class CollectiblesAssetWidget(QWidget):
             lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                 self._view_model.page_navigation.issue_cfa_asset_page,
             ),
-            check_utxos_first=True,
         )
         self._view_model.main_asset_view_model.loading_started.connect(
             self.show_collectible_asset_loading,
@@ -530,6 +528,7 @@ class CollectiblesAssetWidget(QWidget):
         """This method start the render timer and perform the collectible asset list refresh"""
         self.render_timer.start()
         self.collectible_header_frame.update_psbt_info()
+        self._view_model.header_frame_view_model.sync_multisig_bridge()
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )

@@ -53,6 +53,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     pending_operation_ready = Signal(object)
     is_reject_loading = Signal(bool)
     psbts_loaded = Signal(list)
+    trigger_bridge_sync = Signal()
 
     def __init__(self, page_navigation) -> None:
         super().__init__()
@@ -296,6 +297,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def _on_multisig_post_success(self, result):
         """Handle successful post to bridge."""
         self.is_loading.emit(False)
+        BroadcastTransactionService.set_pending_operation_state(None, None)
+        self.trigger_bridge_sync.emit()
         self.tx_broadcasted.emit(True)
 
         # Handle case where result is explicitly None (e.g. from post_psbt_to_bridge_by_purpose)
@@ -435,7 +438,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             raise CommonException(
                 'Incomplete send-asset context for this PSBT. Please recreate the send-asset PSBT.',
             )
-
         request = SendBeginRequestModel(
             asset_id=str(asset_id),
             assignment=assignment,
@@ -473,6 +475,8 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle successful NACK post to the multisig bridge."""
         self.is_reject_loading.emit(False)
         # Close the dialog like other flows and show a specific success toast
+        BroadcastTransactionService.set_pending_operation_state(None, None)
+        self.trigger_bridge_sync.emit()
         self.tx_broadcasted.emit(True)
         ToastManager.success(
             description='Operation rejected and posting to the bridge',

@@ -455,7 +455,6 @@ def register_multisig_button(
     button,
     normal_handler,
     pending_handler=None,
-    check_utxos_first: bool = False,
 ):
     """
     Registers a button to automatically react to multisig pending state changes.
@@ -469,9 +468,6 @@ def register_multisig_button(
         button: The QPushButton to manage.
         normal_handler: The function to call when button is clicked in normal state.
         pending_handler: Optional. Function to call when pending. Defaults to showing toast.
-        check_utxos_first: If True, allow the button to remain functional during pending
-            operations when UTXOs are available (e.g. for issue/receive operations that
-            don't create new transactions if UTXOs exist).
     """
 
     # Default to standard toast if no specific pending handler provided
@@ -489,23 +485,6 @@ def register_multisig_button(
             return
 
         if is_pending:
-            # When UTXOs are available, allow issue/receive to proceed
-            if check_utxos_first:
-                try:
-                    from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
-                    if get_unspent_utxo_count() > 0:
-                        button.setProperty('pending', 'false')
-                        button.style().polish(button)
-                        if normal_handler is not None:
-                            try:
-                                button.clicked.disconnect()
-                            except (TypeError, RuntimeError):
-                                pass
-                            button.clicked.connect(normal_handler)
-                        return
-                except Exception:
-                    pass
-
             # Set pending property to trigger QSS [pending="true"] selector
             button.setProperty('pending', 'true')
             button.style().polish(button)

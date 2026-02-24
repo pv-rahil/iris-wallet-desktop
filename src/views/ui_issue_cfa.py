@@ -393,7 +393,6 @@ class IssueCFAWidget(QWidget):
                 self._view_model,
                 self.issue_cfa_button,
                 self.on_issue_cfa,
-                check_utxos_first=True,
             )
         self.upload_file.clicked.connect(self.on_upload_asset_file)
         self._view_model.issue_cfa_asset_view_model.is_loading.connect(

@@ -452,21 +452,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.update_sidebar()
         if self.priv.can_use_faucet:
             self.check_faucet_availability()
-        if self.is_multisig_wallet and not self.is_offline_wallet:
-            # Trigger centralized sync with the bridge
-            self._view_model.header_frame_view_model.sync_multisig_bridge()            
-            register_multisig_button(
-                self._view_model,
-                self.sidebar.receive_asset_button,
-                self.sidebar._on_receive_asset_clicked,
-                pending_handler=None,
-                check_utxos_first=True,
-            )
-            
-            connect_multisig_pending_signal(
-                self._view_model, 
-                lambda is_pending: self.sidebar.receive_asset_button.setCheckable(not is_pending)
-            )
+        self._view_model.header_frame_view_model.sync_multisig_bridge()
         self._view_model.main_asset_view_model.get_assets()
         self.title_frame.refresh_page_button.clicked.connect(
             self.refresh_asset,
@@ -484,7 +470,6 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
                     self._view_model.page_navigation.issue_nia_asset_page,
                 ),
-                check_utxos_first=True,
             )
         self._view_model.main_asset_view_model.loading_started.connect(
             self.show_fungible_loading_screen,
@@ -522,6 +507,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         """This method start the render timer and perform the fungible asset list refresh"""
         self.render_timer.start()
         self.title_frame.update_psbt_info()
+        self._view_model.header_frame_view_model.sync_multisig_bridge()
         self._view_model.main_asset_view_model.get_assets(
             rgb_asset_hard_refresh=True,
         )
@@ -620,19 +606,4 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         ToastManager.info(
             description=INFO_FAUCET_NOT_AVAILABLE,
         )
-
-    def _update_sidebar_multisig_ui(self, is_pending: bool) -> None:
-        """Update sidebar receive button based on multisig pending state."""
-        if not self.is_multisig_wallet or self.is_offline_wallet:
-            return
-        
-        if is_pending:
-            self.sidebar.receive_asset_button.setCheckable(False)
-        else:
-            self.sidebar.receive_asset_button.setCheckable(True)
-        
-        # We rely on register_multisig_button to handle the rest
-
-
-    
 

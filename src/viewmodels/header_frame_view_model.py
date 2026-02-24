@@ -313,9 +313,6 @@ class HeaderFrameViewModel(QObject, ThreadManager):
             BroadcastTransactionService.set_pending_operation_state(
                 op_info, txid,
             )
-            logger.info(
-                'Global pending operation state set with TXID: %s', txid,
-            )
         except Exception as e:
             logger.error('Failed to set global pending state: %s', e)
 

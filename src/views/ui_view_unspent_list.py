@@ -244,6 +244,7 @@ class ViewUnspentList(QWidget):
     def trigger_render_and_refresh(self):
         """This method start the render timer and perform the unspent list refresh"""
         self.render_timer.start()
+        self._view_model.header_frame_view_model.sync_multisig_bridge()
         self._view_model.unspent_view_model.get_unspent_list(
             is_hard_refresh=True,
         )

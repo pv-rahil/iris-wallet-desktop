@@ -728,6 +728,10 @@ class BroadcastTransactionWidget(QWidget):
         self.view_model.broadcast_transaction_view_model.is_reject_loading.connect(
             self.update_reject_button_state,
         )
+        self.view_model.broadcast_transaction_view_model.trigger_bridge_sync.connect(
+            self.view_model.header_frame_view_model.sync_multisig_bridge,
+            Qt.ConnectionType.UniqueConnection,
+        )
         self._signals_connected = True
 
     @staticmethod
@@ -1445,7 +1449,7 @@ class BroadcastTransactionWidget(QWidget):
                 operation,
             )
             self._is_inflation_context = self._pending_transfer_type == 'inflation' or operation.is_inflation_pending()
-            consignment_paths = op_ctx.consignment_paths if operation.is_send_pending() else None
+            consignment_paths = op_ctx.consignment_paths if operation.is_send_to_review() else None
             # For inflation: use operation details directly (no RGB inspection needed)
             # For asset transfer: use RGB inspection
             self._rgb_expected = bool(
@@ -1473,7 +1477,7 @@ class BroadcastTransactionWidget(QWidget):
 
         # For asset transfer: trigger RGB inspection
         if operation and self._rgb_expected and op_ctx:
-            consignment_paths = op_ctx.consignment_paths if operation.is_send_pending() else None
+            consignment_paths = op_ctx.consignment_paths if operation.is_send_to_review() else None
             if consignment_paths:
                 self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
                     consignment_paths,

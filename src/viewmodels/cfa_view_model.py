@@ -149,7 +149,7 @@ class CFAViewModel(QObject, ThreadManager):
             isinstance(error, CommonException) and error.message == 'NoAvailableUtxos'
         ) or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.hw_dialog_update.emit(
-                str(error), PsbtStatus.ERROR,
+                str(error.message), PsbtStatus.ERROR,
             )
         else:
             ToastManager.error(description=error.message)
@@ -313,7 +313,6 @@ class CFAViewModel(QObject, ThreadManager):
         )
         # Store request for multisig post_send step
         self.current_send_request = request
-
         self.run_in_thread(
             RgbRepository.send_begin,
             {
