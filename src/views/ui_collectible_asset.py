@@ -41,6 +41,7 @@ from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
+from src.utils.logging import logger
 
 
 class CollectiblesAssetWidget(QWidget):

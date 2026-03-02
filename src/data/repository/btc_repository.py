@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from rgb_lib import BtcBalance
+from rgb_lib import InitOperationResult
 from rgb_lib import Transaction
 from rgb_lib import Unspent
 
@@ -111,6 +112,22 @@ class BtcRepository:
             return psbt
 
     @staticmethod
+    @auto_sync_multisig(check_pending_ops=True)
+    def send_btc_init(param: SendBtcRequestModel) -> InitOperationResult:
+        """Init multisig psbt for send btc."""
+        with repository_custom_context():
+            result: InitOperationResult = colored_wallet.wallet.send_btc_init(
+                online=colored_wallet.online, address=param.address, amount=param.amount, fee_rate=param.fee_rate,
+                skip_sync=param.skip_sync,
+            )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.add_psbt(
+                    result.psbt, purpose='send_btc',
+                )
+            return result
+
+    @staticmethod
     def send_btc_end(detail: BroadcastPsbtRequestModel) -> SendBtcResponseModel:
         """Broadcast the signed psbt"""
         with repository_custom_context():
@@ -140,6 +157,20 @@ class BtcRepository:
             return psbt
 
     @staticmethod
+    @auto_sync_multisig(check_pending_ops=True)
+    def create_utxos_init(param: CreateUtxosRequestModel, purpose: str | None = None) -> InitOperationResult:
+        """Init colorable utxo psbt for multisig."""
+        with repository_custom_context():
+            result: InitOperationResult = colored_wallet.wallet.create_utxos_init(
+                online=colored_wallet.online, up_to=param.up_to, num=param.num, size=param.size, fee_rate=param.fee_rate,
+                skip_sync=param.skip_sync,
+            )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.add_psbt(result.psbt, purpose=purpose)
+            return result
+
+    @staticmethod
     def create_utxos_end(detail: BroadcastPsbtRequestModel) -> int:
         """Broadcast the colorable utxo psbt."""
         with repository_custom_context():
@@ -153,29 +184,3 @@ class BtcRepository:
             if cache is not None:
                 cache.invalidate_cache()
             return data
-
-    @staticmethod
-    @auto_sync_multisig(check_pending_ops=True)
-    def post_create_utxos(signed_psbt: str) -> None:
-        """Post the signed create_utxos PSBT to the multisig bridge for other cosigners."""
-        with repository_custom_context():
-            colored_wallet.wallet.post_create_utxos(
-                online=colored_wallet.online,
-                psbt=signed_psbt,
-            )
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.delete_psbt(signed_psbt)
-
-    @staticmethod
-    @auto_sync_multisig(check_pending_ops=True)
-    def post_send_btc(signed_psbt: str) -> None:
-        """Post the signed send_btc PSBT to the multisig bridge for other cosigners."""
-        with repository_custom_context():
-            colored_wallet.wallet.post_send_btc(
-                online=colored_wallet.online,
-                psbt=signed_psbt,
-            )
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.delete_psbt(signed_psbt)

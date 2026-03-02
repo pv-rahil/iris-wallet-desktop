@@ -12,6 +12,7 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import AssetSchema
 from rgb_lib import Assignment
+from rgb_lib import RespondToOperation
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
@@ -63,7 +64,6 @@ class CFAViewModel(QObject, ThreadManager):
     stop_loading = Signal(bool)
     hw_dialog_update = Signal(object, Enum)
     unsigned_psbt = Signal(str)
-    post_to_bridge = Signal(bool)
 
     def __init__(self, page_navigation: Any) -> None:
         super().__init__()
@@ -127,7 +127,6 @@ class CFAViewModel(QObject, ThreadManager):
         # Check for multisig pending status via wallet type and response
         is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
         if is_multisig:
-            self.post_to_bridge.emit(True)
             ToastManager.success(description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
         else:
             ToastManager.success(
@@ -313,20 +312,36 @@ class CFAViewModel(QObject, ThreadManager):
         )
         # Store request for multisig post_send step
         self.current_send_request = request
-        self.run_in_thread(
-            RgbRepository.send_begin,
-            {
-                'args': [request],
-                'callback': self.on_psbt_created,
-                'error_callback': self.on_error,
-            },
-        )
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            self.run_in_thread(
+                RgbRepository.send_init,
+                {
+                    'args': [request],
+                    'callback': self.on_psbt_created,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
+            self.run_in_thread(
+                RgbRepository.send_begin,
+                {
+                    'args': [request],
+                    'callback': self.on_psbt_created,
+                    'error_callback': self.on_error,
+                },
+            )
 
-    def on_psbt_created(self, unsigned_psbt: str):
+    def on_psbt_created(self, result):
         """
-        Handle the PSBT created by send_begin.
+        Handle the PSBT created by send_begin or send_init.
         Run signing and finalization in a background thread.
         """
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            unsigned_psbt = result.psbt
+            self.operation_idx = result.operation_idx
+        else:
+            unsigned_psbt = result
+            self.operation_idx = None
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
             return
@@ -359,21 +374,13 @@ class CFAViewModel(QObject, ThreadManager):
 
     def on_multisig_psbt_signed(self, signed_psbt: str):
         """Post signed PSBT and recipient map to bridge."""
-        if not hasattr(self, 'current_send_request') or not self.current_send_request:
-            self.on_error(
-                CommonException(
-                    'Send request details missing for multisig post.',
-                ),
-            )
-            return
-
         self.hw_dialog_update.emit(
             INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
         )
         self.run_in_thread(
-            RgbRepository.post_send,
+            RgbRepository.respond_to_operation,
             {
-                'args': [signed_psbt, self.current_send_request],
+                'args': [self.operation_idx, RespondToOperation.ACK(signed_psbt)],
                 'callback': self.on_multisig_post_success,
                 'error_callback': self.on_error,
             },

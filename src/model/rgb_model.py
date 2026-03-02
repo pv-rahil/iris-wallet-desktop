@@ -13,6 +13,7 @@ from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
 from rgb_lib import Assignment
 from rgb_lib import Balance
+from rgb_lib import ExpirationAbsolute
 from rgb_lib import Outpoint
 from rgb_lib import RgbLibError
 from rgb_lib import TransferKind
@@ -116,7 +117,7 @@ class TransferAsset(BaseModel):
     recipient_id: str | None = None
     receive_utxo: Outpoint | None = None
     change_utxo: Outpoint | None = None
-    expiration: int | None = None
+    expiration: ExpirationAbsolute | None = None
     transport_endpoints: list[TransferTransportEndpoint | None] | None = []
     invoice_string: str | None = None
     consignment_path: str | None = None
@@ -178,7 +179,6 @@ class IssueAssetUdaRequestModel(IssueAssetCfaRequestModel):
 class IssueAssetIfaRequestModel(IssueAssetNiaRequestModel):
     """Request model for issuing assets."""
     inflation_amounts: list[int]
-    replace_rights_num: int
 
 
 class RgbInvoiceRequestModel(BaseModel):
@@ -206,6 +206,7 @@ class SendAssetRequestModel(BaseModel):
     min_confirmations: int
     transport_endpoints: list[str]
     skip_sync: bool = False
+    duration_seconds: int = RGB_INVOICE_DURATION_SECONDS
 
     class Config:
         """Pydantic configuration class allowing arbitrary types."""
@@ -249,6 +250,7 @@ class SendBeginRequestModel(BaseModel):
     fee_rate: int
     min_confirmations: int
     transport_endpoints: list[str]
+    duration_seconds: int = RGB_INVOICE_DURATION_SECONDS
 
     class Config:
         """Pydantic configuration class allowing arbitrary types."""

@@ -11,7 +11,6 @@ from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QCheckBox
 from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
@@ -411,19 +410,6 @@ class IssueIFAWidget(QWidget):
             self.inflatables_asset_supply_layout,
         )
 
-        # Secondary issuance-only: option to replace label (shown only in secondary mode)
-        self.replace_label_checkbox = QCheckBox(self.issue_ifa_widget)
-        self.replace_label_checkbox.setObjectName('replace_label_checkbox')
-        self.replace_label_checkbox.hide()  # shown only in secondary mode
-        self.replace_checkbox_horizontal_layout = QHBoxLayout()
-        self.replace_checkbox_horizontal_layout.setContentsMargins(0, 20, 0, 0)
-        # self.replace_checkbox_horizontal_layout.addWidget(
-        #     self.replace_label_checkbox,
-        # )
-        # self.inflatables_asset_supply_layout.addLayout(
-        #     self.replace_checkbox_horizontal_layout,
-        # )
-
         self.vertical_spacer_issue_ifa = QSpacerItem(
             20,
             40,
@@ -494,7 +480,6 @@ class IssueIFAWidget(QWidget):
             self.inflatables_total_supply_title_widget.hide()
             self.inflatables_total_supply_input.hide()
             self.inflatables_asset_name_input.setReadOnly(True)
-            # self.replace_label_checkbox.show()
             self.issue_ifa_widget.setFixedHeight(608)
 
         if self.from_draft and self.draft_id:
@@ -733,12 +718,6 @@ class IssueIFAWidget(QWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_asset', None,
             ),
         )
-        # Checkbox label for secondary issue (fallback to raw if missing in translations)
-        self.replace_label_checkbox.setText(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'replace_label', None,
-            ),
-        )
 
     def update_loading_state(self, is_loading: bool):
         """
@@ -788,11 +767,10 @@ class IssueIFAWidget(QWidget):
             )
             return
         inflation_amounts = t - a
-        replace_rights_num = self.replace_label_checkbox.isChecked()
-        if not self.from_draft or get_unspent_utxo_count() == 0:
+        if get_unspent_utxo_count() < 3 and not self.from_draft:
             self.create_issue_inflatables_asset_draft(
                 short_identifier, asset_name, a,
-                inflation_amounts, replace_rights_num,
+                inflation_amounts,
             )
 
         # Call the IFA view model method and pass the text values as arguments
@@ -801,7 +779,6 @@ class IssueIFAWidget(QWidget):
             asset_name,
             a,
             inflation_amounts,
-            replace_rights_num,
         )
 
     def on_secondary_issuance_click(self):
@@ -1216,7 +1193,7 @@ class IssueIFAWidget(QWidget):
                 ),
         )
 
-    def create_issue_inflatables_asset_draft(self, ticker, name, amount, inflation_amounts, replace_rights_num):
+    def create_issue_inflatables_asset_draft(self, ticker, name, amount, inflation_amounts):
         """Create and save an Issue Asset draft when UTXOs are not available.
         It stores minimal metadata so the draft can be shown on the fungible page.
         """
@@ -1228,7 +1205,6 @@ class IssueIFAWidget(QWidget):
                     ticker=ticker,
                     issued_amount=int(amount),
                     inflation_amounts=int(inflation_amounts),
-                    replace_rights_num=int(replace_rights_num),
                 ),
             )
 
@@ -1277,10 +1253,6 @@ class IssueIFAWidget(QWidget):
             if 'inflation_amounts' in draft:
                 self.inflatables_total_supply_input.setText(
                     str(draft['inflation_amounts']),
-                )
-            if 'replace_rights_num' in draft:
-                self.replace_label_checkbox.setChecked(
-                    bool(draft['replace_rights_num']),
                 )
             self.handle_button_enabled()
 

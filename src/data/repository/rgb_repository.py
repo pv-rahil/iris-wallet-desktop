@@ -9,9 +9,11 @@ from rgb_lib import AssetUda
 from rgb_lib import Balance
 from rgb_lib import Invoice
 from rgb_lib import Operation
+from rgb_lib import InitOperationResult
 from rgb_lib import OperationInfo
 from rgb_lib import OperationResult
 from rgb_lib import PsbtInspection
+from rgb_lib import ExpirationRelative
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import RefreshedTransfer
@@ -106,8 +108,9 @@ class RgbRepository:
                     transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
                 )
             else :
+                expiration = ExpirationRelative(duration_seconds=invoice.duration_seconds, exact=True)
                 data: ReceiveData = colored_wallet.wallet.witness_receive(
-                    asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
+                    asset_id=invoice.asset_id, assignment=invoice.assignment, expiration=expiration,
                     transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
                 )
             cache = Cache.get_cache_session()
@@ -129,10 +132,12 @@ class RgbRepository:
             )
 
             recipient_map = {asset_detail.asset_id: [recipient]}
+            expiration = ExpirationRelative(duration_seconds=asset_detail.duration_seconds, exact=True)
 
             data: OperationResult = colored_wallet.wallet.send(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=asset_detail.donation,
                 fee_rate=asset_detail.fee_rate, min_confirmations=asset_detail.min_confirmations, skip_sync=asset_detail.skip_sync,
+                expiration=expiration
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -220,7 +225,7 @@ class RgbRepository:
             data: AssetIfa = colored_wallet.wallet.issue_asset_ifa(
                 **online_kwargs,
                 ticker=asset.ticker, name=asset.name, precision=asset.precision, amounts=asset.amounts,
-                inflation_amounts=asset.inflation_amounts, replace_rights_num=1, reject_list_url=None,
+                inflation_amounts=asset.inflation_amounts, reject_list_url=None,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -252,21 +257,44 @@ class RgbRepository:
                 transport_endpoints=detail.transport_endpoints,
             )
             recipient_map = {detail.asset_id: [recipient]}
+            expiration = ExpirationRelative(duration_seconds=detail.duration_seconds, exact=True)
             psbt: SendBeginResult = colored_wallet.wallet.send_begin(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration=expiration
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(
                     psbt,
                     purpose='send_asset',
-                    asset_id=detail.asset_id,
-                    recipient_id=detail.recipient_id,
-                    transport_endpoints=detail.transport_endpoints,
-                    assignment=detail.assignment,
                 )
             return psbt
+
+    @staticmethod
+    @auto_sync_multisig(check_pending_ops=True)
+    @check_colorable_available()
+    def send_init(detail: SendBeginRequestModel) -> InitOperationResult:
+        """Init multisig psbt for send rgb asset"""
+        with repository_custom_context():
+            recipient = Recipient(
+                recipient_id=detail.recipient_id,
+                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT,blinding=None),
+                assignment=detail.assignment,
+                transport_endpoints=detail.transport_endpoints,
+            )
+            recipient_map = {detail.asset_id: [recipient]}
+            result: InitOperationResult = colored_wallet.wallet.send_init(
+                online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, duration_seconds=detail.duration_seconds
+            )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_draft_transfer(detail.asset_id)
+                wallet_service.add_psbt(
+                    result.psbt,
+                    purpose='send_asset',
+                )
+            return result
 
     @staticmethod
     @check_colorable_available()
@@ -313,9 +341,27 @@ class RgbRepository:
                 wallet_service.add_psbt(
                     psbt,
                     purpose='inflate_asset',
-                    asset_id=detail.asset_id,
                 )
             return psbt
+
+    @staticmethod
+    @auto_sync_multisig(check_pending_ops=True)
+    @check_colorable_available()
+    def inflate_init(detail: InflateRequestModel) -> InitOperationResult:
+        """Init multisig psbt for inflation"""
+        with repository_custom_context():
+            result: InitOperationResult = colored_wallet.wallet.inflate_init(
+                online=colored_wallet.online, asset_id=detail.asset_id, inflation_amounts=detail.inflation_amounts,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
+            )
+            wallet_service = WalletDataService.get_session()
+            if wallet_service is not None:
+                wallet_service.delete_secondary_draft_by_psbt(result.psbt)
+                wallet_service.add_psbt(
+                    result.psbt,
+                    purpose='inflate_asset',
+                )
+            return result
 
     @staticmethod
     def inflate_end(signed_psbt: str) -> OperationResult:
@@ -333,43 +379,6 @@ class RgbRepository:
                 wallet_service.delete_secondary_draft_by_psbt(signed_psbt)
             return data
 
-    @staticmethod
-    @auto_sync_multisig(check_pending_ops=True)
-    def post_send(signed_psbt: str, asset_detail: SendBeginRequestModel) -> None:
-        """Post the signed RGB send PSBT + recipient map to the multisig bridge."""
-        with repository_custom_context():
-            recipient = Recipient(
-                recipient_id=asset_detail.recipient_id,
-                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT,blinding=None),
-                assignment=asset_detail.assignment,
-                transport_endpoints=asset_detail.transport_endpoints,
-            )
-            recipient_map = {asset_detail.asset_id: [recipient]}
-
-            colored_wallet.wallet.post_send(
-                online=colored_wallet.online,
-                signed_psbt=signed_psbt,
-                recipient_map=recipient_map,
-            )
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.delete_psbt(signed_psbt)
-                wallet_service.delete_draft_transfer(asset_detail.asset_id)
-
-    @staticmethod
-    @auto_sync_multisig(check_pending_ops=True)
-    def post_inflation(signed_psbt: str, asset_id: str) -> None:
-        """Post the signed inflation PSBT to the multisig bridge."""
-        with repository_custom_context():
-            colored_wallet.wallet.post_inflation(
-                online=colored_wallet.online,
-                signed_psbt=signed_psbt,
-                asset_id=asset_id,
-            )
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                wallet_service.delete_psbt(signed_psbt)
-                wallet_service.delete_secondary_draft_by_psbt(signed_psbt)
 
     @staticmethod
     def sync_with_bridge() -> OperationInfo:
@@ -382,10 +391,10 @@ class RgbRepository:
 
     @staticmethod
     @auto_sync_multisig()
-    def respond_to_operation(operation_idx: int, respond_to_operation: RespondToOperation) -> Operation:
+    def respond_to_operation(operation_idx: int, respond_to_operation: RespondToOperation) -> OperationInfo:
         """Respond to a pending operation with a signed PSBT."""
         with repository_custom_context():
-            data = colored_wallet.wallet.respond_to_operation(
+            data: OperationInfo = colored_wallet.wallet.respond_to_operation(
                 online=colored_wallet.online,
                 operation_idx=operation_idx,
                 respond_to_operation=respond_to_operation,
@@ -423,11 +432,11 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def inspect_rgb_transfer(consignment: list[str], psbt: str, entropy: int) -> RgbInspection:
+    def inspect_rgb_transfer(fascia_path: str, psbt: str, entropy: int) -> RgbInspection:
         """Inspect RGB transfer details."""
         with repository_custom_context():
             data: RgbInspection = colored_wallet.wallet.inspect_rgb_transfer(
-                consignment_paths=consignment,
+                fascia_path=fascia_path,
                 psbt=psbt,
                 entropy=entropy,
             )

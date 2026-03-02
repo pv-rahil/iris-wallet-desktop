@@ -7,10 +7,12 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import RespondToOperation
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.common_operations_repository import CommonOperationRepository
+from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -67,17 +69,33 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             fee_rate=default_fee_rate.fee_rate,
             num=num,
         )
-        self.run_in_thread(
-            BtcRepository.create_utxos_begin,
-            {
-                'args': [self.param, purpose],
-                'callback': self.on_utxo_begin_done,
-                'error_callback': self.on_error,
-            },
-        )
+        if self._is_multisig():
+            self.run_in_thread(
+                BtcRepository.create_utxos_init,
+                {
+                    'args': [self.param, purpose],
+                    'callback': self.on_utxo_begin_done,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
+            self.run_in_thread(
+                BtcRepository.create_utxos_begin,
+                {
+                    'args': [self.param, purpose],
+                    'callback': self.on_utxo_begin_done,
+                    'error_callback': self.on_error,
+                },
+            )
 
-    def on_utxo_begin_done(self, unsigned_psbt):
+    def on_utxo_begin_done(self, result):
         """Callback when unsigned PSBT is created. Updates dialog and starts signing process."""
+        if self._is_multisig():
+            unsigned_psbt = result.psbt
+            self.operation_idx = result.operation_idx
+        else:
+            unsigned_psbt = result
+            self.operation_idx = None
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
             return
@@ -115,9 +133,9 @@ class UtxoCreationViewModel(QObject, ThreadManager):
             INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
         )
         self.run_in_thread(
-            BtcRepository.post_create_utxos,
+            RgbRepository.respond_to_operation,
             {
-                'args': [signed_psbt],
+                'args': [self.operation_idx, RespondToOperation.ACK(signed_psbt)],
                 'callback': self.on_psbt_posted_to_bridge,
                 'error_callback': self.on_error,
             },

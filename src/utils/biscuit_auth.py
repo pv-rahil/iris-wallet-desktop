@@ -7,7 +7,7 @@ import os
 import subprocess
 
 from src.data.repository.setting_repository import SettingRepository
-from src.utils.constant import MASTER_XPUB
+from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.logging import logger
 
 
@@ -24,12 +24,12 @@ def generate_and_store_token() -> str | None:
             logger.info('Bridge token already exists in settings.')
             return existing_token
 
-        # 2. Get Master XPUB
-        master_xpub = SettingRepository.get_config_value(MASTER_XPUB, None)
-        if not master_xpub:
-            print('DEBUG: Master XPUB not found in settings.')
+        # 2. Get Colored Account XPUB
+        account_xpub_colored = SettingRepository.get_config_value(ACCOUNT_XPUB_COLORED, None)
+        if not account_xpub_colored:
+            print('DEBUG: Colored Account XPUB not found in settings.')
             logger.warning(
-                'Master XPUB not found in settings. Cannot generate token.',
+                'Colored Account XPUB not found in settings. Cannot generate token.',
             )
             return None
 
@@ -75,14 +75,14 @@ def generate_and_store_token() -> str | None:
             return None
 
         # 4. Run biscuit CLI
-        # Command: echo 'owner_xpub("XPUB");' | biscuit generate --private-key-file <path> -
-        logger.info('Generating biscuit token for xpub: %s...', master_xpub)
+        # Command: echo 'role("cosigner"); xpub("XPUB");' | biscuit generate --private-key-file <path> -
+        logger.info('Generating biscuit token for xpub: %s...', account_xpub_colored)
 
         # Determine executable path - assuming 'biscuit' is in PATH
         binary = 'biscuit'
 
         # Prepare the datalog authority check/fact
-        datalog = f'owner_xpub("{master_xpub}");'
+        datalog = f'role("cosigner"); xpub("{account_xpub_colored}");'
 
         cmd = [
             binary,

@@ -23,7 +23,7 @@ services:
     ports:
       - 50001:50001
   proxy:
-    image: ghcr.io/rgb-tools/rgb-proxy-server:0.3.0
+    image: proxy:updated
     ports:
       - 3000:3000
 
@@ -34,4 +34,4 @@ services:
       - 8141:8141
     volumes:
       - ./bridge:/usr/bridge
-      - ./bridge/rgb-multisig-bridge/config.toml:/usr/bridge/rgb-multisig-bridge/config.toml:ro
+      - ./bridge/config.toml:/usr/bridge/config.toml:ro

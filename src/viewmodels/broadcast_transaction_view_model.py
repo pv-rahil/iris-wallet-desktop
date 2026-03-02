@@ -301,36 +301,23 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self.trigger_bridge_sync.emit()
         self.tx_broadcasted.emit(True)
 
-        # Handle case where result is explicitly None (e.g. from post_psbt_to_bridge_by_purpose)
         if result is None:
             ToastManager.success(
                 description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE,
             )
             return
 
-        # Combine pending checks to reduce complexity
-        is_pending = (
-            result.is_create_utxos_pending() or
-            result.is_send_btc_pending() or
-            result.is_inflation_pending() or
-            result.is_send_pending()
-        )
-
-        if is_pending:
-            ToastManager.success(
-                description=INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS,
-            )
-        elif result.is_create_utxos_completed():
+        if result.operation.is_create_utxos_completed():
             ToastManager.success(
                 description=INFO_OPERATION_COMPLETED_AND_FINALIZED,
             )
-        elif result.is_send_btc_completed():
+        elif result.operation.is_send_btc_completed():
             ToastManager.success(description=INFO_BITCOIN_SENT_SUCCESSFULLY)
-        elif result.is_inflation_completed():
+        elif result.operation.is_inflation_completed():
             ToastManager.success(
                 description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY,
             )
-        elif result.is_send_completed():
+        elif result.operation.is_send_completed():
             ToastManager.success(description=INFO_ASSET_SENT_SUCCESSFULLY)
         else:
             # Generic success for initiator or other cases
@@ -359,117 +346,12 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     # ========== Multisig Watch-Only USB helpers ==========
 
-    def post_psbt_to_bridge_by_purpose(self, purpose: str, signed_psbt: str) -> None:
-        """Initiator flow (watch-only): post a signed PSBT to bridge based on purpose."""
-        if not signed_psbt:
-            self.on_error(CommonException('No PSBT to post'))
-            return
-        self.is_loading.emit(True)
-
-        if purpose == 'send_btc':
-            self.run_in_thread(
-                BtcRepository.post_send_btc,
-                {
-                    'args': [signed_psbt],
-                    'callback': lambda *_: self._on_multisig_post_success(None),
-                    'error_callback': self.on_error,
-                },
-            )
-            return
-
-        if purpose in ['create_utxos', 'issue_asset_nia', 'issue_asset_cfa', 'issue_asset_ifa', 'send_rgb']:
-            self.run_in_thread(
-                BtcRepository.post_create_utxos,
-                {
-                    'args': [signed_psbt],
-                    'callback': lambda *_: self._on_multisig_post_success(None),
-                    'error_callback': self.on_error,
-                },
-            )
-            return
-
-        if purpose == 'send_asset':
-            self.run_in_thread(
-                self._post_send_asset_to_bridge,
-                {
-                    'args': [signed_psbt],
-                    'callback': lambda *_: self._on_multisig_post_success(None),
-                    'error_callback': self.on_error,
-                },
-            )
-            return
-
-        if purpose == 'inflate_asset':
-            self.run_in_thread(
-                self._post_inflate_asset_to_bridge,
-                {
-                    'args': [signed_psbt],
-                    'callback': lambda *_: self._on_multisig_post_success(None),
-                    'error_callback': self.on_error,
-                },
-            )
-            return
-
-        self.on_error(CommonException(f'Unsupported purpose: {purpose}'))
-
     def respond_psbt_to_operation(self, signed_psbt: str, operation_idx: int | None) -> None:
         """Cosigner flow (watch-only): respond to operation with ACK(signed_psbt)."""
         self.is_loading.emit(True)
         response = RespondToOperation.ACK(signed_psbt)
         self._respond_to_multisig_operation(operation_idx, response)
 
-    def _post_send_asset_to_bridge(self, signed_psbt: str) -> None:
-        """Initiator flow (watch-only/offline): post signed RGB send PSBT + recipient_map context."""
-        wallet_service = WalletDataService.get_session()
-        if wallet_service is None:
-            raise CommonException('WalletDataService not available')
-
-        ctx = wallet_service.get_psbt_context(signed_psbt)
-        if not isinstance(ctx, dict):
-            raise CommonException(
-                'Missing send-asset context for this PSBT. Please recreate the send-asset PSBT.',
-            )
-
-        asset_id = ctx.get('asset_id')
-        recipient_id = ctx.get('recipient_id')
-        transport_endpoints = ctx.get('transport_endpoints')
-        assignment = ctx.get('assignment')
-        if not asset_id or not recipient_id or transport_endpoints is None or assignment is None:
-            raise CommonException(
-                'Incomplete send-asset context for this PSBT. Please recreate the send-asset PSBT.',
-            )
-        request = SendBeginRequestModel(
-            asset_id=str(asset_id),
-            assignment=assignment,
-            recipient_id=str(recipient_id),
-            transport_endpoints=list(transport_endpoints),
-            fee_rate=0,
-            min_confirmations=0,
-            donation=False,
-        )
-
-        RgbRepository.post_send(signed_psbt, request)
-
-    def _post_inflate_asset_to_bridge(self, signed_psbt: str) -> None:
-        """Initiator flow (watch-only/offline): post signed inflation PSBT + asset_id context."""
-        wallet_service = WalletDataService.get_session()
-        if wallet_service is None:
-            raise CommonException('WalletDataService not available')
-
-        asset_id = None
-        ctx = wallet_service.get_psbt_context(signed_psbt)
-        if isinstance(ctx, dict):
-            asset_id = ctx.get('asset_id')
-
-        if not asset_id:
-            asset_id = wallet_service.get_asset_id_by_inflate_psbt(signed_psbt)
-
-        if not asset_id:
-            raise CommonException(
-                'Missing inflate-asset context for this PSBT. Please recreate the inflate PSBT.',
-            )
-
-        RgbRepository.post_inflation(signed_psbt, str(asset_id))
 
     def _on_nack_post_success(self, result):
         """Handle successful NACK post to the multisig bridge."""
@@ -493,12 +375,12 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def inspect_rgb_transfer(self, consignment: list[str], psbt: str, entropy: int):
+    def inspect_rgb_transfer(self, fascia_path: str, psbt: str, entropy: int):
         """Inspect RGB transfer for review details."""
         self.run_in_thread(
             RgbRepository.inspect_rgb_transfer,
             {
-                'args': [consignment, psbt, entropy],
+                'args': [fascia_path, psbt, entropy],
                 'callback': self._on_inspect_rgb_transfer_success,
                 'error_callback': self.on_error,
             },

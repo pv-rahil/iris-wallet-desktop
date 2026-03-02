@@ -485,7 +485,6 @@ def register_multisig_button(
             return
 
         try:
-            # Test if the underlying C++ object is still alive
             _ = button.objectName()
         except RuntimeError:
             return
@@ -494,21 +493,19 @@ def register_multisig_button(
             # Set pending property to trigger QSS [pending="true"] selector
             button.setProperty('pending', 'true')
             button.style().polish(button)
-            # Disconnect all existing handlers
-            try:
-                button.clicked.disconnect()
-            except (TypeError, RuntimeError):
-                pass
+            button.blockSignals(True)
             # Connect pending handler
             button.clicked.connect(pending_handler)
+            button.blockSignals(False)
         else:
             # Remove pending property to restore normal QSS styling
             button.setProperty('pending', 'false')
             button.style().polish(button)
-
+            button.blockSignals(True)
             # Connect normal handler if provided
             if normal_handler is not None:
                 button.clicked.connect(normal_handler)
+            button.blockSignals(False)
 
     # Connect the signal using the existing helper
     connect_multisig_pending_signal(view_model, state_update_callback)

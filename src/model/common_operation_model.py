@@ -178,4 +178,3 @@ class IssueAssetDraftModel(BaseModel):
     issued_amount: int
     file_path: str | None = None
     inflation_amounts: int | None = None
-    replace_rights_num: int | None = None

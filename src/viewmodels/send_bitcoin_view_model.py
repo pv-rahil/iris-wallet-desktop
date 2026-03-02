@@ -7,6 +7,7 @@ from enum import Enum
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import RespondToOperation
 
 from src.data.repository.btc_repository import BtcRepository
 from src.data.repository.common_operations_repository import CommonOperationRepository
@@ -141,20 +142,36 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         request = SendBtcRequestModel(
             address=address, amount=amount, fee_rate=fee_rate, skip_sync=skip_sync,
         )
-        self.run_in_thread(
-            BtcRepository.send_btc_begin,
-            {
-                'args': [request],
-                'callback': self.on_psbt_created,
-                'error_callback': self.on_error,
-            },
-        )
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            self.run_in_thread(
+                BtcRepository.send_btc_init,
+                {
+                    'args': [request],
+                    'callback': self.on_psbt_created,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
+            self.run_in_thread(
+                BtcRepository.send_btc_begin,
+                {
+                    'args': [request],
+                    'callback': self.on_psbt_created,
+                    'error_callback': self.on_error,
+                },
+            )
 
-    def on_psbt_created(self, unsigned_psbt: str):
+    def on_psbt_created(self, result):
         """
         Handle the PSBT created by send_btc_begin.
         Run signing and finalization in a background thread.
         """
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            unsigned_psbt = result.psbt
+            self.operation_idx = result.operation_idx
+        else:
+            unsigned_psbt = result
+            self.operation_idx = None
         self.send_button_clicked.emit(True)
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
@@ -196,9 +213,9 @@ class SendBitcoinViewModel(QObject, ThreadManager):
             INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
         )
         self.run_in_thread(
-            BtcRepository.post_send_btc,
+            RgbRepository.respond_to_operation,
             {
-                'args': [signed_psbt],
+                'args': [self.operation_idx, RespondToOperation.ACK(signed_psbt)],
                 'callback': self.on_success_multisig_post,
                 'error_callback': self.on_error,
             },

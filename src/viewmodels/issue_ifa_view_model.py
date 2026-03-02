@@ -10,6 +10,7 @@ from typing import Any
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import OperationResult
+from rgb_lib import RespondToOperation
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
@@ -56,7 +57,6 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.asset_name: str | None = None
         self.amount: int | None = None
         self.inflation_amounts: int | None = None
-        self.replace_rights_num: bool | None = None
         self.fee_rate: int | None = None
         self.min_confirmation: int | None = None
 
@@ -70,7 +70,6 @@ class IssueIFAViewModel(QObject, ThreadManager):
                 or self.asset_name is None
                 or self.amount is None
                 or self.inflation_amounts is None
-                or self.replace_rights_num is None
             ):
                 raise CommonException(ERROR_FIELD_MISSING)
 
@@ -80,7 +79,6 @@ class IssueIFAViewModel(QObject, ThreadManager):
                 name=self.asset_name,
                 precision=0,
                 inflation_amounts=[int(self.inflation_amounts)],
-                replace_rights_num=1 if bool(self.replace_rights_num) else 0,
             )
 
             self.run_in_thread(
@@ -112,7 +110,6 @@ class IssueIFAViewModel(QObject, ThreadManager):
         asset_name: str,
         amount: int,
         inflation_amounts: int,
-        replace_rights_num: bool,
     ) -> None:
         """Issue an IFA asset with provided details."""
         self.is_loading.emit(True)
@@ -120,7 +117,6 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.asset_name = asset_name
         self.amount = amount
         self.inflation_amounts = inflation_amounts
-        self.replace_rights_num = replace_rights_num
         self.run_in_thread(
             SettingRepository.native_authentication,
             {
@@ -218,26 +214,41 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.fee_rate = fee_rate
         self.min_confirmation = min_confirmation
         self.is_loading.emit(True)
-        self.run_in_thread(
-            RgbRepository.inflate_begin,
-            {
-                'args': [
-                    InflateRequestModel(
-                        asset_id=asset_id,
-                        inflation_amounts=[amount],
-                        fee_rate=fee_rate,
-                        min_confirmations=min_confirmation,
-                    ),
-                ],
-                'callback': self.on_success_inflate_begin,
-                'error_callback': self.on_error,
-            },
+        request = InflateRequestModel(
+            asset_id=asset_id,
+            inflation_amounts=[amount],
+            fee_rate=fee_rate,
+            min_confirmations=min_confirmation,
         )
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            self.run_in_thread(
+                RgbRepository.inflate_init,
+                {
+                    'args': [request],
+                    'callback': self.on_success_inflate_begin,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
+            self.run_in_thread(
+                RgbRepository.inflate_begin,
+                {
+                    'args': [request],
+                    'callback': self.on_success_inflate_begin,
+                    'error_callback': self.on_error,
+                },
+            )
 
-    def on_success_inflate_begin(self, response: str) -> None:
+    def on_success_inflate_begin(self, result):
         """Handle success response of IFA second issuance."""
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            unsigned_psbt = result.psbt
+            self.operation_idx = result.operation_idx
+        else:
+            unsigned_psbt = result
+            self.operation_idx = None
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-            self.unsigned_psbt.emit(response)
+            self.unsigned_psbt.emit(unsigned_psbt)
             return
 
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
@@ -250,7 +261,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
             self.run_in_thread(
                 CommonOperationRepository.sign_psbt,
                 {
-                    'args': [response],
+                    'args': [unsigned_psbt],
                     'callback': self.on_multisig_psbt_signed,
                     'error_callback': self.on_error,
                 },
@@ -259,7 +270,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
             self.run_in_thread(
                 CommonOperationRepository.sign_and_finalize_psbt,
                 {
-                    'args': [response],
+                    'args': [unsigned_psbt],
                     'callback': self.on_psbt_signed_and_finalized_success,
                     'error_callback': self.on_error,
                 },
@@ -274,9 +285,9 @@ class IssueIFAViewModel(QObject, ThreadManager):
             INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
         )
         self.run_in_thread(
-            RgbRepository.post_inflation,
+            RgbRepository.respond_to_operation,
             {
-                'args': [signed_psbt, self.asset_id],
+                'args': [self.operation_idx, RespondToOperation.ACK(signed_psbt)],
                 'callback': self.on_success_multisig_post,
                 'error_callback': self.on_error,
             },

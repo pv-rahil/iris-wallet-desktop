@@ -23,6 +23,7 @@ from src.model.setting_model import IsShowHiddenAssetEnabled
 from src.model.setting_model import IsWalletInitialized
 from src.model.setting_model import NativeAuthenticationStatus
 from src.model.setting_model import SetWalletInitialized
+from src.utils.build_app_path import app_paths
 from src.utils.constant import IS_NATIVE_AUTHENTICATION_ENABLED
 from src.utils.constant import NATIVE_LOGIN_ENABLED
 from src.utils.constant import RGB_LIB_VERSION_KEY
@@ -483,9 +484,10 @@ class SettingRepository:
         """
         try:
             cosigners_json = json.dumps(cosigners_data)
-            local_store.set_value('multisig_cosigners', cosigners_json)
-            stored = local_store.get_value('multisig_cosigners')
-            return stored == cosigners_json
+            cosigners_file_path = os.path.join(app_paths.app_path, "multisig_cosigners.json")
+            with open(cosigners_file_path, "w", encoding="utf-8") as f:
+                f.write(cosigners_json)
+            return True
         except Exception as exe:
             return handle_exceptions(exe)
 
@@ -498,7 +500,10 @@ class SettingRepository:
             List of cosigner dicts, empty list if none stored
         """
         try:
-            cosigners_json = local_store.get_value('multisig_cosigners')
+            cosigners_file_path = os.path.join(app_paths.app_path, "multisig_cosigners.json")
+            if os.path.exists(cosigners_file_path):
+                with open(cosigners_file_path, "r", encoding="utf-8") as f:
+                    cosigners_json = f.read()
             if not cosigners_json:
                 return []
             return json.loads(cosigners_json)

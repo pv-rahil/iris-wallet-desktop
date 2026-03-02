@@ -583,6 +583,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         self.sidebar = self._view_model.page_navigation.sidebar()
         if available:
             self.sidebar.faucet.setCheckable(True)
+            self.sidebar.faucet.blockSignals(False)
         else:
             self.sidebar.faucet.setCheckable(False)
             self.sidebar.faucet.setStyleSheet(
@@ -596,10 +597,7 @@ class FungibleAssetWidget(QWidget, ThreadManager):
                 'background-origin: content;',
             )
             # Disconnecting all previous click events
-            try:
-                self.sidebar.faucet.clicked.disconnect()
-            except Exception:
-                pass
+            self.sidebar.faucet.blockSignals(True)
             self.sidebar.faucet.clicked.connect(
                 self.show_faucet_unavailability_message,
             )

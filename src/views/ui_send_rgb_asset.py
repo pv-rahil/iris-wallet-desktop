@@ -166,9 +166,7 @@ class SendRGBAssetWidget(QWidget):
         self._view_model.utxo_creation_view_model.psbt_posted_to_bridge.connect(
             self._on_utxo_posted_to_bridge,
         )
-        self._view_model.cfa_view_model.post_to_bridge.connect(
-            self._on_post_to_bridge,
-        )
+
 
     def refresh_asset(self):
         """This method handle the refresh asset on send asset page"""
@@ -547,7 +545,3 @@ class SendRGBAssetWidget(QWidget):
         # Redirect users back to the asset page (fungible/collectible list)
         self.rgb_asset_page_navigation()
 
-    def _on_post_to_bridge(self):
-        """Handle signal when PSBT is posted to bridge (Multisig)."""
-        if self.send_rgb_hw_dialog:
-            self.send_rgb_hw_dialog.accept()

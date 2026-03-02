@@ -514,28 +514,19 @@ class MultisigSetupPage(QWidget):
         self.row3 = QHBoxLayout()
         self.row3.setContentsMargins(0, 0, 0, 0)
         self.row3.setSpacing(12)
-        self.xpub_colored_display, self.xpub_colored_value_widget, _ = self._create_wallet_detail_field(
+        self.xpub_colored_display, self.xpub_colored_value_widget, self.xpub_colored_copy_btn = self._create_wallet_detail_field(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored',
             ),
             '',
+            show_copy_btn=True,
+            info_text=QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'colored_xpub_info_text', 'Share this with the bridge operator to sync with the multisig bridge',
+            ),
         )
         self.row3.addLayout(self.xpub_colored_display)
         self.r_v.addLayout(self.row3)
 
-        # Row 4: Master XPUB
-        self.row4 = QHBoxLayout()
-        self.row4.setContentsMargins(0, 0, 0, 0)
-        self.row4.setSpacing(12)
-        self.master_xpub_display, self.master_xpub_value_widget, self.master_xpub_copy_btn = self._create_wallet_detail_field(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_xpub',
-            ),
-            '',
-            show_copy_btn=True,
-        )
-        self.row4.addLayout(self.master_xpub_display)
-        self.r_v.addLayout(self.row4)
 
         # Row 5: Cosigner string (new)
         self.row5 = QHBoxLayout()
@@ -702,10 +693,6 @@ class MultisigSetupPage(QWidget):
                     self._complete_threshold_confirmation_after_hw_connect(saved_m, saved_n)
                     return
 
-            # If threshold is locked (implied by workflow, though logic here is loose), we should perform confirmation logic
-            # or minimally check if we have cosigner data to restore.
-            # Ideally, if M/N are set, we might want to prompt user or just auto-lock if complete?
-            # For now, let's just restore cosigner inputs if we have them.
             stored_cosigners = SettingRepository.get_cosigners()
             if stored_cosigners:
                 self._restore_cosigner_inputs(stored_cosigners)
@@ -998,8 +985,8 @@ class MultisigSetupPage(QWidget):
                 self.review_frame.show()
                 self.cos_frame.hide()
                 self._current_step = 2
-                self.card.setMinimumSize(QSize(770, 670))
-                self.card.setMaximumSize(QSize(770, 670))
+                self.card.setMinimumSize(QSize(770, 570))
+                self.card.setMaximumSize(QSize(770, 570))
                 self._update_continue_enabled()
                 self.continue_button.setText(
                     QCoreApplication.translate(
@@ -1013,8 +1000,8 @@ class MultisigSetupPage(QWidget):
                 self.cos_frame.hide()
                 self._current_step = 2
                 self.export_button.show()  # Show export button on review page
-                self.card.setMinimumSize(QSize(770, 670))
-                self.card.setMaximumSize(QSize(770, 670))
+                self.card.setMinimumSize(QSize(770, 570))
+                self.card.setMaximumSize(QSize(770, 570))
                 self._update_continue_enabled()  # Re-enable the continue button
                 self.continue_button.setText(
                     QCoreApplication.translate(
@@ -1089,25 +1076,20 @@ class MultisigSetupPage(QWidget):
         self.xpub_vanilla_value_widget.clear()
         self.xpub_colored_value_widget.clear()
         self.cosigner_string_value_widget.clear()
-        # Reorder layout for watch-only: Signer Details at top, Master xpub second, then others
+        # Reorder layout for watch-only: Signer Details at top, then others
         # Remove existing rows from layout
         self.r_v.removeItem(self.row1)
         self.r_v.removeItem(self.row2)
         self.r_v.removeItem(self.row3)
-        self.r_v.removeItem(self.row4)
         self.r_v.removeItem(self.row5)
-        # Re-add rows in desired order
         self.r_v.addLayout(self.row5)  # Signer Details (cosigner string) at top
-        self.r_v.addLayout(self.row4)  # Master xpub second
         self.r_v.addLayout(self.row1)  # Fingerprint and Keychain (Signer Details)
         self.r_v.addLayout(self.row2)  # Vanilla xpub
         self.r_v.addLayout(self.row3)  # Colored xpub
-        # Make signer details and master keys writable
-        self.master_xpub_value_widget.setReadOnly(False)
+        # Make signer details writable
         self.cosigner_string_value_widget.setReadOnly(False)
         # Remove copy buttons only in Step 2 for watch-only
-        if hasattr(self, 'master_xpub_copy_btn'):
-            self.master_xpub_copy_btn.hide()
+
         if hasattr(self, 'cosigner_string_copy_btn'):
             self.cosigner_string_copy_btn.hide()
         # Create a new Reset button with same design as card buttons and replace export_button in footer
@@ -1130,7 +1112,7 @@ class MultisigSetupPage(QWidget):
         self.export_button.hide()
         # Connect textChanged to parse cosigner string and enable/disable Continue
         self.cosigner_string_value_widget.textChanged.connect(self._on_watch_only_cosigner_string_changed)
-        self.master_xpub_value_widget.textChanged.connect(self._update_continue_enabled)
+
 
     def _on_watch_only_reset_clicked(self):
         """Handle Reset button click in watch-only Step 2: clear all fields."""
@@ -1138,7 +1120,7 @@ class MultisigSetupPage(QWidget):
         self.keychain_value_widget.clear()
         self.xpub_vanilla_value_widget.clear()
         self.xpub_colored_value_widget.clear()
-        self.master_xpub_value_widget.clear()
+
         self.cosigner_string_value_widget.clear()
         self._update_continue_enabled()
 
@@ -1178,21 +1160,18 @@ class MultisigSetupPage(QWidget):
         keychain = self.keychain_value_widget.text().strip()
         vanilla = self.xpub_vanilla_value_widget.text().strip()
         colored = self.xpub_colored_value_widget.text().strip()
-        master_xpub = self.master_xpub_value_widget.text().strip()
         if not fp or not vanilla or not colored:
             return False
         local_store.set_value(MASTER_FINGERPRINT, fp)
         local_store.set_value(VANILLA_KEYCHAIN, int(keychain) if keychain.isdigit() else 0)
         local_store.set_value(ACCOUNT_XPUB_VANILLA, vanilla)
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
-        local_store.set_value(MASTER_XPUB, master_xpub)
         return True
 
     def _populate_wallet_review_fields(self):
         """Populate wallet review fields with actual wallet data from local_store."""
         # Get wallet data from local_store
         master_fp = local_store.get_value(MASTER_FINGERPRINT)
-        master_xpub = local_store.get_value(MASTER_XPUB)
         account_xpub_vanilla = local_store.get_value(
             ACCOUNT_XPUB_VANILLA,
         )
@@ -1220,10 +1199,7 @@ class MultisigSetupPage(QWidget):
             self._truncate_text(account_xpub_colored),
         )
 
-        self.master_xpub_value_widget.setText(self._truncate_text(master_xpub))
-        self.master_xpub_copy_btn.clicked.connect(
-            lambda: copy_text(master_xpub),
-        )
+
 
         # Generate and display cosigner string only if not in watch-only Step 2
         if not self._is_watch_only:
@@ -1244,6 +1220,9 @@ class MultisigSetupPage(QWidget):
                 self.cosigner_string_value_widget.setCursorPosition(0)
                 self.cosigner_string_copy_btn.clicked.connect(
                     lambda: copy_text(cosigner_str),
+                )
+                self.xpub_colored_copy_btn.clicked.connect(
+                    lambda: copy_text(account_xpub_colored),
                 )
             except Exception as e:
                 logger.error('Failed to generate cosigner string: %s', e)
@@ -1325,8 +1304,8 @@ class MultisigSetupPage(QWidget):
             self.review_frame.show()
             self.export_button.show()  # Show export button on review step
             self._current_step = 2
-            self.card.setMinimumSize(QSize(770, 670))
-            self.card.setMaximumSize(QSize(770, 670))
+            self.card.setMinimumSize(QSize(770, 570))
+            self.card.setMaximumSize(QSize(770, 570))
             self._update_continue_enabled()
             self.continue_button.setText(
                 QCoreApplication.translate(

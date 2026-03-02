@@ -462,7 +462,7 @@ class IssueNIAWidget(QWidget):
         short_identifier = self.short_identifier_input.text().upper()
         asset_name = self.asset_name_input.text()
         amount_to_issue = self.amount_input.text()
-        if not self.from_draft or get_unspent_utxo_count() == 0:
+        if get_unspent_utxo_count() == 0 and not self.from_draft:
             self.create_issue_asset_draft(
                 short_identifier, asset_name, amount_to_issue,
             )
