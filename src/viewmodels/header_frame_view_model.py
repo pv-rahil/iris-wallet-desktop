@@ -22,13 +22,12 @@ from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.biscuit_auth import generate_and_store_token
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import MASTER_XPUB
+from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import MULTISIG_BRIDGE_URL
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
-from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.usb_sync_manager import USBSyncManager
 from src.utils.worker import ThreadManager
@@ -351,12 +350,10 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
             # Check if this is a review operation needing signature
             is_review = (
-                hasattr(
-                    operation, 'is_create_utxos_to_review',
-                ) and operation.is_create_utxos_to_review()
-                or hasattr(operation, 'is_send_btc_to_review') and operation.is_send_btc_to_review()
-                or hasattr(operation, 'is_send_to_review') and operation.is_send_to_review()
-                or hasattr(operation, 'is_inflation_to_review') and operation.is_inflation_to_review()
+                operation.is_create_utxos_to_review()
+                or operation.is_send_btc_to_review()
+                or operation.is_send_to_review()
+                or operation.is_inflation_to_review()
             )
 
             if not is_review:
@@ -369,29 +366,50 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
             # Determine purpose from operation type
             purpose = None
-            if hasattr(operation, 'is_create_utxos_to_review') and operation.is_create_utxos_to_review():
+            if operation.is_create_utxos_to_review():
                 purpose = 'create_utxos'
-            elif hasattr(operation, 'is_send_btc_to_review') and operation.is_send_btc_to_review():
+            elif operation.is_send_btc_to_review():
                 purpose = 'send_btc'
-            elif hasattr(operation, 'is_send_to_review') and operation.is_send_to_review():
+            elif operation.is_send_to_review():
                 purpose = 'send_asset'
-            elif hasattr(operation, 'is_inflation_to_review') and operation.is_inflation_to_review():
+            elif operation.is_inflation_to_review():
                 purpose = 'inflate_asset'
 
             if not purpose:
                 continue
 
             try:
-                # Check if PSBT already exists to avoid duplicates
+                # Check if unsigned PSBT exactly matches an existing one to avoid simple duplicates
                 existing = wallet_service.list_psbt(signed=False)
                 if existing and any(p.get('psbt') == psbt for p in existing):
                     continue
 
-                # Save as unsigned PSBT with purpose
-                wallet_service.add_psbt(psbt, signed=False, purpose=purpose)
-                logger.info(
-                    'Saved review operation PSBT to local DB: purpose=%s', purpose,
-                )
+                # Save as unsigned PSBT with purpose, provided we didn't initiate it
+                if op_info.initiator_xpub != SettingRepository.get_config_value(ACCOUNT_XPUB_COLORED, None):
+                    # Also check if we ALREADY have a signed version of this PSBT locally
+                    existing_signed = wallet_service.list_psbt(signed=True)
+                    already_signed = False
+                    if existing_signed:
+                        try:
+                            unsigned_txid = RgbRepository.inspect_psbt(psbt=psbt).txid
+                            for p in existing_signed:
+                                try:
+                                    signed_txid = RgbRepository.inspect_psbt(psbt=p.get('psbt')).txid
+                                    if unsigned_txid == signed_txid:
+                                        already_signed = True
+                                        break
+                                except Exception:
+                                    pass
+                        except Exception as e:
+                            logger.error("Failed to inspect PSBT for duplicate check: %s", e)
+                    
+                    if already_signed:
+                        continue
+
+                    wallet_service.add_psbt(psbt, signed=False, purpose=purpose)
+                    logger.info(
+                        'Saved review operation PSBT to local DB: purpose=%s', purpose,
+                    )
             except Exception as exc:
                 logger.error('Failed to save review PSBT to DB: %s', exc)
 

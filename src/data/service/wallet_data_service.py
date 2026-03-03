@@ -344,7 +344,7 @@ class WalletDataService:
             try:
                 cur = self.conn.cursor()
                 cur.execute(
-                    'SELECT id, name, ticker, issued_amount, file_path, inflation_amounts, replace_rights_num FROM draft_issue_asset ORDER BY id DESC',
+                    'SELECT id, name, ticker, issued_amount, file_path, inflation_amounts FROM draft_issue_asset ORDER BY id DESC',
                 )
                 rows = cur.fetchall()
                 return [
@@ -355,7 +355,6 @@ class WalletDataService:
                         'issued_amount': int(r[3]),
                         'file_path': r[4],
                         'inflation_amounts': r[5],
-                        'replace_rights_num': r[6],
                     }
                     for r in rows
                 ]
@@ -582,19 +581,30 @@ class WalletDataService:
                 )
                 raise
 
-    def delete_secondary_draft_by_psbt(self, psbt_base64: str) -> bool:
+    def delete_secondary_draft_by_psbt(self, psbt_base64: str|None=None, asset_id: str|None = None) -> bool:
         """Delete secondary issuance draft row by attached psbt content (unsigned/signed base64).
         Returns True if a row was deleted.
         """
         if not (self.is_watch_only or self.is_offline_wallet or self.is_multisig):
             return False
-        psbt_id = self._psbt_id(psbt_base64)
+        psbt_id = None
+        if psbt_base64 is None and asset_id is None:
+            return False
+        if psbt_base64 is not None:
+            psbt_id = self._psbt_id(psbt_base64)
         with self._db_lock:
             try:
                 with self.conn:
-                    cur = self.conn.execute(
-                        'DELETE FROM ifa_secondary_draft WHERE psbt_id = ?', (
-                            psbt_id,
+                    if psbt_id is not None:
+                        cur = self.conn.execute(
+                            'DELETE FROM ifa_secondary_draft WHERE psbt_id = ?', (
+                                psbt_id,
+                        ),
+                    )
+                    else:
+                        cur = self.conn.execute(
+                            'DELETE FROM ifa_secondary_draft WHERE asset_id = ?', (
+                                asset_id,
                         ),
                     )
                 return cur.rowcount > 0

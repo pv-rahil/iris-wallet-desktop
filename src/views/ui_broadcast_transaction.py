@@ -683,6 +683,9 @@ class BroadcastTransactionWidget(QWidget):
         self.view_model.broadcast_transaction_view_model.tx_broadcasted.connect(
             self._close_navigation_with_status,
         )
+        self.view_model.broadcast_transaction_view_model.tx_broadcasted.connect(
+            self._cleanup_secondary_draft_if_any,
+        )
         self.view_model.broadcast_transaction_view_model.finalized_psbt.connect(
             self.show_signed_psbt_page,
         )
@@ -696,7 +699,7 @@ class BroadcastTransactionWidget(QWidget):
             self.btn_reject.clicked.connect(self._on_reject_operation)
             if self.is_watch_only:
                 self.broadcast_button.clicked.connect(
-                    self._on_post_or_respond_multisig,
+                    self._on_respond_multisig,
                 )
             else:
                 # For multisig signer: sign and post back to bridge
@@ -839,19 +842,6 @@ class BroadcastTransactionWidget(QWidget):
             )
         except Exception:
             pass
-
-    @staticmethod
-    def _supported_multisig_post_purposes() -> set[str]:
-        return {
-            'create_utxos',
-            'send_btc',
-            'send_asset',
-            'issue_asset_nia',
-            'issue_asset_cfa',
-            'issue_asset_ifa',
-            'inflate_asset',
-            'send_rgb',
-        }
 
     def _on_psbt_text_changed(self):
         """Auto-trigger inspection and sizing when the user pastes/types a PSBT."""
@@ -1093,8 +1083,13 @@ class BroadcastTransactionWidget(QWidget):
         """Delete the latest active IFA secondary draft (watch-only/offline)."""
         try:
             psbt_text = self.broadcast_transaction_input.toPlainText().strip()
+            explicit_purpose = None
+            if self._current_operation:
+                if self._current_operation.is_inflation_to_review():
+                    explicit_purpose = 'inflate_asset'
             BroadcastTransactionService.cleanup_secondary_draft_if_any(
                 psbt_text,
+                explicit_purpose
             )
         except Exception:
             pass
@@ -1244,7 +1239,7 @@ class BroadcastTransactionWidget(QWidget):
                 return (None, parts[1].strip())
         return (None, text)
 
-    def _on_post_or_respond_multisig(self):
+    def _on_respond_multisig(self):
         """Watch-only multisig: respond to pending op."""
         psbt_text = self.broadcast_transaction_input.toPlainText().strip()
         if not psbt_text:
@@ -1336,7 +1331,6 @@ class BroadcastTransactionWidget(QWidget):
             # For offline multisig mode, trigger inspection even without pending operation
             # if we have a PSBT with purpose or just a valid PSBT
             offline_mode = (
-                SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or
                 SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
             )
             if offline_mode and current_psbt:
@@ -1366,7 +1360,6 @@ class BroadcastTransactionWidget(QWidget):
         self.view_model.broadcast_transaction_view_model.inspect_psbt(
             psbt_body,
         )
-
         # Handle operation context if available
         if operation and (operation.is_inflation_to_review() or operation.is_send_to_review()):
             op_ctx = operation.details
@@ -1403,8 +1396,6 @@ class BroadcastTransactionWidget(QWidget):
                     psbt_body,
                     op_ctx.entropy if op_ctx.entropy is not None else 0,
                 )
-            else:
-                self._handle_send_asset_fallback(op_ctx)
 
         self._render_inspection_if_ready()
 
@@ -1431,7 +1422,7 @@ class BroadcastTransactionWidget(QWidget):
                 ),
             )
             self.val_amount.setVisible(True)
-            self.val_amount.setText(f"{amount:,}")
+            self.val_amount.setText(str(amount))
             self.val_amount.setStyleSheet('color: #10B981; font-weight: 700;')
             self.tile_amount.show()
         elif not (self._rgb_expected or self._is_inflation_context):
@@ -1449,63 +1440,16 @@ class BroadcastTransactionWidget(QWidget):
 
     def _update_min_confirmations(self):
         """Helper to update the Min Confirmations UI component."""
-        if self._current_operation.is_send_to_review() or self._current_operation.is_inflation_to_review():
-            op_details = self._current_operation.details if self._current_operation is not None else None
+        if self._current_operation is not None and (self._current_operation.is_send_to_review() or self._current_operation.is_inflation_to_review()):
+            op_details = self._current_operation.details
             if op_details is not None and op_details.min_confirmations is not None:
                 self.lbl_min_conf.setVisible(True)
                 self.val_min_conf.setVisible(True)
                 self.val_min_conf.setText(str(op_details.min_confirmations))
                 self.tile_minconf.show()
-            else:
-                self.tile_minconf.hide()
-                self.val_min_conf.clear()
-
-    def _handle_send_asset_fallback(self, op_ctx):
-        """Handle send asset display manually when no consignment is available."""
-        if not op_ctx or not hasattr(op_ctx, 'recipient_map'):
-            self._render_inspection_if_ready()
-            return
-
-        asset_id_value = None
-        destination_value = None
-        amount_value = 0
-        try:
-            rm = op_ctx.recipient_map
-            if rm and len(rm) > 0:
-                asset_id_value = list(rm.keys())[0]
-                recipients = rm[asset_id_value]
-                if recipients and len(recipients) > 0:
-                    recipient = recipients[0]
-                    destination_value = getattr(recipient, 'recipient_id', None)
-        except Exception:
-            pass
-
-        if asset_id_value:
-            self.lbl_asset_id.setVisible(True)
-            self.val_asset_id.setVisible(True)
-            self.val_asset_id.setText(self._wrap_to_two_lines(str(asset_id_value)))
-            self.val_asset_id.setToolTip(str(asset_id_value))
-            self.tile_asset.show()
-
-        if destination_value:
-            self.lbl_destination.setVisible(True)
-            self.val_destination.setVisible(True)
-            self.val_destination.setText(self._wrap_to_two_lines(str(destination_value)))
-            self.tile_destination.show()
-
-        self.tile_ttype.show()
-        self.lbl_transfer_type.setVisible(True)
-        self.val_transfer_type.setVisible(True)
-        self.val_transfer_type.setText(
-            self._get_transfer_type_label('asset_transfer'),
-        )
-
-        # Hide amount since we couldn't properly extract it without rgb inspection
-        set_widgets_visible([self.tile_amount, self.lbl_amount, self.val_amount], False)
-
-        self.is_psbt_validated = True
-        self._rgb_details = None
-        self._render_inspection_if_ready()
+        else:
+            self.tile_minconf.hide()
+            self.val_min_conf.clear()
 
     def _handle_psbt_inspection_result(self, details):
         """
@@ -1579,7 +1523,7 @@ class BroadcastTransactionWidget(QWidget):
             self.val_destination.clear()
             set_widgets_visible([self.tile_destination], False)
 
-        # BTC-only: layout compaction and ordering (do NOT affect RGB send/inflation flows)
+        # BTC-only: layout compaction and ordering
         is_btc_only = (not self._rgb_expected) and (
             not self._is_inflation_context
         )
@@ -1591,6 +1535,14 @@ class BroadcastTransactionWidget(QWidget):
             # Type (left) and Fee (right) on second row
             self.inspect_grid.addWidget(self.tile_ttype, 1, 0, 1, 1)
             self.inspect_grid.addWidget(self.tile_fee, 1, 1, 1, 1)
+        else:
+            # Restore to original positions for RGB layout
+            self.broadcast_transaction_widget.setMinimumHeight(450)
+            self.broadcast_transaction_widget.setMaximumHeight(16777215)
+            self.inspect_grid.addWidget(self.tile_txid, 0, 0, 1, 1)
+            self.val_txid.setText(details.txid)
+            self.inspect_grid.addWidget(self.tile_fee, 1, 1)
+            self.inspect_grid.addWidget(self.tile_ttype, 3, 0)
 
         # Fee: show if available (>=0)
         fee_sat = details.fee_sat

@@ -92,8 +92,8 @@ class CommonOperationRepository:
     def restore_keys(bitcoin_network: BitcoinNetwork, mnemonic: str) -> Keys:
         """Restore keys operation."""
         with repository_custom_context():
-            restore_keys = restore_keys(bitcoin_network, mnemonic)
-            return restore_keys
+            restore_key = restore_keys(bitcoin_network, mnemonic)
+            return restore_key
 
     @staticmethod
     @require_hardware_wallet_connected()

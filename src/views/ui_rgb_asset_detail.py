@@ -639,44 +639,42 @@ class RGBAssetDetailWidget(QWidget):
             if widget_to_remove is not None:
                 widget_to_remove.setParent(None)
         row_index = 0
-        # Insert pending transfer draft if any (Multisig only or generic?)
-        # User requested "draft logic". It was implemented for NoAvailableUtxos error
-        # which can happen on any wallet type, but mostly relevant for flow interruption.
         try:
-            svc = WalletDataService.get_session()
-            if svc is not None:
-                transfer_draft = svc.get_draft_transfer(str(asset_id))
-                if transfer_draft:
-                    draft_frame = TransactionDetailFrame(
-                        self.scroll_area_widget_contents,
-                    )
-                    draft_frame.transaction_date.setText(
-                        'Resume Transfer',
-                    )
-                    draft_frame.transaction_time.setText('DRAFT')
-                    draft_amt = transfer_draft.get('amount')
-                    draft_frame.transaction_amount.setText(
-                        str(draft_amt) if draft_amt else '',
-                    )
-                    draft_frame.transaction_amount.setStyleSheet(
-                        'font: 15px "Inter"; color: #D0D3DD; background: transparent; border: none; font-weight: 600;',
-                    )
-                    draft_frame.transaction_type.hide()
-                    draft_frame.transfer_type.hide()
-                    draft_frame.setCursor(
-                        QCursor(Qt.CursorShape.PointingHandCursor),
-                    )
-
-                    def on_resume_transfer(_p=None, _data=transfer_draft):
-                        self._view_model.page_navigation.send_cfa_page(
-                            draft_data=_data,
+            if SettingRepository.get_wallet_type() != WalletType.OFFLINE_TYPE_WALLET:
+                svc = WalletDataService.get_session()
+                if svc is not None:
+                    transfer_draft = svc.get_draft_transfer(str(asset_id))
+                    if transfer_draft:
+                        draft_frame = TransactionDetailFrame(
+                            self.scroll_area_widget_contents,
+                        )
+                        draft_frame.transaction_date.setText(
+                            'Resume Transfer',
+                        )
+                        draft_frame.transaction_time.setText('DRAFT')
+                        draft_amt = transfer_draft.get('amount')
+                        draft_frame.transaction_amount.setText(
+                            str(draft_amt) if draft_amt else '',
+                        )
+                        draft_frame.transaction_amount.setStyleSheet(
+                            'font: 15px "Inter"; color: #D0D3DD; background: transparent; border: none; font-weight: 600;',
+                        )
+                        draft_frame.transaction_type.hide()
+                        draft_frame.transfer_type.hide()
+                        draft_frame.setCursor(
+                            QCursor(Qt.CursorShape.PointingHandCursor),
                         )
 
-                    draft_frame.click_frame.connect(on_resume_transfer)
-                    self.scroll_area_widget_layout.addWidget(
-                        draft_frame, row_index, 0, 1, 1,
-                    )
-                    row_index += 1
+                        def on_resume_transfer(_p=None, _data=transfer_draft):
+                            self._view_model.page_navigation.send_cfa_page(
+                                draft_data=_data,
+                            )
+
+                        draft_frame.click_frame.connect(on_resume_transfer)
+                        self.scroll_area_widget_layout.addWidget(
+                            draft_frame, row_index, 0, 1, 1,
+                        )
+                        row_index += 1
         except Exception as e:
             print(f"Error loading transfer draft: {e}")
 
@@ -686,7 +684,7 @@ class RGBAssetDetailWidget(QWidget):
                 access_type = SettingRepository.get_wallet_access_type()
                 is_multisig = SettingRepository.get_wallet_signature_type(
                 ) == WalletSignatureType.MULTI_SIG_WALLET
-                if access_type == WalletAccessType.WATCH_ONLY or is_multisig:
+                if access_type == WalletAccessType.WATCH_ONLY or is_multisig and SettingRepository.get_wallet_type() != WalletType.OFFLINE_TYPE_WALLET:
                     svc = WalletDataService.get_session()
                     if svc is not None:
                         drafts = svc.list_ifa_secondary_drafts(

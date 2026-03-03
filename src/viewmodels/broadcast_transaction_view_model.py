@@ -324,7 +324,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             ToastManager.success(
                 description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE,
             )
-            logger.info('Multisig post result: %s', str(result))
 
     def respond_nack(self, operation_idx: int | None):
         """NACK a pending operation without signing (human disagrees)."""

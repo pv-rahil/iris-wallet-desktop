@@ -72,6 +72,7 @@ class BackupResponseModel(StatusModel):
 
 class RestoreResponseModel(StatusModel):
     """Restore response model."""
+    is_multisig: bool = False
 
 
 class UnlockResponseModel(StatusModel):

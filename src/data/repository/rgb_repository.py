@@ -356,7 +356,7 @@ class RgbRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.delete_secondary_draft_by_psbt(result.psbt)
+                wallet_service.delete_secondary_draft_by_psbt(asset_id=detail.asset_id)
                 wallet_service.add_psbt(
                     result.psbt,
                     purpose='inflate_asset',
@@ -399,10 +399,10 @@ class RgbRepository:
                 operation_idx=operation_idx,
                 respond_to_operation=respond_to_operation,
             )
-            if respond_to_operation.is_ack:
+            if respond_to_operation.is_ack():
                 wallet_service = WalletDataService.get_session()
                 if wallet_service is not None:
-                    wallet_service.delete_psbt(respond_to_operation.signed_psbt)
+                        wallet_service.delete_psbt(respond_to_operation.signed_psbt)
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()

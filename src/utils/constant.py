@@ -5,12 +5,12 @@ from __future__ import annotations
 from src.model.enums.enums_model import NetworkEnumModel
 
 DEFAULT_LOCALE = 'en_IN'
-ORGANIZATION_NAME = 'rgb'
-APP_NAME = 'iris-wallet-vault'
-ORGANIZATION_DOMAIN = 'com.rgb.iriswalletvault'
+ORGANIZATION_NAME = 'rgb_receiver'
+APP_NAME = 'iris-wallet-vault_receiver'
+ORGANIZATION_DOMAIN = 'com.rgb.iriswalletvault_receiver'
 LOG_FILE_MAX_SIZE = 1048576  # 1 mb
 LOG_FILE_MAX_BACKUP_COUNT = 5
-MNEMONIC_KEY = 'mnemonic'
+MNEMONIC_KEY = 'mnemonic_receiver'
 ACCOUNT_XPUB_VANILLA = 'account_xpub_vanilla'
 ACCOUNT_XPUB_COLORED = 'account_xpub_colored'
 MASTER_FINGERPRINT = 'master_fingerprint'
@@ -22,7 +22,7 @@ TEMP_MULTISIG_MNEMONIC = 'temp_multisig_mnemonic'
 LAST_SYNC_DIRECTION = 'last_sync_direction'
 EPOCH_TIME = 'epoch_time'
 SYNC_INDEX = 'sync_index'
-WALLET_PASSWORD_KEY = 'wallet_password'
+WALLET_PASSWORD_KEY = 'wallet_password_receiver'
 SAVED_INDEXER_URL = 'indexer_url'
 SAVED_PROXY_ENDPOINT = 'proxy_endpoint'
 CACHE_FILE_NAME = {
@@ -49,8 +49,8 @@ MAX_ISSUE_AMOUNT = 18446744073709551615
 FEE_RATE = 5
 MAX_ASSET_FILE_SIZE = 5  # In mb
 G_SCOPES = ['https://www.googleapis.com/auth/drive.file']
-NATIVE_LOGIN_ENABLED = 'nativeLoginEnabled'
-IS_NATIVE_AUTHENTICATION_ENABLED = 'isNativeAuthenticationEnabled'
+NATIVE_LOGIN_ENABLED = 'nativeLoginEnabled_receiver'
+IS_NATIVE_AUTHENTICATION_ENABLED = 'isNativeAuthenticationEnabled_receiver'
 PRIVACY_POLICY_URL = 'https://iriswallet.com/privacy_policy.html'
 TERMS_OF_SERVICE_URL = 'https://iriswallet.com/testnet/terms_of_service.html'
 LOG_FOLDER_NAME = 'logs'

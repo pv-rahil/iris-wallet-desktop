@@ -123,7 +123,7 @@ class BroadcastTransactionService:
         return 'NIA page'
 
     @staticmethod
-    def cleanup_secondary_draft_if_any(psbt_text: str) -> None:
+    def cleanup_secondary_draft_if_any(psbt_text: str, explicit_purpose: str | None = None) -> None:
         """Clean up secondary draft (IFA) if applicable."""
 
         wallet_service = WalletDataService.get_session()
@@ -131,7 +131,7 @@ class BroadcastTransactionService:
             return
 
         parsed = BroadcastTransactionService.parse_psbt_input(psbt_text)
-        purpose = parsed.purpose
+        purpose = explicit_purpose or parsed.purpose
         psbt_only = parsed.psbt
 
         if purpose is not None and purpose != 'inflate_asset':
