@@ -1065,7 +1065,8 @@ class RGBAssetDetailWidget(QWidget):
             self.transfer_amount,
         )
         if self.transaction_status == TransferStatus.WAITING_COUNTERPARTY \
-                and SettingRepository.get_wallet_type() != WalletType.OFFLINE_TYPE_WALLET:
+                and SettingRepository.get_wallet_type() != WalletType.OFFLINE_TYPE_WALLET or \
+                SettingRepository.get_wallet_signature_type() == WalletSignatureType.STANDARD_TYPE_WALLET:
             self.transaction_detail_frame.transaction_type.hide()
             self.transaction_detail_frame.transaction_amount.setStyleSheet(
                 'color:#959BAE;font-weight: 600',

@@ -19,6 +19,7 @@ from src.utils.constant import CACHE_FOLDER_NAME
 from src.utils.constant import LOG_FOLDER_NAME
 from src.utils.constant import MNEMONIC_KEY
 from src.utils.constant import WALLET_DATA_FOLDER_NAME
+from src.utils.constant import MULTISIG_COSIGNERS_FILE_NAME
 from src.utils.handle_exception import handle_exceptions
 from src.utils.local_store import local_store
 
@@ -67,6 +68,9 @@ def build_app_paths(base_path: str) -> AppPathsModel:
             mnemonic_file_path=os.path.join(app_path, MNEMONIC_KEY),
             wallet_data_folder_path=os.path.join(
                 app_path, WALLET_DATA_FOLDER_NAME,
+            ),
+            multisig_cosigners_file_path=os.path.join(
+                app_path, MULTISIG_COSIGNERS_FILE_NAME,
             ),
             download_consignment_path=downloads_dir,
 

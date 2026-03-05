@@ -108,6 +108,7 @@ class AppPathsModel(BaseModel):
     restore_folder_path: str
     mnemonic_file_path: str
     wallet_data_folder_path: str
+    multisig_cosigners_file_path: str
     download_consignment_path: str
 
 

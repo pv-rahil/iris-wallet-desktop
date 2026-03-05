@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import io
+import json
 import os
 import shutil
 import time
@@ -493,6 +494,13 @@ class USBSyncManager:
                             os.makedirs(os.path.dirname(target), exist_ok=True)
                             with open(target, 'wb') as f:
                                 f.write(z.read(m))
+
+                    # Restore multisig cosigners file if present
+                    multisig_file_name = os.path.basename(app_paths.multisig_cosigners_file_path)
+                    if multisig_file_name in z.namelist():
+                        cosigners_target = app_paths.multisig_cosigners_file_path
+                        with open(cosigners_target, 'wb') as f:
+                            f.write(z.read(multisig_file_name))
                 else:
                     z.extractall(app_paths.app_path)
 
@@ -569,6 +577,21 @@ class USBSyncManager:
                         os.path.basename(
                             app_paths.config_file_path,
                         ), '\n'.join(lines),
+                    )
+
+                # Include multisig cosigners in ZIP if this is a multisig wallet
+                cosigners = SettingRepository.get_cosigners()
+                if cosigners:
+                    required_signers, total_signers = SettingRepository.get_multisig_config()
+                    composite = {
+                        'required_signers': required_signers,
+                        'total_signers': total_signers,
+                        'cosigners': cosigners,
+                    }
+                    z.writestr(
+                        os.path.basename(
+                            app_paths.multisig_cosigners_file_path,
+                        ), json.dumps(composite),
                     )
             return buf.getvalue()
         except Exception as exc:

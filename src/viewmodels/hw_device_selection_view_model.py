@@ -82,7 +82,7 @@ class HWDeviceSelectionViewModel(QObject, ThreadManager):
 
                 multisig_colored_path = single_sig_path.replace(
                     replace_target,
-                    rgb_coin_type + '/1h',
+                    rgb_coin_type + '/0h',
                 )
 
                 vanilla = client.get_pubkey_at_path(single_sig_path).to_string()

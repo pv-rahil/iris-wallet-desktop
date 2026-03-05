@@ -30,6 +30,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import cleanup_debug_logs
 from src.utils.common_utils import download_file
@@ -37,9 +38,11 @@ from src.utils.common_utils import network_info
 from src.utils.common_utils import zip_logger_folder
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
+from src.utils.constant import VANILLA_KEYCHAIN
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MASTER_FINGERPRINT
+from rgb_lib import Cosigner, CosignerData
 from src.utils.constant import PRIVACY_POLICY_URL
 from src.utils.constant import TERMS_OF_SERVICE_URL
 from src.utils.error_message import ERROR_WHILE_DOWNLOADING_LOGS
@@ -161,6 +164,32 @@ class AboutWidget(QWidget):
             self.master_fingerprint_widget.copy_button.setAccessibleName(
                 MASTER_FINGERPRINT_COPY_BUTTON,
             )
+
+        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            # User's own cosigner string
+            master_fp = local_store.get_value(MASTER_FINGERPRINT)
+            account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA)
+            account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
+            keychain = local_store.get_value(VANILLA_KEYCHAIN)
+            keychain_val = int(keychain) if keychain is not None else 0
+            
+            try:
+                data = CosignerData(
+                    master_fingerprint=master_fp,
+                    account_xpub_vanilla=account_xpub_vanilla,
+                    account_xpub_colored=account_xpub_colored,
+                    vanilla_keychain=keychain_val, # use keychain_val here
+                )
+                cosigner_str = Cosigner.from_data(data).cosigner_string()
+                
+                self.cosigner_string_widget = WalletInfoWidget(
+                    translation_key='signer_details',
+                    value=truncate_xpub(cosigner_str, 20, 20),
+                    v_layout=self.about_vertical_layout,
+                    copy_value=cosigner_str,
+                )
+            except Exception as e:
+                logger.error('Failed to generate cosigner string: %s', e)
 
         self.privacy_policy_label = QLabel(self.about_widget)
         self.privacy_policy_label.setObjectName('privacy_policy_label')

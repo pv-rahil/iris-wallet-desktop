@@ -4,6 +4,9 @@ for the term and conditions page activities.
 """
 from __future__ import annotations
 
+import json
+import os
+
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
@@ -14,12 +17,13 @@ from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
+from src.utils.build_app_path import app_paths
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import WALLET_PASSWORD_KEY
-from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.info_message import INFO_RESTORE_COMPLETED
 from src.utils.keyring_storage import get_value
 from src.utils.keyring_storage import set_value
+from src.utils.logging import logger
 from src.utils.usb_sync_manager import USBSyncManager
 from src.utils.worker import ThreadManager
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
@@ -91,14 +95,28 @@ class WelcomeViewModel(QObject, ThreadManager):
         """This method handles the restore process completion."""
         if data.password is None:
             return
-        network = get_bitcoin_network_from_enum(
-            SettingRepository.get_wallet_network(),
-        )
+        network = SettingRepository.get_wallet_network()
         is_set_password: bool = set_value(
             WALLET_PASSWORD_KEY, data.password, network.value,
         )
 
         if is_set_password:
+            # Restore multisig configuration if cosigners file was synced from USB
+            cosigners_file_path = app_paths.multisig_cosigners_file_path
+            if os.path.exists(cosigners_file_path):
+                try:
+                    with open(cosigners_file_path, 'r', encoding='utf-8') as mf:
+                        multisig_data = json.load(mf)
+                    SettingRepository.set_wallet_signature_type(WalletSignatureType.MULTI_SIG_WALLET)
+                    SettingRepository.set_multisig_config(
+                        multisig_data.get('required_signers'),
+                        multisig_data.get('total_signers'),
+                    )
+                    SettingRepository.set_cosigners(multisig_data.get('cosigners', []))
+                    SettingRepository.set_threshold_confirmed(True)
+                    logger.info('Restored multisig configuration from USB')
+                except Exception as exc:
+                    logger.error('Failed to restore multisig config from cosigners file: %s', exc)
             ToastManager.success(INFO_RESTORE_COMPLETED)
             SettingRepository.set_keyring_status(status=False)
             self._page_navigation.enter_wallet_password_page()

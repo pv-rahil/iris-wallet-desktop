@@ -72,9 +72,7 @@ class RestoreViewModel(QObject, ThreadManager):
             SettingRepository.set_wallet_initialized()
             SettingRepository.set_backup_configured(True)
 
-            network = get_bitcoin_network_from_enum(
-                SettingRepository.get_wallet_network(),
-            )
+            network = SettingRepository.get_wallet_network()
             if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
                 self._store_hardware_wallet_data()
             else:

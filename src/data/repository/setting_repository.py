@@ -484,7 +484,7 @@ class SettingRepository:
         """
         try:
             cosigners_json = json.dumps(cosigners_data)
-            cosigners_file_path = os.path.join(app_paths.app_path, "multisig_cosigners.json")
+            cosigners_file_path = app_paths.multisig_cosigners_file_path
             with open(cosigners_file_path, "w", encoding="utf-8") as f:
                 f.write(cosigners_json)
             return True
@@ -500,7 +500,7 @@ class SettingRepository:
             List of cosigner dicts, empty list if none stored
         """
         try:
-            cosigners_file_path = os.path.join(app_paths.app_path, "multisig_cosigners.json")
+            cosigners_file_path = app_paths.multisig_cosigners_file_path
             if os.path.exists(cosigners_file_path):
                 with open(cosigners_file_path, "r", encoding="utf-8") as f:
                     cosigners_json = f.read()
