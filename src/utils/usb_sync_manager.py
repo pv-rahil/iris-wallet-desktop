@@ -498,9 +498,21 @@ class USBSyncManager:
                     # Restore multisig cosigners file if present
                     multisig_file_name = os.path.basename(app_paths.multisig_cosigners_file_path)
                     if multisig_file_name in z.namelist():
-                        cosigners_target = app_paths.multisig_cosigners_file_path
-                        with open(cosigners_target, 'wb') as f:
-                            f.write(z.read(multisig_file_name))
+                        raw_data = z.read(multisig_file_name)
+                        try:
+                            data = json.loads(raw_data.decode('utf-8'))
+                            if isinstance(data, dict) and 'cosigners' in data:
+                                required_signers = data.get('required_signers')
+                                total_signers = data.get('total_signers')
+                                if required_signers is not None and total_signers is not None:
+                                    SettingRepository.set_multisig_config(required_signers, total_signers)
+                                SettingRepository.set_cosigners(data['cosigners'])
+                            else:
+                                cosigners_target = app_paths.multisig_cosigners_file_path
+                                with open(cosigners_target, 'wb') as f:
+                                    f.write(raw_data)
+                        except Exception as e:
+                            logger.error('Failed to parse multisig cosigners from USB zip: %s', e)
                 else:
                     z.extractall(app_paths.app_path)
 

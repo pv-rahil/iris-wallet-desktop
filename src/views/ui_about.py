@@ -173,23 +173,24 @@ class AboutWidget(QWidget):
             keychain = local_store.get_value(VANILLA_KEYCHAIN)
             keychain_val = int(keychain) if keychain is not None else 0
             
-            try:
-                data = CosignerData(
-                    master_fingerprint=master_fp,
-                    account_xpub_vanilla=account_xpub_vanilla,
-                    account_xpub_colored=account_xpub_colored,
-                    vanilla_keychain=keychain_val, # use keychain_val here
-                )
-                cosigner_str = Cosigner.from_data(data).cosigner_string()
+            if master_fp and account_xpub_vanilla and account_xpub_colored:
+                try:
+                    data = CosignerData(
+                        master_fingerprint=master_fp,
+                        account_xpub_vanilla=account_xpub_vanilla,
+                        account_xpub_colored=account_xpub_colored,
+                        vanilla_keychain=keychain_val, # use keychain_val here
+                    )
+                    cosigner_str = Cosigner.from_data(data).cosigner_string()
                 
-                self.cosigner_string_widget = WalletInfoWidget(
-                    translation_key='signer_details',
-                    value=truncate_xpub(cosigner_str, 20, 20),
-                    v_layout=self.about_vertical_layout,
-                    copy_value=cosigner_str,
-                )
-            except Exception as e:
-                logger.error('Failed to generate cosigner string: %s', e)
+                    self.cosigner_string_widget = WalletInfoWidget(
+                        translation_key='signer_details',
+                        value=truncate_xpub(cosigner_str, 20, 20),
+                        v_layout=self.about_vertical_layout,
+                        copy_value=cosigner_str,
+                    )
+                except Exception as e:
+                    logger.error('Failed to generate cosigner string: %s', e)
 
         self.privacy_policy_label = QLabel(self.about_widget)
         self.privacy_policy_label.setObjectName('privacy_policy_label')

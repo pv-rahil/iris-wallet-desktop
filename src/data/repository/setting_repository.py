@@ -483,7 +483,13 @@ class SettingRepository:
             bool: True if stored successfully
         """
         try:
-            cosigners_json = json.dumps(cosigners_data)
+            required_signers, total_signers = SettingRepository.get_multisig_config()
+            composite = {
+                'required_signers': required_signers,
+                'total_signers': total_signers,
+                'cosigners': cosigners_data,
+            }
+            cosigners_json = json.dumps(composite)
             cosigners_file_path = app_paths.multisig_cosigners_file_path
             with open(cosigners_file_path, "w", encoding="utf-8") as f:
                 f.write(cosigners_json)
@@ -501,12 +507,16 @@ class SettingRepository:
         """
         try:
             cosigners_file_path = app_paths.multisig_cosigners_file_path
-            if os.path.exists(cosigners_file_path):
-                with open(cosigners_file_path, "r", encoding="utf-8") as f:
-                    cosigners_json = f.read()
+            if not os.path.exists(cosigners_file_path):
+                return []
+            with open(cosigners_file_path, "r", encoding="utf-8") as f:
+                cosigners_json = f.read()
             if not cosigners_json:
                 return []
-            return json.loads(cosigners_json)
+            data = json.loads(cosigners_json)
+            if isinstance(data, dict) and 'cosigners' in data:
+                return data['cosigners']
+            return []
         except Exception as exe:
             return handle_exceptions(exe)
 

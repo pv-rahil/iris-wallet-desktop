@@ -1203,31 +1203,36 @@ class MultisigSetupPage(QWidget):
 
         # Generate and display cosigner string only if not in watch-only Step 2
         if not self._is_watch_only:
-            try:
-                # keychain is optional int, ensure it's None if not set (though we default to 0 above/in usage)
-                keychain_val = int(keychain) if keychain is not None else 0
+            if master_fp and account_xpub_vanilla and account_xpub_colored:
+                try:
+                    # keychain is optional int, ensure it's None if not set (though we default to 0 above/in usage)
+                    keychain_val = int(keychain) if keychain is not None else 0
 
-                data = CosignerData(
-                    master_fingerprint=master_fp,
-                    account_xpub_vanilla=account_xpub_vanilla,
-                    account_xpub_colored=account_xpub_colored,
-                    vanilla_keychain=keychain_val,
-                )
-                cosigner_str = Cosigner.from_data(data).cosigner_string()
+                    data = CosignerData(
+                        master_fingerprint=master_fp,
+                        account_xpub_vanilla=account_xpub_vanilla,
+                        account_xpub_colored=account_xpub_colored,
+                        vanilla_keychain=keychain_val,
+                    )
+                    cosigner_str = Cosigner.from_data(data).cosigner_string()
+                    self.cosigner_string_value_widget.setText(
+                        cosigner_str,
+                    )
+                    self.cosigner_string_value_widget.setCursorPosition(0)
+                    self.cosigner_string_copy_btn.clicked.connect(
+                        lambda: copy_text(cosigner_str),
+                    )
+                    self.xpub_colored_copy_btn.clicked.connect(
+                        lambda: copy_text(account_xpub_colored),
+                    )
+                except Exception as e:
+                    logger.error('Failed to generate cosigner string: %s', e)
+                    self.cosigner_string_value_widget.setText(
+                        'Error generating string',
+                    )
+            else:
                 self.cosigner_string_value_widget.setText(
-                    cosigner_str,
-                )
-                self.cosigner_string_value_widget.setCursorPosition(0)
-                self.cosigner_string_copy_btn.clicked.connect(
-                    lambda: copy_text(cosigner_str),
-                )
-                self.xpub_colored_copy_btn.clicked.connect(
-                    lambda: copy_text(account_xpub_colored),
-                )
-            except Exception as e:
-                logger.error('Failed to generate cosigner string: %s', e)
-                self.cosigner_string_value_widget.setText(
-                    'Error generating string',
+                    'Incomplete signer data',
                 )
 
     def _truncate_text(self, text: str) -> str:
