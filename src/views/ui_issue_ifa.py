@@ -825,7 +825,7 @@ class IssueIFAWidget(QWidget):
                 self._view_model.utxo_creation_view_model.current_purpose = 'inflate_asset'
                 self.show_inflate_psbt_page(existing_unsigned)
                 return
-        if (self.is_hardware_wallet and self.is_online_wallet) or self.is_watch_only or self.is_multisig:
+        if (self.is_hardware_wallet and not self.is_offline_wallet) or self.is_watch_only or self.is_multisig:
             self._view_model.issue_ifa_asset_view_model.secondary_issuance_begin(
                 asset_id=self.params.asset_id,
                 amount=int(amount_to_issue),
@@ -1045,7 +1045,7 @@ class IssueIFAWidget(QWidget):
                 self.on_issue_ifa_click()
             elif purpose == 'inflate_asset':
                 # Before retrying inflate, guide user to open RGB app on Ledger (HW-online only)
-                if self.is_hardware_wallet and self.is_online_wallet and (self._retry_after_utxo_inflate or self.secondary_issuance):
+                if self.is_hardware_wallet and not self.is_offline_wallet and (self._retry_after_utxo_inflate or self.secondary_issuance):
                     if not self._prompt_rgb_app_and_confirm():
                         return
                 self._retry_after_utxo_inflate = False
@@ -1114,7 +1114,7 @@ class IssueIFAWidget(QWidget):
                 self.show_ifa_psbt_page(existing_inflatables_psbt.get('psbt'))
                 return
         # For HW-online, prompt for Bitcoin app first; for others, proceed directly to PSBT creation
-        if self.is_hardware_wallet and self.is_online_wallet:
+        if self.is_hardware_wallet and not self.is_offline_wallet:
             if not self._prompt_bitcoin_app_and_confirm():
                 return
             self._retry_after_utxo_inflate = bool(self.secondary_issuance)

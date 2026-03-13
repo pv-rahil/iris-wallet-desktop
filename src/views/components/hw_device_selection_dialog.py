@@ -5,7 +5,7 @@ Provides UI for device selection, error handling, and connection logic.
 """
 from __future__ import annotations
 
-from hwilib.commands import enumerate as hwi_enumerate
+from src.utils.ledger_hw_client import enumerate_ledger_devices
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
@@ -251,7 +251,7 @@ class HWDeviceSelectionDialog(QDialog):
                 self.poll_timer.start(5000)
             return
         selected_fingerprint = selected_button.property('fingerprint')
-        devices = hwi_enumerate(allow_emulators=True)
+        devices = enumerate_ledger_devices()
         matched_device = None
         for d in devices:
             if d.get('fingerprint', 'no-fp') == selected_fingerprint:
@@ -274,10 +274,9 @@ class HWDeviceSelectionDialog(QDialog):
             self._reset_connecting_loader()
             return
 
-        device_path = matched_device['path']
         network = SettingRepository.get_wallet_network()
         self._device_selection_view_model.connect_to_device(
-            device_path, network,
+            matched_device, network,
         )
 
     def _show_connecting_loader(self):
@@ -355,7 +354,7 @@ class HWDeviceSelectionDialog(QDialog):
 
     def checking_devices(self):
         """
-        Checking devices with HWI enumerate and update device list and error label.
+        Check available Ledger devices (HID + TCP emulator) and update device list and error label.
         """
         # Store the currently selected fingerprint (if any)
         selected_fingerprint = None
@@ -363,7 +362,7 @@ class HWDeviceSelectionDialog(QDialog):
         if selected_button:
             selected_fingerprint = selected_button.property('fingerprint')
 
-        devices_info = hwi_enumerate(allow_emulators=True)
+        devices_info = enumerate_ledger_devices()
         error_message = None
         for d in devices_info:
             if d.get('error'):

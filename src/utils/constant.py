@@ -73,6 +73,10 @@ PROXY_ENDPOINT_TESTNET = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
 INDEXER_URL_MAINNET = 'http://127.0.0.1:50003'
 PROXY_ENDPOINT_MAINNET = 'http://127.0.0.1:3002/json-rpc'
 
+# Ledger Speculos emulator connection defaults.
+LEDGER_EMULATOR_HOST = '127.0.0.1'
+LEDGER_EMULATOR_PORT = 9999
+
 # Block values for fee estimation
 SLOW_TRANSACTION_FEE_BLOCKS = 17
 MEDIUM_TRANSACTION_FEE_BLOCKS = 7

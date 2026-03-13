@@ -151,6 +151,7 @@ class BtcRepository:
                 online=colored_wallet.online, up_to=param.up_to, num=param.num, size=param.size, fee_rate=param.fee_rate,
                 skip_sync=param.skip_sync,
             )
+            print(psbt)
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(psbt, purpose=purpose)

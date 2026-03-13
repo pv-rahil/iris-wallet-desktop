@@ -32,11 +32,11 @@ def test_set_and_clear_client(store: HardwareClientStore):
 
 
 def test_stop_client_closes_and_clears():
-    """stop_client() should call close() on the client and clear it."""
+    """stop_client() should call stop() on the client and clear it."""
     mock_client = MagicMock()
     hardware_client_store.set_client(mock_client)
 
     hardware_client_store.stop_client()
 
-    mock_client.close.assert_called_once()
+    mock_client.stop.assert_called_once()
     assert hardware_client_store.client is None

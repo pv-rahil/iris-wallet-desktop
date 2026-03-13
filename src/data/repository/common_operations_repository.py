@@ -1,7 +1,6 @@
 """Module containing CommonOperationRepository."""
 from __future__ import annotations
 
-from hwilib.psbt import PSBT
 from rgb_lib import AssetSchema
 from rgb_lib import BitcoinNetwork
 from rgb_lib import DatabaseType
@@ -31,6 +30,7 @@ from src.utils.custom_exception import CommonException
 from src.utils.decorators.require_hardware_wallet_connected import require_hardware_wallet_connected
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import get_bitcoin_network_from_enum
+from src.utils.ledger_hw_client import sign_psbt_with_ledger
 from src.utils.wallet_credential_encryption import mnemonic_store
 
 
@@ -98,14 +98,16 @@ class CommonOperationRepository:
     @staticmethod
     @require_hardware_wallet_connected()
     def sign_and_finalize_psbt(unsigned_psbt: str) -> str:
-        """Sign and finalize psbt"""
+        """Sign and finalize PSBT using hardware wallet or software wallet."""
         with repository_custom_context():
-            psbt = PSBT()
-            psbt.deserialize(unsigned_psbt)
             key_storage_type = SettingRepository.get_key_storage_type()
             if key_storage_type == KeyStorageType.HARDWARE_WALLET:
-                signed_psbt = hardware_client_store.client.sign_tx(psbt)
-                serialized_psbt = signed_psbt.serialize()
+                # Get descriptor dynamically from the active wallet — no hardcoded values.
+                descriptor = colored_wallet.wallet.get_descriptors()
+                client = hardware_client_store.client
+                serialized_psbt = sign_psbt_with_ledger(
+                    unsigned_psbt, client, descriptor,
+                )
             else:
                 serialized_psbt = colored_wallet.wallet.sign_psbt(
                     unsigned_psbt,
@@ -163,10 +165,12 @@ class CommonOperationRepository:
         with repository_custom_context():
             key_storage_type = SettingRepository.get_key_storage_type()
             if key_storage_type == KeyStorageType.HARDWARE_WALLET:
-                psbt = PSBT()
-                psbt.deserialize(unsigned_psbt)
-                signed_psbt = hardware_client_store.client.sign_tx(psbt)
-                serialized_psbt = signed_psbt.serialize()
+                # Get descriptor dynamically from the active wallet — no hardcoded values.
+                descriptor = colored_wallet.wallet.get_descriptors()
+                client = hardware_client_store.client
+                serialized_psbt = sign_psbt_with_ledger(
+                    unsigned_psbt, client, descriptor,
+                )
             else:
                 temp_wallet = CommonOperationRepository._get_temp_singlesig_wallet()
                 serialized_psbt = temp_wallet.sign_psbt(unsigned_psbt)
