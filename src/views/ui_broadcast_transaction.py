@@ -132,13 +132,15 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_transaction_widget.setMinimumSize(QSize(800, 450))
             self.broadcast_transaction_widget.setMaximumSize(QSize(800, 450))
         else:
-            self.broadcast_transaction_widget.setMinimumSize(QSize(630, 450))
-            self.broadcast_transaction_widget.setMaximumSize(QSize(630, 450))
+            self.broadcast_transaction_widget.setMinimumSize(QSize(700, 450))
+            self.broadcast_transaction_widget.setMaximumSize(QSize(700, 450))
         self.vertical_layout = QVBoxLayout(self.broadcast_transaction_widget)
         self.vertical_layout.setObjectName('verticalLayout')
         # Multisig: tighten and equalize inner paddings similar to reference
         if self.is_multisig:
             self.vertical_layout.setContentsMargins(22, 8, 22, 10)
+        else:
+            self.vertical_layout.setContentsMargins(22, 12, 22, 16)
         self.vertical_layout.addSpacing(4)
 
         # Loading overlay (matches other pages): covers the card while inspections run
@@ -194,8 +196,12 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_title_layout.addWidget(
             self.close_btn_broadcast_transaction_page,
         )
-        # Multisig: ensure close button is vertically centered next to the title
-        if self.is_multisig:
+        # Ensure consistent vertical centering/alignment for both modes
+        if not self.is_multisig:
+            self.broadcast_transaction_title_layout.setContentsMargins(
+                22, 0, 22, 0,
+            )
+        else:
             self.broadcast_transaction_title_layout.setContentsMargins(
                 0, 0, 0, 0,
             )
@@ -285,6 +291,8 @@ class BroadcastTransactionWidget(QWidget):
         # Ensure input aligns to card margins exactly
         if self.is_multisig:
             self.horizontal_layout_1.setContentsMargins(0, 0, 0, 0)
+        else:
+            self.horizontal_layout_1.setContentsMargins(0, 8, 0, 8)
         self.broadcast_transaction_input = QPlainTextEdit(
             self.broadcast_transaction_widget,
         )

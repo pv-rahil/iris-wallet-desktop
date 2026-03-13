@@ -8,7 +8,6 @@ from rgb_lib import Assets
 from rgb_lib import AssetUda
 from rgb_lib import Balance
 from rgb_lib import Invoice
-from rgb_lib import Operation
 from rgb_lib import InitOperationResult
 from rgb_lib import OperationInfo
 from rgb_lib import OperationResult
@@ -20,7 +19,8 @@ from rgb_lib import RefreshedTransfer
 from rgb_lib import RespondToOperation
 from rgb_lib import RgbInspection
 from rgb_lib import Transfer
-from rgb_lib.rgb_lib import WitnessData
+from rgb_lib import WitnessData
+from rgb_lib import SendBeginResult
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.service.wallet_data_service import WalletDataService
@@ -126,7 +126,7 @@ class RgbRepository:
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=asset_detail.recipient_id,
-                witness_data=None,
+                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT, blinding=None),
                 assignment=asset_detail.assignment,
                 transport_endpoints=asset_detail.transport_endpoints,
             )
@@ -258,17 +258,17 @@ class RgbRepository:
             )
             recipient_map = {detail.asset_id: [recipient]}
             expiration = ExpirationRelative(duration_seconds=detail.duration_seconds, exact=True)
-            psbt: SendBeginResult = colored_wallet.wallet.send_begin(
+            result: SendBeginResult = colored_wallet.wallet.send_begin(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
                 fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration=expiration
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(
-                    psbt,
+                    result.psbt,
                     purpose='send_asset',
                 )
-            return psbt
+            return result
 
     @staticmethod
     @auto_sync_multisig(check_pending_ops=True)

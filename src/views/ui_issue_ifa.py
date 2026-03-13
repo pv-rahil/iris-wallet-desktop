@@ -526,6 +526,10 @@ class IssueIFAWidget(QWidget):
             view_model = self._view_model.cfa_view_model
             self.asset_transactions: ListTransferAssetWithBalanceResponseModel = view_model.txn_list
             self.spendable_balance_validation()
+            # Re-validate when asset data is loaded/refreshed
+            view_model.txn_list_loaded.connect(
+                self.spendable_balance_validation,
+            )
         else:
             if not self.is_multisig:
                 self.issue_ifa_btn.clicked.connect(
@@ -1134,8 +1138,9 @@ class IssueIFAWidget(QWidget):
             )
             if dialog.exec() != QDialog.Accepted:
                 return
+        utxo_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset_ifa'
         self._view_model.utxo_creation_view_model.create_utxos_begin(
-            purpose='issue_asset_ifa', num=needed,
+            purpose=utxo_purpose, num=needed,
         )
 
     def show_ifa_psbt_page(self, inflatables_psbt):

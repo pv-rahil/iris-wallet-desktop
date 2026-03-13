@@ -340,7 +340,7 @@ class CFAViewModel(QObject, ThreadManager):
             unsigned_psbt = result.psbt
             self.operation_idx = result.operation_idx
         else:
-            unsigned_psbt = result
+            unsigned_psbt = result.psbt
             self.operation_idx = None
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)

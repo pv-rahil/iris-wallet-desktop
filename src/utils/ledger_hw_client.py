@@ -1,69 +1,39 @@
 """
-Ledger hardware wallet client utilities.
-
+Ledger hardware wallet client for taproot single-sig and multisig PSBT signing.
 """
 from __future__ import annotations
 
+import copy
 import re
 import socket
 from typing import Any
-from rgb_lib import WalletDescriptors
+
+from ledger_bitcoin import Chain, WalletPolicy, createClient
+from ledger_bitcoin.client_base import PartialSignature, TransportClient
 from ledger_bitcoin.psbt import PSBT
-from ledger_bitcoin import Chain
-from ledger_bitcoin import WalletPolicy
-from ledger_bitcoin import createClient
-from ledger_bitcoin.client_base import PartialSignature
-from ledger_bitcoin.client_base import TransportClient
+from rgb_lib import WalletDescriptors
 
-from src.model.enums.enums_model import NetworkEnumModel
-from src.utils.constant import LEDGER_EMULATOR_HOST
-from src.utils.constant import LEDGER_EMULATOR_PORT
 from src.data.repository.setting_repository import SettingRepository
-from src.utils.logging import logger
+from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.constant import LEDGER_EMULATOR_HOST, LEDGER_EMULATOR_PORT
 from src.utils.hardware_client_store import hardware_client_store
+from src.utils.logging import logger
 
-# ---------------------------------------------------------------------------
-# Hardware constant — Ledger's USB Vendor ID, assigned by USB-IF.
-# This is not a business choice; it cannot change without new hardware.
-# ---------------------------------------------------------------------------
+# Ledger USB Vendor ID
 _LEDGER_VENDOR_ID = 0x2C97
 
-# ---------------------------------------------------------------------------
-# Hardware models — mapped from USB Product IDs (same as HWI).
-# This allows the UI to display "Nano S", "Nano X", etc. correctly.
-# ---------------------------------------------------------------------------
-_LEDGER_MODEL_IDS = {
-    0x10: 'ledger_nano_s',
-    0x40: 'ledger_nano_x',
-    0x50: 'ledger_nano_s_plus',
-    0x60: 'ledger_stax',
-    0x70: 'ledger_flex',
+# Model names by product ID
+_LEDGER_MODELS = {
+    0x10: 'ledger_nano_s', 0x40: 'ledger_nano_x', 0x50: 'ledger_nano_s_plus',
+    0x60: 'ledger_stax', 0x70: 'ledger_flex',
+    0x0001: 'ledger_nano_s', 0x0004: 'ledger_nano_x',  # Legacy
 }
 
-_LEDGER_LEGACY_PRODUCT_IDS = {
-    0x0001: 'ledger_nano_s',
-    0x0004: 'ledger_nano_x',
-}
-
-
-
-# ---------------------------------------------------------------------------
-# Emulator probe timeout — used by _is_emulator_reachable.
-# ---------------------------------------------------------------------------
 _LEDGER_EMULATOR_TIMEOUT = 1.0
 
+
 def network_to_chain(network: NetworkEnumModel) -> Chain:
-    """
-    Convert a ``NetworkEnumModel`` value to the corresponding
-    ``ledger_bitcoin.Chain``.
-
-    * ``MAINNET``  → ``Chain.MAIN``
-    * ``TESTNET``  → ``Chain.TEST``
-    * ``REGTEST``  → ``Chain.TEST``  (Regtest uses testnet derivation paths)
-
-    This is the single authoritative mapping used by both
-    ``require_hardware_wallet_connected`` and ``common_operations_repository``.
-    """
+    """Convert NetworkEnumModel to ledger_bitcoin Chain."""
     return {
         NetworkEnumModel.MAINNET: Chain.MAIN,
         NetworkEnumModel.TESTNET: Chain.TEST,
@@ -71,252 +41,154 @@ def network_to_chain(network: NetworkEnumModel) -> Chain:
     }.get(network, Chain.TEST)
 
 
-def _is_emulator_reachable(host: str, port: int, timeout: float = _LEDGER_EMULATOR_TIMEOUT) -> bool:
-    """
-    Return True if a Speculos emulator is listening on host:port.
-    Returns False immediately if host is empty or port is 0 (emulator disabled).
-    """
+def _is_emulator_reachable(host: str, port: int) -> bool:
+    """Check if Speculos emulator is listening on host:port."""
     if not host or port == 0:
         return False
     try:
-        with socket.create_connection((host, port), timeout=timeout):
+        with socket.create_connection((host, port), timeout=_LEDGER_EMULATOR_TIMEOUT):
             return True
     except (OSError, ConnectionRefusedError):
         return False
 
 
 def _get_hid_devices() -> list[dict]:
-    """
-    Return raw HID device info dicts for all connected Ledger devices.
-    Returns an empty list if the `hid` package is unavailable.
-    """
+    """Enumerate connected Ledger HID devices."""
     try:
-        import hid  # pylint: disable=import-outside-toplevel
-        raw: list[dict] = []
+        import hid
+        devices = []
         for dev in hid.enumerate(_LEDGER_VENDOR_ID, 0):
-            # Filter to the correct interface/usage_page like ledgercomm does
             if dev.get('interface_number') == 0 or dev.get('usage_page') == 0xFFA0:
-                raw.append(dev)
-        return raw
-    except Exception as exc:  # pylint: disable=broad-except
-        logger.warning('[LedgerHW] hid.enumerate failed: %s', exc)
+                devices.append(dev)
+        return devices
+    except Exception as exc:
+        logger.warning('[LedgerHW] HID enumerate failed: %s', exc)
         return []
 
 
-def _probe_device(transport_client: TransportClient) -> tuple[str | None, str | None]:
-    """
-    Open a short-lived connection and fetch (model_name, fingerprint_hex).
-    Returns (None, None) if the device cannot be reached.
-    """
+def _probe_device(transport: TransportClient) -> tuple[str | None, str | None]:
+    """Get (app_name, fingerprint_hex) from device. Returns (None, None) on failure."""
     try:
         network = SettingRepository.get_wallet_network()
-        chain = network_to_chain(network)
-        client = createClient(transport_client, chain=chain)
-        app_name, _version, _flags = client.get_version()
-        fingerprint: bytes = client.get_master_fingerprint()
+        client = createClient(transport, chain=network_to_chain(network))
+        app_name, _, _ = client.get_version()
+        fp = client.get_master_fingerprint().hex()
         client.stop()
-        return app_name, fingerprint.hex()
+        return app_name, fp
     except Exception:
-        transport_client.stop()
-        return None,None
+        transport.stop()
+        return None, None
 
 
 def enumerate_ledger_devices() -> list[dict[str, Any]]:
     """
-    Discover all available Ledger devices — real (HID) and emulated (TCP).
-
-    Each entry in the returned list has the same shape as the old HWI enumerate
-    result so callers need no changes:
-
-        {
-            'path'        : bytes | str,  # HID path or 'tcp:<host>:<port>'
-            'type'        : 'hid' | 'tcp',
-            'model'       : str,          # app name reported by the device
-            'fingerprint' : str,          # 8-char hex
-            'error'       : str | None,
-        }
-
-    Devices that are unreachable, locked, or not in the Bitcoin app will have
-    'error' set and 'fingerprint' / 'model' will be empty strings.
-
-    The Speculos TCP emulator is only probed when the active network has an
-    emulator endpoint configured (Regtest by default).  On Testnet and Mainnet
-    the emulator is disabled unless ``LEDGER_EMULATOR_HOST`` is explicitly set.
+    Discover Ledger devices (HID and TCP emulator).
+    
+    Returns list of dicts with keys: path, type, model, fingerprint, error.
     """
-    devices: list[dict[str, Any]] = []
+    devices = []
 
-    # --- Real HID devices ---
+    # HID devices
     for raw in _get_hid_devices():
-        path: bytes = raw.get('path', b'')
+        path = raw.get('path', b'')
         pid = raw.get('product_id', 0)
-        model_id = pid >> 8
-        model_name = _LEDGER_MODEL_IDS.get(model_id)
-        if not model_name:
-            model_name = _LEDGER_LEGACY_PRODUCT_IDS.get(pid, 'ledger')
-
-        entry: dict[str, Any] = {
-            'path': path,
-            'type': 'hid',
-            'model': model_name,
-            'fingerprint': '',
-            'error': None,
-        }
+        model = _LEDGER_MODELS.get(pid >> 8) or _LEDGER_MODELS.get(pid, 'ledger')
+        
+        entry = {'path': path, 'type': 'hid', 'model': model, 'fingerprint': '', 'error': None}
         try:
             tc = TransportClient('hid', path=path)
-            result = _probe_device(tc)
-            app_name, fp = result
-            if fp is None:
-                entry['error'] = 'Device not in Bitcoin app or locked'
-            else:
+            _, fp = _probe_device(tc)
+            if fp:
                 entry['fingerprint'] = fp
-        except Exception as exc:  # pylint: disable=broad-except
+            else:
+                entry['error'] = 'Device not in Bitcoin app or locked'
+        except Exception as exc:
             entry['error'] = str(exc)
         devices.append(entry)
-        logger.debug('[LedgerHW] HID device: %s', entry)
 
-    # --- Speculos TCP emulator (network-aware) ---
+    # TCP emulator
     if _is_emulator_reachable(LEDGER_EMULATOR_HOST, LEDGER_EMULATOR_PORT):
         tcp_path = f'tcp:{LEDGER_EMULATOR_HOST}:{LEDGER_EMULATOR_PORT}'
         
-        # Direct detection: try to find the running speculos process and its model.
-        # Fallback to Nano S (HWI behavior).
-        pid = 0x1000  # Default: Nano S
+        # Detect model from speculos process
+        pid = 0x1000
         try:
             import psutil
             for proc in psutil.process_iter(['cmdline']):
                 cmd = proc.info.get('cmdline') or []
-                if any('speculos' in str(arg).lower() for arg in cmd):
-                    if '-m' in cmd:
-                        m_idx = cmd.index('-m')
-                        if m_idx + 1 < len(cmd):
-                            model_flag = cmd[m_idx + 1].lower()
-                            if 'flex' in model_flag: pid = 0x7000
-                            elif 'stax' in model_flag: pid = 0x6000
-                            elif 'nanosp' in model_flag: pid = 0x5000
-                            elif 'nanox' in model_flag: pid = 0x4000
-        except:
+                if any('speculos' in str(a).lower() for a in cmd) and '-m' in cmd:
+                    model_flag = cmd[cmd.index('-m') + 1].lower()
+                    if 'flex' in model_flag: pid = 0x7000
+                    elif 'stax' in model_flag: pid = 0x6000
+                    elif 'nanosp' in model_flag: pid = 0x5000
+                    elif 'nanox' in model_flag: pid = 0x4000
+        except Exception:
             pass
 
-        model_id = pid >> 8
-        model_name = _LEDGER_MODEL_IDS.get(model_id, 'ledger_nano_s')
-
-        entry: dict[str, Any] = {
-            'path': tcp_path,
-            'type': 'tcp',
-            'model': model_name,
-            'fingerprint': '',
-            'error': None,
-        }
+        model = _LEDGER_MODELS.get(pid >> 8, 'ledger_nano_s')
+        entry = {'path': tcp_path, 'type': 'tcp', 'model': model, 'fingerprint': '', 'error': None}
+        
         try:
             tc = TransportClient('tcp', server=LEDGER_EMULATOR_HOST, port=LEDGER_EMULATOR_PORT)
-            result = _probe_device(tc)
-            if result is None or result[1] is None:
-                entry['error'] = 'Emulator connection failed or not in app'
-            else:
-                app_name, fp = result
+            _, fp = _probe_device(tc)
+            if fp:
                 entry['fingerprint'] = fp
+            else:
+                entry['error'] = 'Emulator connection failed'
         except Exception as exc:
             entry['error'] = str(exc)
         devices.append(entry)
-        logger.debug('[LedgerHW] TCP emulator: %s', entry)
 
     return devices
 
 
 def create_ledger_client(device_info: dict[str, Any]) -> Any:
-    """
-    Create and return a ready-to-use ledger-bitcoin client.
-
-    Parameters
-    ----------
-    device_info:
-        A dict from `enumerate_ledger_devices()` (must contain 'type' and 'path').
-
-    Returns
-    -------
-    A `ledger_bitcoin` client (NewClient or LegacyClient).
-    """
-    transport_type: str = device_info.get('type', 'hid')
+    """Create ledger_bitcoin client from device_info dict."""
+    transport_type = device_info.get('type', 'hid')
     path = device_info.get('path')
 
-    if transport_type == 'tcp':
-        # Parse 'tcp:<host>:<port>' stored during enumeration
-        if isinstance(path, str) and path.startswith('tcp:'):
-            _, host, port_str = path.split(':', 2)
-            port = int(port_str)
-        else:
-            host = LEDGER_EMULATOR_HOST
-            port = LEDGER_EMULATOR_PORT
-        tc = TransportClient('tcp', server=host, port=port)
+    if transport_type == 'tcp' and isinstance(path, str) and path.startswith('tcp:'):
+        _, host, port_str = path.split(':', 2)
+        tc = TransportClient('tcp', server=host, port=int(port_str))
+    elif transport_type == 'tcp':
+        tc = TransportClient('tcp', server=LEDGER_EMULATOR_HOST, port=LEDGER_EMULATOR_PORT)
     else:
         tc = TransportClient('hid', path=path)
 
     network = SettingRepository.get_wallet_network()
-    chain = network_to_chain(network)
-
-    return createClient(tc, chain=chain)
+    return createClient(tc, chain=network_to_chain(network))
 
 
-def build_wallet_policy_from_descriptor(
-    desc_str: str,
-    wallet_name: str = 'Taproot Multisig',
-) -> WalletPolicy:
-    """
-    Parse an rgb-lib vanilla descriptor string and return a
-    ``ledger_bitcoin.WalletPolicy`` that the device can register and sign with.
+def _hardened(n: int) -> int:
+    """Convert to hardened derivation index."""
+    return n + 0x80000000
 
-    Supports:
-    * Standard single-sig taproot  ``tr(xpub/*)``  /  ``tr(xpub/**)``
-    * Taproot multisig  ``tr(NUMS_KEY, multi_a(M, key1/*, key2/*, ...))``
 
-    Parameters
-    ----------
-    desc_str:
-        The full descriptor string from ``wallet.get_descriptors().vanilla``
-        (or ``colored``).
-    wallet_name:
-        Human-readable name shown on the Ledger display during registration.
+def _get_bip44_coin_type(is_testnet: bool, is_rgb: bool) -> int:
+    """Get BIP44 coin type. RGB uses 827166/827167, Bitcoin uses 0/1."""
+    if is_rgb:
+        return 827167 if is_testnet else 827166
+    return 1 if is_testnet else 0
 
-    Returns
-    -------
-    A ``WalletPolicy`` ready to be passed to
-    ``client.register_wallet()`` or ``client.sign_psbt()``.
-    """
-    # Strip any checksum (#xxxx)
-    desc_str = re.sub(r'#[a-z0-9]+$', '', desc_str.strip())
 
-    # ------------------------------------------------------------------
-    # Taproot multisig:  tr(INTERNAL_KEY, multi_a(M, k1, k2, ...))
-    # ------------------------------------------------------------------
-    multi_a_match = re.search(r'tr\(([^,]+),\s*multi_a\((\d+),(.*?)\)\)', desc_str, re.DOTALL)
-    if multi_a_match:
-        internal_key_raw = multi_a_match.group(1).strip()
-        threshold = int(multi_a_match.group(2))
-        participants_raw = multi_a_match.group(3)
+def _build_multisig_policy(desc_str: str, wallet_name: str) -> WalletPolicy:
+    """Build WalletPolicy from taproot multisig descriptor."""
+    match = re.search(r'tr\(([^,]+),\s*multi_a\((\d+),(.*?)\)\)', desc_str, re.DOTALL)
+    if not match:
+        raise ValueError(f'Invalid multisig descriptor: {desc_str[:60]}')
 
-        # Strip the wildcard derivation suffix carried by each key in the
-        # descriptor — the WalletPolicy template uses @N/** notation instead.
-        def _strip_wildcard(k: str) -> str:
-            return k.replace('/0/*', '').replace('/**', '').replace('/1/*', '').strip()
+    internal_key = match.group(1).strip()
+    threshold = int(match.group(2))
+    participants = match.group(3)
 
-        internal_key_clean = _strip_wildcard(internal_key_raw)
-        participant_keys = [_strip_wildcard(k) for k in participants_raw.split(',') if k.strip()]
+    def strip_wildcard(k: str) -> str:
+        return k.replace('/0/*', '').replace('/**', '').replace('/1/*', '').strip()
 
-        keys_info = [internal_key_clean] + participant_keys
-        template_parts = [f'@{i + 1}/**' for i in range(len(participant_keys))]
-        template = f"tr(@0/**,multi_a({threshold},{','.join(template_parts)}))"
-        return WalletPolicy(wallet_name, template, keys_info)
-
-    single_sig_match = re.search(r'tr\(([^)]+)\)', desc_str)
-    if single_sig_match:
-        key_raw = single_sig_match.group(1).strip()
-        # Ensure we strip wildcards like /0/* or /* which are common in rgb-lib descriptors
-        key_clean = re.sub(r'/(?:[01]/)?(?:\*|\*\*)?$', '', key_raw)
-        return WalletPolicy('Single Sig', 'tr(@0/**)', [key_clean])
-
-    raise ValueError(
-        f'Unsupported descriptor format for Ledger signing: {desc_str[:120]}',
-    )
+    keys = [strip_wildcard(internal_key)] + [strip_wildcard(k) for k in participants.split(',') if k.strip()]
+    template_parts = [f'@{i + 1}/**' for i in range(len(keys) - 1)]
+    template = f"tr(@0/**,multi_a({threshold},{','.join(template_parts)}))"
+    
+    return WalletPolicy(wallet_name, template, keys)
 
 
 def sign_psbt_with_ledger(
@@ -326,96 +198,68 @@ def sign_psbt_with_ledger(
     wallet_name: str = 'Taproot Multisig',
 ) -> str:
     """
-    High-level helper that:
-
-    1. Parses ``descriptor`` to build a :class:`WalletPolicy`.
-    2. Registers the policy with the Ledger device (user confirms on screen).
-    3. Deserializes ``unsigned_psbt`` and signs it.
-    4. Applies signatures to the PSBT inputs.
-    5. Returns the serialized PSBT string.
-
-    Parameters
-    ----------
-    unsigned_psbt:
-        Base-64-encoded PSBT string.
-    client:
-        An active ``ledger_bitcoin`` client.
-    descriptor:
-        The vanilla (or colored) descriptor string from rgb-lib, e.g.
-        ``wallet.get_descriptors().vanilla``.
-    wallet_name:
-        Display name shown on the Ledger during registration.
-
-    Returns
-    -------
-    Serialized PSBT string with signatures applied.
-    """
-    is_rgb_mode = hardware_client_store.get_rgb_mode()
-    if is_rgb_mode:
-        policy = build_wallet_policy_from_descriptor(descriptor.colored, wallet_name)
-    else:
-        policy = build_wallet_policy_from_descriptor(descriptor.vanilla, wallet_name)
+    Sign PSBT with Ledger device.
     
-    # For standard single-sig wallets, registration is not required and can cause
-    # 0x6a80 errors if the device considers the policy built-in.
-    if len(policy.keys_info) == 1:
-        policy_hmac = None
-    else:
-        _policy_id, policy_hmac = client.register_wallet(policy)
+    Single-sig: Reads account from PSBT, queries device for xpub, builds standard policy.
+    Multisig: Builds policy from descriptor, registers with device.
+    """
+    is_rgb = hardware_client_store.get_rgb_mode()
+    desc_str = descriptor.colored if is_rgb else descriptor.vanilla
+    is_multisig = 'multi_a(' in desc_str
 
+    # Parse and convert PSBT to v2
     psbt = PSBT()
     psbt.deserialize(unsigned_psbt)
+    psbt_v2 = copy.deepcopy(psbt)
+    if psbt_v2.version != 2:
+        psbt_v2.convert_to_v2()
 
-    partial_sigs = client.sign_psbt(psbt, policy, policy_hmac)
+    network = SettingRepository.get_wallet_network()
+    is_testnet = network in (NetworkEnumModel.TESTNET, NetworkEnumModel.REGTEST)
 
-    apply_signatures_to_psbt(psbt, partial_sigs)
+    if is_multisig:
+        policy = _build_multisig_policy(desc_str, wallet_name)
+        _, policy_hmac = client.register_wallet(policy)
+    else:
+        # Single-sig: extract account from PSBT and query device for xpub
+        master_fp = client.get_master_fingerprint()
+        account = 0
+
+        for inp in psbt_v2.inputs:
+            if hasattr(inp, 'tap_bip32_paths') and inp.tap_bip32_paths:
+                for key, (_, origin) in inp.tap_bip32_paths.items():
+                    if key == inp.tap_internal_key and origin.fingerprint == master_fp:
+                        account = origin.path[2] - _hardened(0)
+                        break
+
+        coin_type = _get_bip44_coin_type(is_testnet, is_rgb)
+        xpub = client.get_extended_pubkey(path=f"m/86'/{coin_type}'/{account}'", display=False)
+        key_str = f"[{master_fp.hex()}/86'/{coin_type}'/{account}']{xpub}"
+        policy = WalletPolicy('', 'tr(@0/**)', [key_str])
+        policy_hmac = None
+
+        logger.debug('[LedgerHW] Single-sig policy: m/86\'/%d\'/%d\'', coin_type, account)
+
+    logger.debug('[LedgerHW] Signing: template=%s keys=%d', policy.descriptor_template, len(policy.keys_info))
+    
+    partial_sigs = client.sign_psbt(psbt_v2, policy, policy_hmac)
+    _apply_signatures(psbt, partial_sigs)
     return psbt.serialize()
 
 
-def apply_signatures_to_psbt(psbt: Any, partial_sigs: list) -> Any:
-    """
-    Apply the partial signatures returned by ``client.sign_psbt()`` back to the
-    PSBT object so callers can serialise and pass it to rgb_lib for finalisation.
-
-    Parameters
-    ----------
-    psbt:
-        A ``ledger_bitcoin.psbt.PSBT`` instance (already deserialized).
-    partial_sigs:
-        The list of ``(input_index, SignPsbtYieldedObject)`` tuples returned by
-        ``client.sign_psbt()``.
-
-    Returns
-    -------
-    The same PSBT object with signatures applied in-place.
-    """
-    for input_index, sig_obj in partial_sigs:
-        if input_index >= len(psbt.inputs):
-            logger.warning(
-                '[LedgerHW] Signature for out-of-range input %d ignored', input_index,
-            )
+def _apply_signatures(psbt: Any, partial_sigs: list) -> None:
+    """Apply signatures from sign_psbt() result to PSBT object."""
+    for idx, sig_obj in partial_sigs:
+        if idx >= len(psbt.inputs):
             continue
 
-        inp = psbt.inputs[input_index]
-
+        inp = psbt.inputs[idx]
         if not isinstance(sig_obj, PartialSignature):
-            # MusigPubNonce / MusigPartialSignature — not handled here
-            logger.debug(
-                '[LedgerHW] Skipping non-PartialSignature for input %d', input_index,
-            )
             continue
 
         if sig_obj.tapleaf_hash is not None:
-            # Taproot script-path: key is (xonly_pubkey[32], tapleaf_hash[32])
             inp.tap_script_sigs[(sig_obj.pubkey, sig_obj.tapleaf_hash)] = sig_obj.signature
-            logger.debug('[LedgerHW] Applied tap_script_sig for input %d', input_index)
         elif len(sig_obj.pubkey) == 32:
-            # Taproot key-path
             inp.tap_key_sig = sig_obj.signature
-            logger.debug('[LedgerHW] Applied tap_key_sig for input %d', input_index)
         else:
-            # Legacy / segwit
             inp.partial_sigs[sig_obj.pubkey] = sig_obj.signature
-            logger.debug('[LedgerHW] Applied partial_sig for input %d', input_index)
-
-    return psbt
