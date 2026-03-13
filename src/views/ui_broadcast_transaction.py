@@ -132,15 +132,15 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_transaction_widget.setMinimumSize(QSize(800, 450))
             self.broadcast_transaction_widget.setMaximumSize(QSize(800, 450))
         else:
-            self.broadcast_transaction_widget.setMinimumSize(QSize(700, 450))
-            self.broadcast_transaction_widget.setMaximumSize(QSize(700, 450))
+            self.broadcast_transaction_widget.setMinimumSize(QSize(700, 380))
+            self.broadcast_transaction_widget.setMaximumSize(QSize(700, 380))
         self.vertical_layout = QVBoxLayout(self.broadcast_transaction_widget)
         self.vertical_layout.setObjectName('verticalLayout')
         # Multisig: tighten and equalize inner paddings similar to reference
         if self.is_multisig:
             self.vertical_layout.setContentsMargins(22, 8, 22, 10)
         else:
-            self.vertical_layout.setContentsMargins(22, 12, 22, 16)
+            self.vertical_layout.setContentsMargins(23, 12, 23, 16)
         self.vertical_layout.addSpacing(4)
 
         # Loading overlay (matches other pages): covers the card while inspections run
@@ -153,20 +153,22 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_title_layout.setObjectName(
             'broadcast_transaction_title_layout',
         )
-        self.broadcast_transaction_title_layout.setContentsMargins(
-            22, -1, 22, -1,
-        )
-        # Multisig: no logo/icon in title per request
+        self.broadcast_transaction_title_layout.setContentsMargins(0, 0, 0, 0)
 
         self.broadcast_transaction_title_label = QLabel(self)
         self.broadcast_transaction_title_label.setObjectName(
             'broadcast_transaction_title_label',
         )
-        self.broadcast_transaction_title_label.setMinimumSize(QSize(530, 63))
-        self.broadcast_transaction_title_label.setMaximumSize(QSize(530, 63))
+        self.broadcast_transaction_title_label.setMinimumSize(QSize(0, 63))
+        self.broadcast_transaction_title_label.setMaximumSize(QSize(16777215, 63))
+        self.broadcast_transaction_title_label.setAlignment(
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+        )
 
         self.broadcast_transaction_title_layout.addWidget(
             self.broadcast_transaction_title_label,
+            0,
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
         )
         # Put stretch between title and close button so close goes to the far right
         self.broadcast_transaction_title_layout.addStretch(1)
@@ -195,16 +197,9 @@ class BroadcastTransactionWidget(QWidget):
         )
         self.broadcast_transaction_title_layout.addWidget(
             self.close_btn_broadcast_transaction_page,
+            0,
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
         )
-        # Ensure consistent vertical centering/alignment for both modes
-        if not self.is_multisig:
-            self.broadcast_transaction_title_layout.setContentsMargins(
-                22, 0, 22, 0,
-            )
-        else:
-            self.broadcast_transaction_title_layout.setContentsMargins(
-                0, 0, 0, 0,
-            )
 
         self.vertical_layout.addLayout(self.broadcast_transaction_title_layout)
 
@@ -247,7 +242,14 @@ class BroadcastTransactionWidget(QWidget):
         self.method_selector_label = QLabel(self.broadcast_transaction_widget)
         self.method_selector_label.setObjectName('broadcast_method_label')
         self.method_selector_label.hide()
+        self.method_selector_label.setText(
+        QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT,
+            'select_psbt_for_broadcast',
+            ),
+        )
         self.horizontal_layout_2 = QHBoxLayout()
+        self.horizontal_layout_2.setContentsMargins(0, 8, 0, 4)
         self.method_selector = QComboBox(self.broadcast_transaction_widget)
         # Start hidden; loaders manage visibility and contents
         self.method_selector.hide()
@@ -289,10 +291,7 @@ class BroadcastTransactionWidget(QWidget):
 
         self.horizontal_layout_1 = QHBoxLayout()
         # Ensure input aligns to card margins exactly
-        if self.is_multisig:
-            self.horizontal_layout_1.setContentsMargins(0, 0, 0, 0)
-        else:
-            self.horizontal_layout_1.setContentsMargins(0, 8, 0, 8)
+        self.horizontal_layout_1.setContentsMargins(0, 0, 0, 0)
         self.broadcast_transaction_input = QPlainTextEdit(
             self.broadcast_transaction_widget,
         )
@@ -316,6 +315,7 @@ class BroadcastTransactionWidget(QWidget):
             self.broadcast_transaction_input.setSizePolicy(
                 QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed,
             )
+            self.broadcast_transaction_input.setFixedWidth(647)
             self.broadcast_transaction_input.setMinimumHeight(50)
             self.broadcast_transaction_input.setMaximumHeight(155)
         # Base styling (no font override). We will apply compact monospace font
@@ -540,7 +540,7 @@ class BroadcastTransactionWidget(QWidget):
             'broadcast_button_horizontal_layout',
         )
         self.broadcast_button_horizontal_layout.setContentsMargins(
-            -1, 6, -1, 14,
+            -1, 14, -1, 14,
         )
         self.broadcast_button = PrimaryButton()
         self.broadcast_button.setMinimumSize(QSize(0, 40))
@@ -1126,8 +1126,11 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         self.horizontal_layout_2.setContentsMargins(10, 15, 0, 15)
-        self.method_selector_label.show()
-        self.method_selector.show()
+        self.broadcast_transaction_widget.setMinimumSize(QSize(700, 450))
+        self.broadcast_transaction_widget.setMaximumSize(QSize(700, 450))
+        if not self.is_multisig:
+            self.method_selector_label.show()
+            self.method_selector.show()
         self.method_selector_label.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT,

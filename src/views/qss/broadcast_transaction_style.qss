@@ -12,8 +12,8 @@ QLabel#broadcast_transaction_title_label {
     color: rgb(208, 211, 221);
     background: transparent;
     border: none;
-    padding-bottom: 15px;
-    padding-top: 15px;
+    padding-bottom: 0px;
+    padding-top: 0px;
 }
 
 /* Styles for close_btn */
@@ -35,7 +35,7 @@ QLabel#broadcast_transaction_label {
     background: transparent;
     border: none;
     font-weight: 600;
-    padding-left: 25px;
+    padding-left: 0px;
 }
 
 /* Styles for broadcast_transaction_input */
@@ -113,7 +113,7 @@ QLabel#broadcast_method_label{
     background: transparent;
     border: none;
     font-weight: 600;
-    padding-left: 17px;
+    padding-left: 0px;
 }
 
 /* Multisig status chip — pill with subtle border on dark palette */

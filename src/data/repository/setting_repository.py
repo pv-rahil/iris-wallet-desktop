@@ -516,6 +516,8 @@ class SettingRepository:
             data = json.loads(cosigners_json)
             if isinstance(data, dict) and 'cosigners' in data:
                 return data['cosigners']
+            if isinstance(data, list):
+                return data
             return []
         except Exception as exe:
             return handle_exceptions(exe)
