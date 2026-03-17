@@ -512,6 +512,8 @@ class IssueNIAWidget(QWidget):
 
     def handle_nia_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
+        if not self.isVisible():
+            return
         nia_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )

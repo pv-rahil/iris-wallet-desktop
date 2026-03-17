@@ -12,6 +12,9 @@ from src.model.broadcast_transaction_model import RgbTransferInspectionSummary
 from src.utils.constant import MASTER_XPUB
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.local_store import local_store
+from PySide6.QtCore import QCoreApplication
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.model.common_operation_model import ReceiveAssetModel
 
 
 class BroadcastTransactionService:
@@ -92,8 +95,8 @@ class BroadcastTransactionService:
             return 'send_btc'
         if purpose == 'send_asset':
             return 'send_asset'
-        if purpose == 'inflate_asset':
-            return 'inflate_asset'
+        if purpose in ('inflate_asset', 'inflation'):
+            return 'inflation'
         return 'create_utxos'
 
     @staticmethod
@@ -117,7 +120,7 @@ class BroadcastTransactionService:
                 continue
             if row['psbt'] != psbt:
                 continue
-            if row['purpose'] == 'inflate_asset':
+            if row['purpose'] in ('inflate_asset', 'inflation'):
                 return 'IFA secondary issuance'
             break
         return 'NIA page'
@@ -134,14 +137,14 @@ class BroadcastTransactionService:
         purpose = explicit_purpose or parsed.purpose
         psbt_only = parsed.psbt
 
-        if purpose is not None and purpose != 'inflate_asset':
+        if purpose is not None and purpose not in ('inflate_asset', 'inflation'):
             return
 
         if psbt_only:
             if wallet_service.delete_secondary_draft_by_psbt(psbt_only):
                 return
 
-        if purpose == 'inflate_asset':
+        if purpose in ('inflate_asset', 'inflation'):
             latest = wallet_service.get_latest_active_secondary_draft()
             if latest is None:
                 return
@@ -219,17 +222,15 @@ class BroadcastTransactionService:
 
     @staticmethod
     def operation_transfer_type_key(operation: object) -> str | None:
-        """Determine the transfer type key for an operation."""
-
-        if operation.is_inflation_to_review():
-            return 'inflation'
-        # RGB send (asset transfer)
-        if operation.is_send_to_review():
+        """Extract transfer_type_key if this is an RGB transfer operation."""
+        if operation.is_INFLATION_TO_REVIEW():
+            return 'issuance'
+        if operation.is_SEND_TO_REVIEW():
             return 'asset_transfer'
         # BTC send
-        if operation.is_send_btc_to_review():
+        if operation.is_SEND_BTC_TO_REVIEW():
             return 'btc_transfer'
-        if operation.is_create_utxos_to_review():
+        if operation.is_CREATE_UTXOS_TO_REVIEW():
             return 'internal'
         return None
 
@@ -249,7 +250,7 @@ class BroadcastTransactionService:
     def is_rgb_purpose(purpose: str | None) -> bool:
         """Check if the purpose is related to RGB."""
 
-        return purpose in ('send_asset', 'inflate_asset')
+        return purpose in ('send_asset', 'inflation')
 
     @staticmethod
     def set_rgb_mode_for_purpose(purpose: str | None) -> None:
@@ -316,3 +317,218 @@ class BroadcastTransactionService:
             amount=int(amount_value),
             transfer_type_key=transfer_type_key,
         )
+
+    @staticmethod
+    def get_psbt_purpose_from_storage(psbt_base64: str) -> str | None:
+        """Fetch purpose stored for this PSBT in the local wallet DB (if any)."""
+        psbt_norm = (psbt_base64 or '').strip()
+        if not psbt_norm:
+            return None
+        try:
+            service = WalletDataService.get_session()
+            if not service:
+                return None
+
+            # Check both unsigned and signed rows.
+            for signed in (0, 1):
+                cur = service.conn.cursor()
+                cur.execute(
+                    'SELECT purpose FROM psbt WHERE signed = ? AND psbt = ? LIMIT 1',
+                    (signed, psbt_norm),
+                )
+                row = cur.fetchone()
+                if row and row[0]:
+                    return row[0]
+            return None
+        except Exception:
+            return None
+
+    @staticmethod
+    def resolve_transfer_type(
+        psbt_text: str,
+        is_multisig: bool,
+        explicit_type: str | None = None,
+        is_inflation: bool = False,
+    ) -> str | None:
+        """Centralized logic to determine the transfer type key for UI labeling."""
+        if is_inflation:
+            return 'inflation'
+        if explicit_type:
+            return explicit_type
+
+        if is_multisig:
+            parsed = BroadcastTransactionService.parse_psbt_input(psbt_text)
+            if parsed.purpose:
+                return parsed.purpose
+            # Fallback to storage lookup if no purpose prefix
+            storage_purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(
+                parsed.psbt,
+            )
+            return storage_purpose or 'send_btc'
+
+        return None
+
+    @staticmethod
+    def get_transfer_type_label(key: str | None) -> str:
+        """Return translated transfer type label with fallback."""
+        if key is None:
+            return ''
+        translated = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, key,
+        )
+        if translated and translated != key:
+            return translated
+
+        fallback_labels = {
+            'internal': 'Internal',
+            'btc_transfer': 'BTC transfer',
+            'inflation': 'Inflation',
+            'asset_transfer': 'Asset transfer',
+            'send_btc': 'Send BTC',
+            'send_asset': 'Send Asset',
+            'create_utxos': 'Internal',
+            'issue_asset_cfa': 'Internal',
+            'issue_asset_nia': 'Internal',
+            'issue_asset_ifa': 'Internal',
+            'send_rgb': 'Internal',
+            'inflate_asset': 'Inflate asset',
+        }
+        return fallback_labels.get(key, key or '')
+
+    @staticmethod
+    def can_enable_primary_action(
+        psbt_text: str,
+        can_broadcast: bool,
+        is_multisig: bool,
+        is_psbt_validated: bool,
+        pending_operation_present: bool,
+        is_watch_only: bool,
+        selector_index: int,
+        selector_visible: bool,
+        is_offline_mode: bool,
+        min_psbt_len: int,
+    ) -> bool:
+        """Determine if the primary action button should be enabled."""
+        has_input = bool(psbt_text) and (
+            len(psbt_text.strip()) >= min_psbt_len
+        )
+        if not has_input:
+            return False
+
+        if can_broadcast:
+            if is_multisig and is_watch_only:
+                return is_psbt_validated and pending_operation_present
+
+            method_ok = (not selector_visible) or (selector_index >= 0)
+            return method_ok
+
+        # Signer flow
+        if is_multisig:
+            has_purpose = False
+            if is_offline_mode:
+                parsed = BroadcastTransactionService.parse_psbt_input(
+                    psbt_text.strip(),
+                )
+                has_purpose = bool(parsed.purpose) or bool(
+                    BroadcastTransactionService.get_psbt_purpose_from_storage(
+                        parsed.psbt,
+                    ),
+                )
+
+            return (is_psbt_validated and pending_operation_present) or (
+                is_offline_mode and (has_purpose or is_psbt_validated)
+            )
+
+        return True
+
+    @staticmethod
+    def can_enable_reject_action(
+        can_broadcast: bool,
+        is_multisig: bool,
+        is_psbt_validated: bool,
+        pending_operation_present: bool,
+        is_watch_only: bool,
+    ) -> bool:
+        """Determine if the reject button should be enabled."""
+        if is_multisig:
+            if can_broadcast and is_watch_only:
+                return is_psbt_validated and pending_operation_present
+            return pending_operation_present
+        return False
+
+    @staticmethod
+    def psbts_loaded_data(items: list[PsbtDraftItem], is_signed: bool) -> dict:
+        """Prepare data needed for the UI after PSBTs are loaded."""
+        if len(items) == 0:
+            return {'has_items': False}
+
+        if len(items) == 1:
+            return {
+                'has_items': True,
+                'is_single': True,
+                'psbt': items[0].psbt,
+            }
+
+        label_key = 'select_psbt_for_broadcast' if is_signed else 'select_psbt_for_sign'
+        titles = BroadcastTransactionService.selector_titles(items)
+
+        return {
+            'has_items': True,
+            'is_single': False,
+            'label_key': label_key,
+            'titles': titles,
+        }
+
+    @staticmethod
+    def receive_asset_model_for_signed_psbt(psbt: str) -> object:
+        """Create the appropriate model for navigating to the receive asset page."""
+        page_name = BroadcastTransactionService.receive_page_name_for_signed_psbt(
+            psbt,
+        )
+        return ReceiveAssetModel(
+            page_name=page_name,
+            address_info='psbt_info',
+            psbt=psbt,
+            is_signed=True,
+        )
+
+    @staticmethod
+    def multisig_sign_loading_data(pending_op_ctx: object) -> dict:
+        """Prepare data needed for loading multisig signed PSBTs."""
+        pending = BroadcastTransactionService.multisig_pending_context(
+            pending_op_ctx,
+        )
+        if pending is None:
+            return {'has_pending': False}
+
+        return {
+            'has_pending': True,
+            'is_initiator': pending.is_initiator,
+            'psbt': pending.psbt,
+            'operation': pending.operation,
+        }
+
+    @staticmethod
+    def get_retranslate_data(can_broadcast: bool, is_multisig: bool) -> dict:
+        """Get translated strings for the UI."""
+        if can_broadcast:
+            title = 'broadcast_transaction'
+            label = 'broadcast_transaction_label'
+            button = 'broadcast_transaction'
+        else:
+            title = 'sign_psbt'
+            label = 'sign_psbt_label'
+            button = 'sign_psbt'
+
+        data = {
+            'title': QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, title),
+            'label': QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, label),
+            'button': QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, button),
+        }
+
+        if is_multisig:
+            data['subtitle'] = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'paste_or_import_psbt',
+            )
+
+        return data

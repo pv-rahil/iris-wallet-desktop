@@ -538,6 +538,8 @@ class IssueCFAWidget(QWidget):
 
     def handle_cfa_hw_dialog_update(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
+        if not self.isVisible():
+            return
         if message and dialog_type:
             cfa_hw_dialog = HardwareWalletOperationDialog.get_instance(
                 parent=self,

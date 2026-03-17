@@ -62,44 +62,29 @@ class HWDeviceSelectionViewModel(QObject, ThreadManager):
                 replace_target = "0'/0'"
             else:
                 replace_target = "1'/0'"
-            
+
             vanilla = None
             colored = None
             fingerprint = None
             master_xpub = None
 
             try:
-
                 client = create_ledger_client(device_info)
-                print(client)
-
-                print('i am printiny')
-
-                vanilla = client.get_extended_pubkey(derivation_path,display=True)
+                vanilla = client.get_extended_pubkey(
+                    derivation_path, display=True,
+                )
 
                 colored_path = derivation_path.replace(
                     replace_target,
                     rgb_coin_type + "/0'",
                 )
-
-                colored = client.get_extended_pubkey(colored_path,display=True)
-
+                colored = client.get_extended_pubkey(
+                    colored_path, display=True,
+                )
                 fingerprint = client.get_master_fingerprint().hex()
-
-                print('i am printiny 2', fingerprint)
-
-                print('i am printiny 3', colored)
-
-                print('i am printiny 4', vanilla)
-
-                master_xpub = None
-                # if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-                #     master_xpub = client.get_extended_pubkey('m')
-
-
+                return vanilla, colored, fingerprint, master_xpub
             finally:
                 client.stop()
-                return vanilla, colored, fingerprint, master_xpub
         except Exception as e:
             self.connect_failed.emit(str(e))
             return None, None, None, None

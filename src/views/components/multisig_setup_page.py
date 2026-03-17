@@ -790,8 +790,8 @@ class MultisigSetupPage(QWidget):
             self.cos_frame.hide()
             self._current_step = 2
             self.export_button.show()  # Show export button on review page
-            self.card.setMinimumSize(QSize(770, 670))
-            self.card.setMaximumSize(QSize(770, 670))
+            self.card.setMinimumSize(QSize(770, 570))
+            self.card.setMaximumSize(QSize(770, 570))
             self._update_continue_enabled()  # Re-enable the continue button
             self.continue_button.setText(
                 QCoreApplication.translate(
@@ -1292,8 +1292,8 @@ class MultisigSetupPage(QWidget):
             self.export_button.hide()  # Hide export button on Step 1
             self._current_step = 1
             # Restore Step 1 card size
-            self.card.setMinimumSize(QSize(770, 520))
-            self.card.setMaximumSize(QSize(770, 520))
+            self.card.setMinimumSize(QSize(770, 530))
+            self.card.setMaximumSize(QSize(770, 530))
             self._update_summary()
             self._update_continue_enabled()
             self.close_btn.show()

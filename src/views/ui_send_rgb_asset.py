@@ -19,32 +19,32 @@ import src.resources_rc
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletType
 from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NOT_ENOUGH_UNCOLORED
 from src.utils.error_message import ERROR_SEND_ASSET
 from src.utils.error_message import ERROR_UNEXPECTED
+from src.utils.helpers import register_multisig_button
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
-from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.confirmation_dialog import ConfirmationDialog
+from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.send_asset import SendAssetWidget
 from src.views.components.toast import ToastManager
-from src.data.service.wallet_data_service import WalletDataService
-from src.utils.helpers import register_multisig_button
 
 
 class SendRGBAssetWidget(QWidget):
@@ -97,7 +97,8 @@ class SendRGBAssetWidget(QWidget):
             if recipient:
                 self.send_rgb_asset_page.asset_address_value.setText(recipient)
             if amount:
-                self.send_rgb_asset_page.asset_amount_value.setText(f"{amount:,}")
+                self.send_rgb_asset_page.asset_amount_value.setText(f"{
+                                                                    amount:,                                                                    }")
         self.sidebar = None
         self.__loading_translucent_screen = LoadingTranslucentScreen(
             parent=self, description_text='Loading',
@@ -167,7 +168,6 @@ class SendRGBAssetWidget(QWidget):
             self._on_utxo_posted_to_bridge,
         )
 
-
     def refresh_asset(self):
         """This method handle the refresh asset on send asset page"""
         self.loading_performer = 'REFRESH_BUTTON'
@@ -215,7 +215,7 @@ class SendRGBAssetWidget(QWidget):
             decoded_rgb_invoice: InvoiceData = RgbRepository.decode_invoice(
                 DecodeRgbInvoiceRequestModel(invoice=provided_invoice),
             )
-            amount = int(amount.replace(",", ""))
+            amount = int(amount.replace(',', ''))
             assignment = type(decoded_rgb_invoice.assignment)(
                 amount=int(amount),
             )
@@ -425,30 +425,15 @@ class SendRGBAssetWidget(QWidget):
                     WalletDataService.get_session().upsert_draft_transfer(
                         asset_id=self._view_model.cfa_view_model.asset_id,
                         recipient_id=self.send_rgb_asset_page.asset_address_value.text(),
-                        amount=int(self.send_rgb_asset_page.asset_amount_value.text()),
+                        amount=int(
+                            self.send_rgb_asset_page.asset_amount_value.text(),
+                        ),
                         fee_rate=SettingCardRepository.get_default_fee_rate().fee_rate,
                         min_confirmation=SettingCardRepository.get_default_min_confirmation().min_confirmation,
                     )
                 except Exception as e:
                     print(f"Failed to save draft: {e}")
 
-                # Ask user to open correct Bitcoin app before UTXO creation
-                if self.is_hardware_wallet:
-                    network = SettingRepository.get_wallet_network()
-                    expected_btc_app = 'Bitcoin' if network == NetworkEnumModel.MAINNET else 'Bitcoin Test'
-                    guidance_msg = f"Please open '{
-                        expected_btc_app
-                    }' on your Ledger and click Continue."
-                    # Configure dialog as a blocking confirmation
-                    self.send_rgb_hw_dialog.set_loading(guidance_msg)
-                    self.send_rgb_hw_dialog.done_button.setText('Continue')
-                    self.send_rgb_hw_dialog.done_button.setVisible(True)
-                    self.send_rgb_hw_dialog.cancel_button.setVisible(True)
-                    if not self.send_rgb_hw_dialog.isVisible():
-                        self.send_rgb_hw_dialog.show()
-                    result = self.send_rgb_hw_dialog.exec()
-                    if result != QDialog.Accepted:
-                        return
                 self._retry_after_utxo = True
                 # Show confirmation dialog for multisig/watch-only wallets
                 if self.is_multisig or self.is_watch_only:
@@ -462,7 +447,7 @@ class SendRGBAssetWidget(QWidget):
                         self._retry_after_utxo = False
                         return
                 self._view_model.utxo_creation_view_model.create_utxos_begin(
-                    purpose='send_rgb',num=3 if self.is_multisig else 1
+                    purpose='send_rgb', num=3 if self.is_multisig else 1,
                 )
                 return
 
@@ -495,7 +480,7 @@ class SendRGBAssetWidget(QWidget):
                 ToastManager.success(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
-                    )
+                    ),
                 )
                 self.rgb_asset_page_navigation()
             else:
@@ -511,26 +496,6 @@ class SendRGBAssetWidget(QWidget):
         if not ok or not self._retry_after_utxo:
             return
         self._retry_after_utxo = False
-        # Before retrying the RGB send, confirm correct RGB app is open
-        if self.is_hardware_wallet and self.is_online_wallet:
-            network = SettingRepository.get_wallet_network()
-            expected_rgb_app = 'RGB' if network == NetworkEnumModel.MAINNET else 'RGB Test'
-            self.send_rgb_hw_dialog = HardwareWalletOperationDialog.get_instance(
-                parent=self,
-            )
-            self.send_rgb_hw_dialog.setMinimumWidth(500)
-            guidance_msg = f"Ready to send asset. Please open '{
-                expected_rgb_app
-            }' on your Ledger and click Continue."
-            self.send_rgb_hw_dialog.set_loading(guidance_msg)
-            self.send_rgb_hw_dialog.done_button.setText('Continue')
-            self.send_rgb_hw_dialog.done_button.setVisible(True)
-            self.send_rgb_hw_dialog.cancel_button.setVisible(True)
-            if not self.send_rgb_hw_dialog.isVisible():
-                self.send_rgb_hw_dialog.show()
-            result = self.send_rgb_hw_dialog.exec()
-            if result != QDialog.Accepted:
-                return
         self.send_rgb_asset_button()
 
     def _on_utxo_posted_to_bridge(self):
@@ -541,7 +506,8 @@ class SendRGBAssetWidget(QWidget):
 
         if self.send_rgb_hw_dialog:
             self.send_rgb_hw_dialog.accept()
-        ToastManager.success(description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
+        ToastManager.success(
+            description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE,
+        )
         # Redirect users back to the asset page (fungible/collectible list)
         self.rgb_asset_page_navigation()
-

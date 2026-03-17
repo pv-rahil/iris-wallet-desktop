@@ -350,10 +350,10 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
             # Check if this is a review operation needing signature
             is_review = (
-                operation.is_create_utxos_to_review()
-                or operation.is_send_btc_to_review()
-                or operation.is_send_to_review()
-                or operation.is_inflation_to_review()
+                operation.is_CREATE_UTXOS_TO_REVIEW()
+                or operation.is_SEND_BTC_TO_REVIEW()
+                or operation.is_SEND_TO_REVIEW()
+                or operation.is_INFLATION_TO_REVIEW()
             )
 
             if not is_review:
@@ -366,13 +366,13 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
             # Determine purpose from operation type
             purpose = None
-            if operation.is_create_utxos_to_review():
+            if operation.is_CREATE_UTXOS_TO_REVIEW():
                 purpose = 'create_utxos'
-            elif operation.is_send_btc_to_review():
+            elif operation.is_SEND_BTC_TO_REVIEW():
                 purpose = 'send_btc'
-            elif operation.is_send_to_review():
+            elif operation.is_SEND_TO_REVIEW():
                 purpose = 'send_asset'
-            elif operation.is_inflation_to_review():
+            elif operation.is_INFLATION_TO_REVIEW():
                 purpose = 'inflate_asset'
 
             if not purpose:

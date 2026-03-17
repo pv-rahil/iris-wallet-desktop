@@ -292,6 +292,8 @@ class SendBitcoinWidget(QWidget):
 
     def handle_send_bitcoin_hw_dialog_update(self, message: str | None, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
+        if not self.isVisible():
+            return
         self.send_bitcoin_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )

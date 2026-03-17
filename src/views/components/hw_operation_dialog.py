@@ -222,13 +222,16 @@ class HardwareWalletOperationDialog(QDialog):
         Returns:
             HardwareWalletOperationDialog: The singleton instance.
         """
-        try:
-            is_valid_and_visible = cls._instance is not None and cls._instance.isVisible()
-        except RuntimeError:
-            # The C++ object was deleted (e.g., its parent page was destroyed)
-            is_valid_and_visible = False
-            
-        if not is_valid_and_visible:
+        is_alive = False
+        if cls._instance is not None:
+            try:
+                # Check if the underlying C++ object is still alive
+                cls._instance.objectName()
+                is_alive = True
+            except RuntimeError:
+                cls._instance = None
+
+        if not is_alive:
             cls._instance = HardwareWalletOperationDialog(
                 message='', dialog_type=None, parent=parent,
             )

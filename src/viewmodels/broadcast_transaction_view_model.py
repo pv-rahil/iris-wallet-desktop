@@ -14,14 +14,12 @@ from src.data.repository.common_operations_repository import CommonOperationRepo
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
-from src.data.service.wallet_data_service import WalletDataService
 from src.model.btc_model import SendBtcResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import SendAssetResponseModel
-from src.model.rgb_model import SendBeginRequestModel
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY
 from src.utils.info_message import INFO_ASSET_SENT
@@ -33,7 +31,6 @@ from src.utils.info_message import INFO_OPERATION_INDEX_MISSING_FOR_NACK
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_PSBT_SIGN_SUCCESSFULLY
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
-from src.utils.info_message import INFO_SIGNED_SUCCESSFULLY_WAITING_FOR_COSIGNERS
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
 from src.views.components.hw_device_selection_dialog import HWDeviceSelectionDialog
@@ -97,7 +94,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         if action == 'send_asset':
             self.send_end(parsed.psbt)
             return
-        if action == 'inflate_asset':
+        if action == 'inflation':
             self.inflate_end(parsed.psbt)
             return
         self.create_utxos_end(parsed.psbt)
@@ -125,7 +122,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def on_error(self, error: CommonException) -> None:
         """Handle error for broadcasting psbt."""
-        print(error)
         self.is_loading.emit(False)
         self.is_reject_loading.emit(False)
         ToastManager.error(description=error.message)
@@ -248,19 +244,41 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     # ========== Multisig Signer Flow ==========
 
-    def sign_and_post_multisig(self, unsigned_psbt: str, operation_idx: int | None):
+    def sign_and_post_multisig(self, unsigned_psbt: str, operation_idx: int | None, purpose: str | None = None):
         """Sign PSBT and post back to multisig bridge."""
         self.is_loading.emit(True)
         # Store operation_idx for use in callback
         self._multisig_operation_idx = operation_idx
+
+        if purpose:
+            BroadcastTransactionService.set_rgb_mode_for_purpose(purpose)
+
+        # Show hardware wallet dialog if applicable
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.hw_dialog_update.emit(
+                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+            )
+
         self.run_in_thread(
             CommonOperationRepository.sign_psbt,
             {
                 'args': [unsigned_psbt],
                 'callback': self._on_multisig_sign_success,
-                'error_callback': self.on_error,
+                'error_callback': self.on_multisig_sign_error,
             },
         )
+
+    def on_multisig_sign_error(self, error: Exception) -> None:
+        """Handle error for multisig signing."""
+        self.is_loading.emit(False)
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            hw_dialog = HWDeviceSelectionDialog(None)
+            message = hw_dialog.map_hwi_error(str(error))
+            self.hw_dialog_update.emit(
+                str(message), PsbtStatus.ERROR,
+            )
+        else:
+            self.on_error(error)
 
     def _on_multisig_sign_success(self, signed_psbt: str):
         """After signing, inspect to get TXID, then post back to the bridge."""
@@ -300,6 +318,10 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         BroadcastTransactionService.set_pending_operation_state(None, None)
         self.trigger_bridge_sync.emit()
         self.tx_broadcasted.emit(True)
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:
+            self.hw_dialog_update.emit(
+                None, PsbtStatus.SUCCESS,
+            )
 
         if result is None:
             ToastManager.success(
@@ -351,8 +373,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         response = RespondToOperation.ACK(signed_psbt)
         self._respond_to_multisig_operation(operation_idx, response)
 
-
-    def _on_nack_post_success(self, result):
+    def _on_nack_post_success(self):
         """Handle successful NACK post to the multisig bridge."""
         self.is_reject_loading.emit(False)
         # Close the dialog like other flows and show a specific success toast
@@ -455,7 +476,6 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             self._pending_psbt_txid = None
         # Now emit the signal with the original op info
         self.pending_operation_ready.emit(self._pending_op_info)
-
 
     def get_pending_psbt_txid(self) -> str | None:
         """Return the TXID of the currently pending operation's PSBT."""

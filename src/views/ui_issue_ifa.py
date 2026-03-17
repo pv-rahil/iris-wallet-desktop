@@ -41,7 +41,6 @@ from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
-from src.utils.helpers import register_multisig_button
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.setting_model import DefaultFeeRate
@@ -55,6 +54,8 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.error_message import ERROR_NOT_ENOUGH_UNCOLORED
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import register_multisig_button
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -62,7 +63,6 @@ from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 
 
 class IssueIFAWidget(QWidget):
@@ -541,8 +541,7 @@ class IssueIFAWidget(QWidget):
                     self.issue_ifa_btn,
                     self.on_issue_ifa_click,
                 )
-            
-       
+
         self._view_model.issue_ifa_asset_view_model.success_page_message.connect(
             self.inflatables_asset_issued,
         )
@@ -799,7 +798,9 @@ class IssueIFAWidget(QWidget):
                 )
             else:
                 amt_text = amount_to_issue or ''
-                pref_amt = int(amt_text) if amt_text.strip().isdigit() else None
+                pref_amt = int(
+                    amt_text,
+                ) if amt_text.strip().isdigit() else None
                 active = svc.get_active_secondary_draft_for_asset(
                     self.params.asset_id,
                 )
@@ -822,11 +823,11 @@ class IssueIFAWidget(QWidget):
             existing_unsigned = None
             drafts = svc.list_psbt(False) or []
             for p in drafts:
-                if p.get('purpose') == 'inflate_asset' and p.get('psbt'):
+                if p.get('purpose') == 'inflation' and p.get('psbt'):
                     existing_unsigned = p.get('psbt')
                     break
             if existing_unsigned:
-                self._view_model.utxo_creation_view_model.current_purpose = 'inflate_asset'
+                self._view_model.utxo_creation_view_model.current_purpose = 'inflation'
                 self.show_inflate_psbt_page(existing_unsigned)
                 return
         if (self.is_hardware_wallet and not self.is_offline_wallet) or self.is_watch_only or self.is_multisig:
@@ -952,6 +953,8 @@ class IssueIFAWidget(QWidget):
 
     def handle_ifa_hw_dialog(self, message: str, dialog_type: Enum):
         """Centralized hardware wallet dialog update handler."""
+        if not self.isVisible():
+            return
         ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(
             parent=self,
         )
@@ -980,11 +983,10 @@ class IssueIFAWidget(QWidget):
         # Intercept common UTXO errors and route to UTXO creation (inflate path)
         if dialog_type == PsbtStatus.ERROR and message:
             if ('NoAvailableUtxos' in message) or (ERROR_NOT_ENOUGH_UNCOLORED in message):
-                if not self._prompt_bitcoin_app_and_confirm():
-                    return
                 # Show confirmation dialog for multisig/watch-only wallets
                 if (
-                    SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+                    SettingRepository.get_wallet_signature_type(
+                    ) == WalletSignatureType.MULTI_SIG_WALLET
                     or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
                 ):
                     dialog = ConfirmationDialog(
@@ -996,7 +998,7 @@ class IssueIFAWidget(QWidget):
                     if dialog.exec() != QDialog.Accepted:
                         return
                 self._retry_after_utxo_inflate = bool(self.secondary_issuance)
-                utxo_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset_ifa'
+                utxo_purpose = 'inflation_utxo' if self.secondary_issuance else 'issue_asset_ifa'
                 # Determine only missing UTXOs to create (required = 3)
                 current = get_unspent_utxo_count()
                 needed = 3 - max(0, current - 1)
@@ -1016,7 +1018,7 @@ class IssueIFAWidget(QWidget):
         """Handle PSBT posted to bridge (multisig initiator)."""
         # Only handle if the current purpose matches IFA issuing
         current_purpose = self._view_model.utxo_creation_view_model.current_purpose
-        if current_purpose not in ['issue_asset_ifa', 'inflate_asset']:
+        if current_purpose not in ['issue_asset_ifa', 'inflation', 'inflation_utxo']:
             return
         if not self.isVisible():
             return
@@ -1032,7 +1034,7 @@ class IssueIFAWidget(QWidget):
     def handle_ifa_utxo_created(self, status: bool):
         """Close the hardware wallet dialog after UTXO creation and resume asset issuance if pending."""
         purpose = self._view_model.utxo_creation_view_model.current_purpose
-        if purpose not in ('issue_asset_ifa', 'inflate_asset'):
+        if purpose not in ('issue_asset_ifa', 'inflation', 'inflation_utxo'):
             return
         if not self.isVisible() or not status:
             return
@@ -1047,11 +1049,7 @@ class IssueIFAWidget(QWidget):
             # Resume the correct flow depending on purpose
             if purpose == 'issue_asset_ifa':
                 self.on_issue_ifa_click()
-            elif purpose == 'inflate_asset':
-                # Before retrying inflate, guide user to open RGB app on Ledger (HW-online only)
-                if self.is_hardware_wallet and not self.is_offline_wallet and (self._retry_after_utxo_inflate or self.secondary_issuance):
-                    if not self._prompt_rgb_app_and_confirm():
-                        return
+            elif purpose in ('inflation', 'inflation_utxo'):
                 self._retry_after_utxo_inflate = False
                 self.on_secondary_issuance_click()
 
@@ -1060,42 +1058,6 @@ class IssueIFAWidget(QWidget):
         ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
         if ifa_hw_dialog.isVisible():
             ifa_hw_dialog.accept()
-
-    def _prompt_bitcoin_app_and_confirm(self) -> bool:
-        """Prompt user to open Bitcoin/Bitcoin Test app on Ledger and return True if confirmed."""
-        network = SettingRepository.get_wallet_network()
-        expected_btc_app = 'Bitcoin' if network == NetworkEnumModel.MAINNET else 'Bitcoin Test'
-        ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
-        ifa_hw_dialog.setMinimumWidth(500)
-        guidance_msg = f"Please open '{
-            expected_btc_app
-        }' on your Ledger and click Continue."
-        ifa_hw_dialog.set_loading(guidance_msg)
-        ifa_hw_dialog.done_button.setText('Continue')
-        ifa_hw_dialog.done_button.setVisible(True)
-        ifa_hw_dialog.cancel_button.setVisible(True)
-        if not ifa_hw_dialog.isVisible():
-            ifa_hw_dialog.show()
-        result = ifa_hw_dialog.exec()
-        return result == QDialog.Accepted
-
-    def _prompt_rgb_app_and_confirm(self) -> bool:
-        """Prompt user to open RGB/RGB Test app on Ledger and return True if confirmed."""
-        network = SettingRepository.get_wallet_network()
-        expected_rgb_app = 'RGB' if network == NetworkEnumModel.MAINNET else 'RGB Test'
-        ifa_hw_dialog = HardwareWalletOperationDialog.get_instance(parent=self)
-        ifa_hw_dialog.setMinimumWidth(500)
-        guidance_msg = f"Ready for secondary issuance. Please open '{
-            expected_rgb_app
-        }' on your Ledger and click Continue."
-        ifa_hw_dialog.set_loading(guidance_msg)
-        ifa_hw_dialog.done_button.setText('Continue')
-        ifa_hw_dialog.done_button.setVisible(True)
-        ifa_hw_dialog.cancel_button.setVisible(True)
-        if not ifa_hw_dialog.isVisible():
-            ifa_hw_dialog.show()
-        result = ifa_hw_dialog.exec()
-        return result == QDialog.Accepted
 
     def handle_ifa_issue(self):
         """handle ifa issue"""
@@ -1107,27 +1069,31 @@ class IssueIFAWidget(QWidget):
                 signed=False,
             )
             # Check for existing PSBT based on purpose
-            target_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset_ifa'
+            target_purpose = 'inflation' if self.secondary_issuance else 'issue_asset_ifa'
+            # Also check for 'inflation_utxo' if we are in secondary issuance
+            purposes_to_check = [target_purpose]
+            if self.secondary_issuance:
+                purposes_to_check.append('inflation_utxo')
+
             existing_inflatables_psbt = next(
                 (
-                    p for p in unsigned_psbts if p.get('purpose') == target_purpose
+                    p for p in unsigned_psbts if p.get('purpose') in purposes_to_check
                 ), None,
             )
             if existing_inflatables_psbt and existing_inflatables_psbt.get('psbt'):
                 self._view_model.utxo_creation_view_model.current_purpose = target_purpose
                 self.show_ifa_psbt_page(existing_inflatables_psbt.get('psbt'))
                 return
-        # For HW-online, prompt for Bitcoin app first; for others, proceed directly to PSBT creation
+        # For HW-online, proceed directly to PSBT creation
         if self.is_hardware_wallet and not self.is_offline_wallet:
-            if not self._prompt_bitcoin_app_and_confirm():
-                return
             self._retry_after_utxo_inflate = bool(self.secondary_issuance)
         current = get_unspent_utxo_count()
         needed = 3 - max(0, current - 1)
         needed = needed if needed > 0 else 1
         # Show confirmation dialog for multisig/watch-only wallets
         if (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
             or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
         ):
             dialog = ConfirmationDialog(
@@ -1138,7 +1104,7 @@ class IssueIFAWidget(QWidget):
             )
             if dialog.exec() != QDialog.Accepted:
                 return
-        utxo_purpose = 'inflate_asset' if self.secondary_issuance else 'issue_asset_ifa'
+        utxo_purpose = 'inflation_utxo' if self.secondary_issuance else 'issue_asset_ifa'
         self._view_model.utxo_creation_view_model.create_utxos_begin(
             purpose=utxo_purpose, num=needed,
         )
@@ -1148,14 +1114,14 @@ class IssueIFAWidget(QWidget):
         if not self.isVisible():
             return
         # Only respond if PSBT relates to IFA UTXO creation purposes
-        if self._view_model.utxo_creation_view_model.current_purpose not in ['issue_asset_ifa', 'inflate_asset']:
+        if self._view_model.utxo_creation_view_model.current_purpose not in ['issue_asset_ifa', 'inflation', 'inflation_utxo']:
             return
         if inflatables_psbt:
             if self.is_multisig:
                 ToastManager.success(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
-                    )
+                    ),
                 )
                 self._view_model.page_navigation.inflatable_asset_page()
             else:
@@ -1176,7 +1142,7 @@ class IssueIFAWidget(QWidget):
         try:
             svc = WalletDataService.get_session()
             if svc is not None and self.params is not None:
-                svc.add_psbt(psbt, signed=False, purpose='inflate_asset')
+                svc.add_psbt(psbt, signed=False, purpose='inflation')
                 if self.params.asset_id:
                     svc.attach_inflate_psbt_to_secondary_draft(
                         self.params.asset_id, psbt,
@@ -1187,7 +1153,7 @@ class IssueIFAWidget(QWidget):
             ToastManager.success(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
-                )
+                ),
             )
             self._view_model.page_navigation.inflatable_asset_page()
         else:
@@ -1196,7 +1162,7 @@ class IssueIFAWidget(QWidget):
                     page_name='IFA secondary issuance',
                     address_info='psbt_info', psbt=psbt, is_signed=False,
                 ),
-        )
+            )
 
     def create_issue_inflatables_asset_draft(self, ticker, name, amount, inflation_amounts):
         """Create and save an Issue Asset draft when UTXOs are not available.
