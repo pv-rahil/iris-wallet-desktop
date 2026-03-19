@@ -83,11 +83,10 @@ def test_secondary_issuance_prefill_and_locks(qt_app, vm_mock):
         try:
             w.show()
             assert w.secondary_issuance is True
-            # Name locked, total supply hidden, replace checkbox shown
+            # Name locked, total supply hidden
             assert w.inflatables_asset_name_input.isReadOnly()
             assert w.inflatables_total_supply_title_widget.isHidden()
             assert w.inflatables_total_supply_input.isHidden()
-            assert w.replace_label_checkbox.isHidden()
         finally:
             w.close()
 
@@ -98,12 +97,14 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
             patch('src.data.service.wallet_data_service.WalletDataService.get_session') as get_sess:
         w = IssueIFAWidget(vm_mock)
         try:
+            # Make widget visible so handle_ifa_issue doesn't return early
+            w.show()
             # Case 1: existing draft PSBT present
-            # Ensure widget gates PSBT display by current purpose and purpose key
-            vm_mock.utxo_creation_view_model.current_purpose = 'issue_asset'
+            # Use correct purpose 'issue_asset_ifa' (not 'issue_asset')
+            vm_mock.utxo_creation_view_model.current_purpose = 'issue_asset_ifa'
             get_sess.return_value = MagicMock(
                 list_psbt=lambda signed: [
-                    {'purpose': 'issue_asset', 'psbt': 'P1'},
+                    {'purpose': 'issue_asset_ifa', 'psbt': 'P1'},
                 ],
             )
             with patch.object(w, 'show_ifa_psbt_page') as show:
@@ -116,8 +117,8 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
             assert vm_mock.utxo_creation_view_model.create_utxos_begin.called
             args, kwargs = vm_mock.utxo_creation_view_model.create_utxos_begin.call_args
             if args:
-                assert args[0] == 'issue_asset'
+                assert args[0] == 'issue_asset_ifa'
             else:
-                assert kwargs.get('purpose') == 'issue_asset'
+                assert kwargs.get('purpose') == 'issue_asset_ifa'
         finally:
             w.close()

@@ -9,6 +9,7 @@ import pytest
 from PySide6.QtCore import QCoreApplication
 from rgb_lib import RgbLibError
 
+from src.model.enums.enums_model import NetworkEnumModel
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
@@ -291,7 +292,7 @@ def test_validate_bitcoin_address(send_bitcoin_widget: SendBitcoinWidget):
     send_bitcoin_widget.send_bitcoin_page.asset_address_value.text.return_value = valid_address
 
     # Mock the settings and the address validation
-    with patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network', return_value=MagicMock(value='MAINNET')), \
+    with patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.MAINNET), \
             patch('rgb_lib.Address', return_value=None):
         send_bitcoin_widget.validate_bitcoin_address()
         # Reset the call count for hide before the next assertion
@@ -301,7 +302,7 @@ def test_validate_bitcoin_address(send_bitcoin_widget: SendBitcoinWidget):
     invalid_address = 'invalid_address'
     send_bitcoin_widget.send_bitcoin_page.asset_address_value.text.return_value = invalid_address
 
-    with patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network', return_value=MagicMock(value='MAINNET')), \
+    with patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.MAINNET), \
             patch('rgb_lib.Address', side_effect=RgbLibError.InvalidAddress('Invalid address details')):
         send_bitcoin_widget.validate_bitcoin_address()
         send_bitcoin_widget.send_bitcoin_page.asset_address_validation_label.show.assert_called_once()
@@ -314,6 +315,8 @@ def test_validate_bitcoin_address(send_bitcoin_widget: SendBitcoinWidget):
 
 def test_handle_send_bitcoin_hw_dialog_update_shows_when_not_visible(send_bitcoin_widget: SendBitcoinWidget, monkeypatch):
     """Ensure dialog is created, update called, cancel connected, and show invoked when not visible."""
+    # Make widget visible so handle_send_bitcoin_hw_dialog_update doesn't return early
+    send_bitcoin_widget.show()
     dummy = MagicMock()
     dummy.cancel_button = MagicMock()
     dummy.cancel_button.clicked = MagicMock()
@@ -344,8 +347,9 @@ def test_handle_send_bitcoin_hw_dialog_update_shows_when_not_visible(send_bitcoi
 
 def test_handle_send_bitcoin_hw_dialog_update_no_show_when_visible(send_bitcoin_widget: SendBitcoinWidget, monkeypatch):
     """If dialog is already visible, do not call show()."""
+    # Make widget visible so handle_send_bitcoin_hw_dialog_update doesn't return early
+    send_bitcoin_widget.show()
     dummy = MagicMock()
-    dummy.cancel_button = MagicMock()
     dummy.cancel_button.clicked = MagicMock()
     dummy.cancel_button.clicked.connect = MagicMock()
     dummy.update_dialog = MagicMock()
@@ -369,6 +373,8 @@ def test_handle_send_bitcoin_hw_dialog_update_no_show_when_visible(send_bitcoin_
 
 def test_show_send_bitcoin_psbt_page_navigates_with_receive_model(send_bitcoin_widget: SendBitcoinWidget):
     """Navigate to receive_asset_page with ReceiveAssetModel constructed with psbt details."""
+    # Make widget visible so show_send_bitcoin_psbt_page doesn't return early
+    send_bitcoin_widget.show()
     with patch('src.views.ui_send_bitcoin.ReceiveAssetModel') as mock_receive_model:
         instance = MagicMock()
         mock_receive_model.return_value = instance

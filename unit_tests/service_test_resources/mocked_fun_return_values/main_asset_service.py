@@ -39,6 +39,7 @@ mock_uda_asset = AssetUda(
     balance=Balance(
         settled=777000, future=777000, spendable=777000,
     ),
+    media=None,
     token=Token(
         index=0,
         ticker='TKN',
@@ -106,6 +107,7 @@ mock_ifa_asset = AssetIfa(
         digest='5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
         hex=None,
     ),
+    reject_list_url=None,
 )
 
 mock_get_asset_response_model = GetAssetResponseModel(
@@ -150,6 +152,7 @@ mock_uda_asset_exhausted_asset = AssetUda(
     balance=Balance(
         settled=0, future=0, spendable=0,
     ),
+    media=None,
     token=Token(
         index=0,
         ticker='TKN',
@@ -217,6 +220,7 @@ mock_ifa_asset_exhausted_asset = AssetIfa(
         digest='5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03',
         hex=None,
     ),
+    reject_list_url=None,
 )
 
 mock_get_asset_response_model_when_exhausted_asset = GetAssetResponseModel(

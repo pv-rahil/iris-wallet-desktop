@@ -87,6 +87,7 @@ def mock_main_page_data_response():
                 ),
                 ticker='USD',
                 token=None,
+                media=None,
 
             ),
             AssetUda(
@@ -101,6 +102,7 @@ def mock_main_page_data_response():
                 ),
                 ticker='USD',
                 token=None,
+                media=None,
             ),
         ],
         cfa=[
@@ -147,6 +149,7 @@ def mock_main_page_data_response():
                     settled=700, future=350, spendable=1050,
                 ),
                 media='filepath',
+                reject_list_url=None,
             ),
         ],
         vanilla=OfflineAsset(

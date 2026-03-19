@@ -4,6 +4,7 @@ Mocked data for the asset detail page service service test
 from __future__ import annotations
 
 from rgb_lib import Balance
+from rgb_lib import ExpirationAbsolute
 from rgb_lib import Outpoint
 from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
@@ -42,7 +43,7 @@ mocked_data_when_transaction_type_send = TransferAsset(
     change_utxo=Outpoint(
         txid='23beece15fc30af37afae0b6499f8d5f91d3fe57168b5a5eeb97e9a65ecc818b', vout=2,
     ),
-    expiration=1717569912,
+    expiration=ExpirationAbsolute(expiry=1717569912, exact=False),
     transport_endpoints=[
         TransferTransportEndpoint(
             endpoint='http://127.0.0.1:3000/json-rpc',
@@ -64,7 +65,7 @@ mocked_data_when_transaction_receive_blind = TransferAsset(
         txid='3a7b2dfaca7186c5d68c960eb69f2ab164bb0a6e391607f06fcff96bc303c3c4', vout=0,
     ),
     change_utxo=None,
-    expiration=1717652591,
+    expiration=ExpirationAbsolute(expiry=1717652591, exact=False),
     transport_endpoints=[
         TransferTransportEndpoint(
             endpoint='http://127.0.0.1:3000/json-rpc',
@@ -87,7 +88,7 @@ mocked_data_when_transaction_receive_witness = TransferAsset(
         txid='3a7b2dfaca7186c5d68c960eb69f2ab164bb0a6e391607f06fcff96bc303c3c4', vout=0,
     ),
     change_utxo=None,
-    expiration=1717652591,
+    expiration=ExpirationAbsolute(expiry=1717652591, exact=False),
     transport_endpoints=[
         TransferTransportEndpoint(
             endpoint='http://127.0.0.1:3000/json-rpc',
@@ -110,7 +111,7 @@ mocked_data_when_transaction_invalid = TransferAsset(
         txid='3a7b2dfaca7186c5d68c960eb69f2ab164bb0a6e391607f06fcff96bc303c3c4', vout=0,
     ),
     change_utxo=None,
-    expiration=1717652591,
+    expiration=ExpirationAbsolute(expiry=1717652591, exact=False),
     transport_endpoints=[
         TransferTransportEndpoint(
             endpoint='http://127.0.0.1:3000/json-rpc',

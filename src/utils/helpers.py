@@ -46,6 +46,7 @@ from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.custom_exception import CommonException
 from src.utils.gauth import TOKEN_PICKLE_PATH
+from src.utils.info_message import INFO_MULTISIG_TRANSACTION_PENDING
 from src.utils.logging import logger
 from src.views.components.toast import ToastManager
 
@@ -247,23 +248,25 @@ def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
         Exception: If configuration retrieval or processing fails.
     """
     try:
-        # Network-specific configurations
-        config_mapping = {
-            BitcoinNetwork.MAINNET: {
+        # Network-specific configurations - use if/elif since BitcoinNetwork is not hashable
+        if network == BitcoinNetwork.MAINNET():
+            network_config = {
                 SAVED_INDEXER_URL: INDEXER_URL_MAINNET,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_MAINNET,
-            },
-            BitcoinNetwork.TESTNET: {
+            }
+        elif network == BitcoinNetwork.TESTNET():
+            network_config = {
                 SAVED_INDEXER_URL: INDEXER_URL_TESTNET,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_TESTNET,
-            },
-            BitcoinNetwork.REGTEST: {
+            }
+        elif network == BitcoinNetwork.REGTEST():
+            network_config = {
                 SAVED_INDEXER_URL: INDEXER_URL_REGTEST,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_REGTEST,
-            },
-        }
-        # Retrieve the appropriate configuration based on the network
-        network_config = config_mapping.get(type(network)) or {}
+            }
+        else:
+            network_config = {}
+
         dynamic_config = {}
         for key, value in network_config.items():
             dynamic_config[key] = SettingRepository.get_config_value(
@@ -458,55 +461,56 @@ def register_multisig_button(
 ):
     """
     Registers a button to automatically react to multisig pending state changes.
-
-    This helper encapsulates the entire setup: checking for multisig wallet type,
-    connecting the signal, and handling the button state updates. It replaces
-    manual connection logic in views.
-
-    Args:
-        view_model: The view model object.
-        button: The QPushButton to manage.
-        normal_handler: The function to call when button is clicked in normal state.
-        pending_handler: Optional. Function to call when pending. Defaults to showing toast.
     """
+    if not isinstance(button, QPushButton):
+        return
 
-    # Default to standard toast if no specific pending handler provided
+    # Default pending handler
     if pending_handler is None:
         def default_pending_handler():
             ToastManager.info(
-                description='A multisig transaction is already pending or under review. '
-                'Please complete it before creating a new transaction.',
+                description=INFO_MULTISIG_TRANSACTION_PENDING,
             )
         pending_handler = default_pending_handler
 
-    # Define the callback that will update the button state
+    # Track currently connected handler on the button
+    if not hasattr(button, "_connected_handler"):
+        button._connected_handler = None
+
     def state_update_callback(is_pending: bool):
         if not isinstance(button, QPushButton):
             return
 
-        try:
-            _ = button.objectName()
-        except RuntimeError:
+        # Decide which handler should be active
+        new_handler = pending_handler if is_pending else normal_handler
+
+        # Skip if already in correct state (prevents unnecessary ops)
+        if button._connected_handler == new_handler:
             return
 
-        if is_pending:
-            # Set pending property to trigger QSS [pending="true"] selector
-            button.setProperty('pending', 'true')
-            button.style().polish(button)
-            button.blockSignals(True)
-            # Connect pending handler
-            button.clicked.connect(pending_handler)
-            button.blockSignals(False)
-        else:
-            # Remove pending property to restore normal QSS styling
-            button.setProperty('pending', 'false')
-            button.style().polish(button)
-            button.blockSignals(True)
-            # Connect normal handler if provided
-            if normal_handler is not None:
-                button.clicked.connect(normal_handler)
-            button.blockSignals(False)
+        # Disconnect previous handler ONLY if it exists
+        if button._connected_handler is not None:
+            try:
+                button.clicked.disconnect(button._connected_handler)
+            except TypeError:
+                # Already disconnected / not connected → safe to ignore
+                pass
 
-    # Connect the signal using the existing helper
+        # Connect new handler if available
+        if new_handler is not None:
+            button.clicked.connect(new_handler)
+
+        # Update tracker
+        button._connected_handler = new_handler
+
+        # Update UI state
+        button.setProperty("pending", "true" if is_pending else "false")
+        button.style().polish(button)
+
+    # Initial connection (important to avoid "no handler" state)
+    if normal_handler is not None:
+        button.clicked.connect(normal_handler)
+        button._connected_handler = normal_handler
+
+    # Hook into multisig state updates
     connect_multisig_pending_signal(view_model, state_update_callback)
-

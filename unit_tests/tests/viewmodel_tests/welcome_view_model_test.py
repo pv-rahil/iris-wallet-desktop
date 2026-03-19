@@ -31,8 +31,22 @@ def test_initialization(welcome_view_model):
     assert welcome_view_model._page_navigation is not None
 
 
-def test_on_create_click(welcome_view_model, mock_page_navigation):
+def test_on_create_click(welcome_view_model, mock_page_navigation, mocker):
     """Test if the on_create_click method works as expected."""
+    mock_network = mocker.Mock()
+    mock_network.value = 'testnet'
+    mocker.patch(
+        'src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network',
+        return_value=mock_network,
+    )
+    mocker.patch(
+        'src.viewmodels.welcome_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=Mock(),
+    )
+    mocker.patch(
+        'src.viewmodels.welcome_view_model.get_value',
+        return_value='test_password',
+    )
     welcome_view_model.on_create_click()
     mock_page_navigation.set_wallet_password_page.assert_called_once()
 
@@ -70,12 +84,11 @@ def test_handle_sync_completed_password_none_returns_early(welcome_view_model, m
 def test_handle_sync_completed_success_sets_password_and_navigates(welcome_view_model, mocker):
     """When set_value True, should show success, set keyring status false, and navigate."""
     data = Mock(password='pwd')
+    mock_network = mocker.Mock()
+    mock_network.value = 'testnet'
     mocker.patch(
         'src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network',
-    )
-    mocker.patch(
-        'src.viewmodels.welcome_view_model.get_bitcoin_network_from_enum',
-        return_value=Mock(value='net'),
+        return_value=mock_network,
     )
     mocker.patch(
         'src.viewmodels.welcome_view_model.set_value',
@@ -103,12 +116,11 @@ def test_handle_sync_completed_keyring_dialog_hw_watch_only(welcome_view_model, 
         password='pwd', xpub_vanilla='vx', xpub_colored='cx',
         master_fingerprint='ff', mnemonic=None,
     )
+    mock_network = mocker.Mock()
+    mock_network.value = 'testnet'
     mocker.patch(
         'src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network',
-    )
-    mocker.patch(
-        'src.viewmodels.welcome_view_model.get_bitcoin_network_from_enum',
-        return_value=Mock(value='net'),
+        return_value=mock_network,
     )
     mocker.patch(
         'src.viewmodels.welcome_view_model.set_value',
@@ -138,12 +150,11 @@ def test_handle_sync_completed_keyring_dialog_software(welcome_view_model, mocke
         password='pwd', mnemonic='mn', xpub_vanilla=None,
         xpub_colored=None, master_fingerprint=None,
     )
+    mock_network = mocker.Mock()
+    mock_network.value = 'testnet'
     mocker.patch(
         'src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network',
-    )
-    mocker.patch(
-        'src.viewmodels.welcome_view_model.get_bitcoin_network_from_enum',
-        return_value=Mock(value='net'),
+        return_value=mock_network,
     )
     mocker.patch(
         'src.viewmodels.welcome_view_model.set_value',

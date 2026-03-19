@@ -33,6 +33,8 @@ def receive_rgb_asset_widget(qtbot):
 def test_handle_receive_cfa_hw_dialog_update_shows_dialog(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
     """Cover HW dialog update and show when not visible for receive CFA."""
     widget = receive_rgb_asset_widget
+    # Make widget visible so handle_receive_cfa_hw_dialog_update doesn't return early
+    widget.show()
     dlg = MagicMock()
     dlg.isVisible.return_value = False
     mocker.patch(

@@ -40,7 +40,7 @@ from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FAIL_TRANSFER
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
-from src.utils.info_message import INFO_ASSET_SENT
+from src.utils.info_message import INFO_ASSET_SENT, INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_POST_TO_BRIDGE
@@ -346,9 +346,20 @@ class CFAViewModel(QObject, ThreadManager):
             self.unsigned_psbt.emit(unsigned_psbt)
             return
 
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET:
+        is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        if is_hw and is_online and SettingRepository.get_wallet_signature_type() == WalletSignatureType.STANDARD_TYPE_WALLET or\
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET and \
+                SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+            )
+            self.send_cfa_button_clicked.emit(True)
+            hardware_client_store.set_rgb_mode(True)
+        elif is_hw and SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            self.hw_dialog_update.emit(
+                INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
             self.send_cfa_button_clicked.emit(True)
             hardware_client_store.set_rgb_mode(True)

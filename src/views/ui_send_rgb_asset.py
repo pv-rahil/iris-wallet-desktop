@@ -97,8 +97,7 @@ class SendRGBAssetWidget(QWidget):
             if recipient:
                 self.send_rgb_asset_page.asset_address_value.setText(recipient)
             if amount:
-                self.send_rgb_asset_page.asset_amount_value.setText(f"{
-                                                                    amount:,                                                                    }")
+                self.send_rgb_asset_page.asset_amount_value.setText(f"{amount:,}")
         self.sidebar = None
         self.__loading_translucent_screen = LoadingTranslucentScreen(
             parent=self, description_text='Loading',

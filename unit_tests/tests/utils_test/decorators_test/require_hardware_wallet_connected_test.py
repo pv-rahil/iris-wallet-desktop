@@ -33,8 +33,8 @@ def test_decorator_no_hw_wallet_calls_function():
         assert mock(1) == 2
 
 
-@patch('src.utils.decorators.require_hardware_wallet_connected.hwi_enumerate')
-@patch('src.utils.decorators.require_hardware_wallet_connected.LedgerClient')
+@patch('src.utils.decorators.require_hardware_wallet_connected.enumerate_ledger_devices')
+@patch('src.utils.decorators.require_hardware_wallet_connected.create_ledger_client')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network')
 @patch('src.data.repository.setting_repository.SettingRepository.get_key_storage_type')
 def test_decorator_hw_wallet_success(mock_get_kst, mock_get_net, mock_ledger, mock_enum):
@@ -51,7 +51,7 @@ def test_decorator_hw_wallet_success(mock_get_kst, mock_get_net, mock_ledger, mo
     mock_ledger.assert_called_once()
 
 
-@patch('src.utils.decorators.require_hardware_wallet_connected.hwi_enumerate', return_value=[])
+@patch('src.utils.decorators.require_hardware_wallet_connected.enumerate_ledger_devices', return_value=[])
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET)
 @patch('src.data.repository.setting_repository.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
 @patch('src.utils.logging.logger.error')

@@ -28,6 +28,7 @@ from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
@@ -99,9 +100,17 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self.unsigned_psbt.emit(unsigned_psbt)
             return
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
+                SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET and self._is_multisig():
+            self.hw_dialog_update.emit(
+                INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
+            )
+            self.sign_psbt_for_multisig(unsigned_psbt)
+            return
 
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
-                SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET or self._is_multisig():
+                SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET or self._is_multisig() and \
+                    SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )

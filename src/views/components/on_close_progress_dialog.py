@@ -16,11 +16,15 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.backup_service import BackupService
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
+from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.keyring_storage import get_value
+from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.wallet_credential_encryption import mnemonic_store
 from src.utils.worker import ThreadManager
@@ -131,13 +135,25 @@ class OnCloseDialogBox(QDialog, ThreadManager):
                 mnemonic_dialog.exec()
             else:
                 network: NetworkEnumModel = SettingRepository.get_wallet_network()
-                if mnemonic_store.decrypted_mnemonic:
-                    mnemonic: str = mnemonic_store.decrypted_mnemonic
-                    password: str = get_value(
-                        key=WALLET_PASSWORD_KEY,
-                        network=network.value,
-                    )
-                    self._start_backup(mnemonic, password)
+                # For hardware wallet or watch-only, use xpub instead of mnemonic
+                if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or \
+                        SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
+                    mnemonic = local_store.get_value(ACCOUNT_XPUB_VANILLA)
+                    if mnemonic is None:
+                        logger.error('xpub is not available for backup.')
+                        self._close_app()
+                        return
+                else:
+                    if not mnemonic_store.decrypted_mnemonic:
+                        logger.error('Mnemonic is not available for backup.')
+                        self._close_app()
+                        return
+                    mnemonic = mnemonic_store.decrypted_mnemonic
+                password: str = get_value(
+                    key=WALLET_PASSWORD_KEY,
+                    network=network.value,
+                )
+                self._start_backup(mnemonic, password)
         else:
             self._close_app()
 

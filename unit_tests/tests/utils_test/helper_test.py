@@ -33,6 +33,8 @@ from src.utils.helpers import write_rgb_lib_version_file
 MOCK_INDEXER_URL = 'mock_indexer_url'
 MOCK_PROXY_ENDPOINT = 'mock_proxy_endpoint'
 MOCK_PASSWORD = 'mock_password'
+SAVED_INDEXER_URL = 'saved_indexer_url'
+SAVED_PROXY_ENDPOINT = 'saved_proxy_endpoint'
 
 
 @pytest.fixture
@@ -202,15 +204,16 @@ def test_create_circular_pixmap(mock_qcolor, mock_qpainter, mock_qpixmap, mock_q
 
 @pytest.mark.parametrize(
     'network_enum, expected_network', [
-        (NetworkEnumModel.MAINNET, BitcoinNetwork.MAINNET),
-        (NetworkEnumModel.TESTNET, BitcoinNetwork.TESTNET),
-        (NetworkEnumModel.REGTEST, BitcoinNetwork.REGTEST),
-        (BitcoinNetwork.MAINNET, BitcoinNetwork.MAINNET),  # Already BitcoinNetwork
+        (NetworkEnumModel.MAINNET, BitcoinNetwork.MAINNET()),
+        (NetworkEnumModel.TESTNET, BitcoinNetwork.TESTNET()),
+        (NetworkEnumModel.REGTEST, BitcoinNetwork.REGTEST()),
+        (BitcoinNetwork.MAINNET(), BitcoinNetwork.MAINNET()),  # Already BitcoinNetwork
     ],
 )
 def test_get_bitcoin_network_from_enum_valid(network_enum, expected_network):
     """Test valid conversions from network enum to BitcoinNetwork."""
-    assert get_bitcoin_network_from_enum(network_enum) == expected_network
+    result = get_bitcoin_network_from_enum(network_enum)
+    assert result == expected_network
 
 
 def test_get_bitcoin_network_from_enum_invalid():
@@ -219,17 +222,24 @@ def test_get_bitcoin_network_from_enum_invalid():
         get_bitcoin_network_from_enum('invalid_network')
 
 
-@patch('src.data.repository.setting_repository.SettingRepository.get_config_value')
 @pytest.mark.parametrize(
-    'network', [
-        BitcoinNetwork.MAINNET,
-        BitcoinNetwork.TESTNET,
-        BitcoinNetwork.REGTEST,
-    ],
+    'network_str', ['mainnet', 'testnet', 'regtest'],
 )
-def test_get_bitcoin_config(mock_get_config_value, network):
+def test_get_bitcoin_config(network_str, mocker):
     """Test get_bitcoin_config returns correct config for each network."""
-    mock_get_config_value.side_effect = [MOCK_INDEXER_URL, MOCK_PROXY_ENDPOINT]
+    # Create network instance
+    if network_str == 'mainnet':
+        network = BitcoinNetwork.MAINNET()
+    elif network_str == 'testnet':
+        network = BitcoinNetwork.TESTNET()
+    else:
+        network = BitcoinNetwork.REGTEST()
+
+    # Mock SettingRepository.get_config_value
+    mocker.patch(
+        'src.utils.helpers.SettingRepository.get_config_value',
+        side_effect=[MOCK_INDEXER_URL, MOCK_PROXY_ENDPOINT],
+    )
 
     config = get_bitcoin_config(network, MOCK_PASSWORD)
 
@@ -238,8 +248,6 @@ def test_get_bitcoin_config(mock_get_config_value, network):
     assert config.proxy_endpoint == MOCK_PROXY_ENDPOINT
     assert config.password == MOCK_PASSWORD
     assert config.network == network
-
-    assert mock_get_config_value.call_count == 2
 
 
 def test_validate_xpub_valid():

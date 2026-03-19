@@ -130,8 +130,10 @@ def sandbox_app_paths(tmp_path):
     return SimpleNamespace(
         app_path=str(tmp_path / 'app'),
         wallet_data_folder_path=str(tmp_path / 'app' / 'wallet-data'),
-        config_file_path=str(tmp_path / 'app' / 'wallet.ini'),
-        mnemonic_file_path=str(tmp_path / 'app' / 'mnemo'),
+        config_file_path=str(tmp_path / 'app' / 'config.ini'),
+        logs_folder_path=str(tmp_path / 'app' / 'logs'),
+        cache_folder_path=str(tmp_path / 'app' / 'cache'),
+        multisig_cosigners_file_path=str(tmp_path / 'app' / 'multisig_cosigners.json'),
     )
 
 

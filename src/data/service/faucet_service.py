@@ -69,7 +69,6 @@ class FaucetService:
                     asset_group=asset_group,
                 ),
             )
-            print(response)
             return response
         except Exception as exc:
             return handle_exceptions(exc=exc)

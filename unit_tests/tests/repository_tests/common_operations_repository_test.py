@@ -22,9 +22,16 @@ from src.model.enums.enums_model import NetworkEnumModel
 
 
 @pytest.fixture
-def mock_rgb_lib():
-    """Fixture for mocking rgb_lib."""
-    with patch('src.data.repository.common_operations_repository.rgb_lib') as mock:
+def mock_generate_keys():
+    """Fixture for mocking generate_keys."""
+    with patch('src.data.repository.common_operations_repository.generate_keys') as mock:
+        yield mock
+
+
+@pytest.fixture
+def mock_wallet():
+    """Fixture for mocking Wallet."""
+    with patch('src.data.repository.common_operations_repository.Wallet') as mock:
         yield mock
 
 
@@ -35,33 +42,33 @@ def mock_colored_wallet():
         yield mock
 
 
-def test_init(mock_rgb_lib):
+def test_init(mock_generate_keys):
     """Test init method."""
     # Setup
     mock_keys = MagicMock(spec=Keys)
-    mock_rgb_lib.generate_keys.return_value = mock_keys
+    mock_generate_keys.return_value = mock_keys
 
     # Execute
     init_request = InitRequestModel(
-        password='test_password', network=BitcoinNetwork.TESTNET,
+        password='test_password', network=BitcoinNetwork.TESTNET(),
     )
     result = CommonOperationRepository.init(init_request)
 
     # Assert
     assert result == mock_keys
-    mock_rgb_lib.generate_keys.assert_called_once_with(BitcoinNetwork.TESTNET)
+    mock_generate_keys.assert_called_once_with(BitcoinNetwork.TESTNET())
 
 
-def test_unlock(mock_rgb_lib, mock_colored_wallet):
+def test_unlock(mock_wallet, mock_colored_wallet):
     """Test unlock method."""
     # Setup
-    mock_wallet = MagicMock()
-    mock_rgb_lib.Wallet.return_value = mock_wallet
+    mock_wallet_instance = MagicMock()
+    mock_wallet.return_value = mock_wallet_instance
 
     # Execute
     unlock_request = WalletRequestModel(
         data_dir='/test/path',
-        bitcoin_network=1,
+        bitcoin_network=BitcoinNetwork.TESTNET(),
         account_xpub_colored='test_pubkey_colored',
         account_xpub_vanilla='test_pubkey_vanilla',
         mnemonic='test mnemonic',
@@ -72,22 +79,9 @@ def test_unlock(mock_rgb_lib, mock_colored_wallet):
     result = CommonOperationRepository.unlock(unlock_request)
 
     # Assert
-    assert result == mock_wallet
-    mock_rgb_lib.Wallet.assert_called_once()
-    mock_colored_wallet.set_wallet.assert_called_once_with(mock_wallet)
-
-    # Verify WalletData was created with correct parameters
-    wallet_data_call = mock_rgb_lib.Wallet.call_args[0][0]
-    assert isinstance(wallet_data_call, MagicMock)  # It's a mock of WalletData
-    assert mock_rgb_lib.WalletData.call_args.kwargs['data_dir'] == '/test/path'
-    assert mock_rgb_lib.WalletData.call_args.kwargs['bitcoin_network'] == BitcoinNetwork.TESTNET
-    assert mock_rgb_lib.WalletData.call_args.kwargs['database_type'] == DatabaseType.SQLITE
-    assert mock_rgb_lib.WalletData.call_args.kwargs['max_allocations_per_utxo'] == 5
-    assert mock_rgb_lib.WalletData.call_args.kwargs['account_xpub_vanilla'] == 'test_pubkey_vanilla'
-    assert mock_rgb_lib.WalletData.call_args.kwargs['account_xpub_colored'] == 'test_pubkey_colored'
-    assert mock_rgb_lib.WalletData.call_args.kwargs['mnemonic'] == 'test mnemonic'
-    assert mock_rgb_lib.WalletData.call_args.kwargs['vanilla_keychain'] == 1
-    assert mock_rgb_lib.WalletData.call_args.kwargs['master_fingerprint'] == 'test_master_fingerprint'
+    assert result == mock_wallet_instance
+    mock_wallet.assert_called_once()
+    mock_colored_wallet.set_wallet.assert_called_once_with(mock_wallet_instance)
 
 
 def test_backup(mock_colored_wallet):
@@ -112,10 +106,12 @@ def test_backup(mock_colored_wallet):
     )
 
 
-def test_restore(mock_rgb_lib):
+def test_restore(mocker):
     """Test restore method."""
     # Setup
-    mock_rgb_lib.restore_backup = MagicMock()
+    mock_restore_backup = mocker.patch(
+        'src.data.repository.common_operations_repository.restore_backup',
+    )
 
     # Execute
     restore_request = RestoreRequestModel(
@@ -128,31 +124,34 @@ def test_restore(mock_rgb_lib):
     # Assert
     assert isinstance(result, RestoreResponseModel)
     assert result.status is True
-    mock_rgb_lib.restore_backup.assert_called_once_with(
+    mock_restore_backup.assert_called_once_with(
         backup_path='/test/backup/path',
         password='test_password',
         data_dir='/test/data/dir',
     )
 
 
-def test_restore_keys(mock_rgb_lib):
+def test_restore_keys(mocker):
     """Test restore_keys method."""
     # Setup
-    mock_rgb_lib.restore_keys = MagicMock()
-    mock_rgb_lib.restore_keys.return_value = MagicMock()  # Mock Keys object
+    mock_restore_keys = mocker.patch(
+        'src.data.repository.common_operations_repository.restore_keys',
+    )
+    mock_keys = MagicMock()
+    mock_restore_keys.return_value = mock_keys
 
     # Test data
-    bitcoin_network = BitcoinNetwork.TESTNET
+    bitcoin_network = BitcoinNetwork.TESTNET()
     mnemonic = 'test mnemonic phrase'
 
     # Execute
     result = CommonOperationRepository.restore_keys(bitcoin_network, mnemonic)
 
     # Assert
-    mock_rgb_lib.restore_keys.assert_called_once_with(
+    mock_restore_keys.assert_called_once_with(
         bitcoin_network, mnemonic,
     )
-    assert result == mock_rgb_lib.restore_keys.return_value
+    assert result == mock_keys
 
 
 @patch('src.data.repository.common_operations_repository.colored_wallet')

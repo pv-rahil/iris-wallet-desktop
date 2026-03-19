@@ -18,6 +18,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import Balance
 from src.model.rgb_model import FailTransferResponseModel
@@ -569,7 +570,8 @@ def test_on_error_native_auth(cfa_view_model, mocker):
 
 @patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
 @patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-def test_on_psbt_created_hardware_wallet(mock_get_kst, mock_get_wt, cfa_view_model):
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+def test_on_psbt_created_hardware_wallet(mock_get_sig, mock_get_kst, mock_get_wt, cfa_view_model):
     """When HW + online wallet, emit signing status and run sign_and_finalize."""
     emitted = []
     cfa_view_model.hw_dialog_update.connect(
@@ -577,7 +579,10 @@ def test_on_psbt_created_hardware_wallet(mock_get_kst, mock_get_wt, cfa_view_mod
     )
     cfa_view_model.send_cfa_button_clicked = MagicMock()
     cfa_view_model.run_in_thread = MagicMock()
-    cfa_view_model.on_psbt_created('psbt')
+    # Create mock result object with psbt attribute
+    mock_result = MagicMock()
+    mock_result.psbt = 'psbt'
+    cfa_view_model.on_psbt_created(mock_result)
     # hw dialog shows signing
     assert any(msg for (msg, st) in emitted if st == PsbtStatus.SIGNING)
     # run_in_thread called targeting CommonOperationRepository.sign_and_finalize_psbt
@@ -588,23 +593,31 @@ def test_on_psbt_created_hardware_wallet(mock_get_kst, mock_get_wt, cfa_view_mod
 
 
 @patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
-def test_on_psbt_created_watch_only(mock_get_acc, cfa_view_model):
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+def test_on_psbt_created_watch_only(mock_get_sig, mock_get_acc, cfa_view_model):
     """WATCH_ONLY should emit unsigned_psbt signal."""
     got = []
     cfa_view_model.unsigned_psbt.connect(got.append)
-    cfa_view_model.on_psbt_created('raw_psbt')
+    # Create mock result object with psbt attribute
+    mock_result = MagicMock()
+    mock_result.psbt = 'raw_psbt'
+    cfa_view_model.on_psbt_created(mock_result)
     assert got == ['raw_psbt']
 
 
 @patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
 @patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-def test_on_psbt_created_sets_rgb_mode(mock_get_kst, mock_get_wt, cfa_view_model, mocker):
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+def test_on_psbt_created_sets_rgb_mode(mock_get_sig, mock_get_kst, mock_get_wt, cfa_view_model, mocker):
     """Ensure RGB mode is enabled before invoking sign_and_finalize_psbt in HW flow."""
     set_rgb = mocker.patch(
         'src.viewmodels.cfa_view_model.hardware_client_store.set_rgb_mode',
     )
     cfa_view_model.run_in_thread = MagicMock()
-    cfa_view_model.on_psbt_created('psbtX')
+    # Create mock result object with psbt attribute
+    mock_result = MagicMock()
+    mock_result.psbt = 'psbtX'
+    cfa_view_model.on_psbt_created(mock_result)
     set_rgb.assert_called_once_with(True)
 
 

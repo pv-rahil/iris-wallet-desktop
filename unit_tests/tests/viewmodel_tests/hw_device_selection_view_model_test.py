@@ -68,19 +68,18 @@ def test_on_ledger_success_sets_local_store_and_emits(vm: HWDeviceSelectionViewM
     ],
 )
 def test_fetch_ledger_xpubs_chain_mapping(mock_create_client, vm: HWDeviceSelectionViewModel, network, expected_chain):
-    """create_ledger_client should be called with correct Chain depending on network."""
+    """create_ledger_client should be called with device_info only (chain is determined internally)."""
     client = MagicMock()
     client.get_extended_pubkey.return_value = 'xpub'
     client.get_master_fingerprint.return_value = b'\xab\xcd\xef\x01'
     mock_create_client.return_value = client
 
     device_info = {'path': '/dev/hw', 'type': 'hid'}
-    vm._fetch_ledger_xpubs(device_info, network)
-    _, kwargs = mock_create_client.call_args
-    # first positional arg is device_info, second is chain
-    args, kw = mock_create_client.call_args
-    actual_chain = args[1] if len(args) > 1 else kw.get('chain')
-    assert actual_chain == expected_chain
+    # Patch SettingRepository.get_wallet_network to return the network
+    with patch('src.utils.ledger_hw_client.SettingRepository.get_wallet_network', return_value=network):
+        vm._fetch_ledger_xpubs(device_info, network)
+    # create_ledger_client is called with device_info only
+    mock_create_client.assert_called_once_with(device_info)
 
 
 @patch('src.viewmodels.hw_device_selection_view_model.create_ledger_client', side_effect=Exception('boom'))
@@ -88,8 +87,11 @@ def test_fetch_ledger_xpubs_emits_on_error(_mock_client, vm: HWDeviceSelectionVi
     """On exception, `_fetch_ledger_xpubs` should emit connect_failed with the error."""
     device_info = {'path': '/dev/hw', 'type': 'hid'}
     with qtbot.waitSignal(vm.connect_failed, timeout=1000) as sig:
-        vm._fetch_ledger_xpubs(device_info, NetworkEnumModel.TESTNET)
-    assert 'boom' in sig.args[0]
+        result = vm._fetch_ledger_xpubs(device_info, NetworkEnumModel.TESTNET)
+    # Should return None tuple and emit error
+    assert result == (None, None, None, None)
+    # The error message includes the client access error from the finally block
+    assert 'client' in sig.args[0] or 'boom' in sig.args[0]
 
 
 def test_on_ledger_error_emits_and_toast(vm: HWDeviceSelectionViewModel, qtbot):

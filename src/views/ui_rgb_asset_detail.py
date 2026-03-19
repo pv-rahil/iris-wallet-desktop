@@ -846,7 +846,8 @@ class RGBAssetDetailWidget(QWidget):
             self.send_asset.setDisabled(True)
             self.receive_rgb_asset.setDisabled(True)
             if self.asset_type == AssetSchema.IFA or self.asset_type == str(AssetSchema.IFA.value):
-                self.secondary_issuance.setDisabled(True)
+                if self.secondary_issuance is not None:
+                    self.secondary_issuance.setDisabled(True)
         else:
             self.render_timer.stop()
             self.__loading_translucent_screen.stop()

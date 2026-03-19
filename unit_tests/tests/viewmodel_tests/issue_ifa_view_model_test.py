@@ -64,7 +64,7 @@ def test_issue_ifa_asset_success_flow(mock_run, mock_issue, mock_toast_err, vm):
     vm.success_page_message.connect(sig_success)
 
     # Provide inputs
-    vm.issue_ifa_asset('IFAT', 'AssetName', 100, 50, True)
+    vm.issue_ifa_asset('IFAT', 'AssetName', 100, 50)
 
     # Simulate worker success callback
     worker = MagicMock()
