@@ -281,8 +281,13 @@ class BroadcastInspectionDetails(QFrame):
 
         self.val_txid.setText(self._wrap_to_two_lines(details.txid))
 
-        # BTC-only vs RGB layout shifts
-        is_btc_only = (not rgb_expected) and (not is_inflation_context)
+        # BTC-only vs RGB layout shifts (offline wallets should NEVER show RGB details)
+        from src.data.repository.setting_repository import SettingRepository
+        from src.model.enums.enums_model import WalletType
+        offline_mode = (
+            SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+        )
+        is_btc_only = ((not rgb_expected) and (not is_inflation_context)) or offline_mode
         if is_btc_only:
             # TXID spans full width in first row
             self.grid.addWidget(self.tile_txid, 0, 0, 1, 2)

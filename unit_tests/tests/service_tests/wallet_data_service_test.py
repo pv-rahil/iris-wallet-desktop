@@ -72,11 +72,12 @@ def test_create_tables_failure_logs_and_raises(tmp_db, mocker):
     assert 'Exception occur in wallet-data' in mock_logger.error.call_args[0][0]
 
 
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.colored_wallet')
-def test_refresh_wallet_data_success(colored_mod, tmp_db):
+def test_refresh_wallet_data_success(colored_mod, mock_get_access, tmp_db):
     """refresh_wallet_data should persist values and log success."""
     # Allow writes
-    tmp_db.is_watch_only = True
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
     # Prepare picklable balance response
     bal_resp = BtcBalance(
         vanilla=Balance(settled=1, future=2, spendable=3),
@@ -97,10 +98,11 @@ def test_refresh_wallet_data_success(colored_mod, tmp_db):
     assert tmp_db.list_unspents().unspents == []
 
 
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.colored_wallet')
-def test_refresh_wallet_data_exception(colored_mod, tmp_db, mocker):
+def test_refresh_wallet_data_exception(colored_mod, mock_get_access, tmp_db, mocker):
     """refresh_wallet_data should log error and re-raise on exception."""
-    tmp_db.is_watch_only = True
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
     colored_mod.wallet.get_btc_balance.side_effect = Exception('boom')
     mock_logger = mocker.patch('src.data.service.wallet_data_service.logger')
     with pytest.raises(Exception):
@@ -136,8 +138,6 @@ def test_psbt_crud_when_watch_only(mock_get_type, mock_get_access, tmp_db):
     """PSBT CRUD should work when watch-only/offline allowed."""
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mock_get_access.return_value = WalletAccessType.WATCH_ONLY
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
 
     pid = tmp_db.add_psbt('base64_psbt', signed=False, purpose='send_btc')
     assert pid is not None
@@ -155,10 +155,12 @@ def test_psbt_crud_when_watch_only(mock_get_type, mock_get_access, tmp_db):
     assert tmp_db.delete_psbt('base64_psbt_signed') is True
 
 
-def test_list_psbt_signed_filter(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_list_psbt_signed_filter(mock_get_type, mock_get_access, tmp_db):
     """list_psbt should filter by signed flag and expose purpose field."""
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     u_id = tmp_db.add_psbt('u_psbt', signed=False, purpose='send_btc')
     s_id = tmp_db.add_psbt('s_psbt', signed=True, purpose='send_rgb')
     assert u_id and s_id
@@ -172,18 +174,22 @@ def test_list_psbt_signed_filter(tmp_db):
     ) == 1 and ss[0]['purpose'] == 'send_rgb' and ss[0]['signed'] is True
 
 
-def test_add_delete_psbt_gating(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_add_delete_psbt_gating(mock_get_type, mock_get_access, tmp_db):
     """add_psbt returns None and delete_psbt returns False when not allowed."""
-    tmp_db.is_watch_only = False
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.add_psbt('psbt') is None
     assert tmp_db.delete_psbt('whatever') is False
 
 
-def test_draft_issue_asset_crud(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_draft_issue_asset_crud(mock_get_type, mock_get_access, tmp_db):
     """Draft issue asset upsert/list/delete should function when allowed."""
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     tmp_db.upsert_draft_issue_asset(
         IssueAssetDraftModel(
             name='name', ticker='T', issued_amount=10, file_path='/tmp/file',
@@ -213,9 +219,10 @@ def test_get_session_singleton_watch_only(app_paths, get_wallet_type, get_access
             WalletDataService._instance = None
 
 
-def test_refresh_wallet_data_returns_early_when_not_watch_only(tmp_db, mocker):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+def test_refresh_wallet_data_returns_early_when_not_watch_only(mock_get_access, tmp_db, mocker):
     """refresh_wallet_data should return early if not watch-only (no repository calls)."""
-    tmp_db.is_watch_only = False
+    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
     colored_mock = mocker.patch(
         'src.data.service.wallet_data_service.colored_wallet',
     )
@@ -223,26 +230,32 @@ def test_refresh_wallet_data_returns_early_when_not_watch_only(tmp_db, mocker):
     assert not colored_mock.wallet.get_btc_balance.called
 
 
-def test_list_psbt_not_allowed_returns_empty(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_list_psbt_not_allowed_returns_empty(mock_get_type, mock_get_access, tmp_db):
     """list_psbt should return [] when not watch-only/offline."""
-    tmp_db.is_watch_only = False
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.list_psbt(signed=False) == []
     assert tmp_db.list_psbt(signed=True) == []
 
 
-def test_draft_issue_asset_not_allowed_paths(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_draft_issue_asset_not_allowed_paths(mock_get_type, mock_get_access, tmp_db):
     """list/delete draft_issue_asset should be gated when not allowed."""
-    tmp_db.is_watch_only = False
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.list_draft_issue_assets() == []
     assert tmp_db.delete_draft_issue_asset('1') is False
 
 
-def test_mark_psbt_signed_without_unsigned_row(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_mark_psbt_signed_without_unsigned_row(mock_get_type, mock_get_access, tmp_db):
     """mark_psbt_signed should handle missing unsigned row (purpose None) and still insert signed row."""
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     signed_id = tmp_db.mark_psbt_signed('missing_unsigned', 'signed_payload')
     assert signed_id is not None
     lst = tmp_db.list_psbt(signed=True)
@@ -291,10 +304,12 @@ def test_get_session_none_for_non_watch_only_online(get_wallet_type, get_access_
         WalletDataService._instance = None
 
 
-def test_ifa_secondary_draft_add_and_get_by_id(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_ifa_secondary_draft_add_and_get_by_id(mock_get_type, mock_get_access, tmp_db):
     """add_ifa_secondary_draft_meta should insert and get_ifa_secondary_draft_by_id should fetch it."""
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     draft_id = tmp_db.add_ifa_secondary_draft_meta('AID', 'AN', 5)
     assert draft_id is not None
     row = tmp_db.get_ifa_secondary_draft_by_id(int(draft_id))
@@ -302,10 +317,12 @@ def test_ifa_secondary_draft_add_and_get_by_id(tmp_db):
     assert row['active_utxo'] == 1
 
 
-def test_ifa_secondary_attach_psbt_and_list(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_ifa_secondary_attach_psbt_and_list(mock_get_type, mock_get_access, tmp_db):
     """attach_inflate_psbt_to_secondary_draft should set psbt_id and list_ifa_secondary_drafts returns it."""
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     _id = tmp_db.add_ifa_secondary_draft_meta('X', None, None)
     assert _id is not None
     psbt = 'psbt_base64_payload'
@@ -315,10 +332,12 @@ def test_ifa_secondary_attach_psbt_and_list(tmp_db):
     assert len(rows) >= 1 and rows[0]['psbt_id'] == psbt_id
 
 
-def test_ifa_secondary_set_active_and_get_active(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_ifa_secondary_set_active_and_get_active(mock_get_type, mock_get_access, tmp_db):
     """set_active_secondary_draft should flip active_utxo and getters should reflect it."""
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     a = tmp_db.add_ifa_secondary_draft_meta('A', 'N1', 1)
     b = tmp_db.add_ifa_secondary_draft_meta('A', 'N2', 2)
     assert a and b
@@ -332,11 +351,13 @@ def test_ifa_secondary_set_active_and_get_active(tmp_db):
     assert act2 and act2['id'] == int(b)
 
 
-def test_ifa_secondary_latest_active_across_assets(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_ifa_secondary_latest_active_across_assets(mock_get_type, mock_get_access, tmp_db):
     """get_latest_active_secondary_draft should return the most recent active."""
     import time as _t
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     _ = tmp_db.add_ifa_secondary_draft_meta('Z1', 'N', 1)
     _t.sleep(1)
     last_id = tmp_db.add_ifa_secondary_draft_meta('Z2', 'N', 1)
@@ -344,10 +365,12 @@ def test_ifa_secondary_latest_active_across_assets(tmp_db):
     assert row and row['asset_id'] == 'Z2' and row['id'] == int(last_id)
 
 
-def test_ifa_secondary_delete_by_id_and_by_psbt_and_update_psbt(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_ifa_secondary_delete_by_id_and_by_psbt_and_update_psbt(mock_get_type, mock_get_access, tmp_db):
     """delete_ifa_secondary_draft returns True; delete_secondary_draft_by_psbt and update_secondary_draft_psbt_id paths work."""
-    tmp_db.is_watch_only = True
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     did = tmp_db.add_ifa_secondary_draft_meta('B', 'NB', 3)
     assert did is not None
     # Update psbt id using update method
@@ -363,10 +386,12 @@ def test_ifa_secondary_delete_by_id_and_by_psbt_and_update_psbt(tmp_db):
     assert tmp_db.delete_ifa_secondary_draft(int(did)) in (True, False)
 
 
-def test_ifa_secondary_gating_when_not_allowed(tmp_db):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_ifa_secondary_gating_when_not_allowed(mock_get_type, mock_get_access, tmp_db):
     """All secondary draft methods should no-op when not watch-only/offline."""
-    tmp_db.is_watch_only = False
-    tmp_db.is_offline_wallet = False
+    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.add_ifa_secondary_draft_meta('X', None, None) is None
     assert tmp_db.attach_inflate_psbt_to_secondary_draft('X', 'p') is None
     assert tmp_db.list_ifa_secondary_drafts('X') == []

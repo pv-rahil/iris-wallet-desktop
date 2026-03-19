@@ -216,22 +216,20 @@ class BroadcastTransactionService:
         pending = BroadcastTransactionService.multisig_pending_context(op_info)
         if pending is None:
             return None
-        # We cannot check TXID here directly without inspection.
-        # Use simple object return; the caller (ViewModel) handles TXID comparison.
         return pending
 
     @staticmethod
     def operation_transfer_type_key(operation: object) -> str | None:
         """Extract transfer_type_key if this is an RGB transfer operation."""
         if operation.is_INFLATION_TO_REVIEW():
-            return 'issuance'
+            return 'inflate_asset'
         if operation.is_SEND_TO_REVIEW():
-            return 'asset_transfer'
+            return 'send_asset'
         # BTC send
         if operation.is_SEND_BTC_TO_REVIEW():
-            return 'btc_transfer'
+            return 'send_btc'
         if operation.is_CREATE_UTXOS_TO_REVIEW():
-            return 'internal'
+            return 'create_utxos'
         return None
 
     @staticmethod
@@ -250,7 +248,7 @@ class BroadcastTransactionService:
     def is_rgb_purpose(purpose: str | None) -> bool:
         """Check if the purpose is related to RGB."""
 
-        return purpose in ('send_asset', 'inflation')
+        return purpose in ('send_asset', 'inflate_asset', 'inflation')
 
     @staticmethod
     def set_rgb_mode_for_purpose(purpose: str | None) -> None:
@@ -509,12 +507,17 @@ class BroadcastTransactionService:
         }
 
     @staticmethod
-    def get_retranslate_data(can_broadcast: bool, is_multisig: bool) -> dict:
+    def get_retranslate_data(can_broadcast: bool, is_multisig: bool, is_watch_only: bool = False) -> dict:
         """Get translated strings for the UI."""
         if can_broadcast:
             title = 'broadcast_transaction'
             label = 'broadcast_transaction_label'
             button = 'broadcast_transaction'
+        elif is_multisig and is_watch_only:
+            # Watch-only multisig can only respond/post, not sign
+            title = 'respond_to_multisig'
+            label = 'respond_to_multisig_label'
+            button = 'post_to_multisig'
         else:
             title = 'sign_psbt'
             label = 'sign_psbt_label'

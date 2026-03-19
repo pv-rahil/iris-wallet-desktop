@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QVBoxLayout
 from accessible_constant import HEADER_PSBT_INFO_FRAME
 from accessible_constant import HEADER_USB_SYNC_FRAME
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
+from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import LoaderDisplayModel
@@ -677,13 +678,52 @@ class HeaderFrame(QFrame, QObject):
                 drafts = wallet_service.list_psbt(
                     True,
                 ) if wallet_service is not None else []
-                count = len(drafts) if drafts is not None else 0
+                signed_count = len(drafts) if drafts is not None else 0
 
-                if count > 0:
+                # Check if signed PSBTs match any pending unsigned operations (by TXID)
+                # If so, we should broadcast instead of showing "Sign Needed"
+                matched_signed_count = 0
+                if signed_count > 0 and self._pending_ops:
+                    try:
+                        for op_info in self._pending_ops:
+                            if op_info is None or not hasattr(op_info, 'operation'):
+                                continue
+                            operation = op_info.operation
+                            if operation is None:
+                                continue
+                            unsigned_psbt = getattr(operation, 'psbt', None)
+                            if not unsigned_psbt:
+                                continue
+                            # Get TXID of unsigned PSBT
+                            try:
+                                unsigned_txid = RgbRepository.inspect_psbt(psbt=unsigned_psbt).txid
+                            except Exception:
+                                continue
+                            # Check if any signed PSBT has matching TXID
+                            for signed_draft in drafts:
+                                signed_psbt = signed_draft.get('psbt')
+                                if not signed_psbt:
+                                    continue
+                                try:
+                                    signed_txid = RgbRepository.inspect_psbt(psbt=signed_psbt).txid
+                                    if unsigned_txid == signed_txid:
+                                        matched_signed_count += 1
+                                        break
+                                except Exception:
+                                    pass
+                    except Exception as e:
+                        logger.error('Failed to check signed PSBT match: %s', e)
+
+                if signed_count > 0:
                     # If we have signed drafts ready to broadcast, prioritize that action
                     label_text = QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
-                    ).format(count)
+                    ).format(signed_count)
+                elif matched_signed_count > 0:
+                    # We have a signed PSBT matching a pending operation - show broadcast
+                    label_text = QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
+                    ).format(matched_signed_count)
                 else:
                     # Otherwise, show that we have pending operations that need signing (offline)
                     # KEEP FRAME ENABLED, but tag it so click shows Toast

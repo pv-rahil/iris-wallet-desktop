@@ -126,7 +126,7 @@ def test_close_button_routing_else_calls_collectibles_page(qtbot):
 
 
 def test_update_qr_and_address_psbt_with_match_prefixes_text(qtbot, monkeypatch):
-    """When a matching PSBT is found, prefix the label with 'psbt:<purpose>:' text."""
+    """When a matching PSBT is found, the text is compressed for QR display."""
     widget, _ = _make_psbt_widget(page_name='send_bitcoin')
     qtbot.addWidget(widget)
 
@@ -154,13 +154,17 @@ def test_update_qr_and_address_psbt_with_match_prefixes_text(qtbot, monkeypatch)
     )
 
     widget.update_qr_and_address('psbt_payload')
+    # The text is now compressed with zlib and base64 encoded
+    import zlib
+    import base64
+    expected_compressed = base64.b64encode(zlib.compress(b'psbt:receive:psbt_payload')).decode()
     assert widget.receiver_address.text() == QCoreApplication.translate(
-        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt:receive:psbt_payload', None,
+        IRIS_WALLET_TRANSLATIONS_CONTEXT, expected_compressed, None,
     )
 
 
 def test_update_qr_and_address_psbt_no_service_uses_raw_text(qtbot, monkeypatch):
-    """If no wallet service is available, keep raw PSBT text in label."""
+    """If no wallet service is available, compress raw PSBT text for QR display."""
     widget, _ = _make_psbt_widget(page_name='send_bitcoin')
     qtbot.addWidget(widget)
 
@@ -174,13 +178,17 @@ def test_update_qr_and_address_psbt_no_service_uses_raw_text(qtbot, monkeypatch)
     )
 
     widget.update_qr_and_address('raw_psbt')
+    # The text is now compressed with zlib and base64 encoded
+    import zlib
+    import base64
+    expected_compressed = base64.b64encode(zlib.compress(b'raw_psbt')).decode()
     assert widget.receiver_address.text() == QCoreApplication.translate(
-        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'raw_psbt', None,
+        IRIS_WALLET_TRANSLATIONS_CONTEXT, expected_compressed, None,
     )
 
 
 def test_update_qr_and_address_psbt_with_no_match_keeps_raw(qtbot, monkeypatch):
-    """If no matching PSBT exists, keep the raw text unchanged."""
+    """If no matching PSBT exists, compress the raw text for QR display."""
     widget, _ = _make_psbt_widget(page_name='send_bitcoin')
     qtbot.addWidget(widget)
 
@@ -202,7 +210,10 @@ def test_update_qr_and_address_psbt_with_no_match_keeps_raw(qtbot, monkeypatch):
     )
 
     widget.update_qr_and_address('psbt_payload')
-    # Should remain unchanged
+    # The text is now compressed with zlib and base64 encoded
+    import zlib
+    import base64
+    expected_compressed = base64.b64encode(zlib.compress(b'psbt_payload')).decode()
     assert widget.receiver_address.text() == QCoreApplication.translate(
-        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_payload', None,
+        IRIS_WALLET_TRANSLATIONS_CONTEXT, expected_compressed, None,
     )

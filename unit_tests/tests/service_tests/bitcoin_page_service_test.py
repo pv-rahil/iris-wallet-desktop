@@ -21,11 +21,10 @@ from unit_tests.service_test_resources.mocked_fun_return_values.bitcoin_page_ser
 from unit_tests.service_test_resources.mocked_fun_return_values.bitcoin_page_service import mocked_transaction_list
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
-def test_get_btc_transaction_success(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_get_btc_transaction_success(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """Test successful retrieval of BTC transactions with balance"""
     # Mocking the repository responses
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
@@ -43,11 +42,10 @@ def test_get_btc_transaction_success(mock_list_transactions, mock_get_btc_balanc
     assert response.transactions[1].txid == 'tx123confirmed'
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
-def test_skips_none_transactions_and_formats_time(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_skips_none_transactions_and_formats_time(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """Transactions list may contain None; service should skip them and format date/time for confirmed ones."""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_btc_balance.return_value = mocked_balance
@@ -69,12 +67,11 @@ def test_skips_none_transactions_and_formats_time(mock_list_transactions, mock_g
     assert isinstance(tx.confirmation_normal_time, str)
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
 @patch('src.data.service.bitcoin_page_service.calculate_transaction_amount')
-def test_amount_none_raises_common_exception(mock_calc_amount, mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_amount_none_raises_common_exception(mock_calc_amount, mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """If helper returns None for amount, service must raise CommonException via handle_exceptions."""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_btc_balance.return_value = mocked_balance
@@ -95,13 +92,12 @@ def test_amount_none_raises_common_exception(mock_calc_amount, mock_list_transac
         assert 'Unable to calculate amount' in exc.message
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
 @patch('src.data.service.bitcoin_page_service.calculate_transaction_amount')
 @patch('src.data.service.bitcoin_page_service.get_transaction_status')
-def test_status_none_raises_common_exception(mock_get_status, mock_calc_amount, mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_status_none_raises_common_exception(mock_get_status, mock_calc_amount, mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """If helper returns (None, None) status, service must raise CommonException."""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_btc_balance.return_value = mocked_balance
@@ -123,11 +119,10 @@ def test_status_none_raises_common_exception(mock_get_status, mock_calc_amount, 
         assert 'Unable to get transaction status' in exc.message
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
-def test_missing_timestamp_raises_common_exception(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_missing_timestamp_raises_common_exception(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """If confirmation_time.timestamp is None, it should raise CommonException."""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_btc_balance.return_value = mocked_balance
@@ -148,11 +143,10 @@ def test_missing_timestamp_raises_common_exception(mock_list_transactions, mock_
         assert 'Confirmation time is missing a timestamp' in exc.message
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
-def test_attribute_error_in_confirmation_block(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_attribute_error_in_confirmation_block(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """If confirmation_time lacks attribute access, AttributeError path is covered."""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_btc_balance.return_value = mocked_balance
@@ -174,11 +168,10 @@ def test_attribute_error_in_confirmation_block(mock_list_transactions, mock_get_
         assert 'AttributeError:' in exc.message
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
-def test_general_exception_in_confirmation_block(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_general_exception_in_confirmation_block(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """Cause a general exception inside datetime conversion to hit the generic except path."""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_btc_balance.return_value = mocked_balance
@@ -202,11 +195,10 @@ def test_general_exception_in_confirmation_block(mock_list_transactions, mock_ge
         assert 'An error occurred:' in exc.message
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
-def test_online_wallet_uses_repository(mock_get_wallet_type, mock_list_transactions, mock_get_btc_balance, mock_refresh_transfer):
+def test_online_wallet_uses_repository(mock_get_wallet_type, mock_list_transactions, mock_get_btc_balance):
     """Test online wallet uses repository"""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_btc_balance.return_value = mocked_balance
@@ -252,11 +244,10 @@ def test_offline_wallet_with_session_calls_session_methods(mock_get_wallet_type,
     assert response.balance.vanilla.spendable == 700000
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
-def test_get_btc_transaction_empty_list(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_get_btc_transaction_empty_list(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """Test when transaction list is empty"""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     # Mocking the repository responses
@@ -274,11 +265,10 @@ def test_get_btc_transaction_empty_list(mock_list_transactions, mock_get_btc_bal
     assert response.balance.vanilla.settled == 500000
 
 
-@patch('src.data.service.bitcoin_page_service.RgbRepository.refresh_transfer')
 @patch('src.data.repository.setting_repository.SettingRepository.get_wallet_type')
 @patch('src.data.repository.btc_repository.BtcRepository.get_btc_balance')
 @patch('src.data.repository.btc_repository.BtcRepository.list_transactions')
-def test_get_btc_transaction_sorting(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type, mock_refresh_transfer):
+def test_get_btc_transaction_sorting(mock_list_transactions, mock_get_btc_balance, mock_get_wallet_type):
     """Test that transactions are properly sorted"""
     mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     # Mocking the repository responses

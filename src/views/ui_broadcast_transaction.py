@@ -26,14 +26,11 @@ from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
 from accessible_constant import BROADCAST_TRANSACTION_METHOD_SELECTOR
-from accessible_constant import BROADCAST_TRANSACTION_PAGE_BUTTON
 from accessible_constant import BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON
 from accessible_constant import BROADCAST_TRANSACTION_PSBT_INPUT
-from accessible_constant import SIGN_PSBT_PAGE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.model.broadcast_transaction_model import PsbtDraftItem
-from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
@@ -41,6 +38,7 @@ from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import close_button_navigation
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import set_widgets_visible
 from src.utils.render_timer import RenderTimer
@@ -127,6 +125,7 @@ class BroadcastTransactionWidget(QWidget):
 
         self.broadcast_transaction_title_layout = QHBoxLayout()
         self.broadcast_transaction_title_label = QLabel(self)
+        self.broadcast_transaction_title_label.setObjectName('broadcast_transaction_title_label')
         self.broadcast_transaction_title_label.setFixedSize(QSize(400, 63))
         self.broadcast_transaction_title_label.setAlignment(
             Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
@@ -512,12 +511,12 @@ class BroadcastTransactionWidget(QWidget):
         if self._psbt_details is None:
             return
 
-        offline_mode = (
-            SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY or
+        is_offline_wallet = (
             SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
         )
 
-        if self.is_multisig and self._rgb_expected and self._rgb_details is None and not offline_mode:
+        # Watch-only should wait for RGB details; only offline skips the wait
+        if self.is_multisig and self._rgb_expected and self._rgb_details is None and not is_offline_wallet:
             return
 
         # Ignore if user cleared/changed PSBT meanwhile
@@ -528,6 +527,7 @@ class BroadcastTransactionWidget(QWidget):
         if not current_psbt or len(current_psbt) < self.min_psbt_len:
             return
 
+        self.inspection_details.inspect_loading.hide()
         self.inspection_details.show_inspection_details(True)
         self.is_psbt_validated = True
         self.handle_button_enable()
@@ -549,7 +549,7 @@ class BroadcastTransactionWidget(QWidget):
         """Translate the UI elements using service logic."""
         is_signed = self.priv.can_broadcast_psbt
         data = BroadcastTransactionService.get_retranslate_data(
-            is_signed, self.is_multisig,
+            is_signed, self.is_multisig, self.is_watch_only,
         )
 
         self.broadcast_transaction_title_label.setText(data['title'])
@@ -711,6 +711,10 @@ class BroadcastTransactionWidget(QWidget):
             purpose = BroadcastTransactionService.operation_transfer_type_key(
                 self._current_operation,
             )
+
+        # Fallback: lookup purpose from storage (critical for offline wallets)
+        if not purpose:
+            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(psbt)
 
         # Set RGB mode explicitly before signing
         if purpose:
@@ -894,9 +898,20 @@ class BroadcastTransactionWidget(QWidget):
                 self.inspection_details.update_transfer_type_label(new_label)
 
             self._is_inflation_context = self._pending_transfer_type == 'inflation'
-            # Do NOT re-trigger inspection here to avoid loop.
+            # Do NOT re-trigger full inspection here to avoid loop.
             # Inspection is already triggered in _on_psbt_text_changed or _update_signature_progress.
             # Only update UI context and signature count.
+
+            # Watch-only: trigger RGB inspection using bridge fascia_path
+            if self.is_watch_only and operation.details and getattr(operation.details, 'fascia_path', None):
+                op_ctx = operation.details
+                self._rgb_expected = True
+                self._rgb_details = None  # Reset so _render_inspection_if_ready waits
+                self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
+                    op_ctx.fascia_path,
+                    current_psbt,
+                    op_ctx.entropy if getattr(op_ctx, 'entropy', None) is not None else 0,
+                )
 
             # Extract ack count from MultisigVotingStatus if available
             if operation.status is not None and operation.status.acked_by is not None and operation.status.threshold is not None:
@@ -923,7 +938,7 @@ class BroadcastTransactionWidget(QWidget):
             self.inspection_details.btn_primary.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT,
-                    'post_to_multisig' if self.is_initiator_of_pending else 'sign_psbt',
+                    'post_to_multisig' if self.is_watch_only else 'sign_psbt',
                 ),
             )
             if self.is_initiator_of_pending:
@@ -981,12 +996,12 @@ class BroadcastTransactionWidget(QWidget):
                     )
                     return
 
-            # For offline multisig mode, trigger inspection even without pending operation
             offline_mode = (
                 SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+                or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
             )
             if offline_mode and current_psbt:
-                stored_purpose = self._get_psbt_purpose_from_storage(current_psbt)
+                stored_purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(current_psbt)
                 if parsed.purpose or stored_purpose or len(current_psbt) >= self.min_psbt_len:
                     self._trigger_inspection(None, current_psbt)
                     return
@@ -1015,6 +1030,10 @@ class BroadcastTransactionWidget(QWidget):
             is_inflation = purpose in ('inflate_asset', 'inflation')
             # Perseve _rgb_expected if already true (e.g. from previous matched operation or explicit set)
             rgb_expected = purpose in ('send_asset', 'inflate_asset', 'inflation') or self._rgb_expected
+
+        # Offline wallets can never get fascia_path, so never expect RGB
+        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
+            rgb_expected = False
 
         self.inspection_details.show_inspection_details(True)
         self._rgb_expected = rgb_expected
@@ -1118,19 +1137,15 @@ class BroadcastTransactionWidget(QWidget):
             self.render_timer.start()
             self.broadcast_button.start_loading()
             self.broadcast_button.setEnabled(False)
-            try:
-                self._loading_overlay.start()
-                self._loading_overlay.make_parent_disabled_during_loading(True)
-            except Exception:
-                pass
+            # Disable reject and clear buttons during loading
+            self.inspection_details.btn_reject.setEnabled(False)
+            self.inspection_details.btn_clear.setEnabled(False)
         else:
             self.render_timer.stop()
             self.broadcast_button.stop_loading()
-            try:
-                self._loading_overlay.stop()
-                self._loading_overlay.make_parent_disabled_during_loading(False)
-            except Exception:
-                pass
+            # Re-enable reject and clear buttons
+            self.inspection_details.btn_reject.setEnabled(True)
+            self.inspection_details.btn_clear.setEnabled(True)
         self.handle_button_enable()
 
     def update_primary_button_state(self, is_loading):
@@ -1176,9 +1191,22 @@ class BroadcastTransactionWidget(QWidget):
         """Centralized hardware wallet dialog update handler."""
         if not self.isVisible():
             return
+        # Stop button loading when showing hardware dialog
+        self.broadcast_button.stop_loading()
+        self.broadcast_button.setEnabled(True)
         self.hw_dialog.update_dialog(message, dialog_type)
+        self.hw_dialog.cancel_button.clicked.connect(self._reset_button_states)
         if not self.hw_dialog.isVisible():
             self.hw_dialog.show()
+
+    def _reset_button_states(self):
+        """Reset all button states after HW dialog is cancelled."""
+        hardware_client_store.stop_client()
+        self.broadcast_button.stop_loading()
+        self.broadcast_button.setEnabled(True)
+        self.inspection_details.btn_reject.setEnabled(True)
+        self.inspection_details.btn_clear.setEnabled(True)
+        self.handle_button_enable()
 
     def show_signed_psbt_page(self, psbt):
         """Navigate to the receive asset page and display the PSBT as a QR code."""
@@ -1210,11 +1238,10 @@ class BroadcastTransactionWidget(QWidget):
         )
 
     def closeEvent(self, event):
-        """Ensure loading overlay is stopped when widget is closed."""
+        """Ensure loading is stopped when widget is closed."""
         try:
-            if hasattr(self, '_loading_overlay') and self._loading_overlay:
-                self._loading_overlay.stop()
-                self._loading_overlay.make_parent_disabled_during_loading(False)
+            if hasattr(self, 'inspection_details') and self.inspection_details:
+                self.inspection_details.inspect_loading.hide()
         except Exception:
             pass
         super().closeEvent(event) if hasattr(super(), 'closeEvent') else None

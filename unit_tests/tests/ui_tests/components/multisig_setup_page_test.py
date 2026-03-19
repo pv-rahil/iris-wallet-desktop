@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
 from src.views.components.multisig_setup_page import MultisigSetupPage
 
@@ -23,7 +24,9 @@ def vm():
 def widget_watch_only(qt_app, vm):
     """Instantiate the page in watch-only mode."""
     with patch('src.views.components.multisig_setup_page.load_stylesheet', return_value=''), \
-            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY):
+            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY), \
+            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET), \
+            patch('src.views.components.multisig_setup_page.get_value', return_value='test_password'):
         w = MultisigSetupPage(vm)
         w.show()
         qt_app.processEvents()
@@ -35,7 +38,9 @@ def widget_watch_only(qt_app, vm):
 def widget_with_privkey(qt_app, vm):
     """Instantiate the page in with-private-key (non watch-only) mode."""
     with patch('src.views.components.multisig_setup_page.load_stylesheet', return_value=''), \
-            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY):
+            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY), \
+            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET), \
+            patch('src.views.components.multisig_setup_page.get_value', return_value='test_password'):
         w = MultisigSetupPage(vm)
         w.show()
         qt_app.processEvents()
@@ -106,7 +111,9 @@ def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage
     # Recreate to reach Step 2 again
     widget_with_privkey = None
     with patch('src.views.components.multisig_setup_page.load_stylesheet', return_value=''), \
-            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY):
+            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY), \
+            patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET), \
+            patch('src.views.components.multisig_setup_page.get_value', return_value='test_password'):
         w = MultisigSetupPage(vm)
     w.total_signer_input.setText('2')
     w.required_signer_input.setText('2')

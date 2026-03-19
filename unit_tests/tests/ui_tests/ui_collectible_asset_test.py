@@ -528,6 +528,13 @@ def test_init_top_row_offline_and_watch_only_branches(qtbot, mocker, mock_collec
 
 def test_update_grid_layout_covers_drafts_and_remove_item(collectible_asset_widget, mocker, qtbot):
     """Covers drafts path (191-196) and removeItem branch (212)."""
+    # Mock wallet access type as WATCH_ONLY so draft frames are created
+    mocker.patch(
+        'src.views.ui_collectible_asset.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+    collectible_asset_widget.is_watch_only = True
+    
     # Ensure scroll_area exists with a layout containing a spacer (so removeItem executes)
     collectible_asset_widget.create_collectibles_frames()
     grid_widget = QWidget()
@@ -543,6 +550,10 @@ def test_update_grid_layout_covers_drafts_and_remove_item(collectible_asset_widg
             """Return a draft with a file_path."""
             return [{'id': 7, 'name': 'Draft A', 'file_path': '/tmp/a.png'}]
 
+        def list_psbt(self, signed: bool):
+            """Return empty list for PSBT queries."""
+            return []
+
     mocker.patch(
         'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=_Session(),
     )
@@ -553,10 +564,13 @@ def test_update_grid_layout_covers_drafts_and_remove_item(collectible_asset_widg
     with patch.object(collectible_asset_widget, 'create_collectible_frame', wraps=collectible_asset_widget.create_collectible_frame) as spy_create:
         collectible_asset_widget.update_grid_layout()
         # One call for the draft
-        assert any(
-            'draft' in str(k) or 'draft' in str(v)
-            for (k, v) in spy_create.call_args.kwargs.items()
-        )
+        assert spy_create.call_count == 1
+        # Check that draft was passed
+        if spy_create.call_args is not None:
+            assert any(
+                'draft' in str(k) or 'draft' in str(v)
+                for (k, v) in spy_create.call_args.kwargs.items()
+            )
 
 
 def test_create_collectible_frame_for_draft_and_click(collectible_asset_widget, mocker):

@@ -120,7 +120,7 @@ def test_on_connect_device_not_found_shows_toast_and_resets(dialog: HWDeviceSele
     dialog.populate_devices(devices)
     # select first
     dialog.radio_buttons[0].setChecked(True)
-    with patch('src.views.components.hw_device_selection_dialog.hwi_enumerate', return_value=[{'fingerprint': 'other'}]) as _enum, \
+    with patch('src.views.components.hw_device_selection_dialog.enumerate_ledger_devices', return_value=[{'fingerprint': 'other'}]) as _enum, \
             patch('src.views.components.hw_device_selection_dialog.ToastManager.error') as mock_toast:
         dialog._on_connect()
         mock_toast.assert_called_once()
@@ -136,7 +136,7 @@ def test_on_connect_device_locked_shows_toast_and_resets(dialog: HWDeviceSelecti
     devices = [{'model': 'nano_s', 'fingerprint': 'fp1'}]
     dialog.populate_devices(devices)
     dialog.radio_buttons[0].setChecked(True)
-    with patch('src.views.components.hw_device_selection_dialog.hwi_enumerate', return_value=[{'fingerprint': 'fp1', 'error': 'locked'}]), \
+    with patch('src.views.components.hw_device_selection_dialog.enumerate_ledger_devices', return_value=[{'fingerprint': 'fp1', 'error': 'locked'}]), \
             patch('src.views.components.hw_device_selection_dialog.ToastManager.error') as mock_toast:
         dialog._on_connect()
         # Should be called with translated device_locked
@@ -149,7 +149,7 @@ def test_on_connect_success_calls_view_model_connect(dialog: HWDeviceSelectionDi
     devices = [{'model': 'nano_s', 'fingerprint': 'fp1'}]
     dialog.populate_devices(devices)
     dialog.radio_buttons[0].setChecked(True)
-    with patch('src.views.components.hw_device_selection_dialog.hwi_enumerate', return_value=[{'fingerprint': 'fp1', 'path': 'usb://dev1'}]), \
+    with patch('src.views.components.hw_device_selection_dialog.enumerate_ledger_devices', return_value=[{'fingerprint': 'fp1', 'path': 'usb://dev1'}]), \
             patch('src.views.components.hw_device_selection_dialog.SettingRepository.get_wallet_network', return_value='MAINNET') as _net, \
             patch.object(dialog._device_selection_view_model, 'connect_to_device') as mock_connect:
         dialog._on_connect()
@@ -187,7 +187,7 @@ def test_checking_devices_preserves_selection(dialog: HWDeviceSelectionDialog):
     dialog.populate_devices(devices)
     dialog.radio_buttons[0].setChecked(True)
     with patch(
-        'src.views.components.hw_device_selection_dialog.hwi_enumerate', return_value=[
+        'src.views.components.hw_device_selection_dialog.enumerate_ledger_devices', return_value=[
             {'model': 'nano_s', 'fingerprint': 'keep'},
             {'model': 'nano_x', 'fingerprint': 'new'},
         ],

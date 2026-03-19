@@ -293,6 +293,7 @@ def test_handle_application_open_main_flow(
     mock_get_network,
     mock_wallet_request_model,
     mock_toast_manager,
+    mocker,
 ):
     """Test handle_application_open for main flows (valid/invalid RGB, keyring, password present/missing)."""
 
@@ -329,6 +330,10 @@ def test_handle_application_open_main_flow(
     ]
     mock_wallet_instance = Mock()
     mock_wallet_request_model.return_value = mock_wallet_instance
+    
+    # Mock build_keys_from_data to return a mock keys object
+    mock_keys = Mock()
+    mocker.patch('src.viewmodels.splash_view_model.build_keys_from_data', return_value=mock_keys)
 
     view_model.handle_application_open()
 
@@ -342,13 +347,11 @@ def test_handle_application_open_main_flow(
     view_model.sync_chain_info_label.emit.assert_called_with(True)
     mock_local_store.get_value.assert_any_call(ACCOUNT_XPUB_VANILLA)
     mock_local_store.get_value.assert_any_call(ACCOUNT_XPUB_COLORED)
+    # WalletRequestModel now uses keys parameter instead of individual xpubs/mnemonic/fingerprint
     mock_wallet_request_model.assert_called_with(
         data_dir='test_app_path',
         bitcoin_network='bitcoin_network',
-        account_xpub_vanilla='account_xpub_vanilla',
-        account_xpub_colored='account_xpub_colored',
-        mnemonic='decrypted_mnemonic',
-        master_fingerprint='master_fingerprint',
+        keys=mock_keys,
     )
     view_model.run_in_thread.assert_called()
     mock_local_store.get_value.reset_mock()
