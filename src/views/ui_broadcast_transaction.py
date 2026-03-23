@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import Operation
 
 from accessible_constant import BROADCAST_TRANSACTION_METHOD_SELECTOR
 from accessible_constant import BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON
@@ -898,20 +899,29 @@ class BroadcastTransactionWidget(QWidget):
                 self.inspection_details.update_transfer_type_label(new_label)
 
             self._is_inflation_context = self._pending_transfer_type == 'inflation'
-            # Do NOT re-trigger full inspection here to avoid loop.
-            # Inspection is already triggered in _on_psbt_text_changed or _update_signature_progress.
-            # Only update UI context and signature count.
 
             # Watch-only: trigger RGB inspection using bridge fascia_path
-            if self.is_watch_only and operation.details and getattr(operation.details, 'fascia_path', None):
-                op_ctx = operation.details
-                self._rgb_expected = True
-                self._rgb_details = None  # Reset so _render_inspection_if_ready waits
-                self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
-                    op_ctx.fascia_path,
-                    current_psbt,
-                    op_ctx.entropy if getattr(op_ctx, 'entropy', None) is not None else 0,
-                )
+            DETAILS_OPERATIONS = (
+                Operation.SEND_TO_REVIEW,
+                Operation.SEND_PENDING,
+                Operation.SEND_COMPLETED,
+                Operation.SEND_DISCARDED,
+                Operation.INFLATION_TO_REVIEW,
+                Operation.INFLATION_PENDING,
+                Operation.INFLATION_COMPLETED,
+                Operation.INFLATION_DISCARDED,
+                Operation.BLIND_RECEIVE_COMPLETED,
+                Operation.WITNESS_RECEIVE_COMPLETED,
+            )
+            if self.is_watch_only and isinstance(operation, DETAILS_OPERATIONS) and getattr(operation.details, 'fascia_path', None):
+                    op_ctx = operation.details
+                    self._rgb_expected = True
+                    self._rgb_details = None  # Reset so _render_inspection_if_ready waits
+                    self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
+                        op_ctx.fascia_path,
+                        current_psbt,
+                        op_ctx.entropy if getattr(op_ctx, 'entropy', None) is not None else 0,
+                    )
 
             # Extract ack count from MultisigVotingStatus if available
             if operation.status is not None and operation.status.acked_by is not None and operation.status.threshold is not None:

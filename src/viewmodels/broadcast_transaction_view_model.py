@@ -60,6 +60,9 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         self._current_signed_txid: str | None = None
         self._pending_psbt_txid: str | None = None
         self._pending_op_info: object | None = None
+        # Guard variables for preventing duplicate calls
+        self._inspecting_psbt: str | None = None
+        self._inspecting_rgb: tuple | None = None
 
     def load_psbts(self, is_signed: bool) -> None:
         """Load PSBT drafts via service and emit to the UI."""
@@ -386,6 +389,10 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def inspect_psbt(self, psbt: str):
         """Inspect PSBT for review details."""
+        # Guard: skip if already inspecting this PSBT
+        if self._inspecting_psbt == psbt:
+            return
+        self._inspecting_psbt = psbt
         self.run_in_thread(
             RgbRepository.inspect_psbt,
             {
@@ -397,6 +404,11 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def inspect_rgb_transfer(self, fascia_path: str, psbt: str, entropy: int):
         """Inspect RGB transfer for review details."""
+        # Guard: skip if already inspecting this RGB transfer
+        key = (fascia_path, psbt)
+        if self._inspecting_rgb == key:
+            return
+        self._inspecting_rgb = key
         self.run_in_thread(
             RgbRepository.inspect_rgb_transfer,
             {
@@ -431,11 +443,13 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
     def _on_inspect_psbt_success(self, result):
         """Handle success message for inspect psbt"""
+        self._inspecting_psbt = None  # Reset guard
         self.is_loading.emit(False)
         self.psbt_inspection_ready.emit(result)
 
     def _on_inspect_rgb_transfer_success(self, result):
         """Handle success message for inspect rgb transfer"""
+        self._inspecting_rgb = None  # Reset guard
         self.is_loading.emit(False)
         self.rgb_transfer_inspection_ready.emit(result)
 
