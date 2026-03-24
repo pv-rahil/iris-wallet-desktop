@@ -198,8 +198,8 @@ def test_show_asset_issued_deletes_draft_when_from_draft(issue_cfa_widget: Issue
 def test_handle_cfa_hw_dialog_update_shows_dialog(issue_cfa_widget: IssueCFAWidget, mocker):
     """Cover dialog creation, update, and show when message/type present."""
     widget = issue_cfa_widget
-    # Make widget visible so handle_cfa_hw_dialog doesn't return early
-    widget.show()
+    # Mock isVisible so handle_cfa_hw_dialog doesn't return early
+    widget.isVisible = MagicMock(return_value=True)
     dlg = MagicMock()
     dlg.isVisible.return_value = False
     mocker.patch(
@@ -336,8 +336,8 @@ def test_load_cfa_draft_data_paths(issue_cfa_widget: IssueCFAWidget, mocker):
 def test_show_cfa_psbt_page_navigates(issue_cfa_widget: IssueCFAWidget):
     """Cover positive path of show_cfa_psbt_page."""
     widget = issue_cfa_widget
-    # Make widget visible so show_cfa_psbt_page doesn't return early
-    widget.show()
+    # Mock isVisible so show_cfa_psbt_page doesn't return early
+    widget.isVisible = MagicMock(return_value=True)
     widget._view_model.page_navigation.receive_asset_page = MagicMock()
     # Gate by current purpose
     widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_cfa'

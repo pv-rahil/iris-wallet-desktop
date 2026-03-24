@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 
 from src.utils.usb_detector import USBDetector
+from subprocess import CalledProcessError
 
 
 @pytest.fixture
@@ -77,3 +78,119 @@ def test_detect_usb_drives_and_is_connected(mock_exists, mock_listdir, _get):
     drives = dd.detect_usb_drives()
     assert drives and drives[0].path == '/media/USB'
     assert dd.is_usb_connected() is True
+
+
+@patch('platform.system', return_value='Windows')
+@patch('subprocess.run')
+def test_get_available_devices_windows_single_dict(mock_run, _):
+    """On Windows, handle single dictionary response from PowerShell."""
+    ps_out = {'DeviceID': 'F:', 'VolumeName': 'FLASH_DRIVE'}
+    mock_run.return_value = MagicMock(stdout=json.dumps(ps_out))
+    dd = USBDetector()
+    devices = dd.get_available_devices()
+    assert 'F' in devices
+    assert devices['F']['label'] == 'FLASH_DRIVE'
+
+
+@patch('subprocess.run')
+def test_get_mountpoint_and_label_failure(mock_run):
+    """Test get_mountpoint_and_label with subprocess error."""
+    mock_run.side_effect = CalledProcessError(1, 'diskutil')
+    dd = USBDetector()
+    mount, label = dd.get_mountpoint_and_label('/dev/fail')
+    assert mount == ''
+    assert label == ''
+
+
+def test_is_directory_empty(detector):
+    """Test _is_directory_empty helper."""
+    with patch('os.path.exists', return_value=False):
+        assert detector._is_directory_empty('/non/existent') is True
+        
+    with patch('os.path.exists', return_value=True):
+        with patch('os.listdir', return_value=['.hidden', 'file.txt']):
+            assert detector._is_directory_empty('/some/path') is False
+        with patch('os.listdir', return_value=['.hidden']):
+            assert detector._is_directory_empty('/some/path') is True
+        with patch('os.listdir', side_effect=PermissionError()):
+            assert detector._is_directory_empty('/secret') is False
+
+
+@patch.object(USBDetector, 'get_available_devices', side_effect=Exception("detect failed"))
+def test_detect_usb_drives_exception(mock_get):
+    """Test detect_usb_drives re-raises as RuntimeError."""
+    dd = USBDetector()
+    with pytest.raises(RuntimeError) as exc:
+        dd.detect_usb_drives()
+    assert "USB detection failed" in str(exc.value)
+
+
+@patch('platform.system', return_value='Linux')
+@patch('subprocess.run')
+def test_linux_recursion_no_mount(mock_run, _):
+    """Test Linux recursion when a USB entry has no mountpoint but its children do."""
+    lsblk = {
+        'blockdevices': [
+            {
+                'name': 'sdc',
+                'tran': 'usb',
+                'children': [
+                    {'name': 'sdc1', 'mountpoint': None}, # No mountpoint here
+                    {'name': 'sdc2', 'mountpoint': '/mnt/usb', 'label': 'RECURSE'},
+                ],
+            },
+        ],
+    }
+    mock_run.return_value = MagicMock(stdout=json.dumps(lsblk))
+    dd = USBDetector()
+    devices = dd.get_available_devices()
+    assert 'sdc2' in devices
+    assert 'sdc1' not in devices
+
+
+@patch('platform.system', return_value='Unsupported')
+def test_unsupported_platform(mock_sys):
+    """Test behavior on unsupported platforms."""
+    dd = USBDetector()
+    assert dd.get_available_devices() == {}
+
+
+@patch('platform.system', return_value='Linux')
+@patch('subprocess.run', side_effect=Exception('lsblk fail'))
+def test_get_available_devices_exception_linux(mock_run, _):
+    """Test exception handling in _get_linux_devices."""
+    dd = USBDetector()
+    assert dd.get_available_devices() == {}
+
+
+@patch('platform.system', return_value='Linux')
+@patch.object(USBDetector, '_get_linux_devices', side_effect=Exception('general fail'))
+def test_get_available_devices_exception_general(mock_get, _):
+    """Test general exception handling in get_available_devices."""
+    dd = USBDetector()
+    assert dd.get_available_devices() == {}
+
+
+@patch('platform.system', return_value='Windows')
+@patch('subprocess.run', side_effect=Exception('powershell fail'))
+def test_get_available_devices_exception_windows(mock_run, _):
+    """Test exception handling in _get_windows_devices."""
+    dd = USBDetector()
+    assert dd.get_available_devices() == {}
+
+
+@patch('platform.system', return_value='Darwin')
+@patch('subprocess.run')
+def test_get_macos_devices_called_process_error(mock_run, _):
+    """Test CalledProcessError handling in _get_macos_devices."""
+    mock_run.side_effect = CalledProcessError(1, 'diskutil list')
+    dd = USBDetector()
+    # This should be caught inside _get_macos_devices and return {}
+    assert dd.get_available_devices() == {}
+
+
+@patch.object(USBDetector, 'detect_usb_drives', side_effect=Exception("connection check fail"))
+def test_is_usb_connected_exception(mock_detect):
+    """Test is_usb_connected exception handling."""
+    dd = USBDetector()
+    assert dd.is_usb_connected() is False

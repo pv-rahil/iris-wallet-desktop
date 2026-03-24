@@ -19,6 +19,9 @@ from rgb_lib import OperationResult
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import Transfer
+from rgb_lib import InitOperationResult
+from rgb_lib import OperationInfo
+from rgb_lib import RespondToOperation
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -45,6 +48,7 @@ def mock_wallet():
         mock_wallet = MagicMock()
         mock_colored_wallet.wallet = mock_wallet
         mock_colored_wallet.online = True
+        mock_colored_wallet.is_multisig = False  # Disable online= conditional branches by default
         yield mock_wallet
 
 
@@ -129,10 +133,10 @@ def test_refresh_transfer(mock_wallet):
 
 
 def test_rgb_invoice(mock_wallet, mock_cache):
-    """Test rgb_invoice method"""
+    """Test rgb_invoice method — non-multisig uses witness_receive without online=."""
     # Setup
     mock_receive_data = MagicMock(spec=ReceiveData)
-    mock_wallet.blind_receive.return_value = mock_receive_data
+    mock_wallet.witness_receive.return_value = mock_receive_data
 
     # Execute
     _assignment = Assignment.__new__(Assignment)
@@ -147,12 +151,12 @@ def test_rgb_invoice(mock_wallet, mock_cache):
 
     # Assert
     assert result == mock_receive_data
-    mock_wallet.blind_receive.assert_called_once()
+    mock_wallet.witness_receive.assert_called_once()
     mock_cache.invalidate_cache.assert_called_once()
 
 
 def test_issue_asset_ifa(mock_wallet, mock_cache):
-    """Test issue_asset_ifa method"""
+    """Test issue_asset_ifa method — no online= when not multisig, reject_list_url=None."""
     # Setup
     mock_asset_ifa = MagicMock()
     mock_wallet.issue_asset_ifa.return_value = mock_asset_ifa
@@ -164,7 +168,6 @@ def test_issue_asset_ifa(mock_wallet, mock_cache):
         precision=0,
         amounts=[1000],
         inflation_amounts=[500],
-        replace_rights_num=1,
     )
     result = RgbRepository.issue_asset_ifa(request)
 
@@ -172,7 +175,7 @@ def test_issue_asset_ifa(mock_wallet, mock_cache):
     assert result == mock_asset_ifa
     mock_wallet.issue_asset_ifa.assert_called_once_with(
         ticker='IFAT', name='IFA Asset', precision=0, amounts=[1000],
-        inflation_amounts=[500], replace_rights_num=1,
+        inflation_amounts=[500], reject_list_url=None,
     )
     mock_cache.invalidate_cache.assert_called_once()
 
@@ -242,8 +245,9 @@ def test_send_begin_with_session(mock_get_session, mock_recipient_cls, mock_wall
     # Setup Recipient and send_begin return
     mock_recipient = MagicMock(spec=Recipient)
     mock_recipient_cls.return_value = mock_recipient
-    psbt = MagicMock(spec=SendBeginResult)
-    mock_wallet.send_begin.return_value = psbt
+    psbt_result = MagicMock(spec=SendBeginResult)
+    psbt_result.psbt = 'the_psbt_string'
+    mock_wallet.send_begin.return_value = psbt_result
 
     svc = MagicMock()
     mock_get_session.return_value = svc
@@ -257,10 +261,11 @@ def test_send_begin_with_session(mock_get_session, mock_recipient_cls, mock_wall
     result = RgbRepository.send_begin(req)
 
     # Assert
-    assert result == psbt
+    assert result == psbt_result
     mock_recipient_cls.assert_called_once()
     mock_wallet.send_begin.assert_called_once()
-    svc.add_psbt.assert_called_once_with(psbt, purpose='send_asset')
+    svc.add_psbt.assert_called_once_with('the_psbt_string', purpose='send_asset')
+
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -333,7 +338,7 @@ def test_get_assets(mock_wallet, mock_cache):
 
 
 def test_issue_asset_nia(mock_wallet, mock_cache):
-    """Test issue_asset_nia method"""
+    """Test issue_asset_nia method — no online= when not multisig."""
     # Setup
     mock_asset_nia = MagicMock(spec=AssetNia)
     mock_wallet.issue_asset_nia.return_value = mock_asset_nia
@@ -358,8 +363,21 @@ def test_issue_asset_nia(mock_wallet, mock_cache):
     mock_cache.invalidate_cache.assert_called_once()
 
 
+def test_issue_asset_nia_multisig(mock_wallet, mock_cache):
+    """When is_multisig=True, online= is added to issue_asset_nia call."""
+    with patch('src.data.repository.rgb_repository.colored_wallet') as mock_cw:
+        mock_cw.wallet = mock_wallet
+        mock_cw.online = True
+        mock_cw.is_multisig = True
+        mock_wallet.issue_asset_nia.return_value = MagicMock(spec=AssetNia)
+        request = IssueAssetNiaRequestModel(ticker='T', name='N', precision=0, amounts=[1])
+        RgbRepository.issue_asset_nia(request)
+        call_kwargs = mock_wallet.issue_asset_nia.call_args.kwargs
+        assert call_kwargs.get('online') is True
+
+
 def test_issue_asset_cfa(mock_wallet, mock_cache):
-    """Test issue_asset_cfa method"""
+    """Test issue_asset_cfa method — no online= when not multisig."""
     # Setup
     mock_asset_cfa = MagicMock(spec=AssetCfa)
     mock_wallet.issue_asset_cfa.return_value = mock_asset_cfa
@@ -387,7 +405,7 @@ def test_issue_asset_cfa(mock_wallet, mock_cache):
 
 
 def test_issue_asset_uda(mock_wallet, mock_cache):
-    """Test issue_asset_uda method"""
+    """Test issue_asset_uda method — no online= when not multisig."""
     # Setup
     mock_asset_uda = MagicMock(spec=AssetUda)
     mock_wallet.issue_asset_uda.return_value = mock_asset_uda
@@ -438,3 +456,165 @@ def test_fail_transfer(mock_wallet, mock_cache):
         skip_sync=False,
     )
     mock_cache.invalidate_cache.assert_called_once()
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+@patch('src.data.repository.rgb_repository.Recipient')
+def test_send_init_with_session(mock_recipient_cls, mock_get_session, mock_wallet):
+    """send_init stores psbt and deletes draft_transfer for asset when session exists."""
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'init_psbt'
+    mock_wallet.send_init.return_value = result_obj
+    mock_recipient_cls.return_value = MagicMock()
+
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    _assignment = Assignment.__new__(Assignment)
+    req = SendBeginRequestModel(
+        asset_id='aid', assignment=_assignment, recipient_id='rid',
+        donation=False, fee_rate=2, min_confirmations=1, transport_endpoints=['te1'],
+    )
+    res = RgbRepository.send_init(req)
+
+    assert res == result_obj
+    mock_wallet.send_init.assert_called_once()
+    svc.delete_draft_transfer.assert_called_once_with('aid')
+    svc.add_psbt.assert_called_once_with('init_psbt', purpose='send_asset')
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+@patch('src.data.repository.rgb_repository.Recipient')
+def test_send_init_without_session(mock_recipient_cls, mock_get_session, mock_wallet):
+    """send_init should not fail when session is None."""
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'init_psbt'
+    mock_wallet.send_init.return_value = result_obj
+    mock_recipient_cls.return_value = MagicMock()
+    mock_get_session.return_value = None
+
+    _assignment = Assignment.__new__(Assignment)
+    req = SendBeginRequestModel(
+        asset_id='aid', assignment=_assignment, recipient_id='rid',
+        donation=False, fee_rate=2, min_confirmations=1, transport_endpoints=['te1'],
+    )
+    res = RgbRepository.send_init(req)
+
+    assert res == result_obj
+    mock_wallet.send_init.assert_called_once()
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_inflate_init_with_session(mock_get_session, mock_wallet):
+    """inflate_init deletes secondary draft, stores psbt with 'inflate_asset' purpose."""
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'inflate_init_psbt'
+    mock_wallet.inflate_init.return_value = result_obj
+
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    req = InflateRequestModel(
+        asset_id='aid', inflation_amounts=[10], fee_rate=3, min_confirmations=2,
+    )
+    res = RgbRepository.inflate_init(req)
+
+    assert res == result_obj
+    mock_wallet.inflate_init.assert_called_once()
+    svc.delete_secondary_draft_by_psbt.assert_called_once_with(asset_id='aid')
+    svc.add_psbt.assert_called_once_with('inflate_init_psbt', purpose='inflate_asset')
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_inflate_init_without_session(mock_get_session, mock_wallet):
+    """inflate_init should work without a session."""
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'inflate_init_psbt'
+    mock_wallet.inflate_init.return_value = result_obj
+    mock_get_session.return_value = None
+
+    req = InflateRequestModel(
+        asset_id='aid', inflation_amounts=[10], fee_rate=3, min_confirmations=2,
+    )
+    res = RgbRepository.inflate_init(req)
+
+    assert res == result_obj
+
+
+def test_sync_with_bridge(mock_wallet):
+    """sync_with_bridge should call wallet.sync_with_bridge with online= and return OperationInfo."""
+    mock_info = MagicMock(spec=OperationInfo)
+    mock_wallet.sync_with_bridge.return_value = mock_info
+
+    result = RgbRepository.sync_with_bridge()
+
+    assert result == mock_info
+    mock_wallet.sync_with_bridge.assert_called_once_with(online=True)
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_respond_to_operation_ack_deletes_psbt(mock_get_session, mock_wallet, mock_cache):
+    """When respond is ACK, psbt is deleted from session and cache is invalidated."""
+    mock_info = MagicMock(spec=OperationInfo)
+    mock_wallet.respond_to_operation.return_value = mock_info
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    respond = MagicMock(spec=RespondToOperation)
+    respond.is_ack.return_value = True
+    respond.signed_psbt = 'signed_psbt_string'
+
+    result = RgbRepository.respond_to_operation(1, respond)
+
+    assert result == mock_info
+    mock_wallet.respond_to_operation.assert_called_once_with(
+        online=True, operation_idx=1, respond_to_operation=respond,
+    )
+    svc.delete_psbt.assert_called_once_with('signed_psbt_string')
+    mock_cache.invalidate_cache.assert_called_once()
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_respond_to_operation_nack_no_delete(mock_get_session, mock_wallet, mock_cache):
+    """When respond is NACK, psbt is not deleted but cache is still invalidated."""
+    mock_info = MagicMock(spec=OperationInfo)
+    mock_wallet.respond_to_operation.return_value = mock_info
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    respond = MagicMock(spec=RespondToOperation)
+    respond.is_ack.return_value = False
+
+    result = RgbRepository.respond_to_operation(2, respond)
+
+    assert result == mock_info
+    svc.delete_psbt.assert_not_called()
+    mock_cache.invalidate_cache.assert_called_once()
+
+
+def test_inspect_psbt(mock_wallet):
+    """inspect_psbt forwards the psbt string to the wallet and returns PsbtInspection."""
+    from rgb_lib import PsbtInspection
+    mock_inspection = MagicMock(spec=PsbtInspection)
+    mock_wallet.inspect_psbt.return_value = mock_inspection
+
+    result = RgbRepository.inspect_psbt('raw_psbt_base64')
+
+    assert result == mock_inspection
+    mock_wallet.inspect_psbt.assert_called_once_with(psbt='raw_psbt_base64')
+
+
+def test_inspect_rgb_transfer(mock_wallet):
+    """inspect_rgb_transfer forwards fascia_path/psbt/entropy and returns RgbInspection."""
+    from rgb_lib import RgbInspection
+    mock_rgb_inspection = MagicMock(spec=RgbInspection)
+    mock_wallet.inspect_rgb_transfer.return_value = mock_rgb_inspection
+
+    result = RgbRepository.inspect_rgb_transfer('/path/to/fascia', 'psbt_str', 1234)
+
+    assert result == mock_rgb_inspection
+    mock_wallet.inspect_rgb_transfer.assert_called_once_with(
+        fascia_path='/path/to/fascia',
+        psbt='psbt_str',
+        entropy=1234,
+    )

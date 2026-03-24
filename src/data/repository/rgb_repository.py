@@ -409,20 +409,6 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def get_my_last_synced_operation_idx() -> int:
-        """Get our wallet's last synced operation index (multisig bridge context)."""
-        with repository_custom_context():
-            data: int = colored_wallet.wallet.get_my_last_synced_operation_idx()
-            return data
-
-    @staticmethod
-    def get_bridge_last_operation_idx() -> int:
-        """Get the bridge's last operation index (authoritative source)."""
-        with repository_custom_context():
-            data: int = colored_wallet.wallet.get_bridge_last_operation_idx()
-            return data
-
-    @staticmethod
     def inspect_psbt(psbt: str) -> PsbtInspection:
         """Inspect PSBT details."""
         with repository_custom_context():

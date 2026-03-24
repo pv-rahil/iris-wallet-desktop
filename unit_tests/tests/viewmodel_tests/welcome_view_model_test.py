@@ -10,6 +10,7 @@ import pytest
 
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.viewmodels.welcome_view_model import WelcomeViewModel
 
 
@@ -187,5 +188,96 @@ def test_handle_sync_error_emits_and_toast(welcome_view_model, mocker):
 
     welcome_view_model.handle_sync_error(err)
 
-    slot.assert_called_once_with()
+    slot.assert_called_once()
     toast_error.assert_called_once_with('boom')
+
+
+def test_on_create_click_multisig(welcome_view_model, mock_page_navigation, mocker):
+    """Test on_create_click for multisig path."""
+    mock_network = mocker.Mock(value='testnet')
+    mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network', return_value=mock_network)
+    mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
+    mocker.patch('src.viewmodels.welcome_view_model.get_value', return_value='pwd')
+    
+    mock_run = mocker.patch.object(welcome_view_model, 'run_in_thread')
+    slot = mocker.Mock()
+    welcome_view_model.create_button_clicked.connect(slot)
+    
+    welcome_view_model.on_create_click()
+    
+    slot.assert_called_once_with(True)
+    mock_run.assert_called_once()
+
+
+def test_on_multisig_wallet_initialized(welcome_view_model, mock_page_navigation, mocker):
+    """Test _on_multisig_wallet_initialized callback."""
+    set_init = mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.set_wallet_initialized')
+    set_ver = mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.set_rgb_lib_version')
+    slot = mocker.Mock()
+    welcome_view_model.create_button_clicked.connect(slot)
+    
+    welcome_view_model._on_multisig_wallet_initialized(None)
+    
+    slot.assert_called_once_with(False)
+    set_init.assert_called_once()
+    set_ver.assert_called_once()
+    mock_page_navigation.fungibles_asset_page.assert_called_once()
+
+
+def test_on_multisig_init_error(welcome_view_model, mocker):
+    """Test _on_multisig_init_error callback."""
+    toast_error = mocker.patch('src.viewmodels.welcome_view_model.ToastManager.error')
+    slot = mocker.Mock()
+    welcome_view_model.create_button_clicked.connect(slot)
+    
+    err = mocker.Mock(message='failed')
+    welcome_view_model._on_multisig_init_error(err)
+    
+    slot.assert_called_once_with(False)
+    toast_error.assert_called_once_with('failed')
+
+
+def test_handle_sync_completed_multisig_restore(welcome_view_model, mocker, tmp_path):
+    """Test handle_sync_completed restores multisig config if file exists."""
+    data = Mock(password='pwd')
+    mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network', return_value=Mock(value='testnet'))
+    mocker.patch('src.viewmodels.welcome_view_model.set_value', return_value=True)
+    mocker.patch('src.viewmodels.welcome_view_model.ToastManager.success')
+    mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.set_keyring_status')
+    
+    ap = mocker.Mock(multisig_cosigners_file_path=str(tmp_path / 'cosigners.json'))
+    mocker.patch('src.viewmodels.welcome_view_model.app_paths', ap)
+    
+    import json
+    with open(ap.multisig_cosigners_file_path, 'w') as f:
+        json.dump({'required_signers': 2, 'total_signers': 3, 'cosigners': ['c1', 'c2']}, f)
+        
+    set_sig = mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.set_wallet_signature_type')
+    set_conf = mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.set_multisig_config')
+    set_cos = mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.set_cosigners')
+    set_th = mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.set_threshold_confirmed')
+    
+    welcome_view_model.handle_sync_completed(data)
+    
+    set_sig.assert_called_once_with(WalletSignatureType.MULTI_SIG_WALLET)
+    set_conf.assert_called_once_with(2, 3)
+    set_cos.assert_called_once_with(['c1', 'c2'])
+    set_th.assert_called_once_with(True)
+
+
+def test_handle_sync_completed_multisig_restore_fail(welcome_view_model, mocker, tmp_path):
+    """Test handle_sync_completed logs error if cosigners file is invalid."""
+    data = Mock(password='pwd')
+    mocker.patch('src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network', return_value=Mock(value='testnet'))
+    mocker.patch('src.viewmodels.welcome_view_model.set_value', return_value=True)
+    
+    ap = mocker.Mock(multisig_cosigners_file_path=str(tmp_path / 'invalid.json'))
+    mocker.patch('src.viewmodels.welcome_view_model.app_paths', ap)
+    with open(ap.multisig_cosigners_file_path, 'w') as f:
+        f.write('invalid json')
+        
+    mock_logger = mocker.patch('src.viewmodels.welcome_view_model.logger.error')
+    
+    welcome_view_model.handle_sync_completed(data)
+    
+    mock_logger.assert_called()

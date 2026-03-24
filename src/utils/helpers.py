@@ -275,8 +275,8 @@ def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
 
         # Create and return the UnlockRequestModel
         bitcoin_config = ConfigModel(
-            indexer_url=dynamic_config[SAVED_INDEXER_URL],
-            proxy_endpoint=dynamic_config[SAVED_PROXY_ENDPOINT],
+            indexer_url=dynamic_config.get(SAVED_INDEXER_URL, ''),
+            proxy_endpoint=dynamic_config.get(SAVED_PROXY_ENDPOINT, ''),
             password=password,
             network=network,
         )

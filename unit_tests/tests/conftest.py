@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import os
 import tempfile
+import gc
 from unittest.mock import MagicMock
+from PySide6.QtCore import QThread
 
 import keyring
 import pytest
@@ -28,11 +30,92 @@ from PySide6.QtWidgets import QApplication
 @pytest.fixture(scope='session', autouse=True)
 def qt_app():
     """Fixture to set up the QApplication instance for the test session."""
+    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
     yield app
     app.quit()
+
+@pytest.fixture(autouse=True)
+def mock_qthread_start(mocker):
+    """
+    Automatically mock QThread.start() to prevent actual thread creation.
+    This prevents 'QThread: Destroyed while thread is still running' errors
+    Tests that need actual threading should call thread.run() directly instead.
+    """
+
+    def mock_start_wrapper(self):
+        """Mock start that calls run() synchronously instead of starting a thread."""
+        # Call run() directly in the same thread instead of starting a new thread
+        self.run()
+
+    mocker.patch.object(QThread, 'start', mock_start_wrapper)
+
+
+@pytest.fixture(autouse=True)
+def mock_qthreadpool(mocker):
+    """
+    Automatically mock QThreadPool to prevent actual thread creation.
+    This prevents Qt code execution inside mocks during parallel tests.
+    """
+    mock_pool = mocker.Mock()
+    # Mock globalInstance to return our mock pool
+    mocker.patch(
+        'PySide6.QtCore.QThreadPool.globalInstance',
+        return_value=mock_pool,
+    )
+    # Mock constructor to return our mock pool
+    mocker.patch('PySide6.QtCore.QThreadPool', return_value=mock_pool)
+    # Ensure start does nothing
+    mock_pool.start.side_effect = lambda runnable: None
+
+
+@pytest.fixture(autouse=True)
+def mock_timer(mocker, request):
+    """
+    Prevent HeaderFrameViewModel from starting infinite thread loops via QTimer.
+    Skip for header_frame_view_model_test.py so it can test the actual logic.
+    """
+    if 'header_frame_view_model_test.py' in str(request.fspath):
+        return
+
+    mocker.patch(
+        'src.viewmodels.header_frame_view_model.HeaderFrameViewModel.start_network_check',
+    )
+
+
+@pytest.fixture(autouse=True)
+def gc_collect():
+    """Force garbage collection after each test to prevent QObject accumulation."""
+    yield
+    gc.collect()
+
+
+@pytest.fixture(autouse=True)
+def mock_network_calls(mocker):
+    """
+    Mock socket.create_connection to prevent real network calls during tests.
+    """
+    mock_socket = mocker.MagicMock()
+    mocker.patch('socket.create_connection', return_value=mock_socket)
+
+
+@pytest.fixture(autouse=True)
+def mock_toast_manager(mocker, request):
+    """
+    Mock ToastManager methods to isolate tests from UI dependencies.
+    ToastManager requires a main window, which is unavailable in unit tests.
+    Skipped for toast_test.py to allow direct ToastManager testing.
+    """
+    # Skip mocking for toast_test.py which specifically tests ToastManager
+    if 'toast_test.py' in str(request.fspath):
+        return
+
+    mocker.patch('src.views.components.toast.ToastManager.error')
+    mocker.patch('src.views.components.toast.ToastManager.success')
+    mocker.patch('src.views.components.toast.ToastManager.info')
+    mocker.patch('src.views.components.toast.ToastManager.warning')
 
 
 # ---------------- Global Safety Fixtures -----------------

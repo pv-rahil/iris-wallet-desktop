@@ -210,8 +210,6 @@ def test_set_button_visibility(header_frame, qtbot):
     """Test set_button_visibility method to verify button visibility based on network status and title."""
     qtbot.addWidget(header_frame)
     header_frame.show()
-
-    # Mock lists for button visibility conditions
     refresh_and_action_button_list = [
         'collectibles', 'fungibles',
     ]
@@ -396,7 +394,6 @@ def test_update_psbt_info_offline(header_frame, mocker, qtbot):
     """Show sign banner for offline wallet with unsigned drafts count."""
     qtbot.addWidget(header_frame)
     header_frame.show()
-    # access_type != WATCH_ONLY, wallet_type == OFFLINE_TYPE_WALLET
     mocker.patch(
         'src.data.repository.setting_repository.SettingRepository.get_wallet_access_type',
         return_value=WalletAccessType.WITH_PRIVATE_KEY,

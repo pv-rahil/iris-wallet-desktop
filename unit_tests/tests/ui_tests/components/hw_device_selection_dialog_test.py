@@ -153,7 +153,7 @@ def test_on_connect_success_calls_view_model_connect(dialog: HWDeviceSelectionDi
             patch('src.views.components.hw_device_selection_dialog.SettingRepository.get_wallet_network', return_value='MAINNET') as _net, \
             patch.object(dialog._device_selection_view_model, 'connect_to_device') as mock_connect:
         dialog._on_connect()
-        mock_connect.assert_called_once_with('usb://dev1', 'MAINNET')
+        mock_connect.assert_called_once_with({'fingerprint': 'fp1', 'path': 'usb://dev1'}, 'MAINNET')
 
 
 def test_set_error_updates_loader_and_shows_cancel(dialog: HWDeviceSelectionDialog, qtbot):

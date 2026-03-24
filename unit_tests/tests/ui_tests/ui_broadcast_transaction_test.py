@@ -379,7 +379,6 @@ def test_handle_nia_hw_dialog_updates_and_shows(widget_broadcast: BroadcastTrans
     """HW dialog is updated and shown when receiving a dialog update."""
     # Make widget visible so handle_nia_hw_dialog doesn't return early
     widget_broadcast.show()
-    # Hardware dialog is a MagicMock from fixture
     widget_broadcast.hw_dialog.isVisible.return_value = False
     widget_broadcast.handle_nia_hw_dialog('msg', MagicMock())
     widget_broadcast.hw_dialog.update_dialog.assert_called()
@@ -390,7 +389,6 @@ def test_show_signed_psbt_page_accepts_dialog_and_navigates(widget_sign: Broadca
     """On signed PSBT, accept dialog if visible and navigate to receive page."""
     # Make widget visible so show_signed_psbt_page doesn't return early
     widget_sign.show()
-    # Simulate visible hw dialog which should be accepted
     widget_sign.hw_dialog.isVisible.return_value = True
     widget_sign.show_signed_psbt_page('finalpsbt')
     widget_sign.hw_dialog.accept.assert_called_once()

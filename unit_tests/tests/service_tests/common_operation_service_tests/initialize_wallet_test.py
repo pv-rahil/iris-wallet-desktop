@@ -25,8 +25,10 @@ from src.utils.custom_exception import CommonException
 @patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
 @patch('src.data.service.common_operation_service.colored_wallet')
 @patch('src.data.service.common_operation_service.mnemonic_store')
+@patch('src.data.service.common_operation_service.build_keys_from_data')
+@patch('src.data.service.common_operation_service.WalletRequestModel')
 def test_initialize_wallet(
-    mock_mnemonic_store, mock_colored_wallet, mock_get_network, mock_setting_repo,
+    mock_wallet_request, mock_build_keys, mock_mnemonic_store, mock_colored_wallet, mock_get_network, mock_setting_repo,
     mock_repo, mock_app_paths,
 ):
     """Test successful wallet initialization"""
@@ -42,6 +44,9 @@ def test_initialize_wallet(
     mock_keys.master_fingerprint = 'ff'
     mock_repo.init.return_value = mock_keys
 
+    mock_keys_built = MagicMock()
+    mock_build_keys.return_value = mock_keys_built
+
     mock_wallet = MagicMock()
     mock_repo.unlock.return_value = mock_wallet
 
@@ -49,7 +54,7 @@ def test_initialize_wallet(
     result = CommonOperationService.initialize_wallet('Random@123')
 
     # Assert
-    assert result == (mock_keys, 'Random@123')
+    assert result == (mock_keys_built, 'Random@123')
     mock_setting_repo.get_wallet_network.assert_called_once()
     mock_get_network.assert_called_once_with(
         mock_setting_repo.get_wallet_network.return_value,
@@ -60,16 +65,12 @@ def test_initialize_wallet(
             network=BitcoinNetwork.TESTNET(),
         ),
     )
-    mock_repo.unlock.assert_called_once_with(
-        WalletRequestModel(
-            data_dir='/test/path',
-            bitcoin_network=BitcoinNetwork.TESTNET(),
-            account_xpub_vanilla='test_xpub_vanilla',
-            account_xpub_colored='test_xpub_colored',
-            mnemonic='skill lamp please gown put season degree collect decline account monitor insane',
-            master_fingerprint='ff',
-        ),
+    mock_wallet_request.assert_called_once_with(
+        data_dir='/test/path',
+        bitcoin_network=BitcoinNetwork.TESTNET(),
+        keys=mock_keys_built,
     )
+    mock_repo.unlock.assert_called_once_with(mock_wallet_request.return_value)
     mock_colored_wallet.set_wallet.assert_called_once_with(mock_wallet)
     mock_mnemonic_store.decrypted_mnemonic = mock_keys.mnemonic
 
@@ -100,9 +101,10 @@ def test_initialize_wallet_exception(mock_get_network, mock_setting_repo, mock_h
 @patch('src.data.service.common_operation_service.local_store')
 @patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
 @patch('src.data.service.common_operation_service.colored_wallet')
-@patch('src.data.service.common_operation_service.Keys')
+@patch('src.data.service.common_operation_service.build_keys_from_data')
+@patch('src.data.service.common_operation_service.WalletRequestModel')
 def test_initialize_wallet_watch_only_or_hardware_success(
-    mock_keys, mock_colored_wallet, mock_get_network, mock_local_store, mock_setting_repo, mock_repo, mock_app_paths,
+    mock_wallet_request, mock_build_keys, mock_colored_wallet, mock_get_network, mock_local_store, mock_setting_repo, mock_repo, mock_app_paths,
 ):
     """Covers watch-only/hardware branch using stored xpubs/fingerprint"""
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
@@ -116,7 +118,7 @@ def test_initialize_wallet_watch_only_or_hardware_success(
 
     result = CommonOperationService.initialize_wallet('pw')
     assert result[1] == 'pw'
-    mock_keys.assert_called_once()
+    mock_build_keys.assert_called_once()
     mock_repo.unlock.assert_called_once()
     mock_colored_wallet.set_wallet.assert_called_once()
 

@@ -19,6 +19,7 @@ from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.constant import DB_FILE_NAME
 
 
@@ -178,7 +179,7 @@ def test_list_psbt_signed_filter(mock_get_type, mock_get_access, tmp_db):
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
 def test_add_delete_psbt_gating(mock_get_type, mock_get_access, tmp_db):
     """add_psbt returns None and delete_psbt returns False when not allowed."""
-    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.add_psbt('psbt') is None
     assert tmp_db.delete_psbt('whatever') is False
@@ -222,7 +223,7 @@ def test_get_session_singleton_watch_only(app_paths, get_wallet_type, get_access
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 def test_refresh_wallet_data_returns_early_when_not_watch_only(mock_get_access, tmp_db, mocker):
     """refresh_wallet_data should return early if not watch-only (no repository calls)."""
-    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     colored_mock = mocker.patch(
         'src.data.service.wallet_data_service.colored_wallet',
     )
@@ -234,7 +235,7 @@ def test_refresh_wallet_data_returns_early_when_not_watch_only(mock_get_access, 
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
 def test_list_psbt_not_allowed_returns_empty(mock_get_type, mock_get_access, tmp_db):
     """list_psbt should return [] when not watch-only/offline."""
-    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.list_psbt(signed=False) == []
     assert tmp_db.list_psbt(signed=True) == []
@@ -244,7 +245,7 @@ def test_list_psbt_not_allowed_returns_empty(mock_get_type, mock_get_access, tmp
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
 def test_draft_issue_asset_not_allowed_paths(mock_get_type, mock_get_access, tmp_db):
     """list/delete draft_issue_asset should be gated when not allowed."""
-    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.list_draft_issue_assets() == []
     assert tmp_db.delete_draft_issue_asset('1') is False
@@ -390,7 +391,7 @@ def test_ifa_secondary_delete_by_id_and_by_psbt_and_update_psbt(mock_get_type, m
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
 def test_ifa_secondary_gating_when_not_allowed(mock_get_type, mock_get_access, tmp_db):
     """All secondary draft methods should no-op when not watch-only/offline."""
-    mock_get_access.return_value = WalletAccessType.SINGLE_SIG
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     assert tmp_db.add_ifa_secondary_draft_meta('X', None, None) is None
     assert tmp_db.attach_inflate_psbt_to_secondary_draft('X', 'p') is None
@@ -401,3 +402,453 @@ def test_ifa_secondary_gating_when_not_allowed(mock_get_type, mock_get_access, t
     assert tmp_db.update_secondary_draft_psbt_id('a', 'b') is False
     assert tmp_db.delete_ifa_secondary_draft(1) is False
     assert tmp_db.delete_secondary_draft_by_psbt('x') is False
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_is_multisig_property(mock_get_sign_type, tmp_db):
+    """is_multisig should return True when signature type is MULTI_SIG_WALLET."""
+    mock_get_sign_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
+    assert tmp_db.is_multisig is True
+
+    mock_get_sign_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    assert tmp_db.is_multisig is False
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_multisig_gated_paths(mock_get_sign, mock_get_type, mock_get_access, tmp_db):
+    """Methods gated behind is_multisig should execute when signature type is MULTI_SIG_WALLET."""
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.MULTI_SIG_WALLET
+
+    # add_psbt - multisig gated
+    pid = tmp_db.add_psbt('multisig_psbt', signed=False, purpose='send_btc')
+    assert pid is not None
+
+    # upsert_draft_issue_asset - multisig gated
+    tmp_db.upsert_draft_issue_asset(IssueAssetDraftModel(name='n', ticker='T', issued_amount=1, file_path=None))
+    rows = tmp_db.list_draft_issue_assets()
+    assert len(rows) == 1
+
+    # add_ifa_secondary_draft_meta - multisig gated
+    did = tmp_db.add_ifa_secondary_draft_meta('ASST', 'Name', 99)
+    assert did is not None
+
+    # set_active_secondary_draft - multisig gated (no-op path verification)
+    tmp_db.set_active_secondary_draft(int(did), 'ASST')
+    act = tmp_db.get_active_secondary_draft_for_asset('ASST')
+    assert act and act['id'] == int(did)
+
+    # get_latest_active_secondary_draft - multisig gated
+    latest = tmp_db.get_latest_active_secondary_draft()
+    assert latest and latest['asset_id'] == 'ASST'
+
+    # delete_secondary_draft_by_psbt with asset_id path (no psbt_base64)
+    result = tmp_db.delete_secondary_draft_by_psbt(asset_id='ASST')
+    assert result is True
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_draft_transfer_crud(mock_get_sign, mock_get_type, mock_get_access, tmp_db):
+    """upsert/get/delete draft_transfer should operate correctly when allowed."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+
+    tmp_db.upsert_draft_transfer('ASSET_1', 'recip_123', 500, 1.5, 1)
+    row = tmp_db.get_draft_transfer('ASSET_1')
+    assert row is not None
+    assert row['asset_id'] == 'ASSET_1'
+    assert row['amount'] == 500
+    assert abs(row['fee_rate'] - 1.5) < 0.001
+    assert row['min_confirmation'] == 1
+
+    # Missing asset_id should return None
+    assert tmp_db.get_draft_transfer('MISSING') is None
+
+    deleted = tmp_db.delete_draft_transfer('ASSET_1')
+    assert deleted is True
+
+    # After deletion, should be gone
+    assert tmp_db.get_draft_transfer('ASSET_1') is None
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_draft_transfer_gating_when_not_allowed(mock_get_sign, mock_get_type, mock_get_access, tmp_db):
+    """draft_transfer methods should no-op when not watch-only/offline/multisig."""
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+
+    tmp_db.upsert_draft_transfer('ASSET_1', 'r', 1, 1.0, 1)
+    assert tmp_db.get_draft_transfer('ASSET_1') is None
+    assert tmp_db.delete_draft_transfer('ASSET_1') is False
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_delete_secondary_draft_by_psbt_both_none(mock_get_type, mock_get_access, tmp_db):
+    """delete_secondary_draft_by_psbt returns False when both psbt_base64 and asset_id are None."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    assert tmp_db.delete_secondary_draft_by_psbt(None, None) is False
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_paths(mock_get_type, mock_get_access, tmp_db, mocker):
+    """Methods should log and re-raise sqlite3.Error on failures."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_log = mocker.patch('src.data.service.wallet_data_service.logger')
+
+    def fail_execute(*args, **kwargs):
+        raise sqlite3.Error('forced')
+
+    # get_ifa_secondary_draft_by_id error
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_conn = mocker.MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.get_ifa_secondary_draft_by_id(1)
+    assert mock_log.error.called
+
+    # Restore cursor for next checks
+    mock_log.reset_mock()
+    tmp_db.conn = sqlite3.connect(':memory:')
+    tmp_db._create_tables()
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_add_ifa_secondary_draft(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """add_ifa_secondary_draft_meta should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.add_ifa_secondary_draft_meta('X', 'N', 1)
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_upsert_draft_transfer(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """upsert_draft_transfer should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.upsert_draft_transfer('A', 'r', 1, 1.0, 1)
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_get_draft_transfer(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """get_draft_transfer should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+
+    mock_conn = mocker.MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    tmp_db.conn = mock_conn    
+    with pytest.raises(sqlite3.Error):
+        tmp_db.get_draft_transfer('A')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_delete_draft_transfer(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """delete_draft_transfer should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.delete_draft_transfer('ASSET_1')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_upsert_draft_issue_asset(mock_get_type, mock_get_access, tmp_db, mocker):
+    """upsert_draft_issue_asset should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.upsert_draft_issue_asset(IssueAssetDraftModel(name='n', ticker='T', issued_amount=1, file_path=None))
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_list_draft_issue_assets(mock_get_type, mock_get_access, tmp_db, mocker):
+    """list_draft_issue_assets should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+
+    mock_conn = mocker.MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    tmp_db.conn = mock_conn    
+    with pytest.raises(sqlite3.Error):
+        tmp_db.list_draft_issue_assets()
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_delete_draft_issue_asset(mock_get_type, mock_get_access, tmp_db, mocker):
+    """delete_draft_issue_asset should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.delete_draft_issue_asset(1)
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_attach_inflate_psbt(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """attach_inflate_psbt_to_secondary_draft should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.attach_inflate_psbt_to_secondary_draft('ASSET', 'psbt')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_set_active_secondary_draft(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """set_active_secondary_draft should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.set_active_secondary_draft(1, 'ASSET')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_get_active_secondary_draft(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """get_active_secondary_draft_for_asset should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+
+    mock_conn = mocker.MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.get_active_secondary_draft_for_asset('ASSET')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_get_latest_active_secondary_draft(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """get_latest_active_secondary_draft should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+
+    mock_conn = mocker.MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.get_latest_active_secondary_draft()
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_delete_ifa_secondary_draft(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """delete_ifa_secondary_draft should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.delete_ifa_secondary_draft(1)
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_sqlite_error_list_ifa_secondary_drafts(mock_get_sign, mock_get_type, mock_get_access, tmp_db, mocker):
+    """list_ifa_secondary_drafts should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+
+    mock_conn = mocker.MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    tmp_db.conn = mock_conn    
+    with pytest.raises(sqlite3.Error):
+        tmp_db.list_ifa_secondary_drafts('ASSET')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_add_psbt(mock_get_type, mock_get_access, tmp_db, mocker):
+    """add_psbt should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.add_psbt('psbt_content')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_mark_psbt_signed(mock_get_type, mock_get_access, tmp_db, mocker):
+    """mark_psbt_signed should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.mark_psbt_signed('unsigned', 'signed')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_delete_psbt(mock_get_type, mock_get_access, tmp_db, mocker):
+    """delete_psbt should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.delete_psbt('some_psbt')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_list_psbt(mock_get_type, mock_get_access, tmp_db, mocker):
+    """list_psbt should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_cursor = mocker.MagicMock()
+    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+
+    mock_conn = mocker.MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+
+    tmp_db.conn = mock_conn 
+    with pytest.raises(sqlite3.Error):
+        tmp_db.list_psbt(False)
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_update_secondary_draft_psbt_id(mock_get_type, mock_get_access, tmp_db, mocker):
+    """update_secondary_draft_psbt_id should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.update_secondary_draft_psbt_id('old', 'new')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+def test_sqlite_error_delete_secondary_draft_by_psbt(mock_get_type, mock_get_access, tmp_db, mocker):
+    """delete_secondary_draft_by_psbt should log and re-raise on sqlite.Error."""
+    mock_get_access.return_value = WalletAccessType.WATCH_ONLY
+    mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
+    mocker.patch('src.data.service.wallet_data_service.logger')
+    mock_conn = mocker.MagicMock()
+    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    tmp_db.conn = mock_conn
+    with pytest.raises(sqlite3.Error):
+        tmp_db.delete_secondary_draft_by_psbt('psbt_content')
+
+
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_initialize_service_multisig_creates_db(mock_get_sign, mock_get_type, mock_get_access):
+    """_initialize_service should create service when signature type is MULTI_SIG_WALLET."""
+    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.MULTI_SIG_WALLET
+    with tempfile.TemporaryDirectory() as d:
+        with patch('src.data.service.wallet_data_service.app_paths') as app_paths:
+            app_paths.wallet_data_folder_path = d
+            svc = WalletDataService._initialize_service()
+            assert isinstance(svc, WalletDataService)
+

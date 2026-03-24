@@ -32,8 +32,10 @@ def reset_network():
 @patch('src.data.service.common_operation_service.mnemonic_store')
 @patch('src.data.service.common_operation_service.CommonOperationRepository.unlock')
 @patch('src.data.service.common_operation_service.app_paths')
+@patch('src.data.service.common_operation_service.build_keys_from_data')
+@patch('src.data.service.common_operation_service.WalletRequestModel')
 def test_enter_wallet_password_success(
-    mock_app_paths, mock_unlock_repo, mock_mnemonic_store,
+    mock_wallet_request, mock_build_keys, mock_app_paths, mock_unlock_repo, mock_mnemonic_store,
     mock_local_store, mock_get_network,
 ):
     """Test successful wallet password entry"""
@@ -46,6 +48,8 @@ def test_enter_wallet_password_success(
         'test_xpub_vanilla', 'test_xpub_colored', 'ff',
     ]
     mock_mnemonic_store.decrypt.return_value = 'test mnemonic'
+    mock_keys = MagicMock()
+    mock_build_keys.return_value = mock_keys
 
     mock_wallet = MagicMock()
     mock_unlock_repo.return_value = mock_wallet
@@ -63,16 +67,18 @@ def test_enter_wallet_password_success(
     mock_mnemonic_store.decrypt.assert_called_once_with(
         password='Random@123', path='/test/mnemonic/path',
     )
-    mock_unlock_repo.assert_called_once_with(
-        WalletRequestModel(
-            data_dir='/test/path',
-            bitcoin_network=BitcoinNetwork.TESTNET(),
-            account_xpub_vanilla='test_xpub_vanilla',
-            account_xpub_colored='test_xpub_colored',
-            mnemonic='test mnemonic',
-            master_fingerprint='ff',
-        ),
+    mock_build_keys.assert_called_once_with(
+        account_xpub_vanilla='test_xpub_vanilla',
+        account_xpub_colored='test_xpub_colored',
+        master_fingerprint='ff',
+        mnemonic='test mnemonic',
     )
+    mock_wallet_request.assert_called_once_with(
+        data_dir='/test/path',
+        bitcoin_network=BitcoinNetwork.TESTNET(),
+        keys=mock_keys,
+    )
+    mock_unlock_repo.assert_called_once_with(mock_wallet_request.return_value)
 
 
 @patch('src.data.service.common_operation_service.get_bitcoin_network_from_enum')
@@ -99,8 +105,10 @@ def test_enter_wallet_password_exception(mock_handle_exceptions, mock_get_networ
 @patch('src.data.service.common_operation_service.CommonOperationRepository.unlock')
 @patch('src.data.service.common_operation_service.app_paths')
 @patch('src.data.service.common_operation_service.SettingRepository')
+@patch('src.data.service.common_operation_service.build_keys_from_data')
+@patch('src.data.service.common_operation_service.WalletRequestModel')
 def test_enter_wallet_password_watch_only_hardware_path(
-    mock_setting_repo, mock_app_paths, mock_unlock_repo, mock_local_store, mock_get_network,
+    mock_wallet_request, mock_build_keys, mock_setting_repo, mock_app_paths, mock_unlock_repo, mock_local_store, mock_get_network,
 ):
     """Covers branch where is_watch_only or is_hardware_only -> decrypted_mnemonic is None"""
     mock_app_paths.app_path = '/test/path'
@@ -115,5 +123,5 @@ def test_enter_wallet_password_watch_only_hardware_path(
     resp = CommonOperationService.enter_wallet_password('pw')
     assert resp == mock_unlock_repo.return_value
     # Ensure unlock called with mnemonic None
-    called_args, _ = mock_unlock_repo.call_args
-    assert called_args[0].mnemonic is None
+    kwargs = mock_build_keys.call_args.kwargs
+    assert kwargs.get('mnemonic') is None

@@ -48,7 +48,7 @@ def test_button_functionality(confirmation_dialog, qtbot):
     dialog = confirmation_dialog
 
     # Ensure the dialog is shown (to ensure the buttons are active)
-    dialog.show()  # Ensure dialog is shown
+    dialog.show()
     qtbot.waitExposed(dialog)
 
     # Create slots to catch the signals for testing
@@ -84,7 +84,7 @@ def test_blur_effect_on_show(confirmation_dialog, qtbot):
 
     # Show the dialog without displaying it on the screen
     dialog.setVisible(False)  # Set the dialog to not be visible
-    dialog.show()  # Show the dialog
+    dialog.show()
     qtbot.waitExposed(dialog)  # Wait for the dialog to be exposed
 
     # Check if the blur effect is applied to the parent widget

@@ -40,3 +40,22 @@ def test_stop_client_closes_and_clears():
 
     mock_client.stop.assert_called_once()
     assert hardware_client_store.client is None
+
+
+def test_rgb_mode_controls(store: HardwareClientStore):
+    """Test setting, getting, and clearing RGB mode."""
+    # Default is False
+    assert store.get_rgb_mode() is False
+
+    # Set to True
+    store.set_rgb_mode(True)
+    assert store.get_rgb_mode() is True
+
+    # Set to False
+    store.set_rgb_mode(False)
+    assert store.get_rgb_mode() is False
+
+    # Clear back to None (which defaults to False in get_rgb_mode)
+    store.clear_rgb_mode()
+    assert store._is_rgb_mode is None
+    assert store.get_rgb_mode() is False

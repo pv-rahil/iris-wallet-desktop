@@ -99,7 +99,6 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
         try:
             # Make widget visible so handle_ifa_issue doesn't return early
             w.show()
-            # Case 1: existing draft PSBT present
             # Use correct purpose 'issue_asset_ifa' (not 'issue_asset')
             vm_mock.utxo_creation_view_model.current_purpose = 'issue_asset_ifa'
             get_sess.return_value = MagicMock(

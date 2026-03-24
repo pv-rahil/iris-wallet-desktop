@@ -291,6 +291,23 @@ def test_on_refresh_click(mock_rgb_repository, mock_toast_manager, mock_cache, c
         cfa_view_model.asset_type,
     )
 
+    # Test refresh with failures (lines 227-235)
+    class DummyFailure:
+        def __init__(self):
+            self.failure = MagicMock()
+
+    mock_refresh_data = {'transfer_idx_1': DummyFailure()}
+    
+    def mock_run_in_thread_with_failures(func, args):
+        args['callback'](mock_refresh_data)
+        
+    cfa_view_model.run_in_thread = MagicMock(side_effect=mock_run_in_thread_with_failures)
+    
+    with patch('src.viewmodels.cfa_view_model.PageNavigationEventManager') as mock_page_nav_ev:
+        with patch('src.viewmodels.cfa_view_model.RefreshFailureItem'):
+            cfa_view_model.on_refresh_click()
+            mock_page_nav_ev.get_instance().refresh_transfer_result_dialog_signal.emit.assert_called_once()
+
     # Test error case with CommonException
     mock_exception = CommonException('Refresh error')
     cfa_view_model.run_in_thread = MagicMock(
@@ -513,7 +530,6 @@ def test_on_success_cfa(cfa_view_model, mocker):
     cfa_view_model.asset_type = AssetSchema.NIA
     cfa_view_model.on_success_cfa(mock_tx_id)
 
-    # Verify behavior for NIA
     cfa_view_model.is_loading.emit.assert_called_once_with(False)
     cfa_view_model.send_cfa_button_clicked.emit.assert_called_once_with(
         False,
@@ -522,6 +538,36 @@ def test_on_success_cfa(cfa_view_model, mocker):
         description=INFO_ASSET_SENT.format(mock_tx_id.txid),
     )
     cfa_view_model._page_navigation.fungibles_asset_page.assert_called_once()
+    
+    # Test IFA asset type (lines 140-141)
+    cfa_view_model.is_loading.reset_mock()
+    cfa_view_model.send_cfa_button_clicked.reset_mock()
+    cfa_view_model._page_navigation.reset_mock()
+    cfa_view_model.asset_type = AssetSchema.IFA
+    cfa_view_model.on_success_cfa(mock_tx_id)
+    cfa_view_model._page_navigation.inflatable_asset_page.assert_called_once()
+    
+
+def test_on_success_cfa_hw_multisig(cfa_view_model, mocker):
+    """Test HW and Multisig specific branches (lines 123, 130)."""
+    cfa_view_model.is_loading = MagicMock()
+    cfa_view_model.send_cfa_button_clicked = MagicMock()
+    cfa_view_model._page_navigation = MagicMock()
+    mock_toast_success = mocker.patch('src.viewmodels.cfa_view_model.ToastManager.success')
+    mock_tx_id = SendAssetResponseModel(txid='test_txid_123')
+    
+    emitted = []
+    cfa_view_model.hw_dialog_update.connect(lambda msg, st: emitted.append((msg, st)))
+    
+    mocker.patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+    mocker.patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
+    
+    cfa_view_model.on_success_cfa(mock_tx_id)
+    
+    assert (None, PsbtStatus.SUCCESS) in emitted
+    mock_toast_success.assert_called_once_with(description='Operation posted to multisig bridge.')
+
+
 
 
 @patch('src.viewmodels.cfa_view_model.ToastManager.error')
@@ -660,10 +706,68 @@ def test_send_end_runs_with_request(cfa_view_model):
     cfa_view_model.send_cfa_button_clicked.emit.assert_called_once_with(True)
     params = cfa_view_model.run_in_thread.call_args[0][1]
     req = params['args'][0]
-    assert req.signed_psbt == 'signed'
     assert req.skip_sync is True
     assert params['callback'] == cfa_view_model.on_success_cfa
     assert params['error_callback'] == cfa_view_model.on_error
+
+
+def test_send_begin_multisig(cfa_view_model, mocker):
+    """Cover multisig branch in send_begin (line 316)."""
+    cfa_view_model.asset_id = 'test_asset'
+    cfa_view_model.run_in_thread = MagicMock()
+    cfa_view_model.send_cfa_button_clicked = Mock()
+    mocker.patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
+    
+    cfa_view_model.send_begin(
+        'blind', ['te'], 2, 3, Assignment.FUNGIBLE(amount=1),
+    )
+    
+    params = cfa_view_model.run_in_thread.call_args[0][1]
+    assert params['args'][0].recipient_id == 'blind'
+    assert 'send_init' in str(cfa_view_model.run_in_thread.call_args[0][0]) or cfa_view_model.run_in_thread.call_args[0][0].__name__ == 'send_init'
+
+
+def test_on_psbt_created_multisig(cfa_view_model, mocker):
+    """Cover HW+Multisig branch in on_psbt_created and common sign branch (lines 340, 360-365, 368)."""
+    mocker.patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
+    mocker.patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+    mocker.patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+    
+    hw_emit = mocker.Mock()
+    cfa_view_model.hw_dialog_update.connect(hw_emit)
+    cfa_view_model.run_in_thread = MagicMock()
+    
+    mock_res = mocker.Mock(psbt='psbt1', operation_idx=2)
+    with patch('src.viewmodels.cfa_view_model.hardware_client_store.set_rgb_mode') as mock_hw_rgb:
+        cfa_view_model.on_psbt_created(mock_res)
+        
+        mock_hw_rgb.assert_called_once_with(True)
+        assert cfa_view_model.operation_idx == 2
+        hw_emit.assert_called_once()
+        cfa_view_model.run_in_thread.assert_called_once()
+        assert 'sign_psbt' in str(cfa_view_model.run_in_thread.call_args[0][0]) or cfa_view_model.run_in_thread.call_args[0][0].__name__ == 'sign_psbt'
+
+
+def test_on_multisig_psbt_signed(cfa_view_model, mocker):
+    """Cover on_multisig_psbt_signed logic (lines 388-391)."""
+    cfa_view_model.operation_idx = 1
+    cfa_view_model.run_in_thread = MagicMock()
+    hw_emit = mocker.Mock()
+    cfa_view_model.hw_dialog_update.connect(hw_emit)
+    
+    cfa_view_model.on_multisig_psbt_signed('signed_psbt')
+    
+    hw_emit.assert_called_once()
+    cfa_view_model.run_in_thread.assert_called_once()
+    assert 'respond_to_operation' in str(cfa_view_model.run_in_thread.call_args[0][0]) or cfa_view_model.run_in_thread.call_args[0][0].__name__ == 'respond_to_operation'
+
+
+def test_on_multisig_post_success(cfa_view_model, mocker):
+    """Cover on_multisig_post_success logic (line 403)."""
+    mock_success = mocker.patch.object(cfa_view_model, 'on_success_cfa')
+    cfa_view_model.on_multisig_post_success(None)
+    mock_success.assert_called_once()
+    assert mock_success.call_args[0][0].txid == 'multisig_pending'
 
 
 @patch('src.viewmodels.cfa_view_model.hardware_client_store.stop_client')

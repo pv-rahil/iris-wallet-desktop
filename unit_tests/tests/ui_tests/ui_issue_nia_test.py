@@ -64,8 +64,8 @@ def test_asset_issued_success_and_draft_cleanup(issue_nia_widget: IssueNIAWidget
 def test_handle_nia_hw_dialog_update_shows_dialog(issue_nia_widget: IssueNIAWidget, mocker):
     """Cover dialog update and show when not visible using get_instance()."""
     widget = issue_nia_widget
-    # Make widget visible so handle_nia_hw_dialog doesn't return early
-    widget.show()
+    # Mock isVisible so handle_nia_hw_dialog doesn't return early
+    widget.isVisible = MagicMock(return_value=True)
     dlg = MagicMock()
     dlg.isVisible.return_value = False
     mocker.patch(
@@ -147,8 +147,8 @@ def test_handle_nia_issue_wallet_service_none(issue_nia_widget: IssueNIAWidget, 
 def test_show_nia_psbt_page_navigates(issue_nia_widget: IssueNIAWidget):
     """Cover positive path of show_nia_psbt_page: disconnect unsigned_psbt and navigate."""
     widget = issue_nia_widget
-    # Make widget visible so show_nia_psbt_page doesn't return early
-    widget.show()
+    # Mock isVisible so show_nia_psbt_page doesn't return early
+    widget.isVisible = MagicMock(return_value=True)
     widget._view_model.page_navigation.receive_asset_page = MagicMock()
     # Gate by current purpose
     widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_nia'

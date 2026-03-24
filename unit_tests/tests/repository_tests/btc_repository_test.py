@@ -317,3 +317,76 @@ def test_create_utxos_end_without_session_no_cache(mock_get_session, mock_cache,
         BroadcastPsbtRequestModel(signed_psbt='p', skip_sync=True),
     )
     assert count == 1
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_send_btc_init_with_session(mock_get_session, mock_wallet):
+    """send_btc_init stores result.psbt in session with purpose 'send_btc' and returns InitOperationResult."""
+    from rgb_lib import InitOperationResult
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'btc_init_psbt'
+    mock_wallet.send_btc_init.return_value = result_obj
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    req = SendBtcRequestModel(address='addr', amount=5000, fee_rate=1, skip_sync=False)
+    res = BtcRepository.send_btc_init(req)
+
+    assert res == result_obj
+    mock_wallet.send_btc_init.assert_called_once_with(
+        online=True, address='addr', amount=5000, fee_rate=1, skip_sync=False,
+    )
+    svc.add_psbt.assert_called_once_with('btc_init_psbt', purpose='send_btc')
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_send_btc_init_without_session(mock_get_session, mock_wallet):
+    """send_btc_init should not fail when session is None."""
+    from rgb_lib import InitOperationResult
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'btc_init_psbt'
+    mock_wallet.send_btc_init.return_value = result_obj
+    mock_get_session.return_value = None
+
+    req = SendBtcRequestModel(address='addr', amount=1000, fee_rate=2, skip_sync=True)
+    res = BtcRepository.send_btc_init(req)
+
+    assert res == result_obj
+    mock_wallet.send_btc_init.assert_called_once()
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_create_utxos_init_with_session(mock_get_session, mock_wallet):
+    """create_utxos_init stores result.psbt in session with provided purpose."""
+    from rgb_lib import InitOperationResult
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'utxo_init_psbt'
+    mock_wallet.create_utxos_init.return_value = result_obj
+    svc = MagicMock()
+    mock_get_session.return_value = svc
+
+    req = CreateUtxosRequestModel(online=True, up_to=True, num=3, size=546, fee_rate=2, skip_sync=False)
+    res = BtcRepository.create_utxos_init(req, purpose='create_utxos')
+
+    assert res == result_obj
+    mock_wallet.create_utxos_init.assert_called_once_with(
+        online=True, up_to=True, num=3, size=546, fee_rate=2, skip_sync=False,
+    )
+    svc.add_psbt.assert_called_once_with('utxo_init_psbt', purpose='create_utxos')
+
+
+@patch('src.data.service.wallet_data_service.WalletDataService.get_session')
+def test_create_utxos_init_without_session(mock_get_session, mock_wallet):
+    """create_utxos_init should not fail when session is None."""
+    from rgb_lib import InitOperationResult
+    result_obj = MagicMock(spec=InitOperationResult)
+    result_obj.psbt = 'utxo_init_psbt'
+    mock_wallet.create_utxos_init.return_value = result_obj
+    mock_get_session.return_value = None
+
+    req = CreateUtxosRequestModel(online=True, up_to=False, num=1, size=300, fee_rate=1, skip_sync=True)
+    res = BtcRepository.create_utxos_init(req)
+
+    assert res == result_obj
+    mock_wallet.create_utxos_init.assert_called_once()
+

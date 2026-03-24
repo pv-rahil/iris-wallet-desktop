@@ -412,18 +412,20 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         btn = PrimaryButton('Issue New Inflatable')
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setFixedWidth(200)
-        btn.clicked.connect(
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_ifa_page,
-            ),
-        )
-        register_multisig_button(
-            self._view_model,
-            btn,
-            lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                self._view_model.page_navigation.issue_ifa_page,
-            ),
-        )
+        if not self.is_multisig:
+            btn.clicked.connect(
+                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                    self._view_model.page_navigation.issue_ifa_page,
+                ),
+            )
+        else:
+            register_multisig_button(
+                self._view_model,
+                btn,
+                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
+                    self._view_model.page_navigation.issue_ifa_page,
+                ),
+            )
         if not self.is_offline_wallet:
             lay.addWidget(btn, 0, Qt.AlignHCenter)
         # Build a dedicated vertical layout with top/bottom stretches to position card higher (like collectibles)

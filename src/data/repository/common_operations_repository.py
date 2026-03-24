@@ -126,34 +126,35 @@ class CommonOperationRepository:
     @staticmethod
     def _get_temp_singlesig_wallet():
         """Helper to create a temporary singlesig wallet for signing."""
-        mnemonic = mnemonic_store.decrypted_mnemonic
-        if not mnemonic:
-            raise CommonException('Mnemonic not available for signing')
+        with repository_custom_context():
+            mnemonic = mnemonic_store.decrypted_mnemonic
+            if not mnemonic:
+                raise CommonException('Mnemonic not available for signing')
 
-        network = get_bitcoin_network_from_enum(
-            SettingRepository.get_wallet_network(),
-        )
+            network = get_bitcoin_network_from_enum(
+                SettingRepository.get_wallet_network(),
+            )
 
-        keys = restore_keys(network, mnemonic)
+            keys = restore_keys(network, mnemonic)
 
-        wallet_data = WalletData(
-            data_dir=app_paths.app_path,
-            bitcoin_network=network,
-            database_type=DatabaseType.SQLITE,
-            max_allocations_per_utxo=1,
-            supported_schemas=AssetSchema,
-        )
+            wallet_data = WalletData(
+                data_dir=app_paths.app_path,
+                bitcoin_network=network,
+                database_type=DatabaseType.SQLITE,
+                max_allocations_per_utxo=1,
+                supported_schemas=AssetSchema,
+            )
 
-        return Wallet(
-            wallet_data,
-            keys=SinglesigKeys(
-                account_xpub_vanilla=keys.account_xpub_vanilla,
-                account_xpub_colored=keys.account_xpub_colored,
-                vanilla_keychain=0,
-                master_fingerprint=keys.master_fingerprint,
-                mnemonic=mnemonic,
-            ),
-        )
+            return Wallet(
+                wallet_data,
+                keys=SinglesigKeys(
+                    account_xpub_vanilla=keys.account_xpub_vanilla,
+                    account_xpub_colored=keys.account_xpub_colored,
+                    vanilla_keychain=0,
+                    master_fingerprint=keys.master_fingerprint,
+                    mnemonic=mnemonic,
+                ),
+            )
 
     @staticmethod
     @require_hardware_wallet_connected()

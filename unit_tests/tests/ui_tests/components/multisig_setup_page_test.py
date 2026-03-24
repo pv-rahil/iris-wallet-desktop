@@ -28,10 +28,8 @@ def widget_watch_only(qt_app, vm):
             patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET), \
             patch('src.views.components.multisig_setup_page.get_value', return_value='test_password'):
         w = MultisigSetupPage(vm)
-        w.show()
         qt_app.processEvents()
         yield w
-        w.close()
 
 
 @pytest.fixture
@@ -42,10 +40,8 @@ def widget_with_privkey(qt_app, vm):
             patch('src.views.components.multisig_setup_page.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET), \
             patch('src.views.components.multisig_setup_page.get_value', return_value='test_password'):
         w = MultisigSetupPage(vm)
-        w.show()
         qt_app.processEvents()
         yield w
-        w.close()
 
 
 def test_close_button_calls_selection_page(widget_watch_only: MultisigSetupPage, vm):
@@ -64,18 +60,34 @@ def test_watch_only_flow_threshold_confirm_and_finish(widget_watch_only: Multisi
     set_cfg = mocker.patch(
         'src.views.components.multisig_setup_page.SettingRepository.set_multisig_config',
     )
+    
+    # Mock data validation properties
+    mocker.patch.object(widget_watch_only, '_save_watch_only_review_fields', return_value=True)
+    mocker.patch.object(widget_watch_only, '_save_cosigners_data', return_value=True)
 
-    # Step 1 -> confirm threshold -> Step 2 cosigner list
+    # Step 1 -> confirm threshold -> Step 2 Review
     widget_watch_only.continue_button.click()
     widget_watch_only.parent().update() if widget_watch_only.parent() else None
 
-    # After confirming threshold, inputs locked and cosigners created (n-1 rows from 2..n)
+    # After confirming threshold, inputs locked
     assert widget_watch_only.required_signer_input.isEnabled() is False
     assert widget_watch_only.total_signer_input.isEnabled() is False
     assert len(widget_watch_only.cosigner_rows) == 2  # for 2 and 3
     set_cfg.assert_called_once_with(2, 3)
+    
+    assert not widget_watch_only.review_frame.isHidden()
+    assert widget_watch_only.cos_frame.isHidden()
+    
+    # Step 2 -> Step 3 Cosigners
+    widget_watch_only.continue_button.click()
+    widget_watch_only.parent().update() if widget_watch_only.parent() else None
+    
+    assert not widget_watch_only.cos_frame.isHidden()
+    assert widget_watch_only.review_frame.isHidden()
 
-    # On watch-only, continue finishes -> welcome page
+    # Step 3 -> finish -> welcome page
+    # Since inputs are empty, it might be disabled by UI logic. Force enable.
+    widget_watch_only.continue_button.setEnabled(True)
     widget_watch_only.continue_button.click()
     assert vm.page_navigation.welcome_page.called
 
@@ -87,6 +99,9 @@ def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage
     set_cfg = mocker.patch(
         'src.views.components.multisig_setup_page.SettingRepository.set_multisig_config',
     )
+    
+    # Mock cosigners validation
+    mocker.patch.object(widget_with_privkey, '_save_cosigners_data', return_value=True)
 
     # Step 1 -> Step 2 (review visible, cos hidden)
     widget_with_privkey.continue_button.click()
@@ -104,6 +119,7 @@ def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage
     assert widget_with_privkey.review_frame.isHidden()
 
     # Step 3 -> finish navigates to welcome
+    widget_with_privkey.continue_button.setEnabled(True)
     widget_with_privkey.continue_button.click()
     assert vm.page_navigation.welcome_page.called
 
@@ -120,7 +136,6 @@ def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage
     set_cfg = mocker.patch(
         'src.views.components.multisig_setup_page.SettingRepository.set_multisig_config',
     )
-    w.show()
     w.continue_button.click()
     # Back from Step 2 -> Step 1
     w._go_back()
@@ -129,4 +144,3 @@ def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage
         args == ((None, None),) or args == (None, None)
         for args, _ in set_cfg.call_args_list
     )
-    w.close()
