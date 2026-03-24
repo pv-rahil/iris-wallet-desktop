@@ -9,7 +9,7 @@ import pytest
 
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
-from src.views.components.multisig_setup_page import MultisigSetupPage
+from src.views.ui_multisig_setup_page import MultisigSetupPage
 
 
 @pytest.fixture
