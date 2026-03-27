@@ -121,3 +121,109 @@ def test_handle_ifa_issue_uses_existing_psbt_or_creates(vm_mock):
                 assert kwargs.get('purpose') == 'issue_asset_ifa'
         finally:
             w.close()
+
+
+def test_update_loading_state(widget: IssueIFAWidget):
+    """Test update_loading_state starts and stops loading."""
+    with patch.object(widget.issue_ifa_btn, 'start_loading') as mock_start, \
+            patch.object(widget.issue_ifa_btn, 'stop_loading') as mock_stop:
+        widget.update_loading_state(True)
+        mock_start.assert_called_once()
+
+        widget.update_loading_state(False)
+        mock_stop.assert_called_once()
+
+
+def test_validate_supply_fields_primary(widget: IssueIFAWidget):
+    """Test validate_supply_fields for primary issuance."""
+    widget.secondary_issuance = False
+    widget.inflatables_total_supply_input.setText('100')
+    widget.inflatables_issue_amount_input.setText('50')
+
+    # Should not raise any errors
+    widget.validate_supply_fields()
+
+
+def test_validate_supply_fields_exceeds_total(widget: IssueIFAWidget):
+    """Test validate_supply_fields when issue amount exceeds total."""
+    widget.secondary_issuance = False
+    widget.inflatables_total_supply_input.setText('50')
+    widget.inflatables_issue_amount_input.setText('100')
+
+    # Should handle the validation (may or may not show error)
+    widget.validate_supply_fields()
+
+
+def test_validate_supply_fields_secondary(widget: IssueIFAWidget):
+    """Test validate_supply_fields for secondary issuance."""
+    widget.secondary_issuance = True
+    widget.inflatables_issue_amount_input.setText('50')
+
+    # Secondary issuance should not validate total supply
+    widget.validate_supply_fields()
+
+
+def test_show_error(widget: IssueIFAWidget):
+    """Test _show_error sets error text."""
+    widget._show_error('Test error message')
+    assert widget.inflatables_error_label.text() == 'Test error message'
+
+
+def test_handle_ifa_hw_dialog_visible(widget: IssueIFAWidget):
+    """Test handle_ifa_hw_dialog when widget is visible."""
+    from enum import Enum
+
+    class DialogType(Enum):
+        INFO = 'info'
+        ERROR = 'error'
+
+    widget.show()
+    with patch('src.views.ui_issue_ifa.HardwareWalletOperationDialog.get_instance') as mock_hw:
+        hw_dialog = MagicMock()
+        hw_dialog.isVisible.return_value = False
+        mock_hw.return_value = hw_dialog
+
+        widget.handle_ifa_hw_dialog('Test message', DialogType.INFO)
+        hw_dialog.update_dialog.assert_called_once()
+        hw_dialog.show.assert_called_once()
+
+
+def test_handle_ifa_hw_dialog_not_visible(widget: IssueIFAWidget):
+    """Test handle_ifa_hw_dialog when widget is not visible."""
+    from enum import Enum
+
+    class DialogType(Enum):
+        INFO = 'info'
+
+    widget.hide()
+    with patch('src.views.ui_issue_ifa.HardwareWalletOperationDialog.get_instance') as mock_hw:
+        widget.handle_ifa_hw_dialog('Test message', DialogType.INFO)
+        mock_hw.assert_not_called()
+
+
+def test_retranslate_ui(widget: IssueIFAWidget):
+    """Test retranslate_ui sets text correctly."""
+    widget.retranslate_ui()
+    assert widget.issue_ifa_title.text() != ''
+    assert widget.issue_ifa_btn.text() != ''
+
+
+def test_handle_button_enabled_all_fields(widget: IssueIFAWidget):
+    """Test handle_button_enabled with all fields filled."""
+    widget.inflatables_short_identifier_input.setText('TCK')
+    widget.inflatables_asset_name_input.setText('Test Asset')
+    widget.inflatables_issue_amount_input.setText('100')
+    widget.inflatables_total_supply_input.setText('1000')
+
+    widget.handle_button_enabled()
+    assert widget.issue_ifa_btn.isEnabled()
+
+
+def test_handle_button_enabled_missing_fields(widget: IssueIFAWidget):
+    """Test handle_button_enabled with missing fields."""
+    widget.inflatables_short_identifier_input.setText('')
+    widget.inflatables_asset_name_input.setText('Test Asset')
+    widget.inflatables_issue_amount_input.setText('100')
+
+    widget.handle_button_enabled()
+    assert not widget.issue_ifa_btn.isEnabled()

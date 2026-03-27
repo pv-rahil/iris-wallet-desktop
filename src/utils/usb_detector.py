@@ -185,9 +185,6 @@ class USBDetector(QObject):
                                 'name': device_path,
                             }
 
-                    # Reset to avoid mixing other disks
-                    current_disk = None
-
             return devices
 
         except subprocess.CalledProcessError as e:

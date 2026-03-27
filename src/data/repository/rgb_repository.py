@@ -40,6 +40,7 @@ from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendBeginRequestModel
 from src.model.rgb_model import SendBeginResult
+from src.model.rgb_model import RgbContextResult
 from src.utils.cache import Cache
 from src.utils.constant import UTXO_SIZE_SAT
 from src.utils.custom_context import repository_custom_context
@@ -271,6 +272,42 @@ class RgbRepository:
             return result
 
     @staticmethod
+    def _sync_and_get_rgb_context(
+        psbt: str,
+        min_confirmations: int | None = None,
+    ) -> RgbContextResult:
+        """Sync with bridge and extract RGB context for a PSBT.
+
+        Args:
+            psbt: The PSBT to match in operation results
+            min_confirmations: Min confirmations to include in context
+
+        Returns:
+            RgbContextResult with fascia_path, entropy, min_confirmations
+        """
+        with repository_custom_context():
+            fascia_path = None
+            entropy = None
+            sync_result = colored_wallet.wallet.sync_with_bridge(
+                online=colored_wallet.online,
+            )
+            if sync_result:
+                for op_info in sync_result:
+                    if op_info and op_info.operation:
+                        op = op_info.operation
+                        if op and hasattr(op, 'psbt') and op.psbt == psbt:
+                            op_details = getattr(op, 'details', None)
+                            if op_details:
+                                fascia_path = getattr(op_details, 'fascia_path', None)
+                                entropy = getattr(op_details, 'entropy', None)
+                            break
+            return RgbContextResult(
+                fascia_path=fascia_path,
+                entropy=entropy,
+                min_confirmations=min_confirmations,
+            )
+
+    @staticmethod
     @auto_sync_multisig(check_pending_ops=True)
     @check_colorable_available()
     def send_init(detail: SendBeginRequestModel) -> InitOperationResult:
@@ -290,9 +327,16 @@ class RgbRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.delete_draft_transfer(detail.asset_id)
+                # Immediately sync to get RGB context (fascia_path, entropy) for USB sync
+                rgb_context = RgbRepository._sync_and_get_rgb_context(
+                    result.psbt, detail.min_confirmations
+                )
                 wallet_service.add_psbt(
                     result.psbt,
                     purpose='send_asset',
+                    fascia_path=rgb_context.fascia_path,
+                    entropy=rgb_context.entropy,
+                    min_confirmations=rgb_context.min_confirmations,
                 )
             return result
 
@@ -357,9 +401,16 @@ class RgbRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.delete_secondary_draft_by_psbt(asset_id=detail.asset_id)
+                # Immediately sync to get RGB context (fascia_path, entropy) for USB sync
+                rgb_context = RgbRepository._sync_and_get_rgb_context(
+                    result.psbt, detail.min_confirmations
+                )
                 wallet_service.add_psbt(
                     result.psbt,
                     purpose='inflate_asset',
+                    fascia_path=rgb_context.fascia_path,
+                    entropy=rgb_context.entropy,
+                    min_confirmations=rgb_context.min_confirmations,
                 )
             return result
 

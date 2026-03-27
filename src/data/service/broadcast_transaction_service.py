@@ -40,10 +40,16 @@ class BroadcastTransactionService:
             psbt = row['psbt']
             signed = bool(row['signed'])
             purpose = row['purpose']
+            fascia_path = row.get('fascia_path')
+            entropy = row.get('entropy')
+            min_confirmations = row.get('min_confirmations')
             items.append(
                 PsbtDraftItem(
                     id=psbt_id, psbt=psbt,
                     signed=signed, purpose=purpose,
+                    fascia_path=fascia_path,
+                    entropy=entropy,
+                    min_confirmations=min_confirmations,
                 ),
             )
         return items
@@ -346,6 +352,23 @@ class BroadcastTransactionService:
             return None
 
     @staticmethod
+    def get_psbt_rgb_context(psbt_base64: str) -> dict | None:
+        """Fetch RGB context (fascia_path, entropy, min_confirmations) for a PSBT from storage.
+        
+        Used by offline wallets to display RGB asset details during PSBT signing.
+        """
+        psbt_norm = (psbt_base64 or '').strip()
+        if not psbt_norm:
+            return None
+        try:
+            service = WalletDataService.get_session()
+            if not service:
+                return None
+            return service.get_psbt_rgb_context(psbt_norm)
+        except Exception:
+            return None
+
+    @staticmethod
     def resolve_transfer_type(
         psbt_text: str,
         is_multisig: bool,
@@ -392,8 +415,9 @@ class BroadcastTransactionService:
             'issue_asset_cfa': 'Internal',
             'issue_asset_nia': 'Internal',
             'issue_asset_ifa': 'Internal',
+            'inflation_utxo': 'Internal',
             'send_rgb': 'Internal',
-            'inflate_asset': 'Inflate asset',
+            'inflate_asset': 'Inflation',
         }
         return fallback_labels.get(key, key or '')
 
@@ -672,7 +696,7 @@ class BroadcastTransactionService:
     @staticmethod
     def prepare_render_inspection_state(
         psbt_details: object | None,
-        rgb_expected: bool,
+        is_multisig_rgb_expected: bool,
         rgb_details: object | None,
         is_offline_wallet: bool,
         current_psbt: str,
@@ -682,7 +706,7 @@ class BroadcastTransactionService:
         if psbt_details is None:
             return RenderInspectionResult(should_render=False, should_show_sign_status=False)
 
-        if rgb_expected and rgb_details is None and not is_offline_wallet:
+        if is_multisig_rgb_expected and rgb_details is None:
             return RenderInspectionResult(should_render=False, should_show_sign_status=False)
 
         if not current_psbt or len(current_psbt) < min_psbt_len:
@@ -712,3 +736,68 @@ class BroadcastTransactionService:
             has_valid_psbt=has_valid_psbt,
             should_trigger_direct=should_trigger_direct,
         )
+
+    @staticmethod
+    def prepare_psbt_export_content(psbt_text: str) -> tuple[str, str] | None:
+        """Prepare PSBT content for export with purpose prefix.
+
+        Args:
+            psbt_text: The PSBT text to prepare
+
+        Returns:
+            Tuple of (export_text, purpose) or None if invalid
+        """
+        parsed = BroadcastTransactionService.parse_psbt_input(psbt_text)
+        purpose = parsed.purpose
+        current_psbt = parsed.psbt
+        if not current_psbt:
+            return None
+
+        if purpose is None:
+            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(current_psbt)
+
+        export_text = current_psbt
+        if purpose:
+            export_text = f"psbt:{purpose}:{current_psbt}"
+
+        return export_text, purpose
+
+    @staticmethod
+    def read_psbt_from_file(file_path: str) -> tuple[str, str | None] | None:
+        """Read and parse PSBT from file.
+
+        Args:
+            file_path: Path to the PSBT file
+
+        Returns:
+            Tuple of (psbt_content, error_message) or None on success
+        """
+        try:
+            with open(file_path, encoding='utf-8') as f:
+                text = (f.read() or '').strip()
+
+            parsed = BroadcastTransactionService.parse_psbt_input(text)
+            psbt_only = parsed.psbt
+            if not psbt_only:
+                return None, 'Invalid PSBT file content'
+            return psbt_only, None
+        except Exception as e:
+            return None, f'Failed to read PSBT file: {e}'
+
+    @staticmethod
+    def write_psbt_to_file(file_path: str, content: str) -> str | None:
+        """Write PSBT content to file.
+
+        Args:
+            file_path: Path to write to
+            content: PSBT content to write
+
+        Returns:
+            Error message or None on success
+        """
+        try:
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(content)
+            return None
+        except Exception as e:
+            return f'Failed to write PSBT file: {e}'

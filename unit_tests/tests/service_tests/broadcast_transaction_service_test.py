@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.model.broadcast_transaction_model import PsbtDraftItem
+from rgb_lib import Operation
 
 
 def test_list_psbt_drafts_handles_missing_session_and_filters_invalid(mocker):
@@ -456,11 +457,8 @@ def test_process_pending_operation_match_and_inspection(mocker):
         status = None
         details = MagicMock(fascia_path='test_path', entropy=123)
 
-    from rgb_lib import Operation
     mock_pending.operation = MockOpReq()
     
-    # We patch tuple to bypass strong isinstance checking against rgb_lib types here
-    # or rely on normal flow which falls through without watch_only logic since mocking it is messy
     res = BroadcastTransactionService.process_pending_operation_match(mock_pending, 'raw_info', False)
     assert res.transfer_type == 'send_asset'
     assert res.is_inflation is False
@@ -510,24 +508,25 @@ def test_prepare_state_contexts():
     assert ctx1.should_inspect is True
     assert ctx1.purpose == 'send_asset'
     assert ctx1.is_rgb is True
-    
-    # render inspect
-    ctx2 = BroadcastTransactionService.prepare_render_inspection_state(None, False, None, False, 'abc', 1)
+
+    # render inspect - updated signature: (psbt_details, is_offline_wallet, current_psbt, min_psbt_len)
+    ctx2 = BroadcastTransactionService.prepare_render_inspection_state(None, False, '', 80)
     assert ctx2.should_render is False
-    
-    ctx3 = BroadcastTransactionService.prepare_render_inspection_state(MagicMock(), False, None, False, 'abc', 3)
+
+    ctx3 = BroadcastTransactionService.prepare_render_inspection_state(MagicMock(), False, 'abc' + 'x' * 80, 80)
     assert ctx3.should_render is True
     assert ctx3.should_show_sign_status is True
-    
-    ctx_rgb_missing = BroadcastTransactionService.prepare_render_inspection_state(MagicMock(), True, None, False, 'abc', 3)
-    assert ctx_rgb_missing.should_render is False
-    
+
+    ctx4 = BroadcastTransactionService.prepare_render_inspection_state(MagicMock(), True, 'abc' + 'x' * 80, 80)
+    assert ctx4.should_render is True
+    assert ctx4.should_show_sign_status is False  # offline wallet
+
     # signature progress
     op = MagicMock()
     op.psbt = 'my_psbt'
-    ctx4 = BroadcastTransactionService.prepare_signature_progress_ui_state('my_psbt', 5, op)
-    assert ctx4.has_valid_psbt is True
-    assert ctx4.should_trigger_direct is True
+    ctx5 = BroadcastTransactionService.prepare_signature_progress_ui_state('my_psbt', 5, op)
+    assert ctx5.has_valid_psbt is True
+    assert ctx5.should_trigger_direct is True
 
 
 @patch('src.data.service.broadcast_transaction_service.QCoreApplication.translate')
@@ -547,4 +546,68 @@ def test_get_retranslate_data(mock_translate):
     # Default
     d3 = BroadcastTransactionService.get_retranslate_data(False, False, False)
     assert d3['title'] == 'T(sign_psbt)'
+
+
+def test_get_psbt_rgb_context_missing_session(mocker):
+    """get_psbt_rgb_context should return None when no session available."""
+    mock_get_session = mocker.patch('src.data.service.broadcast_transaction_service.WalletDataService.get_session')
+    mock_get_session.return_value = None
+    
+    result = BroadcastTransactionService.get_psbt_rgb_context('any_psbt')
+    assert result is None
+
+
+def test_get_psbt_rgb_context_success(mocker):
+    """get_psbt_rgb_context should return RGB context dict from wallet service."""
+    mock_get_session = mocker.patch('src.data.service.broadcast_transaction_service.WalletDataService.get_session')
+    mock_session = MagicMock()
+    mock_session.get_psbt_rgb_context.return_value = {
+        'fascia_path': '/path/to/app/fascia.rgb',
+        'entropy': 123456789,
+        'min_confirmations': 3,
+    }
+    mock_get_session.return_value = mock_session
+    
+    result = BroadcastTransactionService.get_psbt_rgb_context('test_psbt')
+    assert result is not None
+    assert result['fascia_path'] == '/path/to/app/fascia.rgb'
+    assert result['entropy'] == 123456789
+    assert result['min_confirmations'] == 3
+    mock_session.get_psbt_rgb_context.assert_called_once_with('test_psbt')
+
+
+def test_get_psbt_rgb_context_not_found(mocker):
+    """get_psbt_rgb_context should return None when PSBT not found."""
+    mock_get_session = mocker.patch('src.data.service.broadcast_transaction_service.WalletDataService.get_session')
+    mock_session = MagicMock()
+    mock_session.get_psbt_rgb_context.return_value = None
+    mock_get_session.return_value = mock_session
+    
+    result = BroadcastTransactionService.get_psbt_rgb_context('nonexistent_psbt')
+    assert result is None
+
+
+def test_get_psbt_rgb_context_missing_fascia_path(mocker):
+    """get_psbt_rgb_context should return dict even with missing fascia_path."""
+    mock_get_session = mocker.patch('src.data.service.broadcast_transaction_service.WalletDataService.get_session')
+    mock_session = MagicMock()
+    mock_session.get_psbt_rgb_context.return_value = {
+        'fascia_path': None,
+        'entropy': 0,
+        'min_confirmations': None,
+    }
+    mock_get_session.return_value = mock_session
+    
+    result = BroadcastTransactionService.get_psbt_rgb_context('psbt_no_fascia')
+    assert result is not None
+    assert result['fascia_path'] is None
+
+
+def test_get_psbt_rgb_context_empty_psbt(mocker):
+    """get_psbt_rgb_context should handle empty PSBT string."""
+    result = BroadcastTransactionService.get_psbt_rgb_context('')
+    assert result is None
+    
+    result = BroadcastTransactionService.get_psbt_rgb_context(None)
+    assert result is None
 

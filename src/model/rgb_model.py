@@ -344,3 +344,10 @@ class RefreshFailureItem(BaseModel):
     class Config:
         """Pydantic configuration class allowing arbitrary types."""
         arbitrary_types_allowed = True
+
+
+class RgbContextResult(BaseModel):
+    """RGB context data extracted from bridge sync."""
+    fascia_path: str | None = None
+    entropy: int | None = None
+    min_confirmations: int | None = None

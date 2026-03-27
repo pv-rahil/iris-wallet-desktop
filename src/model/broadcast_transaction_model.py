@@ -8,6 +8,9 @@ class PsbtDraftItem(BaseModel):
     psbt: str
     signed: bool
     purpose: str | None
+    fascia_path: str | None = None
+    entropy: int | None = None
+    min_confirmations: int | None = None
 
 
 class PsbtParsed(BaseModel):

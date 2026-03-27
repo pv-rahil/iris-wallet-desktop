@@ -250,6 +250,8 @@ class HeaderFrameViewModel(QObject, ThreadManager):
         # so they can be transferred to offline wallet via USB sync
         if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
             self._extract_and_save_review_psbts(pending_ops)
+            # Update RGB context for PSBTs where we are the initiator
+            self._update_rgb_context_for_initiator_psbts(pending_ops)
 
         # Trigger inspection of the blocking pending operation (if any) to get its TXID
         # and store it in global service state
@@ -406,12 +408,99 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                     if already_signed:
                         continue
 
-                    wallet_service.add_psbt(psbt, signed=False, purpose=purpose)
+                    # Extract RGB context from operation.details for offline RGB inspection
+                    fascia_path = None
+                    entropy = None
+                    min_confirmations = None
+                    is_rgb_operation = operation.is_SEND_TO_REVIEW() or operation.is_INFLATION_TO_REVIEW()
+                    if is_rgb_operation:
+                        op_details = getattr(operation, 'details', None)
+                        if op_details is not None:
+                            fascia_path = getattr(op_details, 'fascia_path', None)
+                            entropy = getattr(op_details, 'entropy', None)
+                            min_confirmations = getattr(op_details, 'min_confirmations', None)
+
+                    wallet_service.add_psbt(
+                        psbt,
+                        signed=False,
+                        purpose=purpose,
+                        fascia_path=fascia_path,
+                        entropy=entropy,
+                        min_confirmations=min_confirmations,
+                    )
                     logger.info(
-                        'Saved review operation PSBT to local DB: purpose=%s', purpose,
+                        'Saved review operation PSBT to local DB: purpose=%s, rgb_context=%s',
+                        purpose,
+                        bool(fascia_path),
                     )
             except Exception as exc:
                 logger.error('Failed to save review PSBT to DB: %s', exc)
+
+    def _update_rgb_context_for_initiator_psbts(self, pending_ops: list):
+        """Update RGB context for PSBTs where current wallet is the initiator.
+        
+        When watch-only initiates a send/inflate operation, the PSBT is saved immediately
+        but RGB context (fascia_path, entropy, min_confirmations) comes later from 
+        sync_with_bridge. This method updates those PSBTs with the RGB context.
+        """
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            return
+
+        local_xpub = SettingRepository.get_config_value(ACCOUNT_XPUB_COLORED, None)
+        
+        for op_info in pending_ops:
+            if op_info is None or not hasattr(op_info, 'operation'):
+                continue
+
+            operation = op_info.operation
+            if operation is None:
+                continue
+
+            # Only process RGB operations where we are the initiator
+            is_rgb_operation = (
+                operation.is_SEND_TO_REVIEW() or operation.is_SEND_PENDING() or
+                operation.is_INFLATION_TO_REVIEW() or operation.is_INFLATION_PENDING()
+            )
+            if not is_rgb_operation:
+                continue
+
+            # Check if we are the initiator
+            initiator_xpub = getattr(op_info, 'initiator_xpub', None)
+            if initiator_xpub != local_xpub:
+                continue
+
+            # Extract PSBT and RGB context
+            psbt = getattr(operation, 'psbt', None)
+            if not psbt:
+                continue
+
+            op_details = getattr(operation, 'details', None)
+            if op_details is None:
+                continue
+
+            fascia_path = getattr(op_details, 'fascia_path', None)
+            entropy = getattr(op_details, 'entropy', None)
+            min_confirmations = getattr(op_details, 'min_confirmations', None)
+
+            # Only update if we have fascia_path (indicates valid RGB context)
+            if not fascia_path:
+                continue
+
+            try:
+                updated = wallet_service.update_psbt_rgb_context(
+                    psbt,
+                    fascia_path=fascia_path,
+                    entropy=entropy,
+                    min_confirmations=min_confirmations,
+                )
+                if updated:
+                    logger.info(
+                        'Updated RGB context for initiator PSBT: fascia_path=%s',
+                        fascia_path[:20] if fascia_path else None,
+                    )
+            except Exception as exc:
+                logger.error('Failed to update RGB context for initiator PSBT: %s', exc)
 
     def on_multisig_sync_error(self, error: Exception):
         """Handle bridge sync error."""

@@ -458,14 +458,19 @@ def test_fail_transfer(mock_wallet, mock_cache):
     mock_cache.invalidate_cache.assert_called_once()
 
 
+@patch('src.data.repository.rgb_repository.RgbRepository._sync_and_get_rgb_context')
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 @patch('src.data.repository.rgb_repository.Recipient')
-def test_send_init_with_session(mock_recipient_cls, mock_get_session, mock_wallet):
+def test_send_init_with_session(mock_recipient_cls, mock_get_session, mock_sync_rgb, mock_wallet):
     """send_init stores psbt and deletes draft_transfer for asset when session exists."""
+    from src.model.rgb_model import RgbContextResult
     result_obj = MagicMock(spec=InitOperationResult)
     result_obj.psbt = 'init_psbt'
     mock_wallet.send_init.return_value = result_obj
     mock_recipient_cls.return_value = MagicMock()
+    mock_sync_rgb.return_value = RgbContextResult(
+        fascia_path='/path/fascia.rgb', entropy=123, min_confirmations=1
+    )
 
     svc = MagicMock()
     mock_get_session.return_value = svc
@@ -480,7 +485,10 @@ def test_send_init_with_session(mock_recipient_cls, mock_get_session, mock_walle
     assert res == result_obj
     mock_wallet.send_init.assert_called_once()
     svc.delete_draft_transfer.assert_called_once_with('aid')
-    svc.add_psbt.assert_called_once_with('init_psbt', purpose='send_asset')
+    svc.add_psbt.assert_called_once_with(
+        'init_psbt', purpose='send_asset',
+        fascia_path='/path/fascia.rgb', entropy=123, min_confirmations=1
+    )
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -504,12 +512,17 @@ def test_send_init_without_session(mock_recipient_cls, mock_get_session, mock_wa
     mock_wallet.send_init.assert_called_once()
 
 
+@patch('src.data.repository.rgb_repository.RgbRepository._sync_and_get_rgb_context')
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
-def test_inflate_init_with_session(mock_get_session, mock_wallet):
+def test_inflate_init_with_session(mock_get_session, mock_sync_rgb, mock_wallet):
     """inflate_init deletes secondary draft, stores psbt with 'inflate_asset' purpose."""
+    from src.model.rgb_model import RgbContextResult
     result_obj = MagicMock(spec=InitOperationResult)
     result_obj.psbt = 'inflate_init_psbt'
     mock_wallet.inflate_init.return_value = result_obj
+    mock_sync_rgb.return_value = RgbContextResult(
+        fascia_path='/path/fascia.rgb', entropy=456, min_confirmations=2
+    )
 
     svc = MagicMock()
     mock_get_session.return_value = svc
@@ -522,7 +535,10 @@ def test_inflate_init_with_session(mock_get_session, mock_wallet):
     assert res == result_obj
     mock_wallet.inflate_init.assert_called_once()
     svc.delete_secondary_draft_by_psbt.assert_called_once_with(asset_id='aid')
-    svc.add_psbt.assert_called_once_with('inflate_init_psbt', purpose='inflate_asset')
+    svc.add_psbt.assert_called_once_with(
+        'inflate_init_psbt', purpose='inflate_asset',
+        fascia_path='/path/fascia.rgb', entropy=456, min_confirmations=2
+    )
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')

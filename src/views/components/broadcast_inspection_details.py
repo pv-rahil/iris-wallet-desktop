@@ -6,14 +6,12 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
-from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QVBoxLayout
-from PySide6.QtWidgets import QWidget
 
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import set_widgets_visible
@@ -33,9 +31,7 @@ class BroadcastInspectionDetails(QFrame):
         self._can_broadcast = False
         self._rgb_expected = False
         self._is_inflation_context = False
-        self._setup_ui()
 
-    def _setup_ui(self):
         self.setObjectName('inspection_frame')
         self.setFrameShape(QFrame.NoFrame)
         self.setFrameShadow(QFrame.Plain)
@@ -281,13 +277,8 @@ class BroadcastInspectionDetails(QFrame):
 
         self.val_txid.setText(self._wrap_to_two_lines(details.txid))
 
-        # BTC-only vs RGB layout shifts (offline wallets should NEVER show RGB details)
-        from src.data.repository.setting_repository import SettingRepository
-        from src.model.enums.enums_model import WalletType
-        offline_mode = (
-            SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
-        )
-        is_btc_only = ((not rgb_expected) and (not is_inflation_context)) or offline_mode
+        # BTC-only vs RGB layout shifts
+        is_btc_only = (not rgb_expected) and (not is_inflation_context)
         if is_btc_only:
             # TXID spans full width in first row
             self.grid.addWidget(self.tile_txid, 0, 0, 1, 2)

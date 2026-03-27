@@ -135,7 +135,10 @@ class WalletDataService:
             id TEXT PRIMARY KEY,           -- sha256 of PSBT base64
             psbt TEXT NOT NULL,            -- PSBT in base64
             signed INTEGER NOT NULL,       -- 0 = unsigned, 1 = signed
-            purpose TEXT                   -- optional context e.g. 'issue_asset', 'send_btc', 'send_asset', 'inflate_asset'
+            purpose TEXT,                  -- optional context e.g. 'issue_asset', 'send_btc', 'send_asset', 'inflate_asset'
+            fascia_path TEXT,              -- RGB fascia path for offline RGB inspection
+            entropy TEXT,                  -- RGB entropy for offline RGB inspection (stored as text for large values)
+            min_confirmations INTEGER      -- RGB min confirmations for offline RGB inspection
         )
         """
         create_draft_issue_asset_table_query = """
@@ -648,20 +651,26 @@ class WalletDataService:
         psbt_base64: str,
         signed: bool = False,
         purpose: str | None = None,
+        fascia_path: str | None = None,
+        entropy: int | None = None,
+        min_confirmations: int | None = None,
     ) -> str | None:
         """Insert or replace a PSBT. Returns its id. Minimal fields only.
         Optionally set a purpose (e.g., 'send_btc', 'create_utxos', 'issue_asset').
+        For RGB PSBTs, also store fascia_path, entropy, and min_confirmations for offline inspection.
         """
         if self.is_watch_only or self.is_offline_wallet or self.is_multisig:
             # Also store the normalized version to match the ID
             normalized_psbt = ''.join(psbt_base64.split())
             psbt_id = self._psbt_id(normalized_psbt)
+            # Convert entropy to string for storage (may exceed SQLite INTEGER limit)
+            entropy_str = str(entropy) if entropy is not None else None
             with self._db_lock:
                 try:
                     with self.conn:
                         self.conn.execute(
-                            'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose) VALUES (?, ?, ?, ?)',
-                            (psbt_id, normalized_psbt, 1 if signed else 0, purpose),
+                            'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose, fascia_path, entropy, min_confirmations) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                            (psbt_id, normalized_psbt, 1 if signed else 0, purpose, fascia_path, entropy_str, min_confirmations),
                         )
                     return psbt_id
                 except sqlite3.Error as exc:
@@ -682,18 +691,21 @@ class WalletDataService:
                 try:
                     with self.conn:
                         cur = self.conn.execute(
-                            'SELECT purpose FROM psbt WHERE id = ?', (
+                            'SELECT purpose, fascia_path, entropy, min_confirmations FROM psbt WHERE id = ?', (
                                 unsigned_id,
                             ),
                         )
                         row = cur.fetchone()
                         purpose = row[0] if row is not None else None
+                        fascia_path = row[1] if row is not None and len(row) > 1 else None
+                        entropy = row[2] if row is not None and len(row) > 2 else None
+                        min_confirmations = row[3] if row is not None and len(row) > 3 else None
                         self.conn.execute(
                             'DELETE FROM psbt WHERE id = ?', (unsigned_id,),
                         )
                         self.conn.execute(
-                            'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose) VALUES (?, ?, ?, ?)',
-                            (signed_id, normalized_signed_psbt, 1, purpose),
+                            'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose, fascia_path, entropy, min_confirmations) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                            (signed_id, normalized_signed_psbt, 1, purpose, fascia_path, entropy, min_confirmations),
                         )
                     return signed_id
                 except sqlite3.Error as exc:
@@ -723,14 +735,73 @@ class WalletDataService:
                     raise
         return False
 
+    def update_psbt_rgb_context(
+        self,
+        psbt_base64: str,
+        fascia_path: str | None = None,
+        entropy: int | None = None,
+        min_confirmations: int | None = None,
+    ) -> bool:
+        """Update RGB context fields for an existing PSBT.
+        Returns True if a row was updated.
+        """
+        if self.is_watch_only or self.is_offline_wallet or self.is_multisig:
+            psbt_id = self._psbt_id(psbt_base64)
+            # Convert entropy to string for storage (may exceed SQLite INTEGER limit)
+            entropy_str = str(entropy) if entropy is not None else None
+            with self._db_lock:
+                try:
+                    with self.conn:
+                        cur = self.conn.execute(
+                            'UPDATE psbt SET fascia_path = ?, entropy = ?, min_confirmations = ? WHERE id = ?',
+                            (fascia_path, entropy_str, min_confirmations, psbt_id),
+                        )
+                    return cur.rowcount > 0
+                except sqlite3.Error as exc:
+                    logger.error(
+                        'WalletDataService: update_psbt_rgb_context failed: %s', exc,
+                    )
+                    raise
+        return False
+
+    def get_psbt_rgb_context(self, psbt_base64: str) -> dict | None:
+        """Get RGB context for a specific PSBT.
+        Returns dict with fascia_path, entropy, min_confirmations or None if not found.
+        """
+        if self.is_watch_only or self.is_offline_wallet or self.is_multisig:
+            psbt_id = self._psbt_id(psbt_base64)
+            with self._db_lock:
+                try:
+                    cur = self.conn.cursor()
+                    cur.execute(
+                        'SELECT fascia_path, entropy, min_confirmations FROM psbt WHERE id = ?',
+                        (psbt_id,),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        return None
+                    # Convert entropy back to int from string storage
+                    entropy_val = int(row[1]) if row[1] is not None else None
+                    return {
+                        'fascia_path': row[0],
+                        'entropy': entropy_val,
+                        'min_confirmations': row[2],
+                    }
+                except sqlite3.Error as exc:
+                    logger.error(
+                        'WalletDataService: get_psbt_rgb_context failed: %s', exc,
+                    )
+                    raise
+        return None
+
     def list_psbt(self, signed: bool) -> list[dict]:
-        """List psbt with optional signed filter. Returns minimal info (including purpose)."""
+        """List psbt with optional signed filter. Returns minimal info (including purpose and RGB context)."""
         if self.is_watch_only or self.is_offline_wallet:
             with self._db_lock:
                 try:
                     cur = self.conn.cursor()
                     cur.execute(
-                        'SELECT id, psbt, signed, purpose FROM psbt WHERE signed = ?',
+                        'SELECT id, psbt, signed, purpose, fascia_path, entropy, min_confirmations FROM psbt WHERE signed = ?',
                         (1 if signed else 0,),
                     )
                     rows = cur.fetchall()
@@ -740,6 +811,9 @@ class WalletDataService:
                             'psbt': r[1],
                             'signed': bool(r[2]),
                             'purpose': r[3] if len(r) > 3 else None,
+                            'fascia_path': r[4] if len(r) > 4 else None,
+                            'entropy': int(r[5]) if len(r) > 5 and r[5] is not None else None,
+                            'min_confirmations': r[6] if len(r) > 6 else None,
                         }
                         for r in rows
                     ]

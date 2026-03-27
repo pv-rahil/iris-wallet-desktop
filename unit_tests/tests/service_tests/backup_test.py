@@ -168,3 +168,63 @@ def test_backup_file_exists():
     """Case 6 : test backup_file_exists"""
     result = BackupService.backup_file_exists('./random_path')
     assert result is False
+
+
+@patch('src.data.service.backup_service.write_rgb_lib_version_file')
+@patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
+@patch('src.data.service.backup_service.BackupService.backup_file_exists')
+@patch('src.data.repository.common_operations_repository.CommonOperationRepository.backup')
+@patch('src.data.service.backup_service.GoogleDriveManager')
+@patch('src.data.service.backup_service.SettingRepository')
+@patch('src.data.service.backup_service.os.path.exists')
+def test_backup_multisig_wallet(mock_os_exists, mock_setting_repo, mock_google_drive, mock_backup_repo, mock_backup_exists, mock_hashed, mock_version_file, setup_directory):
+    """Case 7: Test backup for multisig wallet - should backup multisig config."""
+    from src.model.enums.enums_model import WalletSignatureType
+    test_dir, _ = setup_directory
+
+    mock_os_exists.return_value = False  # No existing backup file
+    mock_hashed.return_value = 'hashed_mnemonic_123'
+    mock_backup_exists.return_value = True
+
+    mock_setting_repo.get_wallet_signature_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
+    mock_setting_repo.get_multisig_config.return_value = (2, 3)
+    mock_setting_repo.get_cosigners.return_value = [{'master_fingerprint': 'FP1'}]
+
+    mock_drive_instance = MagicMock()
+    mock_drive_instance.upload_to_drive.return_value = True
+    mock_google_drive.return_value = mock_drive_instance
+
+    mock_version_file.return_value = ('/tmp/version.txt', 'version.txt')
+
+    result = BackupService.backup('mnemonic words', 'password123')
+
+    assert result is True
+    # Verify multisig config was backed up
+    assert mock_drive_instance.upload_to_drive.call_count == 3  # backup, version, multisig
+
+
+@patch('src.data.service.backup_service.write_rgb_lib_version_file')
+@patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
+@patch('src.data.service.backup_service.BackupService.backup_file_exists')
+@patch('src.data.repository.common_operations_repository.CommonOperationRepository.backup')
+@patch('src.data.service.backup_service.GoogleDriveManager')
+@patch('src.data.service.backup_service.os.remove')
+@patch('src.data.service.backup_service.os.makedirs')
+@patch('src.data.service.backup_service.os.path.exists')
+def test_backup_removes_old_file(mock_os_exists, mock_makedirs, mock_remove, mock_google_drive, mock_backup_repo, mock_backup_exists, mock_hashed, mock_version_file):
+    """Case 8: Test backup removes old backup file if exists."""
+    # 1. backup_folder_path exists, 2. backup_file_path exists, 3. iriswallet_temp_folder_path exists
+    mock_os_exists.side_effect = [True, True, True, True, True]
+    mock_hashed.return_value = 'hashed_mnemonic'
+    mock_backup_exists.return_value = True
+
+    mock_drive_instance = MagicMock()
+    mock_drive_instance.upload_to_drive.return_value = True
+    mock_google_drive.return_value = mock_drive_instance
+
+    mock_version_file.return_value = ('/tmp/version.txt', 'version.txt')
+
+    result = BackupService.backup('mnemonic', 'password')
+
+    assert result is True
+    mock_remove.assert_called_once()  # Old backup file removed

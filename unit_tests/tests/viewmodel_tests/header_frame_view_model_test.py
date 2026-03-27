@@ -510,7 +510,7 @@ def test_extract_and_save_review_psbts(mocker):
     mock_db.list_psbt.side_effect = side_effect_list_psbt_empty # Unsigned list empty, Signed list empty
     
     vm._extract_and_save_review_psbts([op_valid])
-    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='create_utxos')
+    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='create_utxos', fascia_path=None, entropy=None, min_confirmations=None)
     mock_db.add_psbt.reset_mock()
     
     # Skip if we already have exact unsigned psbt
@@ -538,7 +538,7 @@ def test_extract_and_save_review_psbts(mocker):
     # Exception inside inspect_psbt in duplicates check
     mocker.patch('src.viewmodels.header_frame_view_model.RgbRepository.inspect_psbt', side_effect=Exception('fail'))
     vm._extract_and_save_review_psbts([op_valid])
-    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='create_utxos')
+    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='create_utxos', fascia_path=None, entropy=None, min_confirmations=None)
     mock_db.add_psbt.reset_mock()
     
     # Check if signed psbt has different txid
@@ -551,42 +551,45 @@ def test_extract_and_save_review_psbts(mocker):
     
     mocker.patch('src.viewmodels.header_frame_view_model.RgbRepository.inspect_psbt', side_effect=side_effect_inspect_psbt)
     vm._extract_and_save_review_psbts([op_valid])
-    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='create_utxos')
+    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='create_utxos', fascia_path=None, entropy=None, min_confirmations=None)
     mock_db.add_psbt.reset_mock()
     
     # Different purposes branch coverage
-    # SEND_BTC_TO_REVIEW
+    # SEND_BTC_TO_REVIEW (non-RGB operation, no RGB context)
     mock_db.list_psbt.side_effect = side_effect_list_psbt_empty
     op_send_btc = mocker.Mock()
     op_send_btc.operation.is_CREATE_UTXOS_TO_REVIEW.return_value = False
     op_send_btc.operation.is_SEND_BTC_TO_REVIEW.return_value = True
     op_send_btc.operation.psbt = 'psbt_text'
+    op_send_btc.operation.details = None  # Non-RGB operation has no details
     op_send_btc.initiator_xpub = 'other_xpub' # skip duplicates check
     vm._extract_and_save_review_psbts([op_send_btc])
-    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='send_btc')
+    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='send_btc', fascia_path=None, entropy=None, min_confirmations=None)
     mock_db.add_psbt.reset_mock()
     
-    # SEND_TO_REVIEW
+    # SEND_TO_REVIEW (RGB operation - needs details mocked)
     op_send = mocker.Mock()
     op_send.operation.is_CREATE_UTXOS_TO_REVIEW.return_value = False
     op_send.operation.is_SEND_BTC_TO_REVIEW.return_value = False
     op_send.operation.is_SEND_TO_REVIEW.return_value = True
     op_send.operation.psbt = 'psbt_text'
+    op_send.operation.details = None  # Set to None for simple test
     op_send.initiator_xpub = 'other_xpub'
     vm._extract_and_save_review_psbts([op_send])
-    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='send_asset')
+    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='send_asset', fascia_path=None, entropy=None, min_confirmations=None)
     mock_db.add_psbt.reset_mock()
     
-    # INFLATION_TO_REVIEW
+    # INFLATION_TO_REVIEW (RGB operation)
     op_inflate = mocker.Mock()
     op_inflate.operation.is_CREATE_UTXOS_TO_REVIEW.return_value = False
     op_inflate.operation.is_SEND_BTC_TO_REVIEW.return_value = False
     op_inflate.operation.is_SEND_TO_REVIEW.return_value = False
     op_inflate.operation.is_INFLATION_TO_REVIEW.return_value = True
     op_inflate.operation.psbt = 'psbt_text'
+    op_inflate.operation.details = None  # Set to None for simple test
     op_inflate.initiator_xpub = 'other_xpub'
     vm._extract_and_save_review_psbts([op_inflate])
-    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='inflate_asset')
+    mock_db.add_psbt.assert_called_with('psbt_text', signed=False, purpose='inflate_asset', fascia_path=None, entropy=None, min_confirmations=None)
     
     # Purpose None (mock an op that is review but doesn't match the specific ifs)
     op_weird = mocker.Mock()
@@ -616,3 +619,62 @@ def test_handle_sync_success_watch_only_multisig(mocker):
     vm.handle_sync_success('from_usb', False)
     mock_gen.assert_called()
     cw.wallet.go_online.assert_called_with(False, 'url', mocker.ANY, 'tok')
+
+def test_update_rgb_context_for_initiator_psbts(mocker):
+    """Test _update_rgb_context_for_initiator_psbts logic."""
+    vm = HeaderFrameViewModel()
+    mock_db = mocker.Mock()
+    mocker.patch('src.viewmodels.header_frame_view_model.WalletDataService.get_session', return_value=mock_db)
+    mocker.patch('src.viewmodels.header_frame_view_model.SettingRepository.get_config_value', return_value='my_xpub')
+    
+    # 1. No valid ops
+    vm._update_rgb_context_for_initiator_psbts([None])
+    mock_db.update_psbt_rgb_context.assert_not_called()
+    
+    # 2. Non-RGB op
+    op_non_rgb = mocker.Mock()
+    op_non_rgb.operation.is_SEND_TO_REVIEW.return_value = False
+    op_non_rgb.operation.is_SEND_PENDING.return_value = False
+    op_non_rgb.operation.is_INFLATION_TO_REVIEW.return_value = False
+    op_non_rgb.operation.is_INFLATION_PENDING.return_value = False
+    vm._update_rgb_context_for_initiator_psbts([op_non_rgb])
+    mock_db.update_psbt_rgb_context.assert_not_called()
+    
+    # 3. RGB op but not initiator
+    op_rgb = mocker.Mock()
+    op_rgb.operation.is_SEND_TO_REVIEW.return_value = True
+    op_rgb.initiator_xpub = 'other_xpub'
+    vm._update_rgb_context_for_initiator_psbts([op_rgb])
+    mock_db.update_psbt_rgb_context.assert_not_called()
+    
+    # 4. RGB op, initiator, no PSBT
+    op_rgb.initiator_xpub = 'my_xpub'
+    op_rgb.operation.psbt = None
+    vm._update_rgb_context_for_initiator_psbts([op_rgb])
+    mock_db.update_psbt_rgb_context.assert_not_called()
+    
+    # 5. RGB op, initiator, PSBT, no details
+    op_rgb.operation.psbt = 'psbt_val'
+    op_rgb.operation.details = None
+    vm._update_rgb_context_for_initiator_psbts([op_rgb])
+    mock_db.update_psbt_rgb_context.assert_not_called()
+    
+    # 6. RGB op, initiator, PSBT, details but no fascia_path
+    op_details = mocker.Mock(fascia_path=None)
+    op_rgb.operation.details = op_details
+    vm._update_rgb_context_for_initiator_psbts([op_rgb])
+    mock_db.update_psbt_rgb_context.assert_not_called()
+    
+    # 7. Success path
+    op_details.fascia_path = 'fp'
+    op_details.entropy = 'ent'
+    op_details.min_confirmations = 1
+    mock_db.update_psbt_rgb_context.return_value = True
+    vm._update_rgb_context_for_initiator_psbts([op_rgb])
+    mock_db.update_psbt_rgb_context.assert_called_with('psbt_val', fascia_path='fp', entropy='ent', min_confirmations=1)
+    
+    # 8. Exception path
+    mock_db.update_psbt_rgb_context.side_effect = Exception('fail')
+    mocker.patch('src.viewmodels.header_frame_view_model.logger.error')
+    vm._update_rgb_context_for_initiator_psbts([op_rgb])
+    # Should log error and not crash

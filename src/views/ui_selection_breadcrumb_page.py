@@ -219,7 +219,13 @@ class SelectionBreadcrumbWidget(QWidget):
         if wallet_mode == WalletType.OFFLINE_TYPE_WALLET.value:
             flow = [0, 1, 3, 4]
         else:
-            flow = [0, 1, 2, 3, 4]
+            is_multisig = SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
+            access_type = self._get_selected_title_for_step(2)
+            if is_multisig and access_type == WalletAccessType.WATCH_ONLY.value:
+                flow = [0, 1, 2, 3]
+            else:
+                flow = [0, 1, 2, 3, 4]
         return flow
 
     def _get_selected_title_for_step(self, step_index: int) -> str | None:
@@ -457,9 +463,13 @@ class SelectionBreadcrumbWidget(QWidget):
         key_storage = SettingRepository.get_key_storage_type()
         entry_type = SettingRepository.get_wallet_entry_type()
 
-        if is_multisig and entry_type == WalletEntryType.CREATE:
-            # For multisig creation, summary should come first, then password page.
-            self._view_model.page_navigation.set_wallet_password_page()
+        if is_multisig:
+            # For multisig, navigate to password page for creation
+            if entry_type == WalletEntryType.CREATE:
+                self._view_model.page_navigation.set_wallet_password_page()
+            else:
+                # For load, navigate to welcome page
+                self._view_model.page_navigation.welcome_page()
             return
 
         if entry_type == WalletEntryType.CREATE:
@@ -478,17 +488,10 @@ class SelectionBreadcrumbWidget(QWidget):
         is_multisig = SettingRepository.get_wallet_signature_type(
         ) == WalletSignatureType.MULTI_SIG_WALLET
         if is_multisig:
-            # For watch-only multisig, show summary first and then continue to password/setup flow.
+            # For watch-only multisig, show entry type selection (create/load) first
+            self.current_index = 3
+            self.steps[3]['widget'].reset_selection()
             self.update_breadcrumbs()
-            blur = QGraphicsBlurEffect()
-            blur.setBlurRadius(10)
-            self.setGraphicsEffect(blur)
-            dialog = WalletModeSummaryDialog(self)
-            if dialog.exec() == QDialog.Accepted:
-                self.setGraphicsEffect(None)
-                self._view_model.page_navigation.set_wallet_password_page()
-            else:
-                self.setGraphicsEffect(None)
             return
         self.update_breadcrumbs()
         blur = QGraphicsBlurEffect()

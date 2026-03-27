@@ -6,6 +6,7 @@ import os
 import shutil
 from unittest.mock import MagicMock
 from unittest.mock import patch
+import json
 
 import pytest
 
@@ -200,3 +201,53 @@ def test_restore_download_error(mock_read_version, mock_google_drive_manager, mo
     # Call the RestoreService.restore method
     with pytest.raises(CommonException, match=ERROR_WHILE_RESTORE_DOWNLOAD_FROM_DRIVE):
         RestoreService.restore(mock_valid_mnemonic, mock_password)
+
+@patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
+@patch('src.data.service.restore_service.GoogleDriveManager')
+@patch('src.data.service.restore_service.read_rgb_lib_version_file')
+def test_restore_incompatible_version(mock_read_version, mock_google_drive_manager, mock_get_hashed_mnemonic):
+    """Case 7: Test restore service with incompatible version."""
+    mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
+    mock_read_version.return_value = 'incompatible_version'
+    mock_google_drive_manager.return_value = MagicMock()
+    with pytest.raises(CommonException, match='RGB_LIB_INCOMPATIBLE'):
+        RestoreService.restore(mock_valid_mnemonic, mock_password)
+
+@patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
+@patch('src.data.service.restore_service.read_rgb_lib_version_file')
+@patch('src.data.service.restore_service.GoogleDriveManager')
+@patch('src.data.repository.common_operations_repository.CommonOperationRepository.restore')
+@patch('src.data.service.restore_service.SettingRepository')
+@patch('src.data.service.restore_service.os.path.exists')
+@patch('src.data.service.restore_service.os.remove')
+@patch('src.data.service.restore_service.open', create=True)
+@patch('src.data.service.restore_service.json.load')
+@patch('src.data.service.restore_service.app_paths')
+def test_restore_multisig(mock_app_paths, mock_json_load, mock_open, mock_remove, mock_os_exists, mock_setting_repo, mock_restore_repo, mock_google_drive, mock_read_version, mock_hashed):
+    """Case 8: Test restore service with multisig restoration."""
+    mock_hashed.return_value = 'e23ddff3cc'
+    mock_read_version.return_value = '0.3.0a14.dev1'
+    # folder exists, old file exists, multisig file exists, temp folder exists (finally block)
+    mock_os_exists.side_effect = [True, True, True, True, True, True, True, True, True, True] 
+    mock_restore_repo.return_value = RestoreResponseModel(status=True)
+    
+    mock_app_paths.iriswallet_temp_folder_path = '/tmp/dummy_temp'
+    mock_app_paths.restore_folder_path = '/tmp/restore'
+    mock_app_paths.app_path = '/tmp/app'
+
+    mock_drive_instance = MagicMock()
+    mock_drive_instance.download_from_drive.return_value = True
+    mock_google_drive.return_value = mock_drive_instance
+    
+    mock_json_load.return_value = {
+        'required_signers': 2,
+        'total_signers': 3,
+        'cosigners': []
+    }
+    
+    with patch('src.data.service.restore_service.shutil.rmtree') as mock_rmtree:
+        result = RestoreService.restore(mock_valid_mnemonic, mock_password)
+        assert result.status is True
+        mock_setting_repo.set_wallet_signature_type.assert_called_once()
+        mock_remove.assert_called_once()
+        mock_rmtree.assert_called_once_with('/tmp/dummy_temp')

@@ -180,3 +180,20 @@ class IssueAssetDraftModel(BaseModel):
     issued_amount: int
     file_path: str | None = None
     inflation_amounts: int | None = None
+
+
+class CosignerDataResult(BaseModel):
+    """Result of parsing cosigner string."""
+    master_fingerprint: str
+    account_xpub_vanilla: str
+    account_xpub_colored: str
+    vanilla_keychain: int | None = None
+    is_valid: bool
+
+
+class ThresholdValidationResult(BaseModel):
+    """Result of threshold validation."""
+    is_valid: bool
+    required: int
+    total: int
+    error_message: str | None = None

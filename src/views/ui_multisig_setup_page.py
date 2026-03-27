@@ -1,4 +1,3 @@
-# pylint: disable=too-many-instance-attributes, too-many-statements, too-few-public-methods
 """
 Multisig setup page – full-page view.
 """
@@ -30,6 +29,7 @@ from rgb_lib import CosignerData
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.multisig_setup_service import MultisigSetupService
 from src.model.common_operation_model import InitRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
@@ -471,10 +471,6 @@ class MultisigSetupPage(QWidget):
         grid.addLayout(h, 1, 0)
         return grid, inp, copy_btn
 
-    # ------------------------------------------------------------------ #
-    #  Translations                                                        #
-    # ------------------------------------------------------------------ #
-
     def retranslate_ui(self):
         """Set or refresh all translatable UI strings."""
         self.title.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title'))
@@ -486,10 +482,6 @@ class MultisigSetupPage(QWidget):
         self.info_sub.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures'))
         self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
         self.tot_lbl.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_label'))
-
-    # ------------------------------------------------------------------ #
-    #  Hardware-wallet post-connect hook                                   #
-    # ------------------------------------------------------------------ #
 
     def _complete_threshold_confirmation_after_hw_connect(self, m: int, n: int):
         """Complete threshold confirmation after returning from hardware wallet setup."""
@@ -527,10 +519,6 @@ class MultisigSetupPage(QWidget):
             self.card.setMaximumSize(QSize(770, 570))
             self._update_continue_enabled()
             self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
-
-    # ------------------------------------------------------------------ #
-    #  Threshold & Key Generation                                          #
-    # ------------------------------------------------------------------ #
 
     def _on_confirm_threshold(self) -> bool:
         """Lock threshold and create exact N cosigner rows."""
@@ -589,10 +577,6 @@ class MultisigSetupPage(QWidget):
         self._update_summary()
         self._update_continue_enabled()
         return True
-
-    # ------------------------------------------------------------------ #
-    #  Step navigation                                                     #
-    # ------------------------------------------------------------------ #
 
     def _go_next(self):
         self.continue_button.setEnabled(False)
@@ -689,10 +673,6 @@ class MultisigSetupPage(QWidget):
             self._update_continue_enabled()
             self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
 
-    # ------------------------------------------------------------------ #
-    #  Watch-only helpers                                                  #
-    # ------------------------------------------------------------------ #
-
     def _configure_watch_only_review_fields(self):
         self._populate_wallet_review_fields()
         self.export_button.hide()
@@ -733,84 +713,59 @@ class MultisigSetupPage(QWidget):
         self._update_continue_enabled()
 
     def _on_watch_only_cosigner_string_changed(self, text):
-        text = text.strip()
-        if not text:
+        result = MultisigSetupService.parse_cosigner_string(text)
+        if not result.is_valid:
             self.fp_value_widget.clear()
             self.keychain_value_widget.clear()
             self.xpub_vanilla_value_widget.clear()
             self.xpub_colored_value_widget.clear()
             self._update_continue_enabled()
             return
-        try:
-            data = Cosigner(text).cosigner_data()
-            self.fp_value_widget.setText(data.master_fingerprint)
-            val = data.vanilla_keychain
-            self.keychain_value_widget.setText(str(val) if val is not None else '')
-            self.xpub_vanilla_value_widget.setText(data.account_xpub_vanilla)
-            self.xpub_colored_value_widget.setText(data.account_xpub_colored)
-            self._update_continue_enabled()
-        except Exception:
-            self.fp_value_widget.clear()
-            self.keychain_value_widget.clear()
-            self.xpub_vanilla_value_widget.clear()
-            self.xpub_colored_value_widget.clear()
-            self._update_continue_enabled()
+        self.fp_value_widget.setText(result.master_fingerprint)
+        self.keychain_value_widget.setText(str(result.vanilla_keychain) if result.vanilla_keychain is not None else '')
+        self.xpub_vanilla_value_widget.setText(result.account_xpub_vanilla)
+        self.xpub_colored_value_widget.setText(result.account_xpub_colored)
+        self._update_continue_enabled()
 
     def _save_watch_only_review_fields(self) -> bool:
         fp = self.fp_value_widget.text().strip()
         keychain = self.keychain_value_widget.text().strip()
         vanilla = self.xpub_vanilla_value_widget.text().strip()
         colored = self.xpub_colored_value_widget.text().strip()
-        if not fp or not vanilla or not colored:
-            return False
-        local_store.set_value(MASTER_FINGERPRINT, fp)
-        local_store.set_value(VANILLA_KEYCHAIN, int(keychain) if keychain.isdigit() else 0)
-        local_store.set_value(ACCOUNT_XPUB_VANILLA, vanilla)
-        local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
-        return True
-
-    # ------------------------------------------------------------------ #
-    #  Review-frame population                                             #
-    # ------------------------------------------------------------------ #
+        return MultisigSetupService.save_watch_only_data(fp, keychain, vanilla, colored)
 
     def _populate_wallet_review_fields(self):
-        master_fp = local_store.get_value(MASTER_FINGERPRINT)
-        account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA)
-        account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
-        derivation_path = "m/48'/0'/0'/2'"
-        keychain = local_store.get_value(VANILLA_KEYCHAIN)
-        keychain_str = str(keychain) if keychain is not None else '0'
+        data = MultisigSetupService.get_wallet_review_data()
 
-        self.fp_value_widget.setText(master_fp)
-        self.keychain_value_widget.setText(keychain_str)
-        self.path_value_widget.setText(derivation_path)
-        self.xpub_vanilla_value_widget.setText(self._truncate_text(account_xpub_vanilla))
-        self.xpub_colored_value_widget.setText(self._truncate_text(account_xpub_colored))
+        self.fp_value_widget.setText(data['master_fingerprint'])
+        self.keychain_value_widget.setText(data['keychain'])
+        self.path_value_widget.setText(data['derivation_path'])
+        self.xpub_vanilla_value_widget.setText(
+            MultisigSetupService.truncate_text(data['account_xpub_vanilla']),
+        )
+        self.xpub_colored_value_widget.setText(
+            MultisigSetupService.truncate_text(data['account_xpub_colored']),
+        )
 
         if not self._is_watch_only:
-            if master_fp and account_xpub_vanilla and account_xpub_colored:
-                try:
-                    keychain_val = int(keychain) if keychain is not None else 0
-                    data = CosignerData(
-                        master_fingerprint=master_fp,
-                        account_xpub_vanilla=account_xpub_vanilla,
-                        account_xpub_colored=account_xpub_colored,
-                        vanilla_keychain=keychain_val,
-                    )
-                    cosigner_str = Cosigner.from_data(data).cosigner_string()
+            if data['master_fingerprint'] and data['account_xpub_vanilla'] and data['account_xpub_colored']:
+                cosigner_str = MultisigSetupService.generate_cosigner_string(
+                    data['master_fingerprint'],
+                    data['account_xpub_vanilla'],
+                    data['account_xpub_colored'],
+                    int(data['keychain']) if data['keychain'].isdigit() else 0,
+                )
+                if cosigner_str:
                     self.cosigner_string_value_widget.setText(cosigner_str)
                     self.cosigner_string_value_widget.setCursorPosition(0)
                     self.cosigner_string_copy_btn.clicked.connect(lambda: copy_text(cosigner_str))
-                    self.xpub_colored_copy_btn.clicked.connect(lambda: copy_text(account_xpub_colored))
-                except Exception as e:
-                    logger.error('Failed to generate cosigner string: %s', e)
+                    self.xpub_colored_copy_btn.clicked.connect(
+                        lambda: copy_text(data['account_xpub_colored']),
+                    )
+                else:
                     self.cosigner_string_value_widget.setText('Error generating string')
             else:
                 self.cosigner_string_value_widget.setText('Incomplete signer data')
-
-    # ------------------------------------------------------------------ #
-    #  Cosigner helpers                                                    #
-    # ------------------------------------------------------------------ #
 
     def _add_cosigner_row(self, index: int):
         card = CosignerDetailCard(index, self)
@@ -829,8 +784,8 @@ class MultisigSetupPage(QWidget):
 
     def _on_cosigner_string_changed(self, text, row_w):
         row_w.string_input.setCursorPosition(0)
-        text = text.strip()
-        if not text:
+        result = MultisigSetupService.parse_cosigner_string(text)
+        if not result.is_valid:
             row_w.fp_input.clear()
             row_w.vanilla_xpub_input.clear()
             row_w.colored_xpub_input.clear()
@@ -840,28 +795,16 @@ class MultisigSetupPage(QWidget):
             row_w.reset_btn.setVisible(False)
             self._update_continue_enabled()
             return
-        try:
-            data = Cosigner(text).cosigner_data()
-            row_w.fp_input.setText(data.master_fingerprint)
-            row_w.vanilla_xpub_input.setText(self._truncate_text(data.account_xpub_vanilla))
-            row_w.vanilla_xpub_str = data.account_xpub_vanilla
-            row_w.colored_xpub_input.setText(self._truncate_text(data.account_xpub_colored))
-            row_w.colored_xpub_str = data.account_xpub_colored
-            val = data.vanilla_keychain
-            row_w.keychain_input.setText(str(val) if val is not None else '0')
-            self._update_continue_enabled()
-            row_w.string_input.setReadOnly(True)
-            row_w.import_btn.setVisible(False)
-            row_w.reset_btn.setVisible(True)
-        except Exception:
-            row_w.fp_input.clear()
-            row_w.vanilla_xpub_input.clear()
-            row_w.colored_xpub_input.clear()
-            row_w.keychain_input.clear()
-            row_w.string_input.setReadOnly(False)
-            row_w.import_btn.setVisible(True)
-            row_w.reset_btn.setVisible(False)
-            self._update_continue_enabled()
+        row_w.fp_input.setText(result.master_fingerprint)
+        row_w.vanilla_xpub_input.setText(MultisigSetupService.truncate_text(result.account_xpub_vanilla))
+        row_w.vanilla_xpub_str = result.account_xpub_vanilla
+        row_w.colored_xpub_input.setText(MultisigSetupService.truncate_text(result.account_xpub_colored))
+        row_w.colored_xpub_str = result.account_xpub_colored
+        row_w.keychain_input.setText(str(result.vanilla_keychain) if result.vanilla_keychain is not None else '0')
+        self._update_continue_enabled()
+        row_w.string_input.setReadOnly(True)
+        row_w.import_btn.setVisible(False)
+        row_w.reset_btn.setVisible(True)
 
     def _restore_cosigner_inputs(self, cosigners_data: list[dict]):
         if not self._threshold_locked:
@@ -878,43 +821,31 @@ class MultisigSetupPage(QWidget):
                     val = data[VANILLA_KEYCHAIN]
                     target_card.keychain_input.setText(str(val) if val is not None else '0')
                 if ACCOUNT_XPUB_VANILLA in data:
-                    target_card.vanilla_xpub_input.setText(self._truncate_text(data[ACCOUNT_XPUB_VANILLA]))
+                    target_card.vanilla_xpub_input.setText(MultisigSetupService.truncate_text(data[ACCOUNT_XPUB_VANILLA]))
                     target_card.vanilla_xpub_str = data[ACCOUNT_XPUB_VANILLA]
                 if ACCOUNT_XPUB_COLORED in data:
-                    target_card.colored_xpub_input.setText(self._truncate_text(data[ACCOUNT_XPUB_COLORED]))
+                    target_card.colored_xpub_input.setText(MultisigSetupService.truncate_text(data[ACCOUNT_XPUB_COLORED]))
                     target_card.colored_xpub_str = data[ACCOUNT_XPUB_COLORED]
         self.required_signer_input.setEnabled(False)
         self.total_signer_input.setEnabled(False)
 
     def _save_cosigners_data(self) -> bool:
-        cosigners_data = []
+        cosigner_rows = []
         for card in self.cosigner_rows:
             card.clear_error()
             cosigner_string = card.string_input.text().strip()
             if not cosigner_string:
                 card.show_error('Cosigner details required')
                 return False
-            try:
-                data = Cosigner(cosigner_string).cosigner_data()
-            except Exception:
+            result = MultisigSetupService.parse_cosigner_string(cosigner_string)
+            if not result.is_valid:
                 card.show_error('Invalid cosigner details')
                 return False
-            keychain = None
-            if data.vanilla_keychain and data.vanilla_keychain.isdigit():
-                keychain = int(data.vanilla_keychain)
-            cosigners_data.append({
+            cosigner_rows.append({
                 'index': card.index,
-                MASTER_FINGERPRINT: data.master_fingerprint,
-                ACCOUNT_XPUB_VANILLA: data.account_xpub_vanilla,
-                ACCOUNT_XPUB_COLORED: data.account_xpub_colored,
-                VANILLA_KEYCHAIN: keychain,
+                'string': cosigner_string,
             })
-        SettingRepository.set_cosigners(cosigners_data)
-        return True
-
-    # ------------------------------------------------------------------ #
-    #  Validation helpers                                                  #
-    # ------------------------------------------------------------------ #
+        return MultisigSetupService.save_cosigners_data(cosigner_rows)
 
     def _get_required_signer(self) -> int:
         try:
@@ -977,15 +908,6 @@ class MultisigSetupPage(QWidget):
             self.summary_text.setText(
                 QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configuration_note').format(m_disp, n_disp),
             )
-
-    def _truncate_text(self, text: str) -> str:
-        if text and len(text) > 40:
-            return text[:25] + '...' + text[-25:]
-        return text
-
-    # ------------------------------------------------------------------ #
-    #  File I/O                                                            #
-    # ------------------------------------------------------------------ #
 
     def _export_cosigner_to_file(self):
         download_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)

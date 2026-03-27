@@ -56,6 +56,8 @@ class WelcomeWidget(QWidget):
         self.is_load_wallet = SettingRepository.get_wallet_entry_type() == WalletEntryType.LOAD
         self.is_watch_only_wallet = SettingRepository.get_wallet_access_type(
         ) == WalletAccessType.WATCH_ONLY
+        self.is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         self.setObjectName('welcome_Page')
         self.grid_layout_welcome = QGridLayout(self)
         self.grid_layout_welcome.setObjectName('gridLayout')
@@ -157,7 +159,7 @@ class WelcomeWidget(QWidget):
         self.restore_btn.setMinimumSize(QSize(318, 40))
         self.restore_btn.setMaximumSize(QSize(318, 40))
         self.restore_btn.setVisible(
-            self.is_load_wallet or self.is_watch_only_wallet,
+            self.is_load_wallet or self.is_watch_only_wallet and not self.is_multisig,
         )
         self.welcome_horizontal_layout.addWidget(self.restore_btn)
 
@@ -166,7 +168,7 @@ class WelcomeWidget(QWidget):
         self.create_btn.setMinimumSize(QSize(318, 40))
         self.create_btn.setMaximumSize(QSize(318, 40))
         self.create_btn.setVisible(
-            not self.is_load_wallet or self.is_watch_only_wallet,
+            not self.is_load_wallet or self.is_watch_only_wallet and not self.is_multisig,
         )
 
         self.welcome_horizontal_layout.addWidget(self.create_btn)
