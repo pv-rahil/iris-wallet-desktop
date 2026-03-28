@@ -42,7 +42,9 @@ from src.utils.common_utils import format_epoch_time
 from src.utils.common_utils import generate_identicon
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.helpers import connect_multisig_pending_signal
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import register_multisig_button
 from src.utils.info_message import INFO_FAUCET_NOT_AVAILABLE
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
@@ -50,7 +52,6 @@ from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
-from src.utils.helpers import register_multisig_button, connect_multisig_pending_signal
 
 
 class FungibleAssetWidget(QWidget, ThreadManager):
@@ -609,4 +610,3 @@ class FungibleAssetWidget(QWidget, ThreadManager):
         ToastManager.info(
             description=INFO_FAUCET_NOT_AVAILABLE,
         )
-

@@ -1,6 +1,9 @@
 # pylint: disable=redefined-outer-name, unused-argument
 """Unit tests for wallet mode configuration."""
+from __future__ import annotations
+
 from unittest.mock import patch
+
 from src.config.wallet_mode_config import WalletModeConfiguration
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
@@ -17,7 +20,7 @@ def test_get_mode_config_online_watch_only(mock_get_sig_type):
         WalletType.ONLINE_TYPE_WALLET,
         WalletAccessType.WATCH_ONLY,
         None,
-        None
+        None,
     )
     assert config.mode_name == 'Online Watch-Only Wallet'
     assert config.privileges.can_sign_psbt is False
@@ -31,7 +34,7 @@ def test_get_mode_config_online_create_on_device(mock_get_sig_type):
         WalletType.ONLINE_TYPE_WALLET,
         WalletAccessType.WITH_PRIVATE_KEY,
         WalletEntryType.CREATE,
-        KeyStorageType.ON_DEVICE
+        KeyStorageType.ON_DEVICE,
     )
     assert config.mode_name == 'Online Wallet - Create New (On Device)'
     assert config.privileges.can_sign_psbt is False
@@ -41,7 +44,7 @@ def test_get_mode_config_online_create_on_device(mock_get_sig_type):
         WalletType.ONLINE_TYPE_WALLET,
         WalletAccessType.WITH_PRIVATE_KEY,
         WalletEntryType.CREATE,
-        KeyStorageType.ON_DEVICE
+        KeyStorageType.ON_DEVICE,
     )
     assert config.privileges.can_sign_psbt is True
 
@@ -54,7 +57,7 @@ def test_get_mode_config_online_create_hardware(mock_get_sig_type):
         WalletType.ONLINE_TYPE_WALLET,
         WalletAccessType.WITH_PRIVATE_KEY,
         WalletEntryType.CREATE,
-        KeyStorageType.HARDWARE_WALLET
+        KeyStorageType.HARDWARE_WALLET,
     )
     assert config.mode_name == 'Online Wallet - Create New (Hardware)'
 
@@ -67,7 +70,7 @@ def test_get_mode_config_online_load_on_device(mock_get_sig_type):
         WalletType.ONLINE_TYPE_WALLET,
         WalletAccessType.WITH_PRIVATE_KEY,
         WalletEntryType.LOAD,
-        KeyStorageType.ON_DEVICE
+        KeyStorageType.ON_DEVICE,
     )
     assert config.mode_name == 'Online Wallet - Load Existing (On Device)'
 
@@ -80,7 +83,7 @@ def test_get_mode_config_online_load_hardware(mock_get_sig_type):
         WalletType.ONLINE_TYPE_WALLET,
         WalletAccessType.WITH_PRIVATE_KEY,
         WalletEntryType.LOAD,
-        KeyStorageType.HARDWARE_WALLET
+        KeyStorageType.HARDWARE_WALLET,
     )
     assert config.mode_name == 'Online Wallet - Load Existing (Hardware)'
 
@@ -93,7 +96,7 @@ def test_get_mode_config_offline_create_on_device(mock_get_sig_type):
         WalletType.OFFLINE_TYPE_WALLET,
         None,
         WalletEntryType.CREATE,
-        KeyStorageType.ON_DEVICE
+        KeyStorageType.ON_DEVICE,
     )
     assert config.mode_name == 'Offline Wallet - Create New (On Device)'
 
@@ -106,7 +109,7 @@ def test_get_mode_config_offline_create_hardware(mock_get_sig_type):
         WalletType.OFFLINE_TYPE_WALLET,
         None,
         WalletEntryType.CREATE,
-        KeyStorageType.HARDWARE_WALLET
+        KeyStorageType.HARDWARE_WALLET,
     )
     assert config.mode_name == 'Offline Wallet - Create New (Hardware)'
 
@@ -119,7 +122,7 @@ def test_get_mode_config_offline_load_on_device(mock_get_sig_type):
         WalletType.OFFLINE_TYPE_WALLET,
         None,
         WalletEntryType.LOAD,
-        KeyStorageType.ON_DEVICE
+        KeyStorageType.ON_DEVICE,
     )
     assert config.mode_name == 'Offline Wallet - Load Existing (On Device)'
 
@@ -132,7 +135,7 @@ def test_get_mode_config_offline_load_hardware(mock_get_sig_type):
         WalletType.OFFLINE_TYPE_WALLET,
         None,
         WalletEntryType.LOAD,
-        KeyStorageType.HARDWARE_WALLET
+        KeyStorageType.HARDWARE_WALLET,
     )
     assert config.mode_name == 'Offline Wallet - Load Existing (Hardware)'
 
@@ -142,6 +145,6 @@ def test_get_mode_config_default(mock_get_sig_type):
     """Test configuration for unknown or invalid wallet mode combinations."""
     mock_get_sig_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     config = WalletModeConfiguration.get_mode_config(
-        None, None, None, None
+        None, None, None, None,
     )
     assert config.mode_name == 'Unknown Mode'

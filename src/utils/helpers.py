@@ -465,7 +465,6 @@ def register_multisig_button(
     if not isinstance(button, QPushButton):
         return
 
-    # Default pending handler
     if pending_handler is None:
         def default_pending_handler():
             ToastManager.info(
@@ -473,44 +472,36 @@ def register_multisig_button(
             )
         pending_handler = default_pending_handler
 
-    # Track currently connected handler on the button
-    if not hasattr(button, "_connected_handler"):
-        button._connected_handler = None
+    # Use Qt property instead of protected attribute
+    if button.property('_connected_handler') is None:
+        button.setProperty('_connected_handler', None)
 
     def state_update_callback(is_pending: bool):
         if not isinstance(button, QPushButton):
             return
 
-        # Decide which handler should be active
         new_handler = pending_handler if is_pending else normal_handler
+        current_handler = button.property('_connected_handler')
 
-        # Skip if already in correct state (prevents unnecessary ops)
-        if button._connected_handler == new_handler:
+        if current_handler == new_handler:
             return
 
-        # Disconnect previous handler ONLY if it exists
-        if button._connected_handler is not None:
+        if current_handler is not None:
             try:
-                button.clicked.disconnect(button._connected_handler)
+                button.clicked.disconnect(current_handler)
             except TypeError:
-                # Already disconnected / not connected → safe to ignore
                 pass
 
-        # Connect new handler if available
         if new_handler is not None:
             button.clicked.connect(new_handler)
 
-        # Update tracker
-        button._connected_handler = new_handler
+        button.setProperty('_connected_handler', new_handler)
 
-        # Update UI state
-        button.setProperty("pending", "true" if is_pending else "false")
+        button.setProperty('pending', 'true' if is_pending else 'false')
         button.style().polish(button)
 
-    # Initial connection (important to avoid "no handler" state)
     if normal_handler is not None:
         button.clicked.connect(normal_handler)
-        button._connected_handler = normal_handler
+        button.setProperty('_connected_handler', normal_handler)
 
-    # Hook into multisig state updates
     connect_multisig_pending_signal(view_model, state_update_callback)

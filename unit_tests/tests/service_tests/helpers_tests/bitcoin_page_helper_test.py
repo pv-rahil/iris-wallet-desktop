@@ -1,16 +1,20 @@
 # pylint: disable=redefined-outer-name, unused-argument
 """Unit tests for bitcoin page helper."""
-import pytest
+from __future__ import annotations
+
 from unittest.mock import MagicMock
+
+import pytest
 from rgb_lib import TransactionType
-from src.data.service.helpers.bitcoin_page_helper import (
-    calculate_transaction_amount,
-    get_transaction_status
-)
+
+from src.data.service.helpers.bitcoin_page_helper import calculate_transaction_amount
+from src.data.service.helpers.bitcoin_page_helper import get_transaction_status
 from src.model.btc_model import Transaction
+from src.model.enums.enums_model import TransactionStatusEnumModel
+from src.model.enums.enums_model import TransferStatusEnumModel
+from src.utils.constant import NO_OF_UTXO
+from src.utils.constant import UTXO_SIZE_SAT
 from src.utils.custom_exception import ServiceOperationException
-from src.model.enums.enums_model import TransactionStatusEnumModel, TransferStatusEnumModel
-from src.utils.constant import NO_OF_UTXO, UTXO_SIZE_SAT
 
 
 def test_calculate_transaction_amount_rgb_send():
@@ -49,14 +53,14 @@ def test_calculate_transaction_amount_create_utxos():
 def test_calculate_transaction_amount_none():
     """Test calculation for unknown transaction type returns None."""
     transaction = MagicMock(spec=Transaction)
-    transaction.transaction_type = 999 # Unknown type
+    transaction.transaction_type = 999  # Unknown type
     result = calculate_transaction_amount(transaction)
     assert result is None
 
 
 def test_calculate_transaction_amount_exception():
     """Test exception handling in calculate_transaction_amount (covers lines 36-38)."""
-    transaction = None # Will cause AttributeError or similar
+    transaction = None  # Will cause AttributeError or similar
     with pytest.raises(ServiceOperationException) as excinfo:
         calculate_transaction_amount(transaction)
     assert 'Failed' in str(excinfo.value) or 'NoneType' in str(excinfo.value)
@@ -69,7 +73,10 @@ def test_get_transaction_status_confirmed_sent():
     transaction.confirmation_time = 123456
     transaction.sent = 1000
     result = get_transaction_status(transaction)
-    assert result == (TransferStatusEnumModel.SENT, TransactionStatusEnumModel.CONFIRMED)
+    assert result == (
+        TransferStatusEnumModel.SENT,
+        TransactionStatusEnumModel.CONFIRMED,
+    )
 
 
 def test_get_transaction_status_confirmed_received():
@@ -79,7 +86,10 @@ def test_get_transaction_status_confirmed_received():
     transaction.confirmation_time = 123456
     transaction.sent = 0
     result = get_transaction_status(transaction)
-    assert result == (TransferStatusEnumModel.RECEIVED, TransactionStatusEnumModel.CONFIRMED)
+    assert result == (
+        TransferStatusEnumModel.RECEIVED,
+        TransactionStatusEnumModel.CONFIRMED,
+    )
 
 
 def test_get_transaction_status_pending():
@@ -88,7 +98,10 @@ def test_get_transaction_status_pending():
     transaction.transaction_type = TransactionType.USER
     transaction.confirmation_time = None
     result = get_transaction_status(transaction)
-    assert result == (TransferStatusEnumModel.ON_GOING_TRANSFER, TransactionStatusEnumModel.WAITING_CONFIRMATIONS)
+    assert result == (
+        TransferStatusEnumModel.ON_GOING_TRANSFER,
+        TransactionStatusEnumModel.WAITING_CONFIRMATIONS,
+    )
 
 
 def test_get_transaction_status_create_utxos_confirmed():
@@ -97,7 +110,10 @@ def test_get_transaction_status_create_utxos_confirmed():
     transaction.transaction_type = TransactionType.CREATE_UTXOS
     transaction.confirmation_time = 123456
     result = get_transaction_status(transaction)
-    assert result == (TransferStatusEnumModel.INTERNAL, TransactionStatusEnumModel.CONFIRMED)
+    assert result == (
+        TransferStatusEnumModel.INTERNAL,
+        TransactionStatusEnumModel.CONFIRMED,
+    )
 
 
 def test_get_transaction_status_create_utxos_pending():
@@ -106,7 +122,10 @@ def test_get_transaction_status_create_utxos_pending():
     transaction.transaction_type = TransactionType.CREATE_UTXOS
     transaction.confirmation_time = None
     result = get_transaction_status(transaction)
-    assert result == (TransferStatusEnumModel.ON_GOING_TRANSFER, TransactionStatusEnumModel.WAITING_CONFIRMATIONS)
+    assert result == (
+        TransferStatusEnumModel.ON_GOING_TRANSFER,
+        TransactionStatusEnumModel.WAITING_CONFIRMATIONS,
+    )
 
 
 def test_get_transaction_status_unknown():

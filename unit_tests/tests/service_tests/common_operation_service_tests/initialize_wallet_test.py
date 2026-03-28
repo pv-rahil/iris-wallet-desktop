@@ -12,7 +12,6 @@ from rgb_lib import RgbLibError
 
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import InitRequestModel
-from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType

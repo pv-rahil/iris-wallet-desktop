@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 
 from src.data.service.backup_service import BackupService
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_BACKUP_FILE_NOT_EXITS
 from src.utils.error_message import ERROR_UNABLE_GET_MNEMONIC
@@ -177,10 +178,12 @@ def test_backup_file_exists():
 @patch('src.data.service.backup_service.GoogleDriveManager')
 @patch('src.data.service.backup_service.SettingRepository')
 @patch('src.data.service.backup_service.os.path.exists')
-def test_backup_multisig_wallet(mock_os_exists, mock_setting_repo, mock_google_drive, mock_backup_repo, mock_backup_exists, mock_hashed, mock_version_file, setup_directory):
+def test_backup_multisig_wallet(
+    mock_os_exists, mock_setting_repo, mock_google_drive,
+    mock_backup_repo, mock_backup_exists, mock_hashed,
+    mock_version_file, setup_directory,
+):
     """Case 7: Test backup for multisig wallet - should backup multisig config."""
-    from src.model.enums.enums_model import WalletSignatureType
-    test_dir, _ = setup_directory
 
     mock_os_exists.return_value = False  # No existing backup file
     mock_hashed.return_value = 'hashed_mnemonic_123'
@@ -188,7 +191,9 @@ def test_backup_multisig_wallet(mock_os_exists, mock_setting_repo, mock_google_d
 
     mock_setting_repo.get_wallet_signature_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
     mock_setting_repo.get_multisig_config.return_value = (2, 3)
-    mock_setting_repo.get_cosigners.return_value = [{'master_fingerprint': 'FP1'}]
+    mock_setting_repo.get_cosigners.return_value = [
+        {'master_fingerprint': 'FP1'},
+    ]
 
     mock_drive_instance = MagicMock()
     mock_drive_instance.upload_to_drive.return_value = True
@@ -200,7 +205,8 @@ def test_backup_multisig_wallet(mock_os_exists, mock_setting_repo, mock_google_d
 
     assert result is True
     # Verify multisig config was backed up
-    assert mock_drive_instance.upload_to_drive.call_count == 3  # backup, version, multisig
+    # backup, version, multisig
+    assert mock_drive_instance.upload_to_drive.call_count == 3
 
 
 @patch('src.data.service.backup_service.write_rgb_lib_version_file')

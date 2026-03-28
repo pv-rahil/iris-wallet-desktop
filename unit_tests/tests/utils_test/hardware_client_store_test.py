@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument,protected-access
 """Unit tests for `src/utils/hardware_client_store.py`."""
 from __future__ import annotations
 

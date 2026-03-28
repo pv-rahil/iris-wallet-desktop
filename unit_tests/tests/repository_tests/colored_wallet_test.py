@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name,protected-access
+# pylint: disable=redefined-outer-name,protected-access,unused-argument
 """Unit tests for the ColoredWallet class and colored_wallet singleton."""
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 import pytest
 from rgb_lib import BitcoinNetwork
+from rgb_lib import MultisigWallet
 from rgb_lib import Online
 from rgb_lib import RgbLibError
 from rgb_lib import Wallet
-from rgb_lib import MultisigWallet
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.repository.colored_wallet import ColoredWallet
@@ -145,11 +145,11 @@ def test_online_property_multisig(
     mock_get_network.return_value = BitcoinNetwork.TESTNET
     mock_get_config.return_value = MagicMock(indexer_url='http://test-indexer')
     mock_generate_token.return_value = 'test-token'
-    
+
     # Mock MultisigWallet
     mock_multisig_wallet = MagicMock(spec=MultisigWallet)
     mock_multisig_wallet.go_online.return_value = mock_online
-    
+
     # Set wallet and test online property
     colored_wallet.set_wallet(mock_multisig_wallet)
     colored_wallet.online_wallet = None
@@ -166,8 +166,10 @@ def test_online_property_multisig(
 def test_online_property_exception(mock_setting_repo):
     """Test exception handling in online property."""
     mock_wallet = MagicMock(spec=Wallet)
-    mock_setting_repo.get_wallet_network.side_effect = Exception('Unexpected error')
-    
+    mock_setting_repo.get_wallet_network.side_effect = Exception(
+        'Unexpected error',
+    )
+
     colored_wallet.set_wallet(mock_wallet)
     colored_wallet.online_wallet = None
     with pytest.raises(CommonException, match='Failed to initialize online session'):
@@ -180,12 +182,12 @@ def test_go_online_again_multisig(mock_generate_token, mock_online):
     mock_multisig_wallet = MagicMock(spec=MultisigWallet)
     mock_multisig_wallet.go_online.return_value = mock_online
     mock_generate_token.return_value = 'test-token'
-    
+
     colored_wallet.set_wallet(mock_multisig_wallet)
     # mock is_multisig check
     with patch.object(ColoredWallet, 'is_multisig', return_value=True):
         colored_wallet.go_online_again('http://new-indexer')
-    
+
     mock_generate_token.assert_called_once()
     mock_multisig_wallet.go_online.assert_called_once()
 
@@ -195,20 +197,24 @@ def test_go_online_again_multisig_no_token(mock_generate_token):
     """Test go_online_again for multisig when token generation fails."""
     mock_multisig_wallet = MagicMock(spec=MultisigWallet)
     mock_generate_token.return_value = None
-    
+
     colored_wallet.set_wallet(mock_multisig_wallet)
     # mock is_multisig check
     with patch.object(ColoredWallet, 'is_multisig', return_value=True):
         with pytest.raises(CommonException, match='Failed to go online again') as exc_info:
             colored_wallet.go_online_again('http://new-indexer')
-        assert 'Failed to generate bridge token' in str(exc_info.value.__cause__)
+        assert 'Failed to generate bridge token' in str(
+            exc_info.value.__cause__,
+        )
 
 
 def test_go_online_again_invalid_indexer():
     """Test go_online_again with InvalidIndexer exception."""
     mock_wallet = MagicMock(spec=Wallet)
-    mock_wallet.go_online.side_effect = RgbLibError.InvalidIndexer('Invalid indexer')
-    
+    mock_wallet.go_online.side_effect = RgbLibError.InvalidIndexer(
+        'Invalid indexer',
+    )
+
     colored_wallet.set_wallet(mock_wallet)
     with pytest.raises(RgbLibError.InvalidIndexer):
         colored_wallet.go_online_again('http://invalid-indexer')
@@ -221,17 +227,16 @@ def test_is_multisig_logic(mock_setting_repo):
     mock_wallet = MagicMock(spec=Wallet)
     colored_wallet.set_wallet(mock_wallet)
     assert colored_wallet.is_multisig is False
-    
+
     # Case 2: Wallet is set and is MultisigWallet
     mock_multisig_wallet = MagicMock(spec=MultisigWallet)
     colored_wallet.set_wallet(mock_multisig_wallet)
     assert colored_wallet.is_multisig is True
-    
+
     # Case 3: Wallet is NOT set, check SettingRepository
     colored_wallet._wallet = None
     mock_setting_repo.get_wallet_signature_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
     assert colored_wallet.is_multisig is True
-    
+
     mock_setting_repo.get_wallet_signature_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     assert colored_wallet.is_multisig is False
-

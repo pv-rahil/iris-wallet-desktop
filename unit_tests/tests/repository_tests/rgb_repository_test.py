@@ -14,14 +14,17 @@ from rgb_lib import Assets
 from rgb_lib import AssetUda
 from rgb_lib import Assignment
 from rgb_lib import Balance
+from rgb_lib import InitOperationResult
 from rgb_lib import Invoice
+from rgb_lib import OperationInfo
 from rgb_lib import OperationResult
+from rgb_lib import PsbtInspection
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
-from rgb_lib import Transfer
-from rgb_lib import InitOperationResult
-from rgb_lib import OperationInfo
 from rgb_lib import RespondToOperation
+from rgb_lib import RgbInspection
+from rgb_lib import SendBeginResult
+from rgb_lib import Transfer
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -35,10 +38,10 @@ from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetUdaRequestModel
 from src.model.rgb_model import ListTransfersRequestModel
+from src.model.rgb_model import RgbContextResult
 from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendBeginRequestModel
-from src.model.rgb_model import SendBeginResult
 
 
 @pytest.fixture
@@ -48,7 +51,8 @@ def mock_wallet():
         mock_wallet = MagicMock()
         mock_colored_wallet.wallet = mock_wallet
         mock_colored_wallet.online = True
-        mock_colored_wallet.is_multisig = False  # Disable online= conditional branches by default
+        # Disable online= conditional branches by default
+        mock_colored_wallet.is_multisig = False
         yield mock_wallet
 
 
@@ -264,8 +268,9 @@ def test_send_begin_with_session(mock_get_session, mock_recipient_cls, mock_wall
     assert result == psbt_result
     mock_recipient_cls.assert_called_once()
     mock_wallet.send_begin.assert_called_once()
-    svc.add_psbt.assert_called_once_with('the_psbt_string', purpose='send_asset')
-
+    svc.add_psbt.assert_called_once_with(
+        'the_psbt_string', purpose='send_asset',
+    )
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -370,7 +375,9 @@ def test_issue_asset_nia_multisig(mock_wallet, mock_cache):
         mock_cw.online = True
         mock_cw.is_multisig = True
         mock_wallet.issue_asset_nia.return_value = MagicMock(spec=AssetNia)
-        request = IssueAssetNiaRequestModel(ticker='T', name='N', precision=0, amounts=[1])
+        request = IssueAssetNiaRequestModel(
+            ticker='T', name='N', precision=0, amounts=[1],
+        )
         RgbRepository.issue_asset_nia(request)
         call_kwargs = mock_wallet.issue_asset_nia.call_args.kwargs
         assert call_kwargs.get('online') is True
@@ -463,13 +470,12 @@ def test_fail_transfer(mock_wallet, mock_cache):
 @patch('src.data.repository.rgb_repository.Recipient')
 def test_send_init_with_session(mock_recipient_cls, mock_get_session, mock_sync_rgb, mock_wallet):
     """send_init stores psbt and deletes draft_transfer for asset when session exists."""
-    from src.model.rgb_model import RgbContextResult
     result_obj = MagicMock(spec=InitOperationResult)
     result_obj.psbt = 'init_psbt'
     mock_wallet.send_init.return_value = result_obj
     mock_recipient_cls.return_value = MagicMock()
     mock_sync_rgb.return_value = RgbContextResult(
-        fascia_path='/path/fascia.rgb', entropy=123, min_confirmations=1
+        fascia_path='/path/fascia.rgb', entropy=123, min_confirmations=1,
     )
 
     svc = MagicMock()
@@ -487,7 +493,7 @@ def test_send_init_with_session(mock_recipient_cls, mock_get_session, mock_sync_
     svc.delete_draft_transfer.assert_called_once_with('aid')
     svc.add_psbt.assert_called_once_with(
         'init_psbt', purpose='send_asset',
-        fascia_path='/path/fascia.rgb', entropy=123, min_confirmations=1
+        fascia_path='/path/fascia.rgb', entropy=123, min_confirmations=1,
     )
 
 
@@ -516,12 +522,11 @@ def test_send_init_without_session(mock_recipient_cls, mock_get_session, mock_wa
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
 def test_inflate_init_with_session(mock_get_session, mock_sync_rgb, mock_wallet):
     """inflate_init deletes secondary draft, stores psbt with 'inflate_asset' purpose."""
-    from src.model.rgb_model import RgbContextResult
     result_obj = MagicMock(spec=InitOperationResult)
     result_obj.psbt = 'inflate_init_psbt'
     mock_wallet.inflate_init.return_value = result_obj
     mock_sync_rgb.return_value = RgbContextResult(
-        fascia_path='/path/fascia.rgb', entropy=456, min_confirmations=2
+        fascia_path='/path/fascia.rgb', entropy=456, min_confirmations=2,
     )
 
     svc = MagicMock()
@@ -537,7 +542,7 @@ def test_inflate_init_with_session(mock_get_session, mock_sync_rgb, mock_wallet)
     svc.delete_secondary_draft_by_psbt.assert_called_once_with(asset_id='aid')
     svc.add_psbt.assert_called_once_with(
         'inflate_init_psbt', purpose='inflate_asset',
-        fascia_path='/path/fascia.rgb', entropy=456, min_confirmations=2
+        fascia_path='/path/fascia.rgb', entropy=456, min_confirmations=2,
     )
 
 
@@ -610,7 +615,6 @@ def test_respond_to_operation_nack_no_delete(mock_get_session, mock_wallet, mock
 
 def test_inspect_psbt(mock_wallet):
     """inspect_psbt forwards the psbt string to the wallet and returns PsbtInspection."""
-    from rgb_lib import PsbtInspection
     mock_inspection = MagicMock(spec=PsbtInspection)
     mock_wallet.inspect_psbt.return_value = mock_inspection
 
@@ -622,11 +626,12 @@ def test_inspect_psbt(mock_wallet):
 
 def test_inspect_rgb_transfer(mock_wallet):
     """inspect_rgb_transfer forwards fascia_path/psbt/entropy and returns RgbInspection."""
-    from rgb_lib import RgbInspection
     mock_rgb_inspection = MagicMock(spec=RgbInspection)
     mock_wallet.inspect_rgb_transfer.return_value = mock_rgb_inspection
 
-    result = RgbRepository.inspect_rgb_transfer('/path/to/fascia', 'psbt_str', 1234)
+    result = RgbRepository.inspect_rgb_transfer(
+        '/path/to/fascia', 'psbt_str', 1234,
+    )
 
     assert result == mock_rgb_inspection
     mock_wallet.inspect_rgb_transfer.assert_called_once_with(

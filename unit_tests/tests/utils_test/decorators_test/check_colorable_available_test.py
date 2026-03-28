@@ -10,6 +10,9 @@ from requests.exceptions import HTTPError
 from rgb_lib import RgbLibError
 
 from src.data.repository.setting_card_repository import SettingCardRepository
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletType
 from src.model.setting_model import DefaultFeeRate
 from src.utils.decorators.check_colorable_available import check_colorable_available
 from src.utils.decorators.check_colorable_available import create_utxos
@@ -119,7 +122,6 @@ def test_check_colorable_available_decorator_success(mock_create_utxos):
 def test_create_utxos_gated_hw_online_raises_no_available(mock_fee, mock_key, mock_wtype, mock_access):
     """create_utxos should raise CommonException('NoAvailableUtxos') for HW wallet online."""
     mock_fee.return_value = DefaultFeeRate(fee_rate=1)
-    from src.model.enums.enums_model import KeyStorageType, WalletType, WalletAccessType
     mock_key.return_value = KeyStorageType.HARDWARE_WALLET
     mock_wtype.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
@@ -139,7 +141,6 @@ def test_create_utxos_gated_hw_online_raises_no_available(mock_fee, mock_key, mo
 def test_create_utxos_gated_watch_only_raises_no_available(mock_fee, mock_key, mock_wtype, mock_access):
     """create_utxos should raise CommonException('NoAvailableUtxos') for WATCH_ONLY wallets."""
     mock_fee.return_value = DefaultFeeRate(fee_rate=1)
-    from src.model.enums.enums_model import KeyStorageType, WalletType, WalletAccessType
     mock_key.return_value = KeyStorageType.ON_DEVICE
     mock_wtype.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_access.return_value = WalletAccessType.WATCH_ONLY
@@ -157,7 +158,6 @@ def test_create_utxos_gated_watch_only_raises_no_available(mock_fee, mock_key, m
 @patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type')
 def test_decorator_gating_on_insufficient_slots_raises_no_available(mock_key, mock_wtype, mock_access, mock_create):
     """Decorator should raise NoAvailableUtxos without calling create_utxos when gated."""
-    from src.model.enums.enums_model import KeyStorageType, WalletType, WalletAccessType
     mock_key.return_value = KeyStorageType.HARDWARE_WALLET
     mock_wtype.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_access.return_value = WalletAccessType.WATCH_ONLY

@@ -27,8 +27,8 @@ from src.utils.constant import NO_OF_UTXO
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_POST_TO_BRIDGE
-from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
@@ -53,6 +53,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
         super().__init__(parent)
         self.param: CreateUtxosRequestModel = None
         self.current_purpose: str | None = None
+        self.operation_idx = None
 
     def _is_multisig(self) -> bool:
         """Check if current wallet is multisig."""
@@ -110,7 +111,7 @@ class UtxoCreationViewModel(QObject, ThreadManager):
 
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
                 SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET or self._is_multisig() and \
-                    SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE:
+        SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE:
             self.hw_dialog_update.emit(
                 INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )

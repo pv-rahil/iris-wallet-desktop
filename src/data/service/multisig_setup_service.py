@@ -54,7 +54,9 @@ class MultisigSetupService:
                 is_valid=False,
                 required=required,
                 total=total,
-                error_message=f'Required signatures must be between 2 and {total}',
+                error_message=f'Required signatures must be between 2 and {
+                    total
+                }',
             )
         return ThresholdValidationResult(
             is_valid=True,
@@ -160,16 +162,28 @@ class MultisigSetupService:
         """
         try:
             if os.path.exists(app_paths.mnemonic_file_path):
-                logger.info('Keys already exist - skipping generation to preserve mnemonic.')
+                logger.info(
+                    'Keys already exist - skipping generation to preserve mnemonic.',
+                )
                 return {'exists': True}
 
-            network = get_bitcoin_network_from_enum(SettingRepository.get_wallet_network())
-            keys = CommonOperationRepository.init(InitRequestModel(password='', network=network))
+            network = get_bitcoin_network_from_enum(
+                SettingRepository.get_wallet_network(),
+            )
+            keys = CommonOperationRepository.init(
+                InitRequestModel(password='', network=network),
+            )
 
             local_store.set_value(MASTER_FINGERPRINT, keys.master_fingerprint)
             local_store.set_value(MASTER_XPUB, keys.xpub)
-            local_store.set_value(ACCOUNT_XPUB_VANILLA, keys.account_xpub_vanilla)
-            local_store.set_value(ACCOUNT_XPUB_COLORED, keys.account_xpub_colored)
+            local_store.set_value(
+                ACCOUNT_XPUB_VANILLA,
+                keys.account_xpub_vanilla,
+            )
+            local_store.set_value(
+                ACCOUNT_XPUB_COLORED,
+                keys.account_xpub_colored,
+            )
 
             encrypted = mnemonic_store.encrypt(password, keys.mnemonic)
             local_store.write_to_file(
@@ -231,7 +245,11 @@ class MultisigSetupService:
         if not fp or not vanilla or not colored:
             return False
         local_store.set_value(MASTER_FINGERPRINT, fp)
-        local_store.set_value(VANILLA_KEYCHAIN, int(keychain) if keychain.isdigit() else 0)
+        local_store.set_value(
+            VANILLA_KEYCHAIN, int(
+                keychain,
+            ) if keychain.isdigit() else 0,
+        )
         local_store.set_value(ACCOUNT_XPUB_VANILLA, vanilla)
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
         return True
@@ -252,7 +270,9 @@ class MultisigSetupService:
             if not cosigner_string:
                 return False
 
-            result = MultisigSetupService.parse_cosigner_string(cosigner_string)
+            result = MultisigSetupService.parse_cosigner_string(
+                cosigner_string,
+            )
             if not result.is_valid:
                 return False
 

@@ -38,6 +38,7 @@ class CosignerDetailCard(ClickableFrame):
         self.string_input = None
         self.import_btn = None
         self.content_widget = None
+        self._collapsible = None
 
         # Data storage for validation
         self.vanilla_xpub_str = None

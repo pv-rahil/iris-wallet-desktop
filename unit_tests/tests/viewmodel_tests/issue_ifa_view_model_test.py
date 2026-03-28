@@ -184,39 +184,67 @@ def test_inflate_end_runs(mock_run, mock_end, vm):
 
 def test_on_success_inflate_begin_hardware(vm, mocker):
     """Test on_success_inflate_begin with hardware wallet."""
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-    mocker.patch('src.viewmodels.issue_ifa_view_model.hardware_client_store.set_rgb_mode')
-    
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WITH_PRIVATE_KEY,
+    )
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.hardware_client_store.set_rgb_mode',
+    )
+
     slot = Mock()
     vm.hw_dialog_update.connect(slot)
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm.on_success_inflate_begin(mocker.Mock(psbt='psbt', operation_idx=1))
-    
+
     slot.assert_called_once()
     mock_run.assert_called_once()
 
 
 def test_on_success_inflate_begin_software(vm, mocker):
     """Test on_success_inflate_begin with software wallet."""
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
-    
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WITH_PRIVATE_KEY,
+    )
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.ON_DEVICE,
+    )
+
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm.on_success_inflate_begin('psbt_str')
     mock_run.assert_called_once()
 
 
 def test_on_error_software(vm, mocker):
     """Test on_error with software wallet."""
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
-    mock_toast = mocker.patch('src.viewmodels.issue_ifa_view_model.ToastManager.error')
-    
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.ON_DEVICE,
+    )
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
+    mock_toast = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.ToastManager.error',
+    )
+
     vm.on_error(CommonException('failed'))
     mock_toast.assert_called_once()
 
@@ -225,7 +253,7 @@ def test_on_success_inflate(vm, mocker):
     """Test on_success_inflate callback."""
     slot = Mock()
     vm.secondary_issuance_success.connect(slot)
-    
+
     res = MagicMock(spec=OperationResult)
     res.txid = 'tx123'
     vm.on_success_inflate(res)
@@ -237,13 +265,13 @@ def test_on_success_multisig_post(vm, mocker):
     slot = Mock()
     vm.secondary_issuance_success.connect(slot)
     mocker.patch('src.viewmodels.issue_ifa_view_model.ToastManager.success')
-    
+
     def mock_run_in_thread(target, params):
         if 'callback' in params:
             params['callback'](None)
-            
+
     mocker.patch.object(vm, 'run_in_thread', side_effect=mock_run_in_thread)
-    
+
     vm.on_success_multisig_post()
     slot.assert_called_once()
 
@@ -263,7 +291,7 @@ def test_native_auth_ifa_success(vm, mocker):
     vm.amount = 100
     vm.inflation_amounts = 50
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm.on_success_native_auth_ifa(True)
     mock_run.assert_called_once()
 
@@ -274,18 +302,22 @@ def test_native_auth_ifa_exception(vm, mocker):
     vm.asset_name = 'AssetName'
     vm.amount = 100
     vm.inflation_amounts = 50
-    
+
     # Trigger exception in int() conversion
     vm.amount = 'invalid'
-    mock_toast = mocker.patch('src.viewmodels.issue_ifa_view_model.ToastManager.error')
-    
+    mock_toast = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.ToastManager.error',
+    )
+
     vm.on_success_native_auth_ifa(True)
     mock_toast.assert_called_once()
 
 
 def test_on_error_native_auth_ifa(vm, mocker):
     """Test on_error_native_auth_ifa callback."""
-    mock_toast = mocker.patch('src.viewmodels.issue_ifa_view_model.ToastManager.error')
+    mock_toast = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.ToastManager.error',
+    )
     vm.on_error_native_auth_ifa(Exception('auth failed'))
     mock_toast.assert_called_once()
 
@@ -296,7 +328,7 @@ def test_issue_ifa_asset_full_flow(vm, mocker):
         if 'callback' in params:
             params['callback'](True)
     mocker.patch.object(vm, 'run_in_thread', side_effect=mock_run_in_thread)
-    
+
     with patch.object(vm, 'on_success_native_auth_ifa') as mock_cb:
         vm.issue_ifa_asset('T', 'N', 1, 1)
         mock_cb.assert_called_with(True)
@@ -304,23 +336,28 @@ def test_issue_ifa_asset_full_flow(vm, mocker):
 
 def test_on_success_issuance(vm, mocker):
     """Test on_success callback."""
-    mock_toast = mocker.patch('src.viewmodels.issue_ifa_view_model.ToastManager.success')
+    mock_toast = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.ToastManager.success',
+    )
     slot = Mock()
     vm.success_page_message.connect(slot)
-    
+
     resp = _mk_issue_resp()
     vm.on_success(resp)
-    
+
     mock_toast.assert_called_once()
     slot.assert_called_once_with('AssetName')
 
 
 def test_on_error_hardware(vm, mocker):
     """Test on_error with hardware wallet."""
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
     slot = Mock()
     vm.hw_dialog_update.connect(slot)
-    
+
     vm.on_error(CommonException('hw failed'))
     slot.assert_called_once()
 
@@ -331,12 +368,14 @@ def test_native_auth_inflate_flow(vm, mocker):
     vm.amount = 100
     vm.fee_rate = 1
     vm.min_confirmation = 1
-    
+
     mock_run = mocker.patch.object(vm, 'run_in_thread')
     vm.on_success_native_auth_inflate(True)
     mock_run.assert_called_once()
-    
-    mock_toast = mocker.patch('src.viewmodels.issue_ifa_view_model.ToastManager.error')
+
+    mock_toast = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.ToastManager.error',
+    )
     vm.on_success_native_auth_inflate(False)
     mock_toast.assert_called_once()
 
@@ -350,10 +389,13 @@ def test_secondary_issuance_full_flow(vm, mocker):
 
 def test_on_success_inflate_hardware(vm, mocker):
     """Test on_success_inflate with hardware wallet."""
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
     slot = Mock()
     vm.hw_dialog_update.connect(slot)
-    
+
     res = MagicMock(spec=OperationResult)
     res.txid = 'tx123'
     vm.on_success_inflate(res)
@@ -362,26 +404,42 @@ def test_on_success_inflate_hardware(vm, mocker):
 
 def test_secondary_issuance_begin_multisig(vm, mocker):
     """Test secondary_issuance_begin with multisig."""
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    _mock_inflate_init = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.RgbRepository.inflate_init',
+        return_value=MagicMock(psbt='psbt', operation_idx=1),
+    )
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm.secondary_issuance_begin('aid', 1, 1, 1)
     mock_run.assert_called_once()
-    # verify it calls inflate_init
+    # Verify the function and args passed to run_in_thread
     args, _ = mock_run.call_args
     assert args[0] == RgbRepository.inflate_init
+    assert args[1] is not None  # request model
 
 
 def test_secondary_issuance_begin_standard(vm, mocker):
     """Test secondary_issuance_begin with standard wallet."""
-    mocker.patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+    mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
+    _mock_inflate_begin = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.RgbRepository.inflate_begin',
+        return_value='psbt',
+    )
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm.secondary_issuance_begin('aid', 1, 1, 1)
     mock_run.assert_called_once()
-    # verify it calls inflate_begin
+    # Verify the function and args passed to run_in_thread
     args, _ = mock_run.call_args
     assert args[0] == RgbRepository.inflate_begin
+    assert args[1] is not None  # request model
 
 
 def test_native_auth_inflate_exception(vm, mocker):
@@ -390,10 +448,13 @@ def test_native_auth_inflate_exception(vm, mocker):
     vm.amount = 100
     vm.fee_rate = 1
     vm.min_confirmation = 1
-    
+
     # Mock run_in_thread to raise an exception when called
-    mocker.patch.object(vm, 'run_in_thread', side_effect=ValueError('immediate fail'))
+    mocker.patch.object(
+        vm, 'run_in_thread',
+        side_effect=ValueError('immediate fail'),
+    )
     mock_on_error = mocker.patch.object(vm, 'on_error')
-    
+
     vm.on_success_native_auth_inflate(True)
     mock_on_error.assert_called_once()

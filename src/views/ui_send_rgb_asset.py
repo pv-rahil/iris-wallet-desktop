@@ -97,7 +97,9 @@ class SendRGBAssetWidget(QWidget):
             if recipient:
                 self.send_rgb_asset_page.asset_address_value.setText(recipient)
             if amount:
-                self.send_rgb_asset_page.asset_amount_value.setText(f"{amount:,}")
+                self.send_rgb_asset_page.asset_amount_value.setText(
+                    str(amount),
+                )
         self.sidebar = None
         self.__loading_translucent_screen = LoadingTranslucentScreen(
             parent=self, description_text='Loading',
@@ -421,7 +423,10 @@ class SendRGBAssetWidget(QWidget):
             if ('NoAvailableUtxos' in message) or (ERROR_NOT_ENOUGH_UNCOLORED in message):
                 # Save draft transfer if UTXOs missing, to avoid manual re-entry
                 try:
-                    WalletDataService.get_session().upsert_draft_transfer(
+                    wallet_service = WalletDataService.get_session()
+                    if wallet_service is None:
+                        return
+                    wallet_service.upsert_draft_transfer(
                         asset_id=self._view_model.cfa_view_model.asset_id,
                         recipient_id=self.send_rgb_asset_page.asset_address_value.text(),
                         amount=int(

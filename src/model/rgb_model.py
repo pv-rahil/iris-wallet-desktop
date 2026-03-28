@@ -323,11 +323,6 @@ class FailTransferResponseModel(BaseModel):
     transfers_changed: bool
 
 
-class SendBeginResult(BaseModel):
-    """Response model for send begin"""
-    psbt: str
-
-
 class DraftAsset(BaseModel):
     """Draft asset model"""
     draft_id: int

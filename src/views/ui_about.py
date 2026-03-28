@@ -17,6 +17,8 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
+from rgb_lib import Cosigner
+from rgb_lib import CosignerData
 
 from accessible_constant import COLORED_XPUB_COPY_BUTTON
 from accessible_constant import DOWNLOAD_DEBUG_LOG
@@ -38,13 +40,12 @@ from src.utils.common_utils import network_info
 from src.utils.common_utils import zip_logger_folder
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
-from src.utils.constant import VANILLA_KEYCHAIN
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MASTER_FINGERPRINT
-from rgb_lib import Cosigner, CosignerData
 from src.utils.constant import PRIVACY_POLICY_URL
 from src.utils.constant import TERMS_OF_SERVICE_URL
+from src.utils.constant import VANILLA_KEYCHAIN
 from src.utils.error_message import ERROR_WHILE_DOWNLOADING_LOGS
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
@@ -172,17 +173,17 @@ class AboutWidget(QWidget):
             account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
             keychain = local_store.get_value(VANILLA_KEYCHAIN)
             keychain_val = int(keychain) if keychain is not None else 0
-            
+
             if master_fp and account_xpub_vanilla and account_xpub_colored:
                 try:
                     data = CosignerData(
                         master_fingerprint=master_fp,
                         account_xpub_vanilla=account_xpub_vanilla,
                         account_xpub_colored=account_xpub_colored,
-                        vanilla_keychain=keychain_val, # use keychain_val here
+                        vanilla_keychain=keychain_val,  # use keychain_val here
                     )
                     cosigner_str = Cosigner.from_data(data).cosigner_string()
-                
+
                     self.cosigner_string_widget = WalletInfoWidget(
                         translation_key='signer_details',
                         value=truncate_xpub(cosigner_str, 20, 20),

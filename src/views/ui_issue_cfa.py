@@ -31,8 +31,8 @@ from accessible_constant import CFA_ASSET_NAME
 from accessible_constant import CFA_UPLOAD_FILE_BUTTON
 from accessible_constant import ISSUE_CFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_CFA_BUTTON
-from src.data.service.wallet_data_service import WalletDataService
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import WalletAccessType
@@ -41,20 +41,20 @@ from src.model.enums.enums_model import WalletType
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import resize_image
-from src.utils.helpers import register_multisig_button
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MAX_ASSET_FILE_SIZE
 from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import register_multisig_button
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
-from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -477,7 +477,6 @@ class IssueCFAWidget(QWidget):
             asset_description, asset_name, total_supply,
         )
 
-
     def on_upload_asset_file(self):
         """This method handled upload asset file operation."""
         self._view_model.issue_cfa_asset_view_model.open_file_dialog()
@@ -599,7 +598,8 @@ class IssueCFAWidget(QWidget):
         needed = needed if needed > 0 else 1
         # Show confirmation dialog for multisig/watch-only wallets
         if (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
             or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
         ):
             dialog = ConfirmationDialog(
@@ -663,7 +663,7 @@ class IssueCFAWidget(QWidget):
                 ToastManager.success(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
-                    )
+                    ),
                 )
                 self.on_close()
             else:
@@ -672,4 +672,4 @@ class IssueCFAWidget(QWidget):
                         page_name='CFA page',
                         address_info='psbt_info', psbt=psbt,
                     ),
-            )
+                )

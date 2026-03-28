@@ -25,7 +25,9 @@ def generate_and_store_token() -> str | None:
             return existing_token
 
         # 2. Get Colored Account XPUB
-        account_xpub_colored = SettingRepository.get_config_value(ACCOUNT_XPUB_COLORED, None)
+        account_xpub_colored = SettingRepository.get_config_value(
+            ACCOUNT_XPUB_COLORED, None,
+        )
         if not account_xpub_colored:
             print('DEBUG: Colored Account XPUB not found in settings.')
             logger.warning(
@@ -76,7 +78,10 @@ def generate_and_store_token() -> str | None:
 
         # 4. Run biscuit CLI
         # Command: echo 'role("cosigner"); xpub("XPUB");' | biscuit generate --private-key-file <path> -
-        logger.info('Generating biscuit token for xpub: %s...', account_xpub_colored)
+        logger.info(
+            'Generating biscuit token for xpub: %s...',
+            account_xpub_colored,
+        )
 
         # Determine executable path - assuming 'biscuit' is in PATH
         binary = 'biscuit'
@@ -102,9 +107,8 @@ def generate_and_store_token() -> str | None:
             SettingRepository.set_bridge_token(token)
             logger.info('Successfully generated and stored biscuit token.')
             return token
-        else:
-            logger.error('Biscuit generation returned empty output.')
-            return None
+        logger.error('Biscuit generation returned empty output.')
+        return None
 
     except subprocess.CalledProcessError as e:
         logger.error('Failed to run biscuit command: %s', e.stderr)

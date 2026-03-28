@@ -329,7 +329,7 @@ def test_issue_ifa_page_uses_factory(page_navigation, mock_ui, monkeypatch):
 def test_issue_ifa_secondary_page_calls_widget(page_navigation, mock_ui, mocker):
     """issue_ifa_secondary_page constructs IssueIFAWidget directly with params."""
     widget = MagicMock()
-    mocker.patch(
+    mock_widget_class = mocker.patch(
         'src.utils.page_navigation.IssueIFAWidget',
         return_value=widget,
     )
@@ -339,9 +339,8 @@ def test_issue_ifa_secondary_page_calls_widget(page_navigation, mock_ui, mocker)
         params, draft_id=9, from_draft=True,
     )
 
-    from src.utils.page_navigation import IssueIFAWidget as _W
-    _W.assert_called_once()
-    args, _ = _W.call_args
+    mock_widget_class.assert_called_once()
+    args, _ = mock_widget_class.call_args
     assert args[0] is mock_ui.view_model and args[1] == 9 and args[2] is True and args[3] is params
     assert page_navigation.current_stack['name'] == 'IssueIFA'
 
@@ -349,16 +348,15 @@ def test_issue_ifa_secondary_page_calls_widget(page_navigation, mock_ui, mocker)
 def test_multisig_setup_page_calls_widget(page_navigation, mock_ui, mocker):
     """multisig_setup_page should construct MultisigSetupPage and set current stack."""
     widget = MagicMock()
-    mocker.patch(
+    mock_widget_class = mocker.patch(
         'src.utils.page_navigation.MultisigSetupPage',
         return_value=widget,
     )
 
     page_navigation.multisig_setup_page()
 
-    from src.utils.page_navigation import MultisigSetupPage as _M
-    _M.assert_called_once()
-    args, _ = _M.call_args
+    mock_widget_class.assert_called_once()
+    args, _ = mock_widget_class.call_args
     assert args[0] is mock_ui.view_model
     assert page_navigation.current_stack['name'] == 'MultisigSetupPage'
 

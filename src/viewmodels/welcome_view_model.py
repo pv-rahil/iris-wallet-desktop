@@ -20,6 +20,7 @@ from src.model.enums.enums_model import WalletSignatureType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.constant import WALLET_PASSWORD_KEY
+from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_RESTORE_COMPLETED
 from src.utils.keyring_storage import get_value
 from src.utils.keyring_storage import set_value
@@ -67,7 +68,7 @@ class WelcomeViewModel(QObject, ThreadManager):
         else:
             self._page_navigation.set_wallet_password_page()
 
-    def _on_multisig_wallet_initialized(self, response):
+    def _on_multisig_wallet_initialized(self):
         """Handle successful multisig wallet initialization."""
         self.create_button_clicked.emit(False)
         SettingRepository.set_wallet_initialized()
@@ -105,18 +106,24 @@ class WelcomeViewModel(QObject, ThreadManager):
             cosigners_file_path = app_paths.multisig_cosigners_file_path
             if os.path.exists(cosigners_file_path):
                 try:
-                    with open(cosigners_file_path, 'r', encoding='utf-8') as mf:
+                    with open(cosigners_file_path, encoding='utf-8') as mf:
                         multisig_data = json.load(mf)
-                    SettingRepository.set_wallet_signature_type(WalletSignatureType.MULTI_SIG_WALLET)
+                    SettingRepository.set_wallet_signature_type(
+                        WalletSignatureType.MULTI_SIG_WALLET,
+                    )
                     SettingRepository.set_multisig_config(
                         multisig_data.get('required_signers'),
                         multisig_data.get('total_signers'),
                     )
-                    SettingRepository.set_cosigners(multisig_data.get('cosigners', []))
+                    SettingRepository.set_cosigners(
+                        multisig_data.get('cosigners', []),
+                    )
                     SettingRepository.set_threshold_confirmed(True)
                     logger.info('Restored multisig configuration from USB')
                 except Exception as exc:
-                    logger.error('Failed to restore multisig config from cosigners file: %s', exc)
+                    logger.error(
+                        'Failed to restore multisig config from cosigners file: %s', exc,
+                    )
             ToastManager.success(INFO_RESTORE_COMPLETED)
             SettingRepository.set_keyring_status(status=False)
             self._page_navigation.enter_wallet_password_page()

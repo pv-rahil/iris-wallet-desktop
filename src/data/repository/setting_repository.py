@@ -491,7 +491,7 @@ class SettingRepository:
             }
             cosigners_json = json.dumps(composite)
             cosigners_file_path = app_paths.multisig_cosigners_file_path
-            with open(cosigners_file_path, "w", encoding="utf-8") as f:
+            with open(cosigners_file_path, 'w', encoding='utf-8') as f:
                 f.write(cosigners_json)
             return True
         except Exception as exe:
@@ -509,7 +509,7 @@ class SettingRepository:
             cosigners_file_path = app_paths.multisig_cosigners_file_path
             if not os.path.exists(cosigners_file_path):
                 return []
-            with open(cosigners_file_path, "r", encoding="utf-8") as f:
+            with open(cosigners_file_path, encoding='utf-8') as f:
                 cosigners_json = f.read()
             if not cosigners_json:
                 return []

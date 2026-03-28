@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """
 Multisig setup page – full-page view.
 """
@@ -24,8 +25,6 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
-from rgb_lib import Cosigner
-from rgb_lib import CosignerData
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import SettingRepository
@@ -63,6 +62,41 @@ class MultisigSetupPage(QWidget):
     def __init__(self, view_model):
         super().__init__()
         self._view_model = view_model
+        self.info_title = None
+        self.info_sub = None
+        self.tot_lbl = None
+        self.total_signer_input = None
+        self.total_signer_help = None
+        self.req_lbl = None
+        self.required_signer_input = None
+        self.required_signer_help = None
+        self.summary_text = None
+        self.r_v = None
+        self.row1 = None
+        self.row2 = None
+        self.fp_display = None
+        self.fp_value_widget = None
+        self.keychain_display = None
+        self.keychain_value_widget = None
+        self.path_display = None
+        self.path_value_widget = None
+        self.xpub_vanilla_display = None
+        self.xpub_vanilla_value_widget = None
+        self.row3 = None
+        self.xpub_colored_display = None
+        self.xpub_colored_value_widget = None
+        self.xpub_colored_copy_btn = None
+        self.row5 = None
+        self.cosigner_string_display = None
+        self.cosigner_string_value_widget = None
+        self.cosigner_string_copy_btn = None
+        self.cos_scroll = None
+        self.cosigners_v = None
+        self.cosigner_rows: list = []
+        self.footer = None
+        self.export_button = None
+        self.back_button = None
+        self.reset_button = None
 
         network = SettingRepository.get_wallet_network()
         self._password = get_value(WALLET_PASSWORD_KEY, network.value)
@@ -88,22 +122,33 @@ class MultisigSetupPage(QWidget):
 
         self.required_signer_input.textChanged.connect(self._update_summary)
         self.total_signer_input.textChanged.connect(self._update_summary)
-        self.required_signer_input.textChanged.connect(self._update_continue_enabled)
-        self.total_signer_input.textChanged.connect(self._update_continue_enabled)
+        self.required_signer_input.textChanged.connect(
+            self._update_continue_enabled,
+        )
+        self.total_signer_input.textChanged.connect(
+            self._update_continue_enabled,
+        )
 
         saved_m, saved_n = SettingRepository.get_multisig_config()
         if saved_m and saved_n:
             self.required_signer_input.setText(str(saved_m))
             self.total_signer_input.setText(str(saved_n))
 
-            is_hardware_wallet = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+            is_hardware_wallet = SettingRepository.get_key_storage_type(
+            ) == KeyStorageType.HARDWARE_WALLET
             if is_hardware_wallet and not self._is_watch_only:
                 master_fp = local_store.get_value(MASTER_FINGERPRINT)
-                account_xpub_vanilla = local_store.get_value(ACCOUNT_XPUB_VANILLA)
-                account_xpub_colored = local_store.get_value(ACCOUNT_XPUB_COLORED)
+                account_xpub_vanilla = local_store.get_value(
+                    ACCOUNT_XPUB_VANILLA,
+                )
+                account_xpub_colored = local_store.get_value(
+                    ACCOUNT_XPUB_COLORED,
+                )
 
                 if master_fp and account_xpub_vanilla and account_xpub_colored:
-                    self._complete_threshold_confirmation_after_hw_connect(saved_m, saved_n)
+                    self._complete_threshold_confirmation_after_hw_connect(
+                        saved_m, saved_n,
+                    )
                     return
 
             stored_cosigners = SettingRepository.get_cosigners()
@@ -111,13 +156,13 @@ class MultisigSetupPage(QWidget):
                 self._restore_cosigner_inputs(stored_cosigners)
                 self._update_continue_enabled()
 
-    # ------------------------------------------------------------------ #
-    #  UI Setup                                                            #
-    # ------------------------------------------------------------------ #
-
     def _setup_ui(self):
         """Build and wire the widget tree."""
-        self.setStyleSheet(load_stylesheet('views/qss/multisig_setup_page.qss'))
+        self.setStyleSheet(
+            load_stylesheet(
+                'views/qss/multisig_setup_page.qss',
+            ),
+        )
 
         self.grid = QGridLayout(self)
         self.grid.setContentsMargins(0, 0, 0, 0)
@@ -126,7 +171,11 @@ class MultisigSetupPage(QWidget):
 
         self.logo = WalletLogoFrame(self)
         self.grid.addWidget(self.logo, 0, 0, 1, 2)
-        self.grid.addItem(QSpacerItem(268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 0)
+        self.grid.addItem(
+            QSpacerItem(
+                268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum,
+            ), 1, 0,
+        )
 
         self.card = QWidget(self)
         self.card.setObjectName('ms_page_card')
@@ -157,7 +206,9 @@ class MultisigSetupPage(QWidget):
         self.close_btn.setFixedSize(32, 32)
         self.close_btn.setIcon(QIcon(':/assets/x_circle.png'))
         self.close_btn.setIconSize(QSize(24, 24))
-        self.close_btn.clicked.connect(self._view_model.page_navigation.selection_page)
+        self.close_btn.clicked.connect(
+            self._view_model.page_navigation.selection_page,
+        )
         title_layout.addWidget(self.close_btn)
         self.v.addLayout(title_layout)
         self.close_btn.show()
@@ -196,10 +247,22 @@ class MultisigSetupPage(QWidget):
         self._build_footer()
 
         # Grid spacers
-        self.grid.addItem(QSpacerItem(20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding), 0, 1)
+        self.grid.addItem(
+            QSpacerItem(
+                20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding,
+            ), 0, 1,
+        )
         self.grid.addWidget(self.card, 1, 1)
-        self.grid.addItem(QSpacerItem(20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding), 2, 1)
-        self.grid.addItem(QSpacerItem(268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 2)
+        self.grid.addItem(
+            QSpacerItem(
+                20, 24, QSizePolicy.Minimum, QSizePolicy.Expanding,
+            ), 2, 1,
+        )
+        self.grid.addItem(
+            QSpacerItem(
+                268, 20, QSizePolicy.Expanding, QSizePolicy.Minimum,
+            ), 1, 2,
+        )
 
     def _build_threshold_frame(self) -> QFrame:
         frame = QFrame(self.card)
@@ -297,7 +360,9 @@ class MultisigSetupPage(QWidget):
         self.r_v.setContentsMargins(34, 0, 34, 6)
         self.r_v.setSpacing(14)
 
-        title_lbl = QLabel('Review your wallet info and copy fields as needed.')
+        title_lbl = QLabel(
+            'Review your wallet info and copy fields as needed.',
+        )
         title_lbl.setObjectName('ms_label')
         title_lbl.setContentsMargins(0, 4, 0, 10)
         self.r_v.addWidget(title_lbl)
@@ -310,20 +375,28 @@ class MultisigSetupPage(QWidget):
         self.row2.setSpacing(12)
 
         self.fp_display, self.fp_value_widget, _ = self._make_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint'), '',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'master_fingerprint',
+            ), '',
         )
         self.keychain_display, self.keychain_value_widget, _ = self._make_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain'), '',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'keychain',
+            ), '',
         )
         self.row1.addLayout(self.fp_display)
         self.row1.addLayout(self.keychain_display)
         self.r_v.addLayout(self.row1)
 
         self.path_display, self.path_value_widget, _ = self._make_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path'), '',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'derivation_path',
+            ), '',
         )
         self.xpub_vanilla_display, self.xpub_vanilla_value_widget, _ = self._make_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla'), '',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_vanilla',
+            ), '',
         )
         self.row2.addLayout(self.xpub_vanilla_display)
         self.r_v.addLayout(self.row2)
@@ -332,7 +405,9 @@ class MultisigSetupPage(QWidget):
         self.row3.setContentsMargins(0, 0, 0, 0)
         self.row3.setSpacing(12)
         self.xpub_colored_display, self.xpub_colored_value_widget, self.xpub_colored_copy_btn = self._make_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored'), '',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'account_xpub_colored',
+            ), '',
             show_copy_btn=True,
             info_text=QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'colored_xpub_info_text',
@@ -346,9 +421,13 @@ class MultisigSetupPage(QWidget):
         self.row5.setContentsMargins(0, 0, 0, 0)
         self.row5.setSpacing(12)
         self.cosigner_string_display, self.cosigner_string_value_widget, self.cosigner_string_copy_btn = self._make_detail_field(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signer_details'), '',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signer_details',
+            ), '',
             show_copy_btn=True,
-            info_text=QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signer_details_explanation'),
+            info_text=QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signer_details_explanation',
+            ),
         )
         self.row5.addLayout(self.cosigner_string_display)
         self.r_v.addLayout(self.row5)
@@ -417,7 +496,7 @@ class MultisigSetupPage(QWidget):
 
     def _make_detail_field(
         self, title: str, placeholder: str,
-        show_copy_btn: bool = False, info_text: str = None,
+        show_copy_btn: bool = False, info_text: str | None = None,
     ) -> tuple[QGridLayout, QLineEdit, QPushButton]:
         """Create a labelled read-only field with an optional copy button."""
         grid = QGridLayout()
@@ -458,7 +537,9 @@ class MultisigSetupPage(QWidget):
         inp.setPlaceholderText(placeholder)
         h.addWidget(inp)
         if show_copy_btn:
-            inp.setStyleSheet('border-top-right-radius: 0px; border-bottom-right-radius: 0px;')
+            inp.setStyleSheet(
+                'border-top-right-radius: 0px; border-bottom-right-radius: 0px;',
+            )
             copy_btn = QPushButton()
             copy_btn.setObjectName('copy_button')
             copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -473,17 +554,53 @@ class MultisigSetupPage(QWidget):
 
     def retranslate_ui(self):
         """Set or refresh all translatable UI strings."""
-        self.title.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title'))
-        self.back_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'back'))
-        self.export_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'export') + ' ')
-        self.total_signer_help.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_help'))
-        self.req_lbl.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'required_signatures_label'))
-        self.info_title.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configure_signature_requirements'))
-        self.info_sub.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures'))
-        self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
-        self.tot_lbl.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_label'))
+        self.title.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'multisig_setup_title',
+            ),
+        )
+        self.back_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'back',
+            ),
+        )
+        self.export_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'export',
+            ) + ' ',
+        )
+        self.total_signer_help.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_help',
+            ),
+        )
+        self.req_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'required_signatures_label',
+            ),
+        )
+        self.info_title.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configure_signature_requirements',
+            ),
+        )
+        self.info_sub.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'choose_number_of_signatures',
+            ),
+        )
+        self.continue_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+            ),
+        )
+        self.tot_lbl.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'total_cosigners_label',
+            ),
+        )
 
-    def _complete_threshold_confirmation_after_hw_connect(self, m: int, n: int):
+    def _complete_threshold_confirmation_after_hw_connect(self, _m: int, n: int):
         """Complete threshold confirmation after returning from hardware wallet setup."""
         self.required_signer_input.setEnabled(False)
         self.total_signer_input.setEnabled(False)
@@ -508,7 +625,11 @@ class MultisigSetupPage(QWidget):
             self.card.setMinimumSize(QSize(770, 640))
             self.card.setMaximumSize(QSize(770, 640))
             self._update_continue_enabled()
-            self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue'))
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                ),
+            )
         else:
             self._populate_wallet_review_fields()
             self.review_frame.show()
@@ -518,7 +639,11 @@ class MultisigSetupPage(QWidget):
             self.card.setMinimumSize(QSize(770, 570))
             self.card.setMaximumSize(QSize(770, 570))
             self._update_continue_enabled()
-            self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                ),
+            )
 
     def _on_confirm_threshold(self) -> bool:
         """Lock threshold and create exact N cosigner rows."""
@@ -532,24 +657,41 @@ class MultisigSetupPage(QWidget):
         self._threshold_locked = True
         SettingRepository.set_multisig_config(m, n)
 
-        is_hardware_wallet = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
+        is_hardware_wallet = SettingRepository.get_key_storage_type(
+        ) == KeyStorageType.HARDWARE_WALLET
 
         if not self._is_watch_only:
             try:
                 if is_hardware_wallet:
                     SettingRepository.set_multisig_config(m, n)
-                    self._view_model.page_navigation.hardware_wallet_connect_page(is_multisig=True)
+                    self._view_model.page_navigation.hardware_wallet_connect_page(
+                        is_multisig=True,
+                    )
                     return True
-                elif os.path.exists(app_paths.mnemonic_file_path):
-                    print('Keys already exist - skipping generation to preserve mnemonic.')
+                if os.path.exists(app_paths.mnemonic_file_path):
+                    print(
+                        'Keys already exist - skipping generation to preserve mnemonic.',
+                    )
                 else:
-                    network = get_bitcoin_network_from_enum(SettingRepository.get_wallet_network())
-                    keys = CommonOperationRepository.init(InitRequestModel(password='', network=network))
-                    local_store.set_value(MASTER_FINGERPRINT, keys.master_fingerprint)
+                    network = get_bitcoin_network_from_enum(
+                        SettingRepository.get_wallet_network(),
+                    )
+                    keys = CommonOperationRepository.init(
+                        InitRequestModel(password='', network=network),
+                    )
+                    local_store.set_value(
+                        MASTER_FINGERPRINT, keys.master_fingerprint,
+                    )
                     local_store.set_value(MASTER_XPUB, keys.xpub)
-                    local_store.set_value(ACCOUNT_XPUB_VANILLA, keys.account_xpub_vanilla)
-                    local_store.set_value(ACCOUNT_XPUB_COLORED, keys.account_xpub_colored)
-                    encrypted = mnemonic_store.encrypt(self._password, keys.mnemonic)
+                    local_store.set_value(
+                        ACCOUNT_XPUB_VANILLA, keys.account_xpub_vanilla,
+                    )
+                    local_store.set_value(
+                        ACCOUNT_XPUB_COLORED, keys.account_xpub_colored,
+                    )
+                    encrypted = mnemonic_store.encrypt(
+                        self._password, keys.mnemonic,
+                    )
                     local_store.write_to_file(
                         file_name=MNEMONIC_KEY, file_path=app_paths.mnemonic_file_path, value=encrypted,
                     )
@@ -598,7 +740,11 @@ class MultisigSetupPage(QWidget):
                 self.card.setMinimumSize(QSize(770, 570))
                 self.card.setMaximumSize(QSize(770, 570))
                 self._update_continue_enabled()
-                self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
+                self.continue_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                    ),
+                )
             else:
                 self._populate_wallet_review_fields()
                 self.review_frame.show()
@@ -608,7 +754,11 @@ class MultisigSetupPage(QWidget):
                 self.card.setMinimumSize(QSize(770, 570))
                 self.card.setMaximumSize(QSize(770, 570))
                 self._update_continue_enabled()
-                self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
+                self.continue_button.setText(
+                    QCoreApplication.translate(
+                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                    ),
+                )
 
         elif self._current_step == 2:
             if self._is_watch_only:
@@ -618,7 +768,9 @@ class MultisigSetupPage(QWidget):
                 self.review_frame.hide()
                 self.cos_frame.show()
                 if hasattr(self, 'reset_button'):
-                    self.footer.replaceWidget(self.reset_button, self.export_button)
+                    self.footer.replaceWidget(
+                        self.reset_button, self.export_button,
+                    )
                     self.reset_button.deleteLater()
                     del self.reset_button
                 self.export_button.hide()
@@ -636,7 +788,11 @@ class MultisigSetupPage(QWidget):
             else:
                 self.card.setMinimumSize(QSize(770, 520))
                 self.card.setMaximumSize(QSize(770, 520))
-            self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue'))
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'continue',
+                ),
+            )
             self._update_continue_enabled()
 
         elif self._current_step == 3:
@@ -662,7 +818,11 @@ class MultisigSetupPage(QWidget):
             self._update_continue_enabled()
             self.close_btn.show()
             SettingRepository.set_multisig_config(None, None)
-            self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                ),
+            )
         elif self._current_step == 3:
             self.cos_frame.hide()
             self.review_frame.show()
@@ -671,7 +831,11 @@ class MultisigSetupPage(QWidget):
             self.card.setMinimumSize(QSize(770, 570))
             self.card.setMaximumSize(QSize(770, 570))
             self._update_continue_enabled()
-            self.continue_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next'))
+            self.continue_button.setText(
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'next',
+                ),
+            )
 
     def _configure_watch_only_review_fields(self):
         self._populate_wallet_review_fields()
@@ -698,11 +862,17 @@ class MultisigSetupPage(QWidget):
         self.reset_button.setLayoutDirection(Qt.RightToLeft)
         self.reset_button.setFixedSize(QSize(100, 36))
         self.reset_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.reset_button.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reset') + ' ')
+        self.reset_button.setText(
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reset',
+            ) + ' ',
+        )
         self.reset_button.clicked.connect(self._on_watch_only_reset_clicked)
         self.footer.replaceWidget(self.export_button, self.reset_button)
         self.export_button.hide()
-        self.cosigner_string_value_widget.textChanged.connect(self._on_watch_only_cosigner_string_changed)
+        self.cosigner_string_value_widget.textChanged.connect(
+            self._on_watch_only_cosigner_string_changed,
+        )
 
     def _on_watch_only_reset_clicked(self):
         self.fp_value_widget.clear()
@@ -722,7 +892,9 @@ class MultisigSetupPage(QWidget):
             self._update_continue_enabled()
             return
         self.fp_value_widget.setText(result.master_fingerprint)
-        self.keychain_value_widget.setText(str(result.vanilla_keychain) if result.vanilla_keychain is not None else '')
+        self.keychain_value_widget.setText(
+            str(result.vanilla_keychain) if result.vanilla_keychain is not None else '',
+        )
         self.xpub_vanilla_value_widget.setText(result.account_xpub_vanilla)
         self.xpub_colored_value_widget.setText(result.account_xpub_colored)
         self._update_continue_enabled()
@@ -758,25 +930,35 @@ class MultisigSetupPage(QWidget):
                 if cosigner_str:
                     self.cosigner_string_value_widget.setText(cosigner_str)
                     self.cosigner_string_value_widget.setCursorPosition(0)
-                    self.cosigner_string_copy_btn.clicked.connect(lambda: copy_text(cosigner_str))
+                    self.cosigner_string_copy_btn.clicked.connect(
+                        lambda: copy_text(cosigner_str),
+                    )
                     self.xpub_colored_copy_btn.clicked.connect(
                         lambda: copy_text(data['account_xpub_colored']),
                     )
                 else:
-                    self.cosigner_string_value_widget.setText('Error generating string')
+                    self.cosigner_string_value_widget.setText(
+                        'Error generating string',
+                    )
             else:
-                self.cosigner_string_value_widget.setText('Incomplete signer data')
+                self.cosigner_string_value_widget.setText(
+                    'Incomplete signer data',
+                )
 
     def _add_cosigner_row(self, index: int):
         card = CosignerDetailCard(index, self)
         if self._get_total_signer() == 2:
             card.set_collapsible(False)
         if card.import_btn:
-            card.import_btn.clicked.connect(lambda: self._import_cosigner_from_file(card))
+            card.import_btn.clicked.connect(
+                lambda: self._import_cosigner_from_file(card),
+            )
         if card.reset_btn:
             card.reset_btn.clicked.connect(card.string_input.clear)
         if card.string_input:
-            card.string_input.textChanged.connect(lambda text, c=card: self._on_cosigner_string_changed(text, c))
+            card.string_input.textChanged.connect(
+                lambda text, c=card: self._on_cosigner_string_changed(text, c),
+            )
         self.cosigner_rows.append(card)
         self.cosigners_v.insertWidget(self.cosigners_v.count() - 1, card)
         if index == 2 and card.string_input:
@@ -796,11 +978,17 @@ class MultisigSetupPage(QWidget):
             self._update_continue_enabled()
             return
         row_w.fp_input.setText(result.master_fingerprint)
-        row_w.vanilla_xpub_input.setText(MultisigSetupService.truncate_text(result.account_xpub_vanilla))
+        row_w.vanilla_xpub_input.setText(
+            MultisigSetupService.truncate_text(result.account_xpub_vanilla),
+        )
         row_w.vanilla_xpub_str = result.account_xpub_vanilla
-        row_w.colored_xpub_input.setText(MultisigSetupService.truncate_text(result.account_xpub_colored))
+        row_w.colored_xpub_input.setText(
+            MultisigSetupService.truncate_text(result.account_xpub_colored),
+        )
         row_w.colored_xpub_str = result.account_xpub_colored
-        row_w.keychain_input.setText(str(result.vanilla_keychain) if result.vanilla_keychain is not None else '0')
+        row_w.keychain_input.setText(
+            str(result.vanilla_keychain) if result.vanilla_keychain is not None else '0',
+        )
         self._update_continue_enabled()
         row_w.string_input.setReadOnly(True)
         row_w.import_btn.setVisible(False)
@@ -813,18 +1001,30 @@ class MultisigSetupPage(QWidget):
             idx = data.get('index')
             if not idx:
                 continue
-            target_card = next((c for c in self.cosigner_rows if c.index == idx), None)
+            target_card = next(
+                (c for c in self.cosigner_rows if c.index == idx), None,
+            )
             if target_card:
                 if MASTER_FINGERPRINT in data:
                     target_card.fp_input.setText(data[MASTER_FINGERPRINT])
                 if VANILLA_KEYCHAIN in data:
                     val = data[VANILLA_KEYCHAIN]
-                    target_card.keychain_input.setText(str(val) if val is not None else '0')
+                    target_card.keychain_input.setText(
+                        str(val) if val is not None else '0',
+                    )
                 if ACCOUNT_XPUB_VANILLA in data:
-                    target_card.vanilla_xpub_input.setText(MultisigSetupService.truncate_text(data[ACCOUNT_XPUB_VANILLA]))
+                    target_card.vanilla_xpub_input.setText(
+                        MultisigSetupService.truncate_text(
+                            data[ACCOUNT_XPUB_VANILLA],
+                        ),
+                    )
                     target_card.vanilla_xpub_str = data[ACCOUNT_XPUB_VANILLA]
                 if ACCOUNT_XPUB_COLORED in data:
-                    target_card.colored_xpub_input.setText(MultisigSetupService.truncate_text(data[ACCOUNT_XPUB_COLORED]))
+                    target_card.colored_xpub_input.setText(
+                        MultisigSetupService.truncate_text(
+                            data[ACCOUNT_XPUB_COLORED],
+                        ),
+                    )
                     target_card.colored_xpub_str = data[ACCOUNT_XPUB_COLORED]
         self.required_signer_input.setEnabled(False)
         self.total_signer_input.setEnabled(False)
@@ -837,7 +1037,9 @@ class MultisigSetupPage(QWidget):
             if not cosigner_string:
                 card.show_error('Cosigner details required')
                 return False
-            result = MultisigSetupService.parse_cosigner_string(cosigner_string)
+            result = MultisigSetupService.parse_cosigner_string(
+                cosigner_string,
+            )
             if not result.is_valid:
                 card.show_error('Invalid cosigner details')
                 return False
@@ -900,17 +1102,23 @@ class MultisigSetupPage(QWidget):
         max_m = max(2, min(n, 15))
         self.required_signer_input.setValidator(QIntValidator(2, max_m, self))
         self.required_signer_help.setText(
-            QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'minimum_signatures_needed').format(max_m),
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'minimum_signatures_needed',
+            ).format(max_m),
         )
         m_disp = m if m >= 1 else 0
         n_disp = n if n >= 1 else 0
         if self.summary_text is not None:
             self.summary_text.setText(
-                QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configuration_note').format(m_disp, n_disp),
+                QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'configuration_note',
+                ).format(m_disp, n_disp),
             )
 
     def _export_cosigner_to_file(self):
-        download_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)
+        download_dir = QStandardPaths.writableLocation(
+            QStandardPaths.DownloadLocation,
+        )
         file_path, _ = QFileDialog.getSaveFileName(
             self, 'Export Cosigner Data',
             os.path.join(download_dir, 'cosigner.txt'),
@@ -920,13 +1128,19 @@ class MultisigSetupPage(QWidget):
             try:
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(self.cosigner_string_value_widget.text())
-                ToastManager.success(description='Cosigner data exported successfully!', parent=self)
+                ToastManager.success(
+                    description='Cosigner data exported successfully!', parent=self,
+                )
             except Exception as e:
                 logger.error('Failed to export cosigner data: %s', e)
-                ToastManager.error(description=f'Failed to export cosigner data: {e}', parent=self)
+                ToastManager.error(
+                    description=f'Failed to export cosigner data: {e}', parent=self,
+                )
 
     def _import_cosigner_from_file(self, target_card):
-        downloads_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)
+        downloads_dir = QStandardPaths.writableLocation(
+            QStandardPaths.DownloadLocation,
+        )
         file_path, _ = QFileDialog.getOpenFileName(
             self, 'Import Cosigner Data', downloads_dir,
             'Text Files (*.txt);;All Files (*)',
@@ -938,7 +1152,11 @@ class MultisigSetupPage(QWidget):
                 target_card.string_input.setText(cosigner_string)
                 if not target_card.is_expanded:
                     target_card.toggle_content()
-                ToastManager.success(description='Cosigner data imported successfully!', parent=self)
+                ToastManager.success(
+                    description='Cosigner data imported successfully!', parent=self,
+                )
             except Exception as e:
                 logger.error('Failed to import cosigner data: %s', e)
-                ToastManager.error(description=f'Failed to import cosigner data: {e}', parent=self)
+                ToastManager.error(
+                    description=f'Failed to import cosigner data: {e}', parent=self,
+                )

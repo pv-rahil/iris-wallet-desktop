@@ -2,6 +2,7 @@
 """UI tests for IssueIFAWidget."""
 from __future__ import annotations
 
+from enum import Enum
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -171,9 +172,8 @@ def test_show_error(widget: IssueIFAWidget):
 
 def test_handle_ifa_hw_dialog_visible(widget: IssueIFAWidget):
     """Test handle_ifa_hw_dialog when widget is visible."""
-    from enum import Enum
-
     class DialogType(Enum):
+        """Dialog type enum."""
         INFO = 'info'
         ERROR = 'error'
 
@@ -190,9 +190,8 @@ def test_handle_ifa_hw_dialog_visible(widget: IssueIFAWidget):
 
 def test_handle_ifa_hw_dialog_not_visible(widget: IssueIFAWidget):
     """Test handle_ifa_hw_dialog when widget is not visible."""
-    from enum import Enum
-
     class DialogType(Enum):
+        """Dialog type enum."""
         INFO = 'info'
 
     widget.hide()

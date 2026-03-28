@@ -525,8 +525,8 @@ class RGBAssetDetailWidget(QWidget):
                 self.navigate_secondary_issuance,
             )
             self._view_model.main_asset_view_model.get_assets()
-        if not SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET:
+        if SettingRepository.get_wallet_signature_type(
+        ) != WalletSignatureType.MULTI_SIG_WALLET:
             self.send_asset.clicked.connect(
                 self.select_send_transfer_type,
             )
@@ -548,8 +548,8 @@ class RGBAssetDetailWidget(QWidget):
             )
 
         if self.asset_type == str(AssetSchema.IFA.value):
-            if not SettingRepository.get_wallet_signature_type(
-            ) == WalletSignatureType.MULTI_SIG_WALLET:
+            if SettingRepository.get_wallet_signature_type(
+            ) != WalletSignatureType.MULTI_SIG_WALLET:
                 self.secondary_issuance.clicked.connect(
                     self.navigate_secondary_issuance,
                 )

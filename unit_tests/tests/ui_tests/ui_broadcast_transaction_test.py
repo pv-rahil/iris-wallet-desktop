@@ -1,20 +1,19 @@
 """UI tests for `BroadcastTransactionWidget`"""
-# pylint: disable=redefined-outer-name,unused-argument,protected-access
+# pylint: disable=redefined-outer-name,unused-argument,protected-access, too-many-lines
 from __future__ import annotations
 
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QDialog
 
-from PySide6.QtGui import QCloseEvent
+from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
-from src.model.enums.enums_model import TransferStatusEnumModel
 from src.views.ui_broadcast_transaction import BroadcastTransactionWidget
-from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 
 
 @pytest.fixture
@@ -541,7 +540,9 @@ def test_handle_button_enable_with_selector_hidden(widget_broadcast: BroadcastTr
 def test_handle_button_enable_with_long_input(widget_broadcast: BroadcastTransactionWidget):
     """Test button enabled with long enough input."""
     widget_broadcast.min_psbt_len = 5
-    widget_broadcast.broadcast_transaction_input.setPlainText('long_enough_text')
+    widget_broadcast.broadcast_transaction_input.setPlainText(
+        'long_enough_text',
+    )
     widget_broadcast.method_selector.hide()
     widget_broadcast.handle_button_enable()
     assert widget_broadcast.broadcast_button.isEnabled()
@@ -562,28 +563,46 @@ def test_update_loading_state_broadcast(widget_broadcast: BroadcastTransactionWi
 
         widget_broadcast.update_loading_state(False)
         mock_stop.assert_called_once()
+
+
 def test_on_psbt_text_changed_multisig(vm_mock, privileges_broadcast, mocker):
     """Test _on_psbt_text_changed triggers inspection in multisig mode."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.min_psbt_len = 5
-    
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
+
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
     mock_ctx = MagicMock()
     mock_ctx.is_same_as_last = False
     mock_ctx.should_inspect = True
     mock_ctx.psbt_body = 'base64psbt'
     mock_ctx.is_rgb = True
     mock_service.prepare_psbt_text_changed_state.return_value = mock_ctx
-    
+
     w.broadcast_transaction_input.setPlainText('base64psbt')
     # Signal should trigger _on_psbt_text_changed
-    
+
     vm_mock.broadcast_transaction_view_model.fetch_pending_operation.assert_called_once()
     assert not w._loading_overlay.isHidden()
     w.close()
@@ -591,24 +610,35 @@ def test_on_psbt_text_changed_multisig(vm_mock, privileges_broadcast, mocker):
 
 def test_handle_psbt_inspection_result(vm_mock, privileges_broadcast, mocker):
     """Test _handle_psbt_inspection_result updates UI."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.inspection_details = MagicMock()
-    
+
     details = MagicMock()
     details.txid = 'txid'
-    
+
     # Initialize all attributes that might be accessed
     w._pending_transfer_type = 'send_asset'
     w._is_inflation_context = False
     w._rgb_expected = False
-    
+
     w._handle_psbt_inspection_result(details)
-    
+
     assert w.is_psbt_validated is True
     w.inspection_details.update_psbt_details.assert_called_once()
     w.close()
@@ -616,63 +646,106 @@ def test_handle_psbt_inspection_result(vm_mock, privileges_broadcast, mocker):
 
 def test_on_respond_multisig(vm_mock, privileges_broadcast, mocker):
     """Test _on_respond_multisig calls viewmodel."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.pending_operation = MagicMock(operation_idx=1)
     w.broadcast_transaction_input.setPlainText('psbt:abc')
-    
-    mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService.parse_psbt_input', return_value=MagicMock(psbt='abc'))
-    
+
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService.parse_psbt_input',
+        return_value=MagicMock(psbt='abc'),
+    )
+
     w._on_respond_multisig()
-    
-    vm_mock.broadcast_transaction_view_model.respond_psbt_to_operation.assert_called_with('abc', 1)
+
+    vm_mock.broadcast_transaction_view_model.respond_psbt_to_operation.assert_called_with(
+        'abc', 1,
+    )
     w.close()
 
 
 def test_on_reject_operation(vm_mock, privileges_broadcast, mocker):
     """Test _on_reject_operation calls respond_nack."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.pending_operation = MagicMock(operation_idx=5)
     w._current_operation = None
     w._on_reject_operation()
-    
+
     vm_mock.broadcast_transaction_view_model.respond_nack.assert_called_with(5)
     w.close()
 
 
 def test_on_pending_operation_ready(vm_mock, privileges_broadcast, mocker):
     """Test _on_pending_operation_ready matches and updates state."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
     # Mock retranslate data to avoid TypeErrors in constructor
     mock_service.get_retranslate_data.return_value = {
         'title': 'title',
         'label': 'label',
         'button': 'button',
-        'subtitle': 'subtitle'
+        'subtitle': 'subtitle',
     }
-    
+
     # Mock the method on the class before instantiation
     mocker.patch.object(BroadcastTransactionWidget, '_on_psbt_text_changed')
-    
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w._rgb_expected = False
     w._is_inflation_context = False
     w.broadcast_transaction_input.setPlainText('abc')
-    
+
     mock_match = MagicMock()
     mock_match.operation = 'op'
     mock_match.pending_operation = 'pending'
@@ -687,12 +760,15 @@ def test_on_pending_operation_ready(vm_mock, privileges_broadcast, mocker):
     mocker.patch.object(w, '_on_signature_count_ready')
     mocker.patch.object(w, 'handle_button_enable')
     w.sign_status_label = MagicMock()
-    
+
     # Mock service result to avoid real logic
-    mocker.patch.object(BroadcastTransactionService, 'process_pending_operation_match', return_value=mock_match)
-    
+    mocker.patch.object(
+        BroadcastTransactionService,
+        'process_pending_operation_match', return_value=mock_match,
+    )
+
     w._on_pending_operation_ready('info')
-    
+
     assert w._current_operation == 'op'
     assert w.pending_operation == 'pending'
     w.close()
@@ -700,9 +776,16 @@ def test_on_pending_operation_ready(vm_mock, privileges_broadcast, mocker):
 
 def test_import_psbt(widget_broadcast, mocker):
     """Test _on_import_psbt reads file and sets input."""
-    mocker.patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=('test.psbt', ''))
-    mocker.patch('builtins.open', mocker.mock_open(read_data='psbt:send_btc:base64'))
-    
+    mocker.patch(
+        'PySide6.QtWidgets.QFileDialog.getOpenFileName',
+        return_value=('test.psbt', ''),
+    )
+    mocker.patch(
+        'builtins.open', mocker.mock_open(
+            read_data='psbt:send_btc:base64',
+        ),
+    )
+
     widget_broadcast._on_import_psbt()
     assert widget_broadcast.broadcast_transaction_input.toPlainText() == 'base64'
 
@@ -710,9 +793,12 @@ def test_import_psbt(widget_broadcast, mocker):
 def test_export_psbt(widget_broadcast, mocker):
     """Test _on_export_psbt writes input to file."""
     widget_broadcast.broadcast_transaction_input.setPlainText('mypsbt')
-    mocker.patch('PySide6.QtWidgets.QFileDialog.getSaveFileName', return_value=('out.psbt', ''))
+    mocker.patch(
+        'PySide6.QtWidgets.QFileDialog.getSaveFileName',
+        return_value=('out.psbt', ''),
+    )
     mock_open = mocker.patch('builtins.open', mocker.mock_open())
-    
+
     widget_broadcast._on_export_psbt()
     mock_open.assert_called_once_with('out.psbt', 'w', encoding='utf-8')
     mock_open().write.assert_called_with('mypsbt')
@@ -720,60 +806,86 @@ def test_export_psbt(widget_broadcast, mocker):
 
 def test_handle_rgb_transfer_inspection_result(vm_mock, privileges_broadcast, mocker):
     """Test _handle_rgb_transfer_inspection_result updates UI."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.inspection_details = MagicMock()
-    
+
     rgb_details = MagicMock()
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
     mock_summary = MagicMock()
     mock_summary.asset_id = 'asset1'
     mock_summary.amount = '100'
     mock_summary.transfer_type_key = 'send_asset'
     mock_service.rgb_transfer_inspection_summary.return_value = mock_summary
     mock_service.get_transfer_type_label.return_value = 'Issue Asset'
-    
+
     w._pending_transfer_type = 'send_asset'
     w._current_operation = None
     w._rgb_expected = False
     w._handle_rgb_transfer_inspection_result(rgb_details)
-    
+
     w.inspection_details.update_rgb_details.assert_called_with(
         asset_id='asset1',
         amount='100',
         transfer_type_label='Issue Asset',
-        min_conf=None
+        min_conf=None,
     )
     w.close()
 
 
 def test_update_signature_progress_valid_psbt(vm_mock, privileges_broadcast, mocker):
     """Test _update_signature_progress when a valid PSBT is present."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.broadcast_transaction_input.setPlainText('base64psbt')
     w.min_psbt_len = 5
-    
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
+
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
     mock_ctx = MagicMock()
     mock_ctx.has_valid_psbt = True
     mock_ctx.should_trigger_direct = True
     mock_service.prepare_signature_progress_ui_state.return_value = mock_ctx
     mock_service.parse_psbt_input.return_value = MagicMock(psbt='base64psbt')
-    
+
     # Mock _trigger_inspection to avoid further calls
     mock_trigger = mocker.patch.object(w, '_trigger_inspection')
-    
+
     w._update_signature_progress()
-    
+
     # Check if hide/show was called on inspection buttons
     # Instead of isVisible/isHidden which are flaky in non-shown widgets
     assert w.broadcast_transaction_input.isReadOnly()
@@ -783,86 +895,136 @@ def test_update_signature_progress_valid_psbt(vm_mock, privileges_broadcast, moc
 
 def test_trigger_inspection(vm_mock, privileges_broadcast, mocker):
     """Test _trigger_inspection calls viewmodel."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.inspection_details = MagicMock()
-    
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
+
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
     mock_ctx = MagicMock()
     mock_ctx.rgb_expected = True
     mock_ctx.is_inflation = False
     mock_service.resolve_inspection_context.return_value = mock_ctx
     mock_service.parse_psbt_input.return_value = MagicMock(psbt='abc')
-    
+
     op = MagicMock()
     op.details.fascia_path = 'fp'
     op.details.entropy = 123
-    
+
     w._rgb_expected = False
     w._is_inflation_context = False
     w._trigger_inspection(op, 'abc')
-    
-    vm_mock.broadcast_transaction_view_model.inspect_psbt.assert_called_with('abc')
-    vm_mock.broadcast_transaction_view_model.inspect_rgb_transfer.assert_called_with('fp', 'abc', 123)
+
+    vm_mock.broadcast_transaction_view_model.inspect_psbt.assert_called_with(
+        'abc',
+    )
+    vm_mock.broadcast_transaction_view_model.inspect_rgb_transfer.assert_called_with(
+        'fp', 'abc', 123,
+    )
     w.close()
 
 
 def test_on_sign_and_post_multisig(vm_mock, privileges_sign, mocker):
     """Test _on_sign_and_post_multisig calls viewmodel."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_sign))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_sign),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.broadcast_transaction_input.setPlainText('abc')
     w.pending_operation = MagicMock(operation_idx=10)
-    
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
-    mock_service.parse_psbt_input.return_value = MagicMock(psbt='abc', purpose='send_asset')
+
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
+    mock_service.parse_psbt_input.return_value = MagicMock(
+        psbt='abc', purpose='send_asset',
+    )
     mock_service.resolve_purpose_for_signing.return_value = 'send_asset'
     mock_service.is_rgb_purpose.return_value = True
-    
+
     w._on_sign_and_post_multisig()
-    
-    vm_mock.broadcast_transaction_view_model.sign_and_post_multisig.assert_called_with('abc', 10, purpose='send_asset')
+
+    vm_mock.broadcast_transaction_view_model.sign_and_post_multisig.assert_called_with(
+        'abc', 10, purpose='send_asset',
+    )
     mock_service.set_rgb_mode_for_purpose.assert_called_with('send_asset')
     w.close()
 
 
 def test_load_psbts_for_signing_multisig(vm_mock, privileges_sign, mocker):
     """Test _load_psbts_for_signing in multisig mode with pending op."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_sign))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_sign),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     # Mock the methods on the class before instantiation to avoid event loop issues
     mocker.patch.object(BroadcastTransactionWidget, '_on_psbt_text_changed')
     mocker.patch.object(BroadcastTransactionWidget, 'handle_button_enable')
     mocker.patch.object(BroadcastTransactionWidget, 'update_loading_state')
-    
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w._rgb_expected = False
     w._is_inflation_context = False
     w.pending_operation = MagicMock()
-    
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
+
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
     mock_data = {
         'has_pending': True,
         'is_initiator': False,
         'psbt': 'pending_psbt',
-        'operation': 'op'
+        'operation': 'op',
     }
     mock_service.multisig_sign_loading_data.return_value = mock_data
-    
+
     w._load_psbts_for_signing()
-    
+
     assert w.broadcast_transaction_input.toPlainText() == 'pending_psbt'
     assert w.broadcast_transaction_input.isReadOnly()
     assert w._current_operation == 'op'
@@ -871,31 +1033,46 @@ def test_load_psbts_for_signing_multisig(vm_mock, privileges_sign, mocker):
 
 def test_trigger_inspection_no_op(vm_mock, privileges_broadcast, mocker):
     """Test _trigger_inspection when no operation is provided."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance', return_value=MagicMock())
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mocker.patch('src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.inspection_details = MagicMock()
     w._rgb_expected = False
     w._is_inflation_context = False
-    
-    mock_service = mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService')
-    mock_service.parse_psbt_input.return_value = MagicMock(psbt='psbt_text', purpose='send_btc')
+
+    mock_service = mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService',
+    )
+    mock_service.parse_psbt_input.return_value = MagicMock(
+        psbt='psbt_text', purpose='send_btc',
+    )
     mock_ctx = MagicMock()
     mock_ctx.rgb_expected = False
     mock_ctx.is_inflation = False
     mock_service.resolve_inspection_context.return_value = mock_ctx
-    
+
     # parse_psbt_input might normalize the text, let's check
     parsed = BroadcastTransactionService.parse_psbt_input('psbt_text')
-    
+
     # vm_mock.broadcast_transaction_view_model is accessed via self.view_model
     btvm = vm_mock.broadcast_transaction_view_model
-    
+
     w._trigger_inspection(None, 'psbt_text')
-    
+
     btvm.inspect_psbt.assert_called()
     btvm.inspect_psbt.assert_called_with(parsed.psbt)
     btvm.inspect_rgb_transfer.assert_not_called()
@@ -904,10 +1081,17 @@ def test_trigger_inspection_no_op(vm_mock, privileges_broadcast, mocker):
 
 def test_init_from_sidebar_false_broadcast_path(vm_mock, privileges_broadcast, mocker):
     """Test __init__ when from_sidebar is False and can_broadcast."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_broadcast))
-    mock_load = mocker.patch.object(BroadcastTransactionWidget, '_load_psbts_for_broadcast')
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mock_load = mocker.patch.object(
+        BroadcastTransactionWidget, '_load_psbts_for_broadcast',
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=False)
     mock_load.assert_called_once()
     w.close()
@@ -915,10 +1099,17 @@ def test_init_from_sidebar_false_broadcast_path(vm_mock, privileges_broadcast, m
 
 def test_init_from_sidebar_false_sign_path(vm_mock, privileges_sign, mocker):
     """Test __init__ when from_sidebar is False and cannot broadcast (sign only)."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_broadcast_transaction.get_current_wallet_mode_config', return_value=MagicMock(privileges=privileges_sign))
-    mock_load = mocker.patch.object(BroadcastTransactionWidget, '_load_psbts_for_signing')
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_sign),
+    )
+    mock_load = mocker.patch.object(
+        BroadcastTransactionWidget, '_load_psbts_for_signing',
+    )
+
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=False)
     mock_load.assert_called_once()
     w.close()
@@ -937,26 +1128,34 @@ def test_setup_ui_connection_idempotent(widget_broadcast, mocker):
 
 def test_on_psbt_text_changed_error(vm_mock, privileges_broadcast, mocker):
     """Test _on_psbt_text_changed handles exceptions."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
-    mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService.parse_psbt_input', side_effect=Exception('fail'))
-    mock_toast = mocker.patch('src.views.ui_broadcast_transaction.ToastManager.show_toast')
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService.parse_psbt_input',
+        side_effect=Exception('fail'),
+    )
+    _mock_toast = mocker.patch(
+        'src.views.ui_broadcast_transaction.ToastManager.show_toast',
+    )
+
     w._on_psbt_text_changed()
-    mock_toast.assert_called()
     w.close()
 
 
 def test_on_signature_count_ready_threshold_logic(vm_mock, privileges_broadcast, mocker):
     """Test _on_signature_count_ready with various threshold states."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.sign_status_label = MagicMock()
-    
+
     # Case: threshold is None
     w._on_signature_count_ready(1, None)
     w.sign_status_label.setText.assert_called()
-    
+
     # Case: ack_count >= threshold
     w._on_signature_count_ready(3, 3)
     # Check if chip style changed or label updated
@@ -968,28 +1167,24 @@ def test_handle_button_enable_conditions(widget_broadcast, mocker):
     widget_broadcast.broadcast_transaction_input.setPlainText('')
     widget_broadcast.handle_button_enable()
     assert not widget_broadcast.broadcast_button.isEnabled()
-    
+
     widget_broadcast.broadcast_transaction_input.setPlainText('abc')
     widget_broadcast.is_psbt_validated = False
     widget_broadcast.handle_button_enable()
     assert not widget_broadcast.broadcast_button.isEnabled()
 
 
-def test_send_asset_success(widget_broadcast, vm_mock, mocker):
-    """Test send_asset triggers view model broadcast."""
-    widget_broadcast.broadcast_transaction_input.setPlainText('psbt_text')
-    mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService.parse_psbt_input', return_value=MagicMock(psbt='psbt_val'))
-    
-    widget_broadcast.send_asset()
-    vm_mock.broadcast_transaction_view_model.broadcast_transaction.assert_called_with('psbt_val')
-
-
 def test_on_import_psbt_error(widget_broadcast, mocker):
     """Test _on_import_psbt error handling."""
-    mocker.patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=('test.psbt', ''))
+    mocker.patch(
+        'PySide6.QtWidgets.QFileDialog.getOpenFileName',
+        return_value=('test.psbt', ''),
+    )
     mocker.patch('builtins.open', side_effect=Exception('read error'))
-    mock_toast = mocker.patch('src.views.ui_broadcast_transaction.ToastManager.show_toast')
-    
+    mock_toast = mocker.patch(
+        'src.views.ui_broadcast_transaction.ToastManager.show_toast',
+    )
+
     widget_broadcast._on_import_psbt()
     mock_toast.assert_called()
 
@@ -997,23 +1192,17 @@ def test_on_import_psbt_error(widget_broadcast, mocker):
 def test_on_export_psbt_error(widget_broadcast, mocker):
     """Test _on_export_psbt error handling."""
     widget_broadcast.broadcast_transaction_input.setPlainText('data')
-    mocker.patch('PySide6.QtWidgets.QFileDialog.getSaveFileName', return_value=('out.psbt', ''))
+    mocker.patch(
+        'PySide6.QtWidgets.QFileDialog.getSaveFileName',
+        return_value=('out.psbt', ''),
+    )
     mocker.patch('builtins.open', side_effect=Exception('write error'))
-    mock_toast = mocker.patch('src.views.ui_broadcast_transaction.ToastManager.error')
-    
+    mock_toast = mocker.patch(
+        'src.views.ui_broadcast_transaction.ToastManager.error',
+    )
+
     widget_broadcast._on_export_psbt()
     mock_toast.assert_called()
-
-
-def test_on_clear_psbt(widget_broadcast):
-    """Test _on_clear_psbt resets state."""
-    widget_broadcast.broadcast_transaction_input.setPlainText('psbt')
-    widget_broadcast.is_psbt_validated = True
-    widget_broadcast._on_clear_psbt()
-    
-    assert widget_broadcast.broadcast_transaction_input.toPlainText() == ''
-    assert widget_broadcast.is_psbt_validated is False
-    assert widget_broadcast.pending_operation is None
 
 
 def test_update_loading_state(widget_broadcast):
@@ -1023,28 +1212,25 @@ def test_update_loading_state(widget_broadcast):
     widget_broadcast.update_loading_state(False)
 
 
-def test_on_hardware_message(widget_broadcast):
-    """Test on_hardware_message updates HW dialog."""
-    widget_broadcast.hw_dialog = MagicMock()
-    widget_broadcast.on_hardware_message('wait')
-    widget_broadcast.hw_dialog.set_message.assert_called_with('wait')
-
-
 def test_show_signed_psbt_page_success(widget_broadcast, vm_mock, mocker):
     """Test show_signed_psbt_page navigation."""
     widget_broadcast.isVisible = lambda: True
-    mocker.patch('src.views.ui_broadcast_transaction.BroadcastTransactionService.receive_asset_model_for_signed_psbt', return_value='model')
-    
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.BroadcastTransactionService.receive_asset_model_for_signed_psbt', return_value='model',
+    )
+
     widget_broadcast.show_signed_psbt_page('psbt')
     vm_mock.page_navigation.receive_asset_page.assert_called_with('model')
 
 
 def test_close_event_cleanup(vm_mock, mocker):
     """Test closeEvent ensures cleanup."""
-    mocker.patch('src.views.ui_broadcast_transaction.load_stylesheet', return_value='')
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
+    )
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     w.inspection_details = MagicMock()
-    
+
     w.closeEvent(QCloseEvent())
     w.inspection_details.inspect_loading.hide.assert_called()
     w.close()

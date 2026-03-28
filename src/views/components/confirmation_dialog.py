@@ -54,7 +54,7 @@ class ConfirmationDialog(QDialog):
         dialog_layout = QVBoxLayout(self)
 
         # Header/message area
-        if self.icon_type == 'warning' or self.icon_type == 'info':
+        if self.icon_type in ['warning', 'info']:
             header_layout = QHBoxLayout()
             header_layout.setObjectName('header_layout')
             header_layout.setContentsMargins(6, 0, 5, 0)
@@ -62,14 +62,18 @@ class ConfirmationDialog(QDialog):
 
             self.icon_label = QLabel(self)
             self.icon_label.setObjectName('icon_label')
+            pixmap: QPixmap | None = None
+
             if self.icon_type == 'warning':
                 pixmap = QPixmap(':/assets/warning_yellow.png')
             elif self.icon_type == 'info':
                 pixmap = QPixmap(':/assets/info_blue.png')
-            if not pixmap.isNull():
+
+            if pixmap is not None and not pixmap.isNull():
                 self.icon_label.setPixmap(
                     pixmap.scaled(
-                        72, 72, Qt.KeepAspectRatio,
+                        72, 72,
+                        Qt.KeepAspectRatio,
                         Qt.SmoothTransformation,
                     ),
                 )

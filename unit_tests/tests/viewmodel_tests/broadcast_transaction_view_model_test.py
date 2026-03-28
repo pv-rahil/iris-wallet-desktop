@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument, protected-access
 """Unit tests for `BroadcastTransactionViewModel`."""
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from rgb_lib import RespondToOperation
 
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
@@ -109,31 +110,41 @@ def test_on_sign_and_finalize_error_hw_emit_dialog(_log, _init, _map, _kst, vm: 
 
 def test_load_psbts(vm, mocker):
     """Test load_psbts success and error."""
-    mock_service = mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.list_psbt_drafts', return_value=['p1'])
-    
+    mock_service = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.list_psbt_drafts', return_value=['p1'],
+    )
+
     def mock_run_in_thread(target, params):
         target()
-                
+
     mocker.patch.object(vm, 'run_in_thread', side_effect=mock_run_in_thread)
-    
+
     slot = Mock()
     vm.psbts_loaded.connect(slot)
-    
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
+
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WITH_PRIVATE_KEY,
+    )
     vm.load_psbts(True)
     slot.assert_called()
     assert slot.call_args[0][0] == ['p1']
-    
+
     # Error path
     mock_service.side_effect = Exception('fail')
-    mock_toast = mocker.patch('src.viewmodels.broadcast_transaction_view_model.ToastManager.error')
+    mock_toast = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.ToastManager.error',
+    )
     vm.load_psbts(True)
     slot.assert_called()
     assert slot.call_args[0][0] == []
     mock_toast.assert_called()
 
     # Watch-only path (lines 71-76)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
     slot.reset_mock()
     vm.load_psbts(True)
     slot.assert_called_with([])
@@ -142,35 +153,51 @@ def test_load_psbts(vm, mocker):
 def test_execute_psbt_action(vm, mocker):
     """Test execute_psbt_action routing."""
     parsed = mocker.Mock(psbt='psbt_text')
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.parse_psbt_input', return_value=parsed)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.resolve_purpose', return_value='btc')
-    
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.parse_psbt_input', return_value=parsed,
+    )
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.resolve_purpose', return_value='btc',
+    )
+
     # sign
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='sign')
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='sign',
+    )
     with patch.object(vm, 'sign_and_finalize_psbt') as m:
         vm.execute_psbt_action('raw', None, False)
         m.assert_called_once_with('psbt_text')
-        
+
     # send_btc
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='send_btc')
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='send_btc',
+    )
     with patch.object(vm, 'send_btc_end') as m:
         vm.execute_psbt_action('raw', None, True)
         m.assert_called_once_with('psbt_text')
-        
+
     # send_asset
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='send_asset')
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key',
+        return_value='send_asset',
+    )
     with patch.object(vm, 'send_end') as m:
         vm.execute_psbt_action('raw', None, True)
         m.assert_called_once_with('psbt_text')
 
     # inflation
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='inflation')
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key',
+        return_value='inflation',
+    )
     with patch.object(vm, 'inflate_end') as m:
         vm.execute_psbt_action('raw', None, True)
         m.assert_called_once_with('psbt_text')
-        
+
     # create_utxos (default)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='other')
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.action_key', return_value='other',
+    )
     with patch.object(vm, 'create_utxos_end') as m:
         vm.execute_psbt_action('raw', None, True)
         m.assert_called_once_with('psbt_text')
@@ -187,10 +214,12 @@ def test_inflate_end_flow(vm, mocker, qtbot):
     mock_run = mocker.patch.object(vm, 'run_in_thread')
     vm.inflate_end('psbt')
     mock_run.assert_called_once()
-    
+
     # success
     res = mocker.Mock(txid='tx123')
-    mock_toast = mocker.patch('src.viewmodels.broadcast_transaction_view_model.ToastManager.success')
+    mock_toast = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.ToastManager.success',
+    )
     with qtbot.waitSignals([vm.is_loading, vm.tx_broadcasted], timeout=1000):
         vm.on_success_inflate_end(res)
     mock_toast.assert_called()
@@ -198,53 +227,61 @@ def test_inflate_end_flow(vm, mocker, qtbot):
 
 def test_multisig_signer_flow(vm, mocker, qtbot):
     """Test multisig signer flow: sign_and_post_multisig, sign_success, inspected, respond."""
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.ON_DEVICE,
+    )
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     # 1. sign_and_post_multisig
     vm.sign_and_post_multisig('unsigned', 1, purpose='btc')
     assert vm._multisig_operation_idx == 1
     mock_run.assert_called()
-    
+
     # 2. _on_multisig_sign_success
     mock_run.reset_mock()
     vm._on_multisig_sign_success('signed')
     assert vm._current_signed_psbt == 'signed'
-    mock_run.assert_called() # Calls inspect_psbt
-    
+    mock_run.assert_called()  # Calls inspect_psbt
+
     # 3. _on_signed_psbt_inspected
     mock_run.reset_mock()
     details = mocker.Mock(txid='tx123')
     vm._on_signed_psbt_inspected(details)
     assert vm._current_signed_txid == 'tx123'
-    mock_run.assert_called() # Calls respond_to_operation
-    
+    mock_run.assert_called()  # Calls respond_to_operation
+
     # 4. _on_multisig_post_success (different message cases)
-    mock_toast = mocker.patch('src.viewmodels.broadcast_transaction_view_model.ToastManager.success')
+    mock_toast = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.ToastManager.success',
+    )
     vm.trigger_bridge_sync.connect(lambda: None)
-    
+
     # Case: result None
     vm._on_multisig_post_success(None)
     mock_toast.assert_called()
-    
+
     # Case: different operation completions
     mock_res = mocker.Mock()
     mock_res.operation.is_create_utxos_completed.return_value = True
     vm._on_multisig_post_success(mock_res)
-    
+
     mock_res.operation.is_create_utxos_completed.return_value = False
     mock_res.operation.is_send_btc_completed.return_value = True
     vm._on_multisig_post_success(mock_res)
-    
+
     mock_res.operation.is_send_btc_completed.return_value = False
     mock_res.operation.is_inflation_completed.return_value = True
     vm._on_multisig_post_success(mock_res)
-    
+
     mock_res.operation.is_inflation_completed.return_value = False
     mock_res.operation.is_send_completed.return_value = True
     vm._on_multisig_post_success(mock_res)
-    
+
     mock_res.operation.is_send_completed.return_value = False
     vm._on_multisig_post_success(mock_res)
 
@@ -252,16 +289,24 @@ def test_multisig_signer_flow(vm, mocker, qtbot):
 def test_on_multisig_sign_error(vm, mocker):
     """Test on_multisig_sign_error handling."""
     # HW case
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.HWDeviceSelectionDialog.map_hwi_error', return_value='msg')
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.HWDeviceSelectionDialog.map_hwi_error', return_value='msg',
+    )
     slot = Mock()
     vm.hw_dialog_update.connect(slot)
-    
+
     vm.on_multisig_sign_error(Exception('raw'))
     slot.assert_called()
-    
+
     # Non-HW case
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.ON_DEVICE,
+    )
     mock_on_error = mocker.patch.object(vm, 'on_error')
     vm.on_multisig_sign_error(Exception('raw'))
     mock_on_error.assert_called()
@@ -270,17 +315,21 @@ def test_on_multisig_sign_error(vm, mocker):
 def test_respond_nack(vm, mocker):
     """Test respond_nack success and error."""
     # Error: no index
-    mock_toast = mocker.patch('src.viewmodels.broadcast_transaction_view_model.ToastManager.error')
+    mock_toast = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.ToastManager.error',
+    )
     vm.respond_nack(None)
     mock_toast.assert_called()
-    
+
     # Success
     mock_run = mocker.patch.object(vm, 'run_in_thread')
     vm.respond_nack(1)
     mock_run.assert_called()
-    
+
     # Callback
-    mock_toast_succ = mocker.patch('src.viewmodels.broadcast_transaction_view_model.ToastManager.success')
+    mock_toast_succ = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.ToastManager.success',
+    )
     vm.trigger_bridge_sync.connect(lambda: None)
     vm._on_nack_post_success()
     mock_toast_succ.assert_called()
@@ -296,11 +345,11 @@ def test_respond_psbt_to_operation(vm, mocker):
 def test_inspection_flows(vm, mocker):
     """Test inspect_psbt and inspect_rgb_transfer."""
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     # inspect_psbt
     vm.inspect_psbt('psbt')
     mock_run.assert_called()
-    
+
     # inspect_rgb_transfer
     mock_run.reset_mock()
     vm.inspect_rgb_transfer('fascia', 'psbt', 123)
@@ -310,16 +359,24 @@ def test_inspection_flows(vm, mocker):
 def test_fetch_pending_operation(vm, mocker):
     """Test fetch_pending_operation routing."""
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.get_pending_operation_state', return_value=(None, None))
-    
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.get_pending_operation_state',
+        return_value=(None, None),
+    )
+
     # Standard use case
     vm.fetch_pending_operation()
     mock_run.assert_called()
-    
+
     # Callback
     mock_res = mocker.Mock()
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.multisig_pending_context', return_value=None)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.multisig_pending_context', return_value=None,
+    )
     slot = Mock()
     vm.pending_operation_ready.connect(slot)
     vm._on_fetch_pending_operation_success(mock_res)
@@ -328,7 +385,6 @@ def test_fetch_pending_operation(vm, mocker):
 
 def test_respond_to_multisig_operation(vm, mocker):
     """Test _respond_to_multisig_operation logic."""
-    from rgb_lib import RespondToOperation
     mock_run = mocker.patch.object(vm, 'run_in_thread')
     vm._respond_to_multisig_operation(1, RespondToOperation.ACK('signed'))
     mock_run.assert_called()
@@ -340,22 +396,28 @@ def test_on_inspect_success(vm, mocker):
     slot_r = Mock()
     vm.psbt_inspection_ready.connect(slot_p)
     vm.rgb_transfer_inspection_ready.connect(slot_r)
-    
+
     vm._on_inspect_psbt_success('details')
     slot_p.assert_called_with('details')
-    
+
     vm._on_inspect_rgb_transfer_success('details')
     slot_r.assert_called_with('details')
 
 
 def test_sign_and_post_multisig_hardware(vm, mocker):
     """Test sign_and_post_multisig with hardware wallet branch (line 261)."""
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
     slot = Mock()
     vm.hw_dialog_update.connect(slot)
     mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm.sign_and_post_multisig('psbt', 1)
     slot.assert_called()
 
@@ -364,9 +426,11 @@ def test_fetch_pending_operation_success_with_psbt(vm, mocker):
     """Test _on_fetch_pending_operation_success with psbt branch (lines 467-475)."""
     res = mocker.Mock()
     ctx = mocker.Mock(psbt='psbt_text')
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.multisig_pending_context', return_value=ctx)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.multisig_pending_context', return_value=ctx,
+    )
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm._on_fetch_pending_operation_success(res)
     mock_run.assert_called()
 
@@ -374,12 +438,12 @@ def test_fetch_pending_operation_success_with_psbt(vm, mocker):
 def test_inspection_guards(vm, mocker):
     """Test inspection guards."""
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     # psbt guard
     vm._inspecting_psbt = 'psbt'
     vm.inspect_psbt('psbt')
     mock_run.assert_not_called()
-    
+
     # rgb guard
     vm._inspecting_rgb = ('f', 'p')
     vm.inspect_rgb_transfer('f', 'p', 1)
@@ -389,14 +453,23 @@ def test_inspection_guards(vm, mocker):
 def test_fetch_pending_operation_branches(vm, mocker):
     """Test fetch_pending_operation offline and cached branches."""
     # Offline
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type', return_value=WalletType.OFFLINE_TYPE_WALLET)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.OFFLINE_TYPE_WALLET,
+    )
     mock_run = mocker.patch.object(vm, 'run_in_thread')
     vm.fetch_pending_operation()
     mock_run.assert_not_called()
-    
+
     # Cached
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.get_pending_operation_state', return_value=('info', 'txid'))
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.BroadcastTransactionService.get_pending_operation_state',
+        return_value=('info', 'txid'),
+    )
     slot = Mock()
     vm.pending_operation_ready.connect(slot)
     vm.fetch_pending_operation()
@@ -406,11 +479,14 @@ def test_fetch_pending_operation_branches(vm, mocker):
 
 def test_multisig_sign_success_offline(vm, mocker):
     """Test _on_multisig_sign_success offline check."""
-    mocker.patch('src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type', return_value=WalletType.OFFLINE_TYPE_WALLET)
+    mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.OFFLINE_TYPE_WALLET,
+    )
     mock_run = mocker.patch.object(vm, 'run_in_thread')
     slot = Mock()
     vm.finalized_psbt.connect(slot)
-    
+
     vm._on_multisig_sign_success('signed')
     slot.assert_called_with('signed')
     mock_run.assert_not_called()
@@ -421,6 +497,6 @@ def test_on_signed_psbt_inspected_error(vm, mocker):
     vm._current_signed_psbt = 'signed'
     vm._multisig_operation_idx = 1
     mock_run = mocker.patch.object(vm, 'run_in_thread')
-    
+
     vm._on_signed_psbt_inspected(Exception('fail'))
-    mock_run.assert_called_once() # Still calls respond_to_operation with NACK or error?
+    mock_run.assert_called_once()  # Still calls respond_to_operation with NACK or error?

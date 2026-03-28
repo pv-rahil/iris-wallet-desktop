@@ -30,7 +30,6 @@ from src.utils.handle_exception import handle_exceptions
 from src.utils.helpers import build_keys_from_data
 from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.helpers import hash_mnemonic
-from src.utils.keyring_storage import get_value
 from src.utils.keyring_storage import set_value
 from src.utils.local_store import local_store
 from src.utils.wallet_credential_encryption import mnemonic_store

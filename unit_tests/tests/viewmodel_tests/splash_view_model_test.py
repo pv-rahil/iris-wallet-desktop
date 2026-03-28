@@ -330,10 +330,12 @@ def test_handle_application_open_main_flow(
     ]
     mock_wallet_instance = Mock()
     mock_wallet_request_model.return_value = mock_wallet_instance
-    
+
     # Mock build_keys_from_data to return a mock keys object
     mock_keys = Mock()
-    mocker.patch('src.viewmodels.splash_view_model.build_keys_from_data', return_value=mock_keys)
+    mocker.patch(
+        'src.viewmodels.splash_view_model.build_keys_from_data', return_value=mock_keys,
+    )
 
     view_model.handle_application_open()
 

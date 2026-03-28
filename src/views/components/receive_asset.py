@@ -249,7 +249,7 @@ class ReceiveAssetWidget(QWidget):
             self.receive_asset_close_button.clicked.connect(
                 self.close_button_navigation,
             )
-        elif self.page_name == 'IFA page' or self.page_name == 'IFA secondary issuance':
+        elif self.page_name in ['IFA page', 'IFA secondary issuance']:
             self.receive_asset_close_button.clicked.connect(
                 self._view_model.page_navigation.inflatable_asset_page,
             )
@@ -342,7 +342,7 @@ class ReceiveAssetWidget(QWidget):
             pixmap = QPixmap.fromImage(qr_image)
             self.label.setPixmap(pixmap)
         else:
-            self.label.setText("QR Code data too large to display")
+            self.label.setText('QR Code data too large to display')
             self.label.setAlignment(Qt.AlignCenter)
         self.receiver_address.setText(
             QCoreApplication.translate(

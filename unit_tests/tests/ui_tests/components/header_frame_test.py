@@ -464,50 +464,73 @@ def test_network_frame_click_without_backup_warning(header_frame, qtbot):
     header_frame.on_network_frame_click()
     # Should not navigate anywhere
 
+
 def test_on_pending_operations_ready_sign_needed(header_frame, mocker, qtbot):
     """Test on_pending_operations_ready shows sign needed for standard or watch-only without drafts."""
     qtbot.addWidget(header_frame)
     header_frame.show()
-    
+
     # 1. Standard wallet - show Sign Needed
-    mocker.patch('src.views.components.header_frame.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
+    mocker.patch(
+        'src.views.components.header_frame.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WITH_PRIVATE_KEY,
+    )
     op = mocker.MagicMock(name='op_info_mock')
     op.operation = mocker.MagicMock(name='operation_mock')
     op.operation.is_CREATE_UTXOS_TO_REVIEW.return_value = True
     header_frame.on_pending_operations_ready([op])
     assert 'sign_psbt_detection_label' in header_frame.psbt_info_label.text()
-    
+
     # 2. Watch-only wallet - no local signed drafts -> show Sign Needed (Use Offline Wallet)
-    mocker.patch('src.views.components.header_frame.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
+    mocker.patch(
+        'src.views.components.header_frame.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
     sess = mocker.Mock()
     sess.list_psbt.return_value = []
-    mocker.patch('src.views.components.header_frame.WalletDataService.get_session', return_value=sess)
+    mocker.patch(
+        'src.views.components.header_frame.WalletDataService.get_session', return_value=sess,
+    )
     header_frame.on_pending_operations_ready([op])
     assert header_frame._psbt_action_mode == 'offline_sign_needed'
     assert 'Sign Needed' in header_frame.psbt_info_label.text()
+
 
 def test_on_pending_operations_ready_broadcast(header_frame, mocker, qtbot):
     """Test on_pending_operations_ready shows broadcast for watch-only with local signed drafts."""
     qtbot.addWidget(header_frame)
     header_frame.show()
-    mocker.patch('src.views.components.header_frame.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
-    
+    mocker.patch(
+        'src.views.components.header_frame.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+
     sess = mocker.Mock()
     sess.list_psbt.return_value = [{'psbt': 'signed_psbt'}]
-    mocker.patch('src.views.components.header_frame.WalletDataService.get_session', return_value=sess)
-    mocker.patch('src.views.components.header_frame.QCoreApplication.translate', return_value='broadcast_detected')
-    
+    mocker.patch(
+        'src.views.components.header_frame.WalletDataService.get_session', return_value=sess,
+    )
+    mocker.patch(
+        'src.views.components.header_frame.QCoreApplication.translate',
+        return_value='broadcast_detected',
+    )
+
     op = mocker.Mock()
     op.operation.psbt = 'unsigned_psbt'
-    mocker.patch('src.views.components.header_frame.RgbRepository.inspect_psbt', return_value=mocker.Mock(txid='tx123'))
-    
+    mocker.patch(
+        'src.views.components.header_frame.RgbRepository.inspect_psbt',
+        return_value=mocker.Mock(txid='tx123'),
+    )
+
     header_frame.on_pending_operations_ready([op])
     assert 'broadcast' in header_frame.psbt_info_label.text().lower()
+
 
 def test_on_pending_operations_ready_empty(header_frame):
     """Test on_pending_operations_ready hides frame when no ops."""
     header_frame.on_pending_operations_ready([])
     assert not header_frame.psbt_info_frame.isVisible()
+
 
 def test_set_action_button_visible_override(header_frame, qtbot):
     """Test set_action_button_visible and its override behavior."""
@@ -516,34 +539,37 @@ def test_set_action_button_visible_override(header_frame, qtbot):
     header_frame.set_action_button_visible(False, override=True)
     assert header_frame._action_button_override is False
     assert header_frame.action_button.isVisible() is False
-    
+
     # Internal update should respect override
     header_frame.set_button_visibility(['collectibles'], [], True)
     assert header_frame.action_button.isVisible() is False
-    
+
     # Clear override
     header_frame.set_action_button_visible(True, override=False)
     assert header_frame._action_button_override is None
     assert header_frame.action_button.isVisible() is True
+
 
 def test_psbt_info_frame_click_navigation(header_frame, mocker, qtbot):
     """Test clicking PSBT info frame navigates to broadcast page."""
     qtbot.addWidget(header_frame)
     header_frame.show()
     header_frame.psbt_info_frame.show()
-    
+
     # 1. Action mode is offline_sign_needed -> Toast only
     header_frame._psbt_action_mode = 'offline_sign_needed'
-    toast_info = mocker.patch('src.views.components.header_frame.ToastManager.info')
-    
+    toast_info = mocker.patch(
+        'src.views.components.header_frame.ToastManager.info',
+    )
+
     # Get LeftButton in a robust way
     left_button = getattr(Qt, 'LeftButton', None)
     if left_button is None:
         left_button = Qt.MouseButton.LeftButton
-        
+
     qtbot.mouseClick(header_frame.psbt_info_frame, left_button)
     toast_info.assert_called_once()
-    
+
     # 2. Multisig with pending ops -> Navigate with op
     header_frame._psbt_action_mode = None
     header_frame._pending_ops = ['op1']

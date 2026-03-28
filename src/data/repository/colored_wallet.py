@@ -9,10 +9,10 @@ It behaves similarly to the `app_paths` pattern used for file paths.
 """
 from __future__ import annotations
 
-from rgb_lib import RgbLibError
-from rgb_lib import Wallet
 from rgb_lib import MultisigWallet
 from rgb_lib import Online
+from rgb_lib import RgbLibError
+from rgb_lib import Wallet
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import WalletSignatureType

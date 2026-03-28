@@ -143,7 +143,7 @@ class AssetDetailPageService:
             return handle_exceptions(exc)
 
     @staticmethod
-    def _get_amount_from_assignments(assignments: list) -> int | None:
+    def _get_amount_from_assignments(assignments: list[Assignment] | None) -> int | None:
         """Helper to get amount from assignment."""
         if not assignments:
             return None

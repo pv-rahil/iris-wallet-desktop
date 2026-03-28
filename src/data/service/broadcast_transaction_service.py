@@ -1,25 +1,31 @@
+# pylint: disable=too-many-public-methods
 """
 Service for handling broadcast transaction operations, including PSBT management,
 multisig coordination, and RGB asset transfers.
 """
 from __future__ import annotations
 
+from PySide6.QtCore import QCoreApplication
+from rgb_lib import Operation
+from rgb_lib import OperationInfo
+from rgb_lib import RgbInspection
+
 from src.data.service.wallet_data_service import WalletDataService
+from src.model.broadcast_transaction_model import InspectionContext
 from src.model.broadcast_transaction_model import MultisigPendingContext
+from src.model.broadcast_transaction_model import PendingOperationMatchResult
 from src.model.broadcast_transaction_model import PsbtDraftItem
 from src.model.broadcast_transaction_model import PsbtParsed
+from src.model.broadcast_transaction_model import PsbtTextChangedContext
+from src.model.broadcast_transaction_model import RenderInspectionResult
 from src.model.broadcast_transaction_model import RgbTransferInspectionSummary
+from src.model.broadcast_transaction_model import SignatureProgressContext
+from src.model.common_operation_model import ReceiveAssetModel
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MASTER_XPUB
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.local_store import local_store
-from PySide6.QtCore import QCoreApplication
-from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.model.common_operation_model import ReceiveAssetModel
-from src.model.broadcast_transaction_model import (
-    MultisigPendingContext, PsbtDraftItem, PsbtParsed, RgbTransferInspectionSummary,
-    PendingOperationMatchResult, InspectionContext, PsbtTextChangedContext,
-    RenderInspectionResult, SignatureProgressContext,
-)
+
 
 class BroadcastTransactionService:
     """Service class for managing broadcast transaction logic and PSBT operations."""
@@ -162,7 +168,7 @@ class BroadcastTransactionService:
             wallet_service.delete_ifa_secondary_draft(draft_id)
 
     @staticmethod
-    def multisig_pending_context(operation_info: object) -> MultisigPendingContext | None:
+    def multisig_pending_context(operation_info: OperationInfo) -> MultisigPendingContext | None:
         """Create a pending context from operation info."""
 
         if operation_info is None:
@@ -229,7 +235,7 @@ class BroadcastTransactionService:
         return pending
 
     @staticmethod
-    def operation_transfer_type_key(operation: object) -> str | None:
+    def operation_transfer_type_key(operation: Operation) -> str | None:
         """Extract transfer_type_key if this is an RGB transfer operation."""
         if operation.is_INFLATION_TO_REVIEW():
             return 'inflate_asset'
@@ -270,7 +276,7 @@ class BroadcastTransactionService:
 
     @staticmethod
     def rgb_transfer_inspection_summary(
-        rgb_details: object,
+        rgb_details: RgbInspection,
         pending_transfer_type_key: str | None,
     ) -> RgbTransferInspectionSummary:
         """Extract (asset_id, amount, transfer_type_key) from an rgb-lib inspection.
@@ -354,7 +360,7 @@ class BroadcastTransactionService:
     @staticmethod
     def get_psbt_rgb_context(psbt_base64: str) -> dict | None:
         """Fetch RGB context (fascia_path, entropy, min_confirmations) for a PSBT from storage.
-        
+
         Used by offline wallets to display RGB asset details during PSBT signing.
         """
         psbt_norm = (psbt_base64 or '').strip()
@@ -571,20 +577,21 @@ class BroadcastTransactionService:
         is_watch_only: bool,
     ) -> PendingOperationMatchResult | None:
         """Process the pending operation matching and extract context data."""
-        from rgb_lib import Operation
 
         if pending is None:
             return None
 
         operation = pending.operation
-        transfer_type = BroadcastTransactionService.operation_transfer_type_key(operation)
-        is_inflation = (transfer_type == 'inflation')
+        transfer_type = BroadcastTransactionService.operation_transfer_type_key(
+            operation,
+        )
+        is_inflation = transfer_type == 'inflation'
 
         should_trigger_rgb_inspection = False
         fascia_path = None
         entropy = 0
 
-        DETAILS_OPERATIONS = (
+        details_operations = (
             Operation.SEND_TO_REVIEW,
             Operation.SEND_PENDING,
             Operation.SEND_COMPLETED,
@@ -597,12 +604,14 @@ class BroadcastTransactionService:
             Operation.WITNESS_RECEIVE_COMPLETED,
         )
 
-        if is_watch_only and isinstance(operation, DETAILS_OPERATIONS):
+        if is_watch_only and isinstance(operation, details_operations):
             op_ctx = operation.details
             if op_ctx and hasattr(op_ctx, 'fascia_path') and op_ctx.fascia_path:
                 should_trigger_rgb_inspection = True
                 fascia_path = op_ctx.fascia_path
-                entropy = op_ctx.entropy if (hasattr(op_ctx, 'entropy') and op_ctx.entropy is not None) else 0
+                entropy = op_ctx.entropy if (
+                    hasattr(op_ctx, 'entropy') and op_ctx.entropy is not None
+                ) else 0
 
         ack_count = 0
         threshold = None
@@ -639,9 +648,13 @@ class BroadcastTransactionService:
             if hasattr(operation, 'is_SEND_TO_REVIEW'):
                 rgb_expected = operation.is_SEND_TO_REVIEW() or is_inflation
         else:
-            purpose = parsed_purpose or BroadcastTransactionService.get_psbt_purpose_from_storage(psbt_body)
+            purpose = parsed_purpose or BroadcastTransactionService.get_psbt_purpose_from_storage(
+                psbt_body,
+            )
             is_inflation = purpose in ('inflate_asset', 'inflation')
-            rgb_expected = purpose in ('send_asset', 'inflate_asset', 'inflation') or current_rgb_expected
+            rgb_expected = purpose in (
+                'send_asset', 'inflate_asset', 'inflation',
+            ) or current_rgb_expected
 
         return InspectionContext(
             is_inflation=is_inflation,
@@ -657,9 +670,13 @@ class BroadcastTransactionService:
         """Resolve the purpose for the signing action."""
         purpose = parsed_purpose
         if not purpose and operation:
-            purpose = BroadcastTransactionService.operation_transfer_type_key(operation)
+            purpose = BroadcastTransactionService.operation_transfer_type_key(
+                operation,
+            )
         if not purpose:
-            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(psbt)
+            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(
+                psbt,
+            )
         return purpose
 
     @staticmethod
@@ -671,17 +688,17 @@ class BroadcastTransactionService:
         """Parse the input PSBT and prepare context variables for _on_psbt_text_changed."""
         parsed = BroadcastTransactionService.parse_psbt_input(psbt_text)
         psbt_body = parsed.psbt
-        
-        is_same_as_last = (last_inspected_psbt == psbt_body)
+
+        is_same_as_last = last_inspected_psbt == psbt_body
         should_inspect = bool(psbt_body and len(psbt_body) >= min_psbt_len)
-        
+
         is_rgb = False
         is_inflation = False
         purpose = None
-        
+
         if should_inspect:
             is_rgb = BroadcastTransactionService.is_rgb_purpose(parsed.purpose)
-            is_inflation = (parsed.purpose == 'inflation')
+            is_inflation = parsed.purpose == 'inflation'
             purpose = parsed.purpose
 
         return PsbtTextChangedContext(
@@ -725,20 +742,22 @@ class BroadcastTransactionService:
         current_operation: object | None,
     ) -> SignatureProgressContext:
         """Context variables for rendering missing signature progress UI."""
-        has_valid_psbt = current_psbt is not None and len(current_psbt) >= min_psbt_len
+        has_valid_psbt = current_psbt is not None and len(
+            current_psbt,
+        ) >= min_psbt_len
         should_trigger_direct = False
-        
+
         if current_operation and current_psbt:
             if hasattr(current_operation, 'psbt') and current_operation.psbt == current_psbt:
                 should_trigger_direct = True
-                
+
         return SignatureProgressContext(
             has_valid_psbt=has_valid_psbt,
             should_trigger_direct=should_trigger_direct,
         )
 
     @staticmethod
-    def prepare_psbt_export_content(psbt_text: str) -> tuple[str, str] | None:
+    def prepare_psbt_export_content(psbt_text: str) -> tuple[str, str | None] | None:
         """Prepare PSBT content for export with purpose prefix.
 
         Args:
@@ -754,7 +773,9 @@ class BroadcastTransactionService:
             return None
 
         if purpose is None:
-            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(current_psbt)
+            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(
+                current_psbt,
+            )
 
         export_text = current_psbt
         if purpose:
@@ -763,7 +784,7 @@ class BroadcastTransactionService:
         return export_text, purpose
 
     @staticmethod
-    def read_psbt_from_file(file_path: str) -> tuple[str, str | None] | None:
+    def read_psbt_from_file(file_path: str) -> tuple[str | None, str | None]:
         """Read and parse PSBT from file.
 
         Args:

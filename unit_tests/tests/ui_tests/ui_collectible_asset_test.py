@@ -534,7 +534,7 @@ def test_update_grid_layout_covers_drafts_and_remove_item(collectible_asset_widg
         return_value=WalletAccessType.WATCH_ONLY,
     )
     collectible_asset_widget.is_watch_only = True
-    
+
     # Ensure scroll_area exists with a layout containing a spacer (so removeItem executes)
     collectible_asset_widget.create_collectibles_frames()
     grid_widget = QWidget()

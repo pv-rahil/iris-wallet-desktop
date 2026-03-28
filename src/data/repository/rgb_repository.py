@@ -7,20 +7,20 @@ from rgb_lib import AssetNia
 from rgb_lib import Assets
 from rgb_lib import AssetUda
 from rgb_lib import Balance
-from rgb_lib import Invoice
+from rgb_lib import ExpirationRelative
 from rgb_lib import InitOperationResult
+from rgb_lib import Invoice
 from rgb_lib import OperationInfo
 from rgb_lib import OperationResult
 from rgb_lib import PsbtInspection
-from rgb_lib import ExpirationRelative
 from rgb_lib import ReceiveData
 from rgb_lib import Recipient
 from rgb_lib import RefreshedTransfer
 from rgb_lib import RespondToOperation
 from rgb_lib import RgbInspection
+from rgb_lib import SendBeginResult
 from rgb_lib import Transfer
 from rgb_lib import WitnessData
-from rgb_lib import SendBeginResult
 
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.service.wallet_data_service import WalletDataService
@@ -36,11 +36,10 @@ from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetUdaRequestModel
 from src.model.rgb_model import ListTransfersRequestModel
+from src.model.rgb_model import RgbContextResult
 from src.model.rgb_model import RgbInvoiceRequestModel
 from src.model.rgb_model import SendAssetRequestModel
 from src.model.rgb_model import SendBeginRequestModel
-from src.model.rgb_model import SendBeginResult
-from src.model.rgb_model import RgbContextResult
 from src.utils.cache import Cache
 from src.utils.constant import UTXO_SIZE_SAT
 from src.utils.custom_context import repository_custom_context
@@ -102,15 +101,18 @@ class RgbRepository:
             online_kwargs = {
                 'online': colored_wallet.online,
             } if colored_wallet.is_multisig else {}
+            data: ReceiveData
             if colored_wallet.is_multisig:
-                data: ReceiveData = colored_wallet.wallet.witness_receive(
-                **online_kwargs,
+                data = colored_wallet.wallet.witness_receive(
+                    **online_kwargs,
                     asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
                     transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
                 )
-            else :
-                expiration = ExpirationRelative(duration_seconds=invoice.duration_seconds, exact=True)
-                data: ReceiveData = colored_wallet.wallet.witness_receive(
+            else:
+                expiration = ExpirationRelative(
+                    duration_seconds=invoice.duration_seconds, exact=True,
+                )
+                data = colored_wallet.wallet.witness_receive(
                     asset_id=invoice.asset_id, assignment=invoice.assignment, expiration=expiration,
                     transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
                 )
@@ -127,18 +129,22 @@ class RgbRepository:
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=asset_detail.recipient_id,
-                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT, blinding=None),
+                witness_data=WitnessData(
+                    amount_sat=UTXO_SIZE_SAT, blinding=None,
+                ),
                 assignment=asset_detail.assignment,
                 transport_endpoints=asset_detail.transport_endpoints,
             )
 
             recipient_map = {asset_detail.asset_id: [recipient]}
-            expiration = ExpirationRelative(duration_seconds=asset_detail.duration_seconds, exact=True)
+            expiration = ExpirationRelative(
+                duration_seconds=asset_detail.duration_seconds, exact=True,
+            )
 
             data: OperationResult = colored_wallet.wallet.send(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=asset_detail.donation,
                 fee_rate=asset_detail.fee_rate, min_confirmations=asset_detail.min_confirmations, skip_sync=asset_detail.skip_sync,
-                expiration=expiration
+                expiration=expiration,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -253,15 +259,19 @@ class RgbRepository:
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=detail.recipient_id,
-                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT,blinding=None),
+                witness_data=WitnessData(
+                    amount_sat=UTXO_SIZE_SAT, blinding=None,
+                ),
                 assignment=detail.assignment,
                 transport_endpoints=detail.transport_endpoints,
             )
             recipient_map = {detail.asset_id: [recipient]}
-            expiration = ExpirationRelative(duration_seconds=detail.duration_seconds, exact=True)
+            expiration = ExpirationRelative(
+                duration_seconds=detail.duration_seconds, exact=True,
+            )
             result: SendBeginResult = colored_wallet.wallet.send_begin(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration=expiration
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration=expiration,
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
@@ -298,7 +308,9 @@ class RgbRepository:
                         if op and hasattr(op, 'psbt') and op.psbt == psbt:
                             op_details = getattr(op, 'details', None)
                             if op_details:
-                                fascia_path = getattr(op_details, 'fascia_path', None)
+                                fascia_path = getattr(
+                                    op_details, 'fascia_path', None,
+                                )
                                 entropy = getattr(op_details, 'entropy', None)
                             break
             return RgbContextResult(
@@ -315,21 +327,23 @@ class RgbRepository:
         with repository_custom_context():
             recipient = Recipient(
                 recipient_id=detail.recipient_id,
-                witness_data=WitnessData(amount_sat=UTXO_SIZE_SAT,blinding=None),
+                witness_data=WitnessData(
+                    amount_sat=UTXO_SIZE_SAT, blinding=None,
+                ),
                 assignment=detail.assignment,
                 transport_endpoints=detail.transport_endpoints,
             )
             recipient_map = {detail.asset_id: [recipient]}
             result: InitOperationResult = colored_wallet.wallet.send_init(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, duration_seconds=detail.duration_seconds
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, duration_seconds=detail.duration_seconds,
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.delete_draft_transfer(detail.asset_id)
                 # Immediately sync to get RGB context (fascia_path, entropy) for USB sync
                 rgb_context = RgbRepository._sync_and_get_rgb_context(
-                    result.psbt, detail.min_confirmations
+                    result.psbt, detail.min_confirmations,
                 )
                 wallet_service.add_psbt(
                     result.psbt,
@@ -400,10 +414,12 @@ class RgbRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.delete_secondary_draft_by_psbt(asset_id=detail.asset_id)
+                wallet_service.delete_secondary_draft_by_psbt(
+                    asset_id=detail.asset_id,
+                )
                 # Immediately sync to get RGB context (fascia_path, entropy) for USB sync
                 rgb_context = RgbRepository._sync_and_get_rgb_context(
-                    result.psbt, detail.min_confirmations
+                    result.psbt, detail.min_confirmations,
                 )
                 wallet_service.add_psbt(
                     result.psbt,
@@ -430,7 +446,6 @@ class RgbRepository:
                 wallet_service.delete_secondary_draft_by_psbt(signed_psbt)
             return data
 
-
     @staticmethod
     def sync_with_bridge() -> OperationInfo:
         """Sync with the multisig bridge and get pending operations."""
@@ -453,7 +468,9 @@ class RgbRepository:
             if respond_to_operation.is_ack():
                 wallet_service = WalletDataService.get_session()
                 if wallet_service is not None:
-                        wallet_service.delete_psbt(respond_to_operation.signed_psbt)
+                    wallet_service.delete_psbt(
+                        respond_to_operation.signed_psbt,
+                    )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()

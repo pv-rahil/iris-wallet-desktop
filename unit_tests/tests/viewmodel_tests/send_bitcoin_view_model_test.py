@@ -13,7 +13,8 @@ import pytest
 from src.model.btc_model import SendBtcResponseModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletType, WalletSignatureType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_BITCOIN_SENT
@@ -73,11 +74,14 @@ def test_on_success(send_bitcoin_view_model):
 def test_on_success_hw_storage(send_bitcoin_view_model, mocker):
     """Test successful BTC send with HW storage emits hw_dialog_update."""
     send_bitcoin_view_model._page_navigation = mocker.Mock()
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
     mocker.patch('src.viewmodels.send_bitcoin_view_model.ToastManager.success')
     slot = mocker.Mock()
     send_bitcoin_view_model.hw_dialog_update.connect(slot)
-    
+
     send_bitcoin_view_model.on_success(SendBtcResponseModel(tx_id='t1'))
     slot.assert_called_once()
 
@@ -178,18 +182,29 @@ def test_send_btc_begin_hw_online_emits_signing_and_calls_repo(send_bitcoin_view
 
 def test_send_btc_begin_multisig(send_bitcoin_view_model, mocker):
     """send_btc_begin should trigger multisig begin properly."""
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+
     hw_slot = mocker.Mock()
     send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
     mock_run = mocker.patch.object(send_bitcoin_view_model, 'run_in_thread')
-    
+
     send_bitcoin_view_model.send_btc_begin('addr', 1, 2)
     hw_slot.assert_called_once()
     mock_run.assert_called_once()
-    assert 'send_btc_init' in str(mock_run.call_args[0]) or mock_run.call_args[0][0].__name__ == 'send_btc_init'
+    assert 'send_btc_init' in str(
+        mock_run.call_args[0],
+    ) or mock_run.call_args[0][0].__name__ == 'send_btc_init'
 
 
 def test_on_psbt_created_watch_only_emits_unsigned(send_bitcoin_view_model, mocker):
@@ -212,10 +227,19 @@ def test_on_psbt_created_non_watch_runs_sign_finalize(send_bitcoin_view_model, m
         'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_access_type',
         return_value=mocker.Mock(name='NOT_WATCH_ONLY'),
     )
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
-    
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
+
     hw_slot = mocker.Mock()
     send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
     send_bitcoin_view_model.run_in_thread = Mock()
@@ -228,22 +252,36 @@ def test_on_psbt_created_non_watch_runs_sign_finalize(send_bitcoin_view_model, m
 
 def test_on_psbt_created_multisig(send_bitcoin_view_model, mocker):
     """Test on_psbt_created handles MULTI_SIG logic and hw signals."""
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    mocker.patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WITH_PRIVATE_KEY,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+
     # Needs a mock response with psbt and operation_idx since it's multisig
     res = mocker.Mock(psbt='psbt1', operation_idx=1)
     hw_slot = mocker.Mock()
     send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
     mock_run = mocker.patch.object(send_bitcoin_view_model, 'run_in_thread')
-    
+
     send_bitcoin_view_model.on_psbt_created(res)
     assert send_bitcoin_view_model.operation_idx == 1
     hw_slot.assert_called_once()
     mock_run.assert_called_once()
-    assert 'sign_psbt' in str(mock_run.call_args[0]) or mock_run.call_args[0][0].__name__ == 'sign_psbt'
+    assert 'sign_psbt' in str(
+        mock_run.call_args[0],
+    ) or mock_run.call_args[0][0].__name__ == 'sign_psbt'
 
 
 def test_on_multisig_psbt_signed(send_bitcoin_view_model, mocker):
@@ -252,11 +290,13 @@ def test_on_multisig_psbt_signed(send_bitcoin_view_model, mocker):
     hw_slot = mocker.Mock()
     send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
     mock_run = mocker.patch.object(send_bitcoin_view_model, 'run_in_thread')
-    
+
     send_bitcoin_view_model.on_multisig_psbt_signed('signed1')
     hw_slot.assert_called_once()
     mock_run.assert_called_once()
-    assert 'respond_to_operation' in str(mock_run.call_args[0]) or mock_run.call_args[0][0].__name__ == 'respond_to_operation'
+    assert 'respond_to_operation' in str(
+        mock_run.call_args[0],
+    ) or mock_run.call_args[0][0].__name__ == 'respond_to_operation'
 
 
 def test_on_success_multisig_post(send_bitcoin_view_model, mocker):
@@ -264,14 +304,18 @@ def test_on_success_multisig_post(send_bitcoin_view_model, mocker):
     send_bitcoin_view_model._page_navigation = mocker.Mock()
     hw_slot = mocker.Mock()
     send_bitcoin_view_model.hw_dialog_update.connect(hw_slot)
-    mock_toast = mocker.patch('src.viewmodels.send_bitcoin_view_model.ToastManager.success')
+    mock_toast = mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.ToastManager.success',
+    )
     mock_run = mocker.patch.object(send_bitcoin_view_model, 'run_in_thread')
-    
+
     send_bitcoin_view_model.on_success_multisig_post()
     hw_slot.assert_called_once()
     mock_toast.assert_called_once()
     mock_run.assert_called_once()
-    assert 'sync_with_bridge' in str(mock_run.call_args[0]) or mock_run.call_args[0][0].__name__ == 'sync_with_bridge'
+    assert 'sync_with_bridge' in str(
+        mock_run.call_args[0],
+    ) or mock_run.call_args[0][0].__name__ == 'sync_with_bridge'
 
 
 def test_on_psbt_signed_and_finalized_hw_online_triggers_broadcast(send_bitcoin_view_model, mocker):

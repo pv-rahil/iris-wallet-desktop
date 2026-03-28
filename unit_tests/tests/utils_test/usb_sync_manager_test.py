@@ -2,13 +2,14 @@
 """Unit tests for `USBSyncManager`."""
 from __future__ import annotations
 
+import hashlib
 import io
+import json
 import os
 import zipfile
 from types import SimpleNamespace
-import json
-import hashlib
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -22,7 +23,6 @@ from src.utils.constant import LAST_SYNC_DIRECTION
 from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.constant import SYNC_INDEX
 from src.utils.usb_detector import USBDrive
-from src.utils.custom_exception import CommonException
 from src.utils.usb_sync_manager import USBSyncManager
 
 
@@ -136,7 +136,9 @@ def sandbox_app_paths(tmp_path):
         config_file_path=str(tmp_path / 'app' / 'config.ini'),
         logs_folder_path=str(tmp_path / 'app' / 'logs'),
         cache_folder_path=str(tmp_path / 'app' / 'cache'),
-        multisig_cosigners_file_path=str(tmp_path / 'app' / 'multisig_cosigners.json'),
+        multisig_cosigners_file_path=str(
+            tmp_path / 'app' / 'multisig_cosigners.json',
+        ),
     )
 
 
@@ -703,17 +705,17 @@ def test_restore_wallet_data_multisig(manager, tmp_path):
     ap = sandbox_app_paths(tmp_path)
     os.makedirs(ap.app_path, exist_ok=True)
     cosigners_file = os.path.basename(ap.multisig_cosigners_file_path)
-    
+
     # Case 1: valid json with required_signers
     data = {'cosigners': ['c1'], 'required_signers': 1, 'total_signers': 1}
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w') as z:
         z.writestr(cosigners_file, json.dumps(data))
-        z.writestr('other/', '') # covered line 491-492
-        
+        z.writestr('other/', '')  # covered line 491-492
+
     with patch('src.utils.usb_sync_manager.app_paths', ap), \
-         patch('src.utils.usb_sync_manager.SettingRepository.set_multisig_config') as mock_conf, \
-         patch('src.utils.usb_sync_manager.SettingRepository.set_cosigners') as mock_cos:
+            patch('src.utils.usb_sync_manager.SettingRepository.set_multisig_config') as mock_conf, \
+            patch('src.utils.usb_sync_manager.SettingRepository.set_cosigners') as mock_cos:
         manager._restore_wallet_data(buf.getvalue(), only_folder=True)
         mock_conf.assert_called_with(1, 1)
         mock_cos.assert_called_with(['c1'])
@@ -724,10 +726,10 @@ def test_restore_wallet_data_multisig(manager, tmp_path):
     with zipfile.ZipFile(buf, 'w') as z:
         z.writestr(cosigners_file, json.dumps(data))
     with patch('src.utils.usb_sync_manager.app_paths', ap), \
-         patch('src.utils.usb_sync_manager.SettingRepository.set_cosigners') as mock_cos:
+            patch('src.utils.usb_sync_manager.SettingRepository.set_cosigners') as mock_cos:
         manager._restore_wallet_data(buf.getvalue(), only_folder=True)
         mock_cos.assert_called_with(['c1'])
-        
+
     # Case 3: raw binary (backward compatibility or raw file)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w') as z:
@@ -743,13 +745,15 @@ def test_create_wallet_data_package_multisig(manager, tmp_path):
     os.makedirs(ap.app_path, exist_ok=True)
     manager.master_fingerprint = 'F1'
     os.makedirs(os.path.join(ap.app_path, 'F1'), exist_ok=True)
-    
+
     with patch('src.utils.usb_sync_manager.app_paths', ap), \
-         patch('src.utils.usb_sync_manager.SettingRepository.get_cosigners', return_value=['c1']), \
-         patch('src.utils.usb_sync_manager.SettingRepository.get_multisig_config', return_value=(1, 2)):
+            patch('src.utils.usb_sync_manager.SettingRepository.get_cosigners', return_value=['c1']), \
+            patch('src.utils.usb_sync_manager.SettingRepository.get_multisig_config', return_value=(1, 2)):
         data = manager._create_wallet_data_package_with_index(1)
         with zipfile.ZipFile(io.BytesIO(data), 'r') as z:
-            assert os.path.basename(ap.multisig_cosigners_file_path) in z.namelist()
+            assert os.path.basename(
+                ap.multisig_cosigners_file_path,
+            ) in z.namelist()
 
 
 def test_sync_from_usb_is_load(manager, tmp_path, fake_local_store):
@@ -757,19 +761,21 @@ def test_sync_from_usb_is_load(manager, tmp_path, fake_local_store):
     ap = sandbox_app_paths(tmp_path)
     os.makedirs(ap.app_path, exist_ok=True)
     manager.master_fingerprint = 'abcd'
-    ini = f"sync_index=10\nrgb_lib_version={next(iter(COMPATIBLE_RGB_LIB_VERSION))}\n{ACCOUNT_XPUB_VANILLA}=X\n{ACCOUNT_XPUB_COLORED}=C\n"
+    ini = f"sync_index=10\nrgb_lib_version={next(iter(COMPATIBLE_RGB_LIB_VERSION))}\n{
+        ACCOUNT_XPUB_VANILLA
+    }=X\n{ACCOUNT_XPUB_COLORED}=C\n"
     usb_dir, _ = make_usb_with_zip(tmp_path, 'abcd', ini)
     manager.selected_drive = USBDrive(name='USB', path=usb_dir, is_empty=False)
-    
+
     with patch('src.utils.usb_sync_manager.app_paths', ap), \
-         patch('src.utils.usb_sync_manager.local_store', fake_local_store):
+            patch('src.utils.usb_sync_manager.local_store', fake_local_store):
         fake_local_store.set_value(ACCOUNT_XPUB_VANILLA, 'X')
         fake_local_store.set_value(ACCOUNT_XPUB_COLORED, 'C')
-        
+
         # is_load=True
         manager.sync_from_usb(is_load=True)
         assert fake_local_store.get_value(SYNC_INDEX) == 10
-        
+
         # is_load=False
         manager.sync_from_usb(is_load=False)
         assert fake_local_store.get_value(SYNC_INDEX) == 11
@@ -778,13 +784,13 @@ def test_sync_from_usb_is_load(manager, tmp_path, fake_local_store):
 def test_misc_exceptions(manager, tmp_path):
     """Cover various exception catch-all blocks."""
     manager.selected_drive = None
-    assert manager._determine_sync_direction() is None # line 117
-    
+    assert manager._determine_sync_direction() is None  # line 117
+
     # 722: _calculate_wallet_checksum handle non-dir
     with patch('os.path.isdir', return_value=False):
         h = manager._calculate_wallet_checksum()
         assert isinstance(h, str) and len(h) == 64
-        
+
     # 766: _calculate_usb_wallet_checksum no drive
     manager.selected_drive = None
     assert manager._calculate_usb_wallet_checksum() == hashlib.sha256(b'').hexdigest()
@@ -796,9 +802,9 @@ def test_perform_sync_to_usb_integration(manager, tmp_path, fake_local_store):
     usb_dir.mkdir()
     drv = USBDrive(name='USB', path=str(usb_dir), is_empty=True)
     fake_local_store.set_value(MASTER_FINGERPRINT, 'abcd')
-    
+
     with patch('src.utils.usb_sync_manager.local_store', fake_local_store), \
-         patch.object(manager, 'sync_to_usb') as mock_to:
+            patch.object(manager, 'sync_to_usb') as mock_to:
         assert manager.perform_sync(drv) == 'to_usb'
         mock_to.assert_called_once()
 
@@ -806,24 +812,28 @@ def test_perform_sync_to_usb_integration(manager, tmp_path, fake_local_store):
 def test_validate_wallet_data_mismatches(manager, fake_local_store):
     """Test xpub mismatches in _validate_wallet_data."""
     rgb_ok = next(iter(COMPATIBLE_RGB_LIB_VERSION))
-    
+
     # Vanilla mismatch
-    ini = f"wallet.ini\n{ACCOUNT_XPUB_VANILLA}=USB_V\n{ACCOUNT_XPUB_COLORED}=C\nrgb_lib_version={rgb_ok}\n"
+    ini = f"wallet.ini\n{ACCOUNT_XPUB_VANILLA}=USB_V\n{
+        ACCOUNT_XPUB_COLORED
+    }=C\nrgb_lib_version={rgb_ok}\n"
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w') as z:
         z.writestr('wallet.ini', ini)
-    
+
     with patch('src.utils.usb_sync_manager.local_store', fake_local_store):
         fake_local_store.set_value(ACCOUNT_XPUB_VANILLA, 'LOCAL_V')
         fake_local_store.set_value(ACCOUNT_XPUB_COLORED, 'C')
         assert manager._validate_wallet_data(buf.getvalue()) is False
-        
+
     # Colored mismatch
-    ini = f"wallet.ini\n{ACCOUNT_XPUB_VANILLA}=V\n{ACCOUNT_XPUB_COLORED}=USB_C\nrgb_lib_version={rgb_ok}\n"
+    ini = f"wallet.ini\n{ACCOUNT_XPUB_VANILLA}=V\n{
+        ACCOUNT_XPUB_COLORED
+    }=USB_C\nrgb_lib_version={rgb_ok}\n"
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w') as z:
         z.writestr('wallet.ini', ini)
-        
+
     with patch('src.utils.usb_sync_manager.local_store', fake_local_store):
         fake_local_store.set_value(ACCOUNT_XPUB_VANILLA, 'V')
         fake_local_store.set_value(ACCOUNT_XPUB_COLORED, 'LOCAL_C')
@@ -833,8 +843,8 @@ def test_validate_wallet_data_mismatches(manager, fake_local_store):
 def test_determine_sync_direction_exceptions(manager):
     """Trigger exceptions in direction determination."""
     manager.selected_drive = MagicMock()
-    with patch.object(manager, '_check_usb_ini_exists', side_effect=Exception("oops")):
+    with patch.object(manager, '_check_usb_ini_exists', side_effect=Exception('oops')):
         assert manager._determine_sync_direction() is None
-        
-    with patch.object(manager, '_get_usb_index', side_effect=Exception("oops")):
+
+    with patch.object(manager, '_get_usb_index', side_effect=Exception('oops')):
         assert manager._determine_sync_direction_with_counter() is None

@@ -18,8 +18,8 @@ from src.utils.constant import APP_NAME
 from src.utils.constant import CACHE_FOLDER_NAME
 from src.utils.constant import LOG_FOLDER_NAME
 from src.utils.constant import MNEMONIC_KEY
-from src.utils.constant import WALLET_DATA_FOLDER_NAME
 from src.utils.constant import MULTISIG_COSIGNERS_FILE_NAME
+from src.utils.constant import WALLET_DATA_FOLDER_NAME
 from src.utils.handle_exception import handle_exceptions
 from src.utils.local_store import local_store
 

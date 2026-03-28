@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QVBoxLayout
 
+from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import set_widgets_visible
 from src.views.components.buttons import PrimaryButton
@@ -204,7 +205,9 @@ class BroadcastInspectionDetails(QFrame):
         val = QLabel(tile)
         val.setObjectName(value_id)
         val.setWordWrap(True)
-        val.setStyleSheet('font-size: 14px; color: #FFFFFF; font-family: "JetBrains Mono", monospace;')
+        val.setStyleSheet(
+            'font-size: 14px; color: #FFFFFF; font-family: "JetBrains Mono", monospace;',
+        )
         lbl.setAlignment(
             Qt.AlignmentFlag.AlignLeft |
             Qt.AlignmentFlag.AlignVCenter,
@@ -316,7 +319,6 @@ class BroadcastInspectionDetails(QFrame):
             self.tile_fee.hide()
 
         if pending_key:
-            from src.data.service.broadcast_transaction_service import BroadcastTransactionService
             label = BroadcastTransactionService.get_transfer_type_label(
                 pending_key,
             )
@@ -462,19 +464,23 @@ class BroadcastInspectionDetails(QFrame):
         )
 
     def set_primary_loading(self, loading: bool):
+        """Set the primary button loading state."""
         if loading:
             self.btn_primary.start_loading()
         else:
             self.btn_primary.stop_loading()
 
     def set_reject_loading(self, loading: bool):
+        """Set the reject button loading state."""
         if loading:
             self.btn_reject.start_loading()
         else:
             self.btn_reject.stop_loading()
 
     def set_primary_enabled(self, enabled: bool):
+        """Set the primary button enabled state."""
         self.btn_primary.setEnabled(enabled)
 
     def set_reject_enabled(self, enabled: bool):
+        """Set the reject button enabled state."""
         self.btn_reject.setEnabled(enabled)

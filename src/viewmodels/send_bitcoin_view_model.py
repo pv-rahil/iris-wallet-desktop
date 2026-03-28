@@ -28,7 +28,8 @@ from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_POST_TO_BRIDGE
-from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET,INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
@@ -47,6 +48,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.address = None
         self.amount = None
         self.fee_rate = None
+        self.operation_idx: int | None = None
 
     def on_send_click(self, address: str, amount: int, fee_rate: int):
         """"
@@ -111,7 +113,8 @@ class SendBitcoinViewModel(QObject, ThreadManager):
             'Exception occurred while sending btc: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or \
+                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.hw_dialog_update.emit(
                 str(error), PsbtStatus.ERROR,
             )
@@ -133,7 +136,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
         if (is_hw and is_online and SettingRepository.get_wallet_signature_type() == WalletSignatureType.STANDARD_TYPE_WALLET) or (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET and \
+            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET and
                 SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
         ):
             self.hw_dialog_update.emit(

@@ -271,7 +271,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_multisig_sign_error(self, error: Exception) -> None:
+    def on_multisig_sign_error(self, error: CommonException) -> None:
         """Handle error for multisig signing."""
         self.is_loading.emit(False)
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET:

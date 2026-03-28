@@ -21,8 +21,8 @@ from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.biscuit_auth import generate_and_store_token
-from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import ACCOUNT_XPUB_COLORED
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MULTISIG_BRIDGE_URL
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
@@ -265,7 +265,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
             operation = op_info.operation
             if operation is None:
                 continue
-            
+
             is_to_review = (
                 operation.is_CREATE_UTXOS_TO_REVIEW()
                 or operation.is_SEND_BTC_TO_REVIEW()
@@ -393,18 +393,27 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                     already_signed = False
                     if existing_signed:
                         try:
-                            unsigned_txid = RgbRepository.inspect_psbt(psbt=psbt).txid
+                            unsigned_txid = RgbRepository.inspect_psbt(
+                                psbt=psbt,
+                            ).txid
                             for p in existing_signed:
+                                psbt_value = p.get('psbt')
+                                if not psbt_value:
+                                    continue
                                 try:
-                                    signed_txid = RgbRepository.inspect_psbt(psbt=p.get('psbt')).txid
+                                    signed_txid = RgbRepository.inspect_psbt(
+                                        psbt=psbt_value,
+                                    ).txid
                                     if unsigned_txid == signed_txid:
                                         already_signed = True
                                         break
                                 except Exception:
                                     pass
                         except Exception as e:
-                            logger.error("Failed to inspect PSBT for duplicate check: %s", e)
-                    
+                            logger.error(
+                                'Failed to inspect PSBT for duplicate check: %s', e,
+                            )
+
                     if already_signed:
                         continue
 
@@ -416,9 +425,13 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                     if is_rgb_operation:
                         op_details = getattr(operation, 'details', None)
                         if op_details is not None:
-                            fascia_path = getattr(op_details, 'fascia_path', None)
+                            fascia_path = getattr(
+                                op_details, 'fascia_path', None,
+                            )
                             entropy = getattr(op_details, 'entropy', None)
-                            min_confirmations = getattr(op_details, 'min_confirmations', None)
+                            min_confirmations = getattr(
+                                op_details, 'min_confirmations', None,
+                            )
 
                     wallet_service.add_psbt(
                         psbt,
@@ -438,17 +451,19 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
     def _update_rgb_context_for_initiator_psbts(self, pending_ops: list):
         """Update RGB context for PSBTs where current wallet is the initiator.
-        
+
         When watch-only initiates a send/inflate operation, the PSBT is saved immediately
-        but RGB context (fascia_path, entropy, min_confirmations) comes later from 
+        but RGB context (fascia_path, entropy, min_confirmations) comes later from
         sync_with_bridge. This method updates those PSBTs with the RGB context.
         """
         wallet_service = WalletDataService.get_session()
         if wallet_service is None:
             return
 
-        local_xpub = SettingRepository.get_config_value(ACCOUNT_XPUB_COLORED, None)
-        
+        local_xpub = SettingRepository.get_config_value(
+            ACCOUNT_XPUB_COLORED, None,
+        )
+
         for op_info in pending_ops:
             if op_info is None or not hasattr(op_info, 'operation'):
                 continue
@@ -500,7 +515,9 @@ class HeaderFrameViewModel(QObject, ThreadManager):
                         fascia_path[:20] if fascia_path else None,
                     )
             except Exception as exc:
-                logger.error('Failed to update RGB context for initiator PSBT: %s', exc)
+                logger.error(
+                    'Failed to update RGB context for initiator PSBT: %s', exc,
+                )
 
     def on_multisig_sync_error(self, error: Exception):
         """Handle bridge sync error."""

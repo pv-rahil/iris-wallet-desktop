@@ -401,14 +401,15 @@ class RGBAssetTransactionDetail(QWidget):
         if self.params.transfer_status == TransferStatusEnumModel.INFLATION:
             self.consignment_endpoints_value.setText('N/A')
             if self.params.confirmation_date and self.params.confirmation_time:
-                self.date_value.setText(f'{self.params.confirmation_date} | {
-                                        self.params.confirmation_time
-                                        }')
+                self.date_value.setText(
+                    f"""{self.params.confirmation_date}
+                    | {self.params.confirmation_time}""",
+                )
         if self.params.transfer_status == TransferStatusEnumModel.INTERNAL:
             self.consignment_endpoints_value.setText('N/A')
-            date_time_concat = f'{self.params.confirmation_date} | {
+            date_time_concat = f"""{self.params.confirmation_date} | {
                 self.params.confirmation_time
-            }'
+            }"""
             self.date_value.setText(date_time_concat)
             self.blinded_utxo_label.hide()
             self.blinded_utxo_value.hide()
@@ -575,7 +576,9 @@ class RGBAssetTransactionDetail(QWidget):
         Returns:
             str: Filename for the consignment.
         """
-        kind = self.params.transfer_status.value.lower()
+        kind = None
+        if self.params.transfer_status is not None:
+            kind = self.params.transfer_status.value.lower()
         if self.params.transfer_status == TransferStatusEnumModel.INTERNAL:
             suffix_source = self.params.asset_id
         else:

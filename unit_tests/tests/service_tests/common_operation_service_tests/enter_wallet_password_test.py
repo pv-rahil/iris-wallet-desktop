@@ -1,7 +1,7 @@
 """Unit tests for enter wallet password method in common operation service"""
 # Disable the redefined-outer-name warning as
 # it's normal to pass mocked object in tests function
-# pylint: disable=redefined-outer-name, unused-argument, protected-access, unused-import
+# pylint: disable=redefined-outer-name, unused-argument, protected-access, unused-import, too-many-arguments
 from __future__ import annotations
 
 from unittest.mock import MagicMock

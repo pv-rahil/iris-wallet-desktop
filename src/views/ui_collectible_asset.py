@@ -35,13 +35,13 @@ from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import register_multisig_button
+from src.utils.logging import logger
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
-from src.utils.logging import logger
 
 
 class CollectiblesAssetWidget(QWidget):
@@ -60,6 +60,7 @@ class CollectiblesAssetWidget(QWidget):
             ),
         )
         self.num_columns = None
+        self._empty_spacer_item = None
         self._view_model.main_asset_view_model.asset_loaded.connect(
             self.create_collectibles_frames,
         )
@@ -268,7 +269,7 @@ class CollectiblesAssetWidget(QWidget):
                 self.grid_layout = grid_layout
                 self.resizeEvent = self.resize_event_called
         except Exception as e:
-            logger.error(f"Error in update_grid_layout: {e}")
+            logger.error('Error in update_grid_layout: %s', e)
 
     def create_collectibles_frames(self):
         """Initial setup for the grid layout and scroll area"""

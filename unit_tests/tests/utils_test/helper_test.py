@@ -10,12 +10,19 @@ from unittest.mock import mock_open
 from unittest.mock import patch
 
 import pytest
+from PySide6.QtWidgets import QPushButton
 from rgb_lib import BitcoinNetwork
+from rgb_lib import MultisigKeys
 
 from src.model.common_operation_model import ConfigModel
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.custom_exception import CommonException
+from src.utils.helpers import build_keys_from_data
 from src.utils.helpers import check_google_auth_token_available
+from src.utils.helpers import connect_multisig_pending_signal
 from src.utils.helpers import create_circular_pixmap
 from src.utils.helpers import get_bitcoin_config
 from src.utils.helpers import get_bitcoin_network_from_enum
@@ -24,19 +31,11 @@ from src.utils.helpers import handle_asset_address
 from src.utils.helpers import hash_mnemonic
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import read_rgb_lib_version_file
+from src.utils.helpers import register_multisig_button
+from src.utils.helpers import set_widgets_visible
 from src.utils.helpers import validate_mnemonic
 from src.utils.helpers import validate_xpub
 from src.utils.helpers import write_rgb_lib_version_file
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import KeyStorageType, WalletAccessType
-from src.utils.helpers import build_keys_from_data
-from rgb_lib import MultisigKeys
-from src.utils.helpers import get_bitcoin_config
-from rgb_lib import BitcoinNetwork
-from src.utils.helpers import set_widgets_visible
-from src.utils.helpers import register_multisig_button
-from PySide6.QtWidgets import QPushButton
-from src.utils.helpers import connect_multisig_pending_signal
 
 
 # Constants for mocking
@@ -217,7 +216,8 @@ def test_create_circular_pixmap(mock_qcolor, mock_qpainter, mock_qpixmap, mock_q
         (NetworkEnumModel.MAINNET, BitcoinNetwork.MAINNET()),
         (NetworkEnumModel.TESTNET, BitcoinNetwork.TESTNET()),
         (NetworkEnumModel.REGTEST, BitcoinNetwork.REGTEST()),
-        (BitcoinNetwork.MAINNET(), BitcoinNetwork.MAINNET()),  # Already BitcoinNetwork
+        # Already BitcoinNetwork
+        (BitcoinNetwork.MAINNET(), BitcoinNetwork.MAINNET()),
     ],
 )
 def test_get_bitcoin_network_from_enum_valid(network_enum, expected_network):
@@ -348,7 +348,7 @@ def test_hash_mnemonic_multisig(mock_setting_repo):
     # Return enums directly
     mock_setting_repo.get_key_storage_type.return_value = KeyStorageType.HARDWARE_WALLET
     mock_setting_repo.get_wallet_access_type.return_value = WalletAccessType.WATCH_ONLY
-    
+
     with patch('src.utils.helpers.validate_xpub', return_value=True) as mock_validate:
         xpub = 'tpubD6NzVbtR7TQ39BH8i8H7S86t65s46s789a...'
         hash_mnemonic(xpub)
@@ -359,7 +359,7 @@ def test_hash_mnemonic_multisig(mock_setting_repo):
 def test_build_keys_from_data_singlesig(mock_setting_repo):
     """Test build_keys_from_data for singlesig wallet."""
     mock_setting_repo.get_wallet_signature_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-        
+
     with patch('src.utils.helpers.SinglesigKeys') as mock_keys:
         build_keys_from_data('v_xpub', 'c_xpub', 'fp', 'mnemonic', 1)
         mock_keys.assert_called_once()
@@ -370,13 +370,19 @@ def test_build_keys_from_data_multisig(mock_setting_repo):
     """Test build_keys_from_data for multisig wallet."""
     mock_setting_repo.get_wallet_signature_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
     mock_setting_repo.get_multisig_config.return_value = (2, 3)
-    
+
     cosigners = [
-        {'account_xpub_vanilla': 'v2', 'account_xpub_colored': 'c2', 'master_fingerprint': 'fp2'},
-        {'account_xpub_vanilla': 'v3', 'account_xpub_colored': 'c3', 'master_fingerprint': 'fp3'},
+        {
+            'account_xpub_vanilla': 'v2', 'account_xpub_colored': 'c2',
+            'master_fingerprint': 'fp2',
+        },
+        {
+            'account_xpub_vanilla': 'v3', 'account_xpub_colored': 'c3',
+            'master_fingerprint': 'fp3',
+        },
     ]
     mock_setting_repo.get_cosigners.return_value = cosigners
-    
+
     keys = build_keys_from_data('v1', 'c1', 'fp1')
     assert isinstance(keys, MultisigKeys)
     assert len(keys.cosigners) == 3
@@ -386,14 +392,14 @@ def test_set_widgets_visible():
     """Test set_widgets_visible including exception paths."""
     w1 = MagicMock()
     w2 = MagicMock()
-    w2.setVisible.side_effect = Exception("err")
-    
+    w2.setVisible.side_effect = Exception('err')
+
     set_widgets_visible([w1, w2, None], True)
     w1.setVisible.assert_called_with(True)
     w2.show.assert_called_once()
-    
+
     w3 = MagicMock()
-    w3.setVisible.side_effect = Exception("err")
+    w3.setVisible.side_effect = Exception('err')
     set_widgets_visible([w3], False)
     w3.hide.assert_called_once()
 
@@ -402,38 +408,54 @@ def test_connect_multisig_pending_signal():
     """Test connect_multisig_pending_signal success and failure."""
     vm = MagicMock()
     cb = MagicMock()
-    
+
     connect_multisig_pending_signal(vm, cb)
-    vm.header_frame_view_model.multisig_pending_state_changed.connect.assert_called_once_with(cb)
+    vm.header_frame_view_model.multisig_pending_state_changed.connect.assert_called_once_with(
+        cb,
+    )
     cb.assert_called_once_with(vm.header_frame_view_model.is_multisig_pending)
-    
+
     # Failure path
-    connect_multisig_pending_signal(None, cb) # Should not raise
+    connect_multisig_pending_signal(None, cb)  # Should not raise
 
 
 def test_register_multisig_button():
     """Test register_multisig_button with various states."""
-    
+
     btn = MagicMock(spec=QPushButton)
     vm = MagicMock()
     # Explicitly set to False to start in normal state
     vm.header_frame_view_model.is_multisig_pending = False
     handler = MagicMock()
-    
+
+    # Track property values to simulate Qt behavior
+    property_values = {}
+
+    def mock_set_property(key, value):
+        property_values[key] = value
+
+    def mock_get_property(key):
+        return property_values.get(key)
+
+    btn.setProperty.side_effect = mock_set_property
+    btn.property.side_effect = mock_get_property
+
     register_multisig_button(vm, btn, handler)
     btn.clicked.connect.assert_called_with(handler)
-    
+
     # Simulate signal update
-    callback = vm.header_frame_view_model.multisig_pending_state_changed.connect.call_args[0][0]
-    
+    callback = vm.header_frame_view_model.multisig_pending_state_changed.connect.call_args[
+        0
+    ][0]
+
     # Switch to pending
     callback(True)
     btn.clicked.disconnect.assert_called_with(handler)
-    btn.setProperty.assert_called_with("pending", "true")
-    
+    btn.setProperty.assert_called_with('pending', 'true')
+
     # Switch back
     callback(False)
-    btn.setProperty.assert_called_with("pending", "false")
+    btn.setProperty.assert_called_with('pending', 'false')
 
 
 @patch('src.utils.helpers.SettingRepository')
@@ -450,15 +472,15 @@ def test_get_bitcoin_config_invalid_network(mock_setting_repo):
 def test_build_keys_from_data_multisig_errors(mock_setting_repo):
     """Test build_keys_from_data multisig error paths."""
     mock_setting_repo.get_wallet_signature_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
-        
+
     # Case: Multisig config not set
     mock_setting_repo.get_multisig_config.return_value = (None, None)
     with pytest.raises(CommonException, match='Multisig configuration not set.'):
         build_keys_from_data('v', 'c', 'fp')
-        
+
     # Case: Mismatched cosigners count
     mock_setting_repo.get_multisig_config.return_value = (2, 3)
-    mock_setting_repo.get_cosigners.return_value = [] # Expected 2
+    mock_setting_repo.get_cosigners.return_value = []  # Expected 2
     with pytest.raises(CommonException, match='Expected 2 cosigners, found 0.'):
         build_keys_from_data('v', 'c', 'fp')
 
@@ -466,15 +488,18 @@ def test_build_keys_from_data_multisig_errors(mock_setting_repo):
 def test_set_widgets_visible_extreme_failure():
     """Test set_widgets_visible when even show/hide fails."""
     w = MagicMock()
-    w.setVisible.side_effect = Exception("err1")
-    w.show.side_effect = Exception("err2")
+    w.setVisible.side_effect = Exception('err1')
+    w.show.side_effect = Exception('err2')
     # Should not raise exception
     set_widgets_visible([w], True)
 
 
 def test_register_multisig_button_not_pushbutton():
     """Test register_multisig_button with a non-QPushButton."""
-    register_multisig_button(MagicMock(), MagicMock(), MagicMock()) # Should return early
+    register_multisig_button(
+        MagicMock(), MagicMock(),
+        MagicMock(),
+    )  # Should return early
 
 
 @patch('src.utils.helpers.ToastManager')
@@ -483,10 +508,12 @@ def test_register_multisig_button_pending_handler(mock_toast):
     btn = MagicMock(spec=QPushButton)
     vm = MagicMock()
     register_multisig_button(vm, btn, MagicMock())
-    
-    callback = vm.header_frame_view_model.multisig_pending_state_changed.connect.call_args[0][0]
-    callback(True) # Set to pending
-    
+
+    callback = vm.header_frame_view_model.multisig_pending_state_changed.connect.call_args[
+        0
+    ][0]
+    callback(True)  # Set to pending
+
     # Trigger click
     handler = btn.clicked.connect.call_args[0][0]
     handler()
@@ -496,7 +523,9 @@ def test_register_multisig_button_pending_handler(mock_toast):
 def test_connect_multisig_pending_signal_exception():
     """Test connect_multisig_pending_signal when an exception occurs."""
     vm = MagicMock()
-    vm.header_frame_view_model.multisig_pending_state_changed.connect.side_effect = Exception("signal error")
+    vm.header_frame_view_model.multisig_pending_state_changed.connect.side_effect = Exception(
+        'signal error',
+    )
     with patch('src.utils.helpers.logger') as mock_logger:
         connect_multisig_pending_signal(vm, MagicMock())
         mock_logger.error.assert_called_once()
@@ -509,7 +538,19 @@ def test_register_multisig_button_redundant_handler():
     # Ensure is_multisig_pending is False to match normal_handler
     vm.header_frame_view_model.is_multisig_pending = False
     handler = MagicMock()
-    
+
+    # Track property values to simulate Qt behavior
+    property_values = {}
+
+    def mock_set_property(key, value):
+        property_values[key] = value
+
+    def mock_get_property(key):
+        return property_values.get(key)
+
+    btn.setProperty.side_effect = mock_set_property
+    btn.property.side_effect = mock_get_property
+
     register_multisig_button(vm, btn, handler)
     # 1 from initial connect, 0 from state_update_callback (early return)
     assert btn.clicked.connect.call_count == 1
@@ -520,10 +561,12 @@ def test_register_multisig_button_disconnect_error():
     btn = MagicMock(spec=QPushButton)
     vm = MagicMock()
     handler = MagicMock()
-    
+
     register_multisig_button(vm, btn, handler)
-    btn.clicked.disconnect.side_effect = TypeError("not connected")
-    
-    callback = vm.header_frame_view_model.multisig_pending_state_changed.connect.call_args[0][0]
+    btn.clicked.disconnect.side_effect = TypeError('not connected')
+
+    callback = vm.header_frame_view_model.multisig_pending_state_changed.connect.call_args[
+        0
+    ][0]
     # Should not raise
     callback(True)

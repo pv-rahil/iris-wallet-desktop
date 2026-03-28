@@ -102,25 +102,31 @@ class RestoreService:
                     backup_path=restore_file_path, password=password, data_dir=app_paths.app_path,
                 ),
             )
-            
+
             # Check for and restore multisig properties if applicable
             multisig_file_name = f"{hashed_mnemonic}.multisig.json"
             multisig_success = restore.download_from_drive(
                 file_name=multisig_file_name, destination_dir=restore_folder_path,
             )
-            
+
             if multisig_success:
-                multisig_file_path = os.path.join(restore_folder_path, multisig_file_name)
+                multisig_file_path = os.path.join(
+                    restore_folder_path, multisig_file_name,
+                )
                 if os.path.exists(multisig_file_path):
-                    with open(multisig_file_path, 'r', encoding='utf-8') as mf:
+                    with open(multisig_file_path, encoding='utf-8') as mf:
                         multisig_data = json.load(mf)
-                    
-                    SettingRepository.set_wallet_signature_type(WalletSignatureType.MULTI_SIG_WALLET)
+
+                    SettingRepository.set_wallet_signature_type(
+                        WalletSignatureType.MULTI_SIG_WALLET,
+                    )
                     SettingRepository.set_multisig_config(
                         multisig_data.get('required_signers'),
-                        multisig_data.get('total_signers')
+                        multisig_data.get('total_signers'),
                     )
-                    SettingRepository.set_cosigners(multisig_data.get('cosigners', []))
+                    SettingRepository.set_cosigners(
+                        multisig_data.get('cosigners', []),
+                    )
                     SettingRepository.set_threshold_confirmed(True)
                     response.is_multisig = True
                     logger.info('Restored multisig configuration successfully')

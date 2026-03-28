@@ -4,12 +4,13 @@
 # pylint: disable=redefined-outer-name, unused-argument, protected-access, too-many-lines
 from __future__ import annotations
 
+import json
+import subprocess
 from unittest.mock import MagicMock
-from unittest.mock import patch
 from unittest.mock import mock_open
+from unittest.mock import patch
 
 import pytest
-import json
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
@@ -17,6 +18,7 @@ from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletEntryType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.model.setting_model import IsNativeLoginIntoAppEnabled
@@ -1355,7 +1357,6 @@ def test_set_rgb_lib_version_exception(mock_local_store, mock_handle_exceptions)
 
 def test_set_wallet_signature_type_success(mock_local_store):
     """set_wallet_signature_type returns True when persisted value matches."""
-    from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.get_value.return_value = WalletSignatureType.STANDARD_TYPE_WALLET.value
 
     res = SettingRepository.set_wallet_signature_type(
@@ -1371,7 +1372,6 @@ def test_set_wallet_signature_type_success(mock_local_store):
 
 def test_set_wallet_signature_type_none_success(mock_local_store):
     """set_wallet_signature_type returns True when clearing value with None."""
-    from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.get_value.return_value = None
 
     res = SettingRepository.set_wallet_signature_type(None)
@@ -1385,7 +1385,6 @@ def test_set_wallet_signature_type_none_success(mock_local_store):
 
 def test_set_wallet_signature_type_failure(mock_local_store):
     """set_wallet_signature_type returns False when persisted value differs."""
-    from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.get_value.return_value = 'DIFFERENT'
 
     res = SettingRepository.set_wallet_signature_type(
@@ -1401,7 +1400,6 @@ def test_set_wallet_signature_type_failure(mock_local_store):
 
 def test_set_wallet_signature_type_exception(mock_local_store, mock_handle_exceptions):
     """set_wallet_signature_type returns 'Error handled' when exception occurs."""
-    from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.set_value.side_effect = Exception('x')
 
     res = SettingRepository.set_wallet_signature_type(
@@ -1413,7 +1411,6 @@ def test_set_wallet_signature_type_exception(mock_local_store, mock_handle_excep
 
 def test_get_wallet_signature_type_value(mock_local_store):
     """get_wallet_signature_type returns enum when stored string exists."""
-    from src.model.enums.enums_model import WalletSignatureType
     mock_local_store.get_value.return_value = WalletSignatureType.MULTI_SIG_WALLET.value
 
     res = SettingRepository.get_wallet_signature_type()
@@ -1509,16 +1506,19 @@ def test_get_multisig_config_exception(mock_local_store, mock_handle_exceptions)
 
     assert res == 'Error handled'
 
+
 @patch('src.data.repository.setting_repository.app_paths')
 def test_set_cosigners_success(mock_app_paths, mock_local_store):
     """set_cosigners writes json to file successfully."""
     mock_local_store.get_value.return_value = (1, 3)
-    cosigners = [{"f": "1"}]
+    cosigners = [{'f': '1'}]
     mock_app_paths.multisig_cosigners_file_path = '/tmp/cosigners.json'
     with patch('builtins.open', mock_open()) as mock_file:
         res = SettingRepository.set_cosigners(cosigners)
     assert res is True
-    mock_file.assert_called_once_with('/tmp/cosigners.json', 'w', encoding='utf-8')
+    mock_file.assert_called_once_with(
+        '/tmp/cosigners.json', 'w', encoding='utf-8',
+    )
 
 
 @patch('src.data.repository.setting_repository.app_paths')
@@ -1544,11 +1544,11 @@ def test_get_cosigners_success(mock_exists, mock_app_paths):
     """get_cosigners returns parsed cosigners."""
     mock_exists.return_value = True
     mock_app_paths.multisig_cosigners_file_path = 'p'
-    data = json.dumps({"cosigners": [{"f": "1"}]})
+    data = json.dumps({'cosigners': [{'f': '1'}]})
     with patch('builtins.open', mock_open(read_data=data)):
         res = SettingRepository.get_cosigners()
-    
-    assert res == [{"f": "1"}]
+
+    assert res == [{'f': '1'}]
 
 
 @patch('src.data.repository.setting_repository.app_paths')
@@ -1572,7 +1572,6 @@ def test_get_cosigners_exception(mock_exists, mock_app_paths, mock_handle_except
 @patch('src.data.repository.setting_repository.subprocess.run')
 def test_linux_native_authentication_fail(mock_run):
     """Test _linux_native_authentication when pkexec fails."""
-    import subprocess
     mock_run.side_effect = subprocess.CalledProcessError(1, 'pkexec')
     assert SettingRepository._linux_native_authentication() is False
 
@@ -1580,7 +1579,6 @@ def test_linux_native_authentication_fail(mock_run):
 @patch('src.data.repository.setting_repository.subprocess.run')
 def test_macos_native_authentication_fail(mock_run):
     """Test _macos_native_authentication when osascript fails."""
-    import subprocess
     mock_run.side_effect = subprocess.CalledProcessError(1, 'osascript')
     assert SettingRepository._macos_native_authentication() is False
 
@@ -1611,7 +1609,6 @@ def test_windows_native_authentication_not_verified(mock_get_path, mock_run):
 @patch('src.data.repository.setting_repository.SettingRepository._get_path_windows_native_executable')
 def test_windows_native_authentication_fail(mock_get_path, mock_run):
     """Test _windows_native_authentication on process error."""
-    import subprocess
     mock_get_path.return_value = 'some.exe'
     mock_run.side_effect = subprocess.CalledProcessError(1, 'some.exe')
     assert SettingRepository._windows_native_authentication() is False
@@ -1622,63 +1619,76 @@ def test_get_bridge_token_success(mock_local_store):
     mock_local_store.get_value.return_value = 'token'
     assert SettingRepository.get_bridge_token() == 'token'
 
+
 def test_get_bridge_token_exception(mock_local_store, mock_handle_exceptions):
     """Test get_bridge_token when exception occurs"""
     mock_local_store.get_value.side_effect = Exception('x')
     assert SettingRepository.get_bridge_token() == 'Error handled'
+
 
 def test_set_bridge_token_success(mock_local_store):
     """Test set_bridge_token when successful"""
     assert SettingRepository.set_bridge_token('t') is True
     mock_local_store.set_value.assert_called_with('bridge_token', 't')
 
+
 def test_set_bridge_token_exception(mock_local_store, mock_handle_exceptions):
     """Test set_bridge_token when exception occurs"""
     mock_local_store.set_value.side_effect = Exception('x')
     assert SettingRepository.set_bridge_token('t') == 'Error handled'
+
 
 def test_set_transaction_type_success(mock_local_store):
     """Test set_transaction_type when successful"""
     mock_local_store.get_value.return_value = 'type'
     assert SettingRepository.set_transaction_type('type') is True
 
+
 def test_set_transaction_type_exception(mock_local_store, mock_handle_exceptions):
     """Test set_transaction_type when exception occurs"""
     mock_local_store.set_value.side_effect = Exception('x')
     assert SettingRepository.set_transaction_type('t') == 'Error handled'
 
+
 def test_set_last_page_success(mock_local_store):
     """Test set_last_page when successful"""
     assert SettingRepository.set_last_page('p') is True
+
 
 def test_set_last_page_exception(mock_local_store, mock_handle_exceptions):
     """Test set_last_page when exception occurs"""
     mock_local_store.set_value.side_effect = Exception('x')
     assert SettingRepository.set_last_page('p') == 'Error handled'
 
+
 def test_get_last_page_success(mock_local_store):
     """Test get_last_page when successful"""
     mock_local_store.get_value.return_value = 'p'
     assert SettingRepository.get_last_page() == 'p'
+
 
 def test_get_last_page_exception(mock_local_store, mock_handle_exceptions):
     """Test get_last_page when exception occurs"""
     mock_local_store.get_value.side_effect = Exception('x')
     assert SettingRepository.get_last_page() == 'Error handled'
 
+
 def test_set_threshold_confirmed_success(mock_local_store):
     """Test set_threshold_confirmed when successful"""
     assert SettingRepository.set_threshold_confirmed(True) is True
+
 
 def test_set_threshold_confirmed_exception(mock_local_store, mock_handle_exceptions):
     """Test set_threshold_confirmed when exception occurs"""
     mock_local_store.set_value.side_effect = Exception('x')
     assert SettingRepository.set_threshold_confirmed(True) == 'Error handled'
 
+
 def test_get_threshold_confirmed_success(mock_local_store):
     """Test get_threshold_confirmed when successful"""
     mock_local_store.get_value.return_value = True
     assert SettingRepository.get_threshold_confirmed() is True
+
 
 def test_get_threshold_confirmed_exception(mock_local_store, mock_handle_exceptions):
     """Test get_threshold_confirmed when exception occurs"""

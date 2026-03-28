@@ -82,6 +82,9 @@ class BroadcastTransactionWidget(QWidget):
         self._rgb_details = None
         self._last_inspected_psbt = None
         self._op_details_ready = False
+        self._rgb_expected: bool = False
+        self._is_inflation_context: bool = False
+        self._pending_transfer_type = None
         self._inspection_epoch = 0
         self.is_multisig = SettingRepository.get_wallet_signature_type(
         ) == WalletSignatureType.MULTI_SIG_WALLET
@@ -112,8 +115,12 @@ class BroadcastTransactionWidget(QWidget):
         self.broadcast_transaction_widget.setObjectName(
             'broadcast_transaction_widget',
         )
-        self.broadcast_transaction_widget.setFixedWidth(800 if self.is_multisig else 700)
-        self.broadcast_transaction_widget.setMinimumHeight(450 if self.is_multisig else 380)
+        self.broadcast_transaction_widget.setFixedWidth(
+            800 if self.is_multisig else 700,
+        )
+        self.broadcast_transaction_widget.setMinimumHeight(
+            450 if self.is_multisig else 380,
+        )
 
         self.vertical_layout = QVBoxLayout(self.broadcast_transaction_widget)
         margin = 22 if self.is_multisig else 23
@@ -127,7 +134,9 @@ class BroadcastTransactionWidget(QWidget):
 
         self.broadcast_transaction_title_layout = QHBoxLayout()
         self.broadcast_transaction_title_label = QLabel(self)
-        self.broadcast_transaction_title_label.setObjectName('broadcast_transaction_title_label')
+        self.broadcast_transaction_title_label.setObjectName(
+            'broadcast_transaction_title_label',
+        )
         self.broadcast_transaction_title_label.setFixedSize(QSize(400, 63))
         self.broadcast_transaction_title_label.setAlignment(
             Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
@@ -204,9 +213,9 @@ class BroadcastTransactionWidget(QWidget):
         self.method_selector_label.setObjectName('broadcast_method_label')
         self.method_selector_label.hide()
         self.method_selector_label.setText(
-        QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT,
-            'select_psbt_for_broadcast',
+            QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT,
+                'select_psbt_for_broadcast',
             ),
         )
         self.horizontal_layout_2 = QHBoxLayout()
@@ -429,7 +438,7 @@ class BroadcastTransactionWidget(QWidget):
             self._on_psbts_loaded,
         )
         self.view_model.broadcast_transaction_view_model.trigger_bridge_sync.connect(
-            lambda: self.view_model.header_frame_view_model.sync_multisig_bridge(),
+            self.view_model.header_frame_view_model.sync_multisig_bridge,
         )
         self.method_selector.currentIndexChanged.connect(
             self._on_method_selector_index_changed,
@@ -455,7 +464,9 @@ class BroadcastTransactionWidget(QWidget):
                 self._on_respond_multisig if self.is_watch_only else self._on_sign_and_post_multisig,
             )
         else:
-            self.inspection_details.btn_primary.clicked.connect(self.send_asset)
+            self.inspection_details.btn_primary.clicked.connect(
+                self.send_asset,
+            )
 
         self._signals_connected = True
 
@@ -513,7 +524,9 @@ class BroadcastTransactionWidget(QWidget):
         )
 
         render_result = BroadcastTransactionService.prepare_render_inspection_state(
-            self._psbt_details, bool(self.is_multisig and self._rgb_expected), self._rgb_details,
+            self._psbt_details, bool(
+                self.is_multisig and self._rgb_expected,
+            ), self._rgb_details,
             is_offline_wallet, current_psbt, self.min_psbt_len,
         )
 
@@ -834,7 +847,9 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         current_text = self.broadcast_transaction_input.toPlainText().strip()
-        current_psbt = BroadcastTransactionService.parse_psbt_input(current_text).psbt
+        current_psbt = BroadcastTransactionService.parse_psbt_input(
+            current_text,
+        ).psbt
         if not current_psbt:
             return
 
@@ -875,7 +890,9 @@ class BroadcastTransactionWidget(QWidget):
             )
 
         self.is_initiator_of_pending = match_result.is_initiator
-        self._on_signature_count_ready(match_result.ack_count, match_result.threshold)
+        self._on_signature_count_ready(
+            match_result.ack_count, match_result.threshold,
+        )
         self.handle_button_enable()
 
     def _on_signature_count_ready(self, count: int, threshold: int):
@@ -955,12 +972,14 @@ class BroadcastTransactionWidget(QWidget):
                 or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
             )
             if offline_mode and current_psbt:
-                stored_purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(current_psbt)
+                stored_purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(
+                    current_psbt,
+                )
                 if parsed.purpose or stored_purpose or len(current_psbt) >= self.min_psbt_len:
                     self._trigger_inspection(None, current_psbt)
                     return
 
-    def _trigger_inspection(self, operation: object | None, psbt_text: str):
+    def _trigger_inspection(self, operation: Operation | None, psbt_text: str):
         """
         Helper to trigger the transaction inspection (BTC and RGB).
         """
@@ -970,7 +989,9 @@ class BroadcastTransactionWidget(QWidget):
             return
 
         # Always trigger PSBT inspection for standard Bitcoin details (TXID, Fee)
-        self.view_model.broadcast_transaction_view_model.inspect_psbt(psbt_body)
+        self.view_model.broadcast_transaction_view_model.inspect_psbt(
+            psbt_body,
+        )
 
         ctx = BroadcastTransactionService.resolve_inspection_context(
             operation, parsed.purpose, psbt_body, self._rgb_expected,
@@ -1186,11 +1207,12 @@ class BroadcastTransactionWidget(QWidget):
             is_signed=True,
         )
 
-    def closeEvent(self, event):
+    def closeEvent(self, event):  # pylint:disable=invalid-name
         """Ensure loading is stopped when widget is closed."""
         try:
             if hasattr(self, 'inspection_details') and self.inspection_details:
                 self.inspection_details.inspect_loading.hide()
         except Exception:
             pass
-        super().closeEvent(event) if hasattr(super(), 'closeEvent') else None
+        if hasattr(super(), 'closeEvent'):
+            super().closeEvent(event)

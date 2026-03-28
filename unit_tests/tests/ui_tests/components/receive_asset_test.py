@@ -4,6 +4,8 @@
 # pylint: disable=redefined-outer-name,unused-argument, too-few-public-methods
 from __future__ import annotations
 
+import base64
+import zlib
 from unittest.mock import MagicMock
 
 import pytest
@@ -155,9 +157,9 @@ def test_update_qr_and_address_psbt_with_match_prefixes_text(qtbot, monkeypatch)
 
     widget.update_qr_and_address('psbt_payload')
     # The text is now compressed with zlib and base64 encoded
-    import zlib
-    import base64
-    expected_compressed = base64.b64encode(zlib.compress(b'psbt:receive:psbt_payload')).decode()
+    expected_compressed = base64.b64encode(
+        zlib.compress(b'psbt:receive:psbt_payload'),
+    ).decode()
     assert widget.receiver_address.text() == QCoreApplication.translate(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, expected_compressed, None,
     )
@@ -179,8 +181,6 @@ def test_update_qr_and_address_psbt_no_service_uses_raw_text(qtbot, monkeypatch)
 
     widget.update_qr_and_address('raw_psbt')
     # The text is now compressed with zlib and base64 encoded
-    import zlib
-    import base64
     expected_compressed = base64.b64encode(zlib.compress(b'raw_psbt')).decode()
     assert widget.receiver_address.text() == QCoreApplication.translate(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, expected_compressed, None,
@@ -211,9 +211,9 @@ def test_update_qr_and_address_psbt_with_no_match_keeps_raw(qtbot, monkeypatch):
 
     widget.update_qr_and_address('psbt_payload')
     # The text is now compressed with zlib and base64 encoded
-    import zlib
-    import base64
-    expected_compressed = base64.b64encode(zlib.compress(b'psbt_payload')).decode()
+    expected_compressed = base64.b64encode(
+        zlib.compress(b'psbt_payload'),
+    ).decode()
     assert widget.receiver_address.text() == QCoreApplication.translate(
         IRIS_WALLET_TRANSLATIONS_CONTEXT, expected_compressed, None,
     )

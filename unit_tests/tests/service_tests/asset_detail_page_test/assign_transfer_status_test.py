@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name,unused-argument,protected-access
+# pylint: disable=redefined-outer-name,unused-argument,protected-access,too-few-public-methods
 """Unit tests for AssetDetailPageService.assign_transfer_status."""
 from __future__ import annotations
 
@@ -97,7 +97,8 @@ def test_assign_status_inflation_sets_plus_and_inflation():
 def test_assign_status_unknown_kind_raises():
     """Test that unknown kind raises."""
     class DummyKind:
-        pass
+        """Dummy kind class."""
+        pass  # pylint: disable=unnecessary-pass
     tx = _tx(DummyKind())
     with pytest.raises(ServiceOperationException):
         AssetDetailPageService.assign_transfer_status(tx)

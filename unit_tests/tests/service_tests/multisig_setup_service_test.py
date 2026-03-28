@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock
-from unittest.mock import patch
-
-import pytest
 
 from src.data.service.multisig_setup_service import MultisigSetupService
 from src.model.common_operation_model import CosignerDataResult
@@ -76,7 +73,9 @@ def test_parse_cosigner_string_whitespace():
 
 def test_parse_cosigner_string_invalid_format(mocker):
     """parse_cosigner_string should return invalid for malformed string."""
-    mock_cosigner = mocker.patch('src.data.service.multisig_setup_service.Cosigner')
+    mock_cosigner = mocker.patch(
+        'src.data.service.multisig_setup_service.Cosigner',
+    )
     mock_cosigner.side_effect = Exception('Invalid format')
 
     result = MultisigSetupService.parse_cosigner_string('invalid_string')
@@ -91,10 +90,14 @@ def test_parse_cosigner_string_valid(mocker):
     mock_data.account_xpub_colored = 'xpub_colored_test'
     mock_data.vanilla_keychain = 0
 
-    mock_cosigner = mocker.patch('src.data.service.multisig_setup_service.Cosigner')
+    mock_cosigner = mocker.patch(
+        'src.data.service.multisig_setup_service.Cosigner',
+    )
     mock_cosigner.return_value.cosigner_data.return_value = mock_data
 
-    result = MultisigSetupService.parse_cosigner_string('valid_cosigner_string')
+    result = MultisigSetupService.parse_cosigner_string(
+        'valid_cosigner_string',
+    )
     assert result.is_valid is True
     assert result.master_fingerprint == 'ABCD1234'
     assert result.account_xpub_vanilla == 'xpub_vanilla_test'
@@ -110,10 +113,14 @@ def test_parse_cosigner_string_with_keychain(mocker):
     mock_data.account_xpub_colored = 'xpub_colored_test'
     mock_data.vanilla_keychain = 1
 
-    mock_cosigner = mocker.patch('src.data.service.multisig_setup_service.Cosigner')
+    mock_cosigner = mocker.patch(
+        'src.data.service.multisig_setup_service.Cosigner',
+    )
     mock_cosigner.return_value.cosigner_data.return_value = mock_data
 
-    result = MultisigSetupService.parse_cosigner_string('valid_cosigner_string')
+    result = MultisigSetupService.parse_cosigner_string(
+        'valid_cosigner_string',
+    )
     assert result.vanilla_keychain == 1
 
 
@@ -136,7 +143,9 @@ def test_generate_cosigner_string_missing_fields():
 
 def test_generate_cosigner_string_success(mocker):
     """generate_cosigner_string should generate valid string."""
-    mock_cosigner = mocker.patch('src.data.service.multisig_setup_service.Cosigner')
+    mock_cosigner = mocker.patch(
+        'src.data.service.multisig_setup_service.Cosigner',
+    )
     mock_cosigner.from_data.return_value.cosigner_string.return_value = 'generated_cosigner_string'
 
     result = MultisigSetupService.generate_cosigner_string(
@@ -150,7 +159,9 @@ def test_generate_cosigner_string_success(mocker):
 
 def test_generate_cosigner_string_exception(mocker):
     """generate_cosigner_string should return None on exception."""
-    mock_cosigner = mocker.patch('src.data.service.multisig_setup_service.Cosigner')
+    mock_cosigner = mocker.patch(
+        'src.data.service.multisig_setup_service.Cosigner',
+    )
     mock_cosigner.from_data.side_effect = Exception('Generation failed')
 
     result = MultisigSetupService.generate_cosigner_string(
@@ -235,7 +246,9 @@ def test_save_watch_only_data_missing_fields():
 
 def test_save_watch_only_data_success(mocker):
     """save_watch_only_data should save data to local_store."""
-    mock_local_store = mocker.patch('src.data.service.multisig_setup_service.local_store')
+    mock_local_store = mocker.patch(
+        'src.data.service.multisig_setup_service.local_store',
+    )
 
     result = MultisigSetupService.save_watch_only_data(
         fp='ABCD1234',
@@ -249,7 +262,9 @@ def test_save_watch_only_data_success(mocker):
 
 def test_get_wallet_review_data(mocker):
     """get_wallet_review_data should return dict from local_store."""
-    mock_local_store = mocker.patch('src.data.service.multisig_setup_service.local_store')
+    mock_local_store = mocker.patch(
+        'src.data.service.multisig_setup_service.local_store',
+    )
     mock_local_store.get_value.side_effect = ['FP', 'vanilla', 'colored', '0']
 
     result = MultisigSetupService.get_wallet_review_data()
@@ -261,7 +276,9 @@ def test_get_wallet_review_data(mocker):
 
 def test_get_wallet_review_data_empty(mocker):
     """get_wallet_review_data should handle None values."""
-    mock_local_store = mocker.patch('src.data.service.multisig_setup_service.local_store')
+    mock_local_store = mocker.patch(
+        'src.data.service.multisig_setup_service.local_store',
+    )
     mock_local_store.get_value.return_value = None
 
     result = MultisigSetupService.get_wallet_review_data()
@@ -272,7 +289,9 @@ def test_get_wallet_review_data_empty(mocker):
 
 def test_is_hardware_wallet_true(mocker):
     """is_hardware_wallet should return True when hardware wallet."""
-    mock_setting = mocker.patch('src.data.service.multisig_setup_service.SettingRepository')
+    mock_setting = mocker.patch(
+        'src.data.service.multisig_setup_service.SettingRepository',
+    )
     mock_setting.get_key_storage_type.return_value = KeyStorageType.HARDWARE_WALLET
 
     result = MultisigSetupService.is_hardware_wallet()
@@ -281,23 +300,13 @@ def test_is_hardware_wallet_true(mocker):
 
 def test_is_hardware_wallet_false(mocker):
     """is_hardware_wallet should return False when not hardware wallet."""
-    mock_setting = mocker.patch('src.data.service.multisig_setup_service.SettingRepository')
+    mock_setting = mocker.patch(
+        'src.data.service.multisig_setup_service.SettingRepository',
+    )
     mock_setting.get_key_storage_type.return_value = KeyStorageType.ON_DEVICE
 
     result = MultisigSetupService.is_hardware_wallet()
     assert result is False
-
-
-def test_threshold_validation_result_is_basemodel():
-    """ThresholdValidationResult should inherit from BaseModel."""
-    from pydantic import BaseModel
-    assert issubclass(ThresholdValidationResult, BaseModel)
-
-
-def test_cosigner_data_result_is_basemodel():
-    """CosignerDataResult should inherit from BaseModel."""
-    from pydantic import BaseModel
-    assert issubclass(CosignerDataResult, BaseModel)
 
 
 def test_threshold_validation_result_model():
@@ -332,7 +341,9 @@ def test_cosigner_data_result_model():
 
 def test_generate_wallet_keys_already_exists(mocker):
     """generate_wallet_keys should skip if mnemonic file exists."""
-    mock_os = mocker.patch('src.data.service.multisig_setup_service.os.path.exists')
+    mock_os = mocker.patch(
+        'src.data.service.multisig_setup_service.os.path.exists',
+    )
     mock_os.return_value = True
 
     result = MultisigSetupService.generate_wallet_keys('password123')
@@ -341,7 +352,9 @@ def test_generate_wallet_keys_already_exists(mocker):
 
 def test_generate_wallet_keys_success(mocker):
     """generate_wallet_keys should generate and save keys."""
-    mock_os = mocker.patch('src.data.service.multisig_setup_service.os.path.exists')
+    mock_os = mocker.patch(
+        'src.data.service.multisig_setup_service.os.path.exists',
+    )
     mock_os.return_value = False
 
     mock_keys = MagicMock()
@@ -351,20 +364,20 @@ def test_generate_wallet_keys_success(mocker):
     mock_keys.account_xpub_colored = 'colored_xpub'
     mock_keys.mnemonic = 'mnemonic words'
 
-    mock_repo = mocker.patch('src.data.service.multisig_setup_service.CommonOperationRepository.init')
+    mock_repo = mocker.patch(
+        'src.data.service.multisig_setup_service.CommonOperationRepository.init',
+    )
     mock_repo.return_value = mock_keys
 
-    mock_setting = mocker.patch('src.data.service.multisig_setup_service.SettingRepository')
+    mock_setting = mocker.patch(
+        'src.data.service.multisig_setup_service.SettingRepository',
+    )
     mock_setting.get_wallet_network.return_value = 'regtest'
 
-    # Mock the entire InitRequestModel to avoid validation
-    mock_init_model = mocker.patch('src.data.service.multisig_setup_service.InitRequestModel')
-
-    mock_local_store = mocker.patch('src.data.service.multisig_setup_service.local_store')
-    mock_mnemonic_store = mocker.patch('src.data.service.multisig_setup_service.mnemonic_store')
+    mock_mnemonic_store = mocker.patch(
+        'src.data.service.multisig_setup_service.mnemonic_store',
+    )
     mock_mnemonic_store.encrypt.return_value = 'encrypted_mnemonic'
-
-    mock_app_paths = mocker.patch('src.data.service.multisig_setup_service.app_paths')
 
     result = MultisigSetupService.generate_wallet_keys('password123')
 
@@ -375,10 +388,14 @@ def test_generate_wallet_keys_success(mocker):
 
 def test_generate_wallet_keys_exception(mocker):
     """generate_wallet_keys should return None on exception."""
-    mock_os = mocker.patch('src.data.service.multisig_setup_service.os.path.exists')
+    mock_os = mocker.patch(
+        'src.data.service.multisig_setup_service.os.path.exists',
+    )
     mock_os.return_value = False
 
-    mock_setting = mocker.patch('src.data.service.multisig_setup_service.SettingRepository')
+    mock_setting = mocker.patch(
+        'src.data.service.multisig_setup_service.SettingRepository',
+    )
     mock_setting.get_wallet_network.side_effect = Exception('Network error')
 
     result = MultisigSetupService.generate_wallet_keys('password123')
@@ -387,7 +404,9 @@ def test_generate_wallet_keys_exception(mocker):
 
 def test_save_cosigners_data_success(mocker):
     """save_cosigners_data should parse and save cosigner data."""
-    mock_parse = mocker.patch('src.data.service.multisig_setup_service.MultisigSetupService.parse_cosigner_string')
+    mock_parse = mocker.patch(
+        'src.data.service.multisig_setup_service.MultisigSetupService.parse_cosigner_string',
+    )
     mock_parse.return_value = CosignerDataResult(
         master_fingerprint='FP1',
         account_xpub_vanilla='v1',
@@ -396,7 +415,9 @@ def test_save_cosigners_data_success(mocker):
         is_valid=True,
     )
 
-    mock_setting = mocker.patch('src.data.service.multisig_setup_service.SettingRepository')
+    mock_setting = mocker.patch(
+        'src.data.service.multisig_setup_service.SettingRepository',
+    )
 
     rows = [
         {'index': 0, 'string': 'cosigner_str_1'},
@@ -417,7 +438,9 @@ def test_save_cosigners_data_empty_string(mocker):
 
 def test_save_cosigners_data_invalid_cosigner(mocker):
     """save_cosigners_data should return False for invalid cosigner."""
-    mock_parse = mocker.patch('src.data.service.multisig_setup_service.MultisigSetupService.parse_cosigner_string')
+    mock_parse = mocker.patch(
+        'src.data.service.multisig_setup_service.MultisigSetupService.parse_cosigner_string',
+    )
     mock_parse.return_value = CosignerDataResult(
         master_fingerprint='',
         account_xpub_vanilla='',

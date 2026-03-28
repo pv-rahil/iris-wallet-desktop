@@ -13,7 +13,6 @@ from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.views.components.error_report_dialog_box import ErrorReportDialog
-from src.views.ui_multisig_setup_page import MultisigSetupPage
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.refresh_transfer_dialog import RefreshTransferDialog
 from src.views.main_window import MainWindow
@@ -32,6 +31,7 @@ from src.views.ui_inflatable_asset import InflatableAssetWidget
 from src.views.ui_issue_cfa import IssueCFAWidget
 from src.views.ui_issue_ifa import IssueIFAWidget
 from src.views.ui_issue_nia import IssueNIAWidget
+from src.views.ui_multisig_setup_page import MultisigSetupPage
 from src.views.ui_receive_bitcoin import ReceiveBitcoinWidget
 from src.views.ui_receive_rgb_asset import ReceiveRGBAssetWidget
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget

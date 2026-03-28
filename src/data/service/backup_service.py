@@ -104,25 +104,27 @@ class BackupService:
             version_success: bool = backup.upload_to_drive(
                 file_path=version_file_path, file_name=version_file_name,
             )
-            
+
             # Check for and backup multisig properties if applicable
             multisig_success: bool = True
             if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
                 req_signers, tot_signers = SettingRepository.get_multisig_config()
                 cosigners = SettingRepository.get_cosigners()
-                
+
                 multisig_data = {
                     'required_signers': req_signers,
                     'total_signers': tot_signers,
                     'cosigners': cosigners,
                 }
-                
+
                 multisig_file_name = f'{hashed_mnemonic}.multisig.json'
-                multisig_file_path = os.path.join(backup_folder_path, multisig_file_name)
-                
+                multisig_file_path = os.path.join(
+                    backup_folder_path, multisig_file_name,
+                )
+
                 with open(multisig_file_path, 'w', encoding='utf-8') as mf:
                     json.dump(multisig_data, mf)
-                
+
                 logger.info('Uploading multisig configuration to drive')
                 multisig_success = backup.upload_to_drive(
                     file_path=multisig_file_path, file_name=multisig_file_name,

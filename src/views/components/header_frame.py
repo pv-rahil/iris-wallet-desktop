@@ -22,6 +22,7 @@ from PySide6.QtWidgets import QPushButton
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
+from rgb_lib import Operation
 
 from accessible_constant import HEADER_PSBT_INFO_FRAME
 from accessible_constant import HEADER_USB_SYNC_FRAME
@@ -36,14 +37,11 @@ from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import IsBackupConfiguredModel
 from src.utils.common_utils import get_current_wallet_mode_config
-from src.utils.constant import ACCOUNT_XPUB_VANILLA
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import MASTER_XPUB
 from src.utils.constant import WALLET_PASSWORD_KEY
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.helpers import load_stylesheet
 from src.utils.keyring_storage import get_value
-from src.utils.local_store import local_store
 from src.utils.logging import logger
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.usb_detector import USBDetector
@@ -73,6 +71,7 @@ class HeaderFrame(QFrame, QObject):
         super().__init__()
         self.title = title_name
         self.is_backup_warning = False
+        self._psbt_action_mode: str | None = None
         self.title_logo_path = title_logo_path
         self.header_frame_view_model = HeaderFrameViewModel()
         self.page_navigation = PageNavigationEventManager.get_instance()
@@ -303,7 +302,7 @@ class HeaderFrame(QFrame, QObject):
         )
         # Store pending operations for multisig
         self._pending_ops_count = 0
-        self._pending_ops = []
+        self._pending_ops: list[Operation] = []
 
         # Connect refresh button to update PSBT info (fix for lag)
         self.refresh_page_button.clicked.connect(self.update_psbt_info)
@@ -667,8 +666,6 @@ class HeaderFrame(QFrame, QObject):
         self.psbt_info_frame.setCursor(
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
-        # Clear internal tag
-        self._psbt_action_mode = None
 
         if self._pending_ops_count > 0:
             # For watch-only wallets: show text indicating offline signature needed
@@ -696,7 +693,9 @@ class HeaderFrame(QFrame, QObject):
                                 continue
                             # Get TXID of unsigned PSBT
                             try:
-                                unsigned_txid = RgbRepository.inspect_psbt(psbt=unsigned_psbt).txid
+                                unsigned_txid = RgbRepository.inspect_psbt(
+                                    psbt=unsigned_psbt,
+                                ).txid
                             except Exception:
                                 continue
                             # Check if any signed PSBT has matching TXID
@@ -705,14 +704,18 @@ class HeaderFrame(QFrame, QObject):
                                 if not signed_psbt:
                                     continue
                                 try:
-                                    signed_txid = RgbRepository.inspect_psbt(psbt=signed_psbt).txid
+                                    signed_txid = RgbRepository.inspect_psbt(
+                                        psbt=signed_psbt,
+                                    ).txid
                                     if unsigned_txid == signed_txid:
                                         matched_signed_count += 1
                                         break
                                 except Exception:
                                     pass
                     except Exception as e:
-                        logger.error('Failed to check signed PSBT match: %s', e)
+                        logger.error(
+                            'Failed to check signed PSBT match: %s', e,
+                        )
 
                 if signed_count > 0:
                     # If we have signed drafts ready to broadcast, prioritize that action

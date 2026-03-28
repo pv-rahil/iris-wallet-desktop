@@ -31,8 +31,8 @@ from accessible_constant import SIGN_PSBT_BUTTON
 from accessible_constant import VIEW_UNSPENT_LIST_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.selection_page_model import AssetDataModel
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT

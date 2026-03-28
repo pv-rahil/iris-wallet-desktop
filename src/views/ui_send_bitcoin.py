@@ -25,14 +25,14 @@ from src.model.enums.enums_model import WalletType
 from src.model.setting_model import DefaultFeeRate
 from src.utils.constant import FEE_RATE
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.helpers import get_bitcoin_network_from_enum
+from src.utils.helpers import register_multisig_button
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.receive_asset import ReceiveAssetWidget
 from src.views.components.send_asset import SendAssetWidget
-from src.utils.helpers import get_bitcoin_network_from_enum
-from src.utils.helpers import register_multisig_button
 from src.views.components.toast import ToastManager
 
 
@@ -62,7 +62,8 @@ class SendBitcoinWidget(QWidget):
         ) == WalletAccessType.WATCH_ONLY
         # Treat multisig wallets with PSBT begin/sign flow
         self.is_multisig_wallet = (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
         )
         layout = QVBoxLayout()
         layout.addWidget(self.send_bitcoin_page)
@@ -94,8 +95,8 @@ class SendBitcoinWidget(QWidget):
             register_multisig_button(
                 self._view_model,
                 self.send_bitcoin_page.send_btn,
-                self.send_bitcoin_button
-        )
+                self.send_bitcoin_button,
+            )
         self.send_bitcoin_page.close_button.clicked.connect(
             self.bitcoin_page_navigation,
         )
@@ -161,7 +162,9 @@ class SendBitcoinWidget(QWidget):
                     existing_psbt = match.get('psbt')
 
             if existing_psbt:
-                self._view_model.send_bitcoin_view_model.unsigned_psbt.emit(existing_psbt)
+                self._view_model.send_bitcoin_view_model.unsigned_psbt.emit(
+                    existing_psbt,
+                )
             else:
                 self._view_model.send_bitcoin_view_model.send_btc_begin(
                     address, amount, fee,
@@ -170,9 +173,6 @@ class SendBitcoinWidget(QWidget):
             self._view_model.send_bitcoin_view_model.on_send_click(
                 address, amount, fee,
             )
-
-
-
 
     def update_loading_state(self, is_loading: bool, is_fee_rate_loading: bool = False):
         """Updates the loading state of the send button."""
@@ -274,7 +274,9 @@ class SendBitcoinWidget(QWidget):
             return
 
         try:
-            network_enum = get_bitcoin_network_from_enum(SettingRepository.get_wallet_network())
+            network_enum = get_bitcoin_network_from_enum(
+                SettingRepository.get_wallet_network(),
+            )
             # Validate the Bitcoin address
             Address(address, network_enum)
 
@@ -316,7 +318,7 @@ class SendBitcoinWidget(QWidget):
                 ToastManager.success(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
-                    )
+                    ),
                 )
                 self.bitcoin_page_navigation()
             else:
@@ -324,5 +326,5 @@ class SendBitcoinWidget(QWidget):
                     ReceiveAssetModel(
                         page_name='send_bitcoin',
                         address_info='psbt_info', psbt=psbt,
-                ),
-            )
+                    ),
+                )

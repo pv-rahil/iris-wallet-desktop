@@ -16,14 +16,14 @@ Yields:
 """
 from __future__ import annotations
 
+import gc
 import os
 import tempfile
-import gc
 from unittest.mock import MagicMock
-from PySide6.QtCore import QThread
 
 import keyring
 import pytest
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
 
@@ -36,6 +36,7 @@ def qt_app():
         app = QApplication([])
     yield app
     app.quit()
+
 
 @pytest.fixture(autouse=True)
 def mock_qthread_start(mocker):

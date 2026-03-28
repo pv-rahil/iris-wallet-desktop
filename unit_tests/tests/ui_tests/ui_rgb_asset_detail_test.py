@@ -23,14 +23,15 @@ from rgb_lib import TransferStatus
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
 from src.model.enums.enums_model import TransferType
-from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import AssetDataModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
-from src.model.enums.enums_model import WalletSignatureType, WalletType, WalletAccessType
 
 
 asset_image_path = os.path.abspath(
@@ -44,8 +45,14 @@ asset_image_path = os.path.abspath(
 @pytest.fixture
 def rgb_asset_detail_widget(qtbot, mocker):
     """Fixture to create and return an instance of RGBAssetDetailWidget."""
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_rgb_asset_detail.resize_image', return_value=QPixmap())
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.resize_image',
+        return_value=QPixmap(),
+    )
     mock_navigation = MagicMock()
     view_model = MagicMock(MainViewModel(mock_navigation))
 
@@ -860,7 +867,10 @@ def test_show_loading_screen_ifa_privileges(rgb_asset_detail_widget: RGBAssetDet
     rgb_asset_detail_widget.config.privileges.can_send_transactions = False
     rgb_asset_detail_widget.config.privileges.can_receive_asset = False
 
-    mocker.patch.object(rgb_asset_detail_widget, '_has_inflation_rights', return_value=True)
+    mocker.patch.object(
+        rgb_asset_detail_widget,
+        '_has_inflation_rights', return_value=True,
+    )
     rgb_asset_detail_widget.remaining_issue_value = MagicMock()
     rgb_asset_detail_widget.remaining_issue_value.text.return_value = '100'
 
@@ -869,7 +879,9 @@ def test_show_loading_screen_ifa_privileges(rgb_asset_detail_widget: RGBAssetDet
     assert rgb_asset_detail_widget.asset_refresh_button.isEnabled() is False
     assert rgb_asset_detail_widget.send_asset.isEnabled() is False
     assert rgb_asset_detail_widget.receive_rgb_asset.isEnabled() is False
-    rgb_asset_detail_widget.secondary_issuance.setDisabled.assert_called_with(True)
+    rgb_asset_detail_widget.secondary_issuance.setDisabled.assert_called_with(
+        True,
+    )
 
 
 def test_set_transaction_detail_frame_ifa_and_drafts(rgb_asset_detail_widget: RGBAssetDetailWidget, mocker, create_mock_transfer):
@@ -897,14 +909,19 @@ def test_set_transaction_detail_frame_ifa_and_drafts(rgb_asset_detail_widget: RG
 
     # Mock WalletDataService and drafts
     mock_svc = MagicMock()
-    mock_svc.get_draft_transfer.return_value = {'amount': 50, 'recipient_id': 'rec'}
+    mock_svc.get_draft_transfer.return_value = {
+        'amount': 50, 'recipient_id': 'rec',
+    }
     mock_svc.list_ifa_secondary_drafts.return_value = [
         {'id': 1, 'amount': 100, 'asset_name': 'IFA Asset'},
     ]
     mocker.patch(
         'src.views.ui_rgb_asset_detail.WalletDataService.get_session', return_value=mock_svc,
     )
-    mocker.patch('src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
     mocker.patch(
         'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_access_type',
         return_value=WalletAccessType.WATCH_ONLY,
@@ -915,8 +932,14 @@ def test_set_transaction_detail_frame_ifa_and_drafts(rgb_asset_detail_widget: RG
     )
 
     # Mock components
-    mocker.patch('src.views.ui_rgb_asset_detail.TransactionDetailFrame', return_value=MagicMock())
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.TransactionDetailFrame',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
     rgb_asset_detail_widget.max_supply_frame = MagicMock()
     rgb_asset_detail_widget.secondary_issuance = MagicMock()
     rgb_asset_detail_widget.scroll_area_widget_layout = MagicMock()
@@ -927,6 +950,9 @@ def test_set_transaction_detail_frame_ifa_and_drafts(rgb_asset_detail_widget: RG
     )
 
     # Verify IFA specific UI updates
+    assert rgb_asset_detail_widget.max_supply_value is not None
+    assert rgb_asset_detail_widget.remaining_issue_value is not None
+
     assert rgb_asset_detail_widget.max_supply_value.text() == '1000'
     assert rgb_asset_detail_widget.remaining_issue_value.text() == '800'
     rgb_asset_detail_widget.max_supply_frame.show.assert_called()
@@ -938,8 +964,13 @@ def test_setup_ui_connection_multisig(rgb_asset_detail_widget: RGBAssetDetailWid
         'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_signature_type',
         return_value=WalletSignatureType.MULTI_SIG_WALLET,
     )
-    mock_register = mocker.patch('src.views.ui_rgb_asset_detail.register_multisig_button')
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
+    mock_register = mocker.patch(
+        'src.views.ui_rgb_asset_detail.register_multisig_button',
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
 
     rgb_asset_detail_widget.setup_ui_connection()
 
@@ -949,15 +980,21 @@ def test_setup_ui_connection_multisig(rgb_asset_detail_widget: RGBAssetDetailWid
 
 def test_init_ifa_asset(qtbot, mocker):
     """Test initialization with IFA asset creates secondary issuance button."""
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_rgb_asset_detail.resize_image', return_value=QPixmap())
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.resize_image',
+        return_value=QPixmap(),
+    )
     mock_navigation = MagicMock()
     view_model = MagicMock(MainViewModel(mock_navigation))
     params = RgbAssetPageLoadModel(
         asset_id='asset_id',
         asset_name='Test Asset',
         image_path=asset_image_path,
-        asset_type='3'
+        asset_type='3',
     )
     widget = RGBAssetDetailWidget(view_model, params)
     assert hasattr(widget, 'secondary_issuance')
@@ -968,7 +1005,10 @@ def test_init_ifa_asset(qtbot, mocker):
 def test_navigate_secondary_issuance(rgb_asset_detail_widget, mocker):
     """Test navigate_secondary_issuance sets up RgbAssetPageLoadModel."""
     # Mock RgbAssetPageLoadModel to avoid Pydantic validation errors
-    mocker.patch('src.views.ui_rgb_asset_detail.RgbAssetPageLoadModel', side_effect=lambda **kwargs: MagicMock(**kwargs))
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.RgbAssetPageLoadModel',
+        side_effect=MagicMock(),
+    )
     rgb_asset_detail_widget.asset_type = AssetSchema.IFA
     rgb_asset_detail_widget.max_amount = 500
     rgb_asset_detail_widget.image_path = None
@@ -979,7 +1019,10 @@ def test_navigate_secondary_issuance(rgb_asset_detail_widget, mocker):
 
 def test_set_transaction_detail_frame_no_transactions(rgb_asset_detail_widget, mocker):
     """Test set_transaction_detail_frame with no transactions."""
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
     mock_txn_list = MagicMock()
     mock_txn_list.asset_balance.future = 0
     mock_txn_list.asset_balance.spendable = 0
@@ -989,18 +1032,35 @@ def test_set_transaction_detail_frame_no_transactions(rgb_asset_detail_widget, m
     rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_txn_list
     rgb_asset_detail_widget.scroll_area_widget_layout = MagicMock()
     rgb_asset_detail_widget.transactions_label = MagicMock()
-    rgb_asset_detail_widget.set_transaction_detail_frame('id', 'name', 'path', 'NIA')
+    rgb_asset_detail_widget.set_transaction_detail_frame(
+        'id', 'name', 'path', 'NIA',
+    )
     rgb_asset_detail_widget.transactions_label.hide.assert_called_with()
 
 
 def test_set_transaction_detail_frame_waiting_counterparty(rgb_asset_detail_widget, mocker):
     """Test set_transaction_detail_frame with WAITING_COUNTERPARTY status."""
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_rgb_asset_detail.TransactionDetailFrame', return_value=MagicMock())
-    mocker.patch('src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    mocker.patch('src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
-    mocker.patch('src.views.ui_rgb_asset_detail.TransactionDetailPageModel', side_effect=lambda **kwargs: MagicMock(**kwargs))
-    
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.TransactionDetailFrame',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.TransactionDetailPageModel',
+        side_effect=MagicMock(),
+    )
+
     mock_transfer = MagicMock()
     mock_transfer.status = TransferStatus.WAITING_COUNTERPARTY
     mock_transfer.transfer_Status = TransferStatusEnumModel.SENT.value
@@ -1017,7 +1077,7 @@ def test_set_transaction_detail_frame_waiting_counterparty(rgb_asset_detail_widg
     mock_transfer.receive_utxo = None
     mock_transfer.kind = 'issuance'
     mock_transfer.amount_status = '10'
-    
+
     mock_txn_list = MagicMock()
     mock_txn_list.transfers = [mock_transfer]
     mock_txn_list.asset_balance.future = 100
@@ -1026,23 +1086,38 @@ def test_set_transaction_detail_frame_waiting_counterparty(rgb_asset_detail_widg
     mock_txn_list.__bool__.return_value = True
     rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_txn_list
     rgb_asset_detail_widget.scroll_area_widget_layout = MagicMock()
-    
-    rgb_asset_detail_widget.set_transaction_detail_frame('id', 'name', 'path', 'NIA')
+
+    rgb_asset_detail_widget.set_transaction_detail_frame(
+        'id', 'name', 'path', 'NIA',
+    )
     assert rgb_asset_detail_widget.transaction_detail_frame.close_button.setIcon.called
 
 
 def test_on_resume_transfer_callback(rgb_asset_detail_widget, mocker):
     """Test the resume transfer callback in set_transaction_detail_frame."""
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
     mock_frame = MagicMock()
-    mocker.patch('src.views.ui_rgb_asset_detail.TransactionDetailFrame', return_value=mock_frame)
-    mocker.patch('src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    mocker.patch('src.views.ui_rgb_asset_detail.TransactionDetailPageModel', side_effect=lambda **kwargs: MagicMock(**kwargs))
-    
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.TransactionDetailFrame', return_value=mock_frame,
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.TransactionDetailPageModel',
+        side_effect=MagicMock(),
+    )
+
     mock_svc = MagicMock()
     mock_svc.get_draft_transfer.return_value = {'amount': 10}
-    mocker.patch('src.views.ui_rgb_asset_detail.WalletDataService.get_session', return_value=mock_svc)
-    
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.WalletDataService.get_session', return_value=mock_svc,
+    )
+
     mock_txn_list = MagicMock()
     mock_txn_list.transfers = []
     mock_txn_list.asset_balance.future = 100
@@ -1050,26 +1125,45 @@ def test_on_resume_transfer_callback(rgb_asset_detail_widget, mocker):
     mock_txn_list.__bool__.return_value = False
     rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_txn_list
     rgb_asset_detail_widget.scroll_area_widget_layout = MagicMock()
-    
-    rgb_asset_detail_widget.set_transaction_detail_frame('id', 'name', 'path', 'NIA')
-    
+
+    rgb_asset_detail_widget.set_transaction_detail_frame(
+        'id', 'name', 'path', 'NIA',
+    )
+
     connect_args = mock_frame.click_frame.connect.call_args[0][0]
     connect_args()
-    rgb_asset_detail_widget._view_model.page_navigation.send_cfa_page.assert_called_with(draft_data={'amount': 10})
+    rgb_asset_detail_widget._view_model.page_navigation.send_cfa_page.assert_called_with(
+        draft_data={'amount': 10},
+    )
 
 
 def test_on_resume_click_secondary_callback(rgb_asset_detail_widget, mocker):
     """Test the resume secondary issuance click callback."""
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
     mock_frame = MagicMock()
-    mocker.patch('src.views.ui_rgb_asset_detail.TransactionDetailFrame', return_value=mock_frame)
-    mocker.patch('src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
-    mocker.patch('src.views.ui_rgb_asset_detail.TransactionDetailPageModel', side_effect=lambda **kwargs: MagicMock(**kwargs))
-    
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.TransactionDetailFrame', return_value=mock_frame,
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.TransactionDetailPageModel',
+        side_effect=MagicMock(),
+    )
+
     mock_svc = MagicMock()
-    mock_svc.list_ifa_secondary_drafts.return_value = [{'id': 1, 'amount': 100, 'asset_name': 'IFA'}]
-    mocker.patch('src.views.ui_rgb_asset_detail.WalletDataService.get_session', return_value=mock_svc)
-    
+    mock_svc.list_ifa_secondary_drafts.return_value = [
+        {'id': 1, 'amount': 100, 'asset_name': 'IFA'},
+    ]
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.WalletDataService.get_session', return_value=mock_svc,
+    )
+
     mock_txn_list = MagicMock()
     mock_txn_list.transfers = []
     mock_txn_list.asset_balance.future = 100
@@ -1077,10 +1171,12 @@ def test_on_resume_click_secondary_callback(rgb_asset_detail_widget, mocker):
     mock_txn_list.__bool__.return_value = False
     rgb_asset_detail_widget._view_model.cfa_view_model.txn_list = mock_txn_list
     rgb_asset_detail_widget.scroll_area_widget_layout = MagicMock()
-    
+
     # Use '3' for IFA
-    rgb_asset_detail_widget.set_transaction_detail_frame('id', 'IFA', 'path', '3')
-    
+    rgb_asset_detail_widget.set_transaction_detail_frame(
+        'id', 'IFA', 'path', '3',
+    )
+
     callback = mock_frame.click_frame.connect.call_args[0][0]
     callback()
     mock_svc.set_active_secondary_draft.assert_called_with(1, 'id')
@@ -1096,14 +1192,24 @@ def test_handle_show_hide_inflation(rgb_asset_detail_widget, mocker):
 
 def test_setup_ui_connection_multisig_ifa(rgb_asset_detail_widget, mocker):
     """Test setup_ui_connection registers multisig button for IFA."""
-    mocker.patch('src.views.ui_rgb_asset_detail.load_stylesheet', return_value='')
-    mocker.patch('src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mock_register = mocker.patch('src.views.ui_rgb_asset_detail.register_multisig_button')
-    
-    rgb_asset_detail_widget.asset_type = '3' # IFA
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.load_stylesheet',
+        return_value='',
+    )
+    mocker.patch(
+        'src.views.ui_rgb_asset_detail.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mock_register = mocker.patch(
+        'src.views.ui_rgb_asset_detail.register_multisig_button',
+    )
+
+    rgb_asset_detail_widget.asset_type = '3'  # IFA
     rgb_asset_detail_widget.secondary_issuance = MagicMock()
     rgb_asset_detail_widget.setup_ui_connection()
-    assert any(call.args[1] == rgb_asset_detail_widget.secondary_issuance for call in mock_register.call_args_list)
+    assert any(
+        call.args[1] == rgb_asset_detail_widget.secondary_issuance for call in mock_register.call_args_list
+    )
 
 
 def test_has_inflation_rights_skip(rgb_asset_detail_widget, mocker):
@@ -1118,4 +1224,6 @@ def test_has_inflation_rights_skip(rgb_asset_detail_widget, mocker):
 
 def test_map_status_unknown(rgb_asset_detail_widget):
     """Test map_status fallback for unknown status."""
-    assert rgb_asset_detail_widget.map_status('unknown') == TransactionStatusEnumModel.FAILED
+    assert rgb_asset_detail_widget.map_status(
+        'unknown',
+    ) == TransactionStatusEnumModel.FAILED

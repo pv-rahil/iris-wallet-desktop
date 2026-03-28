@@ -13,8 +13,8 @@ from src.utils.constant import MASTER_FINGERPRINT
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.ledger_hw_client import create_ledger_client
 from src.utils.ledger_hw_client import enumerate_ledger_devices
-from src.utils.logging import logger
 from src.utils.local_store import local_store
+from src.utils.logging import logger
 
 
 def require_hardware_wallet_connected() -> Callable[..., Any]:
@@ -40,7 +40,9 @@ def require_hardware_wallet_connected() -> Callable[..., Any]:
                     )
 
                 # Select device matching the stored fingerprint when possible
-                preferred_fingerprint = local_store.get_value(MASTER_FINGERPRINT)
+                preferred_fingerprint = local_store.get_value(
+                    MASTER_FINGERPRINT,
+                )
                 device_info = None
                 if preferred_fingerprint:
                     for d in devices:

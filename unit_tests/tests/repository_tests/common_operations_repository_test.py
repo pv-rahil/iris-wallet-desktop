@@ -1,5 +1,5 @@
 """Unit tests for CommonOperationRepository."""
-# pylint: disable=redefined-outer-name, unused-argument,too-many-arguments
+# pylint: disable=redefined-outer-name, unused-argument,too-many-arguments, protected-access
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -9,8 +9,8 @@ import pytest
 from rgb_lib import BitcoinNetwork
 from rgb_lib import Keys
 from rgb_lib import MultisigKeys
-from rgb_lib import SinglesigKeys
 from rgb_lib import RgbLibError
+from rgb_lib import SinglesigKeys
 
 from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.setting_repository import KeyStorageType
@@ -70,7 +70,6 @@ def test_unlock(mock_wallet, mock_colored_wallet):
     mock_wallet.return_value = mock_wallet_instance
 
     with patch('src.data.repository.common_operations_repository.SettingRepository.get_wallet_signature_type') as mock_sign_type:
-        from src.model.enums.enums_model import WalletSignatureType
         mock_sign_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
 
         # Build SinglesigKeys
@@ -88,7 +87,9 @@ def test_unlock(mock_wallet, mock_colored_wallet):
     # Assert
     assert result == mock_wallet_instance
     mock_wallet.assert_called_once()
-    mock_colored_wallet.set_wallet.assert_called_once_with(mock_wallet_instance)
+    mock_colored_wallet.set_wallet.assert_called_once_with(
+        mock_wallet_instance,
+    )
 
 
 def test_backup(mock_colored_wallet):
@@ -208,13 +209,17 @@ def test_sign_and_finalize_psbt_hardware(
 
     # Patch sign_psbt_with_ledger to skip actual device interaction
     with patch('src.data.repository.common_operations_repository.sign_psbt_with_ledger', return_value='signed_psbt') as mock_sign:
-        result = CommonOperationRepository.sign_and_finalize_psbt('unsigned_psbt')
+        result = CommonOperationRepository.sign_and_finalize_psbt(
+            'unsigned_psbt',
+        )
 
     assert result == 'final_psbt'
     mock_sign.assert_called_once_with(
         'unsigned_psbt', repo_client, mock_descriptors,
     )
-    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(signed_psbt='signed_psbt')
+    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(
+        signed_psbt='signed_psbt',
+    )
     svc.mark_psbt_signed.assert_called_once_with('unsigned_psbt', 'final_psbt')
 
 
@@ -232,8 +237,12 @@ def test_sign_and_finalize_psbt_software(mock_get_key_storage_type, mock_get_ses
     result = CommonOperationRepository.sign_and_finalize_psbt('unsigned_psbt')
 
     assert result == 'final_psbt'
-    mock_colored_wallet.wallet.sign_psbt.assert_called_once_with('unsigned_psbt')
-    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(signed_psbt='signed_sw')
+    mock_colored_wallet.wallet.sign_psbt.assert_called_once_with(
+        'unsigned_psbt',
+    )
+    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(
+        signed_psbt='signed_sw',
+    )
     svc.mark_psbt_signed.assert_called_once_with('unsigned_psbt', 'final_psbt')
 
 
@@ -250,15 +259,21 @@ def test_sign_and_finalize_psbt_no_session(mock_get_key_storage_type, mock_get_s
     result = CommonOperationRepository.sign_and_finalize_psbt('unsigned_psbt')
 
     assert result == 'final_psbt'
-    mock_colored_wallet.wallet.sign_psbt.assert_called_once_with('unsigned_psbt')
-    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(signed_psbt='signed_sw')
+    mock_colored_wallet.wallet.sign_psbt.assert_called_once_with(
+        'unsigned_psbt',
+    )
+    mock_colored_wallet.wallet.finalize_psbt.assert_called_once_with(
+        signed_psbt='signed_sw',
+    )
     mock_get_session.assert_called_once()
 
 
 def test_unlock_multisig(mocker, mock_colored_wallet):
     """Test unlock method for multisig wallet."""
     # Setup
-    mock_multisig_wallet_cls = mocker.patch('src.data.repository.common_operations_repository.MultisigWallet')
+    mock_multisig_wallet_cls = mocker.patch(
+        'src.data.repository.common_operations_repository.MultisigWallet',
+    )
     mock_multisig_instance = MagicMock()
     mock_multisig_wallet_cls.return_value = mock_multisig_instance
 
@@ -280,7 +295,9 @@ def test_unlock_multisig(mocker, mock_colored_wallet):
     # Assert
     assert result == mock_multisig_instance
     mock_multisig_wallet_cls.assert_called_once()
-    mock_colored_wallet.set_wallet.assert_called_once_with(mock_multisig_instance)
+    mock_colored_wallet.set_wallet.assert_called_once_with(
+        mock_multisig_instance,
+    )
 
 
 @patch('src.data.repository.common_operations_repository.mnemonic_store')
@@ -295,22 +312,22 @@ def test_get_temp_singlesig_wallet(
     mock_restore_keys,
     mock_get_network,
     mock_setting_repo,
-    mock_mnemonic_store
+    mock_mnemonic_store,
 ):
     """Test _get_temp_singlesig_wallet creation."""
     # Setup
     mock_mnemonic_store.decrypted_mnemonic = 'test mnemonic'
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
     mock_get_network.return_value = BitcoinNetwork.TESTNET()
-    
+
     mock_keys = MagicMock()
     mock_keys.account_xpub_vanilla = 'xpub1'
     mock_keys.account_xpub_colored = 'xpub2'
     mock_keys.master_fingerprint = 'mpf'
     mock_restore_keys.return_value = mock_keys
-    
+
     mock_app_paths.app_path = '/app/path'
-    
+
     mock_wallet_instance = MagicMock()
     mock_wallet_cls.return_value = mock_wallet_instance
 
@@ -339,8 +356,8 @@ def test_get_temp_singlesig_wallet_no_mnemonic(mock_mnemonic_store):
 @patch('src.data.repository.common_operations_repository.Wallet')
 def test_sign_psbt_software(mock_wallet_cls, mock_restore_keys, mock_mnemonic_store, mock_get_key_storage_type, mock_get_session, mock_colored_wallet):
     """Test software path for sign_psbt (multisig signing)."""
-    mock_get_key_storage_type.return_value = KeyStorageType.ON_DEVICE # not HARDWARE_WALLET
-    
+    mock_get_key_storage_type.return_value = KeyStorageType.ON_DEVICE  # not HARDWARE_WALLET
+
     # Mocking _get_temp_singlesig_wallet dependencies
     mock_mnemonic_store.decrypted_mnemonic = 'test mnemonic'
     mock_keys = MagicMock()
@@ -348,11 +365,11 @@ def test_sign_psbt_software(mock_wallet_cls, mock_restore_keys, mock_mnemonic_st
     mock_keys.account_xpub_colored = 'x2'
     mock_keys.master_fingerprint = 'mp'
     mock_restore_keys.return_value = mock_keys
-    
+
     mock_temp_wallet = MagicMock()
     mock_temp_wallet.sign_psbt.return_value = 'partially_signed_psbt'
     mock_wallet_cls.return_value = mock_temp_wallet
-    
+
     svc = MagicMock()
     mock_get_session.return_value = svc
 
@@ -381,18 +398,18 @@ def test_sign_psbt_hardware(
     mock_create_client,
     mock_enumerate,
     mock_get_session,
-    mock_colored_wallet
+    mock_colored_wallet,
 ):
     """Test hardware path for sign_psbt."""
     mock_get_key_storage_type.return_value = KeyStorageType.HARDWARE_WALLET
-    
+
     # Decorator requirements
     mock_enumerate.return_value = [{'path': '/dev/hw', 'error': None}]
     mock_get_network.return_value = NetworkEnumModel.TESTNET
-    
+
     repo_hc_store.client = MagicMock()
     mock_sign_with_ledger.return_value = 'signed_hw'
-    
+
     svc = MagicMock()
     mock_get_session.return_value = svc
 
@@ -403,6 +420,7 @@ def test_sign_psbt_hardware(
     assert result == 'signed_hw'
     mock_sign_with_ledger.assert_called_once()
     svc.mark_psbt_signed.assert_called_once()
+
 
 @patch('src.utils.custom_context.handle_exceptions')
 @patch('src.data.repository.common_operations_repository.mnemonic_store')

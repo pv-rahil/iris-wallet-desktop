@@ -262,7 +262,10 @@ class WalletDataService:
                 with self.conn:
                     self.conn.execute(
                         'INSERT OR REPLACE INTO draft_transfer (asset_id, recipient_id, amount, fee_rate, min_confirmation) VALUES (?, ?, ?, ?, ?)',
-                        (asset_id, recipient_id, amount, fee_rate, min_confirmation),
+                        (
+                            asset_id, recipient_id, amount,
+                            fee_rate, min_confirmation,
+                        ),
                     )
             except sqlite3.Error as exc:
                 logger.error(
@@ -584,7 +587,7 @@ class WalletDataService:
                 )
                 raise
 
-    def delete_secondary_draft_by_psbt(self, psbt_base64: str|None=None, asset_id: str|None = None) -> bool:
+    def delete_secondary_draft_by_psbt(self, psbt_base64: str | None = None, asset_id: str | None = None) -> bool:
         """Delete secondary issuance draft row by attached psbt content (unsigned/signed base64).
         Returns True if a row was deleted.
         """
@@ -602,14 +605,14 @@ class WalletDataService:
                         cur = self.conn.execute(
                             'DELETE FROM ifa_secondary_draft WHERE psbt_id = ?', (
                                 psbt_id,
-                        ),
-                    )
+                            ),
+                        )
                     else:
                         cur = self.conn.execute(
                             'DELETE FROM ifa_secondary_draft WHERE asset_id = ?', (
                                 asset_id,
-                        ),
-                    )
+                            ),
+                        )
                 return cur.rowcount > 0
             except sqlite3.Error as exc:
                 logger.error(
@@ -670,7 +673,10 @@ class WalletDataService:
                     with self.conn:
                         self.conn.execute(
                             'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose, fascia_path, entropy, min_confirmations) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                            (psbt_id, normalized_psbt, 1 if signed else 0, purpose, fascia_path, entropy_str, min_confirmations),
+                            (
+                                psbt_id, normalized_psbt, 1 if signed else 0,
+                                purpose, fascia_path, entropy_str, min_confirmations,
+                            ),
                         )
                     return psbt_id
                 except sqlite3.Error as exc:
@@ -685,7 +691,9 @@ class WalletDataService:
         """
         if self.is_watch_only or self.is_offline_wallet or self.is_multisig:
             unsigned_id = self._psbt_id(unsigned_psbt_base64)
-            normalized_signed_psbt = ''.join((signed_psbt_base64 or '').split())
+            normalized_signed_psbt = ''.join(
+                (signed_psbt_base64 or '').split(),
+            )
             signed_id = self._psbt_id(normalized_signed_psbt)
             with self._db_lock:
                 try:
@@ -697,15 +705,24 @@ class WalletDataService:
                         )
                         row = cur.fetchone()
                         purpose = row[0] if row is not None else None
-                        fascia_path = row[1] if row is not None and len(row) > 1 else None
-                        entropy = row[2] if row is not None and len(row) > 2 else None
-                        min_confirmations = row[3] if row is not None and len(row) > 3 else None
+                        fascia_path = row[1] if row is not None and len(
+                            row,
+                        ) > 1 else None
+                        entropy = row[2] if row is not None and len(
+                            row,
+                        ) > 2 else None
+                        min_confirmations = row[3] if row is not None and len(
+                            row,
+                        ) > 3 else None
                         self.conn.execute(
                             'DELETE FROM psbt WHERE id = ?', (unsigned_id,),
                         )
                         self.conn.execute(
                             'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose, fascia_path, entropy, min_confirmations) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                            (signed_id, normalized_signed_psbt, 1, purpose, fascia_path, entropy, min_confirmations),
+                            (
+                                signed_id, normalized_signed_psbt, 1, purpose,
+                                fascia_path, entropy, min_confirmations,
+                            ),
                         )
                     return signed_id
                 except sqlite3.Error as exc:

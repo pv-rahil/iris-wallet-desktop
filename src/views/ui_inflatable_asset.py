@@ -42,6 +42,7 @@ from src.utils.common_utils import generate_identicon
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import register_multisig_button
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
 from src.viewmodels.main_view_model import MainViewModel
@@ -49,7 +50,6 @@ from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
-from src.utils.helpers import register_multisig_button
 
 
 class InflatableAssetWidget(QWidget, ThreadManager):
@@ -118,6 +118,9 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         self.inflatables_amount_header = None
         self.inflatables_symbol_header = None
         self.inflatables_outbound_balance = None
+        self._empty_state_layout = None
+        self._empty_top_spacer = None
+        self._empty_bottom_spacer = None
 
         self.vertical_layout_inflatable_2.addWidget(
             self.inflatables_header_title_frame,
@@ -339,8 +342,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         if issued_count == 0 and not self._has_inflatable_drafts:
             self._show_empty_inflatables_state()
             return
-        else:
-            self._hide_empty_inflatables_state()
+        self._hide_empty_inflatables_state()
         self.inflatables_vertical_spacer_scroll_area = QSpacerItem(
             20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
         )

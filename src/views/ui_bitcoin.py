@@ -31,6 +31,7 @@ from accessible_constant import BITCOIN_SPENDABLE_BALANCE
 from accessible_constant import BITCOIN_TRANSACTION_DETAIL_FRAME
 from accessible_constant import RECEIVE_BITCOIN_BUTTON
 from accessible_constant import SEND_BITCOIN_BUTTON
+from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import TransactionListResponse
 from src.model.enums.enums_model import TransactionStatusEnumModel
 from src.model.enums.enums_model import TransferStatusEnumModel
@@ -41,14 +42,13 @@ from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.common_utils import network_info
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import register_multisig_button
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import AssetTransferButton
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.transaction_detail_frame import TransactionDetailFrame
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-from src.utils.helpers import register_multisig_button
-from src.data.repository.setting_repository import SettingRepository
 
 
 class BtcWidget(QWidget):
@@ -364,9 +364,9 @@ class BtcWidget(QWidget):
             register_multisig_button(
                 self._view_model,
                 self.send_asset_btn,
-                self.select_send_transfer_type
+                self.select_send_transfer_type,
             )
-        
+
     def handle_asset_frame_click(self, signal_value: TransactionDetailPageModel):
         """
         Handle the click event on an asset frame.
@@ -415,8 +415,6 @@ class BtcWidget(QWidget):
     def select_send_transfer_type(self):
         """This method navigates the send asset page according to the condition"""
         self._view_model.bitcoin_view_model.on_send_bitcoin_click()
-
-
 
     def set_bitcoin_balance(self):
         """This method updates the displayed bitcoin balance in the UI.

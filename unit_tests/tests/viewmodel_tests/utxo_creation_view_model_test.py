@@ -7,7 +7,10 @@ from unittest.mock import patch
 
 import pytest
 
-from src.model.enums.enums_model import KeyStorageType, WalletSignatureType, WalletAccessType, WalletType
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.viewmodels.utxo_creation_view_model import UtxoCreationViewModel
 
 
@@ -66,7 +69,10 @@ def test_on_utxo_begin_done_signs_when_hw(vm: UtxoCreationViewModel):
 
 def test_on_utxo_begin_done_watch_only(vm: UtxoCreationViewModel, mocker):
     """Verify on_utxo_begin_done emits unsigned for watch-only."""
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WATCH_ONLY)
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
     slot = mocker.Mock()
     vm.unsigned_psbt.connect(slot)
     vm.on_utxo_begin_done('psbt')
@@ -75,16 +81,25 @@ def test_on_utxo_begin_done_watch_only(vm: UtxoCreationViewModel, mocker):
 
 def test_on_utxo_begin_done_hw_multisig(vm: UtxoCreationViewModel, mocker):
     """Verify on_utxo_begin_done calls sign_psbt_for_multisig when hw+multisig."""
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.HARDWARE_WALLET)
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
-    
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.HARDWARE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_type',
+        return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+
     res = mocker.Mock(psbt='psbt1', operation_idx=1)
-    
+
     mock_hw = mocker.Mock()
     vm.hw_dialog_update.connect(mock_hw)
     mock_sign = mocker.patch.object(vm, 'sign_psbt_for_multisig')
-    
+
     vm.on_utxo_begin_done(res)
     mock_hw.assert_called_once()
     mock_sign.assert_called_once_with('psbt1')
@@ -92,15 +107,21 @@ def test_on_utxo_begin_done_hw_multisig(vm: UtxoCreationViewModel, mocker):
 
 def test_on_utxo_begin_done_local_multisig(vm: UtxoCreationViewModel, mocker):
     """Verify on_utxo_begin_done calls sign_psbt_for_multisig when on_device+multisig."""
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.MULTI_SIG_WALLET)
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
-    
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.ON_DEVICE,
+    )
+
     res = mocker.Mock(psbt='psbt2', operation_idx=2)
-    
+
     mock_hw = mocker.Mock()
     vm.hw_dialog_update.connect(mock_hw)
     mock_sign = mocker.patch.object(vm, 'sign_psbt_for_multisig')
-    
+
     vm.on_utxo_begin_done(res)
     mock_hw.assert_called_once()
     mock_sign.assert_called_once_with('psbt2')
@@ -165,8 +186,14 @@ def test_on_utxo_end_done_emits(vm: UtxoCreationViewModel, qtbot):
 
 def test_on_error_non_hw_shows_toast(vm: UtxoCreationViewModel, mocker):
     """Verify on_error_non_hw_shows_toast shows toast error."""
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
-    mocker.patch('src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.ON_DEVICE,
+    )
+    mocker.patch(
+        'src.viewmodels.utxo_creation_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
     with patch('src.views.components.toast.ToastManager.error') as terr:
         vm.on_error(Exception('x'))
         terr.assert_called()

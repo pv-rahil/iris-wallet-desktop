@@ -60,6 +60,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.inflation_amounts: int | None = None
         self.fee_rate: int | None = None
         self.min_confirmation: int | None = None
+        self.operation_idx = None
 
     def on_success_native_auth_ifa(self, success: bool):
         """Callback after native authentication for IFA."""
@@ -143,7 +144,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
                 self.utxo_creation_started.emit(True)
                 return
         if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET and \
-            SettingRepository.get_wallet_signature_type() != WalletSignatureType.MULTI_SIG_WALLET:
+                SettingRepository.get_wallet_signature_type() != WalletSignatureType.MULTI_SIG_WALLET:
             description = error.message if isinstance(
                 error, CommonException,
             ) else ERROR_SOMETHING_WENT_WRONG

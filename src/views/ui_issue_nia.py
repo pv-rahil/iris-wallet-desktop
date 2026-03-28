@@ -29,17 +29,22 @@ from accessible_constant import ISSUE_NIA_BUTTON
 from accessible_constant import NIA_ASSET_AMOUNT
 from accessible_constant import NIA_ASSET_NAME
 from accessible_constant import NIA_ASSET_TICKER
+from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
-from src.utils.helpers import register_multisig_button
 from src.utils.common_utils import set_number_validator
 from src.utils.common_utils import set_placeholder_value
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.helpers import load_stylesheet
+from src.utils.helpers import register_multisig_button
+from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -47,11 +52,7 @@ from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
-from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
+
 
 class IssueNIAWidget(QWidget):
     """This class represents the UI for issuing NIA assets."""
@@ -576,7 +577,8 @@ class IssueNIAWidget(QWidget):
         needed = needed if needed > 0 else 1
         # Show confirmation dialog for multisig/watch-only wallets
         if (
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+            SettingRepository.get_wallet_signature_type(
+            ) == WalletSignatureType.MULTI_SIG_WALLET
             or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
         ):
             dialog = ConfirmationDialog(
@@ -603,7 +605,7 @@ class IssueNIAWidget(QWidget):
                 ToastManager.success(
                     QCoreApplication.translate(
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully',
-                    )
+                    ),
                 )
                 self._view_model.issue_nia_asset_view_model.on_close_click()
             else:
@@ -612,7 +614,7 @@ class IssueNIAWidget(QWidget):
                         page_name='NIA page',
                         address_info='psbt_info', psbt=psbt, is_signed=False,
                     ),
-            )
+                )
 
     def create_issue_asset_draft(self, ticker, name, amount):
         """Create and save an Issue Asset draft when UTXOs are not available.

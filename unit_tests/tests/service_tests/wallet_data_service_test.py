@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name,unused-argument, protected-access, too-few-public-methods
+# pylint: disable=redefined-outer-name,unused-argument, protected-access, too-few-public-methods, too-many-lines
 """Unit tests for `WalletDataService`.
 
 Structured similarly to `unit_tests/tests/utils_test/cache_test.py`.
@@ -18,8 +18,8 @@ from rgb_lib import BtcBalance
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletType
 from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.utils.constant import DB_FILE_NAME
 
 
@@ -356,11 +356,10 @@ def test_ifa_secondary_set_active_and_get_active(mock_get_type, mock_get_access,
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
 def test_ifa_secondary_latest_active_across_assets(mock_get_type, mock_get_access, tmp_db):
     """get_latest_active_secondary_draft should return the most recent active."""
-    import time as _t
     mock_get_access.return_value = WalletAccessType.WATCH_ONLY
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     _ = tmp_db.add_ifa_secondary_draft_meta('Z1', 'N', 1)
-    _t.sleep(1)
+    time.sleep(1)
     last_id = tmp_db.add_ifa_secondary_draft_meta('Z2', 'N', 1)
     row = tmp_db.get_latest_active_secondary_draft()
     assert row and row['asset_id'] == 'Z2' and row['id'] == int(last_id)
@@ -428,7 +427,11 @@ def test_multisig_gated_paths(mock_get_sign, mock_get_type, mock_get_access, tmp
     assert pid is not None
 
     # upsert_draft_issue_asset - multisig gated
-    tmp_db.upsert_draft_issue_asset(IssueAssetDraftModel(name='n', ticker='T', issued_amount=1, file_path=None))
+    tmp_db.upsert_draft_issue_asset(
+        IssueAssetDraftModel(
+            name='n', ticker='T', issued_amount=1, file_path=None,
+        ),
+    )
     rows = tmp_db.list_draft_issue_assets()
     assert len(rows) == 1
 
@@ -508,12 +511,9 @@ def test_sqlite_error_paths(mock_get_type, mock_get_access, tmp_db, mocker):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mock_log = mocker.patch('src.data.service.wallet_data_service.logger')
 
-    def fail_execute(*args, **kwargs):
-        raise sqlite3.Error('forced')
-
     # get_ifa_secondary_draft_by_id error
     mock_cursor = mocker.MagicMock()
-    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_cursor.execute.side_effect = sqlite3.Error('fail')
     mock_conn = mocker.MagicMock()
     mock_conn.cursor.return_value = mock_cursor
     tmp_db.conn = mock_conn
@@ -536,9 +536,9 @@ def test_sqlite_error_add_ifa_secondary_draft(mock_get_sign, mock_get_type, mock
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
-    
+
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.add_ifa_secondary_draft_meta('X', 'N', 1)
@@ -554,7 +554,7 @@ def test_sqlite_error_upsert_draft_transfer(mock_get_sign, mock_get_type, mock_g
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.upsert_draft_transfer('A', 'r', 1, 1.0, 1)
@@ -570,12 +570,12 @@ def test_sqlite_error_get_draft_transfer(mock_get_sign, mock_get_type, mock_get_
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_cursor = mocker.MagicMock()
-    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_cursor.execute.side_effect = sqlite3.Error('fail')
 
     mock_conn = mocker.MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 
-    tmp_db.conn = mock_conn    
+    tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.get_draft_transfer('A')
 
@@ -590,7 +590,7 @@ def test_sqlite_error_delete_draft_transfer(mock_get_sign, mock_get_type, mock_g
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.delete_draft_transfer('ASSET_1')
@@ -604,10 +604,14 @@ def test_sqlite_error_upsert_draft_issue_asset(mock_get_type, mock_get_access, t
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
-        tmp_db.upsert_draft_issue_asset(IssueAssetDraftModel(name='n', ticker='T', issued_amount=1, file_path=None))
+        tmp_db.upsert_draft_issue_asset(
+            IssueAssetDraftModel(
+                name='n', ticker='T', issued_amount=1, file_path=None,
+            ),
+        )
 
 
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
@@ -618,12 +622,12 @@ def test_sqlite_error_list_draft_issue_assets(mock_get_type, mock_get_access, tm
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_cursor = mocker.MagicMock()
-    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_cursor.execute.side_effect = sqlite3.Error('fail')
 
     mock_conn = mocker.MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 
-    tmp_db.conn = mock_conn    
+    tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.list_draft_issue_assets()
 
@@ -636,7 +640,7 @@ def test_sqlite_error_delete_draft_issue_asset(mock_get_type, mock_get_access, t
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.delete_draft_issue_asset(1)
@@ -652,7 +656,7 @@ def test_sqlite_error_attach_inflate_psbt(mock_get_sign, mock_get_type, mock_get
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.attach_inflate_psbt_to_secondary_draft('ASSET', 'psbt')
@@ -668,7 +672,7 @@ def test_sqlite_error_set_active_secondary_draft(mock_get_sign, mock_get_type, m
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.set_active_secondary_draft(1, 'ASSET')
@@ -684,7 +688,7 @@ def test_sqlite_error_get_active_secondary_draft(mock_get_sign, mock_get_type, m
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_cursor = mocker.MagicMock()
-    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_cursor.execute.side_effect = sqlite3.Error('fail')
 
     mock_conn = mocker.MagicMock()
     mock_conn.cursor.return_value = mock_cursor
@@ -704,7 +708,7 @@ def test_sqlite_error_get_latest_active_secondary_draft(mock_get_sign, mock_get_
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_cursor = mocker.MagicMock()
-    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_cursor.execute.side_effect = sqlite3.Error('fail')
 
     mock_conn = mocker.MagicMock()
     mock_conn.cursor.return_value = mock_cursor
@@ -724,7 +728,7 @@ def test_sqlite_error_delete_ifa_secondary_draft(mock_get_sign, mock_get_type, m
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.delete_ifa_secondary_draft(1)
@@ -740,12 +744,12 @@ def test_sqlite_error_list_ifa_secondary_drafts(mock_get_sign, mock_get_type, mo
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_cursor = mocker.MagicMock()
-    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_cursor.execute.side_effect = sqlite3.Error('fail')
 
     mock_conn = mocker.MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 
-    tmp_db.conn = mock_conn    
+    tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.list_ifa_secondary_drafts('ASSET')
 
@@ -758,7 +762,7 @@ def test_sqlite_error_add_psbt(mock_get_type, mock_get_access, tmp_db, mocker):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.add_psbt('psbt_content')
@@ -772,7 +776,7 @@ def test_sqlite_error_mark_psbt_signed(mock_get_type, mock_get_access, tmp_db, m
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.mark_psbt_signed('unsigned', 'signed')
@@ -786,7 +790,7 @@ def test_sqlite_error_delete_psbt(mock_get_type, mock_get_access, tmp_db, mocker
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.delete_psbt('some_psbt')
@@ -800,12 +804,12 @@ def test_sqlite_error_list_psbt(mock_get_type, mock_get_access, tmp_db, mocker):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_cursor = mocker.MagicMock()
-    mock_cursor.execute.side_effect = sqlite3.Error("fail")
+    mock_cursor.execute.side_effect = sqlite3.Error('fail')
 
     mock_conn = mocker.MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 
-    tmp_db.conn = mock_conn 
+    tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.list_psbt(False)
 
@@ -818,7 +822,7 @@ def test_sqlite_error_update_secondary_draft_psbt_id(mock_get_type, mock_get_acc
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.update_secondary_draft_psbt_id('old', 'new')
@@ -832,7 +836,7 @@ def test_sqlite_error_delete_secondary_draft_by_psbt(mock_get_type, mock_get_acc
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mocker.patch('src.data.service.wallet_data_service.logger')
     mock_conn = mocker.MagicMock()
-    mock_conn.execute.side_effect = sqlite3.Error("fail")
+    mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
         tmp_db.delete_secondary_draft_by_psbt('psbt_content')
@@ -1073,4 +1077,3 @@ def test_rgb_context_gating_when_not_allowed(mock_get_type, mock_get_access, tmp
 
     # update_psbt_rgb_context should return False
     assert tmp_db.update_psbt_rgb_context('any_psbt', '/path', 123, 1) is False
-

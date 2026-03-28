@@ -1,7 +1,6 @@
 # pylint: disable=redefined-outer-name,unused-argument
 """Unit tests for WalletModeSummaryDialog following the common UI test style."""
 from __future__ import annotations
-from unittest.mock import MagicMock
 
 from types import SimpleNamespace
 

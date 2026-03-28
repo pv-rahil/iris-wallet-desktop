@@ -40,11 +40,12 @@ from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FAIL_TRANSFER
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
-from src.utils.info_message import INFO_ASSET_SENT, INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
+from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_REFRESH_SUCCESSFULLY
+from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.page_navigation_events import PageNavigationEventManager
@@ -82,6 +83,7 @@ class CFAViewModel(QObject, ThreadManager):
         self.assignment = None
         self.txn_list = []
         self.current_send_request = None
+        self.operation_idx = None
 
     def get_cfa_asset_detail(self, asset_id: str, asset_name: str, image_path: str, asset_type: Enum) -> None:
         """Retrieve CFA asset list."""
@@ -125,9 +127,12 @@ class CFAViewModel(QObject, ThreadManager):
             )
 
         # Check for multisig pending status via wallet type and response
-        is_multisig = SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
         if is_multisig:
-            ToastManager.success(description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE)
+            ToastManager.success(
+                description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE,
+            )
         else:
             ToastManager.success(
                 description=INFO_ASSET_SENT.format(tx_id.txid),
@@ -145,7 +150,9 @@ class CFAViewModel(QObject, ThreadManager):
         self.is_loading.emit(False)
         self.send_cfa_button_clicked.emit(False)
         if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or (
-            isinstance(error, CommonException) and error.message == 'NoAvailableUtxos'
+            isinstance(
+                error, CommonException,
+            ) and error.message == 'NoAvailableUtxos'
         ) or SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.hw_dialog_update.emit(
                 str(error.message), PsbtStatus.ERROR,
