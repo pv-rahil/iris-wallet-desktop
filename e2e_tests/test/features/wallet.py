@@ -17,8 +17,11 @@ from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import MULTISIG_VARIANTS
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
+from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
@@ -34,6 +37,7 @@ from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.executable_shell_script import send_to_address
 from e2e_tests.test.utilities.fake_usb import clear_fake_usb_mount_all
+from e2e_tests.test.utilities.multisig_coordinator import get_multisig_coordinator
 from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import map_load_to_create
@@ -66,6 +70,7 @@ class Wallet(MainPageObjects, BaseOperations):
         # Decide effective variant based on instance mode and app role
         env = self.get_current_environment()
         original_watch_only = variant == ONLINE_WATCH_ONLY
+        original_multisig_watch_only = variant == ONLINE_MULTISIG_WATCH_ONLY
         multi_instance = bool(env and getattr(env, 'num_instances', 1) >= 2)
 
         if original_watch_only:
@@ -81,10 +86,23 @@ class Wallet(MainPageObjects, BaseOperations):
                 # Single-instance: run helper flow that spawns temp second app, then return
                 self.setup_watch_only_single_instance()
                 return
+        elif original_multisig_watch_only:
+            if multi_instance:
+                # Multi-instance: first -> offline_multisig_on_device, second -> multisig_watch_only
+                if application == FIRST_APPLICATION:
+                    effective_variant = OFFLINE_MULTISIG_ON_DEVICE
+                elif application == SECOND_APPLICATION:
+                    effective_variant = ONLINE_MULTISIG_WATCH_ONLY
+                else:
+                    effective_variant = variant
+            else:
+                # Single-instance: run helper flow for multisig watch-only
+                self.setup_multisig_watch_only_single_instance()
+                return
         else:
             # Non watch-only: keep existing rules
             if application == SECOND_APPLICATION:
-                if is_load_wallet:
+                if is_load_wallet or variant in MULTISIG_VARIANTS:
                     effective_variant = variant
                 else:
                     if variant in REQUIRE_USB_VARIANTS:
@@ -110,8 +128,9 @@ class Wallet(MainPageObjects, BaseOperations):
         if effective_variant in HARDWARE_WALLET_VARIANTS:
             self.set_up_hardware_wallet(application)
 
-        if self.do_is_displayed(self.welcome_page_objects.create_button()):
-            self.welcome_page_objects.click_create_button()
+        if effective_variant not in MULTISIG_VARIANTS:
+            if self.do_is_displayed(self.welcome_page_objects.create_button()):
+                self.welcome_page_objects.click_create_button()
 
         if effective_variant == ONLINE_WATCH_ONLY:
             xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app()
@@ -119,6 +138,7 @@ class Wallet(MainPageObjects, BaseOperations):
             self.set_up_watch_only_wallet(
                 xpub_vanilla, xpub_colored, fingerprint,
             )
+
 
         if self.do_is_displayed(self.set_password_page_objects.password_input()):
             self.set_password_page_objects.enter_password('walletpassword')
@@ -130,6 +150,9 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
             self.set_password_page_objects.click_proceed_button()
+
+        if effective_variant in MULTISIG_VARIANTS:
+            self.initiate_multisig_setup(application)
 
     def fund_wallet(self, application):
         """
@@ -227,6 +250,157 @@ class Wallet(MainPageObjects, BaseOperations):
                 self.set_password_page_objects.click_proceed_button()
         except Exception as e:
             print(f"Error in setup_watch_only_single_instance: {e}")
+        finally:
+            # Safely terminate the temp second process
+            try:
+                if proc and hasattr(env, 'terminate_process'):
+                    env.terminate_process(proc)
+                elif proc:
+                    proc.terminate()
+            except Exception:
+                pass
+
+    def initiate_multisig_setup(self, application: str):
+        """
+        Phase 1 of multisig setup: reach the exchange screen and store local data.
+        """
+        coordinator = get_multisig_coordinator()
+        coordinator.register_application(application)
+
+        self.do_focus_on_application(application)
+
+        total_signers = 2
+        required_signers = 2
+        try:
+            if self.do_is_displayed(self.multisig_setup_page_objects.total_signer_input()):
+                val = self.multisig_setup_page_objects.get_total_signer_value()
+                if val and val.isdigit():
+                    total_signers = int(val)
+            if self.do_is_displayed(self.multisig_setup_page_objects.required_signer_input()):
+                val = self.multisig_setup_page_objects.get_required_signer_value()
+                if val and val.isdigit():
+                    required_signers = int(val)
+        except (ValueError, TypeError):
+            pass
+
+        coordinator.set_threshold(required_signers)
+
+        if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
+            self.multisig_setup_page_objects.click_continue_button()
+
+        colored_xpub = None
+        cosigner_string = None
+        if self.do_is_displayed(self.multisig_setup_page_objects.colored_xpub_copy_button()):
+            self.multisig_setup_page_objects.click_colored_xpub_copy_button()
+            colored_xpub = self.multisig_setup_page_objects.do_get_copied_address()
+        if self.do_is_displayed(self.multisig_setup_page_objects.cosigner_string_copy_button()):
+            self.multisig_setup_page_objects.click_cosigner_string_copy_button()
+            cosigner_string = self.multisig_setup_page_objects.do_get_copied_address()
+
+        if colored_xpub:
+            coordinator.store_colored_xpub(application, colored_xpub)
+        if cosigner_string:
+            coordinator.store_cosigner_string(application, cosigner_string)
+
+    def import_multisig_data(self, application: str):
+        """
+        Phase 2: Import the other cosigner's data.
+        """
+        coordinator = get_multisig_coordinator()
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
+            self.multisig_setup_page_objects.click_continue_button()
+
+        other_cosigner_string = coordinator.get_other_cosigner_string(application)
+        if other_cosigner_string:
+            print(f"[SYNC] Importing cosigner data into {application}")
+            self.multisig_setup_page_objects.import_cosigner_data(2, other_cosigner_string)
+
+    def finalize_multisig_setup(self, application: str):
+        """
+        Phase 3: Finalize multisig setup and start services if needed.
+        """
+        coordinator = get_multisig_coordinator()
+        self.do_focus_on_application(application)
+
+        # Update bridge config once both wallets have their xpubs ready
+        if len(coordinator._colored_xpubs) >= 2 and not coordinator.is_bridge_updated():
+            print(f"[SYNC] Updating bridge config and starting services from {application}")
+            coordinator.update_bridge_config(coordinator.get_threshold())
+
+        if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
+            self.multisig_setup_page_objects.click_continue_button()
+
+        if self.do_is_displayed(self.welcome_page_objects.create_button()):
+            self.welcome_page_objects.click_create_button()
+
+    def setup_multisig_watch_only_single_instance(self):
+        """
+        Single-instance multisig watch-only flow: spawn a temp second app,
+        create offline multisig wallet, collect xpubs/fingerprint,
+        and configure the first app as multisig watch-only.
+        """
+        env = self.get_current_environment()
+        if not env:
+            return
+        # Prepare FIRST app to the multisig watch-only dialog
+        self.do_focus_on_application(FIRST_APPLICATION)
+        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
+            self.term_and_condition_page_objects.scroll_to_end()
+        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
+            self.term_and_condition_page_objects.click_accept_button()
+        self.drive_selection_flow(FIRST_APPLICATION, ONLINE_MULTISIG_WATCH_ONLY)
+        if self.do_is_displayed(self.welcome_page_objects.create_button()):
+            self.welcome_page_objects.click_create_button()
+        proc = None
+        try:
+            actual_path = os.path.dirname(local_store.get_path())
+            app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
+            delete_app_data(app2_data)
+            # Launch temp second instance with default environment (not TestEnvironment)
+            proc = subprocess.Popen(
+                [f"e2e_tests/applications/iris-wallet-vault_{
+                    APP2_NAME
+                }-{__version__}-x86_64.AppImage"],
+                env=None,
+            )
+            # Wait for the second application window
+            if hasattr(env, 'wait_for_application'):
+                env.wait_for_application(SECOND_APPLICATION)
+            # Maximize the second window for stability
+            subprocess.run(
+                [
+                    'wmctrl', '-r', SECOND_APPLICATION, '-b',
+                    'add,maximized_vert,maximized_horz',
+                ],
+                check=True,
+            )
+            second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+            second_wallet = Wallet(second_app)
+            second_wallet.create_wallet(
+                SECOND_APPLICATION, OFFLINE_MULTISIG_ON_DEVICE, is_load_wallet=True,
+            )
+
+            xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app(
+                SECOND_APPLICATION,
+            )
+
+            self.do_focus_on_application(FIRST_APPLICATION)
+            self.set_up_watch_only_wallet(
+                xpub_vanilla, xpub_colored, fingerprint,
+            )
+
+            if self.do_is_displayed(self.set_password_page_objects.password_input()):
+                self.set_password_page_objects.enter_password('walletpassword')
+            if self.do_is_displayed(self.set_password_page_objects.confirm_password_input()):
+                self.set_password_page_objects.enter_confirm_password(
+                    'walletpassword',
+                )
+            if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
+                self.set_password_page_objects.click_proceed_button()
+        except Exception as e:
+            print(f"Error in setup_multisig_watch_only_single_instance: {e}")
         finally:
             # Safely terminate the temp second process
             try:

@@ -7,7 +7,7 @@ from typing import Tuple
 from accessible_constant import NAME_TO_STEPS
 from e2e_tests.test.utilities.executable_shell_script import reset_regtest
 
-Steps = Tuple[int, int, int, int]
+Steps = Tuple[int, int, int, int, int]
 
 # Lookup tables
 name_to_steps: dict[str, Steps] = {
@@ -42,15 +42,14 @@ def list_variants() -> None:
 
 def map_to_load_variant(variant_name: str) -> str:
     """Map a variant to its corresponding 'load' variant for restore flows."""
-    s1, s2, s3, s4 = resolve_steps(variant_name)
+    s1, s2, s3, s4, s5 = resolve_steps(variant_name)
 
-    if s3 == 0:
+    # For watch-only variants (s3 == 2 and s4 == 0), return as-is
+    if s3 == 2 and s4 == 0:
         return variant_name.strip().lower()
 
-    if s1 == 1:
-        target = (s1, s2, 2, s4)
-    else:
-        target = (s1, 2, s3, s4)
+    # Map entry_type (s4) from create (1) to load (2)
+    target = (s1, s2, s3, 2, s5)
     mapped = steps_to_name.get(target)
 
     if not mapped:
@@ -68,19 +67,13 @@ def map_load_to_create(variant_name: str) -> str:
 
     Strategy:
     - Convert variant to steps using resolve_steps.
-    - For online (s1 == 1), set step3 to 1 (create) and keep step2 the same.
-    - For offline (s1 == 2), set step2 to 1 (create) and keep step3 the same.
+    - Map entry_type (s4) from load (2) to create (1).
     - Look up the variant name from the adjusted steps.
     """
-    s1, s2, s3, s4 = resolve_steps(variant_name)
+    s1, s2, s3, s4, s5 = resolve_steps(variant_name)
 
-    # If already a create variant (s3 == 1 for on-device; hardware create uses s3 == 2),
-    # just return normalized name.
-    # We still normalize via steps_to_name below to ensure canonical naming.
-    if s1 == 1:
-        target = (s1, s2, 1, s4)
-    else:
-        target = (s1, 1, s3, s4)
+    # Map entry_type (s4) to create (1)
+    target = (s1, s2, s3, 1, s5)
 
     mapped = steps_to_name.get(target)
     if not mapped:

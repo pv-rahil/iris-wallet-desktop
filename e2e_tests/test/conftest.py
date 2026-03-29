@@ -3,17 +3,70 @@ End-to-End testing script.
 """
 from __future__ import annotations
 
+import os
+import time
+
 import pytest
+from dogtail.tree import root
 
 from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import MULTISIG_VARIANTS
 from accessible_constant import OFFLINE_CREATE_HARDWARE
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
+from accessible_constant import OFFLINE_MULTISIG_HARDWARE
+from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_HARDWARE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_LOAD_HARDWARE
 from accessible_constant import ONLINE_LOAD_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_HARDWARE
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
+
+# Timing constants
+CI_STABILIZATION_DELAY = 2.0
+LOCAL_STABILIZATION_DELAY = 0.5
+
+
+def _is_ci_environment():
+    """Check if running in CI environment."""
+    return os.getenv('CI', '').lower() in ('true', '1', 'yes')
+
+
+def _refresh_atspi_tree():
+    """
+    Force AT-SPI tree refresh by accessing root.
+    This helps clear stale element caches between tests.
+    """
+    try:
+        _ = root.children
+    except Exception:
+        pass
+
+
+def _reset_operations_state(test_environment):
+    """
+    Reset state in all BaseOperations instances.
+    Clears debounce tracking, circuit breakers, and window switch flags.
+    """
+    try:
+        if hasattr(test_environment, 'first_page_operations'):
+            test_environment.first_page_operations.reset_state()
+
+        if test_environment.multi_instance and hasattr(test_environment, 'second_page_operations'):
+            test_environment.second_page_operations.reset_state()
+    except Exception:
+        pass
+
+
+def _stabilize_ui(delay_seconds):
+    """
+    Add stabilization delay for UI and AT-SPI to settle.
+    Longer delays in CI to account for slower accessibility tree synchronization.
+    """
+    time.sleep(delay_seconds)
 
 
 @pytest.hookimpl
@@ -29,7 +82,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
             'Wallet mode key used by tests (e.g., online_create_on_device, '
             'online_create_hardware, offline_create_on_device, offline_create_hardware, '
             'online_load_on_device, offline_load_on_device, online_load_hardware, '
-            'offline_load_hardware, online_watch_only).'
+            'offline_load_hardware, online_watch_only, online_multisig_on_device, '
+            'online_multisig_hardware, online_multisig_watch_only, '
+            'offline_multisig_on_device, offline_multisig_hardware).'
         ),
     )
 
@@ -47,7 +102,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     wallet_mode = item.config.getoption('--wallet-variant')
 
     # Skip tests marked with @pytest.mark.skip_for_hardware_wallet if running in hardware wallet mode
-    if wallet_mode in [ONLINE_CREATE_HARDWARE, ONLINE_LOAD_HARDWARE] and any(
+    if wallet_mode in [ONLINE_CREATE_HARDWARE, ONLINE_LOAD_HARDWARE, ONLINE_MULTISIG_HARDWARE, OFFLINE_MULTISIG_HARDWARE] and any(
         True for _ in item.iter_markers('skip_for_hardware_wallet')
     ):
         pytest.skip(
@@ -59,7 +114,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         pytest.skip(
             'Skipping test because it is not applicable in offline wallet mode.',
         )
-    if wallet_mode in [ONLINE_CREATE_ON_DEVICE, ONLINE_LOAD_ON_DEVICE] and any(
+    if wallet_mode in [ONLINE_CREATE_ON_DEVICE, ONLINE_LOAD_ON_DEVICE, ONLINE_MULTISIG_ON_DEVICE] and any(
         True for _ in item.iter_markers('skip_for_online_wallet')
     ):
         pytest.skip(
@@ -77,9 +132,55 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         pytest.skip(
             'Skipping test because it is not applicable in load wallet variant mode.',
         )
-    if wallet_mode in [ONLINE_WATCH_ONLY] and any(
+    if wallet_mode in [ONLINE_WATCH_ONLY, ONLINE_MULTISIG_WATCH_ONLY] and any(
         True for _ in item.iter_markers('skip_for_watch_only')
     ):
         pytest.skip(
             'Skipping test because it is not applicable in watch only mode.',
         )
+    if wallet_mode in MULTISIG_VARIANTS and any(
+        True for _ in item.iter_markers('skip_for_multisig')
+    ):
+        pytest.skip(
+            'Skipping test because it is not applicable in multisig wallet mode.',
+        )
+
+
+@pytest.fixture(autouse=True)
+def cleanup_between_tests(request):
+    """
+    Automatic cleanup fixture that runs between each test function.
+
+    This fixture ensures clean state when using module-scoped test_environment
+    by:
+    - Yielding before the test runs
+    - Performing cleanup after the test completes
+    - Refreshing AT-SPI tree to clear stale caches
+    - Resetting all BaseOperations state
+    - Adding stabilization delays in CI
+    """
+    # Before test: nothing to do
+    yield
+
+    # After test: perform cleanup
+    try:
+        # Get the test_environment fixture if it exists
+        if 'test_environment' in request.fixturenames:
+            test_env = request.getfixturevalue('test_environment')
+
+            print('\n[CLEANUP] Running inter-test cleanup')
+
+            # 1. Refresh AT-SPI tree to clear stale element caches
+            _refresh_atspi_tree()
+
+            # 2. Reset state in BaseOperations instances
+            _reset_operations_state(test_env)
+
+            # Stabilization delay (longer in CI)
+            delay = CI_STABILIZATION_DELAY if _is_ci_environment() else LOCAL_STABILIZATION_DELAY
+            _stabilize_ui(delay)
+
+            print('[CLEANUP] Complete')
+    except Exception as e:
+        # Don't fail tests if cleanup has issues
+        print(f'[CLEANUP] Warning: Cleanup encountered an error: {e}')

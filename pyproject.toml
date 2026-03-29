@@ -28,6 +28,7 @@ base58 = "^2.1.1"
 hwi = {git = "https://github.com/pv-nirav/HWI.git"}
 bip32 = "^4.0"
 rgb-lib = "0.3.0b4"
+dogtail = "1.0.7"
 [tool.poetry.dev-dependencies]
 pyqt-toast-notification = "^1.2.0"
 pre-commit = "^3.7.1"
@@ -54,7 +55,7 @@ pyinstaller = ">=4.5.1"
 pylint = "3.1.0"
 
 # Extra package required only for Linux OS, used exclusively in Linux end-to-end tests.
-dogtail = { version = "^1.0.5", platform = "linux" }
+dogtail = { version = "^1.0.7", platform = "linux" }
 python3-xlib = { version = "^0.15", platform = "linux" }
 python3-pyatspi = { version = "^1.19.0", platform = "linux" }
 allure-pytest = { version = "^2.13.5", platform = "linux" }

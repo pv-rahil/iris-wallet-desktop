@@ -32,27 +32,27 @@ class WatchOnlyDialogPageObjects(BaseOperations):
             roleName='dialog', name=WATCH_ONLY_DIALOG,
         )
         self.watch_only_xpub_vanilla = lambda: self.perform_action_on_element(
-            application_name=self.watch_only_dialog(),
+            application_node=self.watch_only_dialog(),
             role_name='text', name=WATCH_ONLY_XPUB_VANILLA,
         )
         self.watch_only_xpub_colored = lambda: self.perform_action_on_element(
-            application_name=self.watch_only_dialog(),
+            application_node=self.watch_only_dialog(),
             role_name='text', name=WATCH_ONLY_XPUB_COLORED,
         )
         self.watch_only_master_fingerprint = lambda: self.perform_action_on_element(
-            application_name=self.watch_only_dialog(),
+            application_node=self.watch_only_dialog(),
             role_name='text', name=WATCH_ONLY_MASTER_FINGERPRINT,
         )
         self.watch_only_checkbox = lambda: self.perform_action_on_element(
-            application_name=self.watch_only_dialog(),
+            application_node=self.watch_only_dialog(),
             role_name='check box', name=WATCH_ONLY_CHECKBOX,
         )
         self.cancel_button = lambda: self.perform_action_on_element(
-            application_name=self.watch_only_dialog(),
+            application_node=self.watch_only_dialog(),
             role_name='push button', name=WATCH_ONLY_CANCEL_BUTTON,
         )
         self.continue_button = lambda: self.perform_action_on_element(
-            application_name=self.watch_only_dialog(),
+            application_node=self.watch_only_dialog(),
             role_name='push button', name=WATCH_ONLY_CONTINUE_BUTTON,
         )
 

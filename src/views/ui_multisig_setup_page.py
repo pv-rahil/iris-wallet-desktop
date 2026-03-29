@@ -55,6 +55,14 @@ from src.views.components.cosigner_detail_card import CosignerDetailCard
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
+from accessible_constant import MULTISIG_BACK_BUTTON
+from accessible_constant import MULTISIG_COLORED_XPUB_COPY_BUTTON
+from accessible_constant import MULTISIG_CONTINUE_BUTTON
+from accessible_constant import MULTISIG_COSIGNER_STRING_COPY_BUTTON
+from accessible_constant import MULTISIG_EXPORT_BUTTON
+from accessible_constant import MULTISIG_REQUIRED_SIGNER_INPUT
+from accessible_constant import MULTISIG_TOTAL_SIGNER_INPUT
+
 
 class MultisigSetupPage(QWidget):
     """Multisig wallet setup page — handles threshold, key generation and cosigner collection."""
@@ -190,6 +198,7 @@ class MultisigSetupPage(QWidget):
         self.continue_button = PrimaryButton()
         self.continue_button.setFixedSize(QSize(100, 40))
         self.continue_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.continue_button.setAccessibleName(MULTISIG_CONTINUE_BUTTON)
 
         # Title row
         title_layout = QHBoxLayout()
@@ -312,6 +321,7 @@ class MultisigSetupPage(QWidget):
         self.total_signer_input.setFixedHeight(40)
         self.total_signer_input.setFrame(False)
         self.total_signer_input.setValidator(QIntValidator(2, 15, self))
+        self.total_signer_input.setAccessibleName(MULTISIG_TOTAL_SIGNER_INPUT)
         tot_block.addWidget(self.total_signer_input)
         self.total_signer_help = QLabel()
         self.total_signer_help.setObjectName('ms_helper')
@@ -332,6 +342,7 @@ class MultisigSetupPage(QWidget):
         self.required_signer_input.setFixedHeight(40)
         self.required_signer_input.setFrame(False)
         self.required_signer_input.setValidator(QIntValidator(2, 15, self))
+        self.required_signer_input.setAccessibleName(MULTISIG_REQUIRED_SIGNER_INPUT)
         req_block.addWidget(self.required_signer_input)
         self.required_signer_help = QLabel()
         self.required_signer_help.setObjectName('ms_helper')
@@ -414,6 +425,8 @@ class MultisigSetupPage(QWidget):
                 'Share this with the bridge operator to sync with the multisig bridge',
             ),
         )
+        if self.xpub_colored_copy_btn:
+            self.xpub_colored_copy_btn.setAccessibleName(MULTISIG_COLORED_XPUB_COPY_BUTTON)
         self.row3.addLayout(self.xpub_colored_display)
         self.r_v.addLayout(self.row3)
 
@@ -429,6 +442,8 @@ class MultisigSetupPage(QWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'signer_details_explanation',
             ),
         )
+        if self.cosigner_string_copy_btn:
+            self.cosigner_string_copy_btn.setAccessibleName(MULTISIG_COSIGNER_STRING_COPY_BUTTON)
         self.row5.addLayout(self.cosigner_string_display)
         self.r_v.addLayout(self.row5)
         self.r_v.addStretch()
@@ -477,6 +492,7 @@ class MultisigSetupPage(QWidget):
         self.export_button.setLayoutDirection(Qt.RightToLeft)
         self.export_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.export_button.setFixedSize(QSize(100, 40))
+        self.export_button.setAccessibleName(MULTISIG_EXPORT_BUTTON)
         self.export_button.hide()
         self.export_button.clicked.connect(self._export_cosigner_to_file)
         self.footer.addSpacing(35)
@@ -485,6 +501,7 @@ class MultisigSetupPage(QWidget):
         self.back_button = PrimaryButton()
         self.back_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.back_button.setFixedSize(QSize(100, 40))
+        self.back_button.setAccessibleName(MULTISIG_BACK_BUTTON)
         self.back_button.clicked.connect(self._go_back)
         self.footer.addStretch()
         self.footer.addSpacing(12)

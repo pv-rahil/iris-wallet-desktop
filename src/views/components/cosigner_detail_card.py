@@ -16,6 +16,10 @@ from PySide6.QtWidgets import QLineEdit
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 
+from accessible_constant import MULTISIG_COSIGNER_CARD
+from accessible_constant import MULTISIG_COSIGNER_IMPORT_BUTTON
+from accessible_constant import MULTISIG_COSIGNER_RESET_BUTTON
+from accessible_constant import MULTISIG_COSIGNER_STRING_INPUT
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.views.components.buttons import PrimaryButton
@@ -53,6 +57,7 @@ class CosignerDetailCard(ClickableFrame):
         self.setObjectName('cosigner_card')
         self.setFrameShape(QFrame.StyledPanel)
         self.setFrameShadow(QFrame.Raised)
+        self.setAccessibleName(f'{MULTISIG_COSIGNER_CARD}_{index}')
 
         layout = QVBoxLayout(self)
         layout.setSpacing(16)
@@ -90,6 +95,7 @@ class CosignerDetailCard(ClickableFrame):
         self.import_btn.setCursor(
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
+        self.import_btn.setAccessibleName(f'{MULTISIG_COSIGNER_IMPORT_BUTTON}_{index}')
         self.import_btn.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'import',
@@ -111,6 +117,7 @@ class CosignerDetailCard(ClickableFrame):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reset',
             ) + ' ',
         )
+        self.reset_btn.setAccessibleName(f'{MULTISIG_COSIGNER_RESET_BUTTON}_{index}')
         self.reset_btn.setVisible(False)
         header_layout.addWidget(self.reset_btn)
 
@@ -128,6 +135,7 @@ class CosignerDetailCard(ClickableFrame):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cosigner_details',
             ), 'Paste cosigner details here', editable=True,
         )
+        self.string_input.setAccessibleName(f'{MULTISIG_COSIGNER_STRING_INPUT}_{index}')
         content_layout.addLayout(self.string_field)
 
         # Row 1: Fingerprint | Keychain

@@ -47,18 +47,41 @@ OFFLINE_CREATE_HARDWARE = 'offline_create_hardware'
 OFFLINE_LOAD_ON_DEVICE = 'offline_load_on_device'
 OFFLINE_LOAD_HARDWARE = 'offline_load_hardware'
 
-NAME_TO_STEPS: dict[str, tuple[int, int, int, int]] = {
-    # Online
-    ONLINE_WATCH_ONLY: (1, 2, 0, 0),
-    ONLINE_CREATE_ON_DEVICE: (1, 1, 1, 1),
-    ONLINE_CREATE_HARDWARE: (1, 1, 1, 2),
-    ONLINE_LOAD_ON_DEVICE: (1, 1, 2, 1),
-    ONLINE_LOAD_HARDWARE: (1, 1, 2, 2),
-    # Offline
-    OFFLINE_CREATE_ON_DEVICE: (2, 1, 1, 0),
-    OFFLINE_CREATE_HARDWARE: (2, 1, 2, 0),
-    OFFLINE_LOAD_ON_DEVICE: (2, 2, 1, 0),
-    OFFLINE_LOAD_HARDWARE: (2, 2, 2, 0),
+# Multisig wallet variants
+ONLINE_MULTISIG_ON_DEVICE = 'online_multisig_on_device'
+ONLINE_MULTISIG_HARDWARE = 'online_multisig_hardware'
+ONLINE_MULTISIG_WATCH_ONLY = 'online_multisig_watch_only'
+OFFLINE_MULTISIG_ON_DEVICE = 'offline_multisig_on_device'
+OFFLINE_MULTISIG_HARDWARE = 'offline_multisig_hardware'
+
+# Multisig variants grouping
+MULTISIG_VARIANTS = [
+    ONLINE_MULTISIG_ON_DEVICE,
+    ONLINE_MULTISIG_HARDWARE,
+    ONLINE_MULTISIG_WATCH_ONLY,
+    OFFLINE_MULTISIG_ON_DEVICE,
+    OFFLINE_MULTISIG_HARDWARE,
+]
+
+NAME_TO_STEPS: dict[str, tuple[int, int, int, int, int]] = {
+    # Online Standard
+    ONLINE_WATCH_ONLY: (1, 1, 2, 0, 0),
+    ONLINE_CREATE_ON_DEVICE: (1, 1, 1, 1, 1),
+    ONLINE_CREATE_HARDWARE: (1, 1, 1, 1, 2),
+    ONLINE_LOAD_ON_DEVICE: (1, 1, 1, 2, 1),
+    ONLINE_LOAD_HARDWARE: (1, 1, 1, 2, 2),
+    # Offline Standard
+    OFFLINE_CREATE_ON_DEVICE: (1, 2, 0, 1, 1),
+    OFFLINE_CREATE_HARDWARE: (1, 2, 0, 1, 2),
+    OFFLINE_LOAD_ON_DEVICE: (1, 2, 0, 2, 1),
+    OFFLINE_LOAD_HARDWARE: (1, 2, 0, 2, 0),
+    # Online Multisig
+    ONLINE_MULTISIG_ON_DEVICE: (2, 1, 1, 1, 1),
+    ONLINE_MULTISIG_HARDWARE: (2, 1, 1, 1, 2),
+    ONLINE_MULTISIG_WATCH_ONLY: (2, 1, 2, 1, 0),
+    # Offline Multisig
+    OFFLINE_MULTISIG_ON_DEVICE: (2, 2, 0, 1, 1),
+    OFFLINE_MULTISIG_HARDWARE: (2, 2, 0, 1, 2),
 }
 
 
@@ -326,3 +349,21 @@ IFA_ASSET_NAME = 'ifa_asset_name'
 IFA_ASSET_AMOUNT = 'ifa_asset_amount'
 IFA_ASSET_TOTAL_SUPPLY = 'ifa_asset_total_supply'
 ISSUE_IFA_BUTTON = 'issue_ifa_button'
+
+# Multisig setup page
+MULTISIG_SETUP_PAGE = 'multisig_setup_page'
+MULTISIG_TOTAL_SIGNER_INPUT = 'multisig_total_signer_input'
+MULTISIG_REQUIRED_SIGNER_INPUT = 'multisig_required_signer_input'
+MULTISIG_CONTINUE_BUTTON = 'multisig_continue_button'
+MULTISIG_BACK_BUTTON = 'multisig_back_button'
+MULTISIG_EXPORT_BUTTON = 'multisig_export_button'
+MULTISIG_COLORED_XPUB_COPY_BUTTON = 'multisig_colored_xpub_copy_button'
+MULTISIG_COSIGNER_STRING_COPY_BUTTON = 'multisig_cosigner_string_copy_button'
+MULTISIG_COSIGNER_STRING_INPUT = 'multisig_cosigner_string_input'
+MULTISIG_COSIGNER_CARD = 'multisig_cosigner_card'
+MULTISIG_COSIGNER_IMPORT_BUTTON = 'multisig_cosigner_import_button'
+MULTISIG_COSIGNER_RESET_BUTTON = 'multisig_cosigner_reset_button'
+MULTISIG_COSIGNER_CARD_TITLE = 'multisig_cosigner_card_title'
+MULTISIG_COSIGNER_CARD_DESCRIPTION = 'multisig_cosigner_card_description'
+MULTISIG_COSIGNER_CARD_PUBLIC_KEY = 'multisig_cosigner_card_public_key'
+MULTISIG_COSIGNER_CARD_THRESHOLD = 'multisig_cosigner_card_threshold'

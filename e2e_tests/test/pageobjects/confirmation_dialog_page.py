@@ -22,13 +22,13 @@ class ConfirmationDialogPageObjects(BaseOperations):
             roleName='dialog', name=CONFIRMATION_DIALOG,
         )
         self.confirmation_continue_button = lambda: self.perform_action_on_element(
-            role_name='push button', name=CONFIRMATION_DIALOG_CONTINUE_BUTTON, application_name=self.confirmation_dialog(),
+            role_name='push button', name=CONFIRMATION_DIALOG_CONTINUE_BUTTON, application_node=self.confirmation_dialog(),
         )
         self.confirmation_checkbox = lambda: self.perform_action_on_element(
-            role_name='check box', name=CONFIRMATION_DIALOG_CHECKBOX, application_name=self.confirmation_dialog(),
+            role_name='check box', name=CONFIRMATION_DIALOG_CHECKBOX, application_node=self.confirmation_dialog(),
         )
         self.confirmation_cancel_button = lambda: self.perform_action_on_element(
-            role_name='push button', name=CONFIRMATION_DIALOG_CANCEL_BUTTON, application_name=self.confirmation_dialog(),
+            role_name='push button', name=CONFIRMATION_DIALOG_CANCEL_BUTTON, application_node=self.confirmation_dialog(),
         )
 
     def click_confirmation_dialog(self):

@@ -53,25 +53,25 @@ class BackupPageObjects(BaseOperations):
             roleName='filler', name=BACKUP_WINDOW,
         )
         self.email_input = lambda: self.perform_action_on_element(
-            role_name='text', name='Email or phone', application_name=self.backup_window(),
+            role_name='text', name='Email or phone', application_node=self.backup_window(),
         )
         self.next_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='Next', application_name=self.backup_window(),
+            role_name='push button', name='Next', application_node=self.backup_window(),
         )
         self.password_input = lambda: self.perform_action_on_element(
-            role_name='password text', name='Enter your password', application_name=self.backup_window(),
+            role_name='password text', name='Enter your password', application_node=self.backup_window(),
         )
         self.try_another_way_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='Try another way', application_name=self.backup_window(),
+            role_name='push button', name='Try another way', application_node=self.backup_window(),
         )
         self.google_authenticator = lambda: self.perform_action_on_element(
-            role_name='link', name='Get a verification code from the Google Authenticator app', application_name=self.backup_window(),
+            role_name='link', name='Get a verification code from the Google Authenticator app', application_node=self.backup_window(),
         )
         self.enter_code = lambda: self.perform_action_on_element(
-            role_name='text', name='Enter code', application_name=self.backup_window(),
+            role_name='text', name='Enter code', application_node=self.backup_window(),
         )
         self.continue_button = lambda: self.perform_action_on_element(
-            role_name='push button', name='Continue', application_name=self.backup_window(),
+            role_name='push button', name='Continue', application_node=self.backup_window(),
         )
         self.backup_wallet_data_button = lambda: self.perform_action_on_element(
             role_name='push button', name=BACKUP_WALLET_DATA_BUTTON,

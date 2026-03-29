@@ -28,11 +28,11 @@ class USBSyncDialogPageObjects(BaseOperations):
             roleName='dialog', name=USB_SYNC_DIALOG,
         )
         self.cancel_button = lambda: self.perform_action_on_element(
-            application_name=self.usb_sync_dialog(),
+            application_node=self.usb_sync_dialog(),
             role_name='push button', name=USB_SYNC_DIALOG_CANCEL_BUTTON,
         )
         self.continue_button = lambda: self.perform_action_on_element(
-            application_name=self.usb_sync_dialog(),
+            application_node=self.usb_sync_dialog(),
             role_name='push button', name=USB_SYNC_DIALOG_CONTINUE_BUTTON,
         )
 

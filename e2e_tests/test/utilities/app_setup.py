@@ -142,12 +142,16 @@ class TestEnvironment:
             ],
             check=True,
         )
-        self.first_application = root.child(
-            roleName='frame', name=FIRST_APPLICATION,
-        )
+        print(f"[SETUP] Initializing {FIRST_APPLICATION}")
+        app = self._find_application_node(FIRST_APPLICATION)
+        print(f"[SETUP] Successfully identified Application node for {FIRST_APPLICATION}: {app}")
+        self.first_application = app
         self.first_page_features = MainFeatures(self.first_application)
         self.first_page_objects = MainPageObjects(self.first_application)
         self.first_page_operations = BaseOperations(self.first_application)
+        
+        self.first_page_operations.register_current_environment(self)
+
         if self.num_instances >= 2:
             self.second_process = subprocess.Popen(
                 [f"e2e_tests/applications/iris-wallet-vault_{
@@ -165,9 +169,9 @@ class TestEnvironment:
                 ],
                 check=True,
             )
-            self.second_application = root.child(
-                roleName='frame', name=SECOND_APPLICATION,
-            )
+            print(f"[SETUP] Initializing {SECOND_APPLICATION}")
+            self.second_application = self._find_application_node(SECOND_APPLICATION)
+            print(f"[SETUP] Successfully identified Application node for {SECOND_APPLICATION}: {self.second_application}")
             self.second_page_features = MainFeatures(self.second_application)
             self.second_page_objects = MainPageObjects(self.second_application)
             self.second_page_operations = BaseOperations(
@@ -190,29 +194,80 @@ class TestEnvironment:
                 ],
                 check=True,
             )
-            self.third_application = root.child(
-                roleName='frame', name=THIRD_APPLICATION,
-            )
+            print(f"[SETUP] Initializing {THIRD_APPLICATION}")
+            self.third_application = self._find_application_node(THIRD_APPLICATION)
+            print(f"[SETUP] Successfully identified Application node for {THIRD_APPLICATION}: {self.third_application}")
             self.third_page_features = MainFeatures(self.third_application)
             self.third_page_objects = MainPageObjects(self.third_application)
             self.third_page_operations = BaseOperations(
                 self.third_application,
             )
 
-    def wait_for_application(self, app_name, timeout=10):
-        """Waits for an application to be fully loaded dynamically."""
+    def _find_application_node(self, app_name):
+        """Helper to find the stable application node for a given app name."""
+        print(f"[DEBUG] Searching for parent application of: {app_name}")
+        
+        # Method 1: Search through all applications to find one containing the target frame
+        try:
+            for app in root.applications():
+                if 'iris' in app.name.lower():
+                    # Check if this app has the frame we're looking for
+                    for child in app.children:
+                        if child.roleName == 'frame' and child.name == app_name:
+                            print(f"[DEBUG] Found parent application '{app.name}' for frame '{app_name}'")
+                            return app
+        except Exception:
+            pass
+
+        # Method 2: Fallback - find the frame and get its parent
+        try:
+            frame = root.child(roleName='frame', name=app_name)
+            if frame:
+                parent = frame.parent
+                if parent and parent.roleName == 'application':
+                    return parent
+                return frame # Return frame as last resort if parent is not app
+        except Exception:
+            pass
+
+        print(f"[WARN] No parent application node found for '{app_name}'. Using dogtail fallback.")
+        return root.application(app_name) # This is dogtail's standard way to get application root by hint
+
+    def _find_showing_frame(self, app_name):
+        """Helper to find a showing frame for a given app name."""
+        # Try to find visible frame under visible application nodes first
+        apps = [a for a in root.applications() if 'iris' in a.name.lower()]
+        for app in apps:
+            if app.showing:
+                try:
+                    frame = app.child(roleName='frame', name=app_name)
+                    if frame and frame.showing:
+                        return frame
+                except Exception:
+                    pass
+        
+        # Fallback to direct search and hope for the best
+        return root.child(roleName='frame', name=app_name)
+
+    def wait_for_application(self, name, timeout=60):
+        """Wait for the application and its main frame to be visible."""
+        print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                if root.child(roleName='frame', name=app_name):
-                    return True
+                # Use our helper to see if an application node with a frame exists
+                app = self._find_application_node(name)
+                if app:
+                    # Also check if it has a showing frame
+                    frame = app.child(roleName='frame', name=name)
+                    if frame and frame.showing:
+                        print(f"[SETUP] {name} is showing and ready.")
+                        return True
             except Exception:
                 pass
-            time.sleep(0.5)  # Avoid excessive CPU usage
+            time.sleep(1.0)
         raise TimeoutError(
-            f"""Application '{app_name}' failed to start within {
-                timeout
-            } seconds""",
+            f"Application '{name}' failed to start or show frame within {timeout} seconds",
         )
 
     def terminate_process(self, process):

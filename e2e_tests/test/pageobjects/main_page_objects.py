@@ -25,6 +25,7 @@ from e2e_tests.test.pageobjects.issue_cfa_page import IssueCfaPageObjects
 from e2e_tests.test.pageobjects.issue_ifa_page import IssueIfaPageObjects
 from e2e_tests.test.pageobjects.issue_nia_page import IssueNiaPageObjects
 from e2e_tests.test.pageobjects.keyring_dialog_page import KeyringDialogBoxPageObjects
+from e2e_tests.test.pageobjects.multisig_setup_page import MultisigSetupPageObjects
 from e2e_tests.test.pageobjects.receive_asset_page import ReceiveAssetPageObjects
 from e2e_tests.test.pageobjects.restore_mnemonic_page import RestoreWalletPageObjects
 from e2e_tests.test.pageobjects.selection_page import SelectionPageObjects
@@ -162,5 +163,9 @@ class MainPageObjects():
         )
 
         self.confirmation_dialog_page_objects = ConfirmationDialogPageObjects(
+            self.application,
+        )
+
+        self.multisig_setup_page_objects = MultisigSetupPageObjects(
             self.application,
         )
