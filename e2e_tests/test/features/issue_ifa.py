@@ -5,6 +5,7 @@ This module contains the IssueIfa class, which provides methods for issuing IFA 
 from __future__ import annotations
 
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
+from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
@@ -167,3 +168,28 @@ class IssueIfa(MainPageObjects, BaseOperations):
             self.issue_ifa_page_objects.click_issue_ifa_button()
 
         self.wallet_feature.usb_sync(is_receive=True)
+    
+    def issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, utxo_required: bool = False):
+        """
+        Issues an IFA asset with sufficient sats and no UTXO.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+            self.sidebar_page_objects.click_inflatable_button()
+
+        self.inflatable_page_objects.click_ifa_frame(asset_ticker)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+            self.issue_ifa_page_objects.click_issue_ifa_button()
+
+        if utxo_required:
+            self.do_focus_on_application(CONFIRMATION_DIALOG)
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+                self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+        else:
+            if self.do_is_displayed(self.success_page_objects.home_button()):
+                self.success_page_objects.click_home_button()

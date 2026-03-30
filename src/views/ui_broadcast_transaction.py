@@ -823,9 +823,13 @@ class BroadcastTransactionWidget(QWidget):
         summary = BroadcastTransactionService.rgb_transfer_inspection_summary(
             rgb_details, self._pending_transfer_type,
         )
+
+        # Retrieve min_conf from operation or stored context (offline)
         min_conf = None
         if self._current_operation and self._current_operation.details:
             min_conf = self._current_operation.details.min_confirmations
+        elif hasattr(self, '_stored_context') and self._stored_context:
+            min_conf = self._stored_context.get('min_confirmations')
 
         self.inspection_details.update_rgb_details(
             asset_id=summary.asset_id,
@@ -997,26 +1001,40 @@ class BroadcastTransactionWidget(QWidget):
             operation, parsed.purpose, psbt_body, self._rgb_expected,
         )
 
-        # Offline wallets can never get fascia_path, so never expect RGB
-        if SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET:
-            rgb_expected = False
-        else:
-            rgb_expected = ctx.rgb_expected
+        # Offline wallets can get fascia_path from storage if it was saved during creation/import
+        is_offline_wallet = SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+        self._stored_context = None
+        if is_offline_wallet:
+            self._stored_context = BroadcastTransactionService.get_psbt_rgb_context(
+                psbt_body,
+            )
+
+        rgb_expected = ctx.rgb_expected
+        if is_offline_wallet:
+            rgb_expected = bool(
+                self._stored_context and self._stored_context.get('fascia_path'),
+            )
 
         self.inspection_details.show_inspection_details(True)
         self._rgb_expected = rgb_expected
         self._is_inflation_context = ctx.is_inflation
 
-        # If operation details are available, trigger RGB inspection
-        if operation and rgb_expected:
-            op_ctx = operation.details
-            has_fp = bool(op_ctx.fascia_path)
-            if op_ctx and has_fp:
-                entropy = op_ctx.entropy if op_ctx.entropy is not None else 0
+        # Trigger RGB inspection if expected
+        if rgb_expected:
+            if operation:
+                op_ctx = operation.details
+                if op_ctx and bool(op_ctx.fascia_path):
+                    entropy = op_ctx.entropy if op_ctx.entropy is not None else 0
+                    self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
+                        op_ctx.fascia_path,
+                        psbt_body,
+                        entropy,
+                    )
+            elif self._stored_context:
                 self.view_model.broadcast_transaction_view_model.inspect_rgb_transfer(
-                    op_ctx.fascia_path,
+                    self._stored_context['fascia_path'],
                     psbt_body,
-                    entropy,
+                    self._stored_context.get('entropy') or 0,
                 )
 
     def _on_import_psbt(self):

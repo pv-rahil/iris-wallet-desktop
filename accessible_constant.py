@@ -232,6 +232,10 @@ BROADCAST_TRANSACTION_PSBT_INPUT = 'broadcast_transaction_psbt_input'
 BROADCAST_TRANSACTION_METHOD_SELECTOR = 'broadcast_transaction_method_selector'
 BROADCAST_TRANSACTION_PAGE_BUTTON = 'broadcast_transaction_page_button'
 SIGN_PSBT_PAGE_BUTTON = 'sign_psbt_page_button'
+IMPORT_PSBT_BUTTON = 'import_psbt_button'
+EXPORT_PSBT_BUTTON = 'export_psbt_button'
+CLEAR_PSBT_BUTTON = 'clear_psbt_button'
+REJECT_PSBT_BUTTON = 'reject_psbt_button'
 
 # Settings page
 ASK_AUTH_FOR_IMPORTANT_QUESTION = 'auth_for_imp_question'

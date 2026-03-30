@@ -12,6 +12,11 @@ from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QVBoxLayout
+from accessible_constant import SIGN_PSBT_PAGE_BUTTON
+from accessible_constant import IMPORT_PSBT_BUTTON
+from accessible_constant import EXPORT_PSBT_BUTTON
+from accessible_constant import CLEAR_PSBT_BUTTON
+from accessible_constant import REJECT_PSBT_BUTTON
 
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
@@ -152,27 +157,32 @@ class BroadcastInspectionDetails(QFrame):
 
         # Standard primary button for single-sig or broadcast
         self.btn_primary = PrimaryButton()
+        self.btn_primary.setAccessibleName(SIGN_PSBT_PAGE_BUTTON)
         self.btn_primary.setMinimumHeight(40)
 
         # Multisig-specific buttons
         self.btn_import = PrimaryButton()
+        self.btn_import.setAccessibleName(IMPORT_PSBT_BUTTON)
         self.btn_import.setFixedWidth(160)
         self.btn_import.setMinimumHeight(40)
         self.btn_import.hide()
 
         self.btn_export = PrimaryButton()
+        self.btn_export.setAccessibleName(EXPORT_PSBT_BUTTON)
         self.btn_export.setFixedWidth(160)
         self.btn_export.setMinimumHeight(40)
         self.btn_export.setEnabled(False)
         self.btn_export.hide()
 
         self.btn_clear = PrimaryButton()
+        self.btn_clear.setAccessibleName(CLEAR_PSBT_BUTTON)
         self.btn_clear.setFixedWidth(160)
         self.btn_clear.setMinimumHeight(40)
         self.btn_clear.setEnabled(False)
         self.btn_clear.hide()
 
         self.btn_reject = PrimaryButton()
+        self.btn_reject.setAccessibleName(REJECT_PSBT_BUTTON)
         self.btn_reject.setFixedWidth(160)
         self.btn_reject.setMinimumHeight(40)
         self.btn_reject.hide()

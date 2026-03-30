@@ -29,6 +29,7 @@ services:
 
   rgb-multisig-bridge:
     image: rgb-multisig-bridge:latest
+    user: "1000:1000"
     command: /usr/bridge --daemon-listening-port 8141
     ports:
       - 8141:8141

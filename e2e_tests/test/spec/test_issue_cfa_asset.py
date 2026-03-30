@@ -12,6 +12,7 @@ from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.multisig_coordinator import get_multisig_coordinator
 
 CFA_ASSET_NAME = 'CFA'
 ASSET_DESCRIPTION = 'This is CFA asset'
@@ -19,6 +20,7 @@ ASSET_AMOUNT = '2000'
 ISSUE_CFA_TOASTER_MESSAGE = 'You have insufficient funds'
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue CFA asset without sufficient sats')
@@ -42,6 +44,7 @@ def test_issue_cfa_without_sufficient_sats(wallets_and_operations: WalletTestSet
         assert description == ISSUE_CFA_TOASTER_MESSAGE
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Issue CFA asset with sufficient sats but no utxo')
@@ -74,6 +77,7 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo(wallets_and_operations: Wall
         assert asset_name == CFA_ASSET_NAME
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -109,6 +113,7 @@ def test_issue_cfa_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
         assert asset_name == CFA_ASSET_NAME
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
 @allure.feature('Issue CFA asset without sufficient sats for offline wallet')
@@ -134,7 +139,7 @@ def test_issue_cfa_without_sufficient_sats_offline_wallet(wallets_and_operations
 
     assert description == ISSUE_CFA_TOASTER_MESSAGE
 
-
+@pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
 @allure.feature('Issue CFA asset with sufficient sats and no utxo for offline wallet')
@@ -184,3 +189,103 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
         )
     assert count == 1
     assert asset_name == CFA_ASSET_NAME
+
+@pytest.mark.parametrize('test_environment', [True], indirect=True)
+@allure.feature('Issue CFA asset for multisig wallet')
+@allure.story('Issue CFA asset with multisig wallet requiring two applications')
+def test_issue_cfa_multisig_without_sufficient_sats(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test CFA asset issuance without sufficient sats for multisig wallet.
+    Multisig requires two applications running in parallel.
+    """
+    coordinator = get_multisig_coordinator()
+    coordinator.reset()
+
+    with allure.step('Initiate first multisig wallet'):
+        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
+        )
+
+    with allure.step('Initiate second multisig wallet'):
+        wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
+            application=SECOND_APPLICATION, variant=wallet_variant_name, fund=False,
+        )
+
+    with allure.step('Import cosigner data into first multisig wallet'):
+        wallets_and_operations.first_page_features.wallet_features.import_multisig_data(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Import cosigner data into second multisig wallet'):
+        wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Finalize first multisig wallet setup'):
+        wallets_and_operations.first_page_features.wallet_features.finalize_multisig_setup(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Finalize second multisig wallet setup'):
+        wallets_and_operations.second_page_features.wallet_features.finalize_multisig_setup(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Issue CFA asset without sufficient sats'):
+        description = wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_asset_without_sat(
+            FIRST_APPLICATION, CFA_ASSET_NAME, ASSET_DESCRIPTION, ASSET_AMOUNT,
+        )
+
+    assert description == ISSUE_CFA_TOASTER_MESSAGE
+
+
+@pytest.mark.parametrize('test_environment', [True], indirect=True)
+@allure.feature('Issue CFA asset for multisig wallet')
+@allure.story('Issue CFA asset with sufficient sats for multisig wallet')
+def test_issue_cfa_multisig_with_sufficient_sats(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test CFA asset issuance with sufficient sats for multisig wallet.
+    Multisig requires two applications running in parallel.
+    """
+    with allure.step('fund first multisig wallet'):
+        wallets_and_operations.first_page_features.wallet_features.fund_wallet(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('refresh second multisig wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Create Utxo for issue CFA asset'):
+        wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
+            FIRST_APPLICATION, CFA_ASSET_NAME, utxo_required=True,
+        )
+
+    with allure.step('refresh second multisig wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Sign and broadcast from second wallet'):
+        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('refresh first multisig wallet'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Issue CFA asset with sufficient sats and utxo from draft'):
+        wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
+            FIRST_APPLICATION, CFA_ASSET_NAME,
+        )
+
+    with allure.step('refresh second multisig wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Verify asset name'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        asset_name = wallets_and_operations.first_page_objects.collectible_page_objects.get_cfa_asset_name(
+            CFA_ASSET_NAME,
+        )
+        assert asset_name == CFA_ASSET_NAME

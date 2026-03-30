@@ -45,6 +45,7 @@ from src.utils.decorators.check_colorable_available import get_unspent_utxo_coun
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import register_multisig_button
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
+from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -582,8 +583,7 @@ class IssueNIAWidget(QWidget):
             or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
         ):
             dialog = ConfirmationDialog(
-                message='UTXO creation is required before issuing this asset. '
-                        'This will generate a PSBT that needs to be signed by all cosigners. ',
+                message=INFO_UTXO_CREATION_REQUIRED,
                 parent=self,
                 icon_type='info',
             )

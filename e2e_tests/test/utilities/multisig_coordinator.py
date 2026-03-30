@@ -157,6 +157,7 @@ class MultisigSetupCoordinator:
         """
         xpubs = list(self._colored_xpubs.values())
         root_public_key = get_bridge_public_key()
+        print(f"[SYNC] Updating bridge config with xpubs: {xpubs} and root public key: {root_public_key}")
         if len(xpubs) >= 2:
             update_bridge_config(
                 cosigner_xpubs=xpubs,

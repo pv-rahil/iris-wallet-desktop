@@ -2378,5 +2378,17 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>psbt_signed_successfully</source>
         <translation>PSBT signed successfully</translation>
     </message>
+    <message>
+        <source>no_assets_issued</source>
+        <translation>No Assets Issued</translation>
+    </message>
+    <message>
+        <source>no_assets_issued_sub</source>
+        <translation>You haven't issued any assets yet. Create your first collectible asset to get started.</translation>
+    </message>
+    <message>
+        <source>issue_new_inflatable</source>
+        <translation>Issue New Inflatable</translation>
+    </message>
 </context>
 </TS>

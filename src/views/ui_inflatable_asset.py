@@ -398,12 +398,12 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         lay = QVBoxLayout(wrapper)
         lay.setContentsMargins(8, 8, 8, 8)
         lay.setSpacing(2)
-        title = QLabel('No Assets Issued')
+        title = QLabel()
+        title.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_assets_issued'))
         title.setStyleSheet('color:#fff; font:600 20px "Inter"; border:none;')
         lay.addWidget(title, 0, Qt.AlignHCenter)
-        sub = QLabel(
-            "You haven't issued any assets yet. Create your first inflatable asset to get started.",
-        )
+        sub = QLabel()
+        sub.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_assets_issued_sub'))
         sub.setStyleSheet(
             'color: rgba(255,255,255,0.75); font: 14px "Inter"; border:none;',
         )
@@ -411,7 +411,9 @@ class InflatableAssetWidget(QWidget, ThreadManager):
         sub.setAlignment(Qt.AlignHCenter)
         sub.setFixedWidth(560)
         lay.addWidget(sub, 0, Qt.AlignHCenter)
-        btn = PrimaryButton('Issue New Inflatable')
+        btn = PrimaryButton()
+        btn.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_new_inflatable'))
+        btn.setAccessibleName(ISSUE_IFA_ASSET)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setFixedWidth(200)
         if not self.is_multisig:

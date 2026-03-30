@@ -139,7 +139,6 @@ class Wallet(MainPageObjects, BaseOperations):
                 xpub_vanilla, xpub_colored, fingerprint,
             )
 
-
         if self.do_is_displayed(self.set_password_page_objects.password_input()):
             self.set_password_page_objects.enter_password('walletpassword')
 
@@ -312,10 +311,11 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
             self.multisig_setup_page_objects.click_continue_button()
 
-        other_cosigner_string = coordinator.get_other_cosigner_string(application)
+        other_cosigner_string = coordinator.get_other_cosigner_string(
+            application)
         if other_cosigner_string:
-            print(f"[SYNC] Importing cosigner data into {application}")
-            self.multisig_setup_page_objects.import_cosigner_data(2, other_cosigner_string)
+            self.multisig_setup_page_objects.import_cosigner_data(
+                2, other_cosigner_string)
 
     def finalize_multisig_setup(self, application: str):
         """
@@ -326,7 +326,6 @@ class Wallet(MainPageObjects, BaseOperations):
 
         # Update bridge config once both wallets have their xpubs ready
         if len(coordinator._colored_xpubs) >= 2 and not coordinator.is_bridge_updated():
-            print(f"[SYNC] Updating bridge config and starting services from {application}")
             coordinator.update_bridge_config(coordinator.get_threshold())
 
         if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
@@ -350,7 +349,8 @@ class Wallet(MainPageObjects, BaseOperations):
             self.term_and_condition_page_objects.scroll_to_end()
         if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
             self.term_and_condition_page_objects.click_accept_button()
-        self.drive_selection_flow(FIRST_APPLICATION, ONLINE_MULTISIG_WATCH_ONLY)
+        self.drive_selection_flow(
+            FIRST_APPLICATION, ONLINE_MULTISIG_WATCH_ONLY)
         if self.do_is_displayed(self.welcome_page_objects.create_button()):
             self.welcome_page_objects.click_create_button()
         proc = None
@@ -824,11 +824,12 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
                 self.sidebar_page_objects.click_fungibles_button()
 
-            if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
-                self.fungible_page_objects.click_usb_sync_frame()
+            if variant_name == ONLINE_WATCH_ONLY:
+                if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
+                    self.fungible_page_objects.click_usb_sync_frame()
 
-            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                self.usb_sync_dialog_page_objects.click_continue_button()
+                if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                    self.usb_sync_dialog_page_objects.click_continue_button()
 
             if self.do_is_displayed(self.fungible_page_objects.psbt_info_frame()):
                 self.fungible_page_objects.click_psbt_info_frame()
@@ -848,15 +849,16 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.broadcast_transaction_page_objects.sign_psbt_button()):
                 self.broadcast_transaction_page_objects.click_sign_psbt_button()
 
-            self.do_focus_on_application(CONFIRMATION_DIALOG)
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                self.confirmation_dialog_page_objects.click_confirmation_dialog()
+            if variant_name not in MULTISIG_VARIANTS:
+                self.do_focus_on_application(CONFIRMATION_DIALOG)
+                if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+                    self.confirmation_dialog_page_objects.click_confirmation_dialog()
 
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_checkbox()):
-                self.confirmation_dialog_page_objects.click_confirmation_checkbox()
+                if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_checkbox()):
+                    self.confirmation_dialog_page_objects.click_confirmation_checkbox()
 
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+                if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+                    self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
             if self.hardware_wallet_emu:
                 self.confirm_transaction_on_hardware_wallet(
@@ -865,7 +867,8 @@ class Wallet(MainPageObjects, BaseOperations):
 
             self.do_focus_on_application(application)
 
-            self.usb_sync(is_receive=True)
+            if variant_name == ONLINE_WATCH_ONLY:
+                self.usb_sync(is_receive=True)
 
         except Exception as e:
             raise e

@@ -143,16 +143,17 @@ class IssueIFAViewModel(QObject, ThreadManager):
             if getattr(error, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)
                 return
-        if SettingRepository.get_key_storage_type() != KeyStorageType.HARDWARE_WALLET and \
-                SettingRepository.get_wallet_signature_type() != WalletSignatureType.MULTI_SIG_WALLET:
+        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or \
+                SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
+                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+            self.hw_dialog_update.emit(
+                str(error), PsbtStatus.ERROR,
+            )
+        else:
             description = error.message if isinstance(
                 error, CommonException,
             ) else ERROR_SOMETHING_WENT_WRONG
             ToastManager.error(description=description)
-        else:
-            self.hw_dialog_update.emit(
-                str(error), PsbtStatus.ERROR,
-            )
 
     def on_success_native_auth_inflate(self, success: bool) -> None:
         """Callback after native authentication for IFA."""

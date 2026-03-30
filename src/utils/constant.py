@@ -64,8 +64,8 @@ MULTISIG_BRIDGE_URL = 'http://127.0.0.1:8141'
 
 INDEXER_URL_REGTEST = '127.0.0.1:50001'
 PROXY_ENDPOINT_REGTEST = 'rpc://127.0.0.1:3000/json-rpc'
-# INDEXER_URL_REGTEST = 'electrum.rgbtools.org:50041'
-# PROXY_ENDPOINT_REGTEST = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
+# INDEXER_URL_REGTEST = '127.0.0.1:50001'
+# PROXY_ENDPOINT_REGTEST = 'rpc://127.0.0.1:3000/json-rpc'
 
 INDEXER_URL_TESTNET = 'ssl://electrum.iriswallet.com:50013'
 PROXY_ENDPOINT_TESTNET = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
