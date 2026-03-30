@@ -106,6 +106,6 @@ runs:
         export GDK_SYNCHRONIZE=1
         export __GLX_VENDOR_LIBRARY_NAME=mesa
         sleep 3  # Increased to 3s for better UI stability
-        poetry run single-test ${{ inputs.test-file }}.py
+        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant online_multisig_on_device
         '
       shell: bash
