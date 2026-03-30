@@ -12,6 +12,7 @@ import pytest
 from src.data.service.restore_service import RestoreService
 from src.model.common_operation_model import RestoreResponseModel
 from src.utils.custom_exception import CommonException
+from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.error_message import ERROR_NOT_BACKUP_FILE
 from src.utils.error_message import ERROR_UNABLE_GET_MNEMONIC
 from src.utils.error_message import ERROR_UNABLE_TO_GET_HASHED_MNEMONIC
@@ -65,7 +66,7 @@ def test_restore(mock_read_version, mock_google_drive_manager, mock_restore, moc
     # Setup mocks
     mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
     mock_get_path.return_value = test_dir
-    mock_read_version.return_value = '0.3.0a14.dev1'
+    mock_read_version.return_value = CURRENT_RGB_LIB_VERSION
 
     mock_restore_instance = MagicMock()
     mock_restore.return_value = RestoreResponseModel(status=True)
@@ -94,7 +95,7 @@ def test_restore_when_file_not_exists(mock_read_version, mock_app_paths, mock_go
     # Setup mocks
     mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
     mock_get_path.return_value = test_dir
-    mock_read_version.return_value = '0.3.0a14.dev1'
+    mock_read_version.return_value = CURRENT_RGB_LIB_VERSION
 
     # Mock app_paths to avoid FileNotFoundError during cleanup
     mock_app_paths.restore_folder_path = restore_dir
@@ -193,7 +194,7 @@ def test_restore_download_error(mock_read_version, mock_google_drive_manager, mo
 
     # Setup mocks
     mock_get_hashed_mnemonic.return_value = 'e23ddff3cc'
-    mock_read_version.return_value = '0.3.0a14.dev1'
+    mock_read_version.return_value = CURRENT_RGB_LIB_VERSION
     mock_google_drive_manager.return_value = MagicMock()
     mock_google_drive_manager.return_value.download_from_drive.return_value = False
 
@@ -231,7 +232,7 @@ def test_restore_multisig(
 ):
     """Case 8: Test restore service with multisig restoration."""
     mock_hashed.return_value = 'e23ddff3cc'
-    mock_read_version.return_value = '0.3.0a14.dev1'
+    mock_read_version.return_value = CURRENT_RGB_LIB_VERSION
     # folder exists, old file exists, multisig file exists, temp folder exists (finally block)
     mock_os_exists.side_effect = [
         True, True, True,
