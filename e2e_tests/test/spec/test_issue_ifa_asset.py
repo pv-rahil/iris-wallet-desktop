@@ -160,7 +160,7 @@ def test_issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue IFA asset for multisig wallet')
 @allure.story('Issue IFA asset with multisig wallet requiring two applications')
-def test_issue_ifa_multisig_without_sufficient_sats(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_issue_ifa_multisig_without_sufficient_sats_for_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test IFA asset issuance without sufficient sats for multisig wallet.
     Multisig requires two applications running in parallel.
@@ -209,7 +209,7 @@ def test_issue_ifa_multisig_without_sufficient_sats(wallets_and_operations: Wall
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue IFA asset for multisig wallet')
 @allure.story('Issue IFA asset with sufficient sats for multisig wallet')
-def test_issue_ifa_multisig_with_sufficient_sats(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_issue_ifa_multisig_with_sufficient_sats_for_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test IFA asset issuance with sufficient sats for multisig wallet.
     Multisig requires two applications running in parallel.
