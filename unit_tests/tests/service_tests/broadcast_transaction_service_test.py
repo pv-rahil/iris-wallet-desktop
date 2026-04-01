@@ -828,3 +828,50 @@ def test_get_psbt_rgb_context_empty_psbt(mocker):
 
     result = BroadcastTransactionService.get_psbt_rgb_context(None)
     assert result is None
+
+
+def test_get_destination_address():
+    """get_destination_address should correctly extract address safely."""
+    
+    # Null cases
+    assert BroadcastTransactionService.get_destination_address(None) == ""
+    
+    # Missing outputs property (AttributeError flow)
+    class MissingOutputsMock:
+        pass
+        
+    mock_no_outputs = MissingOutputsMock()
+    assert BroadcastTransactionService.get_destination_address(mock_no_outputs) == ""
+    
+    # Empty outputs
+    mock_empty = MagicMock()
+    mock_empty.outputs = []
+    assert BroadcastTransactionService.get_destination_address(mock_empty) == ""
+    
+    # Standard change and non-change outputs
+    out_change = MagicMock()
+    out_change.is_ours = True
+    out_change.address = "change_addr"
+    
+    out_dest = MagicMock()
+    out_dest.is_ours = False
+    out_dest.address = "dest_addr"
+    
+    # Single destination
+    mock_single = MagicMock()
+    mock_single.outputs = [out_change, out_dest]
+    assert BroadcastTransactionService.get_destination_address(mock_single) == "dest_addr"
+    
+    # Multiple destinations (adds multi_prefix '...')
+    out_dest2 = MagicMock()
+    out_dest2.is_ours = False
+    out_dest2.address = "dest_addr2"
+    
+    mock_multi = MagicMock()
+    mock_multi.outputs = [out_change, out_dest, out_dest2]
+    assert BroadcastTransactionService.get_destination_address(mock_multi) == "dest_addr..."
+    
+    # Only change outputs (fallback to first output)
+    mock_only_change = MagicMock()
+    mock_only_change.outputs = [out_change]
+    assert BroadcastTransactionService.get_destination_address(mock_only_change) == "change_addr"

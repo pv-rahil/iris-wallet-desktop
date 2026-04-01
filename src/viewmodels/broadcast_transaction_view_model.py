@@ -405,14 +405,15 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
     def inspect_rgb_transfer(self, fascia_path: str, psbt: str, entropy: int):
         """Inspect RGB transfer for review details."""
         # Guard: skip if already inspecting this RGB transfer
-        key = (fascia_path, psbt)
+        rebased_path = BroadcastTransactionService.rebase_fascia_path(fascia_path)
+        key = (rebased_path, psbt)
         if self._inspecting_rgb == key:
             return
         self._inspecting_rgb = key
         self.run_in_thread(
             RgbRepository.inspect_rgb_transfer,
             {
-                'args': [fascia_path, psbt, entropy],
+                'args': [rebased_path, psbt, entropy],
                 'callback': self._on_inspect_rgb_transfer_success,
                 'error_callback': self.on_error,
             },

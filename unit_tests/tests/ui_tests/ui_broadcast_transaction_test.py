@@ -846,6 +846,7 @@ def test_handle_rgb_transfer_inspection_result(vm_mock, privileges_broadcast, mo
         amount='100',
         transfer_type_label='Issue Asset',
         min_conf=None,
+        result=rgb_details,
     )
     w.close()
 

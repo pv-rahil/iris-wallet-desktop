@@ -39,6 +39,7 @@ from src.model.enums.enums_model import WalletType
 from src.utils.common_utils import close_button_navigation
 from src.utils.common_utils import get_current_wallet_mode_config
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.error_message import ERROR_OPERATION_NOT_FOUND_TO_REJECT
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import set_widgets_visible
@@ -328,11 +329,8 @@ class BroadcastTransactionWidget(QWidget):
 
         # Always hide Export in this flow (not needed now)
         if self.is_multisig:
-            try:
-                self.inspection_details.btn_export.hide()
-                self.inspection_details.btn_export.setEnabled(False)
-            except Exception:
-                pass
+            self.inspection_details.btn_export.hide()
+            self.inspection_details.btn_export.setEnabled(False)
 
         self.grid_layout.addWidget(
             self.broadcast_transaction_widget, 1, 1, 1, 1,
@@ -735,13 +733,8 @@ class BroadcastTransactionWidget(QWidget):
             ToastManager.error(description='No PSBT')
             return
 
-        # 1. Check if we are responding to a pending operation (Validation already done in handle_button_enable)
-        # We trust self.pending_operation if it is set (meaning it matched current input)
         if self.pending_operation is not None:
-            try:
-                operation_idx = self.pending_operation.operation_idx
-            except AttributeError:
-                operation_idx = None
+            operation_idx = self.pending_operation.operation_idx
             # Use raw PSBT text (base64) for response, stripping prefix if any
             parsed = BroadcastTransactionService.parse_psbt_input(psbt_text)
             psbt_only = parsed.psbt
@@ -761,11 +754,9 @@ class BroadcastTransactionWidget(QWidget):
         if self.pending_operation:
             operation_idx = self.pending_operation.operation_idx
         elif self._current_operation:
-            # _current_operation is the inner Operation (no operation_idx)
-            # Fall back to pending_operation if available
             pass
         if operation_idx is None:
-            ToastManager.error(description='Operation not found to reject')
+            ToastManager.error(description=ERROR_OPERATION_NOT_FOUND_TO_REJECT)
             return
         self.view_model.broadcast_transaction_view_model.respond_nack(
             operation_idx,
@@ -786,9 +777,6 @@ class BroadcastTransactionWidget(QWidget):
         """
         Handle the async PSBT inspection result from the signal.
         """
-        if not self.is_multisig:
-            return
-
         if details is None:
             self.inspection_details.show_inspection_details(False)
             self.is_psbt_validated = False
@@ -838,6 +826,7 @@ class BroadcastTransactionWidget(QWidget):
                 summary.transfer_type_key,
             ),
             min_conf=min_conf,
+            result=rgb_details,
         )
         self._render_inspection_if_ready()
         self._refresh_multisig_state_and_sync()

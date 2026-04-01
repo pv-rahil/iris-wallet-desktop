@@ -44,6 +44,7 @@ from src.utils.constant import PROXY_ENDPOINT_REGTEST
 from src.utils.constant import PROXY_ENDPOINT_TESTNET
 from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
+from src.utils.constant import VANILLA_KEYCHAIN
 from src.utils.custom_exception import CommonException
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.info_message import INFO_MULTISIG_TRANSACTION_PENDING
@@ -392,7 +393,7 @@ def build_keys_from_data(
                 CosignerData(
                     account_xpub_vanilla=c[ACCOUNT_XPUB_VANILLA],
                     account_xpub_colored=c[ACCOUNT_XPUB_COLORED],
-                    vanilla_keychain=c.get('vanilla_keychain'),
+                    vanilla_keychain=c.get(VANILLA_KEYCHAIN),
                     master_fingerprint=c[MASTER_FINGERPRINT],
                 ),
             )
@@ -472,36 +473,36 @@ def register_multisig_button(
             )
         pending_handler = default_pending_handler
 
-    # Use Qt property instead of protected attribute
-    if button.property('_connected_handler') is None:
-        button.setProperty('_connected_handler', None)
+    # State to track the currently connected handler without mutating Qt object properties
+    state = {'current_handler': None}
 
     def state_update_callback(is_pending: bool):
+        try:
+            # Check if the underlying C++ object is still alive
+            button.objectName()
+        except RuntimeError:
+            return
+
         if not isinstance(button, QPushButton):
             return
 
         new_handler = pending_handler if is_pending else normal_handler
-        current_handler = button.property('_connected_handler')
 
-        if current_handler == new_handler:
+        if state['current_handler'] == new_handler:
             return
 
-        if current_handler is not None:
+        if state['current_handler'] is not None:
             try:
-                button.clicked.disconnect(current_handler)
-            except TypeError:
+                button.clicked.disconnect(state['current_handler'])
+            except (TypeError, RuntimeError):
                 pass
 
         if new_handler is not None:
             button.clicked.connect(new_handler)
 
-        button.setProperty('_connected_handler', new_handler)
+        state['current_handler'] = new_handler
 
         button.setProperty('pending', 'true' if is_pending else 'false')
         button.style().polish(button)
-
-    if normal_handler is not None:
-        button.clicked.connect(normal_handler)
-        button.setProperty('_connected_handler', normal_handler)
 
     connect_multisig_pending_signal(view_model, state_update_callback)

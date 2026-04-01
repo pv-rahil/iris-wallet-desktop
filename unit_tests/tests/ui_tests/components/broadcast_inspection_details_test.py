@@ -99,6 +99,7 @@ def test_update_psbt_details_offline(mock_wt, inspection_details):
     details = MagicMock()
     details.txid = 'some_txid'
     details.fee_sat = 1500
+    details.outputs = []
 
     with patch('src.views.components.broadcast_inspection_details.set_widgets_visible') as mock_set_vis:
         inspection_details.update_psbt_details(details, False, False, None)
@@ -115,6 +116,7 @@ def test_update_psbt_details_rgb(mock_wt, inspection_details):
     details = MagicMock()
     details.txid = 'a_very_long_txid_' * 5
     details.fee_sat = -1  # hide fee
+    details.outputs = []
 
     with patch('src.data.service.broadcast_transaction_service.BroadcastTransactionService.get_transfer_type_label') as mock_lbl:
         mock_lbl.return_value = 'Send RGB'

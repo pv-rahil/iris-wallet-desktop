@@ -22,6 +22,7 @@ from src.data.service.broadcast_transaction_service import BroadcastTransactionS
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import set_widgets_visible
 from src.views.components.buttons import PrimaryButton
+from src.views.components.inspection_detail_dialog import InspectionDetailDialog
 
 
 class BroadcastInspectionDetails(QFrame):
@@ -37,6 +38,8 @@ class BroadcastInspectionDetails(QFrame):
         self._can_broadcast = False
         self._rgb_expected = False
         self._is_inflation_context = False
+        self._last_psbt_details = None
+        self._last_rgb_details = None
 
         self.setObjectName('inspection_frame')
         self.setFrameShape(QFrame.NoFrame)
@@ -82,15 +85,38 @@ class BroadcastInspectionDetails(QFrame):
         )
         self.details_card.setFrameShape(QFrame.NoFrame)
         self.details_card.setFrameShadow(QFrame.Plain)
+        
+        # Vertical layout for card (top link + grid)
+        self.card_v_layout = QVBoxLayout(self.details_card)
+        self.card_v_layout.setContentsMargins(10, 5, 10, 5)
+        self.card_v_layout.setSpacing(0)
 
-        self.grid = QGridLayout(self.details_card)
-        self.grid.setContentsMargins(10, 10, 10, 10)
+        # Grid for details
+        self.grid = QGridLayout()
+        self.grid.setContentsMargins(0, 0, 0, 0)
         self.grid.setHorizontalSpacing(5)
         self.grid.setVerticalSpacing(5)
         self.grid.setColumnStretch(0, 1)
         self.grid.setColumnStretch(1, 1)
         self.grid.setColumnMinimumWidth(0, 200)
         self.grid.setColumnMinimumWidth(1, 200)
+        self.card_v_layout.addLayout(self.grid)
+
+        # Bottom layout for View More link
+        self.view_more_layout = QHBoxLayout()
+        self.view_more_layout.setContentsMargins(0, 0, 5, 5)
+        self.view_more_layout.addStretch(1)
+        
+        self.lbl_show_more = QLabel(self)
+        self.lbl_show_more.setObjectName('lbl_show_more')
+        self.lbl_show_more.setText(
+            f'<a href="#show_more" style="color: #01A781; font-weight: 600; text-decoration: none;">{QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, "review_transaction")}</a>'
+        )
+        self.lbl_show_more.setCursor(Qt.PointingHandCursor)
+        self.lbl_show_more.linkActivated.connect(self._on_show_more_clicked)
+        self.lbl_show_more.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.view_more_layout.addWidget(self.lbl_show_more)
+        self.card_v_layout.addLayout(self.view_more_layout)
 
         self.outer_layout.addWidget(self.details_card)
 
@@ -137,8 +163,8 @@ class BroadcastInspectionDetails(QFrame):
         self.grid.addWidget(self.tile_amount, 1, 0)
         self.grid.addWidget(self.tile_fee, 1, 1)
         self.grid.addWidget(self.tile_destination, 0, 1, 1, 1)
-        self.grid.addWidget(self.tile_ttype, 3, 0)
-        self.grid.addWidget(self.tile_minconf, 3, 1)
+        self.grid.addWidget(self.tile_ttype, 2, 0)
+        self.grid.addWidget(self.tile_minconf, 2, 1)
 
         # Default hide details section
         self.details_title.hide()
@@ -193,6 +219,15 @@ class BroadcastInspectionDetails(QFrame):
         """Show or hide the transaction details section specifically."""
         self.details_title.setVisible(visible)
         self.details_card.setVisible(visible)
+        self.lbl_show_more.setVisible(visible)
+
+    def _on_show_more_clicked(self):
+        """Open the detailed inspection dialog."""
+        if self._last_psbt_details:
+            dialog = InspectionDetailDialog(
+                self._last_psbt_details, self._last_rgb_details, self,
+            )
+            dialog.exec()
 
     def _create_detail_row(self, label_text, value_id):
         tile = QFrame(self.details_card)
@@ -258,7 +293,6 @@ class BroadcastInspectionDetails(QFrame):
             self.btn_primary.setMaximumSize(QSize(270, 16777215))
         else:
             self.actions_layout.addStretch(1)
-            self.btn_primary.setFixedWidth(160)
             self.actions_layout.addWidget(self.btn_import)
             self.actions_layout.addWidget(self.btn_export)
             self.actions_layout.addWidget(self.btn_clear)
@@ -287,29 +321,51 @@ class BroadcastInspectionDetails(QFrame):
         """Update BTC-level details from PsbtInspection."""
         self._rgb_expected = rgb_expected
         self._is_inflation_context = is_inflation_context
+        self._last_psbt_details = details
 
         self.val_txid.setText(self._wrap_to_two_lines(details.txid))
 
         # BTC-only vs RGB layout shifts
         is_btc_only = (not rgb_expected) and (not is_inflation_context)
         if is_btc_only:
-            # TXID spans full width in first row
-            self.grid.addWidget(self.tile_txid, 0, 0, 1, 2)
-            self.val_txid.setText(details.txid)
-            # Type (left) and Fee (right) on second row
+            # Row 0: TxID (left) and Destination (right)
+            self.grid.addWidget(self.tile_txid, 0, 0, 1, 1)
+            self.val_txid.setText(self._wrap_to_two_lines(details.txid))
+            
+            # Extract destination address
+            destination_addr = BroadcastTransactionService.get_destination_address(details)
+            
+            if destination_addr:
+                self.val_destination.setText(self._wrap_to_two_lines(destination_addr))
+                self.val_destination.setToolTip(destination_addr)
+                self.grid.addWidget(self.tile_destination, 0, 1)
+                set_widgets_visible(
+                    [self.tile_destination, self.lbl_destination, self.val_destination],
+                    True,
+                )
+            else:
+                set_widgets_visible(
+                    [self.tile_destination, self.lbl_destination, self.val_destination],
+                    False,
+                )
+
+            # Row 1: Type (left) and Fee (right)
             self.grid.addWidget(self.tile_ttype, 1, 0, 1, 1)
             self.grid.addWidget(self.tile_fee, 1, 1, 1, 1)
-            set_widgets_visible(
-                [
-                    self.tile_destination, self.lbl_destination,
-                    self.val_destination,
-                ], False,
-            )
+            
+            # Ensure all other tiles are hidden and moved to row 0 to collapse grid
+            for tile in [self.tile_asset, self.tile_amount, self.tile_minconf]:
+                self.grid.addWidget(tile, 0, 0)
+                tile.hide()
         else:
-            # Restore to original positions for RGB layout
+            # Restore to original positions for RGB layout (Consolidated rows)
             self.grid.addWidget(self.tile_txid, 0, 0, 1, 1)
+            self.grid.addWidget(self.tile_asset, 0, 1, 1, 1)
+            self.grid.addWidget(self.tile_amount, 1, 0)
             self.grid.addWidget(self.tile_fee, 1, 1)
-            self.grid.addWidget(self.tile_ttype, 3, 0)
+            self.grid.addWidget(self.tile_ttype, 2, 0)
+            self.grid.addWidget(self.tile_minconf, 2, 1)
+            
             set_widgets_visible(
                 [
                     self.lbl_destination, self.val_destination,
@@ -337,8 +393,9 @@ class BroadcastInspectionDetails(QFrame):
             self.val_transfer_type.setVisible(True)
             self.tile_ttype.show()
 
-    def update_rgb_details(self, asset_id, amount, transfer_type_label, min_conf=None):
+    def update_rgb_details(self, asset_id, amount, transfer_type_label, min_conf=None, result=None):
         """Update RGB-level details."""
+        self._last_rgb_details = result
         if asset_id:
             self.lbl_asset_id.setVisible(True)
             self.val_asset_id.setVisible(True)

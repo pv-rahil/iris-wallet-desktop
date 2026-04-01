@@ -1,0 +1,122 @@
+#inspection_detail_dialog {
+    background-color: #1B233B;
+    border-radius: 8px;
+    border: 1px solid #313952;
+}
+
+#dialog_header {
+    background-color: transparent;
+    border-bottom: 2px solid #313952;
+    padding-bottom: 12px;
+}
+
+#dialog_title {
+    color: #FFFFFF;
+    font-family: "Inter";
+    font-size: 24px;
+    font-weight: 700;
+}
+
+#section_title {
+    font-family: "Inter";
+    font-size: 14px;
+    color: #667085;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+#info_card {
+    background-color: rgba(3, 11, 37, 0.5);
+    border: 1px solid #313952;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+#item_card {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid #313952;
+    border-radius: 8px;
+    margin-bottom: 2px;
+}
+
+#scroll_content {
+    background-color: transparent;
+}
+
+QScrollArea {
+    border: none;
+    background-color: transparent;
+}
+
+/* Custom Scrollbar (Thin) */
+QScrollBar:vertical {
+    border: none;
+    background: #0B0F1A;
+    width: 6px;
+}
+
+QScrollBar::handle:vertical {
+    background: #313952;
+    min-height: 20px;
+    border-radius: 3px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    border: none;
+    background: transparent;
+}
+
+QLabel {
+    color: #B3B6C3;
+    font-family: "Inter";
+    font-size: 14px;
+}
+
+QLabel#label_text {
+    font-weight: 600;
+    color: #667085;
+}
+
+QLabel#value_text {
+    color: #FFFFFF;
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-weight: 500;
+}
+
+QLabel#card_header {
+    font-size: 13px;
+    font-weight: 800;
+    color: #03CA9B;
+    text-transform: uppercase;
+}
+
+QLabel#card_body {
+    color: #E4E7EB;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+QLabel#card_meta {
+    color: #667085;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+#close_btn {
+    min-width: 140px;
+    height: 44px;
+    border-radius: 8px;
+    background-color: #313952;
+    color: #FFFFFF;
+    font-weight: 600;
+    border: 1px solid #4A5568;
+}
+
+#close_btn:hover {
+    background-color: #4A5568;
+    border-color: #718096;
+}

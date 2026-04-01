@@ -2390,5 +2390,53 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>issue_new_inflatable</source>
         <translation>Issue New Inflatable</translation>
     </message>
+    <message>
+        <source>detailed_transaction_view</source>
+        <translation>Detailed Transaction View</translation>
+    </message>
+    <message>
+        <source>transaction_summary</source>
+        <translation>Transaction Summary</translation>
+    </message>
+    <message>
+        <source>total_input</source>
+        <translation>Total Network Input</translation>
+    </message>
+    <message>
+        <source>total_output</source>
+        <translation>Total Network Output</translation>
+    </message>
+    <message>
+        <source>network_fee</source>
+        <translation>Network Fee</translation>
+    </message>
+    <message>
+        <source>inputs</source>
+        <translation>Inputs</translation>
+    </message>
+    <message>
+        <source>outputs</source>
+        <translation>Outputs</translation>
+    </message>
+    <message>
+        <source>input</source>
+        <translation>Input</translation>
+    </message>
+    <message>
+        <source>output</source>
+        <translation>Output</translation>
+    </message>
+    <message>
+        <source>asset_info</source>
+        <translation>Asset Information</translation>
+    </message>
+    <message>
+        <source>transaction_type</source>
+        <translation>Transaction Type</translation>
+    </message>
+    <message>
+        <source>review_transaction</source>
+        <translation>Review Transaction</translation>
+    </message>
 </context>
 </TS>

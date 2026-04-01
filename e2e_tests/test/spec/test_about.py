@@ -106,6 +106,7 @@ def test_indexer_info_for_multisig_wallet(wallets_and_operations: WalletTestSetu
         )
 
     with allure.step('Indexer URL'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
         indexer_url = wallets_and_operations.first_page_objects.about_page_objects.get_indexer_url()
         wallets_and_operations.first_page_objects.about_page_objects.click_indexer_url_copy_button()

@@ -25,6 +25,7 @@ from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MASTER_XPUB
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.local_store import local_store
+from src.utils.constant import APP_NAME
 
 
 class BroadcastTransactionService:
@@ -370,9 +371,45 @@ class BroadcastTransactionService:
             service = WalletDataService.get_session()
             if not service:
                 return None
-            return service.get_psbt_rgb_context(psbt_norm)
+            context = service.get_psbt_rgb_context(psbt_norm)
+            if context and 'fascia_path' in context:
+                context['fascia_path'] = BroadcastTransactionService.rebase_fascia_path(
+                    context['fascia_path'],
+                )
+            return context
         except Exception:
             return None
+
+    @staticmethod
+    def rebase_fascia_path(fascia_path: str | None) -> str | None:
+        """Adjust fascia path if it contains a different app_name (e.g. from watch-only to offline)."""
+        if not fascia_path:
+            return None
+
+        # If it's already Correct, return
+        if APP_NAME in fascia_path:
+            return fascia_path
+
+        # Try to replace the iris-wallet-vault_... part
+        # We look for the prefix 'iris-wallet-vault_'
+        prefix = 'iris-wallet-vault_'
+        if prefix not in fascia_path:
+            return fascia_path
+
+        try:
+            # Find the start of the vault name
+            start_idx = fascia_path.find(prefix)
+            # Find the end of the vault name (next slash)
+            end_idx = fascia_path.find('/', start_idx)
+            if end_idx == -1:
+                # If no trailing slash, check if it just ends with the name
+                return fascia_path[:start_idx] + APP_NAME
+
+            # Replace the old name with the current APP_NAME
+            new_path = fascia_path[:start_idx] + APP_NAME + fascia_path[end_idx:]
+            return new_path
+        except Exception:
+            return fascia_path
 
     @staticmethod
     def resolve_transfer_type(
@@ -426,6 +463,31 @@ class BroadcastTransactionService:
             'inflate_asset': 'Inflation',
         }
         return fallback_labels.get(key, key or '')
+
+    @staticmethod
+    def get_destination_address(details: object) -> str:
+        """Extract destination address from PSBT inspection details."""
+        if not details:
+            return ""
+
+        try:
+            outputs = details.outputs
+            if not outputs:
+                return ""
+
+            # Try to find non-change outputs to identify the actual destination
+            non_change = [out for out in outputs if not out.is_ours]
+            target_output = non_change[0] if non_change else outputs[0]
+            
+            destination_addr = target_output.address or ""
+            
+            multi_prefix = "..." if (len(non_change) if non_change else len(outputs)) > 1 else ""
+            if destination_addr and multi_prefix:
+                destination_addr += multi_prefix
+                
+            return destination_addr
+        except AttributeError:
+            return ""
 
     @staticmethod
     def can_enable_primary_action(
