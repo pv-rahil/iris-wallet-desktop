@@ -45,7 +45,7 @@ from src.utils.decorators.check_colorable_available import get_unspent_utxo_coun
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import register_multisig_button
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED
+from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -76,6 +76,7 @@ class IssueNIAWidget(QWidget):
         ) == WalletSignatureType.MULTI_SIG_WALLET
         self.is_offline_wallet = SettingRepository.get_wallet_type(
         ) == WalletType.OFFLINE_TYPE_WALLET
+        self._utxo_dialog_active = False
 
         self.horizontal_spacer_nia_widget = QSpacerItem(
             265,
@@ -582,12 +583,17 @@ class IssueNIAWidget(QWidget):
             ) == WalletSignatureType.MULTI_SIG_WALLET
             or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
         ):
+            if self._utxo_dialog_active:
+                return
+            self._utxo_dialog_active = True
             dialog = ConfirmationDialog(
-                message=INFO_UTXO_CREATION_REQUIRED,
+                message=INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING,
                 parent=self,
                 icon_type='info',
             )
-            if dialog.exec() != QDialog.Accepted:
+            accepted = dialog.exec() == QDialog.Accepted
+            self._utxo_dialog_active = False
+            if not accepted:
                 return
         self._view_model.utxo_creation_view_model.create_utxos_begin(
             'issue_asset_nia', needed,

@@ -169,9 +169,6 @@ class IssueNia(MainPageObjects, BaseOperations):
         self.do_focus_on_application(application)
 
         if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
-            self.fungible_page_objects.issue_nia_button()
-
-        if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
             self.fungible_page_objects.click_issue_nia_button()
 
         if self.do_is_displayed(self.issue_nia_page_objects.asset_ticker()):
@@ -199,7 +196,6 @@ class IssueNia(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
 
-
         if utxo_required:
             self.do_focus_on_application(CONFIRMATION_DIALOG)
             if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
@@ -210,3 +206,30 @@ class IssueNia(MainPageObjects, BaseOperations):
         else:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()
+
+    def issue_nia_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, asset_amount):
+        """
+        Issues an NIA asset with sufficient sats for multisig wallet.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
+            self.fungible_page_objects.click_issue_nia_button()
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_ticker()):
+            self.issue_nia_page_objects.enter_asset_ticker(asset_ticker)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_name()):
+            self.issue_nia_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_amount()):
+            self.issue_nia_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
+            self.issue_nia_page_objects.click_issue_nia_button()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()

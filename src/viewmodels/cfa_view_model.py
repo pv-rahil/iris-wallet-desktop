@@ -133,6 +133,9 @@ class CFAViewModel(QObject, ThreadManager):
             ToastManager.success(
                 description=INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE,
             )
+            self.hw_dialog_update.emit(
+                None, PsbtStatus.SUCCESS,
+            )
         else:
             ToastManager.success(
                 description=INFO_ASSET_SENT.format(tx_id.txid),

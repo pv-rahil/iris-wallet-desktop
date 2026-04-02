@@ -8,6 +8,7 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from rgb_lib import Operation
 from rgb_lib import OperationInfo
+from rgb_lib import PsbtInspection
 from rgb_lib import RgbInspection
 
 from src.data.service.wallet_data_service import WalletDataService
@@ -21,11 +22,11 @@ from src.model.broadcast_transaction_model import RenderInspectionResult
 from src.model.broadcast_transaction_model import RgbTransferInspectionSummary
 from src.model.broadcast_transaction_model import SignatureProgressContext
 from src.model.common_operation_model import ReceiveAssetModel
+from src.utils.constant import APP_NAME
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import MASTER_XPUB
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.local_store import local_store
-from src.utils.constant import APP_NAME
 
 
 class BroadcastTransactionService:
@@ -406,7 +407,8 @@ class BroadcastTransactionService:
                 return fascia_path[:start_idx] + APP_NAME
 
             # Replace the old name with the current APP_NAME
-            new_path = fascia_path[:start_idx] + APP_NAME + fascia_path[end_idx:]
+            new_path = fascia_path[:start_idx] + \
+                APP_NAME + fascia_path[end_idx:]
             return new_path
         except Exception:
             return fascia_path
@@ -465,29 +467,30 @@ class BroadcastTransactionService:
         return fallback_labels.get(key, key or '')
 
     @staticmethod
-    def get_destination_address(details: object) -> str:
+    def get_destination_address(details: PsbtInspection) -> str:
         """Extract destination address from PSBT inspection details."""
         if not details:
-            return ""
+            return ''
 
         try:
             outputs = details.outputs
             if not outputs:
-                return ""
+                return ''
 
             # Try to find non-change outputs to identify the actual destination
             non_change = [out for out in outputs if not out.is_ours]
             target_output = non_change[0] if non_change else outputs[0]
-            
-            destination_addr = target_output.address or ""
-            
-            multi_prefix = "..." if (len(non_change) if non_change else len(outputs)) > 1 else ""
+
+            destination_addr = target_output.address or ''
+
+            multi_prefix = '...' if (
+                len(non_change) if non_change else len(outputs)) > 1 else ''
             if destination_addr and multi_prefix:
                 destination_addr += multi_prefix
-                
+
             return destination_addr
         except AttributeError:
-            return ""
+            return ''
 
     @staticmethod
     def can_enable_primary_action(
@@ -668,12 +671,10 @@ class BroadcastTransactionService:
 
         if is_watch_only and isinstance(operation, details_operations):
             op_ctx = operation.details
-            if op_ctx and hasattr(op_ctx, 'fascia_path') and op_ctx.fascia_path:
+            if op_ctx and op_ctx.fascia_path:
                 should_trigger_rgb_inspection = True
                 fascia_path = op_ctx.fascia_path
-                entropy = op_ctx.entropy if (
-                    hasattr(op_ctx, 'entropy') and op_ctx.entropy is not None
-                ) else 0
+                entropy = op_ctx.entropy if op_ctx.entropy is not None else 0
 
         ack_count = 0
         threshold = None

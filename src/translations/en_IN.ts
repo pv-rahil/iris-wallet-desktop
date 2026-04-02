@@ -2438,5 +2438,17 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>review_transaction</source>
         <translation>Review Transaction</translation>
     </message>
+    <message>
+        <source>resume_transfer</source>
+        <translation>Resume Transfer</translation>
+    </message>
+    <message>
+        <source>resume_secondary_issuance</source>
+        <translation>Resume Secondary Issuance</translation>
+    </message>
+    <message>
+        <source>draft</source>
+        <translation>DRAFT</translation>
+    </message>
 </context>
 </TS>

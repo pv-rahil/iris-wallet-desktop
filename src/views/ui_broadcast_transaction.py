@@ -816,7 +816,7 @@ class BroadcastTransactionWidget(QWidget):
         min_conf = None
         if self._current_operation and self._current_operation.details:
             min_conf = self._current_operation.details.min_confirmations
-        elif hasattr(self, '_stored_context') and self._stored_context:
+        elif self._stored_context:
             min_conf = self._stored_context.get('min_confirmations')
 
         self.inspection_details.update_rgb_details(
@@ -991,7 +991,8 @@ class BroadcastTransactionWidget(QWidget):
         )
 
         # Offline wallets can get fascia_path from storage if it was saved during creation/import
-        is_offline_wallet = SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
+        is_offline_wallet = SettingRepository.get_wallet_type(
+        ) == WalletType.OFFLINE_TYPE_WALLET
         self._stored_context = None
         if is_offline_wallet:
             self._stored_context = BroadcastTransactionService.get_psbt_rgb_context(
@@ -1001,7 +1002,8 @@ class BroadcastTransactionWidget(QWidget):
         rgb_expected = ctx.rgb_expected
         if is_offline_wallet:
             rgb_expected = bool(
-                self._stored_context and self._stored_context.get('fascia_path'),
+                self._stored_context and self._stored_context.get(
+                    'fascia_path'),
             )
 
         self.inspection_details.show_inspection_details(True)

@@ -1,4 +1,4 @@
-# pylint: disable=too-many-arguments,too-many-branches
+# pylint: disable=too-many-arguments,too-many-branches, too-many-arguments
 """
 This module contains the IssueIfa class, which provides methods for issuing IFA assets.
 """
@@ -168,7 +168,7 @@ class IssueIfa(MainPageObjects, BaseOperations):
             self.issue_ifa_page_objects.click_issue_ifa_button()
 
         self.wallet_feature.usb_sync(is_receive=True)
-    
+
     def issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, utxo_required: bool = False):
         """
         Issues an IFA asset with sufficient sats and no UTXO.
@@ -193,3 +193,36 @@ class IssueIfa(MainPageObjects, BaseOperations):
         else:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()
+
+    def issue_ifa_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount):
+        """
+        Issues an NIA asset with sufficient sats for multisig wallet.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+            self.sidebar_page_objects.click_inflatable_button()
+
+        if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
+            self.inflatable_page_objects.click_issue_ifa_button()
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_ticker()):
+            self.issue_ifa_page_objects.enter_asset_ticker(asset_ticker)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_name()):
+            self.issue_ifa_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
+            self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
+            self.issue_ifa_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+            self.issue_ifa_page_objects.click_issue_ifa_button()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()

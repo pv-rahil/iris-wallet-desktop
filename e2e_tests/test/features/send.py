@@ -7,7 +7,9 @@ from __future__ import annotations
 import time
 
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
+from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -181,3 +183,45 @@ class SendOperation(MainPageObjects, BaseOperations):
             pass
 
         self.wallet_features.usb_sync()
+
+    def create_psbt_for_multisig(self, application, receiver_invoice, amount, wallet_variant_name, utxo_required: bool = False):
+        """
+        Create psbt for multisig wallet
+
+        :param receiver_invoice: The recipient's invoice.
+        :param amount: The amount to send.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+            self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+        self.do_focus_on_application(application)
+
+        if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
+            self.send_asset_page_objects.enter_asset_amount(amount)
+
+        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+            self.send_asset_page_objects.click_send_button()
+
+        if utxo_required:
+            self.do_focus_on_application(CONFIRMATION_DIALOG)
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+                self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+        if wallet_variant_name in REQUIRE_USB_VARIANTS:
+            self.wallet_features.usb_sync()
+
+    def send_asset_for_multisig(self, application, wallet_variant_name):
+        """
+        Send asset for multisig wallet
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.asset_detail_page_objects.resume_draft_frame()):
+            self.asset_detail_page_objects.click_resume_draft_frame()
+
+        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+            self.send_asset_page_objects.click_send_button()

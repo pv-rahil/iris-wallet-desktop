@@ -240,6 +240,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
             self.issue_cfa_page_objects.click_issue_cfa_button()
 
         self.wallet_features.usb_sync(is_receive=True)
+
     def issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_name, utxo_required: bool = False):
         """
         Issues an CFA asset with sufficient sats and no UTXO.
@@ -264,3 +265,42 @@ class IssueCfa(MainPageObjects, BaseOperations):
         else:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()
+
+    def issue_cfa_with_sufficient_sats_for_multisig_wallet(self, application, asset_name, asset_description, asset_amount):
+        """
+        Issues an CFA asset with sufficient sats and no UTXO.
+        """
+        self.do_focus_on_application(application)
+        copy_cfa_image_to_home_directory(os.getcwd())
+
+        if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
+            self.sidebar_page_objects.click_collectibles_button()
+
+        if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
+            self.collectible_page_objects.click_issue_cfa_button()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
+            self.issue_cfa_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
+            self.issue_cfa_page_objects.enter_asset_description(
+                asset_description,
+            )
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
+            self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
+            self.issue_cfa_page_objects.click_upload_file_button()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
+            self.issue_cfa_page_objects.click_cfa_asset_media()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
+            self.issue_cfa_page_objects.click_issue_cfa_button()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()

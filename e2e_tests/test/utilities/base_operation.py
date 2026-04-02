@@ -9,7 +9,9 @@ import time
 
 import pyperclip
 from dogtail.rawinput import keyCombo
+from dogtail.rawinput import press
 from dogtail.rawinput import pressKey
+from dogtail.rawinput import release
 from dogtail.rawinput import typeText
 from dogtail.tree import root
 from dotenv import load_dotenv
@@ -107,8 +109,23 @@ class BaseOperations:
                 self._wait_for_element_stable(element, timeout=2.0)
 
             element.grabFocus()
-            time.sleep(0.2 if not is_ci_environment() else 0.5)
-            if element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue'] and is_ci_environment():
+            time.sleep(0.5)
+
+            is_copy_button = any(kw in (element.name or '').lower() for kw in [
+                                 'copy', 'indexer_url_copy_button', 'rgb_proxy_url_copy_button'])
+
+            if is_copy_button:
+                pos = element.position
+                center_x = int(pos[0] + element.size[0]//2)
+                center_y = int(pos[1] + element.size[1]//2)
+
+                press(center_x, center_y)
+                time.sleep(0.2)
+                release(center_x, center_y)
+
+                # Extra wait for clipboard synchronization
+                time.sleep(1.0)
+            elif element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue'] and is_ci_environment():
                 element.queryAction().doAction(0)
             else:
                 element.click()
@@ -127,7 +144,7 @@ class BaseOperations:
             None
         """
         if self.do_is_displayed(element) and value:
-                element.typeText(value)
+            element.typeText(value)
 
     def do_set_text(self, element, value: str):
         """
@@ -169,9 +186,9 @@ class BaseOperations:
             str: The value of the element.
         """
         if self.do_is_displayed(element):
-            return element.text if element.text is not None else ""
+            return element.text if element.text is not None else ''
 
-        return ""
+        return ''
 
     def do_is_displayed(
         self,
@@ -234,14 +251,26 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_get_copied_address(self) -> str:
+    def do_get_copied_address(self, timeout=5.0) -> str:
         """
-        Gets the copied address.
+        Gets the copied address, waiting for the clipboard to be updated if necessary.
+
+        Args:
+            timeout (float): Maximum time to wait for the clipboard to become non-empty.
 
         Returns:
-            str: The copied address.
+            str: The copied address, or an empty string if timeout is reached.
         """
-        return pyperclip.paste()
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                text = pyperclip.paste()
+                if text and text.strip():
+                    return text
+            except Exception:
+                pass
+            time.sleep(0.5)
+        return ''
 
     def activate_window_by_name(self, window_name):
         """
@@ -318,10 +347,12 @@ class BaseOperations:
             role = self.application.roleName
             try:
                 # Search from root for a showing node with same identity
-                new_node = root.child(roleName=role, name=name, showingOnly=True)
+                new_node = root.child(
+                    roleName=role, name=name, showingOnly=True)
                 if new_node:
                     self.application = new_node
-                    print(f"[RECOVERY] Switched to showing {role} node for '{name}'")
+                    print(f"[RECOVERY] Switched to showing {
+                          role} node for '{name}'")
             except Exception:
                 pass
 
@@ -392,9 +423,13 @@ class BaseOperations:
 
         while time.time() - start_time < timeout:
             try:
+                try:
+                    sens = element.sensitive
+                except AttributeError:
+                    sens = True
                 current_state = (
                     element.showing,
-                    getattr(element, 'sensitive', True),
+                    sens,
                     element.name,
                 )
 
@@ -480,7 +515,12 @@ class BaseOperations:
 
     def _handle_window_switch_delay(self):
         """Apply delay after window switch for AT-SPI synchronization."""
-        if getattr(self, '_just_switched_window', False):
+        try:
+            switched = self._just_switched_window
+        except AttributeError:
+            switched = False
+
+        if switched:
             initial_delay = 1.5 if is_ci_environment() else 0.3
             time.sleep(initial_delay)
             self._just_switched_window = False
@@ -762,7 +802,10 @@ class BaseOperations:
             try:
                 element = toggle_element_getter()
                 if element:
-                    current_state = getattr(element, 'checked', None)
+                    try:
+                        current_state = element.checked
+                    except AttributeError:
+                        current_state = None
                     if current_state == expected_checked:
                         return True
                 element.click()

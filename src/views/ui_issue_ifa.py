@@ -56,7 +56,7 @@ from src.utils.error_message import ERROR_NOT_ENOUGH_UNCOLORED
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import register_multisig_button
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED
+from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
@@ -90,6 +90,7 @@ class IssueIFAWidget(QWidget):
         ) == WalletSignatureType.MULTI_SIG_WALLET
         self.asset_transactions: ListTransferAssetWithBalanceResponseModel | None = None
         self.value_of_default_fee_rate: DefaultFeeRate = SettingCardRepository.get_default_fee_rate()
+        self._utxo_dialog_active = False
         self._retry_after_utxo_inflate = False
         self.issue_ifa_grid_layout = QGridLayout(self)
         self.issue_ifa_grid_layout.setObjectName('issue_nia_grid_layout')
@@ -990,12 +991,17 @@ class IssueIFAWidget(QWidget):
                     ) == WalletSignatureType.MULTI_SIG_WALLET
                     or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
                 ):
+                    if self._utxo_dialog_active:
+                        return
+                    self._utxo_dialog_active = True
                     dialog = ConfirmationDialog(
-                        message=INFO_UTXO_CREATION_REQUIRED,
+                        message=INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING,
                         parent=self,
                         icon_type='info',
                     )
-                    if dialog.exec() != QDialog.Accepted:
+                    accepted = dialog.exec() == QDialog.Accepted
+                    self._utxo_dialog_active = False
+                    if not accepted:
                         return
                 self._retry_after_utxo_inflate = bool(self.secondary_issuance)
                 utxo_purpose = 'inflation_utxo' if self.secondary_issuance else 'issue_asset_ifa'
@@ -1096,12 +1102,17 @@ class IssueIFAWidget(QWidget):
             ) == WalletSignatureType.MULTI_SIG_WALLET
             or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
         ):
+            if self._utxo_dialog_active:
+                return
+            self._utxo_dialog_active = True
             dialog = ConfirmationDialog(
-                message=INFO_UTXO_CREATION_REQUIRED,
+                message=INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING,
                 parent=self,
                 icon_type='info',
             )
-            if dialog.exec() != QDialog.Accepted:
+            accepted = dialog.exec() == QDialog.Accepted
+            self._utxo_dialog_active = False
+            if not accepted:
                 return
         utxo_purpose = 'inflation_utxo' if self.secondary_issuance else 'issue_asset_ifa'
         self._view_model.utxo_creation_view_model.create_utxos_begin(

@@ -4,6 +4,8 @@ set -e  # Exit on error
 set -o pipefail  # Exit if any command in a pipeline fails
 set -u  # Treat unset variables as errors
 
+export QT_LOGGING_RULES="qt.accessibility.atspi*=false"
+
 # Define paths
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 E2E_DIR="$ROOT_DIR/e2e_tests"

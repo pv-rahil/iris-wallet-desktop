@@ -60,6 +60,9 @@ class AssetDetailPageObjects(BaseOperations):
         self.fail_transfer_button = lambda: self.get_first_element(
             role_name='push button', name=TRANSACTION_DETAIL_CLOSE_BUTTON,
         )
+        self.resume_draft_frame = lambda: self.perform_action_on_element(
+            role_name='label', name='Resume Transfer',
+        )
 
     def click_close_button(self):
         """
@@ -138,3 +141,9 @@ class AssetDetailPageObjects(BaseOperations):
         Clicks the fail transfer button on the asset detail page.
         """
         return self.do_click(self.fail_transfer_button()) if self.do_is_displayed(self.fail_transfer_button()) else None
+
+    def click_resume_draft_frame(self):
+        """
+        Clicks the resume draft frame on the asset detail page.
+        """
+        return self.do_click(self.resume_draft_frame()) if self.do_is_displayed(self.resume_draft_frame()) else None

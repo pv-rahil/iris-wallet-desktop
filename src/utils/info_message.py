@@ -43,4 +43,5 @@ INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE = 'Operation posted to multisig bridge.
 INFO_OPERATION_INDEX_MISSING_FOR_NACK = 'Operation index missing for NACK'
 INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET = 'Please register the wallet and sign the transaction from the hardware wallet'
 INFO_MULTISIG_TRANSACTION_PENDING = 'A multisig transaction is already pending or under review. Please complete it before creating a new transaction.'
-INFO_UTXO_CREATION_REQUIRED = 'UTXO creation is required before issuing this asset.This will generate a PSBT that needs to be signed by all cosigners.'
+INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING = 'UTXO creation is required before issuing this asset.This will generate a PSBT that needs to be signed by all cosigners.'
+INFO_UTXO_CREATION_REQUIRED_FOR_SENDING = 'UTXO creation is required before sending this asset.This will generate a PSBT that needs to be signed by all cosigners.'

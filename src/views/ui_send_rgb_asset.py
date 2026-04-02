@@ -22,7 +22,6 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import KeyStorageType
-from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
@@ -38,6 +37,7 @@ from src.utils.error_message import ERROR_SEND_ASSET
 from src.utils.error_message import ERROR_UNEXPECTED
 from src.utils.helpers import register_multisig_button
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
+from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED_FOR_SENDING
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.confirmation_dialog import ConfirmationDialog
@@ -80,6 +80,7 @@ class SendRGBAssetWidget(QWidget):
         ) == WalletSignatureType.MULTI_SIG_WALLET
         self._hw_operation_dialog = None
         self._retry_after_utxo = False
+        self._utxo_dialog_active = False
 
         layout = QVBoxLayout()
         layout.addWidget(self.send_rgb_asset_page)
@@ -439,15 +440,19 @@ class SendRGBAssetWidget(QWidget):
                     print(f"Failed to save draft: {e}")
 
                 self._retry_after_utxo = True
-                # Show confirmation dialog for multisig/watch-only wallets
                 if self.is_multisig or self.is_watch_only:
+                    if self._utxo_dialog_active:
+                        return
+                    self._utxo_dialog_active = True
                     dialog = ConfirmationDialog(
-                        message='UTXO creation is required before sending this asset. '
-                                'This will generate a PSBT that needs to be signed by all cosigners. ',
+                        message=INFO_UTXO_CREATION_REQUIRED_FOR_SENDING,
                         parent=self,
                         icon_type='info',
                     )
-                    if dialog.exec() != QDialog.Accepted:
+                    accepted = dialog.exec() == QDialog.Accepted
+                    self._utxo_dialog_active = False
+
+                    if not accepted:
                         self._retry_after_utxo = False
                         return
                 self._view_model.utxo_creation_view_model.create_utxos_begin(

@@ -649,9 +649,15 @@ class RGBAssetDetailWidget(QWidget):
                             self.scroll_area_widget_contents,
                         )
                         draft_frame.transaction_date.setText(
-                            'Resume Transfer',
+                            QCoreApplication.translate(
+                                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'resume_transfer', None,
+                            ),
                         )
-                        draft_frame.transaction_time.setText('DRAFT')
+                        draft_frame.transaction_time.setText(
+                            QCoreApplication.translate(
+                                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'draft', None,
+                            ),
+                        )
                         draft_amt = transfer_draft.get('amount')
                         draft_frame.transaction_amount.setText(
                             str(draft_amt) if draft_amt else '',
@@ -698,9 +704,15 @@ class RGBAssetDetailWidget(QWidget):
                                 self.scroll_area_widget_contents,
                             )
                             draft_frame.transaction_date.setText(
-                                'Resume secondary issuance',
+                                QCoreApplication.translate(
+                                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'resume_secondary_issuance', None,
+                                ),
                             )
-                            draft_frame.transaction_time.setText('DRAFT')
+                            draft_frame.transaction_time.setText(
+                                QCoreApplication.translate(
+                                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'draft', None,
+                                ),
+                            )
                             draft_frame.transaction_amount.setText(
                                 str(amt) if amt is not None else '',
                             )

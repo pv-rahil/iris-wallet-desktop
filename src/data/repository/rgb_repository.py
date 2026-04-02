@@ -302,16 +302,16 @@ class RgbRepository:
                 online=colored_wallet.online,
             )
             if sync_result:
-                for op_info in sync_result:
+                operations = sync_result if isinstance(
+                    sync_result, list) else [sync_result]
+                for op_info in operations:
                     if op_info and op_info.operation:
                         op = op_info.operation
-                        if op and hasattr(op, 'psbt') and op.psbt == psbt:
-                            op_details = getattr(op, 'details', None)
+                        if op and op.psbt == psbt:
+                            op_details = op.details
                             if op_details:
-                                fascia_path = getattr(
-                                    op_details, 'fascia_path', None,
-                                )
-                                entropy = getattr(op_details, 'entropy', None)
+                                fascia_path = op_details.fascia_path
+                                entropy = op_details.entropy
                             break
             return RgbContextResult(
                 fascia_path=fascia_path,
