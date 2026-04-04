@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import binascii
 import os
+import re
 import shutil
 import time
 import zipfile
@@ -663,3 +664,33 @@ def get_checked_button_translation_key(sidebar):
         if button.isChecked():
             return button.get_translation_key()
     return None
+
+
+def is_valid_path(file_path) -> bool:
+    """Check if the file path is valid.
+
+    Args:
+        file_path: The file path to check.
+
+    Returns:
+        True if valid path, False otherwise.
+    """
+    if not isinstance(file_path, str):
+        return False
+    pattern = r'^(\/[a-zA-Z0-9_.-]+)+\/?$'
+    return bool(re.match(pattern, file_path))
+
+
+def is_hex_string(bytes_hex: str) -> bool:
+    """Check if the string is a valid hex string.
+
+    Args:
+        bytes_hex: The string to check.
+
+    Returns:
+        True if valid hex string, False otherwise.
+    """
+    if len(bytes_hex) % 2 != 0:
+        return False
+    hex_pattern = re.compile(r'^[0-9a-fA-F]+$')
+    return bool(hex_pattern.match(bytes_hex))

@@ -12,9 +12,7 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import AssetSchema
 from rgb_lib import Assignment
-from rgb_lib import RespondToOperation
 
-from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.asset_detail_page_services import AssetDetailPageService
@@ -43,13 +41,14 @@ from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_FAIL_TRANSFER_SUCCESSFULLY
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_REFRESH_SUCCESSFULLY
-from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
-from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.page_navigation_events import PageNavigationEventManager
 from src.utils.worker import ThreadManager
+from src.viewmodels.viewmodel_helpers import handle_hardware_wallet_signing
+from src.viewmodels.viewmodel_helpers import post_signed_psbt_to_bridge
+from src.viewmodels.viewmodel_helpers import sign_and_finalize_psbt
+from src.viewmodels.viewmodel_helpers import sign_psbt_for_multisig
 from src.views.components.toast import ToastManager
 
 
@@ -358,54 +357,22 @@ class CFAViewModel(QObject, ThreadManager):
 
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
 
-        if is_hw and is_online and SettingRepository.get_wallet_signature_type() == WalletSignatureType.STANDARD_TYPE_WALLET or\
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET and \
-                SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE:
-            self.hw_dialog_update.emit(
-                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
-            )
-            self.send_cfa_button_clicked.emit(True)
-            hardware_client_store.set_rgb_mode(True)
-        elif is_hw and SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.hw_dialog_update.emit(
-                INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
-            )
-            self.send_cfa_button_clicked.emit(True)
-            hardware_client_store.set_rgb_mode(True)
+        handle_hardware_wallet_signing(
+            self, is_hw, is_online, is_multisig, is_on_device, self.send_cfa_button_clicked,
+        )
 
-        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.run_in_thread(
-                CommonOperationRepository.sign_psbt,
-                {
-                    'args': [unsigned_psbt],
-                    'callback': self.on_multisig_psbt_signed,
-                    'error_callback': self.on_error,
-                },
-            )
+        if is_multisig:
+            sign_psbt_for_multisig(self, unsigned_psbt, self.operation_idx)
         else:
-            self.run_in_thread(
-                CommonOperationRepository.sign_and_finalize_psbt,
-                {
-                    'args': [unsigned_psbt],
-                    'callback': self.on_psbt_signed_and_finalized_success,
-                    'error_callback': self.on_error,
-                },
-            )
+            sign_and_finalize_psbt(self, unsigned_psbt)
 
     def on_multisig_psbt_signed(self, signed_psbt: str):
         """Post signed PSBT and recipient map to bridge."""
-        self.hw_dialog_update.emit(
-            INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
-        )
-        self.run_in_thread(
-            RgbRepository.respond_to_operation,
-            {
-                'args': [self.operation_idx, RespondToOperation.ACK(signed_psbt)],
-                'callback': self.on_multisig_post_success,
-                'error_callback': self.on_error,
-            },
-        )
+        post_signed_psbt_to_bridge(self, signed_psbt, self.operation_idx)
 
     def on_multisig_post_success(self, _):
         """Handle success after posting to bridge."""

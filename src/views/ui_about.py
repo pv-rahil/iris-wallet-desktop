@@ -17,8 +17,6 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
-from rgb_lib import Cosigner
-from rgb_lib import CosignerData
 
 from accessible_constant import COLORED_XPUB_COPY_BUTTON
 from accessible_constant import DOWNLOAD_DEBUG_LOG
@@ -29,6 +27,7 @@ from accessible_constant import RGB_PROXY_URL_ACCESSIBLE_DESCRIPTION
 from accessible_constant import RGB_PROXY_URL_COPY_BUTTON
 from accessible_constant import VANILLA_XPUB_COPY_BUTTON
 from src.data.repository.setting_repository import SettingRepository
+from src.data.service.multisig_setup_service import create_cosigner_string
 from src.model.common_operation_model import ConfigModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
@@ -175,23 +174,16 @@ class AboutWidget(QWidget):
             keychain_val = int(keychain) if keychain is not None else 0
 
             if master_fp and account_xpub_vanilla and account_xpub_colored:
-                try:
-                    data = CosignerData(
-                        master_fingerprint=master_fp,
-                        account_xpub_vanilla=account_xpub_vanilla,
-                        account_xpub_colored=account_xpub_colored,
-                        vanilla_keychain=keychain_val,  # use keychain_val here
-                    )
-                    cosigner_str = Cosigner.from_data(data).cosigner_string()
-
+                cosigner_str = create_cosigner_string(
+                    master_fp, account_xpub_vanilla, account_xpub_colored, keychain_val,
+                )
+                if cosigner_str:
                     self.cosigner_string_widget = WalletInfoWidget(
                         translation_key='signer_details',
                         value=truncate_xpub(cosigner_str, 20, 20),
                         v_layout=self.about_vertical_layout,
                         copy_value=cosigner_str,
                     )
-                except Exception as e:
-                    logger.error('Failed to generate cosigner string: %s', e)
 
         self.privacy_policy_label = QLabel(self.about_widget)
         self.privacy_policy_label.setObjectName('privacy_policy_label')

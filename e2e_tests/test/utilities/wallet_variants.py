@@ -70,7 +70,7 @@ def map_load_to_create(variant_name: str) -> str:
     - Map entry_type (s4) from load (2) to create (1).
     - Look up the variant name from the adjusted steps.
     """
-    s1, s2, s3, s4, s5 = resolve_steps(variant_name)
+    s1, s2, s3, _, s5 = resolve_steps(variant_name)
 
     # Map entry_type (s4) to create (1)
     target = (s1, s2, s3, 1, s5)

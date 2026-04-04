@@ -34,11 +34,11 @@ class InflatablePageObjects(BaseOperations):
         self.scroll_area = lambda: self.perform_action_on_element(
             role_name='filler', name=FUNGIBLES_SCROLL_WIDGETS,
         )
-        self.usb_sync_frame = lambda: self.perform_action_on_element(
-            role_name='panel', name=HEADER_USB_SYNC_FRAME,
-        )
         self.psbt_info_frame = lambda: self.perform_action_on_element(
             role_name='panel', name=HEADER_PSBT_INFO_FRAME,
+        )
+        self.usb_sync_frame = lambda: self.perform_action_on_element(
+            role_name='panel', name=HEADER_USB_SYNC_FRAME,
         )
 
     def click_issue_ifa_button(self):

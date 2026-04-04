@@ -464,63 +464,61 @@ class USBSyncManager:
             logger.error('Failed to create local temp backup: %s', exc)
             return None
 
+    def _restore_wallet_folders(self, z: zipfile.ZipFile) -> None:
+        """Restore wallet folders from ZIP."""
+        for m in z.namelist():
+            top = m.split('/', 1)[0]
+
+            if not top or top in ('logs', 'cache'):
+                continue
+
+            if top != 'wallet-data' and not m.startswith(top + '/'):
+                continue
+
+            target = os.path.join(app_paths.app_path, m)
+
+            if m.endswith('/'):
+                os.makedirs(target, exist_ok=True)
+            else:
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                with open(target, 'wb') as f:
+                    f.write(z.read(m))
+
+    def _restore_multisig_cosigners(self, z: zipfile.ZipFile) -> None:
+        """Restore multisig cosigners file from ZIP."""
+        multisig_file_name = os.path.basename(
+            app_paths.multisig_cosigners_file_path,
+        )
+        if multisig_file_name not in z.namelist():
+            return
+
+        raw_data = z.read(multisig_file_name)
+        try:
+            data = json.loads(raw_data.decode('utf-8'))
+            if isinstance(data, dict) and 'cosigners' in data:
+                required_signers = data.get('required_signers')
+                total_signers = data.get('total_signers')
+                if required_signers is not None and total_signers is not None:
+                    SettingRepository.set_multisig_config(
+                        required_signers, total_signers,
+                    )
+                SettingRepository.set_cosigners(data['cosigners'])
+            else:
+                cosigners_target = app_paths.multisig_cosigners_file_path
+                with open(cosigners_target, 'wb') as f:
+                    f.write(raw_data)
+        except Exception as e:
+            logger.error(
+                'Failed to parse multisig cosigners from USB zip: %s', e,
+            )
+
     def _restore_wallet_data(self, data: bytes, only_folder: bool = False):
         """Restore wallet data from ZIP; if only_folder, restore wallet folders + wallet_data only."""
         try:
             with zipfile.ZipFile(io.BytesIO(data), 'r') as z:
                 if only_folder:
-
-                    for m in z.namelist():
-                        # top-level directory name
-                        top = m.split('/', 1)[0]
-
-                        # skip empty entries
-                        if not top:
-                            continue
-
-                        # exclude logs and cache everywhere
-                        if top in ('logs', 'cache'):
-                            continue
-
-                        # allow wallet folders and wallet-data
-                        if top != 'wallet-data' and not m.startswith(top + '/'):
-                            continue
-
-                        target = os.path.join(app_paths.app_path, m)
-
-                        if m.endswith('/'):
-                            os.makedirs(target, exist_ok=True)
-                        else:
-                            os.makedirs(os.path.dirname(target), exist_ok=True)
-                            with open(target, 'wb') as f:
-                                f.write(z.read(m))
-
-                    # Restore multisig cosigners file if present
-                    multisig_file_name = os.path.basename(
-                        app_paths.multisig_cosigners_file_path,
-                    )
-                    if multisig_file_name in z.namelist():
-                        raw_data = z.read(multisig_file_name)
-                        try:
-                            data = json.loads(raw_data.decode('utf-8'))
-                            if isinstance(data, dict) and 'cosigners' in data:
-                                required_signers = data.get('required_signers')
-                                total_signers = data.get('total_signers')
-                                if required_signers is not None and total_signers is not None:
-                                    SettingRepository.set_multisig_config(
-                                        required_signers, total_signers,
-                                    )
-                                SettingRepository.set_cosigners(
-                                    data['cosigners'],
-                                )
-                            else:
-                                cosigners_target = app_paths.multisig_cosigners_file_path
-                                with open(cosigners_target, 'wb') as f:
-                                    f.write(raw_data)
-                        except Exception as e:
-                            logger.error(
-                                'Failed to parse multisig cosigners from USB zip: %s', e,
-                            )
+                    self._restore_wallet_folders(z)
+                    self._restore_multisig_cosigners(z)
                 else:
                     z.extractall(app_paths.app_path)
 
@@ -563,6 +561,47 @@ class USBSyncManager:
         except Exception as exc:
             logger.error('Failed to rollback USB wallet: %s', exc)
 
+    def _add_wallet_data_to_zip(self, z, wallet_data_path: str, app_path: str) -> None:
+        """Add wallet data folder contents to ZIP.
+
+        Args:
+            z: The zipfile object.
+            wallet_data_path: Path to wallet data folder.
+            app_path: The app path for relative path calculation.
+        """
+        if not os.path.exists(wallet_data_path):
+            return
+        for root, _, files in os.walk(wallet_data_path):
+            for f in files:
+                path = os.path.join(root, f)
+                rel = os.path.relpath(path, app_path)
+                info = zipfile.ZipInfo(rel)
+                info.date_time = datetime.datetime.fromtimestamp(
+                    os.stat(path).st_mtime,
+                ).timetuple()[:6]
+                with open(path, 'rb') as fh:
+                    z.writestr(info, fh.read())
+
+    def _add_multisig_cosigners_to_zip(self, z) -> None:
+        """Add multisig cosigners data to ZIP if present.
+
+        Args:
+            z: The zipfile object.
+        """
+        cosigners = SettingRepository.get_cosigners()
+        if not cosigners:
+            return
+        required_signers, total_signers = SettingRepository.get_multisig_config()
+        composite = {
+            'required_signers': required_signers,
+            'total_signers': total_signers,
+            'cosigners': cosigners,
+        }
+        z.writestr(
+            os.path.basename(app_paths.multisig_cosigners_file_path),
+            json.dumps(composite),
+        )
+
     def _create_wallet_data_package_with_index(self, index: int) -> bytes:
         """Create wallet data package as ZIP containing wallet folder + wallet_data + INI file with updated sync_index and epoch_time."""
         try:
@@ -570,18 +609,9 @@ class USBSyncManager:
 
             with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
                 self._add_wallet_folder_to_zip(z, app_paths.app_path)
-                wallet_data_path = app_paths.wallet_data_folder_path
-                if os.path.exists(wallet_data_path):
-                    for root, _, files in os.walk(wallet_data_path):
-                        for f in files:
-                            path = os.path.join(root, f)
-                            rel = os.path.relpath(path, app_paths.app_path)
-                            info = zipfile.ZipInfo(rel)
-                            info.date_time = datetime.datetime.fromtimestamp(
-                                os.stat(path).st_mtime,
-                            ).timetuple()[:6]
-                            with open(path, 'rb') as fh:
-                                z.writestr(info, fh.read())
+                self._add_wallet_data_to_zip(
+                    z, app_paths.wallet_data_folder_path, app_paths.app_path,
+                )
                 if os.path.exists(app_paths.config_file_path):
                     with open(app_paths.config_file_path, encoding='utf-8') as cfg:
                         lines = cfg.read().splitlines()
@@ -600,19 +630,7 @@ class USBSyncManager:
                     )
 
                 # Include multisig cosigners in ZIP if this is a multisig wallet
-                cosigners = SettingRepository.get_cosigners()
-                if cosigners:
-                    required_signers, total_signers = SettingRepository.get_multisig_config()
-                    composite = {
-                        'required_signers': required_signers,
-                        'total_signers': total_signers,
-                        'cosigners': cosigners,
-                    }
-                    z.writestr(
-                        os.path.basename(
-                            app_paths.multisig_cosigners_file_path,
-                        ), json.dumps(composite),
-                    )
+                self._add_multisig_cosigners_to_zip(z)
             return buf.getvalue()
         except Exception as exc:
             logger.error('Failed to create wallet data package: %s', exc)

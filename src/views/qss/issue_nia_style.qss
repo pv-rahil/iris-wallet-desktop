@@ -60,6 +60,14 @@ QFrame#issue_nia_wallet_logo{
     border:none
 }
 
+QWidget#issue_ifa_page {
+    background: transparent;
+    background-color: rgb(3, 11, 37);
+    border: 1px solid rgb(102, 108, 129);
+    border-radius: 8px;
+
+}
+
 /* Styles for line elements within the issue NIA widget */
 QFrame#line_3, QFrame#bottom_line_frame {
     border: none;

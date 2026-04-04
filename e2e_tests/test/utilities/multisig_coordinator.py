@@ -5,12 +5,10 @@ Handles synchronization between two applications during multisig wallet setup.
 from __future__ import annotations
 
 import threading
-from typing import Optional
 
 from e2e_tests.test.utilities.bridge_config import generate_biscuit_token
 from e2e_tests.test.utilities.bridge_config import get_bridge_public_key
 from e2e_tests.test.utilities.bridge_config import reset_bridge_config
-from e2e_tests.test.utilities.bridge_config import restart_bridge_service
 from e2e_tests.test.utilities.bridge_config import start_regtest_services
 from e2e_tests.test.utilities.bridge_config import stop_regtest_services
 from e2e_tests.test.utilities.bridge_config import update_bridge_config
@@ -22,30 +20,36 @@ class MultisigSetupCoordinator:
     Ensures both wallets reach synchronization points together before proceeding.
     """
 
-    _instance: Optional['MultisigSetupCoordinator'] = None
+    _instance: MultisigSetupCoordinator | None = None
     _lock = threading.Lock()
+    _initialized: bool = False
 
-    def __new__(cls) -> 'MultisigSetupCoordinator':
+    def __new__(cls) -> MultisigSetupCoordinator:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
         return cls._instance
 
     def __init__(self):
         if self._initialized:
             return
         self._initialized = True
+        self._cosigner_strings: dict[str, str] = {}
+        self._colored_xpubs: dict[str, str] = {}
+        self._biscuit_tokens: dict[str, str] = {}
+        self._applications_registered: set[str] = set()
+        self._registration_lock = threading.Lock()
+        self._threshold: int = 2
+        self._bridge_updated: bool = False
         self.reset()
 
     def reset(self):
         """Reset all synchronization state for a new multisig setup."""
-        self._cosigner_strings: dict[str, str] = {}
-        self._colored_xpubs: dict[str, str] = {}
-        self._biscuit_tokens: dict[str, str] = {}
-        self._applications_registered = set()
-        self._registration_lock = threading.Lock()
+        self._cosigner_strings.clear()
+        self._colored_xpubs.clear()
+        self._biscuit_tokens.clear()
+        self._applications_registered.clear()
         self._threshold = 2
         self._bridge_updated = False
         stop_regtest_services()
@@ -101,7 +105,7 @@ class MultisigSetupCoordinator:
         if token:
             self._biscuit_tokens[application] = token
 
-    def get_other_cosigner_string(self, application: str) -> Optional[str]:
+    def get_other_cosigner_string(self, application: str) -> str | None:
         """
         Get the cosigner string from the other application.
 
@@ -116,7 +120,7 @@ class MultisigSetupCoordinator:
                 return string
         return None
 
-    def get_other_colored_xpub(self, application: str) -> Optional[str]:
+    def get_other_colored_xpub(self, application: str) -> str | None:
         """
         Get the colored xpub from the other application.
 
@@ -131,7 +135,7 @@ class MultisigSetupCoordinator:
                 return xpub
         return None
 
-    def get_biscuit_token(self, application: str) -> Optional[str]:
+    def get_biscuit_token(self, application: str) -> str | None:
         """
         Get the biscuit token for an application.
 
@@ -147,6 +151,15 @@ class MultisigSetupCoordinator:
         """Check if coordinator has active registrations."""
         return len(self._applications_registered) >= 2
 
+    def get_colored_xpubs(self) -> dict[str, str]:
+        """
+        Get all stored colored xpubs.
+
+        Returns:
+            Dictionary mapping application names to their colored xpubs.
+        """
+        return self._colored_xpubs.copy()
+
     def update_bridge_config(self, threshold: int = 2):
         """
         Update the bridge config.toml with collected xpubs and root public key.
@@ -157,7 +170,8 @@ class MultisigSetupCoordinator:
         """
         xpubs = list(self._colored_xpubs.values())
         root_public_key = get_bridge_public_key()
-        print(f"[SYNC] Updating bridge config with xpubs: {xpubs} and root public key: {root_public_key}")
+        print(f"""[SYNC] Updating bridge config with xpubs:
+              {xpubs} and root public key: {root_public_key}""")
         if len(xpubs) >= 2:
             update_bridge_config(
                 cosigner_xpubs=xpubs,

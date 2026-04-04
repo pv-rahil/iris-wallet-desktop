@@ -10,17 +10,13 @@ from typing import Any
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import OperationResult
-from rgb_lib import RespondToOperation
 
-from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
-from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
@@ -29,14 +25,13 @@ from src.utils.error_message import ERROR_AUTHENTICATION
 from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
-from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.info_message import INFO_POST_TO_BRIDGE
-from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
-from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.worker import ThreadManager
+from src.viewmodels.viewmodel_helpers import handle_viewmodel_error
+from src.viewmodels.viewmodel_helpers import post_signed_psbt_to_bridge
+from src.viewmodels.viewmodel_helpers import process_psbt_result
 from src.views.components.toast import ToastManager
 
 
@@ -143,17 +138,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
             if getattr(error, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)
                 return
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or \
-                SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET and \
-                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.hw_dialog_update.emit(
-                str(error), PsbtStatus.ERROR,
-            )
-        else:
-            description = error.message if isinstance(
-                error, CommonException,
-            ) else ERROR_SOMETHING_WENT_WRONG
-            ToastManager.error(description=description)
+        handle_viewmodel_error(self, error)
 
     def on_success_native_auth_inflate(self, success: bool) -> None:
         """Callback after native authentication for IFA."""
@@ -244,67 +229,16 @@ class IssueIFAViewModel(QObject, ThreadManager):
 
     def on_success_inflate_begin(self, result):
         """Handle success response of IFA second issuance."""
-        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            unsigned_psbt = result.psbt
-            self.operation_idx = result.operation_idx
-        else:
-            unsigned_psbt = result
-            self.operation_idx = None
-        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-            self.unsigned_psbt.emit(unsigned_psbt)
-            return
-
-        is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-
-        if is_hw and is_online and SettingRepository.get_wallet_signature_type() == WalletSignatureType.STANDARD_TYPE_WALLET or\
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET and \
-                SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE:
-            self.hw_dialog_update.emit(
-                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
-            )
-            hardware_client_store.set_rgb_mode(True)
-        elif is_hw and SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.hw_dialog_update.emit(
-                INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
-            )
-            hardware_client_store.set_rgb_mode(True)
-
-        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.run_in_thread(
-                CommonOperationRepository.sign_psbt,
-                {
-                    'args': [unsigned_psbt],
-                    'callback': self.on_multisig_psbt_signed,
-                    'error_callback': self.on_error,
-                },
-            )
-        else:
-            self.run_in_thread(
-                CommonOperationRepository.sign_and_finalize_psbt,
-                {
-                    'args': [unsigned_psbt],
-                    'callback': self.on_psbt_signed_and_finalized_success,
-                    'error_callback': self.on_error,
-                },
-            )
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        process_psbt_result(self, result, is_multisig)
 
     def on_multisig_psbt_signed(self, signed_psbt: str):
         """
         Callback after multisig PSBT is signed (partially).
         Now post to bridge.
         """
-        self.hw_dialog_update.emit(
-            INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
-        )
-        self.run_in_thread(
-            RgbRepository.respond_to_operation,
-            {
-                'args': [self.operation_idx, RespondToOperation.ACK(signed_psbt)],
-                'callback': self.on_success_multisig_post,
-                'error_callback': self.on_error,
-            },
-        )
+        post_signed_psbt_to_bridge(self, signed_psbt, self.operation_idx)
 
     def on_psbt_signed_and_finalized_success(self, finalized_psbt: str):
         """

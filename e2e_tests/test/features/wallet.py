@@ -1,4 +1,4 @@
-# pylint: disable=too-many-branches, consider-using-with
+# pylint: disable=consider-using-with, too-many-branches
 """
 Wallet class for creating and funding a wallet.
 """
@@ -61,63 +61,80 @@ class Wallet(MainPageObjects, BaseOperations):
         self.address = None
         self.hardware_wallet_emu = None
 
+    def _resolve_effective_variant(self, application: str, variant: str, is_load_wallet: bool) -> str | None:
+        """
+        Resolve the effective variant based on application role and instance mode.
+        Returns None if single-instance watch-only flow should be used.
+        """
+        env = self.get_current_environment()
+        multi_instance = bool(env and getattr(env, 'num_instances', 1) >= 2)
+        result: str | None = variant
+
+        if variant == ONLINE_WATCH_ONLY:
+            result = self._handle_online_watch_only_variant(
+                application, multi_instance,
+            )
+        elif variant == ONLINE_MULTISIG_WATCH_ONLY:
+            result = self._handle_online_multisig_watch_only_variant(
+                application, multi_instance,
+            )
+        elif application == SECOND_APPLICATION:
+            result = self._handle_second_application_variant(
+                variant, is_load_wallet,
+            )
+
+        return result
+
+    def _handle_online_watch_only_variant(self, application: str, multi_instance: bool) -> str | None:
+        """Handle ONLINE_WATCH_ONLY variant resolution."""
+        if multi_instance:
+            return OFFLINE_CREATE_ON_DEVICE if application == FIRST_APPLICATION else ONLINE_WATCH_ONLY
+        self.setup_watch_only_single_instance()
+        return None
+
+    def _handle_online_multisig_watch_only_variant(self, application: str, multi_instance: bool) -> str | None:
+        """Handle ONLINE_MULTISIG_WATCH_ONLY variant resolution."""
+        if multi_instance:
+            return OFFLINE_MULTISIG_ON_DEVICE if application == FIRST_APPLICATION else ONLINE_MULTISIG_WATCH_ONLY
+        self.setup_multisig_watch_only_single_instance()
+        return None
+
+    def _handle_second_application_variant(self, variant: str, is_load_wallet: bool) -> str:
+        """Handle variant resolution for second application."""
+        if is_load_wallet or variant in MULTISIG_VARIANTS:
+            return variant
+        return ONLINE_WATCH_ONLY if variant in REQUIRE_USB_VARIANTS else ONLINE_CREATE_ON_DEVICE
+
+    def _accept_terms_and_conditions(self):
+        """Accept terms and conditions if displayed."""
+        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
+            self.term_and_condition_page_objects.scroll_to_end()
+        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
+            self.term_and_condition_page_objects.click_accept_button()
+
+    def _handle_password_setup(self):
+        """Handle password setup flow."""
+        if self.do_is_displayed(self.set_password_page_objects.password_input()):
+            self.set_password_page_objects.enter_password('walletpassword')
+        if self.do_is_displayed(self.set_password_page_objects.confirm_password_input()):
+            self.set_password_page_objects.enter_confirm_password(
+                'walletpassword',
+            )
+        if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
+            self.set_password_page_objects.click_proceed_button()
+
     def create_wallet(self, application, variant: str, is_load_wallet: bool = False):
         """
         Creates a wallet.
         """
         self.do_focus_on_application(application)
+        effective_variant = self._resolve_effective_variant(
+            application, variant, is_load_wallet,
+        )
+        if effective_variant is None:
+            return
 
-        # Decide effective variant based on instance mode and app role
-        env = self.get_current_environment()
-        original_watch_only = variant == ONLINE_WATCH_ONLY
-        original_multisig_watch_only = variant == ONLINE_MULTISIG_WATCH_ONLY
-        multi_instance = bool(env and getattr(env, 'num_instances', 1) >= 2)
-
-        if original_watch_only:
-            if multi_instance:
-                # Multi-instance: first -> offline_create_on_device, second -> watch_only
-                if application == FIRST_APPLICATION:
-                    effective_variant = OFFLINE_CREATE_ON_DEVICE
-                elif application == SECOND_APPLICATION:
-                    effective_variant = ONLINE_WATCH_ONLY
-                else:
-                    effective_variant = variant
-            else:
-                # Single-instance: run helper flow that spawns temp second app, then return
-                self.setup_watch_only_single_instance()
-                return
-        elif original_multisig_watch_only:
-            if multi_instance:
-                # Multi-instance: first -> offline_multisig_on_device, second -> multisig_watch_only
-                if application == FIRST_APPLICATION:
-                    effective_variant = OFFLINE_MULTISIG_ON_DEVICE
-                elif application == SECOND_APPLICATION:
-                    effective_variant = ONLINE_MULTISIG_WATCH_ONLY
-                else:
-                    effective_variant = variant
-            else:
-                # Single-instance: run helper flow for multisig watch-only
-                self.setup_multisig_watch_only_single_instance()
-                return
-        else:
-            # Non watch-only: keep existing rules
-            if application == SECOND_APPLICATION:
-                if is_load_wallet or variant in MULTISIG_VARIANTS:
-                    effective_variant = variant
-                else:
-                    if variant in REQUIRE_USB_VARIANTS:
-                        effective_variant = ONLINE_WATCH_ONLY
-                    else:
-                        effective_variant = ONLINE_CREATE_ON_DEVICE
-            else:
-                effective_variant = variant
-
-        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
-            self.term_and_condition_page_objects.scroll_to_end()
-
-        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
-            self.term_and_condition_page_objects.click_accept_button()
-
+        self._accept_terms_and_conditions()
         self.drive_selection_flow(application, effective_variant)
 
         if effective_variant in LOAD_WALLET_VARIANT:
@@ -139,16 +156,7 @@ class Wallet(MainPageObjects, BaseOperations):
                 xpub_vanilla, xpub_colored, fingerprint,
             )
 
-        if self.do_is_displayed(self.set_password_page_objects.password_input()):
-            self.set_password_page_objects.enter_password('walletpassword')
-
-        if self.do_is_displayed(self.set_password_page_objects.confirm_password_input()):
-            self.set_password_page_objects.enter_confirm_password(
-                'walletpassword',
-            )
-
-        if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
-            self.set_password_page_objects.click_proceed_button()
+        self._handle_password_setup()
 
         if effective_variant in MULTISIG_VARIANTS:
             self.initiate_multisig_setup(application)
@@ -268,13 +276,12 @@ class Wallet(MainPageObjects, BaseOperations):
 
         self.do_focus_on_application(application)
 
-        total_signers = 2
         required_signers = 2
         try:
             if self.do_is_displayed(self.multisig_setup_page_objects.total_signer_input()):
                 val = self.multisig_setup_page_objects.get_total_signer_value()
                 if val and val.isdigit():
-                    total_signers = int(val)
+                    _total_signers = int(val)  # noqa: F841
             if self.do_is_displayed(self.multisig_setup_page_objects.required_signer_input()):
                 val = self.multisig_setup_page_objects.get_required_signer_value()
                 if val and val.isdigit():
@@ -312,10 +319,12 @@ class Wallet(MainPageObjects, BaseOperations):
             self.multisig_setup_page_objects.click_continue_button()
 
         other_cosigner_string = coordinator.get_other_cosigner_string(
-            application)
+            application,
+        )
         if other_cosigner_string:
             self.multisig_setup_page_objects.import_cosigner_data(
-                2, other_cosigner_string)
+                2, other_cosigner_string,
+            )
 
     def finalize_multisig_setup(self, application: str):
         """
@@ -325,7 +334,7 @@ class Wallet(MainPageObjects, BaseOperations):
         self.do_focus_on_application(application)
 
         # Update bridge config once both wallets have their xpubs ready
-        if len(coordinator._colored_xpubs) >= 2 and not coordinator.is_bridge_updated():
+        if len(coordinator.get_colored_xpubs()) >= 2 and not coordinator.is_bridge_updated():
             coordinator.update_bridge_config(coordinator.get_threshold())
 
         if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
@@ -350,7 +359,8 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
             self.term_and_condition_page_objects.click_accept_button()
         self.drive_selection_flow(
-            FIRST_APPLICATION, ONLINE_MULTISIG_WATCH_ONLY)
+            FIRST_APPLICATION, ONLINE_MULTISIG_WATCH_ONLY,
+        )
         if self.do_is_displayed(self.welcome_page_objects.create_button()):
             self.welcome_page_objects.click_create_button()
         proc = None

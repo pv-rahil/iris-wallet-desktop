@@ -197,3 +197,13 @@ class ThresholdValidationResult(BaseModel):
     required: int
     total: int
     error_message: str | None = None
+
+
+class PsbtData(BaseModel):
+    """Data class encapsulating PSBT fields."""
+    psbt_base64: str
+    signed: bool = False
+    purpose: str | None = None
+    fascia_path: str | None = None
+    entropy: int | None = None
+    min_confirmations: int | None = None

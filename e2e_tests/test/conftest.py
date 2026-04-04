@@ -14,7 +14,6 @@ from accessible_constant import MULTISIG_VARIANTS
 from accessible_constant import OFFLINE_CREATE_HARDWARE
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
 from accessible_constant import OFFLINE_MULTISIG_HARDWARE
-from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_HARDWARE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_LOAD_HARDWARE

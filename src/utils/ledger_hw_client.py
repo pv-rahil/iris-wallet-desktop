@@ -16,14 +16,52 @@ from ledger_bitcoin import WalletPolicy
 from ledger_bitcoin.client_base import PartialSignature
 from ledger_bitcoin.client_base import TransportClient
 from ledger_bitcoin.psbt import PSBT
+from PySide6.QtCore import QCoreApplication
 from rgb_lib import WalletDescriptors
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.constant import LEDGER_EMULATOR_HOST
 from src.utils.constant import LEDGER_EMULATOR_PORT
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.logging import logger
+
+
+# Ledger error mapping shared across components
+LEDGER_ERROR_MAPPING: dict[str, str] = {
+    'not in either the bitcoin or bitcoin testnet app': 'ledger_app_not_open',
+    'not in either the rgb or rgb testnet app': 'ledger_app_not_open',
+    'app does not seem to be open': 'ledger_app_not_open',
+    '0x5515': 'ledger_unlock_device',
+    'open failed': 'ledger_open_failed',
+    '0x6985': 'ledger_operation_cancelled',
+    '0x6a82': 'ledger_command_not_supported',
+    '0x0': 'ledger_operation_cancelled',
+}
+
+
+def get_ledger_error_message(error_message: str) -> str:
+    """
+    Translate ledger error message to user-friendly message.
+
+    Args:
+        error_message: The raw error message from ledger.
+
+    Returns:
+        Translated error message or original if no mapping found.
+    """
+    if not error_message:
+        return ''
+
+    error_message_lower = error_message.lower()
+
+    for pattern, translation_key in LEDGER_ERROR_MAPPING.items():
+        if pattern in error_message_lower:
+            return QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, translation_key)
+
+    return error_message
+
 
 # Ledger USB Vendor ID
 _LEDGER_VENDOR_ID = 0x2C97
@@ -36,17 +74,6 @@ _LEDGER_MODELS = {
 }
 
 _LEDGER_EMULATOR_TIMEOUT = 1.0
-
-_LEDGER_ERROR_MAPPING = {
-    'not in either the bitcoin or bitcoin testnet app': 'ledger_app_not_open',
-    'not in either the rgb or rgb testnet app': 'ledger_app_not_open',
-    'app does not seem to be open': 'ledger_app_not_open',
-    '0x5515': 'ledger_unlock_device',
-    'open failed': 'ledger_open_failed',
-    '0x6985': 'ledger_operation_cancelled',
-    '0x6a82': 'ledger_command_not_supported',
-    '0x0': 'ledger_operation_cancelled',
-}
 
 
 def network_to_chain(network: NetworkEnumModel) -> Chain:
@@ -102,6 +129,80 @@ def _probe_device(transport: TransportClient) -> tuple[str | None, str | None]:
         return None, None
 
 
+def _create_hid_device_entry(raw: dict) -> dict[str, Any]:
+    """Create device entry for HID device."""
+    path = raw.get('path', b'')
+    pid = raw.get('product_id', 0)
+    model = _LEDGER_MODELS.get(pid >> 8) or _LEDGER_MODELS.get(pid, 'ledger')
+
+    entry = {
+        'path': path, 'type': 'hid',
+        'model': model, 'fingerprint': '', 'error': None,
+    }
+    try:
+        tc = TransportClient('hid', path=path)
+        _, fp = _probe_device(tc)
+        if fp:
+            entry['fingerprint'] = fp
+        else:
+            entry['error'] = 'App not open or device locked'
+    except Exception as exc:
+        error_message = str(exc).lower()
+        entry['error'] = LEDGER_ERROR_MAPPING.get(
+            error_message, error_message,
+        )
+    return entry
+
+
+def _detect_speculos_model() -> int:
+    """Detect model from speculos process, return product ID."""
+    pid = 0x1000
+    try:
+        for proc in psutil.process_iter(['cmdline']):
+            cmd = proc.info.get('cmdline') or []
+            if any('speculos' in str(a).lower() for a in cmd) and '-m' in cmd:
+                model_flag = cmd[cmd.index('-m') + 1].lower()
+                if 'flex' in model_flag:
+                    pid = 0x7000
+                elif 'stax' in model_flag:
+                    pid = 0x6000
+                elif 'nanosp' in model_flag:
+                    pid = 0x5000
+                elif 'nanox' in model_flag:
+                    pid = 0x4000
+    except Exception:
+        pass
+    return pid
+
+
+def _create_tcp_device_entry() -> dict[str, Any]:
+    """Create device entry for TCP emulator."""
+    tcp_path = f'tcp:{LEDGER_EMULATOR_HOST}:{LEDGER_EMULATOR_PORT}'
+    pid = _detect_speculos_model()
+    model = _LEDGER_MODELS.get(pid >> 8, 'ledger_nano_s')
+
+    entry = {
+        'path': tcp_path, 'type': 'tcp',
+        'model': model, 'fingerprint': '', 'error': None,
+    }
+
+    try:
+        tc = TransportClient(
+            'tcp', server=LEDGER_EMULATOR_HOST, port=LEDGER_EMULATOR_PORT,
+        )
+        _, fp = _probe_device(tc)
+        if fp:
+            entry['fingerprint'] = fp
+        else:
+            entry['error'] = 'App not open or device locked'
+    except Exception as exc:
+        error_message = str(exc).lower()
+        entry['error'] = LEDGER_ERROR_MAPPING.get(
+            error_message, error_message,
+        )
+    return entry
+
+
 def enumerate_ledger_devices() -> list[dict[str, Any]]:
     """
     Discover Ledger devices (HID and TCP emulator).
@@ -112,73 +213,11 @@ def enumerate_ledger_devices() -> list[dict[str, Any]]:
 
     # HID devices
     for raw in _get_hid_devices():
-        path = raw.get('path', b'')
-        pid = raw.get('product_id', 0)
-        model = _LEDGER_MODELS.get(
-            pid >> 8,
-        ) or _LEDGER_MODELS.get(pid, 'ledger')
-
-        entry = {
-            'path': path, 'type': 'hid',
-            'model': model, 'fingerprint': '', 'error': None,
-        }
-        try:
-            tc = TransportClient('hid', path=path)
-            _, fp = _probe_device(tc)
-            if fp:
-                entry['fingerprint'] = fp
-            else:
-                entry['error'] = 'App not open or device locked'
-        except Exception as exc:
-            error_message = str(exc).lower()
-            entry['error'] = _LEDGER_ERROR_MAPPING.get(
-                error_message, error_message,
-            )
-        devices.append(entry)
+        devices.append(_create_hid_device_entry(raw))
 
     # TCP emulator
     if _is_emulator_reachable(LEDGER_EMULATOR_HOST, LEDGER_EMULATOR_PORT):
-        tcp_path = f'tcp:{LEDGER_EMULATOR_HOST}:{LEDGER_EMULATOR_PORT}'
-
-        # Detect model from speculos process
-        pid = 0x1000
-        try:
-            for proc in psutil.process_iter(['cmdline']):
-                cmd = proc.info.get('cmdline') or []
-                if any('speculos' in str(a).lower() for a in cmd) and '-m' in cmd:
-                    model_flag = cmd[cmd.index('-m') + 1].lower()
-                    if 'flex' in model_flag:
-                        pid = 0x7000
-                    elif 'stax' in model_flag:
-                        pid = 0x6000
-                    elif 'nanosp' in model_flag:
-                        pid = 0x5000
-                    elif 'nanox' in model_flag:
-                        pid = 0x4000
-        except Exception:
-            pass
-
-        model = _LEDGER_MODELS.get(pid >> 8, 'ledger_nano_s')
-        entry = {
-            'path': tcp_path, 'type': 'tcp',
-            'model': model, 'fingerprint': '', 'error': None,
-        }
-
-        try:
-            tc = TransportClient(
-                'tcp', server=LEDGER_EMULATOR_HOST, port=LEDGER_EMULATOR_PORT,
-            )
-            _, fp = _probe_device(tc)
-            if fp:
-                entry['fingerprint'] = fp
-            else:
-                entry['error'] = 'App not open or device locked'
-        except Exception as exc:
-            error_message = str(exc).lower()
-            entry['error'] = _LEDGER_ERROR_MAPPING.get(
-                error_message, error_message,
-            )
-        devices.append(entry)
+        devices.append(_create_tcp_device_entry())
 
     return devices
 
@@ -239,6 +278,52 @@ def _build_multisig_policy(desc_str: str, wallet_name: str) -> WalletPolicy:
     return WalletPolicy(wallet_name, template, keys)
 
 
+def _extract_account_from_psbt(psbt_v2, master_fp: bytes) -> int:
+    """Extract account number from PSBT inputs.
+
+    Args:
+        psbt_v2: The PSBT v2 object.
+        master_fp: The master fingerprint.
+
+    Returns:
+        The account number (default 0 if not found).
+    """
+    account = 0
+    for inp in psbt_v2.inputs:
+        if hasattr(inp, 'tap_bip32_paths') and inp.tap_bip32_paths:
+            for key, (_, origin) in inp.tap_bip32_paths.items():
+                if key == inp.tap_internal_key and origin.fingerprint == master_fp:
+                    account = origin.path[2] - _hardened(0)
+                    break
+    return account
+
+
+def _build_single_sig_policy(client, psbt_v2, is_testnet: bool, is_rgb: bool) -> WalletPolicy:
+    """Build single-sig wallet policy for Ledger signing.
+
+    Args:
+        client: The Ledger client.
+        psbt_v2: The PSBT v2 object.
+        is_testnet: Whether using testnet.
+        is_rgb: Whether in RGB mode.
+
+    Returns:
+        The wallet policy.
+    """
+    master_fp = client.get_master_fingerprint()
+    account = _extract_account_from_psbt(psbt_v2, master_fp)
+    coin_type = _get_bip44_coin_type(is_testnet, is_rgb)
+    xpub = client.get_extended_pubkey(
+        path=f"m/86'/{coin_type}'/{account}'", display=False,
+    )
+    key_str = f"[{master_fp.hex()}/86'/{coin_type}'/{account}']{xpub}"
+    logger.debug(
+        '[LedgerHW] Single-sig policy: m/86\'/%d\'/%d\'',
+        coin_type, account,
+    )
+    return WalletPolicy('', 'tr(@0/**)', [key_str])
+
+
 def sign_psbt_with_ledger(
     unsigned_psbt: str,
     client: Any,
@@ -271,28 +356,8 @@ def sign_psbt_with_ledger(
         policy = _build_multisig_policy(desc_str, wallet_name)
         _, policy_hmac = client.register_wallet(policy)
     else:
-        # Single-sig: extract account from PSBT and query device for xpub
-        master_fp = client.get_master_fingerprint()
-        account = 0
-
-        for inp in psbt_v2.inputs:
-            if hasattr(inp, 'tap_bip32_paths') and inp.tap_bip32_paths:
-                for key, (_, origin) in inp.tap_bip32_paths.items():
-                    if key == inp.tap_internal_key and origin.fingerprint == master_fp:
-                        account = origin.path[2] - _hardened(0)
-                        break
-
-        coin_type = _get_bip44_coin_type(is_testnet, is_rgb)
-        xpub = client.get_extended_pubkey(
-            path=f"m/86'/{coin_type}'/{account}'", display=False,
-        )
-        key_str = f"[{master_fp.hex()}/86'/{coin_type}'/{account}']{xpub}"
-        policy = WalletPolicy('', 'tr(@0/**)', [key_str])
+        policy = _build_single_sig_policy(client, psbt_v2, is_testnet, is_rgb)
         policy_hmac = None
-
-        logger.debug(
-            '[LedgerHW] Single-sig policy: m/86\'/%d\'/%d\'', coin_type, account,
-        )
 
     logger.debug(
         '[LedgerHW] Signing: template=%s keys=%d',

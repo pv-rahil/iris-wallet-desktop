@@ -95,7 +95,9 @@ class CosignerDetailCard(ClickableFrame):
         self.import_btn.setCursor(
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
-        self.import_btn.setAccessibleName(f'{MULTISIG_COSIGNER_IMPORT_BUTTON}_{index}')
+        self.import_btn.setAccessibleName(
+            f'{MULTISIG_COSIGNER_IMPORT_BUTTON}_{index}',
+        )
         self.import_btn.setText(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'import',
@@ -117,7 +119,9 @@ class CosignerDetailCard(ClickableFrame):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'reset',
             ) + ' ',
         )
-        self.reset_btn.setAccessibleName(f'{MULTISIG_COSIGNER_RESET_BUTTON}_{index}')
+        self.reset_btn.setAccessibleName(
+            f'{MULTISIG_COSIGNER_RESET_BUTTON}_{index}',
+        )
         self.reset_btn.setVisible(False)
         header_layout.addWidget(self.reset_btn)
 
@@ -135,7 +139,9 @@ class CosignerDetailCard(ClickableFrame):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'cosigner_details',
             ), 'Paste cosigner details here', editable=True,
         )
-        self.string_input.setAccessibleName(f'{MULTISIG_COSIGNER_STRING_INPUT}_{index}')
+        self.string_input.setAccessibleName(
+            f'{MULTISIG_COSIGNER_STRING_INPUT}_{index}',
+        )
         content_layout.addLayout(self.string_field)
 
         # Row 1: Fingerprint | Keychain

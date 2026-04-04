@@ -77,8 +77,12 @@ def mock_timer(mocker, request):
     """
     Prevent HeaderFrameViewModel from starting infinite thread loops via QTimer.
     Skip for header_frame_view_model_test.py so it can test the actual logic.
+    Skip for repository tests that don't need this mock.
     """
     if 'header_frame_view_model_test.py' in str(request.fspath):
+        return
+
+    if 'repository_tests' in str(request.fspath):
         return
 
     mocker.patch(

@@ -1,8 +1,6 @@
 """Multisig setup page objects module."""
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import MULTISIG_BACK_BUTTON
 from accessible_constant import MULTISIG_COLORED_XPUB_COPY_BUTTON
 from accessible_constant import MULTISIG_CONTINUE_BUTTON
@@ -213,7 +211,6 @@ class MultisigSetupPageObjects(BaseOperations):
         """
         return self.do_get_value(self.required_signer_input()) if self.do_is_displayed(self.required_signer_input()) else None
 
-
     def expand_cosigner_card(self, index: int):
         """
         Expand a cosigner card by clicking on it.
@@ -261,9 +258,9 @@ class MultisigSetupPageObjects(BaseOperations):
         button = self.get_cosigner_import_button(index)
         if button and self.do_is_displayed(button):
             try:
-                 return button.queryAction().doAction(0)
+                return button.queryAction().doAction(0)
             except Exception:
-                 return self.do_click(button)
+                return self.do_click(button)
         return None
 
     def click_cosigner_reset_button(self, index: int):

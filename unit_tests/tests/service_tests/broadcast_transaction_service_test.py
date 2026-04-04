@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name,unused-argument, protected-access, invalid-name
+# pylint: disable=redefined-outer-name, protected-access, too-few-public-methods, too-many-function-args
 """Unit tests for `BroadcastTransactionService`.
 
 Structured similarly to other service tests, focusing on logic coverage and
@@ -8,7 +8,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 from unittest.mock import patch
+
 from rgb_lib import Operation
+
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.model.broadcast_transaction_model import PsbtDraftItem
 from src.model.broadcast_transaction_model import PsbtParsed
@@ -601,7 +603,7 @@ def test_should_enable_action_conditional_gates():
     ) is False
 
 
-def test_process_pending_operation_match_and_inspection(mocker):
+def test_process_pending_operation_match_and_inspection():
     """Heavy logic path checks for matching operations onto UI payloads."""
     # Testing process_pending_operation_match
     assert BroadcastTransactionService.process_pending_operation_match(
@@ -821,7 +823,7 @@ def test_get_psbt_rgb_context_missing_fascia_path(mocker):
     assert result['fascia_path'] is None
 
 
-def test_get_psbt_rgb_context_empty_psbt(mocker):
+def test_get_psbt_rgb_context_empty_psbt():
     """get_psbt_rgb_context should handle empty PSBT string."""
     result = BroadcastTransactionService.get_psbt_rgb_context('')
     assert result is None
@@ -832,46 +834,57 @@ def test_get_psbt_rgb_context_empty_psbt(mocker):
 
 def test_get_destination_address():
     """get_destination_address should correctly extract address safely."""
-    
+
     # Null cases
-    assert BroadcastTransactionService.get_destination_address(None) == ""
-    
+    assert BroadcastTransactionService.get_destination_address(None) == ''
+
     # Missing outputs property (AttributeError flow)
     class MissingOutputsMock:
-        pass
-        
+        """Mock class for testing missing outputs attribute."""
+        pass  # pylint: disable=unnecessary-pass
+
     mock_no_outputs = MissingOutputsMock()
-    assert BroadcastTransactionService.get_destination_address(mock_no_outputs) == ""
-    
+    assert BroadcastTransactionService.get_destination_address(
+        mock_no_outputs,
+    ) == ''
+
     # Empty outputs
     mock_empty = MagicMock()
     mock_empty.outputs = []
-    assert BroadcastTransactionService.get_destination_address(mock_empty) == ""
-    
+    assert BroadcastTransactionService.get_destination_address(
+        mock_empty,
+    ) == ''
+
     # Standard change and non-change outputs
     out_change = MagicMock()
     out_change.is_ours = True
-    out_change.address = "change_addr"
-    
+    out_change.address = 'change_addr'
+
     out_dest = MagicMock()
     out_dest.is_ours = False
-    out_dest.address = "dest_addr"
-    
+    out_dest.address = 'dest_addr'
+
     # Single destination
     mock_single = MagicMock()
     mock_single.outputs = [out_change, out_dest]
-    assert BroadcastTransactionService.get_destination_address(mock_single) == "dest_addr"
-    
+    assert BroadcastTransactionService.get_destination_address(
+        mock_single,
+    ) == 'dest_addr'
+
     # Multiple destinations (adds multi_prefix '...')
     out_dest2 = MagicMock()
     out_dest2.is_ours = False
-    out_dest2.address = "dest_addr2"
-    
+    out_dest2.address = 'dest_addr2'
+
     mock_multi = MagicMock()
     mock_multi.outputs = [out_change, out_dest, out_dest2]
-    assert BroadcastTransactionService.get_destination_address(mock_multi) == "dest_addr..."
-    
+    assert BroadcastTransactionService.get_destination_address(
+        mock_multi,
+    ) == 'dest_addr...'
+
     # Only change outputs (fallback to first output)
     mock_only_change = MagicMock()
     mock_only_change.outputs = [out_change]
-    assert BroadcastTransactionService.get_destination_address(mock_only_change) == "change_addr"
+    assert BroadcastTransactionService.get_destination_address(
+        mock_only_change,
+    ) == 'change_addr'

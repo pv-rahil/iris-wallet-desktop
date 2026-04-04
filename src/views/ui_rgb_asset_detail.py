@@ -4,8 +4,6 @@
  """
 from __future__ import annotations
 
-import re
-
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QRect
 from PySide6.QtCore import QSize
@@ -24,7 +22,6 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtWidgets import QWidget
 from rgb_lib import AssetSchema
-from rgb_lib import TransferKind
 from rgb_lib import TransferStatus
 
 from accessible_constant import ASSET_CLOSE_BUTTON
@@ -37,11 +34,7 @@ from accessible_constant import ASSET_TOTAL_BALANCE
 from accessible_constant import RGB_TRANSACTION_DETAIL_FRAME
 from accessible_constant import TRANSACTION_DETAIL_CLOSE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
-from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import NetworkEnumModel
-from src.model.enums.enums_model import TransactionStatusEnumModel
-from src.model.enums.enums_model import TransferStatusEnumModel
-from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
@@ -51,6 +44,7 @@ from src.model.transaction_detail_page_model import TransactionDetailPageModel
 from src.utils.common_utils import convert_hex_to_image
 from src.utils.common_utils import copy_text
 from src.utils.common_utils import get_current_wallet_mode_config
+from src.utils.common_utils import is_hex_string
 from src.utils.common_utils import resize_image
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
@@ -59,8 +53,15 @@ from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import AssetTransferButton
 from src.views.components.confirmation_dialog import ConfirmationDialog
+from src.views.components.draft_loader import load_secondary_issuance_drafts
+from src.views.components.draft_loader import load_transfer_draft
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.transaction_detail_frame import TransactionDetailFrame
+from src.views.components.transaction_ui_helpers import apply_transaction_style_by_status
+from src.views.components.transaction_ui_helpers import configure_transaction_time_display
+from src.views.components.transaction_ui_helpers import handle_transaction_type_display
+from src.views.components.transaction_ui_helpers import map_transfer_status
+from src.views.components.transaction_ui_helpers import setup_on_chain_icon
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
 
@@ -87,7 +88,7 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_type = None
         self.transaction_status = None
         self.vertical_spacer_3 = None
-        self.scroll_area_widget_layout = None
+        self.scroll_area_widget_layout: QGridLayout = None
         self.label_asset_name = None
         self.on_chain_icon = None
         self.transaction_detail_frame = None
@@ -97,17 +98,17 @@ class RGBAssetDetailWidget(QWidget):
             NetworkEnumModel.REGTEST.value: ':/assets/regtest_bitcoin.png',
             NetworkEnumModel.TESTNET.value: ':/assets/testnet_bitcoin.png',
         }
-        self.secondary_issuance = None
+        self.secondary_issuance: AssetTransferButton | None = None
         self.__loading_translucent_screen = LoadingTranslucentScreen(self)
         self.asset_type = params.asset_type
         self.image_path = params.image_path
         self.max_amount = None
         self.circulation = None
-        self.max_supply_frame = None
+        self.max_supply_frame: QFrame = None
         self.max_supply_label = None
-        self.max_supply_value = None
+        self.max_supply_value: QLabel = None
         self.remaining_issue_label = None
-        self.remaining_issue_value = None
+        self.remaining_issue_value: QLabel = None
         self._view_model: MainViewModel = view_model
         self.config = get_current_wallet_mode_config()
         self.grid_layout_2 = QGridLayout(self)
@@ -122,10 +123,16 @@ class RGBAssetDetailWidget(QWidget):
             20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding,
         )
         self.vertical_layout_2.addItem(self.vertical_spacer_2)
+        self._setup_asset_detail_widget()
+        self._setup_send_receive_buttons()
+        self._setup_transactions_scroll_area()
+        self._setup_asset_id_frame()
+        self._setup_asset_balance_frame()
+
+    def _setup_asset_detail_widget(self):
+        """Setup the asset detail widget and its basic layout."""
         self.rgb_asset_detail_widget = QWidget(self)
-        self.rgb_asset_detail_widget.setObjectName(
-            'rgb_asset_detail_widget',
-        )
+        self.rgb_asset_detail_widget.setObjectName('rgb_asset_detail_widget')
         self.rgb_asset_detail_widget.setMinimumSize(QSize(499, 770))
         self.rgb_asset_detail_widget_layout = QGridLayout(
             self.rgb_asset_detail_widget,
@@ -140,6 +147,16 @@ class RGBAssetDetailWidget(QWidget):
         self.rgb_asset_detail_widget_layout.addWidget(
             self.top_line, 1, 0, 1, 1,
         )
+        self.asset_image_layout = QVBoxLayout()
+        self.asset_image_layout.setSpacing(0)
+        self.asset_image_layout.setObjectName('vertical_layout_7')
+        self.asset_image_layout.setContentsMargins(-1, 15, -1, 18)
+        self.rgb_asset_detail_widget_layout.addLayout(
+            self.asset_image_layout, 2, 0, 1, 1,
+        )
+
+    def _setup_send_receive_buttons(self):
+        """Setup send and receive buttons."""
         self.send_receive_button_layout = QHBoxLayout()
         self.send_receive_button_layout.setSpacing(12)
         self.send_receive_button_layout.setObjectName('horizontal_layout_11')
@@ -160,29 +177,11 @@ class RGBAssetDetailWidget(QWidget):
             'send_assets', ':/assets/top_right.png',
         )
         self.send_asset.setAccessibleName(ASSET_SEND_BUTTON)
-        self.send_asset.setCursor(
-            QCursor(Qt.CursorShape.PointingHandCursor),
-        )
+        self.send_asset.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.send_receive_button_layout.addWidget(self.send_asset)
-        # Secondary issuance entry point within the action row (compact sizing)
         if self.asset_type == str(AssetSchema.IFA.value):
-            self.secondary_issuance = AssetTransferButton(
-                'Secondary\nIssuance',
-            )
-            self.secondary_issuance.setCursor(
-                QCursor(Qt.CursorShape.PointingHandCursor),
-            )
-            self.secondary_issuance.setDisabled(True)
-            self.receive_rgb_asset.setFixedSize(QSize(104, 50))
-            self.send_asset.setFixedSize(QSize(104, 50))
-            self.secondary_issuance.setFixedSize(QSize(104, 50))
-            self.receive_rgb_asset.setText(
-                self.receive_rgb_asset.text().replace(' ', '\n', 1),
-            )
-            self.send_asset.setText(
-                self.send_asset.text().replace(' ', '\n', 1),
-            )
-            self.send_receive_button_layout.addWidget(self.secondary_issuance)
+            self._setup_secondary_issuance_button()
+
         self.horizontal_spacer_2 = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
@@ -190,13 +189,28 @@ class RGBAssetDetailWidget(QWidget):
         self.rgb_asset_detail_widget_layout.addLayout(
             self.send_receive_button_layout, 4, 0, 1, 1,
         )
-        self.asset_image_layout = QVBoxLayout()
-        self.asset_image_layout.setSpacing(0)
-        self.asset_image_layout.setObjectName('vertical_layout_7')
-        self.asset_image_layout.setContentsMargins(-1, 15, -1, 18)
-        self.rgb_asset_detail_widget_layout.addLayout(
-            self.asset_image_layout, 2, 0, 1, 1,
+
+    def _setup_secondary_issuance_button(self):
+        """Setup secondary issuance button for IFA assets."""
+        secondary_issuance_text = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'secondary_issuance', None,
+        ).replace(' ', '\n', 1)
+        self.secondary_issuance = AssetTransferButton(secondary_issuance_text)
+        self.secondary_issuance.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor),
         )
+        self.secondary_issuance.setDisabled(True)
+        self.receive_rgb_asset.setFixedSize(QSize(104, 50))
+        self.send_asset.setFixedSize(QSize(104, 50))
+        self.secondary_issuance.setFixedSize(QSize(104, 50))
+        self.receive_rgb_asset.setText(
+            self.receive_rgb_asset.text().replace(' ', '\n', 1),
+        )
+        self.send_asset.setText(self.send_asset.text().replace(' ', '\n', 1))
+        self.send_receive_button_layout.addWidget(self.secondary_issuance)
+
+    def _setup_transactions_scroll_area(self):
+        """Setup transactions scroll area."""
         self.vertical_layout_8 = QVBoxLayout()
         self.vertical_layout_8.setSpacing(0)
         self.vertical_layout_8.setObjectName('vertical_layout_8')
@@ -215,7 +229,6 @@ class RGBAssetDetailWidget(QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area.setWidgetResizable(True)
         self.scroll_area_widget_contents = QWidget()
         self.scroll_area_widget_contents.setObjectName(
             'scroll_area_widget_contents',
@@ -233,6 +246,9 @@ class RGBAssetDetailWidget(QWidget):
         self.rgb_asset_detail_widget_layout.addLayout(
             self.vertical_layout_8, 5, 0, 1, 1, Qt.AlignCenter,
         )
+
+    def _setup_asset_id_frame(self):
+        """Setup asset ID frame."""
         self.vertical_layout = QVBoxLayout()
         self.vertical_layout.setSpacing(20)
         self.vertical_layout.setObjectName('vertical_layout')
@@ -246,12 +262,14 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_id_frame_layout.setObjectName('gridLayout_23')
         self.asset_id_frame_layout.setVerticalSpacing(3)
         self.asset_id_frame_layout.setContentsMargins(15, 11, 15, 12)
+
         self.asset_id_label = QLabel(self.asset_id_frame)
         self.asset_id_label.setObjectName('asset_id_label')
         self.asset_id_label.setMinimumSize(QSize(83, 20))
         self.asset_id_frame_layout.addWidget(
             self.asset_id_label, 0, 0, 1, 1, Qt.AlignLeft,
         )
+
         self.asset_id_detail = QPlainTextEdit(self.asset_id_frame)
         self.asset_id_detail.setObjectName('asset_id_detail')
         self.asset_id_detail.setMinimumSize(QSize(289, 38))
@@ -263,6 +281,7 @@ class RGBAssetDetailWidget(QWidget):
             Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse,
         )
         self.asset_id_frame_layout.addWidget(self.asset_id_detail, 1, 0, 1, 1)
+
         self.copy_button = QPushButton(self.asset_id_frame)
         self.copy_button.setObjectName('copy_button')
         self.copy_button.setAccessibleName(ASSET_ID_COPY_BUTTON)
@@ -272,35 +291,42 @@ class RGBAssetDetailWidget(QWidget):
         icon2.addFile(':/assets/copy.png', QSize(), QIcon.Normal, QIcon.Off)
         self.copy_button.setIcon(icon2)
         self.asset_id_frame_layout.addWidget(self.copy_button, 0, 1, 1, 1)
+
         self.vertical_layout.addWidget(self.asset_id_frame, 0, Qt.AlignHCenter)
+
+    def _setup_asset_balance_frame(self):
+        """Setup asset balance frame."""
         self.asset_balance_frame.setObjectName('frame_4')
         self.asset_balance_frame.setMinimumSize(QSize(335, 86))
         self.asset_balance_frame.setMaximumSize(QSize(335, 86))
         self.asset_balance_frame.setFrameShape(QFrame.StyledPanel)
         self.asset_balance_frame.setFrameShadow(QFrame.Raised)
+
         self.asset_balance_frame_layout = QGridLayout(self.asset_balance_frame)
         self.asset_balance_frame_layout.setObjectName('gridLayout_8')
         self.asset_balance_frame_layout.setContentsMargins(15, -1, 15, 9)
+
         self.asset_balance_label = QLabel(self.asset_balance_frame)
         self.asset_balance_label.setObjectName('asset_balance_label')
         self.asset_balance_label.setMinimumSize(QSize(83, 20))
         self.asset_balance_frame_layout.addWidget(
             self.asset_balance_label, 0, 0, 1, 1, Qt.AlignLeft,
         )
+
         self.asset_total_amount_label = QLabel(self.asset_balance_frame)
         self.asset_total_amount_label.setObjectName('asset_total_amount_label')
         self.asset_balance_frame_layout.addWidget(
             self.asset_total_amount_label, 1, 0, 1, 1, Qt.AlignLeft,
         )
+
         self.asset_total_balance = QLabel(self.asset_balance_frame)
         self.asset_total_balance.setObjectName('asset_total_balance')
-        self.asset_total_balance.setAccessibleDescription(
-            ASSET_TOTAL_BALANCE,
-        )
+        self.asset_total_balance.setAccessibleDescription(ASSET_TOTAL_BALANCE)
         self.asset_total_balance.setMinimumSize(QSize(60, 18))
         self.asset_balance_frame_layout.addWidget(
             self.asset_total_balance, 2, 0, 1, 1, Qt.AlignLeft,
         )
+
         self.asset_spendable_amount_label = QLabel(self.asset_balance_frame)
         self.asset_spendable_amount_label.setObjectName(
             'asset_spendable_amount_label',
@@ -308,6 +334,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_balance_frame_layout.addWidget(
             self.asset_spendable_amount_label, 1, 1, 1, 1, Qt.AlignLeft,
         )
+
         self.asset_spendable_amount = QLabel(self.asset_balance_frame)
         self.asset_spendable_amount.setObjectName('asset_spendable_amount')
         self.asset_spendable_amount.setAccessibleDescription(
@@ -316,6 +343,7 @@ class RGBAssetDetailWidget(QWidget):
         self.asset_balance_frame_layout.addWidget(
             self.asset_spendable_amount, 2, 1, 1, 1, Qt.AlignLeft,
         )
+
         self.vertical_layout.addWidget(
             self.asset_balance_frame, alignment=Qt.AlignmentFlag.AlignHCenter,
         )
@@ -463,7 +491,6 @@ class RGBAssetDetailWidget(QWidget):
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'spendable_bal', None,
             ),
         )
-        # Max Supply panel labels
         if self.max_supply_label is not None:
             self.max_supply_label.setText(
                 QCoreApplication.translate(
@@ -583,6 +610,58 @@ class RGBAssetDetailWidget(QWidget):
         )
         self._view_model.page_navigation.issue_ifa_secondary_page(params)
 
+    def _load_transfer_draft(self, asset_id, row_index: int) -> int:
+        """Load transfer draft and add to scroll area."""
+        return load_transfer_draft(
+            asset_id, row_index, self.scroll_area_widget_contents,
+            self.scroll_area_widget_layout, self._view_model,
+        )
+
+    def _load_secondary_issuance_drafts(self, asset_id, image_path, row_index: int) -> int:
+        """Load secondary issuance drafts for IFA assets."""
+        return load_secondary_issuance_drafts(
+            asset_id, image_path, row_index,
+            self.scroll_area_widget_contents, self.scroll_area_widget_layout,
+            self._view_model,
+        )
+
+    def _setup_ifa_supply_display(self, asset_id, asset_type: str) -> None:
+        """Setup max supply and remaining display for IFA assets.
+
+        Args:
+            asset_id: The asset ID.
+            asset_type: The asset type string.
+        """
+        if asset_type != AssetSchema.IFA and asset_type != str(AssetSchema.IFA.value):
+            return
+        if not self._view_model.main_asset_view_model.assets or not self._view_model.main_asset_view_model.assets.ifa:
+            return
+        for a in self._view_model.main_asset_view_model.assets.ifa:
+            if a.asset_id == asset_id:
+                max_supply = a.max_supply
+                circ = a.known_circulating_supply
+                if max_supply is not None and circ is not None:
+                    remaining = max_supply - circ
+                    self.max_supply_value.setText(str(max_supply))
+                    self.remaining_issue_value.setText(str(remaining))
+                    self.max_supply_frame.show()
+                    # Disable Secondary Issuance when nothing remains to issue
+                    if self.secondary_issuance is not None:
+                        has_rights = self._has_inflation_rights()
+                        disabled = remaining <= 0 or not has_rights
+                        self.secondary_issuance.setDisabled(disabled)
+                break
+
+    def _clear_scroll_area_layout(self) -> None:
+        """Clear all widgets from scroll area layout."""
+        for i in reversed(range(self.scroll_area_widget_layout.count())):
+            item = self.scroll_area_widget_layout.itemAt(i)
+            if item is None:
+                continue
+            widget_to_remove = item.widget()
+            if widget_to_remove is not None:
+                widget_to_remove.setParent(None)
+
     def _fetch_ifa_supply(self, asset_id: str):
         """Fetch max supply and circulation for an IFA asset and cache on the widget."""
         if self._view_model.main_asset_view_model.assets and self._view_model.main_asset_view_model.assets.ifa:
@@ -610,149 +689,18 @@ class RGBAssetDetailWidget(QWidget):
             str(asset_transactions.asset_balance.spendable),
         )
         # Populate Max Supply / Remaining for IFA assets
-        if asset_type == AssetSchema.IFA or asset_type == str(AssetSchema.IFA.value):
-            # Find asset details in main view model to compute supply
-            if self._view_model.main_asset_view_model.assets and self._view_model.main_asset_view_model.assets.ifa:
-                for a in self._view_model.main_asset_view_model.assets.ifa:
-                    if a.asset_id == asset_id:
-                        max_supply = a.max_supply
-                        circ = a.known_circulating_supply
-                        if max_supply is not None and circ is not None:
-                            remaining = max_supply - circ
-                            self.max_supply_value.setText(str(max_supply))
-                            self.remaining_issue_value.setText(str(remaining))
-                            self.max_supply_frame.show()
-                            # Disable Secondary Issuance when nothing remains to issue
-                            if self.secondary_issuance is not None:
-                                has_rights = self._has_inflation_rights()
-                                disabled = (remaining <= 0 or not has_rights)
-                                self.secondary_issuance.setDisabled(disabled)
-                        break
+        self._setup_ifa_supply_display(asset_id, asset_type)
         # Ensure asset_transactions is unpacked correctly if it's a tuple
         if isinstance(asset_transactions, tuple):
             asset_transactions, _ = asset_transactions
         # Clear any existing items in the layout
-        for i in reversed(range(self.scroll_area_widget_layout.count())):
-            widget_to_remove = self.scroll_area_widget_layout.itemAt(
-                i,
-            ).widget()
-            if widget_to_remove is not None:
-                widget_to_remove.setParent(None)
+        self._clear_scroll_area_layout()
         row_index = 0
-        try:
-            if SettingRepository.get_wallet_type() != WalletType.OFFLINE_TYPE_WALLET:
-                svc = WalletDataService.get_session()
-                if svc is not None:
-                    transfer_draft = svc.get_draft_transfer(str(asset_id))
-                    if transfer_draft:
-                        draft_frame = TransactionDetailFrame(
-                            self.scroll_area_widget_contents,
-                        )
-                        draft_frame.transaction_date.setText(
-                            QCoreApplication.translate(
-                                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'resume_transfer', None,
-                            ),
-                        )
-                        draft_frame.transaction_time.setText(
-                            QCoreApplication.translate(
-                                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'draft', None,
-                            ),
-                        )
-                        draft_amt = transfer_draft.get('amount')
-                        draft_frame.transaction_amount.setText(
-                            str(draft_amt) if draft_amt else '',
-                        )
-                        draft_frame.transaction_amount.setStyleSheet(
-                            'font: 15px "Inter"; color: #D0D3DD; background: transparent; border: none; font-weight: 600;',
-                        )
-                        draft_frame.transaction_type.hide()
-                        draft_frame.transfer_type.hide()
-                        draft_frame.setCursor(
-                            QCursor(Qt.CursorShape.PointingHandCursor),
-                        )
-
-                        def on_resume_transfer(_p=None, _data=transfer_draft):
-                            self._view_model.page_navigation.send_cfa_page(
-                                draft_data=_data,
-                            )
-
-                        draft_frame.click_frame.connect(on_resume_transfer)
-                        self.scroll_area_widget_layout.addWidget(
-                            draft_frame, row_index, 0, 1, 1,
-                        )
-                        row_index += 1
-        except Exception as e:
-            print(f"Error loading transfer draft: {e}")
-
-        # Insert secondary issuance drafts (IFA) at the top if any (watch-only wallets only)
-        try:
-            if asset_type == AssetSchema.IFA or asset_type == str(AssetSchema.IFA.value):
-                access_type = SettingRepository.get_wallet_access_type()
-                is_multisig = SettingRepository.get_wallet_signature_type(
-                ) == WalletSignatureType.MULTI_SIG_WALLET
-                if access_type == WalletAccessType.WATCH_ONLY or is_multisig and SettingRepository.get_wallet_type() != WalletType.OFFLINE_TYPE_WALLET:
-                    svc = WalletDataService.get_session()
-                    if svc is not None:
-                        drafts = svc.list_ifa_secondary_drafts(
-                            asset_id=str(asset_id),
-                        ) or []
-                        for d in drafts:
-                            amt = d.get('amount')
-                            draft_id = d.get('id')
-                            d_asset_name = d.get('asset_name')
-                            draft_frame = TransactionDetailFrame(
-                                self.scroll_area_widget_contents,
-                            )
-                            draft_frame.transaction_date.setText(
-                                QCoreApplication.translate(
-                                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'resume_secondary_issuance', None,
-                                ),
-                            )
-                            draft_frame.transaction_time.setText(
-                                QCoreApplication.translate(
-                                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'draft', None,
-                                ),
-                            )
-                            draft_frame.transaction_amount.setText(
-                                str(amt) if amt is not None else '',
-                            )
-                            draft_frame.transaction_amount.setStyleSheet(
-                                'font: 15px "Inter"; color: #D0D3DD; background: transparent; border: none; font-weight: 600;',
-                            )
-                            draft_frame.transaction_type.hide()
-                            draft_frame.transfer_type.hide()
-                            draft_frame.setCursor(
-                                QCursor(Qt.CursorShape.PointingHandCursor),
-                            )
-
-                            def on_resume_click(_p=None, _asset_id=str(asset_id), _draft_id=draft_id, _asset_name=d_asset_name):
-                                try:
-                                    svc = WalletDataService.get_session()
-                                    if svc is not None and _draft_id is not None:
-                                        svc.set_active_secondary_draft(
-                                            int(_draft_id), str(_asset_id),
-                                        )
-                                except Exception:
-                                    pass
-                                params = RgbAssetPageLoadModel(
-                                    asset_id=str(_asset_id),
-                                    asset_name=_asset_name,
-                                    image_path=image_path,
-                                    asset_type='IFA',
-                                    is_secondary_issuance=True,
-                                )
-                                self._view_model.page_navigation.issue_ifa_secondary_page(
-                                    params, draft_id=int(
-                                        _draft_id,
-                                    ) if _draft_id is not None else None, from_draft=True,
-                                )
-                            draft_frame.click_frame.connect(on_resume_click)
-                            self.scroll_area_widget_layout.addWidget(
-                                draft_frame, row_index, 0, 1, 1,
-                            )
-                            row_index += 1
-        except Exception:
-            pass
+        row_index = self._load_transfer_draft(asset_id, row_index)
+        if asset_type == AssetSchema.IFA or asset_type == str(AssetSchema.IFA.value):
+            row_index = self._load_secondary_issuance_drafts(
+                asset_id, image_path, row_index,
+            )
         if not asset_transactions:
             transaction_detail_frame = TransactionDetailFrame(
                 self.scroll_area_widget_contents,
@@ -820,30 +768,6 @@ class RGBAssetDetailWidget(QWidget):
         """Pass emit value to navigation page"""
         self._view_model.page_navigation.cfa_transaction_detail_page(params)
 
-    def handle_show_hide(self, transaction_detail_frame):
-        """It handled to hide and show transaction details frame"""
-        if self.transfer_status == TransferStatusEnumModel.INFLATION.value:
-            transaction_detail_frame.transaction_type.setText('INFLATION')
-            transaction_detail_frame.transaction_amount.setStyleSheet(
-                'color:#01A781;font-weight: 600',
-            )
-            transaction_detail_frame.transaction_type.show()
-            transaction_detail_frame.transfer_type.hide()
-        elif self.transfer_status == TransferStatusEnumModel.INTERNAL.value:
-            if self.transaction_type == TransferKind.ISSUANCE:
-                transaction_detail_frame.transaction_type.setText('ISSUANCE')
-                transaction_detail_frame.transaction_amount.setStyleSheet(
-                    'color:#01A781;font-weight: 600',
-                )
-                transaction_detail_frame.transaction_type.show()
-                transaction_detail_frame.transfer_type.hide()
-            else:
-                transaction_detail_frame.transfer_type.show()
-                transaction_detail_frame.transaction_type.hide()
-        else:
-            transaction_detail_frame.transfer_type.show()
-            transaction_detail_frame.transaction_type.hide()
-
     def show_loading_screen(self, loading: bool):
         """This method handled show loading screen on main asset page"""
         if loading:
@@ -901,25 +825,9 @@ class RGBAssetDetailWidget(QWidget):
         else:
             self._view_model.page_navigation.collectibles_asset_page()
 
-    def is_path(self, file_path):
-        """Check the file path"""
-        if not isinstance(file_path, str):
-            return False
-        # Define a basic regex pattern for Unix-like file paths
-        pattern = r'^(\/[a-zA-Z0-9_.-]+)+\/?$'
-        # Check if the file_path matches the pattern
-        return bool(re.match(pattern, file_path))
-
-    def is_hex_string(self, bytes_hex):
-        """Check if the string is a valid hex string."""
-        if len(bytes_hex) % 2 != 0:
-            return False
-        hex_pattern = re.compile(r'^[0-9a-fA-F]+$')
-        return bool(hex_pattern.match(bytes_hex))
-
     def set_asset_image(self, image_hex):
         """This method set the asset image according to the media path or image hex """
-        if self.is_hex_string(image_hex):
+        if is_hex_string(image_hex):
             pixmap = convert_hex_to_image(image_hex)
             resized_image = resize_image(pixmap, 335, 335)
             self.label_asset_name.setPixmap(resized_image)
@@ -1029,50 +937,21 @@ class RGBAssetDetailWidget(QWidget):
         self.transaction_type = transaction.kind
         self.transaction_status = transaction.status
 
-        if self.transfer_status == TransferStatusEnumModel.SENT.value:
-            self.transaction_detail_frame.transaction_amount.setStyleSheet(
-                'color:#EB5A5A;font-weight: 600',
-            )
-        if self.transfer_status == TransferStatusEnumModel.RECEIVED.value:
-            self.transaction_detail_frame.transaction_amount.setStyleSheet(
-                'color:#01A781;font-weight: 600',
-            )
-        if self.transaction_date == TransactionStatusEnumModel.FAILED:
-            self.transaction_detail_frame.transaction_amount.setStyleSheet(
-                'color:#EB5A5A;font-weight: 600',
-            )
-        self.transaction_detail_frame.transaction_time.setText(
-            self.transaction_time,
-        )
-        self.transaction_detail_frame.transaction_date.setText(
+        apply_transaction_style_by_status(
+            self.transaction_detail_frame, self.transfer_status,
             self.transaction_date,
         )
+        configure_transaction_time_display(
+            self.transaction_detail_frame, self.transaction_time,
+            self.transaction_date, self.transaction_status,
+        )
         if self.transaction_status != TransferStatus.SETTLED:
-            self.transaction_detail_frame.transaction_time.setStyleSheet(
-                'color:#959BAE;font-weight: 400; font-size:14px',
-            )
             self.transaction_detail_frame.transaction_time.setText(
-                self.map_status(self.transaction_status),
+                map_transfer_status(self.transaction_status),
             )
-            self.transaction_detail_frame.transaction_date.setText(
-                self.transaction_date,
-            )
-        self.on_chain_icon = QIcon()
-        img_path = self.bitcoin_img_path.get(self.network.value)
-        self.on_chain_icon.addFile(
-            img_path,
-            QSize(), QIcon.Normal, QIcon.Off,
-        )
-        self.transaction_detail_frame.transfer_type.setIcon(
-            self.on_chain_icon,
-        )
-        self.transaction_detail_frame.transfer_type.setIconSize(
-            QSize(18, 18),
-        )
-        self.transaction_detail_frame.transfer_type.setToolTip(
-            QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'on_chain', None,
-            ),
+        self.on_chain_icon = setup_on_chain_icon(
+            self.transaction_detail_frame, self.network.value,
+            self.bitcoin_img_path,
         )
         self.transaction_detail_frame.transaction_amount.setText(
             self.transfer_amount,
@@ -1103,13 +982,7 @@ class RGBAssetDetailWidget(QWidget):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'fail_transfer', None,
                 ),
             )
-        self.handle_show_hide(self.transaction_detail_frame)
-
-    def map_status(self, transfer_status) -> str:
-        """Map TransferStatus to corresponding TransactionStatusEnumModel."""
-        status = {
-            TransferStatus.WAITING_COUNTERPARTY: TransactionStatusEnumModel.WAITING_COUNTERPARTY.value,
-            TransferStatus.WAITING_CONFIRMATIONS: TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value,
-            TransferStatus.FAILED: TransactionStatusEnumModel.FAILED.value,
-        }
-        return status.get(transfer_status, TransactionStatusEnumModel.FAILED)
+        handle_transaction_type_display(
+            self.transaction_detail_frame, self.transfer_status,
+            self.transaction_type,
+        )

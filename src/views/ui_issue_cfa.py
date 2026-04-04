@@ -13,7 +13,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QLabel
@@ -31,13 +30,9 @@ from accessible_constant import CFA_ASSET_NAME
 from accessible_constant import CFA_UPLOAD_FILE_BUTTON
 from accessible_constant import ISSUE_CFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_CFA_BUTTON
-from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import ReceiveAssetModel
-from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.success_model import SuccessPageModel
 from src.utils.common_utils import enforce_u64_max_input
 from src.utils.common_utils import resize_image
@@ -49,12 +44,14 @@ from src.utils.decorators.check_colorable_available import get_unspent_utxo_coun
 from src.utils.helpers import load_stylesheet
 from src.utils.helpers import register_multisig_button
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.components.buttons import PrimaryButton
-from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
+from src.views.components.issue_asset_helpers import compute_needed_utxos
+from src.views.components.issue_asset_helpers import create_utxos_for_issue
+from src.views.components.issue_asset_helpers import get_wallet_type_flags
+from src.views.components.issue_asset_helpers import show_multisig_psbt_toast_and_close
 from src.views.components.toast import ToastManager
 from src.views.components.wallet_logo_frame import WalletLogoFrame
 
@@ -71,10 +68,7 @@ class IssueCFAWidget(QWidget):
         self.from_draft = from_draft
         self.draft_id = draft_id
         self.selected_file_path: str | None = None
-        self.is_multisig_wallet = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
-        self.is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
+        self.is_multisig_wallet, self.is_offline_wallet = get_wallet_type_flags()
         self._utxo_dialog_active = False
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('gridLayout')
@@ -594,30 +588,15 @@ class IssueCFAWidget(QWidget):
                 self._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_cfa'
                 self.show_cfa_psbt_page(existing_psbt.get('psbt'))
                 return
-        # Compute missing UTXOs (required = 3) and create only those
+        # Compute missing UTXOs and create only those
         current = get_unspent_utxo_count()
-        needed = 1 - current
-        needed = needed if needed > 0 else 1
-        # Show confirmation dialog for multisig/watch-only wallets
-        if (
-            SettingRepository.get_wallet_signature_type(
-            ) == WalletSignatureType.MULTI_SIG_WALLET
-            or SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
-        ):
-            if self._utxo_dialog_active:
-                return
-            self._utxo_dialog_active = True
-            dialog = ConfirmationDialog(
-                message=INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING,
-                parent=self,
-                icon_type='info',
-            )
-            accepted = dialog.exec() == QDialog.Accepted
-            self._utxo_dialog_active = False
-            if not accepted:
-                return
-        self._view_model.utxo_creation_view_model.create_utxos_begin(
-            'issue_asset_cfa', needed,
+        needed = compute_needed_utxos(current, 1)
+        create_utxos_for_issue(
+            self, 'issue_asset_cfa',
+            self._view_model.utxo_creation_view_model,
+            self._utxo_dialog_active,
+            lambda active: setattr(self, '_utxo_dialog_active', active),
+            needed,
         )
 
     def create_issue_cfa_draft(self, name: str, description: str, total_supply: str, file_path: str | None) -> None:
@@ -666,12 +645,7 @@ class IssueCFAWidget(QWidget):
             return
         if psbt:
             if self.is_multisig_wallet:
-                ToastManager.success(
-                    QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'psbt_created_successfully', 'PSBT created successfully',
-                    ),
-                )
-                self.on_close()
+                show_multisig_psbt_toast_and_close(self.on_close)
             else:
                 self._view_model.page_navigation.receive_asset_page(
                     ReceiveAssetModel(

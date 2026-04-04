@@ -27,6 +27,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.utils.helpers import load_stylesheet
 from src.utils.ledger_hw_client import enumerate_ledger_devices
+from src.utils.ledger_hw_client import get_ledger_error_message
 from src.viewmodels.hw_device_selection_view_model import HWDeviceSelectionViewModel
 from src.views.components.buttons import PrimaryButton
 from src.views.components.buttons import SecondaryButton
@@ -413,27 +414,7 @@ class HWDeviceSelectionDialog(QDialog):
         Returns:
             str: Translated or mapped error message.
         """
-        if not error_message:
-            return ''
-
-        error_message_lower = error_message.lower()
-
-        error_mapping: dict[str, str] = {
-            'not in either the bitcoin or bitcoin testnet app': 'ledger_app_not_open',
-            'not in either the rgb or rgb testnet app': 'ledger_app_not_open',
-            'app does not seem to be open': 'ledger_app_not_open',
-            '0x5515': 'ledger_unlock_device',
-            'open failed': 'ledger_open_failed',
-            '0x6985': 'ledger_operation_cancelled',
-            '0x6a82': 'ledger_command_not_supported',
-            '0x0': 'ledger_operation_cancelled',
-        }
-
-        for pattern, translation_key in error_mapping.items():
-            if pattern in error_message_lower:
-                return QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, translation_key)
-
-        return error_message
+        return get_ledger_error_message(error_message)
 
     def reject(self):
         """

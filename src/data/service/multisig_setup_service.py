@@ -28,6 +28,39 @@ from src.utils.logging import logger
 from src.utils.wallet_credential_encryption import mnemonic_store
 
 
+def create_cosigner_string(
+    master_fp: str,
+    account_xpub_vanilla: str,
+    account_xpub_colored: str,
+    keychain: int = 0,
+) -> str | None:
+    """
+    Create a cosigner string from xpub data.
+
+    Args:
+        master_fp: Master fingerprint.
+        account_xpub_vanilla: Vanilla account xpub.
+        account_xpub_colored: Colored account xpub.
+        keychain: Vanilla keychain value.
+
+    Returns:
+        Cosigner string or None if creation fails.
+    """
+    if not master_fp or not account_xpub_vanilla or not account_xpub_colored:
+        return None
+    try:
+        data = CosignerData(
+            master_fingerprint=master_fp,
+            account_xpub_vanilla=account_xpub_vanilla,
+            account_xpub_colored=account_xpub_colored,
+            vanilla_keychain=keychain,
+        )
+        return Cosigner.from_data(data).cosigner_string()
+    except Exception as e:
+        logger.error('Failed to generate cosigner string: %s', e)
+        return None
+
+
 class MultisigSetupService:
     """Service class for multisig setup business logic."""
 
@@ -121,19 +154,7 @@ class MultisigSetupService:
         Returns:
             Cosigner string or None if generation fails
         """
-        if not master_fp or not account_xpub_vanilla or not account_xpub_colored:
-            return None
-        try:
-            data = CosignerData(
-                master_fingerprint=master_fp,
-                account_xpub_vanilla=account_xpub_vanilla,
-                account_xpub_colored=account_xpub_colored,
-                vanilla_keychain=keychain,
-            )
-            return Cosigner.from_data(data).cosigner_string()
-        except Exception as e:
-            logger.error('Failed to generate cosigner string: %s', e)
-            return None
+        return create_cosigner_string(master_fp, account_xpub_vanilla, account_xpub_colored, keychain)
 
     @staticmethod
     def truncate_text(text: str, max_length: int = 40) -> str:

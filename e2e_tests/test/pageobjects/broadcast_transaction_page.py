@@ -7,11 +7,11 @@ from accessible_constant import BROADCAST_TRANSACTION_METHOD_SELECTOR
 from accessible_constant import BROADCAST_TRANSACTION_PAGE_BUTTON
 from accessible_constant import BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON
 from accessible_constant import BROADCAST_TRANSACTION_PSBT_INPUT
-from accessible_constant import SIGN_PSBT_PAGE_BUTTON
-from accessible_constant import IMPORT_PSBT_BUTTON
-from accessible_constant import EXPORT_PSBT_BUTTON
 from accessible_constant import CLEAR_PSBT_BUTTON
+from accessible_constant import EXPORT_PSBT_BUTTON
+from accessible_constant import IMPORT_PSBT_BUTTON
 from accessible_constant import REJECT_PSBT_BUTTON
+from accessible_constant import SIGN_PSBT_PAGE_BUTTON
 from e2e_tests.test.utilities.base_operation import BaseOperations
 
 

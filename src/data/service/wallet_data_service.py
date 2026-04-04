@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 """
 A thread-safe wallet data manager using SQLite for storing and managing wallet state.
 
@@ -31,6 +32,7 @@ from src.model.btc_model import BalanceResponseModel
 from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import UnspentsListResponseModel
 from src.model.common_operation_model import IssueAssetDraftModel
+from src.model.common_operation_model import PsbtData
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
@@ -649,33 +651,33 @@ class WalletDataService:
         normalized = ''.join(psbt_base64.split())
         return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
 
-    def add_psbt(
-        self,
-        psbt_base64: str,
-        signed: bool = False,
-        purpose: str | None = None,
-        fascia_path: str | None = None,
-        entropy: int | None = None,
-        min_confirmations: int | None = None,
-    ) -> str | None:
+    def add_psbt(self, params: PsbtData) -> str | None:
         """Insert or replace a PSBT. Returns its id. Minimal fields only.
         Optionally set a purpose (e.g., 'send_btc', 'create_utxos', 'issue_asset').
         For RGB PSBTs, also store fascia_path, entropy, and min_confirmations for offline inspection.
+
+        Args:
+            params: Parameters for adding the PSBT.
+
+        Returns:
+            The PSBT ID or None if not applicable.
         """
         if self.is_watch_only or self.is_offline_wallet or self.is_multisig:
             # Also store the normalized version to match the ID
-            normalized_psbt = ''.join(psbt_base64.split())
+            normalized_psbt = ''.join(params.psbt_base64.split())
             psbt_id = self._psbt_id(normalized_psbt)
             # Convert entropy to string for storage (may exceed SQLite INTEGER limit)
-            entropy_str = str(entropy) if entropy is not None else None
+            entropy_str = str(
+                params.entropy,
+            ) if params.entropy is not None else None
             with self._db_lock:
                 try:
                     with self.conn:
                         self.conn.execute(
                             'INSERT OR REPLACE INTO psbt (id, psbt, signed, purpose, fascia_path, entropy, min_confirmations) VALUES (?, ?, ?, ?, ?, ?, ?)',
                             (
-                                psbt_id, normalized_psbt, 1 if signed else 0,
-                                purpose, fascia_path, entropy_str, min_confirmations,
+                                psbt_id, normalized_psbt, 1 if params.signed else 0,
+                                params.purpose, params.fascia_path, entropy_str, params.min_confirmations,
                             ),
                         )
                     return psbt_id

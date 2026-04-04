@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods
 """
 Dialog for displaying detailed PSBT and RGB inspection information.
 """
@@ -35,7 +36,10 @@ class InspectionDetailDialog(QDialog):
         self.setObjectName('inspection_detail_dialog')
         self.setMinimumSize(QSize(800, 650))
         self.setMaximumHeight(750)
-        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog |
+            Qt.WindowType.FramelessWindowHint,
+        )
         self.setModal(True)
         self.setStyleSheet(
             load_stylesheet('views/qss/inspection_detail_dialog.qss'),
@@ -50,7 +54,7 @@ class InspectionDetailDialog(QDialog):
         header_frame.setObjectName('dialog_header')
         header_layout = QHBoxLayout(header_frame)
         header_layout.setContentsMargins(0, 0, 0, 10)
-        
+
         title = QLabel(
             QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'detailed_transaction_view', 'Detailed Transaction View',
@@ -59,7 +63,7 @@ class InspectionDetailDialog(QDialog):
         title.setObjectName('dialog_title')
         header_layout.addWidget(title)
         header_layout.addStretch(1)
-        
+
         main_layout.addWidget(header_frame)
 
         # Scroll Area for Content
@@ -81,11 +85,11 @@ class InspectionDetailDialog(QDialog):
 
         # 3. RGB Asset Section (if available)
         if self.rgb_details is not None:
-             self._add_rgb_section()
+            self._add_rgb_section()
 
         self.scroll_layout.addStretch(1)
         scroll_area.setWidget(scroll_content)
-        main_layout.addWidget(scroll_area, 1) # Give it stretch factor 1
+        main_layout.addWidget(scroll_area, 1)  # Give it stretch factor 1
 
         # Bottom Actions
         btn_layout = QHBoxLayout()
@@ -114,7 +118,7 @@ class InspectionDetailDialog(QDialog):
         card.setObjectName('info_card')
         grid = QGridLayout(card)
         grid.setSpacing(12)
-        
+
         self._add_grid_row(
             grid, 0, QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_id', 'Transaction Identification',
@@ -131,13 +135,41 @@ class InspectionDetailDialog(QDialog):
             ), f"{self.psbt_details.total_output_sat:,} sats",
         )
         if hasattr(self.psbt_details, 'fee_sat'):
-             self._add_grid_row(
+            self._add_grid_row(
                 grid, 3, QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'network_fee', 'Network Fee',
                 ), f"{self.psbt_details.fee_sat:,} sats",
             )
-            
+
         self.scroll_layout.addWidget(card)
+
+    def _create_io_card(self, index: int, amount_sat: int, label_key: str, body_text: str) -> QFrame:
+        """Create an input/output card."""
+        card = QFrame()
+        card.setObjectName('item_card')
+        l = QVBoxLayout(card)
+        l.setContentsMargins(16, 14, 16, 14)
+        l.setSpacing(6)
+
+        header_layout = QHBoxLayout()
+        text_label = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, label_key,
+        )
+        header = QLabel(f"{text_label} #{index}")
+        header.setObjectName('card_header')
+        header_layout.addWidget(header)
+        header_layout.addStretch()
+
+        amount_lbl = QLabel(f"{amount_sat:,} sats")
+        amount_lbl.setObjectName('value_text')
+        header_layout.addWidget(amount_lbl)
+        l.addLayout(header_layout)
+
+        body = QLabel(body_text)
+        body.setObjectName('card_body')
+        body.setWordWrap(True)
+        l.addWidget(body)
+        return card
 
     def _add_bitcoin_io_sections(self):
         # Inputs
@@ -151,39 +183,8 @@ class InspectionDetailDialog(QDialog):
             self.scroll_layout.addWidget(h_inputs)
 
             for i, inp in enumerate(self.psbt_details.inputs):
-                card = QFrame()
-                card.setObjectName('item_card')
-                l = QVBoxLayout(card)
-                l.setContentsMargins(16, 14, 16, 14)
-                l.setSpacing(6)
-                
-                header_layout = QHBoxLayout()
-                input_text_label = QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'input', 'INPUT',
-                )
-                header = QLabel(f"{input_text_label} #{i}")
-                header.setObjectName('card_header')
-                header_layout.addWidget(header)
-                header_layout.addStretch()
-                
-                amount_lbl = QLabel(f"{inp.amount_sat:,} sats")
-                amount_lbl.setObjectName('value_text')
-                header_layout.addWidget(amount_lbl)
-                l.addLayout(header_layout)
-                
-                # Simplify: extract clean TxID
-                try:
-                    txid = str(inp.outpoint.txid) if hasattr(inp.outpoint, 'txid') else str(inp.outpoint).split(':')[0]
-                except Exception:
-                    txid = str(inp.outpoint)
-                
-                if txid.startswith('Outpoint(txid='):
-                    txid = txid.replace('Outpoint(txid=', '').split(',')[0].strip()
-                
-                body = QLabel(txid)
-                body.setObjectName('card_body')
-                body.setWordWrap(True)
-                l.addWidget(body)
+                txid = self._extract_txid(inp)
+                card = self._create_io_card(i, inp.amount_sat, 'input', txid)
                 self.scroll_layout.addWidget(card)
 
         # Outputs
@@ -197,36 +198,64 @@ class InspectionDetailDialog(QDialog):
             self.scroll_layout.addWidget(h_outputs)
 
             for i, out in enumerate(self.psbt_details.outputs):
-                # Filter out 0-sats if desired (often OP_RETURN or metadata)
                 if out.amount_sat == 0:
                     continue
-
-                card = QFrame()
-                card.setObjectName('item_card')
-                l = QVBoxLayout(card)
-                l.setContentsMargins(16, 14, 16, 14)
-                l.setSpacing(6)
-                
-                header_layout = QHBoxLayout()
-                output_text_label = QCoreApplication.translate(
-                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'output', 'OUTPUT',
+                card = self._create_io_card(
+                    i, out.amount_sat, 'output', out.address,
                 )
-                header = QLabel(f"{output_text_label} #{i}")
-                header.setObjectName('card_header')
-                header_layout.addWidget(header)
-                header_layout.addStretch()
-                
-                amount_lbl = QLabel(f"{out.amount_sat:,} sats")
-                amount_lbl.setObjectName('value_text')
-                header_layout.addWidget(amount_lbl)
-                l.addLayout(header_layout)
-                
-                addr = out.address
-                body = QLabel(addr)
-                body.setObjectName('card_body')
-                body.setWordWrap(True)
-                l.addWidget(body)
                 self.scroll_layout.addWidget(card)
+
+    def _extract_txid(self, inp) -> str:
+        """Extract clean TxID from input."""
+        txid = str(inp.outpoint.txid) if hasattr(inp.outpoint, 'txid') else str(
+            inp.outpoint,
+        ).split(':', maxsplit=1)[0]
+
+        if txid.startswith('Outpoint(txid='):
+            txid = txid.replace('Outpoint(txid=', '').split(',')[0].strip()
+        return txid
+
+    def _create_rgb_io_card(self, index: int, label_key: str, assignment, clean_type: str, is_concealed: bool = False) -> QFrame:
+        """Create an RGB input/output card."""
+        card = QFrame()
+        card.setObjectName('item_card')
+        l = QVBoxLayout(card)
+        l.setContentsMargins(12, 10, 12, 10)
+        l.setSpacing(4)
+
+        h = QHBoxLayout()
+        hdr_text = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, label_key,
+        )
+        hdr = QLabel(f"{hdr_text} #{index}")
+        hdr.setObjectName('card_header')
+        h.addWidget(hdr)
+        h.addStretch()
+
+        val = str(assignment)
+        if hasattr(assignment, 'is_FUNGIBLE') and assignment.is_FUNGIBLE():
+            val = f"{assignment.amount:,}"
+        elif hasattr(assignment, 'is_INFLATION_RIGHT') and assignment.is_INFLATION_RIGHT():
+            val = f"{assignment.amount:,}"
+
+        amt = QLabel(val)
+        amt.setObjectName('value_text')
+        h.addWidget(amt)
+        l.addLayout(h)
+
+        type_text = QCoreApplication.translate(
+            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_type', 'Transaction type',
+        )
+        body = QLabel(f"{type_text}: {clean_type}")
+        body.setObjectName('card_body')
+        l.addWidget(body)
+
+        if is_concealed:
+            meta = QLabel('🔒')
+            meta.setObjectName('card_meta')
+            l.addWidget(meta)
+
+        return card
 
     def _add_rgb_section(self):
         title = QLabel(
@@ -238,102 +267,39 @@ class InspectionDetailDialog(QDialog):
         self.scroll_layout.addWidget(title)
 
         transition_type_map = {
-             'TYPEOFTRANSITION.INFLATE': 'Inflation',
-             'TYPEOFTRANSITION.SEND': 'Asset Transfer',
-             'TypeOfTransition.INFLATE': 'Inflation',
-             'TypeOfTransition.SEND': 'Asset Transfer',
+            'TYPEOFTRANSITION.INFLATE': 'Inflation',
+            'TYPEOFTRANSITION.SEND': 'Asset Transfer',
+            'TypeOfTransition.INFLATE': 'Inflation',
+            'TypeOfTransition.SEND': 'Asset Transfer',
         }
 
-        for op_idx, op in enumerate(self.rgb_details.operations):
+        for _op_idx, op in enumerate(self.rgb_details.operations):
             asset_label_text = QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_id', 'Asset id',
             )
             asset_title = QLabel(f"{asset_label_text}: {op.asset_id}")
             asset_title.setObjectName('section_title')
-            asset_title.setStyleSheet('font-size: 11px; color: #00FFA3; margin-top: 6px;')
+            asset_title.setStyleSheet(
+                'font-size: 11px; color: #00FFA3; margin-top: 6px;',
+            )
             self.scroll_layout.addWidget(asset_title)
 
-            for t_idx, trans in enumerate(op.transitions):
-                # Separate cards for each RGB input/output to match BTC UI fully
+            for _t_idx, trans in enumerate(op.transitions):
                 raw_type = str(trans.type)
                 clean_type = transition_type_map.get(raw_type, raw_type)
-                
+
                 if trans.inputs:
                     for j, ri in enumerate(trans.inputs):
-                        card = QFrame()
-                        card.setObjectName('item_card')
-                        l = QVBoxLayout(card)
-                        l.setContentsMargins(12, 10, 12, 10)
-                        l.setSpacing(4)
-                        
-                        h = QHBoxLayout()
-                        hdr_text = QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'input', 'INPUT',
+                        card = self._create_rgb_io_card(
+                            j, 'input', ri.assignment, clean_type,
                         )
-                        hdr = QLabel(f"{hdr_text} #{j}")
-                        hdr.setObjectName('card_header')
-                        h.addWidget(hdr)
-                        h.addStretch()
-                        
-                        val = str(ri.assignment)
-                        if hasattr(ri.assignment, 'is_FUNGIBLE') and ri.assignment.is_FUNGIBLE():
-                             val = f"{ri.assignment.amount:,}"
-                        elif hasattr(ri.assignment, 'is_INFLATION_RIGHT') and ri.assignment.is_INFLATION_RIGHT():
-                             val = f"{ri.assignment.amount:,}"
-                        
-                        amt = QLabel(val)
-                        amt.setObjectName('value_text')
-                        h.addWidget(amt)
-                        l.addLayout(h)
-                        
-                        type_text = QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_type', 'Transaction type',
-                        )
-                        body = QLabel(f"{type_text}: {clean_type}")
-                        body.setObjectName('card_body')
-                        l.addWidget(body)
                         self.scroll_layout.addWidget(card)
-                
+
                 if trans.outputs:
                     for j, ro in enumerate(trans.outputs):
-                        card = QFrame()
-                        card.setObjectName('item_card')
-                        l = QVBoxLayout(card)
-                        l.setContentsMargins(12, 10, 12, 10)
-                        l.setSpacing(4)
-                        
-                        h = QHBoxLayout()
-                        hdr_text = QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'output', 'OUTPUT',
+                        card = self._create_rgb_io_card(
+                            j, 'output', ro.assignment, clean_type, ro.is_concealed,
                         )
-                        hdr = QLabel(f"{hdr_text} #{j}")
-                        hdr.setObjectName('card_header')
-                        h.addWidget(hdr)
-                        h.addStretch()
-                        
-                        val = str(ro.assignment)
-                        if hasattr(ro.assignment, 'is_FUNGIBLE') and ro.assignment.is_FUNGIBLE():
-                             val = f"{ro.assignment.amount:,}"
-                        elif hasattr(ro.assignment, 'is_INFLATION_RIGHT') and ro.assignment.is_INFLATION_RIGHT():
-                             val = f"{ro.assignment.amount:,}"
-                        
-                        amt = QLabel(val)
-                        amt.setObjectName('value_text')
-                        h.addWidget(amt)
-                        l.addLayout(h)
-                        
-                        type_text = QCoreApplication.translate(
-                            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_type', 'Transaction type',
-                        )
-                        body = QLabel(f"{type_text}: {clean_type}")
-                        body.setObjectName('card_body')
-                        l.addWidget(body)
-                        
-                        if ro.is_concealed:
-                             meta = QLabel("🔒")
-                             meta.setObjectName('card_meta')
-                             l.addWidget(meta)
-                        
                         self.scroll_layout.addWidget(card)
 
     def _add_grid_row(self, grid, row, label, value):
@@ -344,4 +310,3 @@ class InspectionDetailDialog(QDialog):
         val.setWordWrap(True)
         grid.addWidget(lbl, row, 0)
         grid.addWidget(val, row, 1)
-

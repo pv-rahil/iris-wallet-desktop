@@ -159,10 +159,10 @@ class CommonOperationService:
 
             # Build keys using the helper method
             keys = build_keys_from_data(
-                account_xpub_vanilla=account_xpub_vanilla,
                 account_xpub_colored=account_xpub_colored,
                 master_fingerprint=master_fingerprint,
                 mnemonic=decrypted_mnemonic,
+                account_xpub_vanilla=account_xpub_vanilla,
             )
 
             response: UnlockResponseModel = CommonOperationRepository.unlock(

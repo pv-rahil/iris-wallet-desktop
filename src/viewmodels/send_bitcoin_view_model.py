@@ -7,10 +7,8 @@ from enum import Enum
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
-from rgb_lib import RespondToOperation
 
 from src.data.repository.btc_repository import BtcRepository
-from src.data.repository.common_operations_repository import CommonOperationRepository
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.model.btc_model import SendBtcRequestModel
@@ -19,20 +17,20 @@ from src.model.common_operation_model import BroadcastPsbtRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
-from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
-from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
-from src.utils.info_message import INFO_POST_TO_BRIDGE
 from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_SIGN_FROM_HARDWARE_WALLET
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.logging import logger
 from src.utils.worker import ThreadManager
+from src.viewmodels.viewmodel_helpers import handle_viewmodel_error
+from src.viewmodels.viewmodel_helpers import post_signed_psbt_to_bridge
+from src.viewmodels.viewmodel_helpers import process_psbt_result
 from src.views.components.toast import ToastManager
 
 
@@ -48,7 +46,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.address = None
         self.amount = None
         self.fee_rate = None
-        self.operation_idx: int | None = None
+        self.operation_idx: str | None = None
 
     def on_send_click(self, address: str, amount: int, fee_rate: int):
         """"
@@ -113,16 +111,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
             'Exception occurred while sending btc: %s, Message: %s',
             type(error).__name__, str(error),
         )
-        if SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET or \
-                SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.hw_dialog_update.emit(
-                str(error), PsbtStatus.ERROR,
-            )
-        else:
-            description = error.message if isinstance(
-                error, CommonException,
-            ) else ERROR_SOMETHING_WENT_WRONG
-            ToastManager.error(description=description)
+        handle_viewmodel_error(self, error)
 
     def send_btc_begin(self, address: str, amount: int, fee_rate: int, skip_sync: bool = False):
         """
@@ -154,7 +143,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
                 BtcRepository.send_btc_init,
                 {
                     'args': [request],
-                    'callback': self.on_psbt_created,
+                    'callback': self.on_psbt_creation_success,
                     'error_callback': self.on_error,
                 },
             )
@@ -163,75 +152,29 @@ class SendBitcoinViewModel(QObject, ThreadManager):
                 BtcRepository.send_btc_begin,
                 {
                     'args': [request],
-                    'callback': self.on_psbt_created,
+                    'callback': self.on_psbt_creation_success,
                     'error_callback': self.on_error,
                 },
             )
 
-    def on_psbt_created(self, result):
+    def on_psbt_creation_success(self, result):
         """
         Handle the PSBT created by send_btc_begin.
         Run signing and finalization in a background thread.
         """
-        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            unsigned_psbt = result.psbt
-            self.operation_idx = result.operation_idx
-        else:
-            unsigned_psbt = result
-            self.operation_idx = None
-        self.send_button_clicked.emit(True)
-        if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-            self.unsigned_psbt.emit(unsigned_psbt)
-            return
-
-        is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-
-        if is_hw and is_online and SettingRepository.get_wallet_signature_type() == WalletSignatureType.STANDARD_TYPE_WALLET or\
-            SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET and \
-                SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE:
-            self.hw_dialog_update.emit(
-                INFO_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
-            )
-        elif is_hw and SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.hw_dialog_update.emit(
-                INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
-            )
-        if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-            self.run_in_thread(
-                CommonOperationRepository.sign_psbt,
-                {
-                    'args': [unsigned_psbt],
-                    'callback': self.on_multisig_psbt_signed,
-                    'error_callback': self.on_error,
-                },
-            )
-        else:
-            self.run_in_thread(
-                CommonOperationRepository.sign_and_finalize_psbt,
-                {
-                    'args': [unsigned_psbt],
-                    'callback': self.on_psbt_signed_and_finalized,
-                    'error_callback': self.on_error,
-                },
-            )
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        process_psbt_result(
+            self, result, is_multisig,
+            self.send_button_clicked,
+        )
 
     def on_multisig_psbt_signed(self, signed_psbt: str):
         """
         Callback after multisig PSBT is signed (partially).
         Now post to bridge.
         """
-        self.hw_dialog_update.emit(
-            INFO_POST_TO_BRIDGE, PsbtStatus.BROADCASTING,
-        )
-        self.run_in_thread(
-            RgbRepository.respond_to_operation,
-            {
-                'args': [self.operation_idx, RespondToOperation.ACK(signed_psbt)],
-                'callback': self.on_success_multisig_post,
-                'error_callback': self.on_error,
-            },
-        )
+        post_signed_psbt_to_bridge(self, signed_psbt, self.operation_idx)
 
     def on_success_multisig_post(self, _=None):
         """Handle success of multisig post"""

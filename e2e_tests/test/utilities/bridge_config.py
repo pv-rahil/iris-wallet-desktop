@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 import subprocess
 import tomllib
-from typing import Optional
 
 
 BRIDGE_CONFIG_PATH = os.path.join(
@@ -23,15 +22,15 @@ PRIVATE_KEY_PATH = os.path.join(
 )
 
 
-def _get_prefixed_private_key() -> Optional[str]:
+def _get_prefixed_private_key() -> str | None:
     """
     Read the private-key-file and ensure it has the correct prefix for biscuit-cli 0.6.0.
     """
     if not os.path.exists(PRIVATE_KEY_PATH):
         print(f"ERROR: private-key-file not found at {PRIVATE_KEY_PATH}")
         return None
-    
-    with open(PRIVATE_KEY_PATH, 'r') as f:
+
+    with open(PRIVATE_KEY_PATH, encoding='utf-8') as f:
         content = f.read().strip()
         if not content.startswith('ed25519-private/'):
             # If it's just hex, add the prefix back
@@ -48,16 +47,16 @@ def read_bridge_config() -> dict:
     """
     if not os.path.exists(BRIDGE_CONFIG_PATH):
         return {}
-    
+
     with open(BRIDGE_CONFIG_PATH, 'rb') as f:
         return tomllib.load(f)
 
 
 def update_bridge_config(
-    cosigner_xpubs: Optional[list[str]] = None,
-    threshold_colored: Optional[int] = None,
-    threshold_vanilla: Optional[int] = None,
-    root_public_key: Optional[str] = None,
+    cosigner_xpubs: list[str] | None = None,
+    threshold_colored: int | None = None,
+    threshold_vanilla: int | None = None,
+    root_public_key: str | None = None,
 ) -> None:
     """
     Update the bridge config.toml file with new values.
@@ -69,23 +68,23 @@ def update_bridge_config(
         root_public_key: Root public key for the multisig.
     """
     config_lines = []
-    
+
     if cosigner_xpubs is not None:
         xpubs_str = ',\n    '.join(f'"{xpub}"' for xpub in cosigner_xpubs)
         config_lines.append(f'cosigner_xpubs = [\n    {xpubs_str},\n]')
-    
+
     if threshold_colored is not None:
         config_lines.append(f'threshold_colored = {threshold_colored}')
-    
+
     if threshold_vanilla is not None:
         config_lines.append(f'threshold_vanilla = {threshold_vanilla}')
-    
+
     if root_public_key is not None:
         config_lines.append(f'root_public_key = "{root_public_key}"')
-    
+
     config_lines.append('rgb_lib_version = "0.3"')
-    
-    with open(BRIDGE_CONFIG_PATH, 'w') as f:
+
+    with open(BRIDGE_CONFIG_PATH, 'w', encoding='utf-8') as f:
         f.write('\n'.join(config_lines) + '\n')
 
 
@@ -102,11 +101,11 @@ threshold_vanilla = 2
 root_public_key = "PLACEHOLDER_ROOT_KEY"
 rgb_lib_version = "0.3"
 """
-    with open(BRIDGE_CONFIG_PATH, 'w') as f:
+    with open(BRIDGE_CONFIG_PATH, 'w', encoding='utf-8') as f:
         f.write(default_config)
 
 
-def generate_biscuit_token(colored_xpub: str) -> Optional[str]:
+def generate_biscuit_token(colored_xpub: str) -> str | None:
     """
     Generate a biscuit token for a cosigner's colored xpub.
 
@@ -121,7 +120,7 @@ def generate_biscuit_token(colored_xpub: str) -> Optional[str]:
         return None
 
     datalog = f'role("cosigner"); xpub("{colored_xpub}");'
-    
+
     try:
         cmd = ['biscuit', 'generate', '--private-key', key, '-']
         result = subprocess.run(
@@ -147,7 +146,7 @@ def generate_biscuit_token(colored_xpub: str) -> Optional[str]:
         return None
 
 
-def get_bridge_public_key() -> Optional[str]:
+def get_bridge_public_key() -> str | None:
     """
     Get the bridge's public key from the private-key-file.
 
@@ -159,7 +158,10 @@ def get_bridge_public_key() -> Optional[str]:
         return None
 
     try:
-        cmd = ['biscuit', 'keypair', '--from-private-key', key, '--only-public-key']
+        cmd = [
+            'biscuit', 'keypair', '--from-private-key',
+            key, '--only-public-key',
+        ]
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -189,7 +191,7 @@ def restart_bridge_service() -> bool:
     """
     try:
         # Restart the bridge container
-        result = subprocess.run(
+        subprocess.run(
             ['docker', 'compose', 'restart', 'rgb-multisig-bridge'],
             cwd=os.path.dirname(os.path.dirname(__file__)),
             capture_output=True,
@@ -219,7 +221,7 @@ def start_regtest_services() -> bool:
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             'regtest.sh',
         )
-        result = subprocess.run(
+        subprocess.run(
             [regtest_path, 'start'],
             capture_output=True,
             text=True,
@@ -247,7 +249,7 @@ def stop_regtest_services() -> bool:
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             'regtest.sh',
         )
-        result = subprocess.run(
+        subprocess.run(
             [regtest_path, 'stop'],
             capture_output=True,
             text=True,

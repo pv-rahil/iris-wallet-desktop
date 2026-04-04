@@ -7,13 +7,13 @@ from __future__ import annotations
 import time
 
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
-from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_dialog
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
@@ -204,17 +204,12 @@ class SendOperation(MainPageObjects, BaseOperations):
             self.send_asset_page_objects.click_send_button()
 
         if utxo_required:
-            self.do_focus_on_application(CONFIRMATION_DIALOG)
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+            handle_utxo_confirmation_dialog(self, self, utxo_required=True)
 
         if wallet_variant_name in REQUIRE_USB_VARIANTS:
             self.wallet_features.usb_sync()
 
-    def send_asset_for_multisig(self, application, wallet_variant_name):
+    def send_asset_for_multisig(self, application, _wallet_variant_name):
         """
         Send asset for multisig wallet
         """

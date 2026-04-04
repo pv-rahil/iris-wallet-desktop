@@ -4,9 +4,6 @@ for the term and conditions page activities.
 """
 from __future__ import annotations
 
-import json
-import os
-
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 
@@ -27,6 +24,7 @@ from src.utils.keyring_storage import set_value
 from src.utils.logging import logger
 from src.utils.usb_sync_manager import USBSyncManager
 from src.utils.worker import ThreadManager
+from src.viewmodels.viewmodel_helpers import restore_multisig_config_from_file
 from src.views.components.keyring_error_dialog import KeyringErrorDialog
 from src.views.components.toast import ToastManager
 
@@ -104,26 +102,8 @@ class WelcomeViewModel(QObject, ThreadManager):
         if is_set_password:
             # Restore multisig configuration if cosigners file was synced from USB
             cosigners_file_path = app_paths.multisig_cosigners_file_path
-            if os.path.exists(cosigners_file_path):
-                try:
-                    with open(cosigners_file_path, encoding='utf-8') as mf:
-                        multisig_data = json.load(mf)
-                    SettingRepository.set_wallet_signature_type(
-                        WalletSignatureType.MULTI_SIG_WALLET,
-                    )
-                    SettingRepository.set_multisig_config(
-                        multisig_data.get('required_signers'),
-                        multisig_data.get('total_signers'),
-                    )
-                    SettingRepository.set_cosigners(
-                        multisig_data.get('cosigners', []),
-                    )
-                    SettingRepository.set_threshold_confirmed(True)
-                    logger.info('Restored multisig configuration from USB')
-                except Exception as exc:
-                    logger.error(
-                        'Failed to restore multisig config from cosigners file: %s', exc,
-                    )
+            if restore_multisig_config_from_file(cosigners_file_path):
+                logger.info('Restored multisig configuration from USB')
             ToastManager.success(INFO_RESTORE_COMPLETED)
             SettingRepository.set_keyring_status(status=False)
             self._page_navigation.enter_wallet_password_page()

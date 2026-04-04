@@ -418,7 +418,7 @@ def test_secondary_issuance_begin_multisig(vm, mocker):
     mock_run.assert_called_once()
     # Verify the function and args passed to run_in_thread
     args, _ = mock_run.call_args
-    assert args[0] == RgbRepository.inflate_init
+    assert args[0] is RgbRepository.inflate_init
     assert args[1] is not None  # request model
 
 
@@ -438,7 +438,7 @@ def test_secondary_issuance_begin_standard(vm, mocker):
     mock_run.assert_called_once()
     # Verify the function and args passed to run_in_thread
     args, _ = mock_run.call_args
-    assert args[0] == RgbRepository.inflate_begin
+    assert args[0] is RgbRepository.inflate_begin
     assert args[1] is not None  # request model
 
 

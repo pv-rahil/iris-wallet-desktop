@@ -4,7 +4,6 @@ This module provides the service for restore.
 """
 from __future__ import annotations
 
-import json
 import os
 import shutil
 
@@ -13,7 +12,6 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import RestoreRequestModel
 from src.model.common_operation_model import RestoreResponseModel
-from src.model.enums.enums_model import WalletSignatureType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import COMPATIBLE_RGB_LIB_VERSION
 from src.utils.custom_exception import CommonException
@@ -24,6 +22,7 @@ from src.utils.gdrive_operation import GoogleDriveManager
 from src.utils.handle_exception import handle_exceptions
 from src.utils.helpers import read_rgb_lib_version_file
 from src.utils.logging import logger
+from src.viewmodels.viewmodel_helpers import restore_multisig_config_from_file
 
 
 class RestoreService:
@@ -113,21 +112,7 @@ class RestoreService:
                 multisig_file_path = os.path.join(
                     restore_folder_path, multisig_file_name,
                 )
-                if os.path.exists(multisig_file_path):
-                    with open(multisig_file_path, encoding='utf-8') as mf:
-                        multisig_data = json.load(mf)
-
-                    SettingRepository.set_wallet_signature_type(
-                        WalletSignatureType.MULTI_SIG_WALLET,
-                    )
-                    SettingRepository.set_multisig_config(
-                        multisig_data.get('required_signers'),
-                        multisig_data.get('total_signers'),
-                    )
-                    SettingRepository.set_cosigners(
-                        multisig_data.get('cosigners', []),
-                    )
-                    SettingRepository.set_threshold_confirmed(True)
+                if restore_multisig_config_from_file(multisig_file_path):
                     response.is_multisig = True
                     logger.info('Restored multisig configuration successfully')
 

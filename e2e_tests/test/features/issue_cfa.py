@@ -7,13 +7,13 @@ from __future__ import annotations
 import os
 
 from accessible_constant import BITCOIN_LEDGER_APP_NAME
-from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.asset_copy import copy_cfa_image_to_home_directory
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_dialog
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
@@ -256,12 +256,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
             self.issue_cfa_page_objects.click_issue_cfa_button()
 
         if utxo_required:
-            self.do_focus_on_application(CONFIRMATION_DIALOG)
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+            handle_utxo_confirmation_dialog(self, self, utxo_required=True)
         else:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()

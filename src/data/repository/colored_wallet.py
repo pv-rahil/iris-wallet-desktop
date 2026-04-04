@@ -24,6 +24,27 @@ from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.logging import logger
 
 
+def get_online_wallet(wallet, is_multisig: bool = False) -> Online:
+    """
+    Create an online wallet instance with appropriate configuration.
+
+    Args:
+        wallet: The wallet instance to take online.
+        is_multisig: Whether this is a multisig wallet.
+
+    Returns:
+        Online wallet instance.
+    """
+    network = get_bitcoin_network_from_enum(
+        SettingRepository.get_wallet_network(),
+    )
+    indexer_url = get_bitcoin_config(network, '').indexer_url
+    if is_multisig:
+        token = generate_and_store_token()
+        return wallet.go_online(False, indexer_url, MULTISIG_BRIDGE_URL, token)
+    return wallet.go_online(False, indexer_url)
+
+
 class ColoredWallet:
     """
     Manages the RGB wallet and online session state, including secure
@@ -86,19 +107,11 @@ class ColoredWallet:
                 )
 
             try:
-                network = get_bitcoin_network_from_enum(
-                    SettingRepository.get_wallet_network(),
+                is_multisig = SettingRepository.get_wallet_signature_type(
+                ) == WalletSignatureType.MULTI_SIG_WALLET
+                self.online_wallet = get_online_wallet(
+                    self._wallet, is_multisig,
                 )
-                indexer_url = get_bitcoin_config(network, '').indexer_url
-                if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-                    token = generate_and_store_token()
-                    self.online_wallet = self._wallet.go_online(
-                        False, indexer_url, MULTISIG_BRIDGE_URL, token,
-                    )
-                else:
-                    self.online_wallet = self._wallet.go_online(
-                        False, indexer_url,
-                    )
             except Exception as exc:
                 logger.error(
                     'Failed to go online: %s, Message: %s',

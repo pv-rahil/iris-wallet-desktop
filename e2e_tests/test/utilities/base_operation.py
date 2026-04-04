@@ -1,3 +1,4 @@
+# pylint: disable=too-many-arguments
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -111,8 +112,11 @@ class BaseOperations:
             element.grabFocus()
             time.sleep(0.5)
 
-            is_copy_button = any(kw in (element.name or '').lower() for kw in [
-                                 'copy', 'indexer_url_copy_button', 'rgb_proxy_url_copy_button'])
+            is_copy_button = any(
+                kw in (element.name or '').lower() for kw in [
+                    'copy', 'indexer_url_copy_button', 'rgb_proxy_url_copy_button',
+                ]
+            )
 
             if is_copy_button:
                 pos = element.position
@@ -348,11 +352,13 @@ class BaseOperations:
             try:
                 # Search from root for a showing node with same identity
                 new_node = root.child(
-                    roleName=role, name=name, showingOnly=True)
+                    roleName=role, name=name, showingOnly=True,
+                )
                 if new_node:
                     self.application = new_node
-                    print(f"[RECOVERY] Switched to showing {
-                          role} node for '{name}'")
+                    print(f"""
+                          [RECOVERY] Switched to showing
+                          {role} node for '{name}'""")
             except Exception:
                 pass
 
@@ -540,8 +546,8 @@ class BaseOperations:
         """
         if max_retries and attempt >= max_retries:
             print(
-                f"[MAX RETRIES] Reached max retries ({max_retries}) "
-                f"for {role_name} '{identifier}'",
+                f"""[MAX RETRIES] Reached max retries ({max_retries})
+                for {role_name} '{identifier}'""",
             )
             return True
         return False
@@ -609,9 +615,9 @@ class BaseOperations:
 
             except Exception as e:
                 print(
-                    f"[RETRY {attempt}] Finding {
+                    f"""[RETRY {attempt}] Finding {
                         role_name
-                    } '{identifier}': {e}",
+                    } '{identifier}': {e}""",
                 )
 
             # Check if we should exit early (max_retries)
@@ -629,11 +635,8 @@ class BaseOperations:
         else:
             self._consecutive_failures = 0
 
-        print(
-            f"[WARN] Element not found after {
-                timeout
-            }s and {attempt} attempts",
-        )
+        print(f"""[WARN] Element not found after
+              {timeout}s and {attempt} attempts""")
 
         return False
 
@@ -740,9 +743,9 @@ class BaseOperations:
             time.sleep(interval)
 
         raise TimeoutError(
-            f"Toaster message '{toaster_name}' did not appear within {
+            f"""Toaster message '{toaster_name}' did not appear within {
                 timeout
-            } seconds.",
+            } seconds.""",
         )
 
     def do_get_child_count(self, element):

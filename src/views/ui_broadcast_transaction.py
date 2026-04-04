@@ -31,8 +31,8 @@ from accessible_constant import BROADCAST_TRANSACTION_PAGE_CLOSE_BUTTON
 from accessible_constant import BROADCAST_TRANSACTION_PSBT_INPUT
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
+from src.model.broadcast_transaction_model import PrimaryActionContext
 from src.model.broadcast_transaction_model import PsbtDraftItem
-from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
@@ -57,6 +57,8 @@ class BroadcastTransactionWidget(QWidget):
     """
     Widget for broadcasting signed transactions (PSBTs) in the application.
     """
+
+    _stored_context: dict | None
 
     def __init__(self, view_model, from_sidebar: bool = False, pending_operation: object = None):
         """
@@ -98,6 +100,7 @@ class BroadcastTransactionWidget(QWidget):
         self._current_operation = None
         self._signals_connected: bool = False
         self._programmatic_psbt_set: bool = False
+        self._stored_context = None
 
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setObjectName('grid_layout')
@@ -667,7 +670,7 @@ class BroadcastTransactionWidget(QWidget):
             SettingRepository.get_wallet_type() == WalletType.OFFLINE_TYPE_WALLET
         )
 
-        can_primary = BroadcastTransactionService.can_enable_primary_action(
+        ctx = PrimaryActionContext(
             psbt_text=psbt_text,
             can_broadcast=self.priv.can_broadcast_psbt,
             is_multisig=self.is_multisig,
@@ -678,6 +681,9 @@ class BroadcastTransactionWidget(QWidget):
             selector_visible=self.method_selector.isVisible(),
             is_offline_mode=is_offline_mode,
             min_psbt_len=self.min_psbt_len,
+        )
+        can_primary = BroadcastTransactionService.can_enable_primary_action(
+            ctx,
         )
         self.inspection_details.set_primary_enabled(can_primary)
 
@@ -1003,7 +1009,8 @@ class BroadcastTransactionWidget(QWidget):
         if is_offline_wallet:
             rgb_expected = bool(
                 self._stored_context and self._stored_context.get(
-                    'fascia_path'),
+                    'fascia_path',
+                ),
             )
 
         self.inspection_details.show_inspection_details(True)
@@ -1034,29 +1041,19 @@ class BroadcastTransactionWidget(QWidget):
         )
         if not file_path:
             return
-        try:
-            with open(file_path, encoding='utf-8') as f:
-                text = (f.read() or '').strip()
+        psbt_only, error = BroadcastTransactionService.read_psbt_from_file(
+            file_path,
+        )
+        if error:
+            ToastManager.error(description=error)
+            return
 
-            # Accept purpose-prefixed format: psbt:<purpose>:<base64>
-            parsed = BroadcastTransactionService.parse_psbt_input(text)
-            psbt_only = parsed.psbt
-            if not psbt_only:
-                ToastManager.error(description='Invalid PSBT file content')
-                return
+        self._programmatic_psbt_set = True
+        self.broadcast_transaction_input.setPlainText(psbt_only)
 
-            self._programmatic_psbt_set = True
-            self.broadcast_transaction_input.setPlainText(psbt_only)
-
-            if self.is_multisig:
-                self._update_signature_progress()
-            self.handle_button_enable()
-        except Exception as e:
-            ToastManager.show_toast(
-                parent=self,
-                preset=ToastPreset.ERROR,
-                description=f'Failed to read PSBT file: {e}',
-            )
+        if self.is_multisig:
+            self._update_signature_progress()
+        self.handle_button_enable()
 
     def _on_export_psbt(self):
         current_text = self.broadcast_transaction_input.toPlainText().strip()
@@ -1067,14 +1064,9 @@ class BroadcastTransactionWidget(QWidget):
             ToastManager.error(description='No PSBT to export')
             return
 
-        # Prefer exporting with purpose prefix when possible (watch-only/offline UX)
-        if purpose is None:
-            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(
-                current_psbt,
-            )
-        export_text = current_psbt
-        if purpose:
-            export_text = f"psbt:{purpose}:{current_psbt}"
+        export_text = BroadcastTransactionService.format_psbt_export(
+            current_psbt, purpose,
+        )
 
         file_path, _ = QFileDialog.getSaveFileName(
             self, 'Export PSBT', 'transaction.psbt', 'PSBT Files (*.psbt *.txt);;All Files (*)',

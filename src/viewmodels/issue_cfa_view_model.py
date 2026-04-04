@@ -122,8 +122,8 @@ class IssueCFAViewModel(QObject, ThreadManager):
         ToastManager.success(
             description=INFO_ASSET_ISSUED.format(response.asset_id),
         )
-        self.success_page_message.emit(response.name)
         self.is_loading.emit(False)
+        self.success_page_message.emit(response.name)
 
     def on_error(self, err: CommonException):
         """on error callback of issue CFA """

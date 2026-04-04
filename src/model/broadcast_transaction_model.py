@@ -8,6 +8,32 @@ from pydantic import BaseModel
 from rgb_lib import Operation
 
 
+class PrimaryActionContext(BaseModel):
+    """Context for determining primary action button state."""
+
+    psbt_text: str
+    can_broadcast: bool
+    is_multisig: bool
+    is_psbt_validated: bool
+    pending_operation_present: bool
+    is_watch_only: bool
+    selector_index: int
+    selector_visible: bool
+    is_offline_mode: bool
+    min_psbt_len: int
+
+
+class MultisigThresholdLabels(BaseModel):
+    """Labels for multisig threshold frame UI."""
+
+    info_title: str
+    info_sub: str
+    tot_lbl: str
+    tot_help: str
+    req_lbl: str
+    req_help: str
+
+
 class PsbtDraftItem(BaseModel):
     """
     Model for PSBT draft item.

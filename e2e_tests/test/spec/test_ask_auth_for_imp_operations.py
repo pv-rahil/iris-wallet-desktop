@@ -15,6 +15,7 @@ from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import refresh_collectibles_on_app2
 from src.data.repository.setting_repository import SettingRepository
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_BITCOIN_SENT
@@ -190,12 +191,7 @@ def test_ask_auth_for_imp_question_send_cfa_on(wallets_and_operations: WalletTes
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
     with allure.step('asserting tx id'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+        refresh_collectibles_on_app2(wallets_and_operations)
         wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
             ASSET_NAME_1,
         )
@@ -348,12 +344,7 @@ def test_ask_auth_for_imp_question_send_cfa_off(wallets_and_operations: WalletTe
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
     with allure.step('asserting tx id'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+        refresh_collectibles_on_app2(wallets_and_operations)
         wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
             ASSET_NAME_2,
         )

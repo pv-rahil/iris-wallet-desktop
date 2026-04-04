@@ -11,19 +11,19 @@ from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.test_helpers import BaseIssueAsset
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
-class IssueIfa(MainPageObjects, BaseOperations):
+class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
     """
     This class provides methods for issuing IFA assets.
     """
 
     def __init__(self, application):
         """
-        Initializes the IssueIfa class.
+        Initialize the IssueIfa class with the application.
         """
-        self.hardware_wallet_emulator = None
         self.wallet_feature = Wallet(application)
         super().__init__(application)
 
@@ -35,8 +35,9 @@ class IssueIfa(MainPageObjects, BaseOperations):
         Issues an IFA asset with sufficient sats and UTXO.
         """
         try:
+            hardware_wallet_emulator = None
             if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet_emulator = handle_hardware_wallet(
+                hardware_wallet_emulator = handle_hardware_wallet(
                     app_name=BITCOIN_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
@@ -64,11 +65,12 @@ class IssueIfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
                 self.issue_ifa_page_objects.click_issue_ifa_button()
 
-            if self.hardware_wallet_emulator:
+            if hardware_wallet_emulator:
                 self.wallet_feature.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME, is_issue_ifa=True,
                 )
 
+            # IFA-specific: native auth and success flow
             if is_native_auth_enabled is True:
                 self.enter_native_password()
 
@@ -79,8 +81,9 @@ class IssueIfa(MainPageObjects, BaseOperations):
         except Exception as e:
             raise e
         finally:
-            if self.hardware_wallet_emulator:
-                self.hardware_wallet_emulator.terminate()
+            # IFA: cleanup local hardware wallet emulator
+            if hardware_wallet_emulator:
+                hardware_wallet_emulator.terminate()
 
     def issue_ifa_asset_without_sat(self, application, asset_ticker, asset_name, issue_amount, total_supply):
         """

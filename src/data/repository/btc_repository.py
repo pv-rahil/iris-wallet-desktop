@@ -18,6 +18,7 @@ from src.model.btc_model import TransactionListResponse
 from src.model.btc_model import UnspentListRequestModel
 from src.model.btc_model import UnspentsListResponseModel
 from src.model.common_operation_model import BroadcastPsbtRequestModel
+from src.model.common_operation_model import PsbtData
 from src.model.rgb_model import CreateUtxosRequestModel
 from src.utils.cache import Cache
 from src.utils.custom_context import repository_custom_context
@@ -108,7 +109,11 @@ class BtcRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.add_psbt(psbt, purpose='send_btc')
+                wallet_service.add_psbt(
+                    PsbtData(
+                        psbt_base64=psbt, purpose='send_btc',
+                    ),
+                )
             return psbt
 
     @staticmethod
@@ -123,7 +128,9 @@ class BtcRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(
-                    result.psbt, purpose='send_btc',
+                    PsbtData(
+                        psbt_base64=result.psbt, purpose='send_btc',
+                    ),
                 )
             return result
 
@@ -153,7 +160,11 @@ class BtcRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.add_psbt(psbt, purpose=purpose)
+                wallet_service.add_psbt(
+                    PsbtData(
+                        psbt_base64=psbt, purpose=purpose,
+                    ),
+                )
             return psbt
 
     @staticmethod
@@ -167,7 +178,11 @@ class BtcRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
-                wallet_service.add_psbt(result.psbt, purpose=purpose)
+                wallet_service.add_psbt(
+                    PsbtData(
+                        psbt_base64=result.psbt, purpose=purpose,
+                    ),
+                )
             return result
 
     @staticmethod

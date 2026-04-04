@@ -8,26 +8,26 @@ from PySide6.QtCore import QObject
 from PySide6.QtCore import QThread
 from PySide6.QtCore import QTimer
 from PySide6.QtCore import Signal
+from rgb_lib import Operation
+from rgb_lib import OperationInfo
 from rgb_lib import RgbLibError
 
 from src.data.repository.colored_wallet import colored_wallet
+from src.data.repository.colored_wallet import get_online_wallet
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
 from src.data.service.common_operation_service import CommonOperationService
 from src.data.service.wallet_data_service import WalletDataService
+from src.model.common_operation_model import PsbtData
 from src.model.common_operation_model import USBDrive
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
-from src.utils.biscuit_auth import generate_and_store_token
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
-from src.utils.constant import MULTISIG_BRIDGE_URL
 from src.utils.constant import PING_DNS_ADDRESS_FOR_NETWORK_CHECK
 from src.utils.constant import PING_DNS_SERVER_CALL_INTERVAL
-from src.utils.helpers import get_bitcoin_config
-from src.utils.helpers import get_bitcoin_network_from_enum
 from src.utils.logging import logger
 from src.utils.usb_sync_manager import USBSyncManager
 from src.utils.worker import ThreadManager
@@ -160,19 +160,11 @@ class HeaderFrameViewModel(QObject, ThreadManager):
         """Handle sync success after password entry."""
         try:
             if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-                network = get_bitcoin_network_from_enum(
-                    SettingRepository.get_wallet_network(),
+                is_multisig = SettingRepository.get_wallet_signature_type(
+                ) == WalletSignatureType.MULTI_SIG_WALLET
+                colored_wallet.online_wallet = get_online_wallet(
+                    colored_wallet.wallet, is_multisig,
                 )
-                indexer_url = get_bitcoin_config(network, '').indexer_url
-                if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
-                    token = generate_and_store_token()
-                    colored_wallet.online_wallet = colored_wallet.wallet.go_online(
-                        False, indexer_url, MULTISIG_BRIDGE_URL, token,
-                    )
-                else:
-                    colored_wallet.online_wallet = colored_wallet.wallet.go_online(
-                        False, indexer_url,
-                    )
             self.sync_process_ended.emit('from_usb')
             if not retry:
                 ToastManager.success(
@@ -212,7 +204,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_multisig_sync_done(self, operation_info):
+    def on_multisig_sync_done(self, operation_info: list[OperationInfo] | OperationInfo):
         """Handle successful bridge sync. Emits pending operations list."""
         # operation_info is a list of filtered operations (or single obj if from legacy path, but we changed it)
         pending_ops = []
@@ -224,9 +216,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         has_blocking_op = False
         for op_info in pending_ops:
-            if op_info is None or not hasattr(op_info, 'operation'):
-                continue
-            operation = op_info.operation
+            operation = self._get_valid_operation(op_info)
             if operation is None:
                 continue
 
@@ -277,7 +267,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         self.pending_operations_ready.emit(actionable_ops)
 
-    def _inspect_and_set_global_pending_state(self, pending_ops: list):
+    def _inspect_and_set_global_pending_state(self, pending_ops: list[OperationInfo]):
         """Find the relevant pending operation, inspect its PSBT to get TXID, and set global state."""
 
         # Reset state first
@@ -285,11 +275,13 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         target_op_info = None
         for op_info in pending_ops:
-            if op_info is None or not hasattr(op_info, 'operation'):
-                continue
-            operation = op_info.operation
+            operation = self._get_valid_operation(op_info)
             if operation is None:
                 continue
+            psbt = getattr(operation, 'psbt', None)
+            if not psbt:
+                continue
+
             # We care about operations that block new ones (Create UTXOs, Send BTC, Send RGB, Inflation)
             is_blocking = (
                 operation.is_CREATE_UTXOS_TO_REVIEW() or operation.is_CREATE_UTXOS_PENDING() or
@@ -325,7 +317,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
             },
         )
 
-    def _on_pending_psbt_inspected(self, result, op_info):
+    def _on_pending_psbt_inspected(self, result, op_info: OperationInfo):
         """Callback when pending PSBT is inspected."""
         try:
             txid = result.txid
@@ -335,121 +327,127 @@ class HeaderFrameViewModel(QObject, ThreadManager):
         except Exception as e:
             logger.error('Failed to set global pending state: %s', e)
 
-    def _extract_and_save_review_psbts(self, pending_ops: list):
+    def _is_review_operation(self, operation: Operation) -> bool:
+        """Check if operation is a review type needing signature."""
+        return (
+            operation.is_CREATE_UTXOS_TO_REVIEW()
+            or operation.is_SEND_BTC_TO_REVIEW()
+            or operation.is_SEND_TO_REVIEW()
+            or operation.is_INFLATION_TO_REVIEW()
+        )
+
+    def _get_purpose_from_operation(self, operation: Operation) -> str | None:
+        """Determine purpose from operation type."""
+        if operation.is_CREATE_UTXOS_TO_REVIEW():
+            return 'create_utxos'
+        if operation.is_SEND_BTC_TO_REVIEW():
+            return 'send_btc'
+        if operation.is_SEND_TO_REVIEW():
+            return 'send_asset'
+        if operation.is_INFLATION_TO_REVIEW():
+            return 'inflate_asset'
+        return None
+
+    def _check_already_signed(self, wallet_service: WalletDataService, psbt: str) -> bool:
+        """Check if we already have a signed version of this PSBT."""
+        existing_signed = wallet_service.list_psbt(signed=True)
+        if not existing_signed:
+            return False
+        try:
+            unsigned_txid = RgbRepository.inspect_psbt(psbt=psbt).txid
+            for p in existing_signed:
+                psbt_value = p.get('psbt')
+                if not psbt_value:
+                    continue
+                try:
+                    signed_txid = RgbRepository.inspect_psbt(
+                        psbt=psbt_value,
+                    ).txid
+                    if unsigned_txid == signed_txid:
+                        return True
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.error('Failed to inspect PSBT for duplicate check: %s', e)
+        return False
+
+    def _extract_rgb_context(self, operation: Operation) -> tuple[str | None, int | None, int | None]:
+        """Extract RGB context from operation details."""
+        is_rgb = operation.is_SEND_TO_REVIEW() or operation.is_INFLATION_TO_REVIEW()
+        if not is_rgb:
+            return None, None, None
+        op_details = operation.details
+        if op_details is None:
+            return None, None, None
+        fascia_path = op_details.fascia_path
+        entropy = op_details.entropy
+        min_confirmations = op_details.min_confirmations
+        return fascia_path, entropy, min_confirmations
+
+    def _extract_and_save_review_psbts(self, pending_ops: list[OperationInfo]):
         """Extract PSBTs from review operations and save to local DB for offline signing."""
 
         wallet_service = WalletDataService.get_session()
         if wallet_service is None:
             return
 
-        for op_info in pending_ops:
-            if op_info is None or not hasattr(op_info, 'operation'):
-                continue
+        local_xpub = SettingRepository.get_config_value(
+            ACCOUNT_XPUB_COLORED, None,
+        )
 
+        for op_info in pending_ops:
             operation = op_info.operation
             if operation is None:
                 continue
 
-            # Check if this is a review operation needing signature
-            is_review = (
-                operation.is_CREATE_UTXOS_TO_REVIEW()
-                or operation.is_SEND_BTC_TO_REVIEW()
-                or operation.is_SEND_TO_REVIEW()
-                or operation.is_INFLATION_TO_REVIEW()
-            )
-
-            if not is_review:
+            if not self._is_review_operation(operation):
                 continue
 
-            # Extract PSBT from operation
-            psbt = getattr(operation, 'psbt', None)
+            psbt = operation.psbt
             if not psbt:
                 continue
 
-            # Determine purpose from operation type
-            purpose = None
-            if operation.is_CREATE_UTXOS_TO_REVIEW():
-                purpose = 'create_utxos'
-            elif operation.is_SEND_BTC_TO_REVIEW():
-                purpose = 'send_btc'
-            elif operation.is_SEND_TO_REVIEW():
-                purpose = 'send_asset'
-            elif operation.is_INFLATION_TO_REVIEW():
-                purpose = 'inflate_asset'
-
+            purpose = self._get_purpose_from_operation(operation)
             if not purpose:
                 continue
 
+            # Skip if we initiated this operation
+            if op_info.initiator_xpub == local_xpub:
+                continue
+
             try:
-                # Check if unsigned PSBT exactly matches an existing one to avoid simple duplicates
+                # Check for duplicate unsigned PSBT
                 existing = wallet_service.list_psbt(signed=False)
                 if existing and any(p.get('psbt') == psbt for p in existing):
                     continue
 
-                # Save as unsigned PSBT with purpose, provided we didn't initiate it
-                if op_info.initiator_xpub != SettingRepository.get_config_value(ACCOUNT_XPUB_COLORED, None):
-                    # Also check if we ALREADY have a signed version of this PSBT locally
-                    existing_signed = wallet_service.list_psbt(signed=True)
-                    already_signed = False
-                    if existing_signed:
-                        try:
-                            unsigned_txid = RgbRepository.inspect_psbt(
-                                psbt=psbt,
-                            ).txid
-                            for p in existing_signed:
-                                psbt_value = p.get('psbt')
-                                if not psbt_value:
-                                    continue
-                                try:
-                                    signed_txid = RgbRepository.inspect_psbt(
-                                        psbt=psbt_value,
-                                    ).txid
-                                    if unsigned_txid == signed_txid:
-                                        already_signed = True
-                                        break
-                                except Exception:
-                                    pass
-                        except Exception as e:
-                            logger.error(
-                                'Failed to inspect PSBT for duplicate check: %s', e,
-                            )
+                # Check if already signed
+                if self._check_already_signed(wallet_service, psbt):
+                    continue
 
-                    if already_signed:
-                        continue
-
-                    # Extract RGB context from operation.details for offline RGB inspection
-                    fascia_path = None
-                    entropy = None
-                    min_confirmations = None
-                    is_rgb_operation = operation.is_SEND_TO_REVIEW() or operation.is_INFLATION_TO_REVIEW()
-                    if is_rgb_operation:
-                        op_details = getattr(operation, 'details', None)
-                        if op_details is not None:
-                            fascia_path = getattr(
-                                op_details, 'fascia_path', None,
-                            )
-                            entropy = getattr(op_details, 'entropy', None)
-                            min_confirmations = getattr(
-                                op_details, 'min_confirmations', None,
-                            )
-
-                    wallet_service.add_psbt(
-                        psbt,
+                # Extract RGB context and save
+                fascia_path, entropy, min_confirmations = self._extract_rgb_context(
+                    operation,
+                )
+                wallet_service.add_psbt(
+                    PsbtData(
+                        psbt_base64=psbt,
                         signed=False,
                         purpose=purpose,
                         fascia_path=fascia_path,
                         entropy=entropy,
                         min_confirmations=min_confirmations,
-                    )
-                    logger.info(
-                        'Saved review operation PSBT to local DB: purpose=%s, rgb_context=%s',
-                        purpose,
-                        bool(fascia_path),
-                    )
+                    ),
+                )
+                logger.info(
+                    'Saved review operation PSBT to local DB: purpose=%s, rgb_context=%s',
+                    purpose,
+                    bool(fascia_path),
+                )
             except Exception as exc:
                 logger.error('Failed to save review PSBT to DB: %s', exc)
 
-    def _update_rgb_context_for_initiator_psbts(self, pending_ops: list):
+    def _update_rgb_context_for_initiator_psbts(self, pending_ops: list[OperationInfo]):
         """Update RGB context for PSBTs where current wallet is the initiator.
 
         When watch-only initiates a send/inflate operation, the PSBT is saved immediately

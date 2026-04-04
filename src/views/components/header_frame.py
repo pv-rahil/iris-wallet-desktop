@@ -656,6 +656,67 @@ class HeaderFrame(QFrame, QObject):
         """Check if current wallet is multisig."""
         return SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET
 
+    def _count_matched_signed_psbts(self, drafts: list) -> int:
+        """Count signed PSBTs matching pending operations."""
+        matched_signed_count = 0
+        if not drafts or not self._pending_ops:
+            return matched_signed_count
+
+        try:
+            for op_info in self._pending_ops:
+                operation = op_info.operation
+                if operation is None:
+                    continue
+                unsigned_psbt = getattr(operation, 'psbt', None)
+                if not unsigned_psbt:
+                    continue
+                try:
+                    unsigned_txid = RgbRepository.inspect_psbt(
+                        psbt=unsigned_psbt,
+                    ).txid
+                except Exception:
+                    continue
+                for signed_draft in drafts:
+                    signed_psbt = signed_draft.get('psbt')
+                    if not signed_psbt:
+                        continue
+                    try:
+                        signed_txid = RgbRepository.inspect_psbt(
+                            psbt=signed_psbt,
+                        ).txid
+                        if unsigned_txid == signed_txid:
+                            matched_signed_count += 1
+                            break
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.error('Failed to check signed PSBT match: %s', e)
+        return matched_signed_count
+
+    def _handle_watch_only_pending_ops(self, wallet_service):
+        """Handle pending operations for watch-only wallets."""
+        drafts = wallet_service.list_psbt(
+            True,
+        ) if wallet_service is not None else []
+        signed_count = len(drafts) if drafts is not None else 0
+        matched_signed_count = self._count_matched_signed_psbts(drafts)
+
+        if signed_count > 0:
+            label_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
+            ).format(signed_count)
+        elif matched_signed_count > 0:
+            label_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
+            ).format(matched_signed_count)
+        else:
+            label_text = 'Sign Needed (Use Offline Wallet)'
+            self._psbt_action_mode = 'offline_sign_needed'
+
+        self.psbt_info_label.setText(label_text)
+        self.psbt_info_frame.setToolTip(label_text)
+        self.psbt_info_frame.show()
+
     def on_pending_operations_ready(self, pending_ops: list):
         """Handle pending operations from multisig bridge sync."""
         self._pending_ops = pending_ops
@@ -668,76 +729,10 @@ class HeaderFrame(QFrame, QObject):
         )
 
         if self._pending_ops_count > 0:
-            # For watch-only wallets: show text indicating offline signature needed
             if SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY:
-                # Check for local signed PSBTs
                 wallet_service = WalletDataService.get_session()
-                drafts = wallet_service.list_psbt(
-                    True,
-                ) if wallet_service is not None else []
-                signed_count = len(drafts) if drafts is not None else 0
-
-                # Check if signed PSBTs match any pending unsigned operations (by TXID)
-                # If so, we should broadcast instead of showing "Sign Needed"
-                matched_signed_count = 0
-                if signed_count > 0 and self._pending_ops:
-                    try:
-                        for op_info in self._pending_ops:
-                            if op_info is None or not hasattr(op_info, 'operation'):
-                                continue
-                            operation = op_info.operation
-                            if operation is None:
-                                continue
-                            unsigned_psbt = getattr(operation, 'psbt', None)
-                            if not unsigned_psbt:
-                                continue
-                            # Get TXID of unsigned PSBT
-                            try:
-                                unsigned_txid = RgbRepository.inspect_psbt(
-                                    psbt=unsigned_psbt,
-                                ).txid
-                            except Exception:
-                                continue
-                            # Check if any signed PSBT has matching TXID
-                            for signed_draft in drafts:
-                                signed_psbt = signed_draft.get('psbt')
-                                if not signed_psbt:
-                                    continue
-                                try:
-                                    signed_txid = RgbRepository.inspect_psbt(
-                                        psbt=signed_psbt,
-                                    ).txid
-                                    if unsigned_txid == signed_txid:
-                                        matched_signed_count += 1
-                                        break
-                                except Exception:
-                                    pass
-                    except Exception as e:
-                        logger.error(
-                            'Failed to check signed PSBT match: %s', e,
-                        )
-
-                if signed_count > 0:
-                    # If we have signed drafts ready to broadcast, prioritize that action
-                    label_text = QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
-                    ).format(signed_count)
-                elif matched_signed_count > 0:
-                    # We have a signed PSBT matching a pending operation - show broadcast
-                    label_text = QCoreApplication.translate(
-                        IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
-                    ).format(matched_signed_count)
-                else:
-                    # Otherwise, show that we have pending operations that need signing (offline)
-                    # KEEP FRAME ENABLED, but tag it so click shows Toast
-                    label_text = 'Sign Needed (Use Offline Wallet)'
-                    self._psbt_action_mode = 'offline_sign_needed'
-
-                self.psbt_info_label.setText(label_text)
-                self.psbt_info_frame.setToolTip(label_text)
-                self.psbt_info_frame.show()
+                self._handle_watch_only_pending_ops(wallet_service)
             else:
-                # Use same format as offline sign label for other wallets
                 label_text = QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt_detection_label', None,
                 ).format(self._pending_ops_count)

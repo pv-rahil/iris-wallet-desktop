@@ -6,12 +6,13 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.translation_utils import TranslationManager
+
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -70,40 +71,13 @@ def test_help_page(wallets_and_operations: WalletTestSetup, wallet_variant_name)
             'where_can_i_get_regtest_bitcoins',
         )
 
+
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Help page test for multisig wallet')
 @allure.story('Tests for elements in help page for multisig wallet')
 def test_help_page_for_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test help page for multisig wallet"""
-    with allure.step('Initiate first multisig wallet'):
-        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
-        )
-
-    with allure.step('Initiate second multisig wallet'):
-        wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION, variant=wallet_variant_name, fund=False,
-        )
-
-    with allure.step('Import cosigner data into first multisig wallet'):
-        wallets_and_operations.first_page_features.wallet_features.import_multisig_data(
-            application=FIRST_APPLICATION,
-        )
-
-    with allure.step('Import cosigner data into second multisig wallet'):
-        wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
-            application=SECOND_APPLICATION,
-        )
-
-    with allure.step('Finalize first multisig wallet setup'):
-        wallets_and_operations.first_page_features.wallet_features.finalize_multisig_setup(
-            application=FIRST_APPLICATION,
-        )
-
-    with allure.step('Finalize second multisig wallet setup'):
-        wallets_and_operations.second_page_features.wallet_features.finalize_multisig_setup(
-            application=SECOND_APPLICATION,
-        )
+    setup_multisig_wallets(wallets_and_operations, wallet_variant_name)
 
     with allure.step('Navigating to help page'):
         wallets_and_operations.first_page_operations.do_focus_on_application(

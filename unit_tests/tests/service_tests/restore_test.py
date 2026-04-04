@@ -11,8 +11,8 @@ import pytest
 
 from src.data.service.restore_service import RestoreService
 from src.model.common_operation_model import RestoreResponseModel
-from src.utils.custom_exception import CommonException
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
+from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NOT_BACKUP_FILE
 from src.utils.error_message import ERROR_UNABLE_GET_MNEMONIC
 from src.utils.error_message import ERROR_UNABLE_TO_GET_HASHED_MNEMONIC

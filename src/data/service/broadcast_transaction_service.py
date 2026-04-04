@@ -15,6 +15,7 @@ from src.data.service.wallet_data_service import WalletDataService
 from src.model.broadcast_transaction_model import InspectionContext
 from src.model.broadcast_transaction_model import MultisigPendingContext
 from src.model.broadcast_transaction_model import PendingOperationMatchResult
+from src.model.broadcast_transaction_model import PrimaryActionContext
 from src.model.broadcast_transaction_model import PsbtDraftItem
 from src.model.broadcast_transaction_model import PsbtParsed
 from src.model.broadcast_transaction_model import PsbtTextChangedContext
@@ -277,6 +278,55 @@ class BroadcastTransactionService:
         )
 
     @staticmethod
+    def _process_transition_outputs(transition, send_amount: int, total_inflation_amount: int) -> tuple[int, int]:
+        """Process outputs from a transition and accumulate amounts.
+
+        Args:
+            transition: The transition to process.
+            send_amount: Current send amount accumulator.
+            total_inflation_amount: Current total inflation amount accumulator.
+
+        Returns:
+            Updated (send_amount, total_inflation_amount).
+        """
+        for output in transition.outputs:
+            assignment = output.assignment
+            if assignment is not None and assignment.is_FUNGIBLE():
+                amt = assignment.amount
+                total_inflation_amount += amt
+                if not output.is_ours:
+                    send_amount += amt
+        return send_amount, total_inflation_amount
+
+    @staticmethod
+    def _extract_rgb_amounts(rgb_details) -> tuple[str | None, int, int]:
+        """Extract asset_id, send_amount, and total_inflation_amount from RGB details.
+
+        Args:
+            rgb_details: The RGB inspection details.
+
+        Returns:
+            Tuple of (asset_id, send_amount, total_inflation_amount).
+        """
+        asset_id: str | None = None
+        send_amount = 0
+        total_inflation_amount = 0
+
+        try:
+            operations = rgb_details.operations
+            if not operations:
+                return asset_id, send_amount, total_inflation_amount
+            op_info = operations[0]
+            asset_id = op_info.asset_id
+            for transition in op_info.transitions:
+                send_amount, total_inflation_amount = BroadcastTransactionService._process_transition_outputs(
+                    transition, send_amount, total_inflation_amount,
+                )
+        except Exception:
+            return None, 0, 0
+        return asset_id, send_amount, total_inflation_amount
+
+    @staticmethod
     def rgb_transfer_inspection_summary(
         rgb_details: RgbInspection,
         pending_transfer_type_key: str | None,
@@ -292,34 +342,11 @@ class BroadcastTransactionService:
                 transfer_type_key=pending_transfer_type_key,
             )
 
-        asset_id: str | None = None
-        send_amount = 0
-        total_inflation_amount = 0
+        asset_id, send_amount, total_inflation_amount = BroadcastTransactionService._extract_rgb_amounts(
+            rgb_details,
+        )
 
-        try:
-            operations = rgb_details.operations
-            if operations:
-                op_info = operations[0]
-                asset_id = op_info.asset_id
-
-                for transition in op_info.transitions:
-                    for output in transition.outputs:
-                        assignment = output.assignment
-                        if assignment is not None and assignment.is_FUNGIBLE():
-                            amt = assignment.amount
-                            total_inflation_amount += amt
-                            if not output.is_ours:
-                                send_amount += amt
-        except Exception:
-            asset_id = None
-            send_amount = 0
-            total_inflation_amount = 0
-
-        amount_value = 0
-        if send_amount > 0:
-            amount_value = send_amount
-        elif total_inflation_amount > 0:
-            amount_value = total_inflation_amount
+        amount_value = send_amount if send_amount > 0 else total_inflation_amount
 
         transfer_type_key = pending_transfer_type_key
         if transfer_type_key is None:
@@ -484,7 +511,8 @@ class BroadcastTransactionService:
             destination_addr = target_output.address or ''
 
             multi_prefix = '...' if (
-                len(non_change) if non_change else len(outputs)) > 1 else ''
+                len(non_change) if non_change else len(outputs)
+            ) > 1 else ''
             if destination_addr and multi_prefix:
                 destination_addr += multi_prefix
 
@@ -493,50 +521,67 @@ class BroadcastTransactionService:
             return ''
 
     @staticmethod
-    def can_enable_primary_action(
-        psbt_text: str,
-        can_broadcast: bool,
-        is_multisig: bool,
-        is_psbt_validated: bool,
-        pending_operation_present: bool,
-        is_watch_only: bool,
-        selector_index: int,
-        selector_visible: bool,
-        is_offline_mode: bool,
-        min_psbt_len: int,
-    ) -> bool:
-        """Determine if the primary action button should be enabled."""
-        has_input = bool(psbt_text) and (
-            len(psbt_text.strip()) >= min_psbt_len
+    def can_enable_primary_action(ctx: PrimaryActionContext) -> bool:
+        """Determine if the primary action button should be enabled.
+
+        Args:
+            ctx: Context containing all parameters for primary action state.
+
+        Returns:
+            True if primary action should be enabled.
+        """
+        has_input = bool(ctx.psbt_text) and (
+            len(ctx.psbt_text.strip()) >= ctx.min_psbt_len
         )
         if not has_input:
             return False
 
-        if can_broadcast:
-            if is_multisig and is_watch_only:
-                return is_psbt_validated and pending_operation_present
-
-            method_ok = (not selector_visible) or (selector_index >= 0)
-            return method_ok
+        if ctx.can_broadcast:
+            return BroadcastTransactionService._check_broadcast_action(
+                ctx.is_multisig, ctx.is_watch_only, ctx.is_psbt_validated,
+                ctx.pending_operation_present, ctx.selector_visible, ctx.selector_index,
+            )
 
         # Signer flow
-        if is_multisig:
-            has_purpose = False
-            if is_offline_mode:
-                parsed = BroadcastTransactionService.parse_psbt_input(
-                    psbt_text.strip(),
-                )
-                has_purpose = bool(parsed.purpose) or bool(
-                    BroadcastTransactionService.get_psbt_purpose_from_storage(
-                        parsed.psbt,
-                    ),
-                )
-
-            return (is_psbt_validated and pending_operation_present) or (
-                is_offline_mode and (has_purpose or is_psbt_validated)
+        if ctx.is_multisig:
+            return BroadcastTransactionService._check_multisig_signer_action(
+                ctx.is_psbt_validated, ctx.pending_operation_present, ctx.is_offline_mode, ctx.psbt_text,
             )
 
         return True
+
+    @staticmethod
+    def _check_broadcast_action(
+        is_multisig: bool, is_watch_only: bool, is_psbt_validated: bool,
+        pending_operation_present: bool, selector_visible: bool, selector_index: int,
+    ) -> bool:
+        """Check if broadcast action can be enabled."""
+        if is_multisig and is_watch_only:
+            return is_psbt_validated and pending_operation_present
+
+        method_ok = (not selector_visible) or (selector_index >= 0)
+        return method_ok
+
+    @staticmethod
+    def _check_multisig_signer_action(
+        is_psbt_validated: bool, pending_operation_present: bool,
+        is_offline_mode: bool, psbt_text: str,
+    ) -> bool:
+        """Check if multisig signer action can be enabled."""
+        has_purpose = False
+        if is_offline_mode:
+            parsed = BroadcastTransactionService.parse_psbt_input(
+                psbt_text.strip(),
+            )
+            has_purpose = bool(parsed.purpose) or bool(
+                BroadcastTransactionService.get_psbt_purpose_from_storage(
+                    parsed.psbt,
+                ),
+            )
+
+        return (is_psbt_validated and pending_operation_present) or (
+            is_offline_mode and (has_purpose or is_psbt_validated)
+        )
 
     @staticmethod
     def can_enable_reject_action(
@@ -845,6 +890,25 @@ class BroadcastTransactionService:
             export_text = f"psbt:{purpose}:{current_psbt}"
 
         return export_text, purpose
+
+    @staticmethod
+    def format_psbt_export(current_psbt: str, purpose: str | None = None) -> str:
+        """Format PSBT for export with optional purpose prefix.
+
+        Args:
+            current_psbt: The PSBT content.
+            purpose: Optional purpose to include in export format.
+
+        Returns:
+            Formatted export text.
+        """
+        if purpose is None:
+            purpose = BroadcastTransactionService.get_psbt_purpose_from_storage(
+                current_psbt,
+            )
+        if purpose:
+            return f"psbt:{purpose}:{current_psbt}"
+        return current_psbt
 
     @staticmethod
     def read_psbt_from_file(file_path: str) -> tuple[str | None, str | None]:

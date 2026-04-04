@@ -55,8 +55,8 @@ def test_close_button_calls_selection_page(widget_watch_only: MultisigSetupPage,
 def test_watch_only_flow_threshold_confirm_and_finish(widget_watch_only: MultisigSetupPage, vm, mocker):
     """Watch-only: Step1 -> Step2 (cosigners) -> finish navigates to welcome page."""
     # Set M and N
-    widget_watch_only.total_signer_input.setText('3')
-    widget_watch_only.required_signer_input.setText('2')
+    widget_watch_only.threshold_frame.total_signer_input.setText('3')
+    widget_watch_only.threshold_frame.required_signer_input.setText('2')
 
     # Spy on config set
     set_cfg = mocker.patch(
@@ -79,9 +79,9 @@ def test_watch_only_flow_threshold_confirm_and_finish(widget_watch_only: Multisi
     if parent:
         parent.update()
     # After confirming threshold, inputs locked
-    assert widget_watch_only.required_signer_input.isEnabled() is False
-    assert widget_watch_only.total_signer_input.isEnabled() is False
-    assert len(widget_watch_only.cosigner_rows) == 2  # for 2 and 3
+    assert widget_watch_only.threshold_frame.required_signer_input.isEnabled() is False
+    assert widget_watch_only.threshold_frame.total_signer_input.isEnabled() is False
+    assert len(widget_watch_only.cos_frame.cosigner_rows) == 2  # for 2 and 3
     set_cfg.assert_called_once_with(2, 3)
 
     assert not widget_watch_only.review_frame.isHidden()
@@ -104,8 +104,8 @@ def test_watch_only_flow_threshold_confirm_and_finish(widget_watch_only: Multisi
 
 def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage, vm, mocker):
     """With private key: Step1 -> Step2(review) -> Step3(cosigners) -> finish, and Back behavior resets config on returning to step1."""
-    widget_with_privkey.total_signer_input.setText('2')
-    widget_with_privkey.required_signer_input.setText('2')
+    widget_with_privkey.threshold_frame.total_signer_input.setText('2')
+    widget_with_privkey.threshold_frame.required_signer_input.setText('2')
     set_cfg = mocker.patch(
         'src.views.ui_multisig_setup_page.SettingRepository.set_multisig_config',
     )
@@ -147,8 +147,8 @@ def test_with_privkey_flow_steps_and_back(widget_with_privkey: MultisigSetupPage
             patch('src.views.ui_multisig_setup_page.SettingRepository.get_wallet_network', return_value=NetworkEnumModel.TESTNET), \
             patch('src.views.ui_multisig_setup_page.get_value', return_value='test_password'):
         w = MultisigSetupPage(vm)
-    w.total_signer_input.setText('2')
-    w.required_signer_input.setText('2')
+    w.threshold_frame.total_signer_input.setText('2')
+    w.threshold_frame.required_signer_input.setText('2')
     set_cfg = mocker.patch(
         'src.views.ui_multisig_setup_page.SettingRepository.set_multisig_config',
     )
@@ -199,34 +199,34 @@ def test_retranslate_ui_sets_texts(widget_watch_only: MultisigSetupPage):
 
 def test_update_summary_displays_threshold(widget_watch_only: MultisigSetupPage):
     """Test _update_summary displays the threshold correctly."""
-    widget_watch_only.required_signer_input.setText('2')
-    widget_watch_only.total_signer_input.setText('3')
+    widget_watch_only.threshold_frame.required_signer_input.setText('2')
+    widget_watch_only.threshold_frame.total_signer_input.setText('3')
     widget_watch_only._update_summary()
     # Summary should be updated
-    assert widget_watch_only.required_signer_input.text() == '2'
-    assert widget_watch_only.total_signer_input.text() == '3'
+    assert widget_watch_only.threshold_frame.required_signer_input.text() == '2'
+    assert widget_watch_only.threshold_frame.total_signer_input.text() == '3'
 
 
 def test_update_continue_enabled_valid_input(widget_watch_only: MultisigSetupPage):
     """Test _update_continue_enabled with valid input."""
-    widget_watch_only.required_signer_input.setText('2')
-    widget_watch_only.total_signer_input.setText('3')
+    widget_watch_only.threshold_frame.required_signer_input.setText('2')
+    widget_watch_only.threshold_frame.total_signer_input.setText('3')
     widget_watch_only._update_continue_enabled()
     assert widget_watch_only.continue_button.isEnabled()
 
 
 def test_update_continue_enabled_invalid_input(widget_watch_only: MultisigSetupPage):
     """Test _update_continue_enabled with invalid input."""
-    widget_watch_only.required_signer_input.setText('5')  # M > N
-    widget_watch_only.total_signer_input.setText('2')
+    widget_watch_only.threshold_frame.required_signer_input.setText('5')  # M > N
+    widget_watch_only.threshold_frame.total_signer_input.setText('2')
     widget_watch_only._update_continue_enabled()
     assert not widget_watch_only.continue_button.isEnabled()
 
 
 def test_update_continue_enabled_empty_input(widget_watch_only: MultisigSetupPage):
     """Test _update_continue_enabled with empty input."""
-    widget_watch_only.required_signer_input.setText('')
-    widget_watch_only.total_signer_input.setText('3')
+    widget_watch_only.threshold_frame.required_signer_input.setText('')
+    widget_watch_only.threshold_frame.total_signer_input.setText('3')
     widget_watch_only._update_continue_enabled()
     assert not widget_watch_only.continue_button.isEnabled()
 
@@ -299,7 +299,7 @@ def test_restore_cosigner_inputs(vm, mocker):
 
     w = MultisigSetupPage(vm)
     # Cosigner rows should be created
-    assert len(w.cosigner_rows) == 2
+    assert len(w.cos_frame.cosigner_rows) == 2
 
 
 def test_close_button_visibility(widget_watch_only: MultisigSetupPage):
@@ -307,8 +307,8 @@ def test_close_button_visibility(widget_watch_only: MultisigSetupPage):
     # Initially visible
     assert not widget_watch_only.close_btn.isHidden()
     # After moving to step 2, hidden
-    widget_watch_only.total_signer_input.setText('2')
-    widget_watch_only.required_signer_input.setText('2')
+    widget_watch_only.threshold_frame.total_signer_input.setText('2')
+    widget_watch_only.threshold_frame.required_signer_input.setText('2')
     widget_watch_only.continue_button.click()
     assert widget_watch_only.close_btn.isHidden()
 
@@ -319,18 +319,18 @@ def test_on_watch_only_cosigner_string_changed_invalid(widget_watch_only, mocker
         'src.views.ui_multisig_setup_page.MultisigSetupService.parse_cosigner_string',
         return_value=mocker.Mock(is_valid=False),
     )
-    widget_watch_only.fp_value_widget.setText('STAY')
+    widget_watch_only.review_frame.fp_value_widget.setText('STAY')
     widget_watch_only._on_watch_only_cosigner_string_changed('invalid')
-    assert widget_watch_only.fp_value_widget.text() == ''
+    assert widget_watch_only.review_frame.fp_value_widget.text() == ''
 
 
 def test_on_watch_only_reset_clicked(widget_watch_only):
     """Test watch-only: reset button clears all fields."""
-    widget_watch_only.fp_value_widget.setText('FP')
-    widget_watch_only.cosigner_string_value_widget.setText('STR')
+    widget_watch_only.review_frame.fp_value_widget.setText('FP')
+    widget_watch_only.review_frame.cosigner_string_value_widget.setText('STR')
     widget_watch_only._on_watch_only_reset_clicked()
-    assert widget_watch_only.fp_value_widget.text() == ''
-    assert widget_watch_only.cosigner_string_value_widget.text() == ''
+    assert widget_watch_only.review_frame.fp_value_widget.text() == ''
+    assert widget_watch_only.review_frame.cosigner_string_value_widget.text() == ''
 
 
 def test_update_continue_enabled_duplicate_cosigners(widget_with_privkey, mocker):
@@ -346,9 +346,9 @@ def test_update_continue_enabled_duplicate_cosigners(widget_with_privkey, mocker
         widget_with_privkey.cos_frame,
         'isVisible', return_value=True,
     )
-    widget_with_privkey.cosigner_rows = [card1, card2]
-    widget_with_privkey.required_signer_input.setText('2')
-    widget_with_privkey.total_signer_input.setText(
+    widget_with_privkey.cos_frame.cosigner_rows = [card1, card2]
+    widget_with_privkey.threshold_frame.required_signer_input.setText('2')
+    widget_with_privkey.threshold_frame.total_signer_input.setText(
         '3',
     )  # n=3 means 2 cosigner cards
 
@@ -369,7 +369,7 @@ def test_export_cosigner_to_file(widget_with_privkey, mocker):
     )
 
     # Ensure review frame exists
-    widget_with_privkey.cosigner_string_value_widget.setText('test_string')
+    widget_with_privkey.review_frame.cosigner_string_value_widget.setText('test_string')
     widget_with_privkey._export_cosigner_to_file()
 
     mock_open.assert_called_once_with(
@@ -412,7 +412,7 @@ def test_save_cosigners_data_invalid(widget_with_privkey, mocker):
         return_value=mocker.Mock(is_valid=False),
     )
 
-    widget_with_privkey.cosigner_rows = [card]
+    widget_with_privkey.cos_frame.cosigner_rows = [card]
     assert widget_with_privkey._save_cosigners_data() is False
     card.show_error.assert_called_with('Invalid cosigner details')
 
@@ -462,18 +462,18 @@ def test_on_watch_only_cosigner_string_changed_valid(widget_watch_only, mocker):
         return_value=mock_result,
     )
     widget_watch_only._on_watch_only_cosigner_string_changed('valid_string')
-    assert widget_watch_only.fp_value_widget.text() == 'FP123'
-    assert widget_watch_only.keychain_value_widget.text() == '88'
-    assert widget_watch_only.xpub_vanilla_value_widget.text() == 'xpub_v'
-    assert widget_watch_only.xpub_colored_value_widget.text() == 'xpub_c'
+    assert widget_watch_only.review_frame.fp_value_widget.text() == 'FP123'
+    assert widget_watch_only.review_frame.keychain_value_widget.text() == '88'
+    assert widget_watch_only.review_frame.xpub_vanilla_value_widget.text() == 'xpub_v'
+    assert widget_watch_only.review_frame.xpub_colored_value_widget.text() == 'xpub_c'
 
 
 def test_save_watch_only_review_fields(widget_watch_only, mocker):
     """Test _save_watch_only_review_fields calls the service with widget values."""
-    widget_watch_only.fp_value_widget.setText('FP')
-    widget_watch_only.keychain_value_widget.setText('1')
-    widget_watch_only.xpub_vanilla_value_widget.setText('V')
-    widget_watch_only.xpub_colored_value_widget.setText('C')
+    widget_watch_only.review_frame.fp_value_widget.setText('FP')
+    widget_watch_only.review_frame.keychain_value_widget.setText('1')
+    widget_watch_only.review_frame.xpub_vanilla_value_widget.setText('V')
+    widget_watch_only.review_frame.xpub_colored_value_widget.setText('C')
     mock_save = mocker.patch(
         'src.views.ui_multisig_setup_page.MultisigSetupService.save_watch_only_data', return_value=True,
     )
@@ -504,8 +504,8 @@ def test_populate_wallet_review_fields_not_watch_only(widget_with_privkey, mocke
     widget_with_privkey._is_watch_only = False
     widget_with_privkey._populate_wallet_review_fields()
 
-    assert widget_with_privkey.cosigner_string_value_widget.text() == 'generated_str'
-    assert widget_with_privkey.fp_value_widget.text() == 'FP'
+    assert widget_with_privkey.review_frame.cosigner_string_value_widget.text() == 'generated_str'
+    assert widget_with_privkey.review_frame.fp_value_widget.text() == 'FP'
 
 
 def test_on_cosigner_string_changed_valid(widget_with_privkey, mocker):
@@ -548,7 +548,7 @@ def test_save_cosigners_data_valid(widget_with_privkey, mocker):
         'src.views.ui_multisig_setup_page.MultisigSetupService.save_cosigners_data', return_value=True,
     )
 
-    widget_with_privkey.cosigner_rows = [card]
+    widget_with_privkey.cos_frame.cosigner_rows = [card]
     assert widget_with_privkey._save_cosigners_data() is True
     mock_save.assert_called_once_with([{'index': 1, 'string': 'valid_str'}])
 
@@ -585,8 +585,8 @@ def test_import_cosigner_from_file_exception(widget_with_privkey, mocker):
 
 def test_get_signers_count_exception(widget_watch_only):
     """Test _get_required_signer and _get_total_signer with non-integer text."""
-    widget_watch_only.required_signer_input.setText('abc')
-    widget_watch_only.total_signer_input.setText('xyz')
+    widget_watch_only.threshold_frame.required_signer_input.setText('abc')
+    widget_watch_only.threshold_frame.total_signer_input.setText('xyz')
     assert widget_watch_only._get_required_signer() == 0
     assert widget_watch_only._get_total_signer() == 0
 
@@ -595,7 +595,7 @@ def test_restore_cosigner_inputs_partial_data(widget_watch_only, mocker):
     """Test _restore_cosigner_inputs with missing index or partial dictionary fields."""
     card = mocker.MagicMock()
     card.index = 1
-    widget_watch_only.cosigner_rows = [card]
+    widget_watch_only.cos_frame.cosigner_rows = [card]
     widget_watch_only._threshold_locked = True
 
     # Missing index
@@ -616,14 +616,14 @@ def test_update_continue_enabled_step_3_various_states(widget_with_privkey, mock
         widget_with_privkey.cos_frame,
         'isVisible', return_value=True,
     )
-    widget_with_privkey.total_signer_input.setText(
+    widget_with_privkey.threshold_frame.total_signer_input.setText(
         '2',
     )  # n=2 -> 1 cosigner card
 
     card = mocker.MagicMock()
     card.vanilla_xpub_str = None
     card.string_input.text.return_value = 'some_invalid_text'
-    widget_with_privkey.cosigner_rows = [card]
+    widget_with_privkey.cos_frame.cosigner_rows = [card]
 
     # Incomplete & invalid
     widget_with_privkey._update_continue_enabled()

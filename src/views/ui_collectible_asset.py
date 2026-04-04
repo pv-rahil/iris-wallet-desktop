@@ -38,10 +38,12 @@ from src.utils.helpers import register_multisig_button
 from src.utils.logging import logger
 from src.utils.render_timer import RenderTimer
 from src.viewmodels.main_view_model import MainViewModel
-from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
+from src.views.components.ui_helpers import create_empty_state_widget
+from src.views.components.ui_helpers import get_wallet_type_flags
+from src.views.components.ui_helpers import setup_issue_button_connection
 
 
 class CollectiblesAssetWidget(QWidget):
@@ -88,6 +90,7 @@ class CollectiblesAssetWidget(QWidget):
         self.image_label = None
         self.horizontal_spacer = None
         self.vertical_spacer_scroll_area = None
+        self.grid_layout = None
 
         self.collectible_header_frame = HeaderFrame(
             title_name='collectibles', title_logo_path=':/assets/my_asset.png',
@@ -102,11 +105,28 @@ class CollectiblesAssetWidget(QWidget):
         )
         self.vertical_layout_2.addWidget(self.collectible_header_frame)
 
+        self._setup_collectibles_label()
+        self._setup_usb_sync_layout()
+        self._setup_top_row_layout()
+        self._setup_grid_layout()
+
+        self.retranslate_ui()
+        self.setup_ui_connection()
+        self.resizeEvent = self.resize_event_called  # pylint: disable=invalid-name
+        # Empty state management
+        self._empty_state_widget = None
+        self.issue_button_in_header = True
+        self._has_collectible_drafts = False
+
+    def _setup_collectibles_label(self):
+        """Setup collectibles label."""
         self.collectibles_label = QLabel(self.widget)
         self.collectibles_label.setObjectName('collectibles_label')
         self.collectibles_label.setMinimumSize(QSize(1016, 50))
         self.collectibles_label.setMaximumSize(QSize(1016, 50))
 
+    def _setup_usb_sync_layout(self):
+        """Setup USB sync layout for offline wallets."""
         self.usb_last_sync_collectible_horizontal_layout = QHBoxLayout()
         self.usb_last_sync_collectible_horizontal_layout.setContentsMargins(
             0, 0, 12, 0,
@@ -125,13 +145,13 @@ class CollectiblesAssetWidget(QWidget):
             self.usb_last_sync_collectible_info_label,
         )
 
-        self.is_watch_only = SettingRepository.get_wallet_access_type(
-        ) == WalletAccessType.WATCH_ONLY
-        self.is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
-        self.is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
+        flags = get_wallet_type_flags()
+        self.is_offline_wallet = flags.is_offline_wallet
+        self.is_watch_only = flags.is_watch_only
+        self.is_multisig = flags.is_multisig
 
+    def _setup_top_row_layout(self):
+        """Setup top row layout with collectibles label and USB sync info."""
         self.horizontal_spacer = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum,
         )
@@ -150,18 +170,19 @@ class CollectiblesAssetWidget(QWidget):
 
         self.vertical_layout_2.addLayout(self._top_row_layout)
 
+    def _setup_grid_layout(self):
+        """Setup grid layout for collectibles."""
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(6)
-
         self.grid_layout.setObjectName('grid_layout')
         self.grid_layout.setContentsMargins(1, -1, 1, -1)
 
         self.vertical_layout_collectibles.addWidget(self.widget)
         self.collectibles_frame_card = QFrame(self.widget)
         self.collectibles_frame_card.setObjectName('collectibles_frame_card')
-
         self.collectibles_frame_card.setFrameShape(QFrame.StyledPanel)
         self.collectibles_frame_card.setFrameShadow(QFrame.Raised)
+
         self.collectible_frame_grid_layout = QFormLayout(
             self.collectibles_frame_card,
         )
@@ -173,16 +194,7 @@ class CollectiblesAssetWidget(QWidget):
         self.collectible_frame_grid_layout.setContentsMargins(3, -1, 3, -1)
 
         self.grid_layout.addWidget(self.collectibles_frame_card)
-
         self.vertical_layout_2.addLayout(self.grid_layout)
-
-        self.retranslate_ui()
-        self.setup_ui_connection()
-        self.resizeEvent = self.resize_event_called  # pylint: disable=invalid-name
-        # Empty state management
-        self._empty_state_widget = None
-        self.issue_button_in_header = True
-        self._has_collectible_drafts = False
 
     def calculate_columns(self):
         """Calculate the number of columns based on the available width"""
@@ -198,28 +210,50 @@ class CollectiblesAssetWidget(QWidget):
             self.update_grid_layout,
         )
 
+    def _load_cfa_drafts(self) -> list:
+        """Load CFA draft frames and return them.
+
+        Returns:
+            List of draft frames.
+        """
+        frames: list = []
+        wallet_service = WalletDataService.get_session()
+        if wallet_service is None:
+            return frames
+        drafts = wallet_service.list_draft_issue_assets()
+        has_drafts = False
+        for d in drafts:
+            fp = d.get('file_path')
+            if not fp:
+                continue
+            if d.get('inflation_amounts') or d.get('replace_rights_num'):
+                continue
+            if self.is_watch_only or (self.is_multisig and not self.is_offline_wallet):
+                has_drafts = True
+                frames.append(self.create_collectible_frame(draft=d))
+        self._has_collectible_drafts = has_drafts
+        return frames
+
+    def _clear_grid_layout(self, grid_layout) -> None:
+        """Clear all items from grid layout.
+
+        Args:
+            grid_layout: The grid layout to clear.
+        """
+        for i in reversed(range(grid_layout.count())):
+            item = grid_layout.itemAt(i)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                grid_layout.removeItem(item)
+
     def update_grid_layout(self):
         """Update the grid layout with new number of columns"""
         try:
             num_columns = self.calculate_columns()
-            # Build frames list including CFA drafts (identified by file_path in shared drafts table)
-            self.frames = []
-            wallet_service = WalletDataService.get_session()
-            if wallet_service is not None:
-                drafts = wallet_service.list_draft_issue_assets()
-                has_drafts = False
-                for d in drafts:
-                    fp = d.get('file_path')
-                    if not fp:
-                        continue
-                    if d.get('inflation_amounts') or d.get('replace_rights_num'):
-                        continue
-                    if self.is_watch_only or (self.is_multisig and not self.is_offline_wallet):
-                        has_drafts = True
-                        self.frames.append(
-                            self.create_collectible_frame(draft=d),
-                        )
-                self._has_collectible_drafts = has_drafts
+            # Build frames list including CFA drafts
+            self.frames = self._load_cfa_drafts()
             # Then append actual issued CFA assets
             for coll_asset in self._view_model.main_asset_view_model.assets.cfa:
                 self.frames.append(
@@ -242,13 +276,7 @@ class CollectiblesAssetWidget(QWidget):
                 grid_layout.setSpacing(40)
 
                 # Clear the existing layout
-                for i in reversed(range(grid_layout.count())):
-                    item = grid_layout.itemAt(i)
-                    widget = item.widget()
-                    if widget is not None:
-                        widget.deleteLater()
-                    else:
-                        grid_layout.removeItem(item)
+                self._clear_grid_layout(grid_layout)
 
                 # Add widgets to the grid layout
                 for index, frame in enumerate(self.frames):
@@ -409,54 +437,20 @@ class CollectiblesAssetWidget(QWidget):
         # Hide scroll area so we can truly center the card
         if hasattr(self, 'scroll_area'):
             self.scroll_area.hide()
-        wrapper = QFrame(self.widget)
-        # remove card visuals per request (transparent)
-        wrapper.setStyleSheet(
-            'QFrame{border:none; background: transparent;} QLabel{background:transparent;}',
+        wrapper, btn = create_empty_state_widget(
+            button_text_key='issue_new_collectibles',
+            button_accessible_name=ISSUE_CFA_ASSET,
+            parent=self.widget,
+            transparent=True,
         )
-        wrapper.setFixedWidth(680)
-        wrapper.setFixedHeight(200)
-        v = QVBoxLayout(wrapper)
-        # reduce internal spacing so content sits tighter
-        v.setContentsMargins(8, 8, 8, 8)
-        v.setSpacing(2)
-        # Title
-        title = QLabel()
-        title.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_assets_issued'))
-        title.setStyleSheet('color:#fff; font: 600 20px "Inter"; border:None;')
-        v.addWidget(title, 0, Qt.AlignHCenter)
-        # Subtext
-        sub = QLabel()
-        sub.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_assets_issued_sub'))
-        sub.setStyleSheet(
-            'color: rgba(255,255,255,0.75); font: 14px "Inter"; border:None;',
+        setup_issue_button_connection(
+            button=btn,
+            view_model=self._view_model,
+            target_page=self._view_model.page_navigation.issue_cfa_asset_page,
+            is_multisig=self.is_multisig,
+            is_offline_wallet=self.is_offline_wallet,
+            parent_layout=wrapper.layout(),
         )
-        sub.setWordWrap(True)
-        sub.setAlignment(Qt.AlignHCenter)
-        sub.setFixedWidth(560)
-        v.addWidget(sub, 0, Qt.AlignHCenter)
-        # Action button
-        btn = PrimaryButton()
-        btn.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_new_collectibles'))
-        btn.setAccessibleName(ISSUE_CFA_ASSET)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setFixedWidth(200)
-        if not self.is_multisig:
-            btn.clicked.connect(
-                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                    self._view_model.page_navigation.issue_cfa_asset_page,
-                ),
-            )
-        else:
-            register_multisig_button(
-                self._view_model,
-                btn,
-                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                    self._view_model.page_navigation.issue_cfa_asset_page,
-                ),
-            )
-        if not self.is_offline_wallet:
-            v.addWidget(btn, 0, Qt.AlignHCenter)
         # Add to grid area centered with stretches
         # Clear previous temp items if any
         self._empty_spacer_item = QSpacerItem(

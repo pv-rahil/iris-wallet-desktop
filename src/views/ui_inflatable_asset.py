@@ -46,10 +46,12 @@ from src.utils.helpers import register_multisig_button
 from src.utils.render_timer import RenderTimer
 from src.utils.worker import ThreadManager
 from src.viewmodels.main_view_model import MainViewModel
-from src.views.components.buttons import PrimaryButton
 from src.views.components.header_frame import HeaderFrame
 from src.views.components.loading_screen import LoadingTranslucentScreen
 from src.views.components.toast import ToastManager
+from src.views.components.ui_helpers import create_empty_state_widget
+from src.views.components.ui_helpers import get_wallet_type_flags
+from src.views.components.ui_helpers import setup_issue_button_connection
 
 
 class InflatableAssetWidget(QWidget, ThreadManager):
@@ -92,12 +94,10 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             ISSUE_IFA_ASSET,
         )
         config = get_current_wallet_mode_config()
-        self.is_watch_only = SettingRepository.get_wallet_access_type(
-        ) == WalletAccessType.WATCH_ONLY
-        self.is_offline_wallet = SettingRepository.get_wallet_type(
-        ) == WalletType.OFFLINE_TYPE_WALLET
-        self.is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
+        flags = get_wallet_type_flags()
+        self.is_offline_wallet = flags.is_offline_wallet
+        self.is_watch_only = flags.is_watch_only
+        self.is_multisig = flags.is_multisig
         self.priv = config.privileges
         self.vertical_layout_inflatable_frame = None
         self.grid_layout_inflatable_frame = None
@@ -389,49 +389,20 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             self.scroll_area_inflatable.hide()
         if hasattr(self, 'inflatable_frame_card') and self.inflatable_frame_card is not None:
             self.inflatable_frame_card.hide()
-        wrapper = QFrame(self.inflatable_widget)
-        wrapper.setStyleSheet(
-            'QFrame{border:none; background: transparent;} QLabel{background:transparent;}',
+        wrapper, btn = create_empty_state_widget(
+            button_text_key='issue_new_inflatable',
+            button_accessible_name=ISSUE_IFA_ASSET,
+            parent=self.inflatable_widget,
+            transparent=True,
         )
-        wrapper.setFixedWidth(680)
-        wrapper.setFixedHeight(200)
-        lay = QVBoxLayout(wrapper)
-        lay.setContentsMargins(8, 8, 8, 8)
-        lay.setSpacing(2)
-        title = QLabel()
-        title.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_assets_issued'))
-        title.setStyleSheet('color:#fff; font:600 20px "Inter"; border:none;')
-        lay.addWidget(title, 0, Qt.AlignHCenter)
-        sub = QLabel()
-        sub.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'no_assets_issued_sub'))
-        sub.setStyleSheet(
-            'color: rgba(255,255,255,0.75); font: 14px "Inter"; border:none;',
+        setup_issue_button_connection(
+            button=btn,
+            view_model=self._view_model,
+            target_page=self._view_model.page_navigation.issue_ifa_page,
+            is_multisig=self.is_multisig,
+            is_offline_wallet=self.is_offline_wallet,
+            parent_layout=wrapper.layout(),
         )
-        sub.setWordWrap(True)
-        sub.setAlignment(Qt.AlignHCenter)
-        sub.setFixedWidth(560)
-        lay.addWidget(sub, 0, Qt.AlignHCenter)
-        btn = PrimaryButton()
-        btn.setText(QCoreApplication.translate(IRIS_WALLET_TRANSLATIONS_CONTEXT, 'issue_new_inflatable'))
-        btn.setAccessibleName(ISSUE_IFA_ASSET)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setFixedWidth(200)
-        if not self.is_multisig:
-            btn.clicked.connect(
-                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                    self._view_model.page_navigation.issue_ifa_page,
-                ),
-            )
-        else:
-            register_multisig_button(
-                self._view_model,
-                btn,
-                lambda: self._view_model.main_asset_view_model.navigate_issue_asset(
-                    self._view_model.page_navigation.issue_ifa_page,
-                ),
-            )
-        if not self.is_offline_wallet:
-            lay.addWidget(btn, 0, Qt.AlignHCenter)
         # Build a dedicated vertical layout with top/bottom stretches to position card higher (like collectibles)
         self._empty_state_layout = QVBoxLayout()
         self._empty_state_layout.setContentsMargins(0, 0, 0, 0)

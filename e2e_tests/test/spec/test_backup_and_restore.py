@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
-from accessible_constant import KEYRING_DIALOG_BOX
 from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
@@ -17,6 +16,7 @@ from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import refresh_collectibles_on_app2
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from src.utils.info_message import INFO_BACKUP_COMPLETED
@@ -384,12 +384,7 @@ def test_cfa_transfer_for_offline_wallet(test_environment, wallets_and_operation
         wallets_and_operations.third_page_features.send_features.send(
             application=THIRD_APPLICATION, receiver_invoice=cfa_invoice_a, amount=SEND_AMOUNT,
         )
-    wallets_and_operations.second_page_operations.do_focus_on_application(
-        SECOND_APPLICATION,
-    )
-    wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-    wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-    wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+    refresh_collectibles_on_app2(wallets_and_operations)
     wallets_and_operations.second_page_features.wallet_features.usb_sync()
 
     with allure.step('Capture CFA received amount in Wallet A'):

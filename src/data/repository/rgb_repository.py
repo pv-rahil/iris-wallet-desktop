@@ -25,6 +25,7 @@ from rgb_lib import WitnessData
 from src.data.repository.colored_wallet import colored_wallet
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import BroadcastPsbtRequestModel
+from src.model.common_operation_model import PsbtData
 from src.model.rgb_model import AssetIdModel
 from src.model.rgb_model import DecodeRgbInvoiceRequestModel
 from src.model.rgb_model import FailTransferRequestModel
@@ -276,8 +277,7 @@ class RgbRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(
-                    result.psbt,
-                    purpose='send_asset',
+                    PsbtData(psbt_base64=result.psbt, purpose='send_asset'),
                 )
             return result
 
@@ -303,7 +303,8 @@ class RgbRepository:
             )
             if sync_result:
                 operations = sync_result if isinstance(
-                    sync_result, list) else [sync_result]
+                    sync_result, list,
+                ) else [sync_result]
                 for op_info in operations:
                     if op_info and op_info.operation:
                         op = op_info.operation
@@ -346,11 +347,13 @@ class RgbRepository:
                     result.psbt, detail.min_confirmations,
                 )
                 wallet_service.add_psbt(
-                    result.psbt,
-                    purpose='send_asset',
-                    fascia_path=rgb_context.fascia_path,
-                    entropy=rgb_context.entropy,
-                    min_confirmations=rgb_context.min_confirmations,
+                    PsbtData(
+                        psbt_base64=result.psbt,
+                        purpose='send_asset',
+                        fascia_path=rgb_context.fascia_path,
+                        entropy=rgb_context.entropy,
+                        min_confirmations=rgb_context.min_confirmations,
+                    ),
                 )
             return result
 
@@ -397,8 +400,9 @@ class RgbRepository:
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(
-                    psbt,
-                    purpose='inflate_asset',
+                    PsbtData(
+                        psbt_base64=psbt, purpose='inflate_asset',
+                    ),
                 )
             return psbt
 
@@ -422,11 +426,13 @@ class RgbRepository:
                     result.psbt, detail.min_confirmations,
                 )
                 wallet_service.add_psbt(
-                    result.psbt,
-                    purpose='inflate_asset',
-                    fascia_path=rgb_context.fascia_path,
-                    entropy=rgb_context.entropy,
-                    min_confirmations=rgb_context.min_confirmations,
+                    PsbtData(
+                        psbt_base64=result.psbt,
+                        purpose='inflate_asset',
+                        fascia_path=rgb_context.fascia_path,
+                        entropy=rgb_context.entropy,
+                        min_confirmations=rgb_context.min_confirmations,
+                    ),
                 )
             return result
 
