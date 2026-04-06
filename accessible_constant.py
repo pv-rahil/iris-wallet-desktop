@@ -31,6 +31,8 @@ REQUIRE_USB_VARIANTS = [
 LOAD_WALLET_VARIANT = [
     'offline_load_hardware', 'offline_load_on_device',
     'online_load_hardware', 'online_load_on_device',
+    'online_multisig_load_on_device', 'online_multisig_load_hardware',
+    'offline_multisig_load_on_device', 'offline_multisig_load_hardware',
 ]
 FAKEUSB_MOUNT_PATH = '/tmp/fakeusb_mount'
 
@@ -47,21 +49,56 @@ OFFLINE_CREATE_HARDWARE = 'offline_create_hardware'
 OFFLINE_LOAD_ON_DEVICE = 'offline_load_on_device'
 OFFLINE_LOAD_HARDWARE = 'offline_load_hardware'
 
-# Multisig wallet variants
+# Multisig wallet variants - Create
 ONLINE_MULTISIG_ON_DEVICE = 'online_multisig_on_device'
 ONLINE_MULTISIG_HARDWARE = 'online_multisig_hardware'
 ONLINE_MULTISIG_WATCH_ONLY = 'online_multisig_watch_only'
 OFFLINE_MULTISIG_ON_DEVICE = 'offline_multisig_on_device'
 OFFLINE_MULTISIG_HARDWARE = 'offline_multisig_hardware'
 
-# Multisig variants grouping
-MULTISIG_VARIANTS = [
+# Multisig wallet variants - Load
+ONLINE_MULTISIG_LOAD_ON_DEVICE = 'online_multisig_load_on_device'
+ONLINE_MULTISIG_LOAD_HARDWARE = 'online_multisig_load_hardware'
+OFFLINE_MULTISIG_LOAD_ON_DEVICE = 'offline_multisig_load_on_device'
+OFFLINE_MULTISIG_LOAD_HARDWARE = 'offline_multisig_load_hardware'
+
+# Multisig create variants grouping
+MULTISIG_CREATE_VARIANTS = [
     ONLINE_MULTISIG_ON_DEVICE,
     ONLINE_MULTISIG_HARDWARE,
     ONLINE_MULTISIG_WATCH_ONLY,
     OFFLINE_MULTISIG_ON_DEVICE,
     OFFLINE_MULTISIG_HARDWARE,
 ]
+
+# Multisig load variants grouping
+MULTISIG_LOAD_VARIANTS = [
+    ONLINE_MULTISIG_LOAD_ON_DEVICE,
+    ONLINE_MULTISIG_LOAD_HARDWARE,
+    OFFLINE_MULTISIG_LOAD_ON_DEVICE,
+    OFFLINE_MULTISIG_LOAD_HARDWARE,
+]
+
+# All multisig variants
+MULTISIG_VARIANTS = MULTISIG_CREATE_VARIANTS + MULTISIG_LOAD_VARIANTS
+
+# Single-sig variants grouping
+SINGLE_SIG_CREATE_VARIANTS = [
+    ONLINE_WATCH_ONLY,
+    ONLINE_CREATE_ON_DEVICE,
+    ONLINE_CREATE_HARDWARE,
+    OFFLINE_CREATE_ON_DEVICE,
+    OFFLINE_CREATE_HARDWARE,
+]
+
+SINGLE_SIG_LOAD_VARIANTS = [
+    ONLINE_LOAD_ON_DEVICE,
+    ONLINE_LOAD_HARDWARE,
+    OFFLINE_LOAD_ON_DEVICE,
+    OFFLINE_LOAD_HARDWARE,
+]
+
+SINGLE_SIG_VARIANTS = SINGLE_SIG_CREATE_VARIANTS + SINGLE_SIG_LOAD_VARIANTS
 
 NAME_TO_STEPS: dict[str, tuple[int, int, int, int, int]] = {
     # Online Standard
@@ -75,13 +112,19 @@ NAME_TO_STEPS: dict[str, tuple[int, int, int, int, int]] = {
     OFFLINE_CREATE_HARDWARE: (1, 2, 0, 1, 2),
     OFFLINE_LOAD_ON_DEVICE: (1, 2, 0, 2, 1),
     OFFLINE_LOAD_HARDWARE: (1, 2, 0, 2, 0),
-    # Online Multisig
+    # Online Multisig - Create
     ONLINE_MULTISIG_ON_DEVICE: (2, 1, 1, 1, 1),
     ONLINE_MULTISIG_HARDWARE: (2, 1, 1, 1, 2),
     ONLINE_MULTISIG_WATCH_ONLY: (2, 1, 2, 1, 0),
-    # Offline Multisig
+    # Offline Multisig - Create
     OFFLINE_MULTISIG_ON_DEVICE: (2, 2, 0, 1, 1),
     OFFLINE_MULTISIG_HARDWARE: (2, 2, 0, 1, 2),
+    # Online Multisig - Load
+    ONLINE_MULTISIG_LOAD_ON_DEVICE: (2, 1, 1, 2, 1),
+    ONLINE_MULTISIG_LOAD_HARDWARE: (2, 1, 1, 2, 2),
+    # Offline Multisig - Load
+    OFFLINE_MULTISIG_LOAD_ON_DEVICE: (2, 2, 0, 2, 1),
+    OFFLINE_MULTISIG_LOAD_HARDWARE: (2, 2, 0, 2, 2),
 }
 
 

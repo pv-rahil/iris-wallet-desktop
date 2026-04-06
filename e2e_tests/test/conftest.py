@@ -10,15 +10,20 @@ import pytest
 from dogtail.tree import root
 
 from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import MULTISIG_LOAD_VARIANTS
 from accessible_constant import MULTISIG_VARIANTS
 from accessible_constant import OFFLINE_CREATE_HARDWARE
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
 from accessible_constant import OFFLINE_MULTISIG_HARDWARE
+from accessible_constant import OFFLINE_MULTISIG_LOAD_HARDWARE
+from accessible_constant import OFFLINE_MULTISIG_LOAD_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_HARDWARE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_LOAD_HARDWARE
 from accessible_constant import ONLINE_LOAD_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_HARDWARE
+from accessible_constant import ONLINE_MULTISIG_LOAD_HARDWARE
+from accessible_constant import ONLINE_MULTISIG_LOAD_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
@@ -83,7 +88,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
             'online_load_on_device, offline_load_on_device, online_load_hardware, '
             'offline_load_hardware, online_watch_only, online_multisig_on_device, '
             'online_multisig_hardware, online_multisig_watch_only, '
-            'offline_multisig_on_device, offline_multisig_hardware).'
+            'offline_multisig_on_device, offline_multisig_hardware, '
+            'online_multisig_load_on_device, online_multisig_load_hardware, '
+            'offline_multisig_load_on_device, offline_multisig_load_hardware).'
         ),
     )
 
@@ -101,7 +108,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     wallet_mode = item.config.getoption('--wallet-variant')
 
     # Skip tests marked with @pytest.mark.skip_for_hardware_wallet if running in hardware wallet mode
-    if wallet_mode in [ONLINE_CREATE_HARDWARE, ONLINE_LOAD_HARDWARE, ONLINE_MULTISIG_HARDWARE, OFFLINE_MULTISIG_HARDWARE] and any(
+    if wallet_mode in [ONLINE_CREATE_HARDWARE, ONLINE_LOAD_HARDWARE, ONLINE_MULTISIG_HARDWARE, OFFLINE_MULTISIG_HARDWARE, ONLINE_MULTISIG_LOAD_HARDWARE, OFFLINE_MULTISIG_LOAD_HARDWARE] and any(
         True for _ in item.iter_markers('skip_for_hardware_wallet')
     ):
         pytest.skip(
@@ -113,7 +120,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         pytest.skip(
             'Skipping test because it is not applicable in offline wallet mode.',
         )
-    if wallet_mode in [ONLINE_CREATE_ON_DEVICE, ONLINE_LOAD_ON_DEVICE, ONLINE_MULTISIG_ON_DEVICE] and any(
+    if wallet_mode in [ONLINE_CREATE_ON_DEVICE, ONLINE_LOAD_ON_DEVICE, ONLINE_MULTISIG_ON_DEVICE, ONLINE_MULTISIG_LOAD_ON_DEVICE] and any(
         True for _ in item.iter_markers('skip_for_online_wallet')
     ):
         pytest.skip(

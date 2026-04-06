@@ -91,7 +91,14 @@ def update_bridge_config(
 def reset_bridge_config() -> None:
     """
     Reset the bridge config to default placeholder values.
+    Creates the bridge directory and config.toml file if they don't exist.
     """
+    # Ensure the bridge directory exists
+    bridge_dir = os.path.dirname(BRIDGE_CONFIG_PATH)
+    if not os.path.exists(bridge_dir):
+        os.makedirs(bridge_dir, exist_ok=True)
+        print(f"Created bridge directory at {bridge_dir}")
+
     default_config = """cosigner_xpubs = [
     "PLACEHOLDER_XPUB_1",
     "PLACEHOLDER_XPUB_2",

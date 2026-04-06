@@ -25,7 +25,6 @@ pydenticon = "^0.3.0"
 
 # Development dependencies
 base58 = "^2.1.1"
-hwi = {git = "https://github.com/pv-nirav/HWI.git"}
 bip32 = "^4.0"
 rgb-lib = "0.3.0b4"
 dogtail = "1.0.7"
