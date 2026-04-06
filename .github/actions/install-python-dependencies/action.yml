@@ -38,8 +38,8 @@ runs:
             rm -rf "$SITE_PACKAGES/rgb_lib-*.dist-info"
             rm -rf "$SITE_PACKAGES/rgb-*.dist-info"
 
-            # Extract wheel (wheel is a zip file) directly to site-packages
-            unzip /tmp/rgb_lib.whl -d "$SITE_PACKAGES/"
+            # Extract wheel (wheel is a zip file) directly to site-packages (overwrite existing)
+            unzip -o /tmp/rgb_lib.whl -d "$SITE_PACKAGES/"
 
             echo "rgb_lib replaced successfully from release"
           fi
