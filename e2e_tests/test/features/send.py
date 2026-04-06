@@ -138,11 +138,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
-            if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-                self.toaster_page_objects.click_toaster_frame()
-
-            if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
-                description = self.toaster_page_objects.get_toaster_description()
+            _, description = self.toaster_page_objects.click_toaster_frame()
         except Exception as e:
             raise e
         finally:
@@ -150,12 +146,14 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.hardware_wallet.terminate()
         return description
 
-    def create_psbt(self, application, receiver_invoice, amount=None, fee_rate=None):
+    def create_psbt(self, application, receiver_invoice, amount=None, fee_rate=None, wallet_variant_name=None, is_native_auth_enabled: bool = False):
         """
         Create psbt
 
         :param receiver_invoice: The recipient's invoice.
         :param amount: The amount to send.
+        :param wallet_variant_name: The wallet variant name for USB sync check.
+        :param is_native_auth_enabled: Whether native auth is enabled.
         """
         self.do_focus_on_application(application)
 
@@ -173,6 +171,9 @@ class SendOperation(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.send_asset_page_objects.send_button()):
             self.send_asset_page_objects.click_send_button()
 
+        if is_native_auth_enabled:
+            self.enter_native_password()
+
         if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
             self.receive_asset_page_objects.click_receive_asset_close_button()
 
@@ -182,14 +183,16 @@ class SendOperation(MainPageObjects, BaseOperations):
         except Exception as _:
             pass
 
-        self.wallet_features.usb_sync()
+        if wallet_variant_name and wallet_variant_name in REQUIRE_USB_VARIANTS:
+            self.wallet_features.usb_sync()
 
-    def create_psbt_for_multisig(self, application, receiver_invoice, amount, wallet_variant_name, utxo_required: bool = False):
+    def create_psbt_for_multisig(self, application, receiver_invoice, amount, wallet_variant_name, utxo_required: bool = False, is_native_auth_enabled: bool = False):
         """
         Create psbt for multisig wallet
 
         :param receiver_invoice: The recipient's invoice.
         :param amount: The amount to send.
+        :param is_native_auth_enabled: Whether native auth is enabled.
         """
         self.do_focus_on_application(application)
 
@@ -203,15 +206,20 @@ class SendOperation(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.send_asset_page_objects.send_button()):
             self.send_asset_page_objects.click_send_button()
 
+        if is_native_auth_enabled:
+            self.enter_native_password()
+
         if utxo_required:
             handle_utxo_confirmation_dialog(self, self, utxo_required=True)
 
         if wallet_variant_name in REQUIRE_USB_VARIANTS:
             self.wallet_features.usb_sync()
 
-    def send_asset_for_multisig(self, application, _wallet_variant_name):
+    def send_asset_for_multisig(self, application, _wallet_variant_name, is_native_auth_enabled: bool = False):
         """
         Send asset for multisig wallet
+
+        :param is_native_auth_enabled: Whether native auth is enabled.
         """
         self.do_focus_on_application(application)
 
@@ -220,3 +228,6 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.send_asset_page_objects.send_button()):
             self.send_asset_page_objects.click_send_button()
+
+        if is_native_auth_enabled:
+            self.enter_native_password()

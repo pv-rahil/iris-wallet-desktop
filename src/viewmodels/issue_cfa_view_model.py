@@ -12,11 +12,14 @@ from PySide6.QtWidgets import QFileDialog
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.issue_asset_service import IssueAssetService
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import IssueAssetCfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_AUTHENTICATION
+from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_UNEXPECTED
@@ -49,19 +52,49 @@ class IssueCFAViewModel(QObject, ThreadManager):
         self.amount = None
         self.asset_name = None
 
-    def on_success_native_auth_cfa(self, success: bool):
-        """Callback function after native authentication successful"""
+    def issue_cfa_asset(
+            self, asset_ticker,
+            asset_name,
+            amount,
+    ):
+        """Issue an CFA asset with the provided details."""
+        self.is_loading.emit(True)
+        self.asset_name = asset_name
+        self.asset_ticker = asset_ticker
+        self.amount = amount
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
+        )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self.on_success_native_auth_cfa,
+                    'error_callback': self.on_error_native_auth_cfa,
+                },
+            )
+        else:
+            self._proceed_with_issue_cfa()
+
+    def _proceed_with_issue_cfa(self):
+        """Proceed with CFA issuance after native auth or directly for non-auth variants."""
         try:
             if self.amount is None or self.asset_name is None or self.asset_ticker is None:
                 raise CommonException(ERROR_FIELD_MISSING)
-            if not success:
-                raise CommonException(ERROR_AUTHENTICATION)
             amount_num = int(self.amount)
             formatted_amount = [amount_num]
             if self.uploaded_file_path is None:
-                ToastManager.error(
-                    description=INFO_NO_FILE,
-                )
+                ToastManager.error(description=INFO_NO_FILE)
                 self.is_loading.emit(False)
                 return
 
@@ -81,14 +114,18 @@ class IssueCFAViewModel(QObject, ThreadManager):
             )
         except CommonException as exc:
             self.is_loading.emit(False)
-            ToastManager.error(
-                description=exc.message,
-            )
+            ToastManager.error(description=exc.message)
         except Exception:
             self.is_loading.emit(False)
-            ToastManager.error(
-                description=ERROR_SOMETHING_WENT_WRONG,
-            )
+            ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
+
+    def on_success_native_auth_cfa(self, success: bool):
+        """Callback function after native authentication successful"""
+        if success:
+            self._proceed_with_issue_cfa()
+        else:
+            self.is_loading.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
 
     def on_error_native_auth_cfa(self, error: Exception):
         """Callback function on error"""
@@ -134,25 +171,6 @@ class IssueCFAViewModel(QObject, ThreadManager):
                 return
         ToastManager.error(
             description=err.message,
-        )
-
-    def issue_cfa_asset(
-            self, asset_ticker,
-            asset_name,
-            amount,
-    ):
-        """Issue an CFA asset with the provided details."""
-        self.is_loading.emit(True)
-        self.asset_name = asset_name
-        self.asset_ticker = asset_ticker
-        self.amount = amount
-        self.run_in_thread(
-            SettingRepository.native_authentication,
-            {
-                'args': [NativeAuthType.MAJOR_OPERATION],
-                'callback': self.on_success_native_auth_cfa,
-                'error_callback': self.on_error_native_auth_cfa,
-            },
         )
 
     def cancel_operation(self):

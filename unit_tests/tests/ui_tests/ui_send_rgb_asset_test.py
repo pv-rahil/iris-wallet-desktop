@@ -680,6 +680,7 @@ def test_show_send_rgb_psbt_page_nia(send_rgb_asset_widget: SendRGBAssetWidget):
     # Make widget visible so show_send_rgb_psbt_page doesn't return early
     send_rgb_asset_widget.show()
     send_rgb_asset_widget.asset_type = AssetSchema.NIA
+    send_rgb_asset_widget.is_multisig = False  # Ensure non-multisig path
     with patch('src.views.ui_send_rgb_asset.ReceiveAssetModel') as mock_receive_model:
         model_instance = MagicMock()
         mock_receive_model.return_value = model_instance
@@ -700,6 +701,7 @@ def test_show_send_rgb_psbt_page_cfa(send_rgb_asset_widget: SendRGBAssetWidget):
     # Make widget visible so show_send_rgb_psbt_page doesn't return early
     send_rgb_asset_widget.show()
     send_rgb_asset_widget.asset_type = AssetSchema.CFA
+    send_rgb_asset_widget.is_multisig = False  # Ensure non-multisig path
     with patch('src.views.ui_send_rgb_asset.ReceiveAssetModel') as mock_receive_model:
         model_instance = MagicMock()
         mock_receive_model.return_value = model_instance

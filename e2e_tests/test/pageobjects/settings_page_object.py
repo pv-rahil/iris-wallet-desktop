@@ -2,6 +2,12 @@
 """This module represents the page object for the settings page"""
 from __future__ import annotations
 
+import time
+
+from dogtail.rawinput import press
+from dogtail.rawinput import pressKey
+from dogtail.rawinput import release
+
 from accessible_constant import ASK_AUTH_FOR_APP_LOGIN_TOGGLE
 from accessible_constant import ASK_AUTH_FOR_IMPORTANT_QUESTION_TOGGLE
 from accessible_constant import HIDE_EXHAUSTED_ASSETS_TOGGLE
@@ -67,34 +73,51 @@ class SettingsPageObjects(BaseOperations):
 
     def click_keyring_toggle_button(self):
         """Click on keyring toggle button"""
-        return self.do_click(self.keyring_toggle_button()) if self.do_is_displayed(self.keyring_toggle_button()) else None
+        if self.do_is_displayed(self.keyring_toggle_button()):
+            self.keyring_toggle_button().grabFocus()
+            return pressKey('space')
 
     def click_login_app_toggle_button(self):
         """Click on login app toggle button"""
-        return self.do_click(self.login_auth_toggle_button()) if self.do_is_displayed(self.login_auth_toggle_button()) else None
+        if self.do_is_displayed(self.login_auth_toggle_button()):
+            self.login_auth_toggle_button().grabFocus()
+            return pressKey('space')
+
+    def _click_frame_with_press_release(self, frame):
+        """Click on a frame using press and release method."""
+        if not self.do_is_displayed(frame):
+            return None
+        pos = frame.position
+        center_x = int(pos[0] + frame.size[0]//2)
+        center_y = int(pos[1] + frame.size[1]//2)
+        press(center_x, center_y)
+        time.sleep(0.2)
+        release(center_x, center_y)
+        time.sleep(0.5)
+        return True
 
     # Default Fee Rate
     def click_default_fee_rate_frame(self):
         """Click on the default fee rate frame"""
-        return self.do_click(self.default_fee_rate_frame()) if self.do_is_displayed(self.default_fee_rate_frame()) else None
+        return self._click_frame_with_press_release(self.default_fee_rate_frame())
 
     # Minimum Confirmation
 
     def click_set_min_confirmation_frame(self):
         """Click on the set minimum confirmation frame"""
-        return self.do_click(self.set_min_confirmation_frame()) if self.do_is_displayed(self.set_min_confirmation_frame()) else None
+        return self._click_frame_with_press_release(self.set_min_confirmation_frame())
 
     # Indexer URL
 
     def click_set_indexer_url_frame(self):
         """Click on the indexer URL frame"""
-        return self.do_click(self.specify_indexer_url_frame()) if self.do_is_displayed(self.specify_indexer_url_frame()) else None
+        return self._click_frame_with_press_release(self.specify_indexer_url_frame())
 
     # RGB Proxy URL
 
     def click_set_rgb_proxy_url_frame(self):
         """Click on the RGB proxy URL frame"""
-        return self.do_click(self.specify_rgb_proxy_url_frame()) if self.do_is_displayed(self.specify_rgb_proxy_url_frame()) else None
+        return self._click_frame_with_press_release(self.specify_rgb_proxy_url_frame())
     # Save Button
 
     def click_save_button(self):
@@ -103,8 +126,12 @@ class SettingsPageObjects(BaseOperations):
 
     def click_hide_exhausted_asset_toggle_button(self):
         """Click on the Hide exhausted asset toggle button"""
-        return self.do_click(self.hide_exhausted_asset_toggle_button()) if self.do_is_displayed(self.hide_exhausted_asset_toggle_button()) else None
+        if self.do_is_displayed(self.hide_exhausted_asset_toggle_button()):
+            self.hide_exhausted_asset_toggle_button().grabFocus()
+            return pressKey('space')
 
     def click_ask_auth_imp_question(self):
         """Click on the ask auth imp question toggle button"""
-        return self.do_click(self.ask_auth_for_imp_question_toggle()) if self.do_is_displayed(self.ask_auth_for_imp_question_toggle()) else None
+        if self.do_is_displayed(self.ask_auth_for_imp_question_toggle()):
+            self.ask_auth_for_imp_question_toggle().grabFocus()
+            return pressKey('space')

@@ -129,8 +129,9 @@ class BaseOperations:
 
                 # Extra wait for clipboard synchronization
                 time.sleep(1.0)
-            elif element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue'] and is_ci_environment():
+            elif element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue']:
                 element.queryAction().doAction(0)
+                time.sleep(0.5)
             else:
                 element.click()
         except Exception as e:

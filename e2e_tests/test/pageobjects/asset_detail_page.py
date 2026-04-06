@@ -12,6 +12,7 @@ from accessible_constant import ASSET_SEND_BUTTON
 from accessible_constant import ASSET_SPENDABLE_BALANCE
 from accessible_constant import ASSET_TOTAL_BALANCE
 from accessible_constant import RGB_TRANSACTION_DETAIL_FRAME
+from accessible_constant import SECONDARY_ISSUANCE_BUTTON
 from accessible_constant import TRANSACTION_DETAIL_CLOSE_BUTTON
 from accessible_constant import TRANSFER_STATUS
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -62,6 +63,12 @@ class AssetDetailPageObjects(BaseOperations):
         )
         self.resume_draft_frame = lambda: self.perform_action_on_element(
             role_name='label', name='Resume Transfer',
+        )
+        self.resume_secondary_issuance_draft_frame = lambda: self.perform_action_on_element(
+            role_name='label', name='Resume Secondary Issuance',
+        )
+        self.secondary_issuance_button = lambda: self.perform_action_on_element(
+            role_name='push button', name=SECONDARY_ISSUANCE_BUTTON,
         )
 
     def click_close_button(self):
@@ -147,3 +154,15 @@ class AssetDetailPageObjects(BaseOperations):
         Clicks the resume draft frame on the asset detail page.
         """
         return self.do_click(self.resume_draft_frame()) if self.do_is_displayed(self.resume_draft_frame()) else None
+
+    def click_resume_secondary_issuance_draft_frame(self):
+        """
+        Clicks the resume secondary issuance draft frame on the asset detail page.
+        """
+        return self.do_click(self.resume_secondary_issuance_draft_frame()) if self.do_is_displayed(self.resume_secondary_issuance_draft_frame()) else None
+
+    def click_secondary_issuance_button(self):
+        """
+        Clicks the secondary issuance button on the asset detail page for IFA assets.
+        """
+        return self.do_click(self.secondary_issuance_button()) if self.do_is_displayed(self.secondary_issuance_button()) else None

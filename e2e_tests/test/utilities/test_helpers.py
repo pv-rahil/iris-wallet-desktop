@@ -461,28 +461,6 @@ def handle_hardware_wallet_cleanup(self) -> None:
         self.hardware_wallet_emulator.terminate()
 
 
-def issue_asset_success_flow(
-    self,
-    application,
-    is_native_auth_enabled: bool = False,
-) -> None:
-    """
-    Common success flow for issuing assets.
-
-    Args:
-        self: Feature class instance.
-        application: Application instance.
-        is_native_auth_enabled: Whether native auth is enabled.
-    """
-    if is_native_auth_enabled is True:
-        self.enter_native_password()
-
-    self.do_focus_on_application(application)
-
-    if self.do_is_displayed(self.success_page_objects.home_button()):
-        self.success_page_objects.click_home_button()
-
-
 def get_invoice_from_third_app(
     third_page_features,
     application,
@@ -652,7 +630,7 @@ def offline_wallet_send_asset_flow(
 
     with allure.step(f'Create {asset_type} psbt for offline wallet'):
         wallets_and_operations.second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount,
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount, wallet_variant_name=wallet_variant_name,
         )
 
     with allure.step(f'Sign {asset_type} psbt for offline wallet'):
@@ -697,6 +675,7 @@ def offline_wallet_send_asset_flow(
                 asset_name,
             )
         elif asset_type == 'cfa':
+            wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
             wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
                 asset_name,
             )
@@ -717,6 +696,7 @@ def multisig_send_asset_flow_with_verification(
     send_amount: str,
     wallet_variant_name: str,
     asset_type: str = 'ifa',
+    verify_assertions: bool = True,
 ) -> None:
     """
     Execute multisig send asset flow with PSBT creation, cosigning, and verification.
@@ -746,6 +726,7 @@ def multisig_send_asset_flow_with_verification(
                 asset_name,
             )
         elif asset_type == 'cfa':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
             wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
                 asset_name,
@@ -775,19 +756,19 @@ def multisig_send_asset_flow_with_verification(
         )
         if asset_type == 'ifa':
             wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_refresh_button()
+            wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
                 asset_name,
             )
         elif asset_type == 'nia':
             wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_refresh_button()
+            wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
                 asset_name,
             )
         elif asset_type == 'cfa':
             wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_refresh_button()
+            wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
                 asset_name,
             )
@@ -807,49 +788,51 @@ def multisig_send_asset_flow_with_verification(
             SECOND_APPLICATION, wallet_variant_name,
         )
 
-    with allure.step('Verify transfer status'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        if asset_type == 'ifa':
-            wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
-            wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
+    if verify_assertions:
+        with allure.step('Verify transfer status'):
+            wallets_and_operations.first_page_operations.do_focus_on_application(
+                FIRST_APPLICATION,
             )
-        elif asset_type == 'nia':
-            wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-            wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-            wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-        actual_transfer_status = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_transfer_status()
-        assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
+            if asset_type == 'ifa':
+                wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+                wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
+                    asset_name,
+                )
+            elif asset_type == 'nia':
+                wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+                wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
+                    asset_name,
+                )
+            elif asset_type == 'cfa':
+                wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+                wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
+                    asset_name,
+                )
+            actual_transfer_status = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_transfer_status()
+            assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
 
-    with allure.step('Verify received amount on App 3'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        if asset_type == 'ifa':
-            wallets_and_operations.third_page_objects.sidebar_page_objects.click_inflatable_button()
-            wallets_and_operations.third_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
+        with allure.step('Verify received amount on App 3'):
+            wallets_and_operations.third_page_operations.do_focus_on_application(
+                THIRD_APPLICATION,
             )
-        elif asset_type == 'nia':
-            wallets_and_operations.third_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-        received_amount = wallets_and_operations.third_page_objects.asset_detail_page_objects.get_total_balance()
-        assert received_amount == send_amount
+            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+            if asset_type == 'ifa':
+                wallets_and_operations.third_page_objects.sidebar_page_objects.click_inflatable_button()
+                wallets_and_operations.third_page_objects.inflatable_page_objects.click_ifa_frame(
+                    asset_name,
+                )
+            elif asset_type == 'nia':
+                wallets_and_operations.third_page_objects.fungible_page_objects.click_nia_frame(
+                    asset_name,
+                )
+            elif asset_type == 'cfa':
+                wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
+                wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
+                    asset_name,
+                )
+            received_amount = wallets_and_operations.third_page_objects.asset_detail_page_objects.get_total_balance()
+            assert received_amount == send_amount
 
 
 def multisig_issue_asset_flow(
@@ -912,11 +895,11 @@ def handle_utxo_confirmation_dialog(
 
     if utxo_required:
         page_operations.do_focus_on_application(CONFIRMATION_DIALOG)
-        if page_objects.confirmation_dialog_page_objects.confirmation_dialog().is_displayed():
+        if page_operations.do_is_displayed(page_objects.confirmation_dialog_page_objects.confirmation_dialog()):
             page_objects.confirmation_dialog_page_objects.click_confirmation_dialog()
 
-        if page_objects.confirmation_dialog_page_objects.confirmation_continue_button().is_displayed():
+        if page_operations.do_is_displayed(page_objects.confirmation_dialog_page_objects.confirmation_continue_button()):
             page_objects.confirmation_dialog_page_objects.click_confirmation_continue_button()
     else:
-        if page_objects.success_page_objects.home_button().is_displayed():
+        if page_operations.do_is_displayed(page_objects.success_page_objects.home_button()):
             page_objects.success_page_objects.click_home_button()

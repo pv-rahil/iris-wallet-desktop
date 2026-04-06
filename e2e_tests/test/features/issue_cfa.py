@@ -124,11 +124,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
 
-        if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-            self.toaster_page_objects.click_toaster_frame()
-
-        if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
-            description = self.toaster_page_objects.get_toaster_description()
+        _, description = self.toaster_page_objects.click_toaster_frame()
 
         if self.do_is_displayed(self.issue_cfa_page_objects.close_button()):
             self.issue_cfa_page_objects.click_close_button()
@@ -241,7 +237,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
         self.wallet_features.usb_sync(is_receive=True)
 
-    def issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_name, utxo_required: bool = False):
+    def issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_name, utxo_required: bool = False, is_native_auth_enabled: bool = False):
         """
         Issues an CFA asset with sufficient sats and no UTXO.
         """
@@ -255,13 +251,16 @@ class IssueCfa(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
 
-        if utxo_required:
-            handle_utxo_confirmation_dialog(self, self, utxo_required=True)
-        else:
+        if is_native_auth_enabled:
+            self.enter_native_password()
+
+        if not utxo_required:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()
+        else:
+            handle_utxo_confirmation_dialog(self, self, utxo_required=True)
 
-    def issue_cfa_with_sufficient_sats_for_multisig_wallet(self, application, asset_name, asset_description, asset_amount):
+    def issue_cfa_with_sufficient_sats_for_multisig_wallet(self, application, asset_name, asset_description, asset_amount, is_native_auth_enabled: bool = False):
         """
         Issues an CFA asset with sufficient sats and no UTXO.
         """
@@ -293,6 +292,9 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
+
+        if is_native_auth_enabled:
+            self.enter_native_password()
 
         if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
             self.confirmation_dialog_page_objects.click_confirmation_dialog()

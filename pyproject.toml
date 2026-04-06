@@ -61,6 +61,7 @@ python3-pyatspi = { version = "^1.19.0", platform = "linux" }
 allure-pytest = { version = "^2.13.5", platform = "linux" }
 pyperclip = { version = "^1.9.0", platform = "linux" }
 pygobject = { version = "==3.50.0", platform = "linux" }
+keyrings-alt = { version = "^5.0.0", platform = "linux" } # Added for e2e tests to run in ci
 speculos = "^0.25.8"
 
 # Extra package required only for windows os

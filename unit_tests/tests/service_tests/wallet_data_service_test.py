@@ -17,6 +17,7 @@ from rgb_lib import BtcBalance
 
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
+from src.model.common_operation_model import PsbtData
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
@@ -140,7 +141,9 @@ def test_psbt_crud_when_watch_only(mock_get_type, mock_get_access, tmp_db):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
     mock_get_access.return_value = WalletAccessType.WATCH_ONLY
 
-    pid = tmp_db.add_psbt('base64_psbt', signed=False, purpose='send_btc')
+    pid = tmp_db.add_psbt(
+        PsbtData(psbt_base64='base64_psbt', purpose='send_btc'),
+    )
     assert pid is not None
 
     lst = tmp_db.list_psbt(signed=False)
@@ -162,8 +165,10 @@ def test_list_psbt_signed_filter(mock_get_type, mock_get_access, tmp_db):
     """list_psbt should filter by signed flag and expose purpose field."""
     mock_get_access.return_value = WalletAccessType.WATCH_ONLY
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
-    u_id = tmp_db.add_psbt('u_psbt', signed=False, purpose='send_btc')
-    s_id = tmp_db.add_psbt('s_psbt', signed=True, purpose='send_rgb')
+    u_id = tmp_db.add_psbt(PsbtData(psbt_base64='u_psbt', purpose='send_btc'))
+    s_id = tmp_db.add_psbt(
+        PsbtData(psbt_base64='s_psbt', signed=True, purpose='send_rgb'),
+    )
     assert u_id and s_id
     us = tmp_db.list_psbt(signed=False)
     ss = tmp_db.list_psbt(signed=True)
@@ -175,13 +180,15 @@ def test_list_psbt_signed_filter(mock_get_type, mock_get_access, tmp_db):
     ) == 1 and ss[0]['purpose'] == 'send_rgb' and ss[0]['signed'] is True
 
 
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
-def test_add_delete_psbt_gating(mock_get_type, mock_get_access, tmp_db):
+def test_add_delete_psbt_gating(mock_get_type, mock_get_access, mock_get_sign, tmp_db):
     """add_psbt returns None and delete_psbt returns False when not allowed."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
-    assert tmp_db.add_psbt('psbt') is None
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    assert tmp_db.add_psbt(PsbtData(psbt_base64='psbt')) is None
     assert tmp_db.delete_psbt('whatever') is False
 
 
@@ -223,7 +230,7 @@ def test_get_session_singleton_watch_only(app_paths, get_wallet_type, get_access
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 def test_refresh_wallet_data_returns_early_when_not_watch_only(mock_get_access, tmp_db, mocker):
     """refresh_wallet_data should return early if not watch-only (no repository calls)."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     colored_mock = mocker.patch(
         'src.data.service.wallet_data_service.colored_wallet',
     )
@@ -231,22 +238,26 @@ def test_refresh_wallet_data_returns_early_when_not_watch_only(mock_get_access, 
     assert not colored_mock.wallet.get_btc_balance.called
 
 
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
-def test_list_psbt_not_allowed_returns_empty(mock_get_type, mock_get_access, tmp_db):
+def test_list_psbt_not_allowed_returns_empty(mock_get_type, mock_get_access, mock_get_sign, tmp_db):
     """list_psbt should return [] when not watch-only/offline."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     assert tmp_db.list_psbt(signed=False) == []
     assert tmp_db.list_psbt(signed=True) == []
 
 
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
-def test_draft_issue_asset_not_allowed_paths(mock_get_type, mock_get_access, tmp_db):
+def test_draft_issue_asset_not_allowed_paths(mock_get_type, mock_get_access, mock_get_sign, tmp_db):
     """list/delete draft_issue_asset should be gated when not allowed."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     assert tmp_db.list_draft_issue_assets() == []
     assert tmp_db.delete_draft_issue_asset('1') is False
 
@@ -294,10 +305,12 @@ def test_initialize_service_exception_handled_returns_none(mock_get_type, mock_g
 
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
-def test_get_session_none_for_non_watch_only_online(get_wallet_type, get_access_type):
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
+def test_get_session_none_for_non_watch_only_online(mock_sign_type, mock_wallet_type, mock_access_type):
     """get_session returns None when unsupported."""
-    get_access_type.return_value = None  # anything not WATCH_ONLY
-    get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_access_type.return_value = WalletAccessType.WITH_PRIVATE_KEY  # not WATCH_ONLY
+    mock_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET  # not OFFLINE
+    mock_sign_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET  # not MULTISIG
     WalletDataService._instance = None
     try:
         assert WalletDataService.get_session() is None
@@ -386,12 +399,14 @@ def test_ifa_secondary_delete_by_id_and_by_psbt_and_update_psbt(mock_get_type, m
     assert tmp_db.delete_ifa_secondary_draft(int(did)) in (True, False)
 
 
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
-def test_ifa_secondary_gating_when_not_allowed(mock_get_type, mock_get_access, tmp_db):
+def test_ifa_secondary_gating_when_not_allowed(mock_get_type, mock_get_access, mock_get_sign, tmp_db):
     """All secondary draft methods should no-op when not watch-only/offline."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     assert tmp_db.add_ifa_secondary_draft_meta('X', None, None) is None
     assert tmp_db.attach_inflate_psbt_to_secondary_draft('X', 'p') is None
     assert tmp_db.list_ifa_secondary_drafts('X') == []
@@ -418,12 +433,14 @@ def test_is_multisig_property(mock_get_sign_type, tmp_db):
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
 def test_multisig_gated_paths(mock_get_sign, mock_get_type, mock_get_access, tmp_db):
     """Methods gated behind is_multisig should execute when signature type is MULTI_SIG_WALLET."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_sign.return_value = WalletSignatureType.MULTI_SIG_WALLET
 
     # add_psbt - multisig gated
-    pid = tmp_db.add_psbt('multisig_psbt', signed=False, purpose='send_btc')
+    pid = tmp_db.add_psbt(
+        PsbtData(psbt_base64='multisig_psbt', purpose='send_btc'),
+    )
     assert pid is not None
 
     # upsert_draft_issue_asset - multisig gated
@@ -485,7 +502,7 @@ def test_draft_transfer_crud(mock_get_sign, mock_get_type, mock_get_access, tmp_
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
 def test_draft_transfer_gating_when_not_allowed(mock_get_sign, mock_get_type, mock_get_access, tmp_db):
     """draft_transfer methods should no-op when not watch-only/offline/multisig."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
 
@@ -765,7 +782,7 @@ def test_sqlite_error_add_psbt(mock_get_type, mock_get_access, tmp_db, mocker):
     mock_conn.execute.side_effect = sqlite3.Error('fail')
     tmp_db.conn = mock_conn
     with pytest.raises(sqlite3.Error):
-        tmp_db.add_psbt('psbt_content')
+        tmp_db.add_psbt(PsbtData(psbt_base64='psbt_content'))
 
 
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
@@ -865,12 +882,13 @@ def test_add_psbt_with_rgb_context(mock_get_type, mock_get_access, tmp_db):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
 
     pid = tmp_db.add_psbt(
-        'rgb_psbt_base64',
-        signed=False,
-        purpose='send_asset',
-        fascia_path='/path/to/app/fascia.rgb',
-        entropy=123456789,
-        min_confirmations=3,
+        PsbtData(
+            psbt_base64='rgb_psbt_base64',
+            purpose='send_asset',
+            fascia_path='/path/to/app/fascia.rgb',
+            entropy=123456789,
+            min_confirmations=3,
+        ),
     )
     assert pid is not None
 
@@ -891,12 +909,13 @@ def test_get_psbt_rgb_context(mock_get_type, mock_get_access, tmp_db):
 
     # Add PSBT with RGB context
     tmp_db.add_psbt(
-        'test_psbt_rgb',
-        signed=False,
-        purpose='send_asset',
-        fascia_path='/app/data/fascia.rgb',
-        entropy=999888777,
-        min_confirmations=6,
+        PsbtData(
+            psbt_base64='test_psbt_rgb',
+            purpose='send_asset',
+            fascia_path='/app/data/fascia.rgb',
+            entropy=999888777,
+            min_confirmations=6,
+        ),
     )
 
     # Retrieve RGB context
@@ -926,7 +945,9 @@ def test_update_psbt_rgb_context(mock_get_type, mock_get_access, tmp_db):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
 
     # Add PSBT without RGB context
-    tmp_db.add_psbt('psbt_to_update', signed=False, purpose='send_asset')
+    tmp_db.add_psbt(
+        PsbtData(psbt_base64='psbt_to_update', purpose='send_asset'),
+    )
 
     # Verify no context initially
     ctx = tmp_db.get_psbt_rgb_context('psbt_to_update')
@@ -960,12 +981,13 @@ def test_entropy_large_value_storage(mock_get_type, mock_get_access, tmp_db):
     large_entropy = 9223372036854775807  # Max int64
 
     tmp_db.add_psbt(
-        'large_entropy_psbt',
-        signed=False,
-        purpose='send_asset',
-        fascia_path='/path/fascia.rgb',
-        entropy=large_entropy,
-        min_confirmations=1,
+        PsbtData(
+            psbt_base64='large_entropy_psbt',
+            purpose='send_asset',
+            fascia_path='/path/fascia.rgb',
+            entropy=large_entropy,
+            min_confirmations=1,
+        ),
     )
 
     # Retrieve and verify
@@ -981,12 +1003,13 @@ def test_entropy_zero_value(mock_get_type, mock_get_access, tmp_db):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
 
     tmp_db.add_psbt(
-        'zero_entropy_psbt',
-        signed=False,
-        purpose='send_asset',
-        fascia_path='/path/fascia.rgb',
-        entropy=0,
-        min_confirmations=1,
+        PsbtData(
+            psbt_base64='zero_entropy_psbt',
+            purpose='send_asset',
+            fascia_path='/path/fascia.rgb',
+            entropy=0,
+            min_confirmations=1,
+        ),
     )
 
     ctx = tmp_db.get_psbt_rgb_context('zero_entropy_psbt')
@@ -1001,12 +1024,13 @@ def test_entropy_none_value(mock_get_type, mock_get_access, tmp_db):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
 
     tmp_db.add_psbt(
-        'none_entropy_psbt',
-        signed=False,
-        purpose='send_asset',
-        fascia_path='/path/fascia.rgb',
-        entropy=None,
-        min_confirmations=1,
+        PsbtData(
+            psbt_base64='none_entropy_psbt',
+            purpose='send_asset',
+            fascia_path='/path/fascia.rgb',
+            entropy=None,
+            min_confirmations=1,
+        ),
     )
 
     ctx = tmp_db.get_psbt_rgb_context('none_entropy_psbt')
@@ -1022,12 +1046,13 @@ def test_mark_psbt_signed_preserves_rgb_context(mock_get_type, mock_get_access, 
 
     # Add unsigned PSBT with RGB context
     tmp_db.add_psbt(
-        'unsigned_rgb_psbt',
-        signed=False,
-        purpose='send_asset',
-        fascia_path='/original/fascia.rgb',
-        entropy=444555666,
-        min_confirmations=3,
+        PsbtData(
+            psbt_base64='unsigned_rgb_psbt',
+            purpose='send_asset',
+            fascia_path='/original/fascia.rgb',
+            entropy=444555666,
+            min_confirmations=3,
+        ),
     )
 
     # Sign the PSBT
@@ -1050,12 +1075,13 @@ def test_list_psbt_includes_rgb_context(mock_get_type, mock_get_access, tmp_db):
     mock_get_type.return_value = WalletType.OFFLINE_TYPE_WALLET
 
     tmp_db.add_psbt(
-        'list_rgb_psbt',
-        signed=False,
-        purpose='send_asset',
-        fascia_path='/list/fascia.rgb',
-        entropy=777888999,
-        min_confirmations=5,
+        PsbtData(
+            psbt_base64='list_rgb_psbt',
+            purpose='send_asset',
+            fascia_path='/list/fascia.rgb',
+            entropy=777888999,
+            min_confirmations=5,
+        ),
     )
 
     rows = tmp_db.list_psbt(signed=False)
@@ -1065,12 +1091,14 @@ def test_list_psbt_includes_rgb_context(mock_get_type, mock_get_access, tmp_db):
     assert rows[0]['min_confirmations'] == 5
 
 
+@patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_signature_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_access_type')
 @patch('src.data.service.wallet_data_service.SettingRepository.get_wallet_type')
-def test_rgb_context_gating_when_not_allowed(mock_get_type, mock_get_access, tmp_db):
+def test_rgb_context_gating_when_not_allowed(mock_get_type, mock_get_access, mock_get_sign, tmp_db):
     """RGB context methods should be gated when not watch-only/offline/multisig."""
-    mock_get_access.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_access.return_value = WalletAccessType.WITH_PRIVATE_KEY
     mock_get_type.return_value = WalletType.ONLINE_TYPE_WALLET
+    mock_get_sign.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
 
     # get_psbt_rgb_context should return None
     assert tmp_db.get_psbt_rgb_context('any_psbt') is None

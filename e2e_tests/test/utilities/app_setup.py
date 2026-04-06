@@ -127,8 +127,9 @@ class TestEnvironment:
             env, _ = setup_fake_usb()
 
         self.first_process = subprocess.Popen(
-            [f"""e2e_tests/applications/iris-wallet-vault_
-             {APP1_NAME}-{__version__}-x86_64.AppImage"""],
+            [f'e2e_tests/applications/iris-wallet-vault_{
+                APP1_NAME
+            }-{__version__}-x86_64.AppImage'],
             env=env,
         )
         self.wait_for_application(FIRST_APPLICATION)
@@ -155,8 +156,9 @@ class TestEnvironment:
 
         if self.num_instances >= 2:
             self.second_process = subprocess.Popen(
-                [f"""e2e_tests/applications/iris-wallet-vault_
-                    {APP2_NAME}-{__version__}-x86_64.AppImage"""],
+                [f'e2e_tests/applications/iris-wallet-vault_{
+                    APP2_NAME
+                }-{__version__}-x86_64.AppImage'],
                 env=env,
             )
             self.wait_for_application(SECOND_APPLICATION)
@@ -183,8 +185,9 @@ class TestEnvironment:
 
         if self.num_instances >= 3:
             self.third_process = subprocess.Popen(
-                [f"""e2e_tests/applications/iris-wallet-vault_
-                    {APP3_NAME}-{__version__}-x86_64.AppImage"""],
+                [f'e2e_tests/applications/iris-wallet-vault_{
+                    APP3_NAME
+                }-{__version__}-x86_64.AppImage'],
                 env=env,
             )
             self.wait_for_application(THIRD_APPLICATION)
@@ -361,9 +364,9 @@ class TestEnvironment:
 
         # Relaunch second application and reinitialize its page abstractions
         self.second_process = subprocess.Popen(
-            [f"""e2e_tests/applications/iris-wallet-vault_{
+            [f'e2e_tests/applications/iris-wallet-vault_{
                 APP2_NAME
-            }-{__version__}-x86_64.AppImage"""],
+            }-{__version__}-x86_64.AppImage'],
             env=env,
         )
         self.wait_for_application(SECOND_APPLICATION)

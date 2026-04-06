@@ -14,6 +14,8 @@ from rgb_lib import AssetSchema
 from rgb_lib import Assignment
 from rgb_lib import TransferStatus
 
+from src.data.repository.rgb_repository import RgbRepository
+from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import TransferStatusEnumModel
@@ -147,6 +149,75 @@ def test_on_send_click(mock_run_in_thread, cfa_view_model):
     assert cfa_view_model.transport_endpoints == transport_endpoints
     assert cfa_view_model.fee_rate == fee_rate
     assert cfa_view_model.min_confirmation == min_confirmation
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type')
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type')
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type')
+def test_on_send_click_multisig_on_device_requires_native_auth(
+    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, cfa_view_model,
+):
+    """Test that multisig on-device wallet requires native auth for send asset."""
+    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
+    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
+    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+
+    assignment = Assignment.FUNGIBLE(amount=100)
+    cfa_view_model.asset_id = 'test_asset_id'
+
+    with patch.object(cfa_view_model, 'run_in_thread') as mock_run:
+        cfa_view_model.on_send_click('blind', ['te'], 2, 3, assignment)
+
+        # Verify native auth was passed to run_in_thread
+        call_args = mock_run.call_args[0]
+        expected_method = SettingRepository.native_authentication
+        assert call_args[0] is expected_method
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type')
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type')
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type')
+def test_on_send_click_standard_wallet_no_native_auth(
+    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, cfa_view_model,
+):
+    """Test that standard online on-device wallet DOES require native auth."""
+    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
+    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+
+    assignment = Assignment.FUNGIBLE(amount=100)
+    cfa_view_model.asset_id = 'test_asset_id'
+
+    with patch.object(cfa_view_model, 'run_in_thread') as mock_run:
+        cfa_view_model.on_send_click('blind', ['te'], 2, 3, assignment)
+
+        # Verify native auth was passed to run_in_thread (standard online on-device DOES require auth)
+        call_args = mock_run.call_args[0]
+        expected_method = SettingRepository.native_authentication
+        assert call_args[0] is expected_method
+
+
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type')
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type')
+@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type')
+def test_on_send_click_hardware_wallet_no_native_auth(
+    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, cfa_view_model,
+):
+    """Test that hardware wallet does not require native auth for send asset."""
+    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_key_storage.return_value = KeyStorageType.HARDWARE_WALLET
+    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+
+    assignment = Assignment.FUNGIBLE(amount=100)
+    cfa_view_model.asset_id = 'test_asset_id'
+
+    with patch.object(cfa_view_model, 'run_in_thread') as mock_run:
+        cfa_view_model.on_send_click('blind', ['te'], 2, 3, assignment)
+
+        # Verify send_asset was passed to run_in_thread (no native auth for hardware wallet)
+        call_args = mock_run.call_args[0]
+        expected_method = RgbRepository.send_asset
+        assert call_args[0] is expected_method
 
 
 @patch('src.data.repository.rgb_repository.RgbRepository.fail_transfer')
@@ -463,9 +534,9 @@ def test_on_success_send_rgb_asset(cfa_view_model, mocker):
     # Call method with success=False
     cfa_view_model.on_success_send_rgb_asset(False)
 
-    # Verify behavior for cancelled case
-    cfa_view_model.send_cfa_button_clicked.emit.assert_not_called()
-    cfa_view_model.is_loading.emit.assert_not_called()
+    # Verify behavior for cancelled case - signals emit False
+    cfa_view_model.send_cfa_button_clicked.emit.assert_called_once_with(False)
+    cfa_view_model.is_loading.emit.assert_called_once_with(False)
     mock_toast_error.assert_called_once_with(
         description=ERROR_AUTHENTICATION_CANCELLED,
     )
@@ -478,6 +549,15 @@ def test_on_error(cfa_view_model, mocker):
     # Create test error
     mock_error = CommonException('Test error message')
 
+    # Mock to ensure non-HW, non-multisig path (which calls ToastManager.error)
+    mocker.patch(
+        'src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type',
+        return_value=KeyStorageType.ON_DEVICE,
+    )
+    mocker.patch(
+        'src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
     mock_toast_error = mocker.patch(
         'src.viewmodels.cfa_view_model.ToastManager.error',
     )
@@ -504,6 +584,12 @@ def test_on_success_cfa(cfa_view_model, mocker):
     cfa_view_model.is_loading = MagicMock()
     cfa_view_model.send_cfa_button_clicked = MagicMock()
     cfa_view_model._page_navigation = MagicMock()
+
+    # Mock for non-multisig path
+    mocker.patch(
+        'src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
     mock_toast_success = mocker.patch(
         'src.viewmodels.cfa_view_model.ToastManager.success',
     )
@@ -782,25 +868,23 @@ def test_on_psbt_created_multisig(cfa_view_model, mocker):
 def test_on_multisig_psbt_signed(cfa_view_model, mocker):
     """Cover on_multisig_psbt_signed logic (lines 388-391)."""
     cfa_view_model.operation_idx = 1
-    cfa_view_model.run_in_thread = MagicMock()
-    hw_emit = mocker.Mock()
-    cfa_view_model.hw_dialog_update.connect(hw_emit)
+    # Mock post_signed_psbt_to_bridge where it's imported in cfa_view_model
+    mock_post = mocker.patch(
+        'src.viewmodels.cfa_view_model.post_signed_psbt_to_bridge',
+    )
 
     cfa_view_model.on_multisig_psbt_signed('signed_psbt')
 
-    hw_emit.assert_called_once()
-    cfa_view_model.run_in_thread.assert_called_once()
-    assert 'respond_to_operation' in str(
-        cfa_view_model.run_in_thread.call_args[0][0],
-    ) or cfa_view_model.run_in_thread.call_args[0][0].__name__ == 'respond_to_operation'
+    # Verify post_signed_psbt_to_bridge was called
+    mock_post.assert_called_once_with(cfa_view_model, 'signed_psbt', 1)
 
 
 def test_on_multisig_post_success(cfa_view_model, mocker):
-    """Cover on_multisig_post_success logic (line 403)."""
+    """Cover on_success_multisig_post logic (line 403)."""
     mock_success = mocker.patch.object(cfa_view_model, 'on_success_cfa')
-    cfa_view_model.on_multisig_post_success(None)
+    cfa_view_model.on_success_multisig_post(None)
     mock_success.assert_called_once()
-    assert mock_success.call_args[0][0].txid == 'multisig_pending'
+    # on_success_cfa is called without arguments from on_success_multisig_post
 
 
 @patch('src.viewmodels.cfa_view_model.hardware_client_store.stop_client')

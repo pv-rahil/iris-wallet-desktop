@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 """
 Multisig setup service - business logic for multisig wallet configuration.
 """

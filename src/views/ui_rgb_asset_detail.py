@@ -32,6 +32,7 @@ from accessible_constant import ASSET_SEND_BUTTON
 from accessible_constant import ASSET_SPENDABLE_BALANCE
 from accessible_constant import ASSET_TOTAL_BALANCE
 from accessible_constant import RGB_TRANSACTION_DETAIL_FRAME
+from accessible_constant import SECONDARY_ISSUANCE_BUTTON
 from accessible_constant import TRANSACTION_DETAIL_CLOSE_BUTTON
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
@@ -199,6 +200,7 @@ class RGBAssetDetailWidget(QWidget):
         self.secondary_issuance.setCursor(
             QCursor(Qt.CursorShape.PointingHandCursor),
         )
+        self.secondary_issuance.setAccessibleName(SECONDARY_ISSUANCE_BUTTON)
         self.secondary_issuance.setDisabled(True)
         self.receive_rgb_asset.setFixedSize(QSize(104, 50))
         self.send_asset.setFixedSize(QSize(104, 50))

@@ -2400,11 +2400,11 @@ If you understand the above remarks and wish to proceed, press the button below 
     </message>
     <message>
         <source>total_input</source>
-        <translation>Total Network Input</translation>
+        <translation>Total Input</translation>
     </message>
     <message>
         <source>total_output</source>
-        <translation>Total Network Output</translation>
+        <translation>Total Output</translation>
     </message>
     <message>
         <source>network_fee</source>

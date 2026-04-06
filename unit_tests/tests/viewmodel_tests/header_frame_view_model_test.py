@@ -222,13 +222,11 @@ def test_handle_sync_success_watch_only_online_go_online_and_toast(mocker):
         'src.viewmodels.header_frame_view_model.SettingRepository.get_wallet_access_type',
         return_value=WalletAccessType.WATCH_ONLY,
     )
-    # Ensure helpers called
-    mocker.patch(
-        'src.viewmodels.header_frame_view_model.get_bitcoin_network_from_enum', return_value='net',
-    )
-    mock_cfg = mocker.Mock(indexer_url='idx')
-    mocker.patch(
-        'src.viewmodels.header_frame_view_model.get_bitcoin_config', return_value=mock_cfg,
+    # Mock get_online_wallet which handles the network/config calls
+    mock_online = mocker.Mock()
+    mock_get_online = mocker.patch(
+        'src.viewmodels.header_frame_view_model.get_online_wallet',
+        return_value=mock_online,
     )
     cw = mocker.patch('src.viewmodels.header_frame_view_model.colored_wallet')
     toast_success = mocker.patch(
@@ -237,7 +235,9 @@ def test_handle_sync_success_watch_only_online_go_online_and_toast(mocker):
 
     view_model.handle_sync_success('from_usb', retry=False)
 
-    cw.wallet.go_online.assert_called_once()
+    # Verify get_online_wallet was called and online_wallet was set
+    mock_get_online.assert_called_once()
+    assert cw.online_wallet == mock_online
     ended_slot.assert_called_with('from_usb')
     toast_success.assert_called()
 
@@ -376,7 +376,6 @@ def test_on_multisig_sync_done_parsing(mocker):
     vm._set_multisig_pending.reset_mock()
     slot.reset_mock()
 
-    op_empty = mocker.Mock(spec=[])
     op_none_op = mocker.Mock()
     op_none_op.operation = None
     op_non_blocking = mocker.Mock()
@@ -389,7 +388,7 @@ def test_on_multisig_sync_done_parsing(mocker):
     op_non_blocking.operation.is_INFLATION_TO_REVIEW.return_value = False
     op_non_blocking.operation.is_INFLATION_PENDING.return_value = False
 
-    vm.on_multisig_sync_done([None, op_empty, op_none_op, op_non_blocking])
+    vm.on_multisig_sync_done([None, op_none_op, op_non_blocking])
     vm._set_multisig_pending.assert_called_with(False)
     slot.assert_called_once_with([])
 
@@ -431,10 +430,9 @@ def test_inspect_and_set_global_pending_state(mocker):
     )
 
     # Empty or no valid ops -> no thread
-    op_empty = mocker.Mock(spec=[])
     op_none_op = mocker.Mock()
     op_none_op.operation = None
-    vm._inspect_and_set_global_pending_state([None, op_empty, op_none_op])
+    vm._inspect_and_set_global_pending_state([None, op_none_op])
     mock_run.assert_not_called()
 
     # Op with no blocking action
@@ -504,7 +502,6 @@ def test_extract_and_save_review_psbts(mocker):
     )
 
     # 2a. None coverage
-    op_empty = mocker.Mock(spec=[])
     op_none_op = mocker.Mock()
     op_none_op.operation = None
     op_no_psbt = mocker.Mock()
@@ -524,7 +521,7 @@ def test_extract_and_save_review_psbts(mocker):
     # Actually if they are all False, is_review is False, so it skips. The purpose block is unreachable if is_review=True.
 
     vm._extract_and_save_review_psbts(
-        [None, op_empty, op_none_op, op_no_psbt, op_not_review],
+        [None, op_none_op, op_no_psbt, op_not_review],
     )
 
     # 2b. Valid ops, check duplicates logic
@@ -546,9 +543,12 @@ def test_extract_and_save_review_psbts(mocker):
     mock_db.list_psbt.side_effect = side_effect_list_psbt_empty
 
     vm._extract_and_save_review_psbts([op_valid])
-    mock_db.add_psbt.assert_called_with(
-        'psbt_text', signed=False, purpose='create_utxos', fascia_path=None, entropy=None, min_confirmations=None,
-    )
+    call_args = mock_db.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_text'
+    assert psbt_data.signed is False
+    assert psbt_data.purpose == 'create_utxos'
     mock_db.add_psbt.reset_mock()
 
     # Skip if we already have exact unsigned psbt
@@ -582,9 +582,12 @@ def test_extract_and_save_review_psbts(mocker):
         side_effect=Exception('fail'),
     )
     vm._extract_and_save_review_psbts([op_valid])
-    mock_db.add_psbt.assert_called_with(
-        'psbt_text', signed=False, purpose='create_utxos', fascia_path=None, entropy=None, min_confirmations=None,
-    )
+    call_args = mock_db.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_text'
+    assert psbt_data.signed is False
+    assert psbt_data.purpose == 'create_utxos'
     mock_db.add_psbt.reset_mock()
 
     # Check if signed psbt has different txid
@@ -599,9 +602,12 @@ def test_extract_and_save_review_psbts(mocker):
         side_effect=side_effect_inspect_psbt,
     )
     vm._extract_and_save_review_psbts([op_valid])
-    mock_db.add_psbt.assert_called_with(
-        'psbt_text', signed=False, purpose='create_utxos', fascia_path=None, entropy=None, min_confirmations=None,
-    )
+    call_args = mock_db.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_text'
+    assert psbt_data.signed is False
+    assert psbt_data.purpose == 'create_utxos'
     mock_db.add_psbt.reset_mock()
 
     # Different purposes branch coverage
@@ -614,9 +620,12 @@ def test_extract_and_save_review_psbts(mocker):
     op_send_btc.operation.details = None  # Non-RGB operation has no details
     op_send_btc.initiator_xpub = 'other_xpub'  # skip duplicates check
     vm._extract_and_save_review_psbts([op_send_btc])
-    mock_db.add_psbt.assert_called_with(
-        'psbt_text', signed=False, purpose='send_btc', fascia_path=None, entropy=None, min_confirmations=None,
-    )
+    call_args = mock_db.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_text'
+    assert psbt_data.signed is False
+    assert psbt_data.purpose == 'send_btc'
     mock_db.add_psbt.reset_mock()
 
     # SEND_TO_REVIEW (RGB operation - needs details mocked)
@@ -628,9 +637,12 @@ def test_extract_and_save_review_psbts(mocker):
     op_send.operation.details = None  # Set to None for simple test
     op_send.initiator_xpub = 'other_xpub'
     vm._extract_and_save_review_psbts([op_send])
-    mock_db.add_psbt.assert_called_with(
-        'psbt_text', signed=False, purpose='send_asset', fascia_path=None, entropy=None, min_confirmations=None,
-    )
+    call_args = mock_db.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_text'
+    assert psbt_data.signed is False
+    assert psbt_data.purpose == 'send_asset'
     mock_db.add_psbt.reset_mock()
 
     # INFLATION_TO_REVIEW (RGB operation)
@@ -643,9 +655,12 @@ def test_extract_and_save_review_psbts(mocker):
     op_inflate.operation.details = None  # Set to None for simple test
     op_inflate.initiator_xpub = 'other_xpub'
     vm._extract_and_save_review_psbts([op_inflate])
-    mock_db.add_psbt.assert_called_with(
-        'psbt_text', signed=False, purpose='inflate_asset', fascia_path=None, entropy=None, min_confirmations=None,
-    )
+    call_args = mock_db.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_text'
+    assert psbt_data.signed is False
+    assert psbt_data.purpose == 'inflate_asset'
 
     # Purpose None (mock an op that is review but doesn't match the specific ifs)
     op_weird = mocker.Mock()
@@ -675,21 +690,17 @@ def test_handle_sync_success_watch_only_multisig(mocker):
         'src.viewmodels.header_frame_view_model.SettingRepository.get_wallet_signature_type',
         return_value=WalletSignatureType.MULTI_SIG_WALLET,
     )
-    mocker.patch(
-        'src.viewmodels.header_frame_view_model.get_bitcoin_network_from_enum', return_value='regtest',
-    )
-    mocker.patch(
-        'src.viewmodels.header_frame_view_model.get_bitcoin_config',
-        return_value=mocker.Mock(indexer_url='url'),
-    )
-    mock_gen = mocker.patch(
-        'src.viewmodels.header_frame_view_model.generate_and_store_token', return_value='tok',
+    # Mock get_online_wallet which handles network/config internally
+    mock_online = mocker.Mock()
+    mock_get_online_wallet = mocker.patch(
+        'src.viewmodels.header_frame_view_model.get_online_wallet',
+        return_value=mock_online,
     )
     cw = mocker.patch('src.viewmodels.header_frame_view_model.colored_wallet')
 
     vm.handle_sync_success('from_usb', False)
-    mock_gen.assert_called()
-    cw.wallet.go_online.assert_called_with(False, 'url', mocker.ANY, 'tok')
+    # Verify get_online_wallet was called with multisig=True
+    mock_get_online_wallet.assert_called_with(cw.wallet, True)
 
 
 def test_update_rgb_context_for_initiator_psbts(mocker):

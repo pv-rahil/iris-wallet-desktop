@@ -211,7 +211,12 @@ def test_send_btc_begin_with_session(mock_get_session, mock_wallet):
     mock_wallet.send_btc_begin.assert_called_once_with(
         online=True, address='addr', amount=10, fee_rate=2, skip_sync=False,
     )
-    svc.add_psbt.assert_called_once_with('psbt_base64', purpose='send_btc')
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_base64'
+    assert psbt_data.purpose == 'send_btc'
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -273,9 +278,12 @@ def test_create_utxos_begin_with_session(mock_get_session, mock_wallet):
     mock_wallet.create_utxos_begin.assert_called_once_with(
         online=True, up_to=False, num=2, size=546, fee_rate=3, skip_sync=False,
     )
-    svc.add_psbt.assert_called_once_with(
-        'psbt_colorable', purpose='create_utxos',
-    )
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'psbt_colorable'
+    assert psbt_data.purpose == 'create_utxos'
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -338,7 +346,12 @@ def test_send_btc_init_with_session(mock_get_session, mock_wallet):
     mock_wallet.send_btc_init.assert_called_once_with(
         online=True, address='addr', amount=5000, fee_rate=1, skip_sync=False,
     )
-    svc.add_psbt.assert_called_once_with('btc_init_psbt', purpose='send_btc')
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'btc_init_psbt'
+    assert psbt_data.purpose == 'send_btc'
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -376,9 +389,12 @@ def test_create_utxos_init_with_session(mock_get_session, mock_wallet):
     mock_wallet.create_utxos_init.assert_called_once_with(
         online=True, up_to=True, num=3, size=546, fee_rate=2, skip_sync=False,
     )
-    svc.add_psbt.assert_called_once_with(
-        'utxo_init_psbt', purpose='create_utxos',
-    )
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'utxo_init_psbt'
+    assert psbt_data.purpose == 'create_utxos'
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')

@@ -59,7 +59,7 @@ class Wallet(MainPageObjects, BaseOperations):
         super().__init__(application)
 
         self.address = None
-        self.hardware_wallet_emu = None
+        self.hw_emulator = None
 
     def _resolve_effective_variant(self, application: str, variant: str, is_load_wallet: bool) -> str | None:
         """
@@ -834,6 +834,9 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
                 self.sidebar_page_objects.click_fungibles_button()
 
+            if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
+                self.fungible_page_objects.click_refresh_button()
+
             if variant_name == ONLINE_WATCH_ONLY:
                 if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
                     self.fungible_page_objects.click_usb_sync_frame()
@@ -846,11 +849,11 @@ class Wallet(MainPageObjects, BaseOperations):
 
             if variant_name in HARDWARE_WALLET_VARIANTS:
                 if is_rgb:
-                    self.hardware_wallet_emu = handle_hardware_wallet(
+                    self.hw_emulator = handle_hardware_wallet(
                         app_name=RGB_LEDGER_APP_NAME,
                     )
                 else:
-                    self.hardware_wallet_emu = handle_hardware_wallet(
+                    self.hw_emulator = handle_hardware_wallet(
                         app_name=BITCOIN_LEDGER_APP_NAME,
                     )
 
@@ -870,12 +873,12 @@ class Wallet(MainPageObjects, BaseOperations):
                 if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
                     self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
-            if self.hardware_wallet_emu:
+            if self.hw_emulator:
                 self.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME, is_rgb, is_issue_ifa,
                 )
 
-            self.do_focus_on_application(application)
+                self.do_focus_on_application(application)
 
             if variant_name == ONLINE_WATCH_ONLY:
                 self.usb_sync(is_receive=True)
@@ -883,8 +886,8 @@ class Wallet(MainPageObjects, BaseOperations):
         except Exception as e:
             raise e
         finally:
-            if self.hardware_wallet_emu:
-                self.hardware_wallet_emu.terminate()
+            if self.hw_emulator:
+                self.hw_emulator.terminate()
 
     def broadcast_psbt(self, application):
         """
@@ -915,11 +918,7 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
             self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
-        if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-            self.toaster_page_objects.click_toaster_frame()
-
-        if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
-            description = self.toaster_page_objects.get_toaster_description()
+        _, description = self.toaster_page_objects.click_toaster_frame()
 
         if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
             self.fungible_page_objects.click_refresh_button()

@@ -10,9 +10,15 @@ from unittest.mock import patch
 
 import pytest
 
+from src.data.repository.rgb_repository import RgbRepository
+from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import Balance
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
+from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.viewmodels.issue_nia_view_model import IssueNIAViewModel
 
@@ -141,20 +147,21 @@ def test_on_success_native_auth_generic_exception(
 
         # Verify the call to show_toast
         mock_show_toast.assert_called_once_with(
-            description='Authentication failed',
+            description=ERROR_AUTHENTICATION_CANCELLED,
         )
 
 
 @patch('src.views.components.toast.ToastManager.error')
 def test_on_success_native_auth_nia_missing_value(mock_toast_manager, issue_nia_view_model):
-    """Test on_success_native_auth_cfa when an unexpected exception occurs"""
+    """Test on_success_native_auth_nia when fields are missing - should call _proceed_with_issue_nia which handles missing fields"""
 
-    # Set all required attributes
-    # This will cause an exception when converting to int
-    issue_nia_view_model.amount = ''
+    # Set all required attributes to None to trigger missing fields in _proceed_with_issue_nia
+    issue_nia_view_model.token_amount = None
     issue_nia_view_model.asset_name = 'Test Asset'
-    issue_nia_view_model.asset_ticker = 'TEST'
+    issue_nia_view_model.short_identifier = 'TEST'
 
+    # on_success_native_auth_nia with success=True will call _proceed_with_issue_nia
+    # which will raise CommonException for missing fields
     issue_nia_view_model.on_success_native_auth_nia(True)
 
     mock_toast_manager.assert_called_once_with(
@@ -164,7 +171,7 @@ def test_on_success_native_auth_nia_missing_value(mock_toast_manager, issue_nia_
 
 @patch('src.views.components.toast.ToastManager.error')
 def test_on_success_native_auth_nia_exception(mock_toast_manager, issue_nia_view_model):
-    """Test on_success_native_auth_cfa when an unexpected exception occurs"""
+    """Test on_success_native_auth_nia when an unexpected exception occurs during _proceed_with_issue_nia"""
     issue_nia_view_model.issue_button_clicked = MagicMock()
 
     # Set required attributes
@@ -172,7 +179,7 @@ def test_on_success_native_auth_nia_exception(mock_toast_manager, issue_nia_view
     issue_nia_view_model.asset_name = 'Test Asset'
     issue_nia_view_model.short_identifier = 'TEST'
 
-    # Mock run_in_thread to raise an exception
+    # Mock run_in_thread to raise an exception inside _proceed_with_issue_nia
     def mock_run_in_thread(*args, **kwargs):
         raise RuntimeError('Test exception')
 
@@ -295,3 +302,63 @@ def test_on_error_no_available_utxos_triggers_utxo_creation_started(mock_toast_e
     btn_slot.assert_called_once_with(False)
     utxo_slot.assert_called_once_with(True)
     mock_toast_error.assert_not_called()
+
+
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_signature_type')
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_key_storage_type')
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_type')
+def test_on_issue_click_multisig_on_device_requires_native_auth(
+    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_nia_view_model,
+):
+    """Test that multisig on-device wallet requires native auth."""
+    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
+    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
+    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+
+    with patch.object(issue_nia_view_model, 'run_in_thread') as mock_run:
+        issue_nia_view_model.on_issue_click('TEST', 'Test Asset', '100')
+
+        # Verify native auth was passed to run_in_thread
+        call_args = mock_run.call_args[0]
+        expected_method = SettingRepository.native_authentication
+        assert call_args[0] is expected_method
+
+
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_signature_type')
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_key_storage_type')
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_type')
+def test_on_issue_click_standard_wallet_no_native_auth(
+    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_nia_view_model,
+):
+    """Test that standard online on-device wallet DOES require native auth."""
+    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
+    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+
+    with patch.object(issue_nia_view_model, 'run_in_thread') as mock_run:
+        issue_nia_view_model.on_issue_click('TEST', 'Test Asset', '100')
+
+        # Verify native auth was passed to run_in_thread (standard online on-device DOES require auth)
+        call_args = mock_run.call_args[0]
+        expected_method = SettingRepository.native_authentication
+        assert call_args[0] is expected_method
+
+
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_signature_type')
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_key_storage_type')
+@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_type')
+def test_on_issue_click_hardware_wallet_no_native_auth(
+    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_nia_view_model,
+):
+    """Test that hardware wallet does not require native auth."""
+    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
+    mock_get_key_storage.return_value = KeyStorageType.HARDWARE_WALLET
+    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
+
+    with patch.object(issue_nia_view_model, 'run_in_thread') as mock_run:
+        issue_nia_view_model.on_issue_click('TEST', 'Test Asset', '100')
+
+        # Verify issue_asset_nia was passed to run_in_thread (no native auth for hardware wallet)
+        call_args = mock_run.call_args[0]
+        expected_method = RgbRepository.issue_asset_nia
+        assert call_args[0] is expected_method

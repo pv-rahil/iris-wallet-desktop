@@ -12,6 +12,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QLabel
 
 from src.model.enums.enums_model import ToastPreset
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.constant import SYNCING_CHAIN_LABEL_TIMER
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.ui_set_wallet_password import SetWalletPasswordWidget
@@ -31,9 +32,12 @@ def set_wallet_password_widget(qtbot):
 
 def test_close_navigation(set_wallet_password_widget: SetWalletPasswordWidget):
     """Test the close_navigation method."""
-
-    set_wallet_password_widget.close_navigation()
-    set_wallet_password_widget._view_model.page_navigation.welcome_page.assert_called_once()
+    with patch(
+        'src.views.ui_set_wallet_password.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    ):
+        set_wallet_password_widget.close_navigation()
+        set_wallet_password_widget._view_model.page_navigation.welcome_page.assert_called_once()
 
 
 def test_set_password_suggestion(set_wallet_password_widget: SetWalletPasswordWidget):

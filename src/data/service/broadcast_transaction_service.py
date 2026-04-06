@@ -505,7 +505,7 @@ class BroadcastTransactionService:
                 return ''
 
             # Try to find non-change outputs to identify the actual destination
-            non_change = [out for out in outputs if not out.is_ours]
+            non_change = [out for out in outputs if not out.is_mine]
             target_output = non_change[0] if non_change else outputs[0]
 
             destination_addr = target_output.address or ''

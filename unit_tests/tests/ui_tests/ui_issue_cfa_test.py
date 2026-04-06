@@ -245,20 +245,23 @@ def test_handle_cfa_issue_reuse_existing_psbt(issue_cfa_widget: IssueCFAWidget, 
 
 
 def test_handle_cfa_issue_create_utxos_when_no_psbt(issue_cfa_widget: IssueCFAWidget, mocker):
-    """Cover else branch -> create_utxos_begin called."""
+    """Cover else branch -> create_utxos_for_issue called."""
     widget = issue_cfa_widget
-    svc = MagicMock()
-    svc.list_psbt.return_value = []
-    with patch.object(widget._view_model.utxo_creation_view_model, 'create_utxos_begin', new=MagicMock()):
-        mocker.patch(
-            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
-        )
+    wallet_service = MagicMock()
+    wallet_service.list_psbt.return_value = []
+    mocker.patch(
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=wallet_service,
+    )
+    mocker.patch(
+        'src.views.ui_issue_cfa.get_unspent_utxo_count', return_value=0,
+    )
+    mock_create_utxos = mocker.patch(
+        'src.views.ui_issue_cfa.create_utxos_for_issue', return_value=True,
+    )
 
-        # The widget now uses purpose 'issue_asset_cfa' and passes a required count
-        widget.handle_cfa_issue()
-        assert widget._view_model.utxo_creation_view_model.create_utxos_begin.called
-        args, _ = widget._view_model.utxo_creation_view_model.create_utxos_begin.call_args
-        assert args[0] == 'issue_asset_cfa'
+    widget.handle_cfa_issue()
+    mock_create_utxos.assert_called_once()
+    assert mock_create_utxos.call_args[0][1] == 'issue_asset_cfa'
 
 
 def test_create_issue_cfa_draft_success_and_exception(issue_cfa_widget: IssueCFAWidget, mocker):
@@ -337,7 +340,8 @@ def test_show_cfa_psbt_page_navigates(issue_cfa_widget: IssueCFAWidget):
     """Cover positive path of show_cfa_psbt_page."""
     widget = issue_cfa_widget
     # Mock isVisible so show_cfa_psbt_page doesn't return early
-    widget.isVisible = MagicMock(return_value=True)
+    widget.show()  # Make widget visible
+    widget.is_multisig_wallet = False  # Ensure non-multisig path
     widget._view_model.page_navigation.receive_asset_page = MagicMock()
     # Gate by current purpose
     widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_cfa'

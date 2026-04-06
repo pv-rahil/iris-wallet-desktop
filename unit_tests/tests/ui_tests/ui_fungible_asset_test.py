@@ -49,9 +49,11 @@ def mock_fungible_asset_view_model():
 @pytest.fixture
 def create_fungible_asset_widget(qtbot, mock_fungible_asset_view_model):
     """Fixture to create the FungibleAssetWidget."""
-    widget = FungibleAssetWidget(mock_fungible_asset_view_model)
-    qtbot.addWidget(widget)
-    return widget
+    with patch('src.views.ui_fungible_asset.SettingRepository.get_wallet_signature_type', return_value=None):
+        widget = FungibleAssetWidget(mock_fungible_asset_view_model)
+        widget.is_multisig_wallet = False  # Ensure action_button is connected
+        qtbot.addWidget(widget)
+        return widget
 
 
 def test_fungible_asset_widget_initialization(create_fungible_asset_widget):

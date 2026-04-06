@@ -143,11 +143,11 @@ class ColoredWallet:
                             'Failed to generate bridge token. Check debug logs for details.',
                         )
                     self.online_wallet = self._wallet.go_online(
-                        indexer_url, MULTISIG_BRIDGE_URL, token,
+                        False, indexer_url, MULTISIG_BRIDGE_URL, token,
                     )
                 else:
                     self.online_wallet = self._wallet.go_online(
-                        True, indexer_url,
+                        False, indexer_url,
                     )
             except RgbLibError.InvalidIndexer:
                 raise

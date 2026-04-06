@@ -11,8 +11,10 @@ from accessible_constant import FIRST_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
 
 
+@pytest.mark.skip_for_multisig
 @allure.feature('Login app')
 @allure.story('Test login app toggle button')
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -42,6 +44,7 @@ def test_login_app_toggle_button_on(test_environment, wallets_and_operations: Wa
         test_environment.restart_single_instance(reset_data=False)
 
 
+@pytest.mark.skip_for_multisig
 @allure.feature('Login app')
 @allure.story('Test login app with authentication')
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
@@ -60,6 +63,64 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
         None
     """
     with allure.step('assert the state of toggle button and toggle it to off'):
+        wallets_and_operations.first_page_operations.enter_native_password()
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        assert True is wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked
+        wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
+
+        wallets_and_operations.first_page_operations.enter_native_password()
+
+        assert False is wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked
+
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Login app for multisig')
+@allure.story('Test login app toggle button for multisig')
+def test_login_app_toggle_button_on_for_multisig(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test the login app toggle button functionality for multisig wallets.
+
+    This test case sets up multisig wallets, toggles the login app auth button to on,
+    and restarts the application.
+
+    Args:
+        test_environment: The test environment setup.
+        wallets_and_operations: The wallets and operations setup.
+        wallet_variant_name: The wallet variant name.
+
+    Returns:
+        None
+    """
+    with allure.step('Setup multisig wallets'):
+        setup_multisig_wallets(wallets_and_operations, wallet_variant_name)
+
+    with allure.step('Toggle the login app auth button to on and restart the application'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
+
+        test_environment.restart_single_instance(reset_data=False)
+
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Login app for multisig')
+@allure.story('Test login app with authentication for multisig')
+def test_login_app_with_authentication_for_multisig(wallets_and_operations: WalletTestSetup):
+    """
+    Test the login app with authentication functionality for multisig.
+
+    This test case types the login password, asserts the state of the toggle button,
+    toggles it to off, and types the login password again.
+
+    Args:
+        wallets_and_operations: The wallets and operations setup.
+
+    Returns:
+        None
+    """
+    with allure.step('Assert the state of toggle button and toggle it to off'):
         wallets_and_operations.first_page_operations.enter_native_password()
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         assert True is wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked

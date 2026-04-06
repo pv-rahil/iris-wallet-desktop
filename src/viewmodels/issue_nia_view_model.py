@@ -10,10 +10,14 @@ from PySide6.QtCore import Signal
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
+from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
+from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import IssueAssetNiaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
+from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.worker import ThreadManager
@@ -35,46 +39,6 @@ class IssueNIAViewModel(QObject, ThreadManager):
         super().__init__()
         self._page_navigation = page_navigation
 
-    def on_success_native_auth_nia(self, success: bool):
-        """Callback function after native authentication successful"""
-        try:
-            if not success:
-                raise CommonException('Authentication failed')
-            if self.token_amount is None or self.asset_name is None or self.short_identifier is None:
-                raise CommonException('Few fields missing')
-
-            asset = IssueAssetNiaRequestModel(
-                amounts=[int(self.token_amount)],
-                name=self.asset_name,
-                ticker=self.short_identifier,
-            )
-            self.run_in_thread(
-                RgbRepository.issue_asset_nia,
-
-                {
-                    'args': [asset],
-                    'callback': self.on_success,
-                    'error_callback': self.on_error,
-                },
-            )
-        except CommonException as error:
-            ToastManager.error(
-                description=error.message,
-            )
-        except Exception:
-            self.issue_button_clicked.emit(False)
-            ToastManager.error(
-                description=ERROR_SOMETHING_WENT_WRONG,
-            )
-
-    def on_error_native_auth_nia(self, error: Exception):
-        """Callback function on error"""
-        self.issue_button_clicked.emit(False)
-        description = error.message if isinstance(
-            error, CommonException,
-        ) else ERROR_SOMETHING_WENT_WRONG
-        ToastManager.error(description=description)
-
     def on_issue_click(self, short_identifier: str, asset_name: str, amount: str):
         """
         Executes the set_wallet_password method in a separate thread.
@@ -85,14 +49,71 @@ class IssueNIAViewModel(QObject, ThreadManager):
         self.token_amount = amount
         self.short_identifier = short_identifier
         self.asset_name = asset_name
-        self.run_in_thread(
-            SettingRepository.native_authentication,
-            {
-                'args': [NativeAuthType.MAJOR_OPERATION],
-                'callback': self.on_success_native_auth_nia,
-                'error_callback': self.on_error_native_auth_nia,
-            },
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
         )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self.on_success_native_auth_nia,
+                    'error_callback': self.on_error_native_auth_nia,
+                },
+            )
+        else:
+            self._proceed_with_issue_nia()
+
+    def _proceed_with_issue_nia(self):
+        """Proceed with NIA issuance after native auth or directly for non-auth variants."""
+        try:
+            if self.token_amount is None or self.asset_name is None or self.short_identifier is None:
+                raise CommonException('Few fields missing')
+
+            asset = IssueAssetNiaRequestModel(
+                amounts=[int(self.token_amount)],
+                name=self.asset_name,
+                ticker=self.short_identifier,
+            )
+            self.run_in_thread(
+                RgbRepository.issue_asset_nia,
+                {
+                    'args': [asset],
+                    'callback': self.on_success,
+                    'error_callback': self.on_error,
+                },
+            )
+        except CommonException as error:
+            self.issue_button_clicked.emit(False)
+            ToastManager.error(description=error.message)
+        except Exception:
+            self.issue_button_clicked.emit(False)
+            ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
+
+    def on_success_native_auth_nia(self, success: bool):
+        """Callback function after native authentication successful"""
+        if success:
+            self._proceed_with_issue_nia()
+        else:
+            self.issue_button_clicked.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
+
+    def on_error_native_auth_nia(self, error: Exception):
+        """Callback function on error"""
+        self.issue_button_clicked.emit(False)
+        description = error.message if isinstance(
+            error, CommonException,
+        ) else ERROR_SOMETHING_WENT_WRONG
+        ToastManager.error(description=description)
 
     def on_success(self, response: IssueAssetResponseModel) -> None:
         """This method is used  handle onsuccess for the NIA issue page."""

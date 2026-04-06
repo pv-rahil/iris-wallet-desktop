@@ -116,7 +116,7 @@ class CFAViewModel(QObject, ThreadManager):
         except Exception as e:
             on_error(CommonException(message=str(e)))
 
-    def on_success_cfa(self, tx_id: SendAssetResponseModel) -> None:
+    def on_success_cfa(self, tx_id: SendAssetResponseModel | None = None) -> None:
         """Handle success for sending CFA asset."""
         self.is_loading.emit(False)
         self.send_cfa_button_clicked.emit(False)
@@ -162,34 +162,6 @@ class CFAViewModel(QObject, ThreadManager):
         else:
             ToastManager.error(description=error.message)
 
-    def on_success_send_rgb_asset(self, success: bool) -> None:
-        """Callback function after native authentication is successful."""
-        if success:
-            self.send_cfa_button_clicked.emit(True)
-            self.is_loading.emit(True)
-            try:
-                self.run_in_thread(
-                    RgbRepository.send_asset,
-                    {
-                        'args': [
-                            SendAssetRequestModel(
-                                asset_id=self.asset_id,
-                                assignment=self.assignment,
-                                recipient_id=self.blinded_utxo,
-                                transport_endpoints=self.transport_endpoints,
-                                fee_rate=int(self.fee_rate),
-                                min_confirmations=int(self.min_confirmation),
-                            ),
-                        ],
-                        'callback': self.on_success_cfa,
-                        'error_callback': self.on_error,
-                    },
-                )
-            except Exception as e:
-                self.on_error(CommonException(message=str(e)))
-        else:
-            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
-
     def on_error_native_auth(self, error: Exception) -> None:
         """Callback function on error during native authentication."""
         description = error.message if isinstance(
@@ -204,14 +176,65 @@ class CFAViewModel(QObject, ThreadManager):
         self.fee_rate = fee_rate
         self.min_confirmation = min_confirmation
         self.assignment = assignment
-        self.run_in_thread(
-            SettingRepository.native_authentication,
-            {
-                'args': [NativeAuthType.MAJOR_OPERATION],
-                'callback': self.on_success_send_rgb_asset,
-                'error_callback': self.on_error_native_auth,
-            },
+        self.send_cfa_button_clicked.emit(True)
+        self.is_loading.emit(True)
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
         )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self.on_success_send_rgb_asset,
+                    'error_callback': self.on_error_native_auth,
+                },
+            )
+        else:
+            self._proceed_with_send_asset()
+
+    def _proceed_with_send_asset(self):
+        """Proceed with sending asset after native auth or directly for non-auth variants."""
+        try:
+            self.run_in_thread(
+                RgbRepository.send_asset,
+                {
+                    'args': [
+                        SendAssetRequestModel(
+                            asset_id=self.asset_id,
+                            assignment=self.assignment,
+                            recipient_id=self.blinded_utxo,
+                            transport_endpoints=self.transport_endpoints,
+                            fee_rate=int(self.fee_rate),
+                            min_confirmations=int(self.min_confirmation),
+                        ),
+                    ],
+                    'callback': self.on_success_cfa,
+                    'error_callback': self.on_error,
+                },
+            )
+        except Exception as e:
+            self.on_error(CommonException(message=str(e)))
+
+    def on_success_send_rgb_asset(self, success: bool) -> None:
+        """Callback function after native authentication is successful."""
+        if success:
+            self.send_cfa_button_clicked.emit(True)
+            self.is_loading.emit(True)
+            self._proceed_with_send_asset()
+        else:
+            self.send_cfa_button_clicked.emit(False)
+            self.is_loading.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
 
     def on_refresh_click(self, asset_id=None) -> None:
         """Executes the refresh operation in a separate thread."""
@@ -311,13 +334,53 @@ class CFAViewModel(QObject, ThreadManager):
         Calls RgbRepository.send_begin and expects a PSBT to be signed externally.
         """
         self.send_cfa_button_clicked.emit(True)
+        # Store params for later use
+        self.blinded_utxo = blinded_utxo
+        self.transport_endpoints = transport_endpoints
+        self.fee_rate = fee_rate
+        self.min_confirmation = min_confirmation
+        self.assignment = assignment
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
+        )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self._on_success_native_auth_send_begin,
+                    'error_callback': self.on_error_native_auth,
+                },
+            )
+        else:
+            self._proceed_with_send_begin()
+
+    def _on_success_native_auth_send_begin(self, success: bool):
+        """Callback after native auth success for send_begin."""
+        if success:
+            self._proceed_with_send_begin()
+        else:
+            self.send_cfa_button_clicked.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
+
+    def _proceed_with_send_begin(self):
+        """Proceed with PSBT creation after native auth check."""
         request = SendBeginRequestModel(
             asset_id=self.asset_id,
-            assignment=assignment,
-            recipient_id=blinded_utxo,
-            transport_endpoints=transport_endpoints,
-            fee_rate=fee_rate,
-            min_confirmations=min_confirmation,
+            assignment=self.assignment,
+            recipient_id=self.blinded_utxo,
+            transport_endpoints=self.transport_endpoints,
+            fee_rate=self.fee_rate,
+            min_confirmations=self.min_confirmation,
         )
         # Store request for multisig post_send step
         self.current_send_request = request
@@ -374,10 +437,10 @@ class CFAViewModel(QObject, ThreadManager):
         """Post signed PSBT and recipient map to bridge."""
         post_signed_psbt_to_bridge(self, signed_psbt, self.operation_idx)
 
-    def on_multisig_post_success(self, _):
+    def on_success_multisig_post(self, _):
         """Handle success after posting to bridge."""
         # Auto-sync is handled by RgbRepository decorator on post_send
-        self.on_success_cfa(SendAssetResponseModel(txid='multisig_pending'))
+        self.on_success_cfa()
 
     def on_psbt_signed_and_finalized_success(self, finalized_psbt: str):
         """

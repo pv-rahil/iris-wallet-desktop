@@ -209,26 +209,25 @@ def test_backup_multisig_wallet(
     assert mock_drive_instance.upload_to_drive.call_count == 3
 
 
-@patch('src.data.service.backup_service.write_rgb_lib_version_file')
-@patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
-@patch('src.data.service.backup_service.BackupService.backup_file_exists')
-@patch('src.data.repository.common_operations_repository.CommonOperationRepository.backup')
+@patch('src.data.service.backup_service.BackupService._upload_multisig_config', return_value=True)
+@patch('src.data.service.backup_service.BackupService._upload_backup_to_drive', return_value=(True, True))
+@patch('src.data.service.backup_service.BackupService._prepare_backup_file')
 @patch('src.data.service.backup_service.GoogleDriveManager')
+@patch('src.data.service.backup_service.app_paths')
+@patch('src.data.service.common_operation_service.CommonOperationService.get_hashed_mnemonic')
 @patch('src.data.service.backup_service.os.remove')
 @patch('src.data.service.backup_service.os.makedirs')
-@patch('src.data.service.backup_service.os.path.exists')
-def test_backup_removes_old_file(mock_os_exists, mock_makedirs, mock_remove, mock_google_drive, mock_backup_repo, mock_backup_exists, mock_hashed, mock_version_file):
+@patch('src.data.service.backup_service.os.path.exists', return_value=True)
+def test_backup_removes_old_file(
+    mock_os_exists, mock_makedirs, mock_remove, mock_hashed, mock_app_paths,
+    mock_google_drive, mock_prepare, mock_upload_backup, mock_multisig_upload,
+):
     """Case 8: Test backup removes old backup file if exists."""
-    # 1. backup_folder_path exists, 2. backup_file_path exists, 3. iriswallet_temp_folder_path exists
-    mock_os_exists.side_effect = [True, True, True, True, True]
+    # Mock app_paths
+    mock_app_paths.backup_folder_path = '/tmp/backup'
+    mock_app_paths.iriswallet_temp_folder_path = '/tmp/iriswallet_temp'
+
     mock_hashed.return_value = 'hashed_mnemonic'
-    mock_backup_exists.return_value = True
-
-    mock_drive_instance = MagicMock()
-    mock_drive_instance.upload_to_drive.return_value = True
-    mock_google_drive.return_value = mock_drive_instance
-
-    mock_version_file.return_value = ('/tmp/version.txt', 'version.txt')
 
     result = BackupService.backup('mnemonic', 'password')
 

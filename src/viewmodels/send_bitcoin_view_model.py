@@ -19,6 +19,7 @@ from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
+from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
 from src.utils.info_message import INFO_BITCOIN_SENT
@@ -58,17 +59,32 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.amount = amount
         self.fee_rate = fee_rate
         self.send_button_clicked.emit(True)
-        self.run_in_thread(
-            SettingRepository.native_authentication,
-            {
-                'args': [NativeAuthType.MAJOR_OPERATION],
-                'callback': self.on_success_authentication_btc_send,
-                'error_callback': self.on_error,
-            },
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
         )
 
-    def on_success_authentication_btc_send(self):
-        """call back which send btc to address after success of authentication"""
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self.on_success_authentication_btc_send,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
+            self._proceed_with_send_btc()
+
+    def _proceed_with_send_btc(self):
+        """Proceed with sending BTC after native auth or directly for non-auth variants."""
         try:
             self.run_in_thread(
                 BtcRepository.send_btc,
@@ -90,6 +106,14 @@ class SendBitcoinViewModel(QObject, ThreadManager):
             ToastManager.error(
                 description=ERROR_SOMETHING_WENT_WRONG,
             )
+
+    def on_success_authentication_btc_send(self, success: bool):
+        """call back which send btc to address after success of authentication"""
+        if success:
+            self._proceed_with_send_btc()
+        else:
+            self.send_button_clicked.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
 
     def on_success(self, response: SendBtcResponseModel) -> None:
         """This method is used  handle onsuccess for the send bitcoin page."""
@@ -122,6 +146,40 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.amount = amount
         self.fee_rate = fee_rate
         self.send_button_clicked.emit(True)
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
+        )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self._on_success_native_auth_send_btc_begin,
+                    'error_callback': self.on_error,
+                },
+            )
+        else:
+            self._proceed_with_send_btc_begin(skip_sync)
+
+    def _on_success_native_auth_send_btc_begin(self, success: bool):
+        """Callback after native auth success for send_btc_begin."""
+        if success:
+            self._proceed_with_send_btc_begin(skip_sync=False)
+        else:
+            self.send_button_clicked.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
+
+    def _proceed_with_send_btc_begin(self, skip_sync: bool):
+        """Proceed with PSBT creation after native auth check."""
         is_hw = SettingRepository.get_key_storage_type() == KeyStorageType.HARDWARE_WALLET
         is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
         if (is_hw and is_online and SettingRepository.get_wallet_signature_type() == WalletSignatureType.STANDARD_TYPE_WALLET) or (
@@ -136,7 +194,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
                 INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET, PsbtStatus.SIGNING,
             )
         request = SendBtcRequestModel(
-            address=address, amount=amount, fee_rate=fee_rate, skip_sync=skip_sync,
+            address=self.address, amount=self.amount, fee_rate=self.fee_rate, skip_sync=skip_sync,
         )
         if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.run_in_thread(
@@ -192,7 +250,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_psbt_signed_and_finalized(self, finalized_psbt: str):
+    def on_psbt_signed_and_finalized_success(self, finalized_psbt: str):
         """
         Callback after PSBT is signed and finalized.
         Now broadcast the transaction.

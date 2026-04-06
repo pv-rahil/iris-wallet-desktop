@@ -216,7 +216,9 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         has_blocking_op = False
         for op_info in pending_ops:
-            operation = self._get_valid_operation(op_info)
+            if op_info is None:
+                continue
+            operation = op_info.operation
             if operation is None:
                 continue
 
@@ -275,7 +277,9 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         target_op_info = None
         for op_info in pending_ops:
-            operation = self._get_valid_operation(op_info)
+            if op_info is None:
+                continue
+            operation = op_info.operation
             if operation is None:
                 continue
             psbt = getattr(operation, 'psbt', None)
@@ -396,6 +400,8 @@ class HeaderFrameViewModel(QObject, ThreadManager):
         )
 
         for op_info in pending_ops:
+            if op_info is None:
+                continue
             operation = op_info.operation
             if operation is None:
                 continue

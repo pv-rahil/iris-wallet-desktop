@@ -182,10 +182,10 @@ def test_send_and_receive_ifa_asset_operation_for_offline_wallet(wallets_and_ope
 
 
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
-@allure.feature('Automation of receive, send, and transaction status for IFA asset in iris wallet for multisig')
-@allure.story('End-to-End testing of receiving, sending, and verifying transaction status for IFA asset for multisig')
-def test_send_and_receive_ifa_asset_multisig_operation(wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """Test send and receive operation for IFA asset for multisig"""
+@allure.feature('Automation of send operation for IFA asset in iris wallet for multisig')
+@allure.story('Testing send IFA asset with invalid invoice for multisig')
+def test_send_ifa_with_invalid_invoice_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test send IFA asset with invalid invoice for multisig"""
 
     setup_multisig_wallets(wallets_and_operations, wallet_variant_name)
 
@@ -214,6 +214,28 @@ def test_send_and_receive_ifa_asset_multisig_operation(wallets_and_operations: W
         )
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
 
+    with allure.step('Navigate to IFA asset for sending'):
+        focus_and_navigate_to_asset(
+            wallets_and_operations.first_page_operations,
+            wallets_and_operations.first_page_objects,
+            IFA_ASSET_NAME,
+            asset_type='ifa',
+        )
+
+    with allure.step('Verify invalid invoice validation for IFA asset (multisig)'):
+        verify_invalid_invoice_validation(
+            wallets_and_operations.first_page_objects,
+            INVOICE,
+            TranslationManager.translate('invalid_invoice'),
+        )
+
+
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Automation of receive, send, and transaction status for IFA asset in iris wallet for multisig')
+@allure.story('End-to-End testing of receiving, sending, and verifying transaction status for IFA asset for multisig')
+def test_send_and_receive_ifa_asset_multisig_operation(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test send and receive operation for IFA asset for multisig"""
+
     with allure.step('Initiate third single-sig wallet for receiving IFA asset'):
         invoice = initiate_third_wallet_and_get_invoice(
             wallets_and_operations.third_page_features,
@@ -229,4 +251,5 @@ def test_send_and_receive_ifa_asset_multisig_operation(wallets_and_operations: W
         SEND_AMOUNT,
         wallet_variant_name,
         asset_type='ifa',
+        verify_assertions=True,
     )

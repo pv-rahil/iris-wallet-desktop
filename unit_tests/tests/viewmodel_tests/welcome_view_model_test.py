@@ -306,7 +306,7 @@ def test_handle_sync_completed_multisig_restore(welcome_view_model, mocker, tmp_
 
 
 def test_handle_sync_completed_multisig_restore_fail(welcome_view_model, mocker, tmp_path):
-    """Test handle_sync_completed logs error if cosigners file is invalid."""
+    """Test handle_sync_completed when cosigners file is invalid - should still succeed."""
     data = Mock(password='pwd')
     mocker.patch(
         'src.viewmodels.welcome_view_model.SettingRepository.get_wallet_network',
@@ -315,6 +315,9 @@ def test_handle_sync_completed_multisig_restore_fail(welcome_view_model, mocker,
     mocker.patch(
         'src.viewmodels.welcome_view_model.set_value',
         return_value=True,
+    )
+    mock_toast = mocker.patch(
+        'src.viewmodels.welcome_view_model.ToastManager.success',
     )
 
     ap = mocker.Mock(
@@ -326,10 +329,7 @@ def test_handle_sync_completed_multisig_restore_fail(welcome_view_model, mocker,
     with open(ap.multisig_cosigners_file_path, 'w', encoding='utf-8') as f:
         f.write('invalid json')
 
-    mock_logger = mocker.patch(
-        'src.viewmodels.welcome_view_model.logger.error',
-    )
-
     welcome_view_model.handle_sync_completed(data)
 
-    mock_logger.assert_called()
+    # Should still show success toast even if multisig restore fails
+    mock_toast.assert_called_once()

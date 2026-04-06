@@ -112,43 +112,50 @@ def test_handle_nia_issue_reuse_existing_psbt(issue_nia_widget: IssueNIAWidget, 
 
 
 def test_handle_nia_issue_create_utxos_when_no_psbt(issue_nia_widget: IssueNIAWidget, mocker):
-    """Cover else branch -> create_utxos_begin called (also covers wallet_service None path separately)."""
+    """Cover else branch -> create_utxos_for_issue called."""
     widget = issue_nia_widget
     svc = MagicMock()
     svc.list_psbt.return_value = []
-    with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
-        mocker.patch(
-            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
-        )
-    widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
+    mocker.patch(
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
+    )
+    mocker.patch(
+        'src.views.ui_issue_nia.get_unspent_utxo_count', return_value=0,
+    )
+    mock_create_utxos = mocker.patch(
+        'src.views.ui_issue_nia.create_utxos_for_issue', return_value=True,
+    )
 
     widget.handle_nia_issue()
-    # Implementation now passes a required count along with purpose; assert purpose only
-    assert widget._view_model.utxo_creation_view_model.create_utxos_begin.called
-    args, _ = widget._view_model.utxo_creation_view_model.create_utxos_begin.call_args
-    assert args[0] == 'issue_asset_nia'
+    # Verify create_utxos_for_issue was called with correct arguments
+    mock_create_utxos.assert_called_once()
+    assert mock_create_utxos.call_args[0][1] == 'issue_asset_nia'
 
 
 def test_handle_nia_issue_wallet_service_none(issue_nia_widget: IssueNIAWidget, mocker):
-    """If wallet service is None, unsigned_psbts becomes [], so create_utxos_begin is called."""
+    """If wallet service is None, create_utxos_for_issue is called."""
     widget = issue_nia_widget
-    with patch.object(widget, 'show_nia_psbt_page', new=MagicMock()):
-        mocker.patch(
-            'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=None,
-        )
-    widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
+    mocker.patch(
+        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=None,
+    )
+    mocker.patch(
+        'src.views.ui_issue_nia.get_unspent_utxo_count', return_value=0,
+    )
+    mock_create_utxos = mocker.patch(
+        'src.views.ui_issue_nia.create_utxos_for_issue', return_value=True,
+    )
 
     widget.handle_nia_issue()
-    assert widget._view_model.utxo_creation_view_model.create_utxos_begin.called
-    args, _ = widget._view_model.utxo_creation_view_model.create_utxos_begin.call_args
-    assert args[0] == 'issue_asset_nia'
+    mock_create_utxos.assert_called_once()
+    assert mock_create_utxos.call_args[0][1] == 'issue_asset_nia'
 
 
 def test_show_nia_psbt_page_navigates(issue_nia_widget: IssueNIAWidget):
     """Cover positive path of show_nia_psbt_page: disconnect unsigned_psbt and navigate."""
     widget = issue_nia_widget
     # Mock isVisible so show_nia_psbt_page doesn't return early
-    widget.isVisible = MagicMock(return_value=True)
+    widget.show()  # Make widget visible
+    widget.is_multisig_wallet = False  # Ensure non-multisig path
     widget._view_model.page_navigation.receive_asset_page = MagicMock()
     # Gate by current purpose
     widget._view_model.utxo_creation_view_model.current_purpose = 'issue_asset_nia'

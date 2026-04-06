@@ -118,7 +118,7 @@ def check_colorable_available(required_utxos: int = 1) -> Callable[..., Any]:
                 # If the error is due to insufficient uncolored UTXOs, call the fallback
                 try:
                     current = get_unspent_utxo_count()
-                    needed = required_utxos - (current-1)
+                    needed = required_utxos - current
                     if needed > 0:
                         create_utxos(num=needed)
                     # Retry the original function

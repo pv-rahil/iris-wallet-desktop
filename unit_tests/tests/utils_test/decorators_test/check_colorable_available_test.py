@@ -1,3 +1,4 @@
+# pylint: disable=unused-argument
 """Unit tests for check_colorable_available decorator"""
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ from rgb_lib import RgbLibError
 from src.data.repository.setting_card_repository import SettingCardRepository
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.model.setting_model import DefaultFeeRate
 from src.utils.decorators.check_colorable_available import check_colorable_available
@@ -29,9 +31,13 @@ colored_wallet.wallet = MagicMock()
 
 
 @patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
 @patch('src.utils.cache.Cache.get_cache_session')
 @patch.object(SettingCardRepository, 'get_default_fee_rate')
-def test_create_utxos_success(mock_get_fee_rate, mock_get_cache):
+def test_create_utxos_success(mock_get_fee_rate, mock_get_cache, mock_key_storage, mock_wallet_type, mock_access_type, mock_signature_type):
     """Test successful execution of create_utxos."""
     mock_fee_rate = DefaultFeeRate(fee_rate=1)
     mock_get_fee_rate.return_value = mock_fee_rate
@@ -46,8 +52,12 @@ def test_create_utxos_success(mock_get_fee_rate, mock_get_cache):
 
 
 @patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
 @patch.object(SettingCardRepository, 'get_default_fee_rate')
-def test_create_utxos_http_error(mock_get_fee_rate):
+def test_create_utxos_http_error(mock_get_fee_rate, mock_key_storage, mock_wallet_type, mock_access_type, mock_signature_type):
     """Test create_utxos with HTTPError."""
     mock_fee_rate = DefaultFeeRate(fee_rate=1)
     mock_get_fee_rate.return_value = mock_fee_rate
@@ -67,8 +77,12 @@ def test_create_utxos_http_error(mock_get_fee_rate):
 
 
 @patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
 @patch.object(SettingCardRepository, 'get_default_fee_rate')
-def test_create_utxos_connection_error(mock_get_fee_rate):
+def test_create_utxos_connection_error(mock_get_fee_rate, mock_key_storage, mock_wallet_type, mock_access_type, mock_signature_type):
     """Test create_utxos with RequestsConnectionError."""
     mock_fee_rate = DefaultFeeRate(fee_rate=1)
     mock_get_fee_rate.return_value = mock_fee_rate
@@ -82,8 +96,12 @@ def test_create_utxos_connection_error(mock_get_fee_rate):
 
 
 @patch('src.utils.decorators.check_colorable_available.colored_wallet', colored_wallet)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_access_type', return_value=WalletAccessType.WITH_PRIVATE_KEY)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_wallet_type', return_value=WalletType.ONLINE_TYPE_WALLET)
+@patch('src.utils.decorators.check_colorable_available.SettingRepository.get_key_storage_type', return_value=KeyStorageType.ON_DEVICE)
 @patch.object(SettingCardRepository, 'get_default_fee_rate')
-def test_create_utxos_general_exception(mock_get_fee_rate):
+def test_create_utxos_general_exception(mock_get_fee_rate, mock_key_storage, mock_wallet_type, mock_access_type, mock_signature_type):
     """Test create_utxos with a general exception."""
     mock_fee_rate = DefaultFeeRate(fee_rate=1)
     mock_get_fee_rate.return_value = mock_fee_rate

@@ -10,19 +10,17 @@ from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.error_message import ERROR_UNABLE_TO_SET_INDEXER_URL
 from src.utils.error_message import ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
 from src.utils.info_message import INFO_SET_ENDPOINT_SUCCESSFULLY
 from src.utils.info_message import INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
 
-TEST_INVALID_ANNOUNCE_ADDRESS = 'example'
 TEST_INDEXER_URL = 'electrum.rgbtools.org:50041'
 TEST_INVALID_INDEXER_URL = 'test.indexer'
 TEST_RGB_PROXY_URL = 'rpcs://proxy.iriswallet.com/0.2/json-rpc'
 TEST_INVALID_RGB_PROXY_URL = 'test.rgb.proxy'
-TEST_INVALID_BITCOIND_HOST = 'test.bitcoind.host'
-TEST_INVALID_BITCOIND_PORT = '12345'
 TEST_FEE_RATE = '20'
 TEST_FEE_RATE_TOAST_DESC_SUCCESS = 'Fee rate set successfully'
 TEST_MIN_CONFIRMATION = '6'
@@ -30,6 +28,7 @@ TEST_MIN_CONFIRMATION = '6'
 pytestmark = [pytest.mark.order(2), pytest.mark.skip_for_offline_wallet]
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Set default fee rate')
 @allure.story('Sets default fee rate for sending assets')
@@ -59,8 +58,7 @@ def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup, wallet_va
             TEST_FEE_RATE,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        _, toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
     assert toast_description == TEST_FEE_RATE_TOAST_DESC_SUCCESS
 
@@ -77,6 +75,7 @@ def test_set_default_fee_rate(wallets_and_operations: WalletTestSetup, wallet_va
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Set default minimum confirmation')
 @allure.story('Sets default minimum confirmation For sending assets')
@@ -95,12 +94,12 @@ def test_set_default_min_confirmation(wallets_and_operations: WalletTestSetup):
             TEST_FEE_RATE,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        _, toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
     assert toast_description == INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Set indexer URL')
 @allure.story('Setting an invalid indexer url for the wallet')
@@ -127,8 +126,7 @@ def test_set_invalid_electrum_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        _, announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
     assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_INDEXER_URL
 
@@ -136,6 +134,7 @@ def test_set_invalid_electrum_url(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Set RGB proxy URL')
 @allure.story('Setting a RGB proxy url for the wallet')
@@ -162,8 +161,7 @@ def test_set_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        _, announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
         TranslationManager.translate('proxy_endpoint'),
@@ -179,6 +177,7 @@ def test_set_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Set RGB proxy URL')
 @allure.story('Setting an invalid RGB proxy url for the wallet')
@@ -205,8 +204,7 @@ def test_set_invalid_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        _, announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
     assert announce_add_toast_desc == ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
 
@@ -214,6 +212,7 @@ def test_set_invalid_rgb_proxy_url(wallets_and_operations: WalletTestSetup):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
+@pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [False], indirect=True)
 @allure.feature('Set indexer URL')
 @allure.story('Setting an indexer url for the wallet')
@@ -240,8 +239,7 @@ def test_set_valid_electrum_url(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
 
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description()
+        _, announce_add_toast_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
     assert announce_add_toast_desc == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
         TranslationManager.translate('indexer_endpoint'),
@@ -254,4 +252,191 @@ def test_set_valid_electrum_url(wallets_and_operations: WalletTestSetup):
     assert test_announce_address == TEST_INDEXER_URL
 
     with allure.step('Navigating to fungibles page'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+
+
+# ============== MULTISIG SETTINGS TESTS ==============
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Set default fee rate for multisig')
+@allure.story('Sets default fee rate for sending assets for multisig')
+def test_set_default_fee_rate_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test setting a default fee rate for multisig"""
+    with allure.step('Setup multisig wallets'):
+        setup_multisig_wallets(wallets_and_operations, wallet_variant_name)
+
+    with allure.step('Navigating to set default fee rate frame in settings for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_default_fee_rate_frame()
+
+    with allure.step('Entering a new default fee rate and saving for multisig'):
+        wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
+        wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
+            TEST_FEE_RATE,
+        )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
+        _, toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+
+    assert toast_description == TEST_FEE_RATE_TOAST_DESC_SUCCESS
+
+    with allure.step('Navigating to send bitcoin page to see the new default fee rate for multisig'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        new_default_fee_rate = wallets_and_operations.first_page_objects.send_asset_page_objects.get_fee_rate_text()
+
+    assert new_default_fee_rate == TEST_FEE_RATE
+
+    with allure.step('Navigating back to fungibles page for multisig'):
+        wallets_and_operations.first_page_objects.send_asset_page_objects.click_send_asset_close_button()
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Set default minimum confirmation for multisig')
+@allure.story('Sets default minimum confirmation for sending assets for multisig')
+def test_set_default_min_confirmation_for_multisig(wallets_and_operations: WalletTestSetup):
+    """Test for setting default minimum confirmation for multisig"""
+    with allure.step('Navigating to set min confirmation frame in settings for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_min_confirmation_frame()
+
+    with allure.step('Entering a new min confirmation and saving for multisig'):
+        wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
+        wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
+            TEST_MIN_CONFIRMATION,
+        )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
+        _, toast_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+
+    assert toast_description == INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
+
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Set indexer URL for multisig')
+@allure.story('Setting an invalid indexer url for the wallet for multisig')
+def test_set_invalid_electrum_url_for_multisig(wallets_and_operations: WalletTestSetup):
+    """Test setting an invalid electrum URL for multisig"""
+    with allure.step('Navigating to set electrum URL frame for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_indexer_url_frame()
+
+    with allure.step('Enter an invalid electrum URL for multisig'):
+        wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
+        wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
+            TEST_INVALID_INDEXER_URL,
+        )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
+
+        _, electrum_url = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+
+    assert electrum_url == ERROR_UNABLE_TO_SET_INDEXER_URL
+
+    with allure.step('Navigating to fungibles page for multisig'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Set RGB proxy URL for multisig')
+@allure.story('Setting a RGB proxy url for the wallet for multisig')
+def test_set_rgb_proxy_url_for_multisig(wallets_and_operations: WalletTestSetup):
+    """Test setting a valid RGB proxy URL for multisig"""
+    with allure.step('Navigating to set RGB proxy URL frame for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_rgb_proxy_url_frame()
+
+    with allure.step('Enter a new RGB proxy URL for multisig'):
+        wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
+        wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
+            TEST_RGB_PROXY_URL,
+        )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
+
+        _, rgb_proxy_url = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+
+    assert rgb_proxy_url == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+        TranslationManager.translate('proxy_endpoint'),
+    )
+
+    with allure.step('Navigating to about page to see the changes for multisig'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
+        proxy_url = wallets_and_operations.first_page_objects.about_page_objects.get_rgb_proxy_url()
+
+    assert proxy_url == TEST_RGB_PROXY_URL
+
+    with allure.step('Navigating to fungibles page for multisig'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Set RGB proxy URL for multisig')
+@allure.story('Setting an invalid RGB proxy url for the wallet for multisig')
+def test_set_invalid_rgb_proxy_url_for_multisig(wallets_and_operations: WalletTestSetup):
+    """Test setting an invalid RGB proxy URL for multisig"""
+    with allure.step('Navigating to set RGB proxy URL frame for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_rgb_proxy_url_frame()
+
+    with allure.step('Enter an invalid RGB proxy URL for multisig'):
+        wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
+        wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
+            TEST_INVALID_RGB_PROXY_URL,
+        )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
+
+        _, rgb_proxy_url = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+
+    assert rgb_proxy_url == ERROR_UNABLE_TO_SET_PROXY_ENDPOINT
+
+    with allure.step('Navigating to fungibles page for multisig'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+
+
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Set indexer URL for multisig')
+@allure.story('Setting an indexer url for the wallet for multisig')
+def test_set_valid_electrum_url_for_multisig(wallets_and_operations: WalletTestSetup):
+    """Test setting a valid electrum URL for multisig"""
+    with allure.step('Navigating to set electrum URL frame for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_set_indexer_url_frame()
+
+    with allure.step('Enter a new electrum URL for multisig'):
+        wallets_and_operations.first_page_objects.settings_page_objects.clear_input_box()
+        wallets_and_operations.first_page_objects.settings_page_objects.enter_input_value(
+            TEST_INDEXER_URL,
+        )
+        wallets_and_operations.first_page_objects.settings_page_objects.click_save_button()
+
+        _, electrum_url = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+
+    assert electrum_url == INFO_SET_ENDPOINT_SUCCESSFULLY.format(
+        TranslationManager.translate('indexer_endpoint'),
+    )
+
+    with allure.step('Navigating to about page for multisig'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
+        indexer_url = wallets_and_operations.first_page_objects.about_page_objects.get_indexer_url()
+
+    assert indexer_url == TEST_INDEXER_URL
+
+    with allure.step('Navigating to fungibles page for multisig'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()

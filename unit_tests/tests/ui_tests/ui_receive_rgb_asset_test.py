@@ -85,6 +85,14 @@ def test_handle_receive_asset_create_utxos_when_no_psbt(receive_rgb_asset_widget
     mocker.patch(
         'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
     )
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.SettingRepository.get_wallet_signature_type',
+        return_value=None,
+    )
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.SettingRepository.get_wallet_access_type',
+        return_value=None,
+    )
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 
     widget.handle_receive_asset()
@@ -98,6 +106,14 @@ def test_handle_receive_asset_wallet_service_none(receive_rgb_asset_widget: Rece
     widget = receive_rgb_asset_widget
     mocker.patch(
         'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=None,
+    )
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.SettingRepository.get_wallet_signature_type',
+        return_value=None,
+    )
+    mocker.patch(
+        'src.views.ui_receive_rgb_asset.SettingRepository.get_wallet_access_type',
+        return_value=None,
     )
     widget._view_model.utxo_creation_view_model.create_utxos_begin = MagicMock()
 

@@ -13,8 +13,10 @@ from PySide6.QtWidgets import QLineEdit
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import KeyStorageType
+from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
 from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NETWORK_MISMATCH
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -226,21 +228,23 @@ def test_password_mismatch(set_wallet_password_view_model, mocker):
     set_wallet_password_view_model.is_loading.connect(mock_emit)
 
 
-def test_password_valid_and_match(set_wallet_password_view_model, mocker):
+@patch('src.viewmodels.set_wallet_password_view_model.set_value', return_value=True)
+@patch('src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_signature_type', return_value=WalletSignatureType.STANDARD_TYPE_WALLET)
+@patch('src.viewmodels.set_wallet_password_view_model.SettingRepository.get_wallet_network')
+def test_password_valid_and_match(mock_network, mock_sign_type, mock_set_value, set_wallet_password_view_model, mocker):
     """
     Test that if passwords are valid and match:
     - No validation error is triggered
     - The loading state is emitted
     - The wallet initialization is executed in a thread
     """
+    mock_network.return_value = NetworkEnumModel.MAINNET
+
     enter_mock = mocker.MagicMock(spec=QLineEdit)
     confirm_mock = mocker.MagicMock(spec=QLineEdit)
     validation_mock = MagicMock()
     mocked_thread = mocker.patch.object(
         set_wallet_password_view_model, 'run_in_thread',
-    )
-    partial_mock = mocker.patch(
-        'src.viewmodels.set_wallet_password_view_model.partial',
     )
 
     enter_mock.text.return_value = 'validpass'
@@ -254,7 +258,6 @@ def test_password_valid_and_match(set_wallet_password_view_model, mocker):
     set_wallet_password_view_model.is_loading.connect(mock_emit)
     mocked_thread.assert_called_once()
     validation_mock.assert_not_called()
-    partial_mock.assert_called_once()
 
 
 @patch('src.viewmodels.set_wallet_password_view_model.mnemonic_store.encrypt', return_value='encrypted_mnemonic')

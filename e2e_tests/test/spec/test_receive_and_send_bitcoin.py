@@ -10,11 +10,15 @@ import pytest
 
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import initiate_third_wallet_and_get_invoice
+from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.info_message import INFO_BITCOIN_SENT
 
@@ -24,6 +28,7 @@ INVOICE = 'rgb:~/~/utxob:2msKeFq-uPjwpYxVY-jKS2ymYBq-SqmyP3ovg-AGvth8491-J7seMBm
 
 
 @pytest.mark.skip_for_offline_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet send operation with zero balance')
 @allure.story('Wallet send operation with zero balance which will give error label')
 def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup, load_qm_translation, wallet_variant_name):
@@ -60,6 +65,7 @@ def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup,
 
 
 @pytest.mark.skip_for_offline_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet receive and send operation automation for bitcoin')
 @allure.story('Wallet receive and send operation automation for bitcoin')
 def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -119,6 +125,7 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, walle
 
 
 @pytest.mark.skip_for_offline_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet send operation with custom fee rate')
 @allure.story('Wallet send operation with custom fee rate')
 def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -183,6 +190,7 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
 
 
 @pytest.mark.skip_for_offline_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet send operation with invalid invoice')
 @allure.story('Wallet send operation with invalid invoice')
 def test_send_bitcoin_with_invalid_invoice(wallets_and_operations: WalletTestSetup, load_qm_translation):
@@ -212,6 +220,7 @@ def test_send_bitcoin_with_invalid_invoice(wallets_and_operations: WalletTestSet
 
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet send operation with zero balance for offline')
 @allure.story('Wallet send operation with zero balance for offline')
 def test_send_bitcoin_with_zero_balance_for_offline(wallets_and_operations: WalletTestSetup, load_qm_translation, wallet_variant_name):
@@ -252,6 +261,7 @@ def test_send_bitcoin_with_zero_balance_for_offline(wallets_and_operations: Wall
 
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet receive and send operation automation for bitcoin offline')
 @allure.story('Wallet receive and send operation automation for bitcoin offline')
 def test_receive_and_send_bitcoin_for_offline(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -282,7 +292,7 @@ def test_receive_and_send_bitcoin_for_offline(wallets_and_operations: WalletTest
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT,
+            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, wallet_variant_name=wallet_variant_name,
         )
     with allure.step('sign psbt for send_btc'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
@@ -311,6 +321,7 @@ def test_receive_and_send_bitcoin_for_offline(wallets_and_operations: WalletTest
 
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet send operation with custom fee rate for offline')
 @allure.story('Wallet send operation with custom fee rate for offline')
 def test_send_bitcoin_with_custom_fee_rate_for_offline(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -334,7 +345,7 @@ def test_send_bitcoin_with_custom_fee_rate_for_offline(wallets_and_operations: W
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE,
+            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE, wallet_variant_name=wallet_variant_name,
         )
 
     with allure.step('Sign psbt for send_btc with custom fee rate'):
@@ -365,6 +376,7 @@ def test_send_bitcoin_with_custom_fee_rate_for_offline(wallets_and_operations: W
 
 @pytest.mark.skip_for_hardware_wallet
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet send operation with invalid invoice for offline')
 @allure.story('Wallet send operation with invalid invoice for offline')
 def test_send_bitcoin_with_invalid_invoice_for_offline(wallets_and_operations: WalletTestSetup, load_qm_translation):
@@ -382,3 +394,197 @@ def test_send_bitcoin_with_invalid_invoice_for_offline(wallets_and_operations: W
         assert validation_label == TranslationManager.translate(
             'invalid_address',
         )
+
+
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Iris wallet send bitcoin with zero balance for multisig')
+@allure.story('Wallet send bitcoin operation with zero balance for multisig')
+def test_send_bitcoin_with_zero_balance_for_multisig(wallets_and_operations: WalletTestSetup, load_qm_translation, wallet_variant_name):
+    """Test sending bitcoin with zero balance for multisig."""
+
+    setup_multisig_wallets(
+        wallets_and_operations,
+        wallet_variant_name=wallet_variant_name,
+    )
+
+    with allure.step('Get bitcoin address for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
+        address, copied_address = wallets_and_operations.first_page_features.receive_features.receive(
+            FIRST_APPLICATION,
+        )
+
+    with allure.step('Verify address'):
+        assert copied_address == address
+
+    with allure.step('Send bitcoin with zero balance for multisig'):
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        validation = wallets_and_operations.first_page_features.send_features.send_with_no_fund(
+            application=FIRST_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT,
+        )
+
+    with allure.step('Verify error message'):
+        assert validation == TranslationManager.translate(
+            'asset_amount_validation',
+        )
+
+    with allure.step('Close bitcoin detail page'):
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Iris wallet send bitcoin with invalid invoice for multisig')
+@allure.story('Wallet send bitcoin operation with invalid invoice for multisig')
+def test_send_bitcoin_with_invalid_invoice_for_multisig(wallets_and_operations: WalletTestSetup, load_qm_translation):
+    """Test sending bitcoin with an invalid invoice for multisig."""
+
+    with allure.step('Fund first multisig wallet'):
+        wallets_and_operations.first_page_features.wallet_features.fund_wallet(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+    validation_label = None
+    with allure.step('Send bitcoin with invalid invoice for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        wallets_and_operations.first_page_objects.send_asset_page_objects.enter_asset_invoice(
+            INVOICE,
+        )
+        validation_label = wallets_and_operations.first_page_objects.send_asset_page_objects.get_asset_address_validation_label()
+
+    with allure.step('Verify error message'):
+        assert validation_label == TranslationManager.translate(
+            'invalid_address',
+        )
+        wallets_and_operations.first_page_objects.send_asset_page_objects.click_send_asset_close_button()
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Iris wallet send bitcoin for multisig')
+@allure.story('Wallet send bitcoin operation for multisig')
+def test_send_bitcoin_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test sending bitcoin for multisig."""
+
+    with allure.step('Get bitcoin address from third wallet'):
+        wallets_and_operations.third_page_features.wallet_features.create_and_fund_wallet(
+            application=THIRD_APPLICATION, variant=ONLINE_CREATE_ON_DEVICE, fund=False,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
+        address, _ = wallets_and_operations.third_page_features.receive_features.receive(
+            THIRD_APPLICATION,
+        )
+
+    with allure.step('Send bitcoin for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        wallets_and_operations.first_page_features.send_features.create_psbt(
+            FIRST_APPLICATION, address, AMOUNT,
+        )
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Refresh and verify transaction'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_refresh_button()
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
+        tx_id = wallets_and_operations.third_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
+
+    with allure.step('Verify transaction id'):
+        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
+        assert description == INFO_BITCOIN_SENT.format(tx_id)
+
+    with allure.step('Close pages'):
+        wallets_and_operations.third_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Iris wallet send bitcoin with custom fee rate for multisig')
+@allure.story('Wallet send bitcoin operation with custom fee rate for multisig')
+def test_send_bitcoin_with_custom_fee_rate_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test sending bitcoin with custom fee rate for multisig."""
+    wallets_and_operations.first_page_features.wallet_features.fund_wallet(
+        FIRST_APPLICATION,
+    )
+
+    with allure.step('Get bitcoin address from third wallet'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
+        address, copied_address = wallets_and_operations.third_page_features.receive_features.receive(
+            THIRD_APPLICATION,
+        )
+
+    with allure.step('Verify address'):
+        assert copied_address == address
+
+    with allure.step('Send bitcoin with custom fee rate for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        wallets_and_operations.first_page_features.send_features.create_psbt(
+            FIRST_APPLICATION, copied_address, AMOUNT, FEE_RATE,
+        )
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+
+    with allure.step('Refresh and verify transaction'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_refresh_button()
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
+        tx_id = wallets_and_operations.third_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
+
+    with allure.step('Verify transaction id'):
+        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
+        assert description == INFO_BITCOIN_SENT.format(tx_id)
+
+    with allure.step('Close pages'):
+        wallets_and_operations.third_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()

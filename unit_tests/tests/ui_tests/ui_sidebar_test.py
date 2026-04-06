@@ -11,6 +11,8 @@ from PySide6.QtCore import QCoreApplication
 
 from src.data.repository.setting_repository import SettingRepository
 from src.model.enums.enums_model import NetworkEnumModel
+from src.model.enums.enums_model import WalletAccessType
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
 from src.views.ui_sidebar import Sidebar
@@ -154,6 +156,16 @@ def test_update_privileges_toggles_visibility_and_retranslate(sidebar_widget: Si
         can_sign_psbt=True,
     )
     config.privileges = priv
+
+    # Mock for non-multisig, non-watch-only path
+    mocker.patch(
+        'src.views.ui_sidebar.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_sidebar.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WITH_PRIVATE_KEY,
+    )
 
     # Spy on retranslate_ui
     mocker.patch.object(sidebar_widget, 'retranslate_ui')

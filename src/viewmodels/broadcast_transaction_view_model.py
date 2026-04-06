@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
+from rgb_lib import OperationInfo
 from rgb_lib import OperationResult
 from rgb_lib import RespondToOperation
 
@@ -23,9 +24,7 @@ from src.model.rgb_model import SendAssetResponseModel
 from src.utils.custom_exception import CommonException
 from src.utils.info_message import INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY
 from src.utils.info_message import INFO_ASSET_SENT
-from src.utils.info_message import INFO_ASSET_SENT_SUCCESSFULLY
 from src.utils.info_message import INFO_BITCOIN_SENT
-from src.utils.info_message import INFO_BITCOIN_SENT_SUCCESSFULLY
 from src.utils.info_message import INFO_OPERATION_COMPLETED_AND_FINALIZED
 from src.utils.info_message import INFO_OPERATION_INDEX_MISSING_FOR_NACK
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
@@ -315,7 +314,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         response = RespondToOperation.ACK(signed_psbt)
         self._respond_to_multisig_operation(operation_idx, response)
 
-    def _on_multisig_post_success(self, result):
+    def _on_multisig_post_success(self, result: OperationInfo):
         """Handle successful post to bridge."""
         self.is_loading.emit(False)
         BroadcastTransactionService.set_pending_operation_state(None, None)
@@ -337,13 +336,19 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
                 description=INFO_OPERATION_COMPLETED_AND_FINALIZED,
             )
         elif result.operation.is_send_btc_completed():
-            ToastManager.success(description=INFO_BITCOIN_SENT_SUCCESSFULLY)
+            ToastManager.success(
+                description=INFO_BITCOIN_SENT.format(result.operation.txid),
+            )
         elif result.operation.is_inflation_completed():
             ToastManager.success(
-                description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY,
+                description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY.format(
+                    result.operation.txid,
+                ),
             )
         elif result.operation.is_send_completed():
-            ToastManager.success(description=INFO_ASSET_SENT_SUCCESSFULLY)
+            ToastManager.success(
+                description=INFO_ASSET_SENT.format(result.operation.txid),
+            )
         else:
             # Generic success for initiator or other cases
             ToastManager.success(

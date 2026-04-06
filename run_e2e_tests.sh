@@ -173,6 +173,12 @@ build_applications() {
     echo "Build process completed."
 }
 
+# Populate TEST_FILES array with all test files
+TEST_FILES=()
+while IFS= read -r -d '' file; do
+    TEST_FILES+=("$file")
+done < <(find "$TESTS_DIR" -name "test_*.py" -print0 | sort -z)
+
 ensure_applications_exist() {
     if [[ "$FORCE_BUILD" == true ]]; then
         echo "--force-build flag detected. Rebuilding applications..."
@@ -188,9 +194,45 @@ ensure_applications_exist() {
     fi
 }
 
+# Helper function to print test suite header
+print_test_header() {
+    local test_name=$1
+    local test_path=$2
+    local wallet_variant=$3
+
+    echo "========================================"
+    echo "Test Suite: $test_name"
+    echo "Path      : $test_path"
+    echo "Variant   : $wallet_variant"
+    echo "========================================"
+}
+
+# Helper function to print failure message
+print_failure() {
+    local test_name=$1
+    local wallet_variant=$2
+
+    echo ""
+    echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+    echo "✗ FAILED: $test_name with ${wallet_variant}"
+    echo "✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗✗"
+    echo ""
+}
+
+# Helper function to print summary failure message
+print_summary_failure() {
+    local wallet_variant=$1
+
+    echo ""
+    echo "════════════════════════════════════════"
+    echo "One or more test suites FAILED with ${wallet_variant}"
+    echo "════════════════════════════════════════"
+}
+
 run_e2e_tests() {
     local results_root_dir="allure-results"
     local reports_root_dir="allure-reports"
+    local EXIT_CODE=0
 
     echo "Running E2E tests"
 
@@ -203,26 +245,33 @@ run_e2e_tests() {
         mkdir -p "$reports_root_dir"
     fi
 
-    # Determine base target (all tests or a single file)
-    local base_target=""
-    if [[ "$RUN_ALL" == true ]]; then
-        echo "Running full test suite..."
-        base_target="$TESTS_DIR/"
-    elif [[ -n "$TEST_FILE" ]]; then
-        echo "Running single test file: $TEST_FILE"
-        base_target="$TESTS_DIR/$TEST_FILE"
-    else
-        echo "No test file provided. Use --all to run all tests."
-        exit 1
-    fi
-
     # If a wallet variant was provided, run once. Otherwise iterate through defaults.
     if [[ "$WALLET_VARIANT_SPECIFIED" == true ]]; then
-        echo "Running tests with explicitly provided wallet variant: ${SPECIFIED_WALLET_VARIANT}"
         local results_dir="$results_root_dir/${SPECIFIED_WALLET_VARIANT:-specified}"
         mkdir -p "$results_dir"
-        if ! pytest -s "$base_target" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
-            echo "E2E tests failed!"
+
+        if [[ "$RUN_ALL" == true ]]; then
+            echo "Running full test suite (per-file)..."
+            for test_file in "${TEST_FILES[@]}"; do
+                print_test_header "$(basename "$test_file")" "$test_file" "$SPECIFIED_WALLET_VARIANT"
+                if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                    print_failure "$(basename "$test_file")" "$SPECIFIED_WALLET_VARIANT"
+                    EXIT_CODE=1
+                fi
+            done
+
+            if [[ $EXIT_CODE -ne 0 ]]; then
+                print_summary_failure "$SPECIFIED_WALLET_VARIANT"
+                exit $EXIT_CODE
+            fi
+        elif [[ -n "$TEST_FILE" ]]; then
+            print_test_header "$TEST_FILE" "$TESTS_DIR/$TEST_FILE" "$SPECIFIED_WALLET_VARIANT"
+            if ! pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                print_failure "$TEST_FILE" "$SPECIFIED_WALLET_VARIANT"
+                exit 1
+            fi
+        else
+            echo "No test file provided. Use --all to run all tests."
             exit 1
         fi
 
@@ -242,16 +291,35 @@ run_e2e_tests() {
         echo "No --wallet-variant provided. Running for all default variants: ${DEFAULT_WALLET_VARIANTS[*]}"
         local failures=()
         for variant in "${DEFAULT_WALLET_VARIANTS[@]}"; do
-            echo "\n===== Running with wallet variant: $variant ====="
-            # Build args by appending the variant
+            echo ""
+            echo "===== Running with wallet variant: $variant ====="
             local results_dir="$results_root_dir/$variant"
-            # ensure per-variant directory exists and is clean for fresh run
             rm -rf "$results_dir" && mkdir -p "$results_dir"
-            if ! pytest -s "$base_target" --wallet-variant "$variant" --alluredir="$results_dir" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
-                failures+=("$variant")
-                echo "---- Failed for variant: $variant ----"
+            local variant_exit_code=0
+
+            if [[ "$RUN_ALL" == true ]]; then
+                echo "Running full test suite (per-file)..."
+                for test_file in "${TEST_FILES[@]}"; do
+                    print_test_header "$(basename "$test_file")" "$test_file" "$variant"
+                    if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                        print_failure "$(basename "$test_file")" "$variant"
+                        variant_exit_code=1
+                    fi
+                done
+
+                if [[ $variant_exit_code -ne 0 ]]; then
+                    print_summary_failure "$variant"
+                    failures+=("$variant")
+                fi
+            elif [[ -n "$TEST_FILE" ]]; then
+                print_test_header "$TEST_FILE" "$TESTS_DIR/$TEST_FILE" "$variant"
+                if ! pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                    print_failure "$TEST_FILE" "$variant"
+                    failures+=("$variant")
+                fi
             else
-                echo "---- Passed for variant: $variant ----"
+                echo "No test file provided. Use --all to run all tests."
+                exit 1
             fi
 
             # Optionally generate report per variant
@@ -271,7 +339,8 @@ run_e2e_tests() {
         done
 
         if [[ ${#failures[@]} -gt 0 ]]; then
-            echo "\nOne or more variants failed: ${failures[*]}"
+            echo ""
+            echo "One or more variants failed: ${failures[*]}"
             exit 1
         fi
     fi

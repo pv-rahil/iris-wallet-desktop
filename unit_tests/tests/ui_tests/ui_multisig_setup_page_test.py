@@ -217,7 +217,9 @@ def test_update_continue_enabled_valid_input(widget_watch_only: MultisigSetupPag
 
 def test_update_continue_enabled_invalid_input(widget_watch_only: MultisigSetupPage):
     """Test _update_continue_enabled with invalid input."""
-    widget_watch_only.threshold_frame.required_signer_input.setText('5')  # M > N
+    widget_watch_only.threshold_frame.required_signer_input.setText(
+        '5',
+    )  # M > N
     widget_watch_only.threshold_frame.total_signer_input.setText('2')
     widget_watch_only._update_continue_enabled()
     assert not widget_watch_only.continue_button.isEnabled()
@@ -369,7 +371,9 @@ def test_export_cosigner_to_file(widget_with_privkey, mocker):
     )
 
     # Ensure review frame exists
-    widget_with_privkey.review_frame.cosigner_string_value_widget.setText('test_string')
+    widget_with_privkey.review_frame.cosigner_string_value_widget.setText(
+        'test_string',
+    )
     widget_with_privkey._export_cosigner_to_file()
 
     mock_open.assert_called_once_with(

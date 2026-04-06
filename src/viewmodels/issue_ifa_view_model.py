@@ -17,11 +17,11 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
-from src.utils.error_message import ERROR_AUTHENTICATION
 from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
@@ -57,11 +57,46 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.min_confirmation: int | None = None
         self.operation_idx = None
 
-    def on_success_native_auth_ifa(self, success: bool):
-        """Callback after native authentication for IFA."""
+    def issue_ifa_asset(
+        self,
+        asset_ticker: str,
+        asset_name: str,
+        amount: int,
+        inflation_amounts: int,
+    ) -> None:
+        """Issue an IFA asset with provided details."""
+        self.is_loading.emit(True)
+        self.asset_ticker = asset_ticker
+        self.asset_name = asset_name
+        self.amount = amount
+        self.inflation_amounts = inflation_amounts
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
+        )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self.on_success_native_auth_ifa,
+                    'error_callback': self.on_error_native_auth_ifa,
+                },
+            )
+        else:
+            self._proceed_with_issue_ifa()
+
+    def _proceed_with_issue_ifa(self):
+        """Proceed with IFA issuance after native auth or directly for non-auth variants."""
         try:
-            if not success:
-                raise CommonException(ERROR_AUTHENTICATION)
             if (
                 self.asset_ticker is None
                 or self.asset_name is None
@@ -93,6 +128,14 @@ class IssueIFAViewModel(QObject, ThreadManager):
             self.is_loading.emit(False)
             ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
 
+    def on_success_native_auth_ifa(self, success: bool):
+        """Callback after native authentication for IFA."""
+        if success:
+            self._proceed_with_issue_ifa()
+        else:
+            self.is_loading.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
+
     def on_error_native_auth_ifa(self, error: Exception):
         """Error callback for native auth."""
         self.is_loading.emit(False)
@@ -100,28 +143,6 @@ class IssueIFAViewModel(QObject, ThreadManager):
             error, CommonException,
         ) else ERROR_SOMETHING_WENT_WRONG
         ToastManager.error(description=description)
-
-    def issue_ifa_asset(
-        self,
-        asset_ticker: str,
-        asset_name: str,
-        amount: int,
-        inflation_amounts: int,
-    ) -> None:
-        """Issue an IFA asset with provided details."""
-        self.is_loading.emit(True)
-        self.asset_ticker = asset_ticker
-        self.asset_name = asset_name
-        self.amount = amount
-        self.inflation_amounts = inflation_amounts
-        self.run_in_thread(
-            SettingRepository.native_authentication,
-            {
-                'args': [NativeAuthType.MAJOR_OPERATION],
-                'callback': self.on_success_native_auth_ifa,
-                'error_callback': self.on_error_native_auth_ifa,
-            },
-        )
 
     def on_success(self, response: IssueAssetResponseModel) -> None:
         """Handle success response of IFA issuance."""
@@ -141,27 +162,9 @@ class IssueIFAViewModel(QObject, ThreadManager):
         handle_viewmodel_error(self, error)
 
     def on_success_native_auth_inflate(self, success: bool) -> None:
-        """Callback after native authentication for IFA."""
+        """Callback after native authentication for inflate."""
         if success:
-            self.is_loading.emit(True)
-            try:
-                self.run_in_thread(
-                    RgbRepository.inflate,
-                    {
-                        'args': [
-                            InflateRequestModel(
-                                asset_id=self.asset_id,
-                                inflation_amounts=[self.amount],
-                                fee_rate=self.fee_rate,
-                                min_confirmations=self.min_confirmation,
-                            ),
-                        ],
-                        'callback': self.on_success_inflate,
-                        'error_callback': self.on_error,
-                    },
-                )
-            except Exception as e:
-                self.on_error(CommonException(message=str(e)))
+            self._proceed_with_secondary_issuance()
         else:
             self.is_loading.emit(False)
             ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
@@ -170,17 +173,53 @@ class IssueIFAViewModel(QObject, ThreadManager):
         """Secondary issuance of IFA asset."""
         self.asset_id = asset_id
         self.amount = amount
-        self.fee_rate = fee_rate
         self.min_confirmation = min_confirmation
+        self.fee_rate = fee_rate
         self.is_loading.emit(True)
-        self.run_in_thread(
-            SettingRepository.native_authentication,
-            {
-                'args': [NativeAuthType.MAJOR_OPERATION],
-                'callback': self.on_success_native_auth_inflate,
-                'error_callback': self.on_error_native_auth_ifa,
-            },
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+        is_multisig_wallet = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig_wallet and is_on_device) or (
+            is_online and is_on_device and not is_multisig_wallet
         )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self.on_success_native_auth_inflate,
+                    'error_callback': self.on_error_native_auth_ifa,
+                },
+            )
+        else:
+            self._proceed_with_secondary_issuance()
+
+    def _proceed_with_secondary_issuance(self):
+        """Proceed with secondary issuance after native auth or directly for non-auth variants."""
+        try:
+            self.run_in_thread(
+                RgbRepository.inflate,
+                {
+                    'args': [
+                        InflateRequestModel(
+                            asset_id=self.asset_id,
+                            inflation_amounts=[self.amount],
+                            fee_rate=self.fee_rate,
+                            min_confirmations=self.min_confirmation,
+                        ),
+                    ],
+                    'callback': self.on_success_inflate,
+                    'error_callback': self.on_error,
+                },
+            )
+        except Exception as e:
+            self.on_error(CommonException(message=str(e)))
 
     def on_success_inflate(self, response: OperationResult) -> None:
         """Handle success response of IFA second issuance."""
@@ -202,11 +241,45 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.fee_rate = fee_rate
         self.min_confirmation = min_confirmation
         self.is_loading.emit(True)
+
+        # Check if native auth is required for multisig or on-device key variants
+        is_multisig = SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.MULTI_SIG_WALLET
+        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+        # Native auth required for: multisig on-device, or online on-device (non-multisig)
+        requires_native_auth = (is_multisig and is_on_device) or (
+            is_online and is_on_device and not is_multisig
+        )
+
+        if requires_native_auth:
+            self.run_in_thread(
+                SettingRepository.native_authentication,
+                {
+                    'args': [NativeAuthType.MAJOR_OPERATION],
+                    'callback': self._on_success_native_auth_secondary_issuance_begin,
+                    'error_callback': self.on_error_native_auth_ifa,
+                },
+            )
+        else:
+            self._proceed_with_secondary_issuance_begin()
+
+    def _on_success_native_auth_secondary_issuance_begin(self, success: bool):
+        """Callback after native auth success for secondary_issuance_begin."""
+        if success:
+            self._proceed_with_secondary_issuance_begin()
+        else:
+            self.is_loading.emit(False)
+            ToastManager.error(description=ERROR_AUTHENTICATION_CANCELLED)
+
+    def _proceed_with_secondary_issuance_begin(self):
+        """Proceed with PSBT creation after native auth check."""
         request = InflateRequestModel(
-            asset_id=asset_id,
-            inflation_amounts=[amount],
-            fee_rate=fee_rate,
-            min_confirmations=min_confirmation,
+            asset_id=self.asset_id,
+            inflation_amounts=[self.amount],
+            fee_rate=self.fee_rate,
+            min_confirmations=self.min_confirmation,
         )
         if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
             self.run_in_thread(

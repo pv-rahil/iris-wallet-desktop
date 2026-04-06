@@ -13,6 +13,10 @@ from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import initiate_third_wallet_and_get_invoice
+from e2e_tests.test.utilities.test_helpers import multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
 ASSET_TICKER = 'TTK'
@@ -22,6 +26,7 @@ SEND_AMOUNT = '50'
 
 
 @pytest.mark.skip_for_offline_wallet
+@pytest.mark.skip_for_multisig
 @allure.feature('Test for refresh transfer')
 @allure.story('Test for refresh transfer from home refresh and then check the status to success after mine the transaction')
 def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -110,6 +115,7 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_varian
 
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
+@pytest.mark.skip_for_multisig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Test for refresh transfer for offline wallet')
 @allure.story('Test for refresh transfer from home refresh and then check the status to success after mine the transaction for offline wallet')
@@ -165,7 +171,7 @@ def test_refresh_transfer_for_offline_wallet(wallets_and_operations: WalletTestS
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
     with allure.step('Create psbt for offline wallet'):
         wallets_and_operations.second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name,
         )
     with allure.step('Sign psbt for offline wallet'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
@@ -213,3 +219,101 @@ def test_refresh_transfer_for_offline_wallet(wallets_and_operations: WalletTestS
 
         assert actual_transfer_status_first_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value
         assert actual_transfer_status_second_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value
+
+
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Test for refresh transfer for multisig')
+@allure.story('Test for refresh transfer and check status for multisig')
+def test_refresh_transfer_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test for refresh transfer for multisig"""
+
+    setup_multisig_wallets(wallets_and_operations, wallet_variant_name)
+
+    fund_and_refresh_multisig_wallets(wallets_and_operations, asset_type='nia')
+
+    with allure.step('Issue NIA asset for multisig wallet'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
+            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME, ASSET_AMOUNT,
+        )
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
+            FIRST_APPLICATION, ASSET_TICKER,
+        )
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+    with allure.step('Generate invoice for multisig'):
+        invoice = initiate_third_wallet_and_get_invoice(
+            wallets_and_operations.third_page_features,
+            THIRD_APPLICATION,
+            ONLINE_CREATE_ON_DEVICE,
+        )
+
+    multisig_send_asset_flow_with_verification(
+        invoice=invoice,
+        wallets_and_operations=wallets_and_operations,
+        asset_ticker=ASSET_TICKER,
+        asset_name=ASSET_NAME,
+        wallet_variant_name=wallet_variant_name,
+        send_amount=SEND_AMOUNT,
+        asset_type='nia',
+        verify_assertions=False,
+    )
+
+    with allure.step('Refresh transfer for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Validate transfer status for multisig'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
+            ASSET_NAME,
+        )
+        actual_transfer_status_first_app = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_transfer_status()
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_nia_frame(
+            ASSET_NAME,
+        )
+        actual_transfer_status_third_app = wallets_and_operations.third_page_objects.asset_detail_page_objects.get_transfer_status()
+        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
+
+        assert actual_transfer_status_first_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value
+        assert actual_transfer_status_third_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value

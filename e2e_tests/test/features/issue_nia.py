@@ -94,11 +94,7 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
 
-        if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-            self.toaster_page_objects.click_toaster_frame()
-
-        if self.do_is_displayed(self.toaster_page_objects.toaster_description()):
-            description = self.toaster_page_objects.get_toaster_description()
+        _, description = self.toaster_page_objects.click_toaster_frame()
 
         if self.do_is_displayed(self.issue_nia_page_objects.close_button()):
             self.issue_nia_page_objects.click_close_button()
@@ -189,7 +185,7 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         self.wallet_feature.usb_sync(is_receive=True)
 
-    def issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, utxo_required: bool = False):
+    def issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, utxo_required: bool = False, is_native_auth_enabled: bool = False):
         """
         Issues an NIA asset with sufficient sats and no UTXO.
         """
@@ -199,14 +195,15 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
-
+        if is_native_auth_enabled:
+            self.enter_native_password()
         if utxo_required:
             handle_utxo_confirmation_dialog(self, self, utxo_required=True)
         else:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()
 
-    def issue_nia_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, asset_amount):
+    def issue_nia_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, asset_amount, is_native_auth_enabled: bool = False):
         """
         Issues an NIA asset with sufficient sats for multisig wallet.
         """
@@ -226,6 +223,9 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
+
+        if is_native_auth_enabled:
+            self.enter_native_password()
 
         if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
             self.confirmation_dialog_page_objects.click_confirmation_dialog()

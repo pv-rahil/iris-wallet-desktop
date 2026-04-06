@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name, protected-access, too-few-public-methods, too-many-function-args
+# pylint: disable=redefined-outer-name, protected-access, too-few-public-methods, too-many-function-args, too-many-lines
 """Unit tests for `BroadcastTransactionService`.
 
 Structured similarly to other service tests, focusing on logic coverage and
@@ -12,6 +12,7 @@ from unittest.mock import patch
 from rgb_lib import Operation
 
 from src.data.service.broadcast_transaction_service import BroadcastTransactionService
+from src.model.broadcast_transaction_model import PrimaryActionContext
 from src.model.broadcast_transaction_model import PsbtDraftItem
 from src.model.broadcast_transaction_model import PsbtParsed
 
@@ -505,31 +506,61 @@ def test_can_enable_primary_and_reject_actions():
         False, True, False, True, False,
     ) is True
 
-    # Primary validations
-    # Base fail
+    # Primary validations - using PrimaryActionContext
+    # Base fail - empty psbt_text
     assert BroadcastTransactionService.can_enable_primary_action(
-        '', True, False, False, False, False, 0, False, False, 5,
+        PrimaryActionContext(
+            psbt_text='', can_broadcast=True, is_multisig=False,
+            is_psbt_validated=False, pending_operation_present=False,
+            is_watch_only=False, selector_index=0, selector_visible=False,
+            is_offline_mode=False, min_psbt_len=5,
+        ),
     ) is False
 
     # Broadcast Flow: valid selection
     assert BroadcastTransactionService.can_enable_primary_action(
-        'abcde', True, False, False, False, False, 0, True, False, 5,
+        PrimaryActionContext(
+            psbt_text='abcde', can_broadcast=True, is_multisig=False,
+            is_psbt_validated=False, pending_operation_present=False,
+            is_watch_only=False, selector_index=0, selector_visible=True,
+            is_offline_mode=False, min_psbt_len=5,
+        ),
     ) is True
     assert BroadcastTransactionService.can_enable_primary_action(
-        'abcde', True, False, False, False, False, -1, True, False, 5,
+        PrimaryActionContext(
+            psbt_text='abcde', can_broadcast=True, is_multisig=False,
+            is_psbt_validated=False, pending_operation_present=False,
+            is_watch_only=False, selector_index=-1, selector_visible=True,
+            is_offline_mode=False, min_psbt_len=5,
+        ),
     ) is False
 
     # Broadcast Flow: multisig watch-only
     assert BroadcastTransactionService.can_enable_primary_action(
-        'abcde', True, True, True, True, True, 0, False, False, 5,
+        PrimaryActionContext(
+            psbt_text='abcde', can_broadcast=True, is_multisig=True,
+            is_psbt_validated=True, pending_operation_present=True,
+            is_watch_only=True, selector_index=0, selector_visible=False,
+            is_offline_mode=False, min_psbt_len=5,
+        ),
     ) is True
 
     # Signer Flow: Offline
     assert BroadcastTransactionService.can_enable_primary_action(
-        'psbt:purpose:abcde', False, True, False, False, False, 0, False, True, 5,
+        PrimaryActionContext(
+            psbt_text='psbt:purpose:abcde', can_broadcast=False, is_multisig=True,
+            is_psbt_validated=False, pending_operation_present=False,
+            is_watch_only=False, selector_index=0, selector_visible=False,
+            is_offline_mode=True, min_psbt_len=5,
+        ),
     ) is True
     assert BroadcastTransactionService.can_enable_primary_action(
-        'abcde', False, True, True, True, False, 0, False, False, 5,
+        PrimaryActionContext(
+            psbt_text='abcde', can_broadcast=False, is_multisig=True,
+            is_psbt_validated=True, pending_operation_present=True,
+            is_watch_only=False, selector_index=0, selector_visible=False,
+            is_offline_mode=False, min_psbt_len=5,
+        ),
     ) is True
 
 
@@ -857,11 +888,11 @@ def test_get_destination_address():
 
     # Standard change and non-change outputs
     out_change = MagicMock()
-    out_change.is_ours = True
+    out_change.is_mine = True
     out_change.address = 'change_addr'
 
     out_dest = MagicMock()
-    out_dest.is_ours = False
+    out_dest.is_mine = False
     out_dest.address = 'dest_addr'
 
     # Single destination
@@ -873,7 +904,7 @@ def test_get_destination_address():
 
     # Multiple destinations (adds multi_prefix '...')
     out_dest2 = MagicMock()
-    out_dest2.is_ours = False
+    out_dest2.is_mine = False
     out_dest2.address = 'dest_addr2'
 
     mock_multi = MagicMock()
@@ -888,3 +919,249 @@ def test_get_destination_address():
     assert BroadcastTransactionService.get_destination_address(
         mock_only_change,
     ) == 'change_addr'
+
+
+def test_match_pending_operation_empty_psbt():
+    """Test match_pending_operation returns None for empty PSBT."""
+    result = BroadcastTransactionService.match_pending_operation(
+        MagicMock(), None,
+    )
+    assert result is None
+
+    result = BroadcastTransactionService.match_pending_operation(
+        MagicMock(), '',
+    )
+    assert result is None
+
+
+def test_match_pending_operation_parsed_psbt_empty(mocker):
+    """Test match_pending_operation returns None when parsed PSBT is empty."""
+    mocker.patch(
+        'src.data.service.broadcast_transaction_service.BroadcastTransactionService.parse_psbt_input',
+        return_value=MagicMock(psbt=''),
+    )
+
+    result = BroadcastTransactionService.match_pending_operation(
+        MagicMock(), 'some_text',
+    )
+    assert result is None
+
+
+def test_match_pending_operation_multisig_pending_none(mocker):
+    """Test match_pending_operation returns None when multisig_pending_context returns None."""
+    mocker.patch(
+        'src.data.service.broadcast_transaction_service.BroadcastTransactionService.parse_psbt_input',
+        return_value=MagicMock(psbt='valid_psbt'),
+    )
+    mocker.patch(
+        'src.data.service.broadcast_transaction_service.BroadcastTransactionService.multisig_pending_context',
+        return_value=None,
+    )
+
+    result = BroadcastTransactionService.match_pending_operation(
+        MagicMock(), 'valid_psbt',
+    )
+    assert result is None
+
+
+def test_match_pending_operation_psbt_mismatch(mocker):
+    """Test match_pending_operation returns None when PSBT doesn't match."""
+    mock_pending = MagicMock()
+    mock_pending.psbt = 'different_psbt'
+    mocker.patch(
+        'src.data.service.broadcast_transaction_service.BroadcastTransactionService.parse_psbt_input',
+        return_value=MagicMock(psbt='valid_psbt'),
+    )
+    mocker.patch(
+        'src.data.service.broadcast_transaction_service.BroadcastTransactionService.multisig_pending_context',
+        return_value=mock_pending,
+    )
+
+    result = BroadcastTransactionService.match_pending_operation(
+        MagicMock(), 'valid_psbt',
+    )
+    assert result is None
+
+
+def test_match_pending_operation_by_txid_pending_none(mocker):
+    """Test match_pending_operation_by_txid returns None when pending is None."""
+    mocker.patch(
+        'src.data.service.broadcast_transaction_service.BroadcastTransactionService.multisig_pending_context',
+        return_value=None,
+    )
+
+    result = BroadcastTransactionService.match_pending_operation_by_txid(
+        MagicMock(), 'txid',
+    )
+    assert result is None
+
+
+def test_rgb_transfer_inspection_summary_exception_handling():
+    """Test rgb_transfer_inspection_summary handles exceptions gracefully."""
+    # Create a mock that raises exception when accessing operations
+    mock_details = MagicMock()
+    mock_details.operations = property(
+        lambda self: (
+            _ for _ in ()
+        ).throw(Exception('test error')),
+    )
+
+    result = BroadcastTransactionService.rgb_transfer_inspection_summary(
+        mock_details, 'send_asset',
+    )
+    assert result.amount == 0
+    assert result.transfer_type_key == 'send_asset'
+
+
+def test_rgb_transfer_inspection_summary_inflation_ours():
+    """Test rgb_transfer_inspection_summary for inflation with is_ours output."""
+    assign = MagicMock()
+    assign.is_FUNGIBLE.return_value = True
+    assign.amount = 500
+
+    out = MagicMock()
+    out.assignment = assign
+    out.is_ours = True
+
+    trans = MagicMock()
+    trans.outputs = [out]
+
+    op = MagicMock()
+    op.asset_id = 'ASSET_ID'
+    op.transitions = [trans]
+
+    rgb_details = MagicMock()
+    rgb_details.operations = [op]
+
+    result = BroadcastTransactionService.rgb_transfer_inspection_summary(
+        rgb_details, None,
+    )
+    assert result.amount == 500
+    assert result.transfer_type_key == 'inflation'
+
+
+def test_prepare_psbt_text_changed_state_empty_text():
+    """Test prepare_psbt_text_changed_state with empty text."""
+    result = BroadcastTransactionService.prepare_psbt_text_changed_state(
+        '', 'last_psbt', 5,
+    )
+    assert result.is_same_as_last is False
+    assert result.should_inspect is False
+
+
+def test_prepare_psbt_text_changed_state_same_as_last():
+    """Test prepare_psbt_text_changed_state when text is same as last."""
+    result = BroadcastTransactionService.prepare_psbt_text_changed_state(
+        'psbt:send:abc123', 'abc123', 5,
+    )
+    assert result.is_same_as_last is True
+
+
+def test_prepare_psbt_text_changed_state_different():
+    """Test prepare_psbt_text_changed_state when text differs from last."""
+    result = BroadcastTransactionService.prepare_psbt_text_changed_state(
+        'psbt:send:new_psbt', 'old_psbt', 5,
+    )
+    assert result.is_same_as_last is False
+    assert result.should_inspect is True
+
+
+def test_can_enable_primary_action_offline_mode():
+    """Test can_enable_primary_action in offline mode with parsed purpose."""
+    result = BroadcastTransactionService.can_enable_primary_action(
+        PrimaryActionContext(
+            psbt_text='psbt:send_asset:valid_psbt_text',
+            can_broadcast=False,
+            is_multisig=True,
+            is_psbt_validated=False,
+            pending_operation_present=False,
+            is_watch_only=False,
+            selector_index=0,
+            selector_visible=False,
+            is_offline_mode=True,
+            min_psbt_len=5,
+        ),
+    )
+    assert result is True
+
+
+def test_can_enable_primary_action_short_psbt():
+    """Test can_enable_primary_action with short PSBT."""
+    result = BroadcastTransactionService.can_enable_primary_action(
+        PrimaryActionContext(
+            psbt_text='abc',
+            can_broadcast=True,
+            is_multisig=False,
+            is_psbt_validated=False,
+            pending_operation_present=False,
+            is_watch_only=False,
+            selector_index=0,
+            selector_visible=True,
+            is_offline_mode=False,
+            min_psbt_len=5,
+        ),
+    )
+    assert result is False
+
+
+def test_get_psbt_rgb_context_empty(mocker):
+    """Test get_psbt_rgb_context with empty PSBT."""
+    mock_get_session = mocker.patch(
+        'src.data.service.broadcast_transaction_service.WalletDataService.get_session',
+    )
+
+    result = BroadcastTransactionService.get_psbt_rgb_context('')
+    assert result is None
+    mock_get_session.assert_not_called()
+
+
+def test_get_destination_address_multiple_destinations():
+    """Test get_destination_address with multiple destinations."""
+    out_change = MagicMock()
+    out_change.is_mine = True
+    out_change.address = 'change_addr'
+
+    out_dest1 = MagicMock()
+    out_dest1.is_mine = False
+    out_dest1.address = 'dest1'
+
+    out_dest2 = MagicMock()
+    out_dest2.is_mine = False
+    out_dest2.address = 'dest2'
+
+    mock_details = MagicMock()
+    mock_details.outputs = [out_change, out_dest1, out_dest2]
+
+    result = BroadcastTransactionService.get_destination_address(mock_details)
+    assert result == 'dest1...'
+
+
+def test_get_destination_address_only_mine():
+    """Test get_destination_address when all outputs are mine."""
+    out1 = MagicMock()
+    out1.is_mine = True
+    out1.address = 'addr1'
+
+    out2 = MagicMock()
+    out2.is_mine = True
+    out2.address = 'addr2'
+
+    mock_details = MagicMock()
+    mock_details.outputs = [out1, out2]
+
+    result = BroadcastTransactionService.get_destination_address(mock_details)
+    # When all outputs are mine, returns first address with '...' for multiple outputs
+    assert result == 'addr1...'
+
+
+def test_get_destination_address_none_output():
+    """Test get_destination_address handles None outputs gracefully."""
+    out_dest = MagicMock()
+    out_dest.is_mine = False
+    out_dest.address = 'dest_addr'
+
+    mock_details = MagicMock()
+    mock_details.outputs = [out_dest]  # Only valid output
+
+    result = BroadcastTransactionService.get_destination_address(mock_details)
+    assert result == 'dest_addr'

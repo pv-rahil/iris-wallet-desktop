@@ -93,7 +93,7 @@ def test_go_online_again_success(mock_wallet, mock_online):
     colored_wallet.go_online_again('http://new-indexer')
 
     # Verify
-    mock_wallet.go_online.assert_called_once_with(True, 'http://new-indexer')
+    mock_wallet.go_online.assert_called_once_with(False, 'http://new-indexer')
     assert colored_wallet.online_wallet == mock_online
 
 
@@ -108,7 +108,7 @@ def test_go_online_again_error(mock_wallet):
         colored_wallet.go_online_again('http://new-indexer')
 
     assert 'Failed to go online again' in str(exc_info.value)
-    mock_wallet.go_online.assert_called_once_with(True, 'http://new-indexer')
+    mock_wallet.go_online.assert_called_once_with(False, 'http://new-indexer')
 
 
 def test_go_online_again_no_wallet():

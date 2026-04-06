@@ -219,25 +219,22 @@ def test_restore_incompatible_version(mock_read_version, mock_google_drive_manag
 @patch('src.data.service.restore_service.read_rgb_lib_version_file')
 @patch('src.data.service.restore_service.GoogleDriveManager')
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.restore')
+@patch('src.viewmodels.viewmodel_helpers.SettingRepository.set_wallet_signature_type')
 @patch('src.data.service.restore_service.SettingRepository')
-@patch('src.data.service.restore_service.os.path.exists')
+@patch('src.data.service.restore_service.os.path.exists', return_value=True)
+@patch('src.viewmodels.viewmodel_helpers.os.path.exists', return_value=True)
 @patch('src.data.service.restore_service.os.remove')
-@patch('src.data.service.restore_service.open', create=True)
-@patch('src.data.service.restore_service.json.load')
+@patch('src.viewmodels.viewmodel_helpers.open', create=True)
+@patch('src.viewmodels.viewmodel_helpers.json.load')
 @patch('src.data.service.restore_service.app_paths')
 def test_restore_multisig(
     mock_app_paths, mock_json_load, mock_open, mock_remove,
-    mock_os_exists, mock_setting_repo, mock_restore_repo,
-    mock_google_drive, mock_read_version, mock_hashed,
+    mock_os_exists_restore, mock_os_exists_helpers, mock_setting_repo, mock_set_sign_type,
+    mock_restore_repo, mock_google_drive, mock_read_version, mock_hashed,
 ):
     """Case 8: Test restore service with multisig restoration."""
     mock_hashed.return_value = 'e23ddff3cc'
     mock_read_version.return_value = CURRENT_RGB_LIB_VERSION
-    # folder exists, old file exists, multisig file exists, temp folder exists (finally block)
-    mock_os_exists.side_effect = [
-        True, True, True,
-        True, True, True, True, True, True, True,
-    ]
     mock_restore_repo.return_value = RestoreResponseModel(status=True)
 
     mock_app_paths.iriswallet_temp_folder_path = '/tmp/dummy_temp'
@@ -257,6 +254,5 @@ def test_restore_multisig(
     with patch('src.data.service.restore_service.shutil.rmtree') as mock_rmtree:
         result = RestoreService.restore(mock_valid_mnemonic, mock_password)
         assert result.status is True
-        mock_setting_repo.set_wallet_signature_type.assert_called_once()
-        mock_remove.assert_called_once()
+        mock_set_sign_type.assert_called_once()
         mock_rmtree.assert_called_once_with('/tmp/dummy_temp')

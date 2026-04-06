@@ -3,9 +3,46 @@ description: Install Python dependencies
 runs:
   using: "composite"
   steps:
-    - name: Install Python dependencies
+    - name: Install poetry and pyinstaller
       run: |
         pip install poetry
         pip install pyinstaller
-        poetry install
+      shell: bash
+
+    - name: Install dependencies
+      run: poetry install
+      shell: bash
+
+    - name: Download rgb_lib from repo release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        # Get the latest release that contains rgb_lib wheel
+        RELEASE_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/releases" | \
+          grep -m1 "browser_download_url.*rgb_lib.*\.whl" | \
+          cut -d '"' -f 4)
+
+        if [ -n "$RELEASE_URL" ]; then
+          # Download wheel from repo release
+          curl -L -H "Authorization: token $GITHUB_TOKEN" -o /tmp/rgb_lib.whl "$RELEASE_URL"
+
+          # Find site-packages directory in venv
+          SITE_PACKAGES=$(find .venv -type d -name "site-packages" | head -1)
+
+          if [ -n "$SITE_PACKAGES" ]; then
+            # Remove existing rgb_lib and rgb packages
+            rm -rf "$SITE_PACKAGES/rgb_lib"
+            rm -rf "$SITE_PACKAGES/rgb"
+            rm -rf "$SITE_PACKAGES/rgb_lib-*.dist-info"
+            rm -rf "$SITE_PACKAGES/rgb-*.dist-info"
+
+            # Extract wheel (wheel is a zip file) directly to site-packages
+            unzip /tmp/rgb_lib.whl -d "$SITE_PACKAGES/"
+
+            echo "rgb_lib replaced successfully from release"
+          fi
+        else
+          echo "No rgb_lib wheel found in releases, using installed version"
+        fi
       shell: bash

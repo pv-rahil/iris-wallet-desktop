@@ -4,6 +4,7 @@ Main features module.
 """
 from __future__ import annotations
 
+from e2e_tests.test.features.inflate import Inflate
 from e2e_tests.test.features.issue_cfa import IssueCfa
 from e2e_tests.test.features.issue_ifa import IssueIfa
 from e2e_tests.test.features.issue_nia import IssueNia
@@ -34,3 +35,5 @@ class MainFeatures():
         self.receive_features = ReceiveOperation(self.application)
 
         self.send_features = SendOperation(self.application)
+
+        self.inflate_features = Inflate(self.application)

@@ -47,12 +47,15 @@ from src.model.rgb_model import SendBeginRequestModel
 @pytest.fixture
 def mock_wallet():
     """Fixture for mocking the colored wallet"""
-    with patch('src.data.repository.rgb_repository.colored_wallet') as mock_colored_wallet:
+    with patch('src.data.repository.rgb_repository.colored_wallet') as mock_colored_wallet, \
+            patch('src.utils.decorators.auto_sync_multisig.colored_wallet', mock_colored_wallet):
         mock_wallet = MagicMock()
         mock_colored_wallet.wallet = mock_wallet
         mock_colored_wallet.online = True
         # Disable online= conditional branches by default
         mock_colored_wallet.is_multisig = False
+        # Mock _wallet to avoid "Wallet not initialized" error
+        mock_colored_wallet._wallet = mock_wallet
         yield mock_wallet
 
 
@@ -220,7 +223,12 @@ def test_inflate_begin_with_session(mock_get_session, mock_wallet):
     # Assert
     assert result == psbt
     mock_wallet.inflate_begin.assert_called_once()
-    svc.add_psbt.assert_called_once_with(psbt, purpose='inflate_asset')
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == psbt
+    assert psbt_data.purpose == 'inflate_asset'
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -268,9 +276,12 @@ def test_send_begin_with_session(mock_get_session, mock_recipient_cls, mock_wall
     assert result == psbt_result
     mock_recipient_cls.assert_called_once()
     mock_wallet.send_begin.assert_called_once()
-    svc.add_psbt.assert_called_once_with(
-        'the_psbt_string', purpose='send_asset',
-    )
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'the_psbt_string'
+    assert psbt_data.purpose == 'send_asset'
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -491,10 +502,15 @@ def test_send_init_with_session(mock_recipient_cls, mock_get_session, mock_sync_
     assert res == result_obj
     mock_wallet.send_init.assert_called_once()
     svc.delete_draft_transfer.assert_called_once_with('aid')
-    svc.add_psbt.assert_called_once_with(
-        'init_psbt', purpose='send_asset',
-        fascia_path='/path/fascia.rgb', entropy=123, min_confirmations=1,
-    )
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'init_psbt'
+    assert psbt_data.purpose == 'send_asset'
+    assert psbt_data.fascia_path == '/path/fascia.rgb'
+    assert psbt_data.entropy == 123
+    assert psbt_data.min_confirmations == 1
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')
@@ -540,10 +556,15 @@ def test_inflate_init_with_session(mock_get_session, mock_sync_rgb, mock_wallet)
     assert res == result_obj
     mock_wallet.inflate_init.assert_called_once()
     svc.delete_secondary_draft_by_psbt.assert_called_once_with(asset_id='aid')
-    svc.add_psbt.assert_called_once_with(
-        'inflate_init_psbt', purpose='inflate_asset',
-        fascia_path='/path/fascia.rgb', entropy=456, min_confirmations=2,
-    )
+    # Verify add_psbt was called with PsbtData object
+    call_args = svc.add_psbt.call_args
+    assert call_args is not None
+    psbt_data = call_args[0][0]
+    assert psbt_data.psbt_base64 == 'inflate_init_psbt'
+    assert psbt_data.purpose == 'inflate_asset'
+    assert psbt_data.fascia_path == '/path/fascia.rgb'
+    assert psbt_data.entropy == 456
+    assert psbt_data.min_confirmations == 2
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')

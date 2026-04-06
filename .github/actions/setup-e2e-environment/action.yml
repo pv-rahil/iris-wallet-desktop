@@ -87,6 +87,7 @@ runs:
         sleep 18
         # Verify AT-SPI services are running
         pgrep -f "at-spi-bus-launcher" >/dev/null || echo "⚠️  AT-SPI bus launcher not running"
+        pgrep -f "at-spi2-registryd" >/dev/null || echo "⚠️  AT-SPI registryd not running"
         # Ensure the test password is visible to the AppImage subprocesses
         export NATIVE_AUTHENTICATION_PASSWORD="123456"
         # Dogtail configuration for CI stability (exported for Python tests)

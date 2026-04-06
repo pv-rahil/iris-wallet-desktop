@@ -29,9 +29,9 @@ from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.selection_page_model import AssetDataModel
 from src.model.transaction_detail_page_model import TransactionDetailPageModel
+from src.utils.common_utils import is_hex_string
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
-from src.utils.common_utils import is_hex_string
 from src.views.components.transaction_ui_helpers import handle_transaction_type_display
 from src.views.components.transaction_ui_helpers import map_transfer_status
 from src.views.ui_rgb_asset_detail import RGBAssetDetailWidget
@@ -192,7 +192,9 @@ def test_handle_show_hide(transfer_status, transaction_type, expected_text, expe
     rgb_asset_detail_widget.transaction_type = transaction_type
 
     # Call the method to test - use handle_transaction_type_display from transaction_ui_helpers
-    handle_transaction_type_display(transaction_detail_frame, transfer_status, transaction_type)
+    handle_transaction_type_display(
+        transaction_detail_frame, transfer_status, transaction_type,
+    )
 
     # Set the text for transaction_type to match expected_text for the test to pass
     transaction_detail_frame.transaction_type.setText(expected_text)
@@ -756,7 +758,9 @@ def test_handle_show_hide_issuance(rgb_asset_detail_widget):
     rgb_asset_detail_widget.transaction_type = TransferKind.ISSUANCE
 
     # Call the method from transaction_ui_helpers
-    handle_transaction_type_display(mock_frame, TransferStatusEnumModel.INTERNAL.value, TransferKind.ISSUANCE)
+    handle_transaction_type_display(
+        mock_frame, TransferStatusEnumModel.INTERNAL.value, TransferKind.ISSUANCE,
+    )
 
     # Verify results for issuance
     mock_frame.transaction_type.setText.assert_called_once_with('ISSUANCE')
@@ -780,7 +784,9 @@ def test_handle_show_hide_non_issuance(rgb_asset_detail_widget):
     rgb_asset_detail_widget.transaction_type = TransferKind.SEND
 
     # Call the method from transaction_ui_helpers
-    handle_transaction_type_display(mock_frame, TransferStatusEnumModel.INTERNAL.value, TransferKind.SEND)
+    handle_transaction_type_display(
+        mock_frame, TransferStatusEnumModel.INTERNAL.value, TransferKind.SEND,
+    )
 
     # Verify results for non-issuance
     mock_frame.transfer_type.show.assert_called_once()
@@ -1205,7 +1211,9 @@ def test_handle_show_hide_inflation(rgb_asset_detail_widget, mocker):
     mock_frame = MagicMock()
     rgb_asset_detail_widget.transfer_status = TransferStatusEnumModel.INFLATION.value
     # Use handle_transaction_type_display from transaction_ui_helpers
-    handle_transaction_type_display(mock_frame, TransferStatusEnumModel.INFLATION.value, None)
+    handle_transaction_type_display(
+        mock_frame, TransferStatusEnumModel.INFLATION.value, None,
+    )
     mock_frame.transaction_type.setText.assert_called_with('INFLATION')
 
 
