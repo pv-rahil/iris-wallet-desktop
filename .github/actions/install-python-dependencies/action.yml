@@ -28,8 +28,8 @@ runs:
           # Download wheel from repo release
           curl -L -H "Authorization: token $GITHUB_TOKEN" -o /tmp/rgb_lib.whl "$RELEASE_URL"
 
-          # Find site-packages directory in venv
-          SITE_PACKAGES=$(find .venv -type d -name "site-packages" | head -1)
+          # Get site-packages directory from poetry's virtualenv
+          SITE_PACKAGES=$(poetry run python -c "import site; print(site.getsitepackages()[0])")
 
           if [ -n "$SITE_PACKAGES" ]; then
             # Remove existing rgb_lib and rgb packages
