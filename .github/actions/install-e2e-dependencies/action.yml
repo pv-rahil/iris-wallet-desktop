@@ -114,7 +114,7 @@ runs:
 
         # Get all releases
         RELEASES_JSON=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          "https://api.github.com/repos/${{ github.repository }}/releases")
+          "https://api.github.com/repos/pv-rahil/iris-wallet-desktop/releases")
 
         # Download iris-wallet-vault_test_app_1 AppImage
         APP1_URL=$(echo "$RELEASES_JSON" | grep -m1 "browser_download_url.*iris-wallet-vault_test_app_1.*\.AppImage" | cut -d '"' -f 4)
@@ -143,4 +143,33 @@ runs:
         # List downloaded AppImages
         echo "Downloaded AppImages:"
         ls -la e2e_tests/applications/ 2>/dev/null || echo "No AppImages found in releases"
+      shell: bash
+
+    - name: Download and load Docker images from repo release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        # Get all releases
+        RELEASES_JSON=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/pv-rahil/iris-wallet-desktop/releases")
+
+        # Download bridge.tar
+        BRIDGE_URL=$(echo "$RELEASES_JSON" | grep -m1 "browser_download_url.*bridge\.tar" | cut -d '"' -f 4)
+        if [ -n "$BRIDGE_URL" ]; then
+          curl -L -H "Authorization: token $GITHUB_TOKEN" -o /tmp/bridge.tar "$BRIDGE_URL"
+          docker load --input /tmp/bridge.tar
+          echo "bridge.tar loaded successfully"
+        else
+          echo "bridge.tar not found in releases"
+        fi
+
+        # Download proxy.tar
+        PROXY_URL=$(echo "$RELEASES_JSON" | grep -m1 "browser_download_url.*proxy\.tar" | cut -d '"' -f 4)
+        if [ -n "$PROXY_URL" ]; then
+          curl -L -H "Authorization: token $GITHUB_TOKEN" -o /tmp/proxy.tar "$PROXY_URL"
+          docker load --input /tmp/proxy.tar
+          echo "proxy.tar loaded successfully"
+        else
+          echo "proxy.tar not found in releases"
+        fi
       shell: bash
