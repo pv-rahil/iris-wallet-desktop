@@ -17,11 +17,12 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        # Get the latest release that contains rgb_lib wheel from iris-wallet-desktop repo
-        RELEASE_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          "https://api.github.com/repos/pv-rahil/iris-wallet-desktop/releases" | \
-          grep -m1 "browser_download_url.*rgb_lib.*\.whl" | \
-          cut -d '"' -f 4)
+        # Get all releases JSON first
+        RELEASES_JSON=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/pv-rahil/iris-wallet-desktop/releases")
+
+        # Find rgb_lib wheel URL (use || true to prevent grep failure from failing the script)
+        RELEASE_URL=$(echo "$RELEASES_JSON" | grep -m1 "browser_download_url.*rgb_lib.*\.whl" | cut -d '"' -f 4 || true)
 
         if [ -n "$RELEASE_URL" ]; then
           # Download wheel from repo release
