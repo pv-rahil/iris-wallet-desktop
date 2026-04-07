@@ -101,7 +101,7 @@ def reset_bridge_config() -> None:
         print(f"Created bridge directory at {bridge_dir}")
 
     if os.path.isdir(BRIDGE_CONFIG_PATH):
-        shutil.rmtree(BRIDGE_CONFIG_PATH)
+        shutil.rmtree(BRIDGE_CONFIG_PATH, ignore_errors=True)
         print(f"Removed incorrect directory at {BRIDGE_CONFIG_PATH}")
 
     default_config = """cosigner_xpubs = [

@@ -25,6 +25,8 @@ ledger_bitcoin_datas = collect_data_files('ledger_bitcoin')
 ledger_bitcoin_binaries = collect_dynamic_libs('ledger_bitcoin')
 speculos_datas = collect_data_files('speculos')
 speculos_binaries = collect_dynamic_libs('speculos')
+hid_datas = collect_data_files('hid')
+hid_binaries = collect_dynamic_libs('hid')
 
 base_project_path = os.path.abspath(__name__)
 print(base_project_path)
@@ -34,13 +36,13 @@ datas = [
     ('./src/assets/icons/*', './assets/icons/'),
     ('./src/views/qss/*.qss', './views/qss/'),
     ('./build_info.json', './build_info.json'),
-] + pyqttoast_datas + rgb_lib_datas + ledger_bitcoin_datas + speculos_datas
+] + pyqttoast_datas + rgb_lib_datas + ledger_bitcoin_datas + speculos_datas + hid_datas
 
 # Common Analysis
 a = Analysis(
     ['src/main.py'],
     pathex=[],
-    binaries=rgb_lib_binaries+ledger_bitcoin_binaries+speculos_binaries,
+    binaries=rgb_lib_binaries+ledger_bitcoin_binaries+speculos_binaries+hid_binaries,
     datas=datas,
     hiddenimports=['pyqttoast', 'PySide6', 'bip32utils', 'mnemonic', 'importlib_metadata', 'hashlib', 'rgb_lib', 'ledger_bitcoin', 'speculos', 'keyring', 'keyrings', 'keyrings.alt', 'keyrings.alt.file', 'hid', 'hidraw', 'usb'],
     hookspath=[],
