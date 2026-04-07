@@ -1140,7 +1140,7 @@ def test_on_psbt_text_changed_error(vm_mock, privileges_broadcast, mocker):
     )
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     mocker.patch(
-        'src.views.ui_broadcast_transaction.BroadcastTransactionService.parse_psbt_input',
+        'src.views.components.broadcast_transaction_helpers.BroadcastTransactionService.parse_psbt_input',
         side_effect=Exception('fail'),
     )
 

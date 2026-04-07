@@ -50,14 +50,6 @@ def configure_dogtail():
     # Delay between keystrokes when typing
     config.config.typingDelay = 0.1 if in_ci else 0.05
 
-    # Enable debug logging in CI for visibility
-    if in_ci:
-        config.config.debugSearching = True
-        config.config.debugSleep = True
-        config.config.debugSearchPaths = True
-        config.config.logDebugToStdOut = True
-        config.config.logDebugToFile = False  # Don't write to file in CI, just stdout
-
 
 def warm_up_atspi(timeout=10):
     """

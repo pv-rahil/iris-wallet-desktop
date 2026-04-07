@@ -356,6 +356,57 @@ class TestEnvironment:
         # Relaunch only the first application
         self.launch_applications()
 
+    def reset_first_instance(self, reset_data: bool = True):
+        """Reset and relaunch only the first application instance.
+
+        This is used for multisig load flow where we:
+        1. Init multisig on both apps
+        2. Collect credentials from FIRST app
+        3. Reset FIRST app (not second)
+        4. Load first app with its own credentials
+
+        Args:
+            reset_data (bool): If True, clears the first app's data directory before relaunching.
+        """
+        # Kill only the first process
+        self.terminate_process(self.first_process)
+        self.first_process = None
+
+        # Optionally clear only the first app's data
+        if reset_data:
+            actual_path = local_store.get_path()
+            app1_data = os.path.dirname(actual_path)
+            delete_app_data(app1_data)
+
+        # Recreate Fake USB environment if required by variant
+        env = None
+        if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
+            env, _ = setup_fake_usb()
+
+        # Relaunch first application and reinitialize its page abstractions
+        self.first_process = subprocess.Popen(
+            [f'e2e_tests/applications/iris-wallet-vault_{
+                APP1_NAME
+            }-{__version__}-x86_64.AppImage'],
+            env=env,
+        )
+        self.wait_for_application(FIRST_APPLICATION)
+
+        subprocess.run(
+            [
+                'wmctrl', '-r', FIRST_APPLICATION, '-b',
+                'add,maximized_vert,maximized_horz',
+            ],
+            check=True,
+        )
+
+        self.first_application = root.child(
+            roleName='frame', name=FIRST_APPLICATION,
+        )
+        self.first_page_features = MainFeatures(self.first_application)
+        self.first_page_objects = MainPageObjects(self.first_application)
+        self.first_page_operations = BaseOperations(self.first_application)
+
     def reset_second_instance(self, reset_data: bool = True):
         """Reset and relaunch only the second application instance.
 

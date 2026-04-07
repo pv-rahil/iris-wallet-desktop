@@ -215,8 +215,8 @@ jobs:
           python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
           echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
 
-      - name: Start regtest services
-        run: poetry run regtest-start
+      # - name: Start regtest services
+      #   run: poetry run regtest-start
 
       - name: Configure Qt for accurate Dogtail positioning
         run: |
@@ -229,6 +229,18 @@ jobs:
           # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
           echo "GTK_CSD=0" >> $GITHUB_ENV
 
+      - name: Start screen recording
+        run: |
+          # Install ffmpeg for screen recording
+          sudo apt-get install -y ffmpeg
+
+          # Start recording the virtual display
+          ffmpeg -video_size 1920x1080 -framerate 15 -f x11grab -i :99.0 \
+            -codec:v libx264 -preset ultrafast -crf 28 \
+            /tmp/test_recording_${{ matrix.test_file }}.mp4 &
+          echo "RECORDER_PID=$!" >> $GITHUB_ENV
+          sleep 2
+
       - name: Run E2E Dogtail Test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -240,6 +252,26 @@ jobs:
         uses: ./.github/actions/setup-e2e-environment
         with:
           test-file: ${{ matrix.test_file }}
+
+      - name: Stop screen recording
+        if: always()
+        run: |
+          # Stop ffmpeg gracefully
+          if [ -n "$RECORDER_PID" ]; then
+            kill -INT $RECORDER_PID 2>/dev/null || true
+            sleep 3
+            # Force kill if still running
+            kill -9 $RECORDER_PID 2>/dev/null || true
+          fi
+
+      - name: Upload screen recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-recording-${{ matrix.test_file }}
+          path: /tmp/test_recording_${{ matrix.test_file }}.mp4
+          retention-days: 7
+          if-no-files-found: ignore
 
       # - name: Upload Allure results (embedded)
       #   if: always()
