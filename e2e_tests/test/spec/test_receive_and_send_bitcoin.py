@@ -396,6 +396,7 @@ def test_send_bitcoin_with_invalid_invoice_for_offline(wallets_and_operations: W
         )
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin with zero balance for multisig')
 @allure.story('Wallet send bitcoin operation with zero balance for multisig')
@@ -435,6 +436,7 @@ def test_send_bitcoin_with_zero_balance_for_multisig(wallets_and_operations: Wal
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin with invalid invoice for multisig')
 @allure.story('Wallet send bitcoin operation with invalid invoice for multisig')
@@ -529,6 +531,7 @@ def test_send_bitcoin_for_multisig(wallets_and_operations: WalletTestSetup, wall
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin with custom fee rate for multisig')
 @allure.story('Wallet send bitcoin operation with custom fee rate for multisig')

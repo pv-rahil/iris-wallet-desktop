@@ -28,6 +28,7 @@ from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
+from accessible_constant import SINGLE_SIG_VARIANTS
 
 # Timing constants
 CI_STABILIZATION_DELAY = 2.0
@@ -149,6 +150,12 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     ):
         pytest.skip(
             'Skipping test because it is not applicable in multisig wallet mode.',
+        )
+    if wallet_mode in SINGLE_SIG_VARIANTS and any(
+        True for _ in item.iter_markers('skip_for_single_sig')
+    ):
+        pytest.skip(
+            'Skipping test because it is not applicable in single-sig wallet mode.',
         )
 
 

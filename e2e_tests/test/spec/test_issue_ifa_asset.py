@@ -162,6 +162,7 @@ def test_issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
     assert asset_name == IFA_ASSET_NAME
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue IFA asset for multisig wallet')
 @allure.story('Issue IFA asset with multisig wallet requiring two applications')
@@ -183,6 +184,7 @@ def test_issue_ifa_multisig_without_sufficient_sats_for_multisig_wallet(wallets_
     assert description == ERROR_INSUFFICIENT_FUNDS
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue IFA asset for multisig wallet')
 @allure.story('Issue IFA asset with sufficient sats for multisig wallet')

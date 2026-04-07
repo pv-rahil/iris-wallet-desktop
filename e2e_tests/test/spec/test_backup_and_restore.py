@@ -620,6 +620,7 @@ def test_watch_only_backup_and_restore(test_environment, wallets_and_operations:
 
 # ============== MULTISIG BACKUP AND RESTORE TESTS ==============
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Mnemonic and backup configuration for multisig')
 @allure.story('Mnemonic and backup configuration functionality for multisig')
@@ -658,6 +659,7 @@ def test_mnemonic_and_backup_configure_for_multisig(wallets_and_operations: Wall
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Issue NIA for multisig')
@@ -694,6 +696,7 @@ def test_issue_nia_for_multisig(test_environment, wallets_and_operations: Wallet
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Issue CFA for multisig')
@@ -732,6 +735,7 @@ def test_issue_cfa_for_multisig(test_environment, wallets_and_operations: Wallet
         wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Send CFA for multisig')

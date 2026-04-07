@@ -23,6 +23,8 @@ ASSET_TICKER = 'TTK'
 NIA_ASSET_NAME = 'Tether'
 ASSET_AMOUNT = '2000'
 
+pytestmark = pytest.mark.skip_for_multisig
+
 
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [False], indirect=True)

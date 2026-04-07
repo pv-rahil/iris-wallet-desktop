@@ -72,6 +72,7 @@ def test_help_page(wallets_and_operations: WalletTestSetup, wallet_variant_name)
         )
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Help page test for multisig wallet')
 @allure.story('Tests for elements in help page for multisig wallet')

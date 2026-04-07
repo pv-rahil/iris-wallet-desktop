@@ -70,6 +70,7 @@ def test_download_debug_log(wallets_and_operations: WalletTestSetup):
         )
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.story('Tests for copy buttons for indexer info for multisig wallet')
 def test_indexer_info_for_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -88,6 +89,7 @@ def test_indexer_info_for_multisig_wallet(wallets_and_operations: WalletTestSetu
         assert copied_indexer_url == indexer_url
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.story('Tests for copy buttons for RGB proxy info for multisig wallet')
 def test_rgb_proxy_info_for_multisig_wallet(wallets_and_operations: WalletTestSetup):
@@ -101,6 +103,7 @@ def test_rgb_proxy_info_for_multisig_wallet(wallets_and_operations: WalletTestSe
         assert copied_rgb_proxy_url == rgb_proxy_url
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('About page tests for multisig wallet')
 @allure.story('Tests for download debug log for multisig wallet')

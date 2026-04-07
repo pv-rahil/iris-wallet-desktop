@@ -215,6 +215,7 @@ def test_hide_exhausted_asset_off_offline(wallets_and_operations: WalletTestSetu
         assert len(child_count) == 4
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Hide exhausted asset for multisig')
 @allure.story('Toggling on hide exhausted asset for multisig')
@@ -281,6 +282,7 @@ def test_hide_exhausted_asset_on_multisig(wallets_and_operations: WalletTestSetu
         assert len(child_count) == 3
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Hide exhausted asset for multisig')
 @allure.story('Toggling off hide exhausted asset for multisig')

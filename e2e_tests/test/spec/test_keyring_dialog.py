@@ -103,6 +103,7 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup, wallet_variant_
         assert True is wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button().checked
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Keyring for multisig')
 @allure.story('Keyring dialog for multisig')
@@ -132,6 +133,7 @@ def test_keyring_dialog_for_multisig(test_environment, wallets_and_operations: W
         test_environment.restart_single_instance(reset_data=False)
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Keyring for multisig')
 @allure.story('Keyring option for multisig')

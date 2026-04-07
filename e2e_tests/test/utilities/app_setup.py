@@ -33,6 +33,7 @@ from accessible_constant import THIRD_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.dogtail_config import warm_up_atspi
 from e2e_tests.test.utilities.fake_usb import setup_fake_usb
 from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.translation_utils import TranslationManager
@@ -102,6 +103,11 @@ class TestEnvironment:
             self.remove_keyring_entries(
                 service=THIRD_SERVICE, app_name=APP3_NAME,
             )
+
+        # Warm up AT-SPI before launching applications
+        # This ensures the accessibility tree is initialized and cached
+        print('[TEST ENV] Warming up AT-SPI before launching applications...')
+        warm_up_atspi(timeout=15)
 
         self.launch_applications()
 
