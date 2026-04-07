@@ -238,9 +238,10 @@ jobs:
             echo "Installing biscuit CLI..."
             cargo install biscuit-cli
           fi
-          # Generate a new keypair and save the private key
-          biscuit keypair > "$PRIVATE_KEY_FILE"
+          # Generate the private key for the bridge service
+          biscuit keypair --only-private-key > "$PRIVATE_KEY_FILE"
           echo "Generated private key file at $PRIVATE_KEY_FILE"
+          cat "$PRIVATE_KEY_FILE"
 
       - name: Start screen recording
         run: |

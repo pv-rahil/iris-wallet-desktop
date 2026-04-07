@@ -1138,9 +1138,25 @@ def test_on_psbt_text_changed_error(vm_mock, privileges_broadcast, mocker):
     mocker.patch(
         'src.views.ui_broadcast_transaction.load_stylesheet', return_value='',
     )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.HardwareWalletOperationDialog.get_instance',
+        return_value=MagicMock(),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.get_current_wallet_mode_config',
+        return_value=MagicMock(privileges=privileges_broadcast),
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.MULTI_SIG_WALLET,
+    )
+    mocker.patch(
+        'src.views.ui_broadcast_transaction.SettingRepository.get_wallet_access_type',
+        return_value=WalletAccessType.WATCH_ONLY,
+    )
     w = BroadcastTransactionWidget(vm_mock, from_sidebar=True)
     mocker.patch(
-        'src.views.components.broadcast_transaction_helpers.BroadcastTransactionService.parse_psbt_input',
+        'src.views.components.broadcast_transaction_helpers.BroadcastTransactionService.prepare_psbt_text_changed_state',
         side_effect=Exception('fail'),
     )
 
