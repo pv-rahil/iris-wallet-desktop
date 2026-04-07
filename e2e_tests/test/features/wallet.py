@@ -61,6 +61,21 @@ class Wallet(MainPageObjects, BaseOperations):
         self.address = None
         self.hw_emulator = None
 
+    def _refresh_application(self):
+        """
+        Refresh the application node and reinitialize all page objects.
+        Call this after the application is reset/relaunched to get fresh element references.
+        """
+        # Get fresh application node from root
+        if self.application and hasattr(self.application, 'name'):
+            name = self.application.name
+            try:
+                self.application = root.child(roleName='frame', name=name, showingOnly=True)
+                # Reinitialize all page objects with fresh application
+                super().__init__(self.application)
+            except Exception as e:
+                print(f"[WARN] Failed to refresh application: {e}")
+
     def _resolve_effective_variant(self, application: str, variant: str, is_load_wallet: bool) -> str | None:
         """
         Resolve the effective variant based on application role and instance mode.
@@ -399,14 +414,10 @@ class Wallet(MainPageObjects, BaseOperations):
             print(f"[ERROR] No load credentials found for {application}")
             return
 
-        # Reset the application via environment
-        env = self.get_current_environment()
-        if env:
-            if application == FIRST_APPLICATION:
-                env.reset_first_instance()
-            elif application == SECOND_APPLICATION:
-                env.reset_second_instance()
+        # Refresh application node and page objects after reset
+        self._refresh_application()
 
+        # Focus on the reset application
         self.do_focus_on_application(application)
 
         # Step 1: TNC scroll and accept

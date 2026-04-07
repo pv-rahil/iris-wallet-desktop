@@ -65,7 +65,7 @@ def test_view_unspent_list_for_offline_wallet(wallets_and_operations: WalletTest
 
         assert actual_outpoint == outpoint
 
-
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('View unspent list for multisig')
 @allure.story('Verify outpoint in unspent list for multisig')

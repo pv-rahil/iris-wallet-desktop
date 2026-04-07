@@ -471,7 +471,7 @@ def test_send_bitcoin_with_invalid_invoice_for_multisig(wallets_and_operations: 
         wallets_and_operations.first_page_objects.send_asset_page_objects.click_send_asset_close_button()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
-
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin for multisig')
 @allure.story('Wallet send bitcoin operation for multisig')

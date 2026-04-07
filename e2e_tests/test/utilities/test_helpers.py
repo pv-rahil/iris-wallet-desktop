@@ -540,11 +540,23 @@ def setup_multisig_wallets(
             )
 
         with allure.step('Load first multisig wallet with saved credentials'):
-            wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
-                application=FIRST_APPLICATION,
-                is_hardware=is_hardware,
-                is_online=is_online,
-            )
+            # Reset and get updated wallet_features from environment
+            env = wallets_and_operations.first_page_features.wallet_features.get_current_environment()
+            if env:
+                env.reset_first_instance()
+                # Use the updated wallet_features from environment after reset
+                updated_wallet_features = env.first_page_features.wallet_features
+                updated_wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                )
+            else:
+                wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                )
 
 
 def fund_and_refresh_multisig_wallets(
