@@ -190,6 +190,84 @@ def get_bridge_public_key() -> str | None:
         return None
 
 
+def clean_and_restart_bridge() -> bool:
+    """
+    Stop, clean data, and restart only the rgb-multisig-bridge container.
+    Does NOT affect other regtest services (bitcoind, electrs, proxy).
+    Use this instead of full regtest restart when services are already running.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    try:
+        e2e_tests_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..'),
+        )
+        bridge_data_dir = os.path.join(e2e_tests_dir, 'bridge')
+
+        print('Stopping rgb-multisig-bridge container...')
+        subprocess.run(
+            ['docker', 'compose', 'stop', 'rgb-multisig-bridge'],
+            cwd=e2e_tests_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        # Clean bridge data (rgb_multisig_bridge_db, files, logs)
+        for subdir in ['rgb_multisig_bridge_db', 'files', 'logs']:
+            subdir_path = os.path.join(bridge_data_dir, subdir)
+            if os.path.exists(subdir_path):
+                print(f'Cleaning bridge data: {subdir_path}')
+                shutil.rmtree(subdir_path, ignore_errors=True)
+
+        print('Starting rgb-multisig-bridge container...')
+        subprocess.run(
+            ['docker', 'compose', 'up', '-d', 'rgb-multisig-bridge'],
+            cwd=e2e_tests_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        # Wait for the bridge to be reachable
+        print('Waiting for bridge to be ready...')
+        for i in range(30):
+            try:
+                subprocess.run(
+                    ['curl', '-fsS', 'http://127.0.0.1:8141/info'],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                print('Bridge service is ready')
+                return True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                time.sleep(1)
+
+        # Diagnostics on failure
+        print('ERROR: Bridge did not become reachable. Dumping logs...')
+        try:
+            logs_out = subprocess.run(
+                ['docker', 'compose', 'logs', '--tail', '100', 'rgb-multisig-bridge'],
+                cwd=e2e_tests_dir,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            print(logs_out.stdout)
+        except Exception:
+            pass
+
+        return False
+    except subprocess.CalledProcessError as e:
+        print(f'ERROR: Failed to clean/restart bridge: {e.stderr}')
+        return False
+    except Exception as e:
+        print(f'ERROR: Unexpected error: {e}')
+        return False
+
+
 def restart_bridge_service() -> bool:
     """
     Restart the rgb-multisig-bridge container to reload config.toml.
