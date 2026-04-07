@@ -1,4 +1,4 @@
-# pylint: disable=consider-using-with, too-many-branches, too-many-lines
+# pylint: disable=consider-using-with, too-many-branches, too-many-lines, too-many-statements
 """
 Wallet class for creating and funding a wallet.
 """
@@ -145,9 +145,8 @@ class Wallet(MainPageObjects, BaseOperations):
         if effective_variant in HARDWARE_WALLET_VARIANTS:
             self.set_up_hardware_wallet(application)
 
-        if effective_variant not in MULTISIG_VARIANTS:
-            if self.do_is_displayed(self.welcome_page_objects.create_button()):
-                self.welcome_page_objects.click_create_button()
+        if self.do_is_displayed(self.welcome_page_objects.create_button()):
+            self.welcome_page_objects.click_create_button()
 
         if effective_variant == ONLINE_WATCH_ONLY:
             xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app()
@@ -441,41 +440,105 @@ class Wallet(MainPageObjects, BaseOperations):
         Load a wallet.
 
         For single-sig: Uses second app's credentials to load first app.
-        For multisig: Inits both apps, collects first app's credentials, resets first app, then loads.
+        For multisig: Both apps CREATE first (3 phases), backup from first app, reset first app, then load.
         """
-        self.do_focus_on_application(application)
-        self.create_wallet(application, variant)
-
-        mnemonic, password, xpub_vanilla, xpub_colored, fingerprint = self.setup_second_wallet(
-            variant,
-        )
-
-        # For multisig load, reset the first instance after collecting credentials
-        # The setup_second_wallet already did the multisig setup on both apps
-        # Now we reset first app and load it with its own credentials
+        # For multisig load, both apps need to CREATE first with CREATE variant
+        # Then backup, reset first app, and load with its own credentials
         if variant in MULTISIG_VARIANTS:
+            # Step 1: CREATE multisig on both apps using CREATE variant
+            create_variant = map_load_to_create(variant)
+
+            # Create multisig on first app (Phase 1: initiate_multisig_setup)
+            self.do_focus_on_application(FIRST_APPLICATION)
+            self.create_wallet(FIRST_APPLICATION, create_variant)
+
+            # Create multisig on second app (Phase 1: initiate_multisig_setup)
+            second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+            second_wallet = Wallet(second_app)
+            second_wallet.do_focus_on_application(SECOND_APPLICATION)
+            second_wallet.create_wallet(SECOND_APPLICATION, create_variant)
+
+            # Phase 2: Import cosigner data on both apps
+            self.do_focus_on_application(FIRST_APPLICATION)
+            self.import_multisig_data(FIRST_APPLICATION)
+            second_wallet.do_focus_on_application(SECOND_APPLICATION)
+            second_wallet.import_multisig_data(SECOND_APPLICATION)
+
+            # Phase 3: Finalize multisig on both apps
+            self.do_focus_on_application(FIRST_APPLICATION)
+            self.finalize_multisig_setup(FIRST_APPLICATION)
+            second_wallet.do_focus_on_application(SECOND_APPLICATION)
+            second_wallet.finalize_multisig_setup(SECOND_APPLICATION)
+
+            # Step 2: Collect credentials from FIRST app
+            mnemonic = password = xpub_vanilla = xpub_colored = fingerprint = None
+            if variant in HARDWARE_WALLET_VARIANTS:
+                xpub_vanilla, xpub_colored, fingerprint, password = self.collect_keyring_values_from_app(
+                    FIRST_APPLICATION, is_load_wallet=True,
+                )
+            else:
+                mnemonic, password = self.collect_mnemonic_password(self)
+
+            # Step 3: Perform backup from first app
+            if variant in REQUIRE_USB_VARIANTS:
+                self.trigger_usb_sync(self)
+            else:
+                self.perform_online_backup(self)
+
+            # Step 4: Reset first app
             env = self.get_current_environment()
             if env:
                 env.reset_first_instance()
                 # Re-initialize page objects after reset
                 self.do_focus_on_application(application)
 
-        self.do_focus_on_application(application)
+            # Step 5: Load first app with its own credentials
+            self.do_focus_on_application(application)
+            self._accept_terms_and_conditions()
+            self.drive_selection_flow(application, variant)
 
-        if variant in REQUIRE_USB_VARIANTS:
-            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                self.usb_sync_dialog_page_objects.click_continue_button()
-            if variant in HARDWARE_WALLET_VARIANTS:
-                self.restore_with_xpubs(
-                    xpub_vanilla, xpub_colored, fingerprint, password,
-                )
+            if self.do_is_displayed(self.welcome_page_objects.restore_button()):
+                self.welcome_page_objects.click_restore_button()
+
+            if variant in REQUIRE_USB_VARIANTS:
+                if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                    self.usb_sync_dialog_page_objects.click_continue_button()
+                if variant in HARDWARE_WALLET_VARIANTS:
+                    self.restore_with_xpubs(
+                        xpub_vanilla, xpub_colored, fingerprint, password,
+                    )
+                else:
+                    self.restore_with_mnemonic(mnemonic, password)
             else:
-                self.restore_with_mnemonic(mnemonic, password)
+                self.google_auth(
+                    mnemonic=mnemonic, password=password, xpub_vanilla=xpub_vanilla,
+                    xpub_colored=xpub_colored, fingerprint=fingerprint,
+                )
         else:
-            self.google_auth(
-                mnemonic=mnemonic, password=password, xpub_vanilla=xpub_vanilla,
-                xpub_colored=xpub_colored, fingerprint=fingerprint,
+            # Single-sig: Create wallet on second app and load first app with second's credentials
+            self.do_focus_on_application(application)
+            self.create_wallet(application, variant)
+
+            mnemonic, password, xpub_vanilla, xpub_colored, fingerprint = self.setup_second_wallet(
+                variant,
             )
+
+            self.do_focus_on_application(application)
+
+            if variant in REQUIRE_USB_VARIANTS:
+                if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                    self.usb_sync_dialog_page_objects.click_continue_button()
+                if variant in HARDWARE_WALLET_VARIANTS:
+                    self.restore_with_xpubs(
+                        xpub_vanilla, xpub_colored, fingerprint, password,
+                    )
+                else:
+                    self.restore_with_mnemonic(mnemonic, password)
+            else:
+                self.google_auth(
+                    mnemonic=mnemonic, password=password, xpub_vanilla=xpub_vanilla,
+                    xpub_colored=xpub_colored, fingerprint=fingerprint,
+                )
 
         if self.do_is_displayed(self.enter_wallet_password_page_objects.password_input()):
             self.enter_wallet_password_page_objects.enter_password(password)
@@ -491,8 +554,8 @@ class Wallet(MainPageObjects, BaseOperations):
     def setup_second_wallet(self, variant: str) -> tuple:
         """Handles key retrieval and wallet setup for the second application.
 
-        For single-sig: Creates wallet on second app, collects credentials from second app.
-        For multisig: Creates multisig on both apps, collects credentials from FIRST app.
+        Only used for single-sig load: Creates wallet on second app, collects credentials.
+        Multisig load is handled directly in load_wallet().
         """
         second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
         if not second_app:
@@ -504,62 +567,25 @@ class Wallet(MainPageObjects, BaseOperations):
 
         mnemonic = password = xpub_vanilla = xpub_colored = fingerprint = None
 
-        # For multisig load variants, we need both apps running to exchange cosigner data
-        # After multisig setup, we collect credentials from FIRST app (not second)
-        # Then reset first app and load it with its own credentials
-        if variant in MULTISIG_VARIANTS:
-            # Initiate multisig on both apps
-            self.do_focus_on_application(FIRST_APPLICATION)
-            self.initiate_multisig_setup(FIRST_APPLICATION)
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
-            second_wallet.initiate_multisig_setup(SECOND_APPLICATION)
+        # Single-sig: Create wallet on second app and collect credentials from it
+        second_wallet.create_wallet(
+            SECOND_APPLICATION, create_variant, is_load_wallet=True,
+        )
+        second_wallet.do_focus_on_application(SECOND_APPLICATION)
 
-            # Import cosigner data on both apps
-            self.do_focus_on_application(FIRST_APPLICATION)
-            self.import_multisig_data(FIRST_APPLICATION)
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
-            second_wallet.import_multisig_data(SECOND_APPLICATION)
-
-            # Finalize multisig on both apps
-            self.do_focus_on_application(FIRST_APPLICATION)
-            self.finalize_multisig_setup(FIRST_APPLICATION)
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
-            second_wallet.finalize_multisig_setup(SECOND_APPLICATION)
-
-            # Collect credentials from FIRST app (not second)
-            # This is different from single-sig where we collect from second app
-            if variant in HARDWARE_WALLET_VARIANTS:
-                xpub_vanilla, xpub_colored, fingerprint, password = self.collect_keyring_values_from_app(
-                    FIRST_APPLICATION, is_load_wallet=True,
-                )
-            else:
-                mnemonic, password = self.collect_mnemonic_password(self)
-
-            # Perform backup from first app
-            if variant in REQUIRE_USB_VARIANTS:
-                self.trigger_usb_sync(self)
-            else:
-                self.perform_online_backup(self)
-        else:
-            # Single-sig: Create wallet on second app and collect credentials from it
-            second_wallet.create_wallet(
-                SECOND_APPLICATION, create_variant, is_load_wallet=True,
+        if variant in HARDWARE_WALLET_VARIANTS:
+            xpub_vanilla, xpub_colored, fingerprint, password = second_wallet.collect_keyring_values_from_app(
+                SECOND_APPLICATION, is_load_wallet=True,
             )
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
+        else:
+            mnemonic, password = self.collect_mnemonic_password(
+                second_wallet,
+            )
 
-            if variant in HARDWARE_WALLET_VARIANTS:
-                xpub_vanilla, xpub_colored, fingerprint, password = second_wallet.collect_keyring_values_from_app(
-                    SECOND_APPLICATION, is_load_wallet=True,
-                )
-            else:
-                mnemonic, password = self.collect_mnemonic_password(
-                    second_wallet,
-                )
-
-            if variant in REQUIRE_USB_VARIANTS:
-                self.trigger_usb_sync(second_wallet)
-            else:
-                self.perform_online_backup(second_wallet)
+        if variant in REQUIRE_USB_VARIANTS:
+            self.trigger_usb_sync(second_wallet)
+        else:
+            self.perform_online_backup(second_wallet)
 
         return mnemonic, password, xpub_vanilla, xpub_colored, fingerprint
 

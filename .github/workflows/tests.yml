@@ -229,6 +229,19 @@ jobs:
           # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
           echo "GTK_CSD=0" >> $GITHUB_ENV
 
+      - name: Generate private key for multisig bridge
+        run: |
+          # Generate private key file for biscuit token generation
+          # This is needed for multisig wallet tests
+          PRIVATE_KEY_FILE="e2e_tests/test/utilities/private-key-file"
+          if ! command -v biscuit &> /dev/null; then
+            echo "Installing biscuit CLI..."
+            cargo install biscuit-cli
+          fi
+          # Generate a new keypair and save the private key
+          biscuit keypair > "$PRIVATE_KEY_FILE"
+          echo "Generated private key file at $PRIVATE_KEY_FILE"
+
       - name: Start screen recording
         run: |
           # Install ffmpeg for screen recording
