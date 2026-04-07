@@ -90,7 +90,10 @@ runs:
           scrot \
           libcairo2-dev \
           pkg-config \
-          python3-dev
+          python3-dev \
+          libhidapi-hidraw0 \
+          libhidapi-libusb0 \
+          libhidapi-dev
         sudo gem install fpm -f
       shell: bash
 

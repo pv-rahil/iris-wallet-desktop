@@ -83,7 +83,10 @@ jobs:
             ninja-build \
             pkg-config \
             libcairo2-dev \
-            libffi-dev
+            libffi-dev \
+            libhidapi-hidraw0 \
+            libhidapi-libusb0 \
+            libhidapi-dev
           sudo gem install fpm -f
 
       - name: Generate config.py
