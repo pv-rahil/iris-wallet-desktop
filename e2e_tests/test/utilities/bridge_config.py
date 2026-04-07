@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import shutil
 import tomllib
 
 
@@ -98,6 +99,10 @@ def reset_bridge_config() -> None:
     if not os.path.exists(bridge_dir):
         os.makedirs(bridge_dir, exist_ok=True)
         print(f"Created bridge directory at {bridge_dir}")
+
+    if os.path.isdir(BRIDGE_CONFIG_PATH):
+        shutil.rmtree(BRIDGE_CONFIG_PATH)
+        print(f"Removed incorrect directory at {BRIDGE_CONFIG_PATH}")
 
     default_config = """cosigner_xpubs = [
     "PLACEHOLDER_XPUB_1",
