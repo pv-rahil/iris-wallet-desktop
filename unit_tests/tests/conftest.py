@@ -85,6 +85,16 @@ def mock_timer(mocker, request):
     if 'repository_tests' in str(request.fspath):
         return
 
+    if 'loading_screen_test.py' in str(request.fspath):
+        return
+
+    if 'custom_toast_test.py' in str(request.fspath):
+        return
+
+    # Mock QTimer.start() globally to prevent timers from running
+    mocker.patch('PySide6.QtCore.QTimer.start', return_value=None)
+
+    # Also mock the specific network check method
     mocker.patch(
         'src.viewmodels.header_frame_view_model.HeaderFrameViewModel.start_network_check',
     )

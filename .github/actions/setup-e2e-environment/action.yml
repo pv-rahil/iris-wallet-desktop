@@ -32,6 +32,7 @@ runs:
         # Copy to project root where biscuit_auth.py can find it
         cp "$PRIVATE_KEY_FILE" private-key-file
         echo "Copied private-key-file to project root"
+      shell: bash
 
     - name: Run E2E test in configured environment
       run: |
