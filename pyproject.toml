@@ -28,6 +28,7 @@ base58 = "^2.1.1"
 bip32 = "^4.0"
 rgb-lib = "0.3.0b4"
 dogtail = "1.0.7"
+hid = "^1.0.9"
 [tool.poetry.dev-dependencies]
 pyqt-toast-notification = "^1.2.0"
 pre-commit = "^3.7.1"

@@ -1149,6 +1149,18 @@ protobuf = ">=4.25.8,<8.0.0"
 grpc = ["grpcio (>=1.44.0,<2.0.0)"]
 
 [[package]]
+name = "hid"
+version = "1.0.9"
+description = "ctypes bindings for hidapi"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "hid-1.0.9-py3-none-any.whl", hash = "sha256:6b9289e00bbc1e1589bec0c7f376a63fe03a4a4a1875575d0ad60e3e11a349f4"},
+    {file = "hid-1.0.9.tar.gz", hash = "sha256:f4471f11f0e176d1b0cb1b243e55498cc90347a3aede735655304395694ac182"},
+]
+
+[[package]]
 name = "httplib2"
 version = "0.31.2"
 description = "A comprehensive HTTP client library."
@@ -3509,4 +3521,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "284631abab0710b5d317868c2c75c49a12df4a4727c19d21c2f7bbcedec11357"
+content-hash = "db57a84b9085233293eb6730a2f76fbc49ada6b3c564c0f645d136a2acd13e81"

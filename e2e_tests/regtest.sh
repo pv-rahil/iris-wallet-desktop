@@ -24,6 +24,9 @@ _start_services() {
     _stop_services
 
     mkdir -p "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2}
+    mkdir -p "$SCRIPT_DIR"/bridge
+    # Ensure config.toml exists as a file before docker-compose mounts it
+    touch "$SCRIPT_DIR"/bridge/config.toml
     # see compose.yaml for the exposed ports
     EXPOSED_PORTS=(3000 50001)
     for port in "${EXPOSED_PORTS[@]}"; do
