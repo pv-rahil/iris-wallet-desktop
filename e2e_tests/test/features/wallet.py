@@ -342,7 +342,7 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.welcome_page_objects.create_button()):
             self.welcome_page_objects.click_create_button()
 
-    def save_multisig_load_credentials(self, application: str, is_hardware: bool = False):
+    def save_multisig_load_credentials(self, application: str, is_hardware: bool = False, is_online: bool = False):
         """
         Save credentials from a multisig wallet for load flow.
         Call this after finalize_multisig_setup for load variants.
@@ -350,6 +350,7 @@ class Wallet(MainPageObjects, BaseOperations):
         Args:
             application: Application name.
             is_hardware: Whether this is a hardware wallet variant.
+            is_online: Whether this is an online variant (needs online backup).
         """
         coordinator = get_multisig_coordinator()
         self.do_focus_on_application(application)
@@ -374,6 +375,12 @@ class Wallet(MainPageObjects, BaseOperations):
                 mnemonic=mnemonic,
                 password=password,
             )
+
+        # Take backup after saving credentials
+        if is_online:
+            self.perform_online_backup(self)
+        else:
+            self.trigger_usb_sync(self)
 
     def load_multisig_wallet(self, application: str, is_hardware: bool = False, is_online: bool = False):
         """
@@ -402,14 +409,19 @@ class Wallet(MainPageObjects, BaseOperations):
 
         self.do_focus_on_application(application)
 
-        # Accept terms and proceed to restore
-        self._accept_terms_and_conditions()
+        # Step 1: TNC scroll and accept
+        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
+            self.term_and_condition_page_objects.scroll_to_end()
+        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
+            self.term_and_condition_page_objects.click_accept_button()
 
-        # Navigate to restore flow
+        self.drive_selection_flow(application, ONLINE_CREATE_ON_DEVICE)
+
+        # Step 3: Click restore button
         if self.do_is_displayed(self.welcome_page_objects.restore_button()):
             self.welcome_page_objects.click_restore_button()
 
-        # Restore with saved credentials
+        # Step 4: Restore with saved credentials via Google auth
         if is_online:
             # Online variant - use Google auth flow
             self.google_auth(
@@ -524,7 +536,7 @@ class Wallet(MainPageObjects, BaseOperations):
         if is_restore_wallet:
             self.create_wallet(application, variant)
 
-        elif application == FIRST_APPLICATION and variant in LOAD_WALLET_VARIANT:
+        elif application == FIRST_APPLICATION and variant in LOAD_WALLET_VARIANT and variant not in MULTISIG_VARIANTS:
             self.load_wallet(application, variant, fund)
             return
         else:

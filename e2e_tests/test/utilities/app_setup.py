@@ -374,8 +374,8 @@ class TestEnvironment:
 
         # Optionally clear only the first app's data
         if reset_data:
-            actual_path = local_store.get_path()
-            app1_data = os.path.dirname(actual_path)
+            actual_path = os.path.dirname(local_store.get_path())
+            app1_data = actual_path.replace(APP_NAME, FIRST_APPLICATION_PATH)
             delete_app_data(app1_data)
 
         # Recreate Fake USB environment if required by variant

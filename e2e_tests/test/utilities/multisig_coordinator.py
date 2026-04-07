@@ -7,12 +7,11 @@ from __future__ import annotations
 import os
 import threading
 
-from e2e_tests.test.utilities.bridge_config import clean_and_restart_bridge
 from e2e_tests.test.utilities.bridge_config import generate_biscuit_token
 from e2e_tests.test.utilities.bridge_config import get_bridge_public_key
 from e2e_tests.test.utilities.bridge_config import reset_bridge_config
-from e2e_tests.test.utilities.bridge_config import start_regtest_services
 from e2e_tests.test.utilities.bridge_config import stop_regtest_services
+from e2e_tests.test.utilities.bridge_config import start_regtest_services
 from e2e_tests.test.utilities.bridge_config import update_bridge_config
 
 
@@ -62,8 +61,7 @@ class MultisigSetupCoordinator:
         self._threshold = 2
         self._bridge_updated = False
         self._load_credentials.clear()
-        if not _is_ci():
-            stop_regtest_services()
+        stop_regtest_services()
         reset_bridge_config()
 
     def set_threshold(self, threshold: int):
@@ -230,10 +228,8 @@ class MultisigSetupCoordinator:
                 threshold_vanilla=threshold,
                 root_public_key=root_public_key,
             )
-            if _is_ci():
-                clean_and_restart_bridge()
-            else:
-                start_regtest_services()
+
+            start_regtest_services()
             self._bridge_updated = True
 
 

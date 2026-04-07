@@ -190,11 +190,11 @@ def get_bridge_public_key() -> str | None:
         return None
 
 
-def clean_and_restart_bridge() -> bool:
+def clean_bridge() -> bool:
     """
-    Stop, clean data, and restart only the rgb-multisig-bridge container.
-    Does NOT affect other regtest services (bitcoind, electrs, proxy).
-    Use this instead of full regtest restart when services are already running.
+    Stop and clean bridge data/config. Does NOT start the bridge.
+    Caller must update config and start bridge separately.
+    Use this before updating bridge config for load wallet flow.
 
     Returns:
         True if successful, False otherwise.
@@ -221,47 +221,64 @@ def clean_and_restart_bridge() -> bool:
                 print(f'Cleaning bridge data: {subdir_path}')
                 shutil.rmtree(subdir_path, ignore_errors=True)
 
-        print('Starting rgb-multisig-bridge container...')
+        # Clear bridge config.toml to avoid 'cannot change cosigner' error
+        config_path = os.path.join(bridge_data_dir, 'config.toml')
+        if os.path.exists(config_path):
+            print(f'Cleaning bridge config: {config_path}')
+            os.remove(config_path)
+
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f'ERROR: Failed to clean bridge: {e.stderr}')
+        return False
+    except Exception as e:
+        print(f'ERROR: Unexpected error: {e}')
+        return False
+
+
+def start_bridge_service() -> bool:
+    """
+    Start only the rgb-multisig-bridge container.
+    Should be called after clean_bridge and update_bridge_config.
+
+    Returns:
+        True if start successful, False otherwise.
+    """
+    try:
+        e2e_tests_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..'),
+        )
+        # Start the bridge container
         subprocess.run(
             ['docker', 'compose', 'up', '-d', 'rgb-multisig-bridge'],
             cwd=e2e_tests_dir,
             capture_output=True,
             text=True,
-            check=True,
+            
         )
 
         # Wait for the bridge to be reachable
         print('Waiting for bridge to be ready...')
-        for i in range(30):
+        for _ in range(30):
             try:
                 subprocess.run(
-                    ['curl', '-fsS', 'http://127.0.0.1:8141/info'],
+                    [
+                        'curl', '-fsS',
+                        'http://127.0.0.1:8141/info',
+                    ],
                     capture_output=True,
                     text=True,
                     check=True,
                 )
-                print('Bridge service is ready')
+                print('Bridge service started successfully')
                 return True
             except (subprocess.CalledProcessError, FileNotFoundError):
                 time.sleep(1)
 
-        # Diagnostics on failure
-        print('ERROR: Bridge did not become reachable. Dumping logs...')
-        try:
-            logs_out = subprocess.run(
-                ['docker', 'compose', 'logs', '--tail', '100', 'rgb-multisig-bridge'],
-                cwd=e2e_tests_dir,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            print(logs_out.stdout)
-        except Exception:
-            pass
-
+        print('ERROR: Bridge did not become reachable')
         return False
     except subprocess.CalledProcessError as e:
-        print(f'ERROR: Failed to clean/restart bridge: {e.stderr}')
+        print(f'ERROR: Failed to start bridge: {e.stderr}')
         return False
     except Exception as e:
         print(f'ERROR: Unexpected error: {e}')
@@ -358,6 +375,22 @@ def start_regtest_services() -> bool:
             text=True,
             check=True,
         )
+        print('Waiting for bridge to be ready...')
+        for _ in range(60):
+            try:
+                subprocess.run(
+                    [
+                        'curl', '-fsS',
+                        'http://127.0.0.1:8141/info',
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                print('Bridge service started successfully')
+                return True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                time.sleep(1)
         print('Regtest services started successfully')
         return True
     except subprocess.CalledProcessError as e:
