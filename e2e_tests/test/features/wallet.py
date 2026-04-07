@@ -440,105 +440,31 @@ class Wallet(MainPageObjects, BaseOperations):
         Load a wallet.
 
         For single-sig: Uses second app's credentials to load first app.
-        For multisig: Both apps CREATE first (3 phases), backup from first app, reset first app, then load.
         """
-        # For multisig load, both apps need to CREATE first with CREATE variant
-        # Then backup, reset first app, and load with its own credentials
-        if variant in MULTISIG_VARIANTS:
-            # Step 1: CREATE multisig on both apps using CREATE variant
-            create_variant = map_load_to_create(variant)
+        # Single-sig: Create wallet on second app and load first app with second's credentials
+        self.do_focus_on_application(application)
+        self.create_wallet(application, variant)
 
-            # Create multisig on first app (Phase 1: initiate_multisig_setup)
-            self.do_focus_on_application(FIRST_APPLICATION)
-            self.create_wallet(FIRST_APPLICATION, create_variant)
+        mnemonic, password, xpub_vanilla, xpub_colored, fingerprint = self.setup_second_wallet(
+            variant,
+        )
 
-            # Create multisig on second app (Phase 1: initiate_multisig_setup)
-            second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
-            second_wallet = Wallet(second_app)
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
-            second_wallet.create_wallet(SECOND_APPLICATION, create_variant)
+        self.do_focus_on_application(application)
 
-            # Phase 2: Import cosigner data on both apps
-            self.do_focus_on_application(FIRST_APPLICATION)
-            self.import_multisig_data(FIRST_APPLICATION)
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
-            second_wallet.import_multisig_data(SECOND_APPLICATION)
-
-            # Phase 3: Finalize multisig on both apps
-            self.do_focus_on_application(FIRST_APPLICATION)
-            self.finalize_multisig_setup(FIRST_APPLICATION)
-            second_wallet.do_focus_on_application(SECOND_APPLICATION)
-            second_wallet.finalize_multisig_setup(SECOND_APPLICATION)
-
-            # Step 2: Collect credentials from FIRST app
-            mnemonic = password = xpub_vanilla = xpub_colored = fingerprint = None
+        if variant in REQUIRE_USB_VARIANTS:
+            if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
+                self.usb_sync_dialog_page_objects.click_continue_button()
             if variant in HARDWARE_WALLET_VARIANTS:
-                xpub_vanilla, xpub_colored, fingerprint, password = self.collect_keyring_values_from_app(
-                    FIRST_APPLICATION, is_load_wallet=True,
+                self.restore_with_xpubs(
+                    xpub_vanilla, xpub_colored, fingerprint, password,
                 )
             else:
-                mnemonic, password = self.collect_mnemonic_password(self)
-
-            # Step 3: Perform backup from first app
-            if variant in REQUIRE_USB_VARIANTS:
-                self.trigger_usb_sync(self)
-            else:
-                self.perform_online_backup(self)
-
-            # Step 4: Reset first app
-            env = self.get_current_environment()
-            if env:
-                env.reset_first_instance()
-                # Re-initialize page objects after reset
-                self.do_focus_on_application(application)
-
-            # Step 5: Load first app with its own credentials
-            self.do_focus_on_application(application)
-            self._accept_terms_and_conditions()
-            self.drive_selection_flow(application, variant)
-
-            if self.do_is_displayed(self.welcome_page_objects.restore_button()):
-                self.welcome_page_objects.click_restore_button()
-
-            if variant in REQUIRE_USB_VARIANTS:
-                if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                    self.usb_sync_dialog_page_objects.click_continue_button()
-                if variant in HARDWARE_WALLET_VARIANTS:
-                    self.restore_with_xpubs(
-                        xpub_vanilla, xpub_colored, fingerprint, password,
-                    )
-                else:
-                    self.restore_with_mnemonic(mnemonic, password)
-            else:
-                self.google_auth(
-                    mnemonic=mnemonic, password=password, xpub_vanilla=xpub_vanilla,
-                    xpub_colored=xpub_colored, fingerprint=fingerprint,
-                )
+                self.restore_with_mnemonic(mnemonic, password)
         else:
-            # Single-sig: Create wallet on second app and load first app with second's credentials
-            self.do_focus_on_application(application)
-            self.create_wallet(application, variant)
-
-            mnemonic, password, xpub_vanilla, xpub_colored, fingerprint = self.setup_second_wallet(
-                variant,
+            self.google_auth(
+                mnemonic=mnemonic, password=password, xpub_vanilla=xpub_vanilla,
+                xpub_colored=xpub_colored, fingerprint=fingerprint,
             )
-
-            self.do_focus_on_application(application)
-
-            if variant in REQUIRE_USB_VARIANTS:
-                if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
-                    self.usb_sync_dialog_page_objects.click_continue_button()
-                if variant in HARDWARE_WALLET_VARIANTS:
-                    self.restore_with_xpubs(
-                        xpub_vanilla, xpub_colored, fingerprint, password,
-                    )
-                else:
-                    self.restore_with_mnemonic(mnemonic, password)
-            else:
-                self.google_auth(
-                    mnemonic=mnemonic, password=password, xpub_vanilla=xpub_vanilla,
-                    xpub_colored=xpub_colored, fingerprint=fingerprint,
-                )
 
         if self.do_is_displayed(self.enter_wallet_password_page_objects.password_input()):
             self.enter_wallet_password_page_objects.enter_password(password)
