@@ -49,6 +49,8 @@ class MultisigSetupCoordinator:
         self._registration_lock = threading.Lock()
         self._threshold: int = 2
         self._bridge_updated: bool = False
+        # Load wallet credentials storage
+        self._load_credentials: dict[str, dict] = {}
         self.reset()
 
     def reset(self):
@@ -59,6 +61,7 @@ class MultisigSetupCoordinator:
         self._applications_registered.clear()
         self._threshold = 2
         self._bridge_updated = False
+        self._load_credentials.clear()
         if not _is_ci():
             stop_regtest_services()
         reset_bridge_config()
@@ -167,6 +170,46 @@ class MultisigSetupCoordinator:
             Dictionary mapping application names to their colored xpubs.
         """
         return self._colored_xpubs.copy()
+
+    def store_load_credentials(
+        self,
+        application: str,
+        mnemonic: str | None = None,
+        password: str | None = None,
+        xpub_vanilla: str | None = None,
+        xpub_colored: str | None = None,
+        fingerprint: str | None = None,
+    ):
+        """
+        Store load wallet credentials for an application.
+
+        Args:
+            application: Application name.
+            mnemonic: Mnemonic phrase (for software wallets).
+            password: Wallet password.
+            xpub_vanilla: Vanilla xpub (for hardware wallets).
+            xpub_colored: Colored xpub (for hardware wallets).
+            fingerprint: Master fingerprint (for hardware wallets).
+        """
+        self._load_credentials[application] = {
+            'mnemonic': mnemonic,
+            'password': password,
+            'xpub_vanilla': xpub_vanilla,
+            'xpub_colored': xpub_colored,
+            'fingerprint': fingerprint,
+        }
+
+    def get_load_credentials(self, application: str) -> dict | None:
+        """
+        Get stored load wallet credentials for an application.
+
+        Args:
+            application: Application name.
+
+        Returns:
+            Dictionary with credentials or None if not stored.
+        """
+        return self._load_credentials.get(application)
 
     def update_bridge_config(self, threshold: int = 2):
         """

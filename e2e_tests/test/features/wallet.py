@@ -342,6 +342,103 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.welcome_page_objects.create_button()):
             self.welcome_page_objects.click_create_button()
 
+    def save_multisig_load_credentials(self, application: str, is_hardware: bool = False):
+        """
+        Save credentials from a multisig wallet for load flow.
+        Call this after finalize_multisig_setup for load variants.
+
+        Args:
+            application: Application name.
+            is_hardware: Whether this is a hardware wallet variant.
+        """
+        coordinator = get_multisig_coordinator()
+        self.do_focus_on_application(application)
+
+        if is_hardware:
+            # Collect xpubs and fingerprint for hardware wallet
+            xpub_vanilla, xpub_colored, fingerprint, password = self.collect_keyring_values_from_app(
+                application, is_load_wallet=True,
+            )
+            coordinator.store_load_credentials(
+                application,
+                xpub_vanilla=xpub_vanilla,
+                xpub_colored=xpub_colored,
+                fingerprint=fingerprint,
+                password=password,
+            )
+        else:
+            # Collect mnemonic for software wallet
+            mnemonic, password = self.collect_mnemonic_password(self)
+            coordinator.store_load_credentials(
+                application,
+                mnemonic=mnemonic,
+                password=password,
+            )
+
+    def load_multisig_wallet(self, application: str, is_hardware: bool = False, is_online: bool = False):
+        """
+        Load a multisig wallet using saved credentials.
+        Resets the app and loads wallet with stored credentials.
+
+        Args:
+            application: Application name.
+            is_hardware: Whether this is a hardware wallet variant.
+            is_online: Whether this is an online variant (uses Google auth).
+        """
+        coordinator = get_multisig_coordinator()
+        credentials = coordinator.get_load_credentials(application)
+
+        if not credentials:
+            print(f"[ERROR] No load credentials found for {application}")
+            return
+
+        # Reset the application via environment
+        env = self.get_current_environment()
+        if env:
+            if application == FIRST_APPLICATION:
+                env.reset_first_instance()
+            elif application == SECOND_APPLICATION:
+                env.reset_second_instance()
+
+        self.do_focus_on_application(application)
+
+        # Accept terms and proceed to restore
+        self._accept_terms_and_conditions()
+
+        # Navigate to restore flow
+        if self.do_is_displayed(self.welcome_page_objects.restore_button()):
+            self.welcome_page_objects.click_restore_button()
+
+        # Restore with saved credentials
+        if is_online:
+            # Online variant - use Google auth flow
+            self.google_auth(
+                mnemonic=credentials.get('mnemonic'),
+                password=credentials.get('password'),
+                xpub_vanilla=credentials.get('xpub_vanilla'),
+                xpub_colored=credentials.get('xpub_colored'),
+                fingerprint=credentials.get('fingerprint'),
+            )
+        elif is_hardware:
+            self.restore_with_xpubs(
+                credentials.get('xpub_vanilla'),
+                credentials.get('xpub_colored'),
+                credentials.get('fingerprint'),
+                credentials.get('password'),
+            )
+        else:
+            self.restore_with_mnemonic(
+                credentials.get('mnemonic'),
+                credentials.get('password'),
+            )
+
+        # Enter password and login
+        password = credentials.get('password')
+        if password and self.do_is_displayed(self.enter_wallet_password_page_objects.password_input()):
+            self.enter_wallet_password_page_objects.enter_password(password)
+        if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
+            self.enter_wallet_password_page_objects.click_login_button()
+
     def setup_multisig_watch_only_single_instance(self):
         """
         Single-instance multisig watch-only flow: spawn a temp second app,

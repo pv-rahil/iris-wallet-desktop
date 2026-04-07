@@ -9,6 +9,8 @@ import allure
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import MULTISIG_LOAD_VARIANTS
+from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
@@ -486,11 +488,16 @@ def setup_multisig_wallets(
 ) -> None:
     """
     Setup two multisig wallets with cosigner data import and finalization.
+    For load variants, also saves credentials, resets app, and reloads wallet.
 
     Args:
         wallets_and_operations: Wallet test setup instance.
         wallet_variant_name: Wallet variant name.
     """
+    is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
+    is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
+    is_online = wallet_variant_name not in REQUIRE_USB_VARIANTS
+
     with allure.step('Initiate first multisig wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
             application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
@@ -520,6 +527,21 @@ def setup_multisig_wallets(
         wallets_and_operations.second_page_features.wallet_features.finalize_multisig_setup(
             application=SECOND_APPLICATION,
         )
+
+    # Handle load wallet flow - only for FIRST application
+    if is_load_variant:
+        with allure.step('Save credentials from first multisig wallet for load'):
+            wallets_and_operations.first_page_features.wallet_features.save_multisig_load_credentials(
+                application=FIRST_APPLICATION,
+                is_hardware=is_hardware,
+            )
+
+        with allure.step('Load first multisig wallet with saved credentials'):
+            wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
+                application=FIRST_APPLICATION,
+                is_hardware=is_hardware,
+                is_online=is_online,
+            )
 
 
 def fund_and_refresh_multisig_wallets(
