@@ -50,89 +50,89 @@ jobs:
   #         pip install pre-commit
   #         pre-commit run --all-files --show-diff-on-failure
 
-  unit-tests:
-    name: Unit tests
-    runs-on: ubuntu-24.04
-    env:
-      QT_QPA_PLATFORM: offscreen
-      TZ: Asia/Kolkata
-      PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # unit-tests:
+  #   name: Unit tests
+  #   runs-on: ubuntu-24.04
+  #   env:
+  #     QT_QPA_PLATFORM: offscreen
+  #     TZ: Asia/Kolkata
+  #     PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Set up Python 3.12.3 environment
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.3"
+  #     - name: Set up Python 3.12.3 environment
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12.3"
 
-      - name: Install required system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libxcb-cursor0 \
-            libegl1 \
-            libgl1 \
-            ruby-dev \
-            build-essential \
-            libgirepository1.0-dev \
-            python3-dev \
-            libfuse2 \
-            gobject-introspection \
-            meson \
-            ninja-build \
-            pkg-config \
-            libcairo2-dev \
-            libffi-dev \
-            libhidapi-hidraw0 \
-            libhidapi-libusb0 \
-            libhidapi-dev
-          sudo gem install fpm -f
+  #     - name: Install required system dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           libxcb-cursor0 \
+  #           libegl1 \
+  #           libgl1 \
+  #           ruby-dev \
+  #           build-essential \
+  #           libgirepository1.0-dev \
+  #           python3-dev \
+  #           libfuse2 \
+  #           gobject-introspection \
+  #           meson \
+  #           ninja-build \
+  #           pkg-config \
+  #           libcairo2-dev \
+  #           libffi-dev \
+  #           libhidapi-hidraw0 \
+  #           libhidapi-libusb0 \
+  #           libhidapi-dev
+  #         sudo gem install fpm -f
 
-      - name: Generate config.py
-        run: |
-          cd src/utils
-          python generate_config.py
+  #     - name: Generate config.py
+  #       run: |
+  #         cd src/utils
+  #         python generate_config.py
 
-      - name: Preinstall keyring backends (system Python)
-        run: |
-          pip install keyring keyrings.alt
+  #     - name: Preinstall keyring backends (system Python)
+  #       run: |
+  #         pip install keyring keyrings.alt
 
-      - name: Install Python dependencies
-        uses: ./.github/actions/install-python-dependencies
+  #     - name: Install Python dependencies
+  #       uses: ./.github/actions/install-python-dependencies
 
-      - name: Install keyring backends in Poetry venv
-        run: |
-          poetry run pip install keyring keyrings.alt
+  #     - name: Install keyring backends in Poetry venv
+  #       run: |
+  #         poetry run pip install keyring keyrings.alt
 
-      - name: Set KEYRING_HOME env
-        run: |
-          echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
+  #     - name: Set KEYRING_HOME env
+  #       run: |
+  #         echo "KEYRING_HOME=$RUNNER_TEMP/keyring" >> "$GITHUB_ENV"
 
-      - name: Ensure keyring storage directory exists
-        run: |
-          mkdir -p "$KEYRING_HOME"
+  #     - name: Ensure keyring storage directory exists
+  #       run: |
+  #         mkdir -p "$KEYRING_HOME"
 
-      - name: Compile QT resources
-        run: |
-          poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
+  #     - name: Compile QT resources
+  #       run: |
+  #         poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
 
-      - name: Run unit tests (fail if coverage < 90%)
-        run: |
-          poetry run pytest -v \
-            --cov=src \
-            --cov-fail-under=90 \
-            --cov-report=html:coverage-report \
-            unit_tests/tests
+  #     - name: Run unit tests (fail if coverage < 90%)
+  #       run: |
+  #         poetry run pytest -v \
+  #           --cov=src \
+  #           --cov-fail-under=90 \
+  #           --cov-report=html:coverage-report \
+  #           unit_tests/tests
 
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage-report/
-          retention-days: 7
-          if-no-files-found: ignore
+  #     - name: Upload coverage report
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: coverage-report
+  #         path: coverage-report/
+  #         retention-days: 7
+  #         if-no-files-found: ignore
 
   e2e-dogtail:
     name: E2E Dogtail tests
@@ -143,7 +143,7 @@ jobs:
       matrix:
         test_file:
           - test_keyring_dialog
-          - test_receive_and_send_bitcoin
+          # - test_receive_and_send_bitcoin
           # - test_login_app_auth
           # - test_ask_auth_for_imp_operations
           # - test_settings

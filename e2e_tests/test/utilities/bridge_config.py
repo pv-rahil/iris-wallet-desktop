@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import subprocess
 import shutil
+import time
 import tomllib
 
 
@@ -198,16 +199,60 @@ def restart_bridge_service() -> bool:
         True if restart successful, False otherwise.
     """
     try:
+        e2e_tests_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..'),
+        )
         # Restart the bridge container
         subprocess.run(
             ['docker', 'compose', 'restart', 'rgb-multisig-bridge'],
-            cwd=os.path.dirname(os.path.dirname(__file__)),
+            cwd=e2e_tests_dir,
             capture_output=True,
             text=True,
             check=True,
         )
-        print('Bridge service restarted successfully')
-        return True
+
+        # Wait for the bridge to be reachable (helps CI and slower machines)
+        for _ in range(30):
+            try:
+                subprocess.run(
+                    [
+                        'curl', '-fsS',
+                        'http://127.0.0.1:8141/info',
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                print('Bridge service restarted successfully')
+                return True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                time.sleep(1)
+
+        # Diagnostics (best-effort)
+        try:
+            ps_out = subprocess.run(
+                ['docker', 'compose', 'ps'],
+                cwd=e2e_tests_dir,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            print(ps_out.stdout)
+            logs_out = subprocess.run(
+                ['docker', 'compose', 'logs', '--tail', '200', 'rgb-multisig-bridge'],
+                cwd=e2e_tests_dir,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            print(logs_out.stdout)
+            if logs_out.stderr:
+                print(logs_out.stderr)
+        except Exception:
+            pass
+
+        print('ERROR: Bridge service did not become reachable on http://127.0.0.1:8141/info')
+        return False
     except subprocess.CalledProcessError as e:
         print(f'ERROR: Failed to restart bridge service: {e.stderr}')
         return False
