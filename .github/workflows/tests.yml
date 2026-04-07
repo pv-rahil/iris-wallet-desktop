@@ -315,7 +315,7 @@ jobs:
     name: Cleanup Artifacts
     if: always()
     runs-on: ubuntu-latest
-    needs: [e2e-dogtail, publish-test-report]
+    # needs: [e2e-dogtail, publish-test-report]
     steps:
       - name: Delete Test Artifacts
         uses: geekyeggo/delete-artifact@v5
