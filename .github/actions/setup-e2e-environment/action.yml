@@ -37,8 +37,6 @@ runs:
     - name: Run E2E test in configured environment
       run: |
         dbus-run-session -- bash -lc '
-        mkdir -p "$XDG_RUNTIME_DIR/keyring"
-        export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
         set -euo pipefail
         export DISPLAY=:99
         export LIBGL_DEBUG=verbose
@@ -78,6 +76,8 @@ runs:
         export PYTHONNOUSERSITE=0
         export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg"
         mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+        mkdir -p "$XDG_RUNTIME_DIR/keyring"
+        export GNOME_KEYRING_CONTROL="$XDG_RUNTIME_DIR/keyring"
         export GSETTINGS_BACKEND=dconf
         # Start gnome-keyring-daemon and unlock with empty password
         eval $(echo -n "" | gnome-keyring-daemon --start --components=secrets,ssh,pkcs11)
@@ -125,6 +125,6 @@ runs:
         export GDK_SYNCHRONIZE=1
         export __GLX_VENDOR_LIBRARY_NAME=mesa
         sleep 3  # Increased to 3s for better UI stability
-        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant online_multisig_on_device
+        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant online_create_on_device
         '
       shell: bash

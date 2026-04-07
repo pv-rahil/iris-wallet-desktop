@@ -215,8 +215,8 @@ jobs:
           python -m pip install --target "$RUNTIME_PYDEPS" keyring keyrings.alt
           echo "PYTHONPATH=$RUNTIME_PYDEPS" >> $GITHUB_ENV
 
-      # - name: Start regtest services
-      #   run: poetry run regtest-start
+      - name: Start regtest services
+        run: poetry run regtest-start
 
       - name: Configure Qt for accurate Dogtail positioning
         run: |
