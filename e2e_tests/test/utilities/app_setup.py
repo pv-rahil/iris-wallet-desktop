@@ -12,6 +12,7 @@ import subprocess
 import time
 
 import keyring
+import psutil
 import pytest
 from dogtail.tree import root
 
@@ -289,6 +290,14 @@ class TestEnvironment:
             } seconds""",
         )
 
+    def get_child_pids(self, parent_pid):
+        """Returns a list of child process PIDs for a given parent process."""
+        try:
+            parent = psutil.Process(parent_pid)
+            return [child.pid for child in parent.children(recursive=True)]
+        except psutil.NoSuchProcess:
+            return []
+
     def terminate_process(self, process):
         """Gracefully terminates a process and its children."""
         if not process:
@@ -298,7 +307,15 @@ class TestEnvironment:
         if not pid:
             return
 
-        os.kill(pid, signal.SIGKILL)
+        # Get all child processes
+        child_pids = self.get_child_pids(pid)
+
+        os.kill(pid, signal.SIGKILL)  # Force shutdown
+        for child_pid in child_pids:
+            try:
+                os.kill(child_pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass  # Process already terminated
 
     def terminate(self):
         """Cleans up the test environment by shutting down applications"""

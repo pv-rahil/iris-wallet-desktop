@@ -59,7 +59,10 @@ def teardown_directory_after_test():
 @patch('src.data.service.backup_service.BackupService.backup_file_exists')
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.backup')
 @patch('src.data.service.backup_service.GoogleDriveManager')
-def test_backup(mock_google_drive_manager, mock_backup, mock_backup_file_exits, mock_get_path, mock_get_hashed_mnemonic, mock_wallet_signature_type, mock_rgb_lib_version, setup_directory):
+def test_backup(
+    mock_google_drive_manager, mock_backup, mock_backup_file_exits,
+    mock_get_path, mock_get_hashed_mnemonic, mock_wallet_signature_type, mock_rgb_lib_version, setup_directory,
+):
     """Case 1 : Test backup service"""
     test_dir, _ = setup_directory
 
@@ -74,7 +77,7 @@ def test_backup(mock_google_drive_manager, mock_backup, mock_backup_file_exits, 
     mock_google_drive_manager.return_value = mock_backup_instance
     mock_backup_instance.upload_to_drive.return_value = True
     mock_rgb_lib_version.return_value = '0.3.0'
-    mock_wallet_signature_type.return_value = WalletSignatureType.SINGLE_SIG_WALLET
+    mock_wallet_signature_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
 
     result = BackupService.backup(mock_valid_mnemonic, mock_password)
 
@@ -90,7 +93,10 @@ def test_backup(mock_google_drive_manager, mock_backup, mock_backup_file_exits, 
 @patch('src.data.service.backup_service.BackupService.backup_file_exists')
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.backup')
 @patch('src.data.service.backup_service.GoogleDriveManager')
-def test_backup_when_backup_file_not_exits(mock_google_drive_manager, mock_backup, mock_backup_file_exits, mock_get_path, mock_get_hashed_mnemonic, mock_wallet_signature_type, setup_directory):
+def test_backup_when_backup_file_not_exits(
+    mock_google_drive_manager, mock_backup,
+    mock_backup_file_exits, mock_get_path, mock_get_hashed_mnemonic, mock_wallet_signature_type, setup_directory,
+):
     """Case  2: When backup not exits after api call"""
     test_dir, _ = setup_directory
 
@@ -104,7 +110,7 @@ def test_backup_when_backup_file_not_exits(mock_google_drive_manager, mock_backu
     mock_backup_instance.return_value = None
     mock_google_drive_manager.return_value = mock_backup_instance
     mock_backup_instance.upload_to_drive.return_value = True
-    mock_wallet_signature_type.return_value = WalletSignatureType.SINGLE_SIG_WALLET
+    mock_wallet_signature_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     error_message = ERROR_BACKUP_FILE_NOT_EXITS
     with pytest.raises(CommonException, match=error_message):
         BackupService.backup(mock_valid_mnemonic, mock_password)
