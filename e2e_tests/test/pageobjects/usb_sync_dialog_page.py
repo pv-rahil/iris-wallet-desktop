@@ -1,8 +1,6 @@
 """USB sync dialog page objects module."""
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import USB_SYNC_DIALOG
 from accessible_constant import USB_SYNC_DIALOG_CANCEL_BUTTON
 from accessible_constant import USB_SYNC_DIALOG_CONTINUE_BUTTON
@@ -24,7 +22,7 @@ class USBSyncDialogPageObjects(BaseOperations):
         super().__init__(application)
 
         # Lazy evaluation of elements using lambdas
-        self.usb_sync_dialog = lambda: root.child(
+        self.usb_sync_dialog = lambda: self.application.parent.child(
             roleName='dialog', name=USB_SYNC_DIALOG,
         )
         self.cancel_button = lambda: self.perform_action_on_element(

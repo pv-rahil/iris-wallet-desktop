@@ -808,6 +808,7 @@ def test_send_cfa_for_multisig(test_environment, wallets_and_operations: WalletT
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
@@ -880,6 +881,7 @@ def test_send_nia_for_multisig(test_environment, wallets_and_operations: WalletT
         NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
@@ -941,6 +943,7 @@ def test_send_btc_for_multisig(test_environment, wallets_and_operations: WalletT
     assert description is not None
     assert tx_id is not None
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
@@ -986,6 +989,7 @@ def test_issue_ifa_for_multisig(test_environment, wallets_and_operations: Wallet
             IFA_NAME,
         )
         assert asset_name == IFA_NAME
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
@@ -1060,6 +1064,7 @@ def test_send_ifa_for_multisig(test_environment, wallets_and_operations: WalletT
         IFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup page for multisig')
@@ -1082,6 +1087,7 @@ def test_backup_for_multisig(test_environment, wallets_and_operations: WalletTes
         _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         assert description == INFO_BACKUP_COMPLETED
         test_environment.restart_single_instance()
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)

@@ -220,6 +220,7 @@ def test_refresh_transfer_for_offline_wallet(wallets_and_operations: WalletTestS
         assert actual_transfer_status_first_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value
         assert actual_transfer_status_second_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Test for refresh transfer for multisig')

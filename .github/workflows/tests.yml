@@ -245,7 +245,7 @@ jobs:
           # Start recording the virtual display
           ffmpeg -video_size 1920x1080 -framerate 15 -f x11grab -i :99.0 \
             -codec:v libx264 -preset ultrafast -crf 28 \
-            /tmp/test_recording_${{ matrix.test_file }}.mp4 &
+            /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4 &
           echo "RECORDER_PID=$!" >> $GITHUB_ENV
           sleep 2
 
@@ -277,8 +277,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-recording-${{ matrix.test_file }}
-          path: /tmp/test_recording_${{ matrix.test_file }}.mp4
+          name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
+          path: /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4
           retention-days: 7
           if-no-files-found: ignore
 
@@ -324,7 +324,7 @@ jobs:
     name: Cleanup Artifacts
     if: always()
     runs-on: ubuntu-latest
-    # needs: [e2e-dogtail, publish-test-report]
+    needs: [e2e-dogtail]
     steps:
       - name: Delete Test Artifacts
         uses: geekyeggo/delete-artifact@v5

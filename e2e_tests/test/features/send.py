@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import time
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
@@ -38,15 +37,11 @@ class SendOperation(MainPageObjects, BaseOperations):
         :param amount: The amount to send.
         """
         try:
-            if is_hardware_wallet and purpose:
-                if purpose == 'send_btc':
-                    self.hardware_wallet = handle_hardware_wallet(
-                        app_name=BITCOIN_LEDGER_APP_NAME,
-                    )
-                elif purpose == 'send_asset':
-                    self.hardware_wallet = handle_hardware_wallet(
-                        app_name=RGB_LEDGER_APP_NAME,
-                    )
+            # Use RGB Ledger app for all hardware wallet operations (can sign both BTC and RGB)
+            if is_hardware_wallet:
+                self.hardware_wallet = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
@@ -65,15 +60,11 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.enter_native_password()
 
             if is_hardware_wallet:
-                if purpose == 'send_btc':
-                    self.wallet_features.confirm_transaction_on_hardware_wallet(
-                        LEDGER_EMULATOR_APP_NAME,
-                    )
-
-                elif purpose == 'send_asset':
-                    self.wallet_features.confirm_transaction_on_hardware_wallet(
-                        LEDGER_EMULATOR_APP_NAME, is_rgb=True,
-                    )
+                # RGB app handles both BTC and RGB transactions
+                is_rgb = purpose == 'send_asset'
+                self.wallet_features.confirm_transaction_on_hardware_wallet(
+                    LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb,
+                )
         except Exception as e:
             raise e
         finally:
@@ -124,7 +115,7 @@ class SendOperation(MainPageObjects, BaseOperations):
 
             if is_hardware_wallet:
                 self.hardware_wallet = handle_hardware_wallet(
-                    app_name=BITCOIN_LEDGER_APP_NAME,
+                    app_name=RGB_LEDGER_APP_NAME,
                 )
 
             self.do_focus_on_application(application)

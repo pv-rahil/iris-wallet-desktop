@@ -7,10 +7,10 @@ import time
 import allure
 import pytest
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import RGB_LEDGER_APP_NAME
 from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -50,7 +50,7 @@ def test_fail_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_n
         )
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
             hardware_wallet = handle_hardware_wallet(
-                app_name=BITCOIN_LEDGER_APP_NAME,
+                app_name=RGB_LEDGER_APP_NAME,
             )
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,

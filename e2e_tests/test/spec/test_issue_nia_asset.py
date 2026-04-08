@@ -189,6 +189,7 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
         )
         assert asset_name == NIA_ASSET_NAME
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue NIA asset for multisig wallet')
@@ -209,6 +210,7 @@ def test_issue_nia_multisig_without_sufficient_sats_for_multisig_wallet(wallets_
         )
 
     assert description == ISSUE_NIA_TOASTER_MESSAGE
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)

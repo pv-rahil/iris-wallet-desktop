@@ -219,6 +219,7 @@ def test_issue_and_inflate_ifa_hardware_wallet(wallets_and_operations: WalletTes
 
         assert int(new_balance) == int(initial_balance) + int(INFLATE_AMOUNT)
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Secondary Issuance - Multisig On-Device Online')

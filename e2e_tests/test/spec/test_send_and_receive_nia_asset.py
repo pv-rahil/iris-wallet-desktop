@@ -180,6 +180,7 @@ def test_send_and_receive_nia_asset_operation_for_offline_wallet(wallets_and_ope
         asset_type='nia',
     )
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Automation of send operation for NIA asset in iris wallet for multisig')
@@ -231,6 +232,7 @@ def test_send_nia_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
             INVOICE,
             TranslationManager.translate('invalid_invoice'),
         )
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)

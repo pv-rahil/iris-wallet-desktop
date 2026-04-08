@@ -82,6 +82,7 @@ class MultisigSetupPage(QWidget):
         self._setup_models()
         self._setup_ui()
         self._setup_connections()
+        self.retranslate_ui()
         saved_m, saved_n = SettingRepository.get_multisig_config()
         if saved_m and saved_n:
             self.threshold_frame.required_signer_input.setText(str(saved_m))
@@ -111,7 +112,6 @@ class MultisigSetupPage(QWidget):
         self.back_button.hide()
         self._update_summary()
         self._update_continue_enabled()
-        self.retranslate_ui()
 
     def _setup_ui(self):
         """Build and wire the widget tree."""

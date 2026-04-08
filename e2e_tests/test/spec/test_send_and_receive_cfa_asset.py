@@ -175,6 +175,7 @@ def test_send_and_receive_cfa_asset_operation_for_offline_wallet(wallets_and_ope
         asset_type='cfa',
     )
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Automation of send operation for CFA asset in iris wallet for multisig')
@@ -223,6 +224,7 @@ def test_send_cfa_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
             INVOICE,
             TranslationManager.translate('invalid_invoice'),
         )
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)

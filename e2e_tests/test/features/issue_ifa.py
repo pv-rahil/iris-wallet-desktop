@@ -4,10 +4,10 @@ This module contains the IssueIfa class, which provides methods for issuing IFA 
 """
 from __future__ import annotations
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -38,7 +38,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
             hardware_wallet_emulator = None
             if variant_name in HARDWARE_WALLET_VARIANTS:
                 hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=BITCOIN_LEDGER_APP_NAME,
+                    app_name=RGB_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
 

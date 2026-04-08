@@ -10,8 +10,8 @@ import threading
 from e2e_tests.test.utilities.bridge_config import generate_biscuit_token
 from e2e_tests.test.utilities.bridge_config import get_bridge_public_key
 from e2e_tests.test.utilities.bridge_config import reset_bridge_config
-from e2e_tests.test.utilities.bridge_config import stop_regtest_services
 from e2e_tests.test.utilities.bridge_config import start_regtest_services
+from e2e_tests.test.utilities.bridge_config import stop_regtest_services
 from e2e_tests.test.utilities.bridge_config import update_bridge_config
 
 

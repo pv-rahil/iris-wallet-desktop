@@ -195,6 +195,7 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
     assert count == 1
     assert asset_name == CFA_ASSET_NAME
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue CFA asset for multisig wallet')
@@ -215,6 +216,7 @@ def test_issue_cfa_multisig_without_sufficient_sats_for_multisig_wallet(wallets_
         )
 
     assert description == ISSUE_CFA_TOASTER_MESSAGE
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [True], indirect=True)

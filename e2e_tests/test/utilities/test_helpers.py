@@ -13,7 +13,8 @@ from accessible_constant import MULTISIG_LOAD_VARIANTS
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
-from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet, map_load_to_create
+from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
+from e2e_tests.test.utilities.wallet_variants import map_load_to_create
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
 
@@ -315,7 +316,7 @@ def focus_and_navigate_to_asset(
     elif asset_type == 'cfa':
         page_objects.sidebar_page_objects.click_collectibles_button()
         page_objects.collectible_page_objects.click_cfa_frame(asset_name)
-        
+
     page_objects.asset_detail_page_objects.click_send_button()
 
 
@@ -554,14 +555,14 @@ def setup_multisig_wallets(
                     application=FIRST_APPLICATION,
                     is_hardware=is_hardware,
                     is_online=is_online,
-                    wallet_variant_name = wallet_variant_name
+                    wallet_variant_name=wallet_variant_name,
                 )
             else:
                 wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
                     application=FIRST_APPLICATION,
                     is_hardware=is_hardware,
                     is_online=is_online,
-                    wallet_variant_name = wallet_variant_name
+                    wallet_variant_name=wallet_variant_name,
                 )
 
 

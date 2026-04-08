@@ -6,10 +6,11 @@ Generates biscuit tokens for bridge authentication.
 from __future__ import annotations
 
 import os
-import subprocess
 import shutil
+import subprocess
 import time
 import tomllib
+
 from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 
 
@@ -255,7 +256,7 @@ def start_bridge_service() -> bool:
             cwd=e2e_tests_dir,
             capture_output=True,
             text=True,
-            
+
         )
 
         # Wait for the bridge to be reachable
@@ -335,7 +336,10 @@ def restart_bridge_service() -> bool:
             )
             print(ps_out.stdout)
             logs_out = subprocess.run(
-                ['docker', 'compose', 'logs', '--tail', '200', 'rgb-multisig-bridge'],
+                [
+                    'docker', 'compose', 'logs', '--tail',
+                    '200', 'rgb-multisig-bridge',
+                ],
                 cwd=e2e_tests_dir,
                 capture_output=True,
                 text=True,
@@ -347,7 +351,9 @@ def restart_bridge_service() -> bool:
         except Exception:
             pass
 
-        print('ERROR: Bridge service did not become reachable on http://127.0.0.1:8141/info')
+        print(
+            'ERROR: Bridge service did not become reachable on http://127.0.0.1:8141/info',
+        )
         return False
     except subprocess.CalledProcessError as e:
         print(f'ERROR: Failed to restart bridge service: {e.stderr}')

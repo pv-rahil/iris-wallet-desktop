@@ -4,9 +4,9 @@ This module contains the IssueNia class, which provides methods for issuing NIA 
 """
 from __future__ import annotations
 
-from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -35,7 +35,7 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
         try:
             if variant_name in HARDWARE_WALLET_VARIANTS:
                 self.hardware_wallet_emu = handle_hardware_wallet(
-                    app_name=BITCOIN_LEDGER_APP_NAME,
+                    app_name=RGB_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
 
@@ -108,7 +108,7 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
         try:
             if variant_name in HARDWARE_WALLET_VARIANTS:
                 self.hardware_wallet_emu = handle_hardware_wallet(
-                    app_name=BITCOIN_LEDGER_APP_NAME,
+                    app_name=RGB_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):

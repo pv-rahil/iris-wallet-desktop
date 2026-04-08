@@ -11,12 +11,12 @@ import time
 from dogtail.tree import root
 
 from accessible_constant import APP2_NAME
-from accessible_constant import BITCOIN_LEDGER_APP_NAME
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import MULTISIG_VARIANTS
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
 from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
@@ -39,8 +39,9 @@ from e2e_tests.test.utilities.executable_shell_script import send_to_address
 from e2e_tests.test.utilities.fake_usb import clear_fake_usb_mount_all
 from e2e_tests.test.utilities.multisig_coordinator import get_multisig_coordinator
 from e2e_tests.test.utilities.reset_app import delete_app_data
-from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet, map_to_load_variant
+from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import map_load_to_create
+from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from e2e_tests.test.utilities.wallet_variants import resolve_steps as resolve_wallet_steps
 from src.utils.constant import APP_NAME
 from src.utils.local_store import local_store
@@ -61,7 +62,7 @@ class Wallet(MainPageObjects, BaseOperations):
         self.address = None
         self.hw_emulator = None
 
-    def _refresh_application(self, application_name: str = None):
+    def _refresh_application(self, application_name: str | None = None):
         """
         Refresh the application node and reinitialize all page objects.
         Call this after the application is reset/relaunched to get fresh element references.
@@ -78,7 +79,9 @@ class Wallet(MainPageObjects, BaseOperations):
                 for app in root.applications():
                     if 'iris' in app.name.lower():
                         try:
-                            found_frame = app.child(roleName='frame', name=name)
+                            found_frame = app.child(
+                                roleName='frame', name=name,
+                            )
                             if found_frame and found_frame.showing:
                                 frame = found_frame
                                 break
@@ -87,7 +90,9 @@ class Wallet(MainPageObjects, BaseOperations):
 
                 # Fallback to direct search if not found
                 if not frame:
-                    frame = root.child(roleName='frame', name=name, showingOnly=True)
+                    frame = root.child(
+                        roleName='frame', name=name, showingOnly=True,
+                    )
 
                 self.application = frame
                 # Reinitialize all page objects with fresh application
@@ -193,7 +198,7 @@ class Wallet(MainPageObjects, BaseOperations):
         self._handle_password_setup()
 
         if effective_variant in MULTISIG_VARIANTS:
-            self.initiate_multisig_setup(application)
+            self.initiate_multisig_setup(application, effective_variant)
 
     def fund_wallet(self, application):
         """
@@ -301,7 +306,7 @@ class Wallet(MainPageObjects, BaseOperations):
             except Exception:
                 pass
 
-    def initiate_multisig_setup(self, application: str):
+    def initiate_multisig_setup(self, application: str, wallet_variant: str | None = None):
         """
         Phase 1 of multisig setup: reach the exchange screen and store local data.
         """
@@ -327,6 +332,10 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
             self.multisig_setup_page_objects.click_continue_button()
+
+        # Handle hardware wallet flow for multisig
+        if wallet_variant and wallet_variant in MULTISIG_HARDWARE_VARIANTS:
+            self.set_up_hardware_wallet(application)
 
         colored_xpub = None
         cosigner_string = None
@@ -417,7 +426,7 @@ class Wallet(MainPageObjects, BaseOperations):
         else:
             self.trigger_usb_sync(self)
 
-    def load_multisig_wallet(self, application: str, is_hardware: bool = False, is_online: bool = False, wallet_variant_name:str = None):
+    def load_multisig_wallet(self, application: str, is_hardware: bool = False, is_online: bool = False, wallet_variant_name: str | None = None):
         """
         Load a multisig wallet using saved credentials.
         Resets the app and loads wallet with stored credentials.
@@ -445,10 +454,11 @@ class Wallet(MainPageObjects, BaseOperations):
 
         # Step 1: TNC scroll and accept
         self._accept_terms_and_conditions()
-        
-        wallet_variant_name = map_to_load_variant(wallet_variant_name)
 
-        self.drive_selection_flow(application,wallet_variant_name)
+        if wallet_variant_name is not None:
+            wallet_variant_name = map_to_load_variant(wallet_variant_name)
+
+        self.drive_selection_flow(application, wallet_variant_name)
 
         # Step 3: Click restore button
         if self.do_is_displayed(self.welcome_page_objects.restore_button()):
@@ -630,12 +640,16 @@ class Wallet(MainPageObjects, BaseOperations):
         second_app = None
         if env and hasattr(env, 'second_application'):
             second_app = env.second_application
-            print(f"[SETUP_SECOND] Using second_application from env: {second_app}")
+            print(f"[SETUP_SECOND] Using second_application from env: {
+                  second_app
+                  }")
 
         # Fallback to finding frame directly if not available from env
         if not second_app:
             second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
-            print(f"[SETUP_SECOND] Fallback: found frame from root: {second_app}")
+            print(f"[SETUP_SECOND] Fallback: found frame from root: {
+                  second_app
+                  }")
 
         if not second_app:
             # mnemonic, password, xpub_vanilla, xpub_colored, fingerprint
@@ -686,8 +700,11 @@ class Wallet(MainPageObjects, BaseOperations):
         return mnemonic, password
 
     def trigger_usb_sync(self, wallet: Wallet):
-        """Triggers USB sync on the wallet."""
-        wallet.do_focus_on_application(SECOND_APPLICATION)
+        """Triggers USB sync on the wallet.
+
+        Uses wallet.application to ensure correct app is focused in multi-instance scenarios.
+        """
+        wallet.do_focus_on_application(wallet.application)
         if wallet.do_is_displayed(wallet.fungible_page_objects.usb_sync_frame()):
             wallet.fungible_page_objects.click_usb_sync_frame()
         if wallet.do_is_displayed(wallet.usb_sync_dialog_page_objects.continue_button()):
@@ -733,26 +750,33 @@ class Wallet(MainPageObjects, BaseOperations):
     def drive_selection_flow(self, application, variant: str):
         """
         Drive the 4-step selection flow using option indices (1 or 2).
+        A step value of 0 means skip that selection step entirely.
         """
         step1, step2, step3, step4, step5 = resolve_wallet_steps(variant)
         self.do_focus_on_application(application)
+
+        # Step 1: Wallet type (Standard/Multisig)
         if self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step1)
             self.selection_page_objects.click_continue_button()
 
+        # Step 2: Network type (Online/Offline)
         if self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step2)
             self.selection_page_objects.click_continue_button()
 
-        if self.do_is_displayed(self.selection_page_objects.option_1_button()):
+        # Step 3: Connection mode (0 = skip for offline variants)
+        if step3 != 0 and self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step3)
             self.selection_page_objects.click_continue_button()
 
+        # Step 4: Entry type (Create/Load)
         if self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step4)
             self.selection_page_objects.click_continue_button()
 
-        if self.do_is_displayed(self.selection_page_objects.option_1_button()):
+        # Step 5: Device type (On-device/Hardware)
+        if step5 != 0 and self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step5)
             self.selection_page_objects.click_continue_button()
 
@@ -869,7 +893,7 @@ class Wallet(MainPageObjects, BaseOperations):
         """
         try:
             speculos_process = handle_hardware_wallet(
-                app_name=BITCOIN_LEDGER_APP_NAME, reset=True,
+                app_name=RGB_LEDGER_APP_NAME, reset=True,
             )
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.hw_connect_page_objects.ledger_option()):
@@ -881,8 +905,9 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.hw_device_selection_dialog_page_objects.connect_button()):
                 self.hw_device_selection_dialog_page_objects.click_connect_button()
             self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
-            self.hw_emulator_page_objects.click_right_arrow_key(7)
-            self.hw_emulator_page_objects.press_left_and_right()
+            for _ in range(2):
+                self.hw_emulator_page_objects.click_right_arrow_key(5)
+                self.hw_emulator_page_objects.press_left_and_right()
             self.do_focus_on_application(application)
             time.sleep(2)
         except Exception as e:
@@ -1011,14 +1036,10 @@ class Wallet(MainPageObjects, BaseOperations):
                 self.fungible_page_objects.click_psbt_info_frame()
 
             if variant_name in HARDWARE_WALLET_VARIANTS:
-                if is_rgb:
-                    self.hw_emulator = handle_hardware_wallet(
-                        app_name=RGB_LEDGER_APP_NAME,
-                    )
-                else:
-                    self.hw_emulator = handle_hardware_wallet(
-                        app_name=BITCOIN_LEDGER_APP_NAME,
-                    )
+                # RGB Ledger app can sign both BTC and RGB transactions
+                self.hw_emulator = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
 
             self.do_focus_on_application(application)
 

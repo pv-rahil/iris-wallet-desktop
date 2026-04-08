@@ -750,12 +750,12 @@ def test_on_pending_operation_ready(vm_mock, privileges_broadcast, mocker):
     mock_match = MagicMock()
     mock_match.operation = 'op'
     mock_match.pending_operation = 'pending'
-    mock_match.transfer_type = 'send_btc'
     mock_match.is_inflation = False
-    mock_match.ack_count = 1
+    mock_match.transfer_type = 'send_btc'
     mock_match.threshold = 3
-    mock_match.is_initiator = False
+    mock_match.ack_count = 1
     mock_match.should_trigger_rgb_inspection = False
+    mock_match.is_initiator = False
     mock_match.fascia_path = None
     mock_match.entropy = None
 
@@ -840,10 +840,10 @@ def test_handle_rgb_transfer_inspection_result(vm_mock, privileges_broadcast, mo
         'src.views.components.broadcast_transaction_helpers.BroadcastTransactionService',
     )
     mock_summary = MagicMock()
-    mock_summary.asset_id = 'asset1'
     mock_summary.amount = '100'
-    mock_summary.transfer_type_key = 'send_asset'
+    mock_summary.asset_id = 'asset1'
     mock_service.rgb_transfer_inspection_summary.return_value = mock_summary
+    mock_summary.transfer_type_key = 'send_asset'
     mock_service.get_transfer_type_label.return_value = 'Issue Asset'
 
     w.pending_transfer_type = 'send_asset'
