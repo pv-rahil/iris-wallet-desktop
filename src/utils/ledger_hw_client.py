@@ -353,6 +353,7 @@ def sign_psbt_with_ledger(
     )
 
     if is_multisig:
+        print(desc_str)
         policy = _build_multisig_policy(desc_str, wallet_name)
         _, policy_hmac = client.register_wallet(policy)
     else:

@@ -4,8 +4,6 @@ Hardware device selection dialog page objects class for interacting with the har
 """
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import HW_DEVICE_SELECTION_DIALOG
 from accessible_constant import HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON
 from accessible_constant import HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON
@@ -27,7 +25,7 @@ class HWDeviceSelectionDialogPageObjects(BaseOperations):
         """
         super().__init__(application)
 
-        self.hw_device_selection_dialog = lambda: root.child(
+        self.hw_device_selection_dialog = lambda: self.application.parent.child(
             roleName='dialog', name=HW_DEVICE_SELECTION_DIALOG,
         )
         self.connect_button = lambda: self.hw_device_selection_dialog().child(

@@ -4,8 +4,6 @@ Keyring dialog box page objects for E2E tests.
 """
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import KEYRING_CANCEL_BUTTON
 from accessible_constant import KEYRING_CONTINUE_BUTTON
 from accessible_constant import KEYRING_DIALOG_BOX
@@ -42,7 +40,7 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         """
         super().__init__(application)
 
-        self.keyring_dialog = lambda: root.child(
+        self.keyring_dialog = lambda: self.application.parent.child(
             roleName='dialog', name=KEYRING_DIALOG_BOX,
         )
         self.keyring_mnemonic_copy_button = lambda: self.keyring_dialog().child(

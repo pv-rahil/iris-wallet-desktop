@@ -1,8 +1,6 @@
 """Watch only dialog page objects module."""
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import WATCH_ONLY_CANCEL_BUTTON
 from accessible_constant import WATCH_ONLY_CHECKBOX
 from accessible_constant import WATCH_ONLY_CONTINUE_BUTTON
@@ -28,7 +26,7 @@ class WatchOnlyDialogPageObjects(BaseOperations):
         super().__init__(application)
 
         # Lazy evaluation of elements using lambdas
-        self.watch_only_dialog = lambda: root.child(
+        self.watch_only_dialog = lambda: self.application.parent.child(
             roleName='dialog', name=WATCH_ONLY_DIALOG,
         )
         self.watch_only_xpub_vanilla = lambda: self.perform_action_on_element(

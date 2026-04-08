@@ -7,6 +7,7 @@ from __future__ import annotations
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -162,11 +163,12 @@ class Inflate(MainPageObjects, BaseOperations):
                 hardware_wallet_emulator.terminate()
 
     def inflate_ifa_asset_for_multisig(
-        self, application, asset_name, inflate_amount, utxo_required: bool = False, is_native_auth_enabled: bool = False,
+        self, application, asset_name, inflate_amount, wallet_variant_name: str | None = None, utxo_required: bool = False, is_native_auth_enabled: bool = False,
     ):
         """
         Perform secondary issuance (inflate) for multisig wallet.
         """
+        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
         self.do_focus_on_application(application)
 
         # Navigate to IFA asset detail page
@@ -198,6 +200,11 @@ class Inflate(MainPageObjects, BaseOperations):
 
             if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
                 self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+            if is_hardware:
+                self.wallet_feature.sign_multisig_on_hardware_wallet(
+                    LEDGER_EMULATOR_APP_NAME,
+                )
         else:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()

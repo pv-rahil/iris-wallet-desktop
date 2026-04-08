@@ -2,6 +2,7 @@
 """This module represents the page object for the settings page"""
 from __future__ import annotations
 
+import os
 import time
 
 from dogtail.rawinput import press
@@ -135,3 +136,8 @@ class SettingsPageObjects(BaseOperations):
         if self.do_is_displayed(self.ask_auth_for_imp_question_toggle()):
             self.ask_auth_for_imp_question_toggle().grabFocus()
             return pressKey('space')
+
+    def set_keyring_enable_ci(self):
+        """Use Plaintext keyring (enable) only in CI."""
+        if os.getenv('CI') == 'true':
+            os.environ['PYTHON_KEYRING_BACKEND'] = 'keyrings.alt.file.PlaintextKeyring'

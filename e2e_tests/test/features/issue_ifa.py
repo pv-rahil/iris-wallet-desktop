@@ -7,6 +7,7 @@ from __future__ import annotations
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
@@ -44,6 +45,9 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
             if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
                 self.sidebar_page_objects.click_inflatable_button()
+                
+            if self.do_is_displayed(self.inflatable_page_objects.refresh_button()):
+                self.inflatable_page_objects.click_refresh_button()
 
             if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
                 self.inflatable_page_objects.click_issue_ifa_button()
@@ -168,10 +172,11 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         self.wallet_feature.usb_sync(is_receive=True)
 
-    def issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, utxo_required: bool = False, is_native_auth_enabled: bool = False):
+    def issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, wallet_variant_name: str | None = None, utxo_required: bool = False, is_native_auth_enabled: bool = False):
         """
         Issues an IFA asset with sufficient sats and no UTXO.
         """
+        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
         self.do_focus_on_application(application)
 
         if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
@@ -192,6 +197,11 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
             if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
                 self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+            if is_hardware:
+                self.wallet_feature.sign_multisig_on_hardware_wallet(
+                    LEDGER_EMULATOR_APP_NAME,
+                )
         else:
             if self.do_is_displayed(self.success_page_objects.home_button()):
                 self.success_page_objects.click_home_button()

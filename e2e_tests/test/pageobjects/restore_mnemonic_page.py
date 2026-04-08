@@ -3,8 +3,6 @@ Restore wallet page objects module.
 """
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import RESTORE_CONTINUE_BUTTON
 from accessible_constant import RESTORE_DIALOG_BOX
 from accessible_constant import RESTORE_FINGERPRINT_INPUT
@@ -29,7 +27,7 @@ class RestoreWalletPageObjects(BaseOperations):
         """
         super().__init__(application)
 
-        self.restore_dialog_box = lambda: root.child(
+        self.restore_dialog_box = lambda: self.application.parent.child(
             roleName='dialog', name=RESTORE_DIALOG_BOX,
         )
         self.restore_mnemonic_input = lambda: self.restore_dialog_box().child(

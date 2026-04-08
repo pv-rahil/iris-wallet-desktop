@@ -16,7 +16,7 @@ THIRD_APPLICATION = f"Iris Wallet Regtest {APP3_NAME}"
 FIRST_APPLICATION_PATH = f"{APP_NAME}_{APP1_NAME}"
 SECOND_APPLICATION_PATH = f"{APP_NAME}_{APP2_NAME}"
 THIRD_APPLICATION_PATH = f"{APP_NAME}_{APP3_NAME}"
-RGB_LEDGER_APP_NAME = 'rgb_test-2.1.0'
+RGB_LEDGER_APP_NAME = 'rgb_ledger_app'
 LEDGER_EMULATOR_APP_NAME = 'Ledger Nano SP Emulator'
 HARDWARE_WALLET_VARIANTS = [
     'online_create_hardware',
@@ -373,7 +373,7 @@ NATIVE_AUTH_ENABLE = 'isNativeAuthenticationEnabled_test_app_1'
 HW_DEVICE_SELECTION_DIALOG = 'hardware_wallet_device_dialog'
 HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON = 'hardware_wallet_device_dialog_connect_button'
 HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON = 'hardware_wallet_device_dialog_cancel_button'
-LEDGER_EMULATOR_RADIO_BUTTON = 'Ledger Nano S'
+LEDGER_EMULATOR_RADIO_BUTTON = 'Ledger Nano S Plus'
 
 # Hardware wallet connect page
 HARDWARE_WALLET_CONNECT_PAGE = 'hardware_wallet_connect_page'

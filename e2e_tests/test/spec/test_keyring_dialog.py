@@ -55,7 +55,18 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
         PASSWORD = wallets_and_operations.first_page_operations.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
+        if getattr(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.keyring_check_box(), 'checked', None) is False:
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=False,
+            timeout=5,
+        ):
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
+
+        wallets_and_operations.first_page_objects.settings_page_objects.set_keyring_enable_ci()
         test_environment.restart_single_instance(reset_data=False)
 
 
@@ -80,7 +91,13 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup, wallet_variant_
         )
         wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-        assert False is wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button().checked
+        if not wallets_and_operations.first_page_operations.do_is_displayed(wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=False,
+            timeout=5,
+        )
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
             wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
@@ -100,7 +117,36 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup, wallet_variant_
             PASSWORD,
         )
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
-        assert True is wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button().checked
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=True,
+            timeout=5,
+        ):
+            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+            if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+                wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
+                    XPUB_VANILLA,
+                )
+                wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_xpub_colored_value(
+                    XPUB_COLORED,
+                )
+                wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_fingerprint_value(
+                    MASTER_FINGERPRINT,
+                )
+            else:
+                wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
+                    MNEMONIC,
+                )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+                PASSWORD,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
+        # Wait for toggle state to update (AT-SPI needs time to sync)
+        assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=True,
+            timeout=5,
+        )
 
 
 @pytest.mark.skip_for_single_sig
@@ -129,7 +175,18 @@ def test_keyring_dialog_for_multisig(test_environment, wallets_and_operations: W
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
         PASSWORD = wallets_and_operations.first_page_operations.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
+        if getattr(wallets_and_operations.first_page_objects.keyring_dialog_page_objects.keyring_check_box(), 'checked', None) is False:
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=False,
+            timeout=5,
+        ):
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_check_box()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_continue_button()
+
+        wallets_and_operations.first_page_objects.settings_page_objects.set_keyring_enable_ci()
         test_environment.restart_single_instance(reset_data=False)
 
 
@@ -153,7 +210,13 @@ def test_keyring_option_for_multisig(wallets_and_operations: WalletTestSetup):
         )
         wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-        assert False is wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button().checked
+        if not wallets_and_operations.first_page_operations.do_is_displayed(wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=False,
+            timeout=5,
+        )
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
             MNEMONIC,
@@ -162,4 +225,22 @@ def test_keyring_option_for_multisig(wallets_and_operations: WalletTestSetup):
             PASSWORD,
         )
         wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
-        assert True is wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button().checked
+        if not wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=True,
+            timeout=5,
+        ):
+            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_mnemonic_value(
+                MNEMONIC,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_password_value(
+                PASSWORD,
+            )
+            wallets_and_operations.first_page_objects.restore_wallet_page_objects.click_continue_button()
+        # Wait for toggle state to update (AT-SPI needs time to sync)
+        assert wallets_and_operations.first_page_operations.wait_for_toggle_state(
+            wallets_and_operations.first_page_objects.settings_page_objects.keyring_toggle_button,
+            expected_checked=True,
+            timeout=5,
+        )

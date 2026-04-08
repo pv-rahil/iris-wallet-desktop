@@ -7,10 +7,9 @@ from __future__ import annotations
 import os
 import re
 import time
+import subprocess
 
 import pyotp
-from dogtail.rawinput import keyCombo
-from dogtail.tree import root
 from dotenv import load_dotenv
 
 from accessible_constant import BACKUP_CLOSE_BUTTON
@@ -49,7 +48,7 @@ class BackupPageObjects(BaseOperations):
         self.show_mnemonic_button = lambda: self.perform_action_on_element(
             role_name='push button', name=SHOW_MNEMONIC_BUTTON,
         )
-        self.backup_window = lambda: root.child(
+        self.backup_window = lambda: self.application.parent.child(
             roleName='filler', name=BACKUP_WINDOW,
         )
         self.email_input = lambda: self.perform_action_on_element(
@@ -111,7 +110,13 @@ class BackupPageObjects(BaseOperations):
         """
         if self.do_is_displayed(self.backup_window()):
             self.do_click(self.backup_window())
-            keyCombo('<Alt>F10')
+            subprocess.run(
+                        [
+                            'wmctrl', '-r', ':ACTIVE:', '-b',
+                            'add,maximized_vert,maximized_horz',
+                        ],
+                        check=False, capture_output=True, timeout=2,
+                    )
             return True
         return False
 

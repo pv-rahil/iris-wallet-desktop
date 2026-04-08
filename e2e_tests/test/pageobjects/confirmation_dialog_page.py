@@ -3,8 +3,6 @@ Confirmation Dialog page objects for interacting with the confirmation dialog pa
 """
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import CONFIRMATION_DIALOG_CANCEL_BUTTON
 from accessible_constant import CONFIRMATION_DIALOG_CHECKBOX
@@ -18,7 +16,7 @@ class ConfirmationDialogPageObjects(BaseOperations):
     def __init__(self, application):
         super().__init__(application)
 
-        self.confirmation_dialog = lambda: root.child(
+        self.confirmation_dialog = lambda: self.application.parent.child(
             roleName='dialog', name=CONFIRMATION_DIALOG,
         )
         self.confirmation_continue_button = lambda: self.perform_action_on_element(

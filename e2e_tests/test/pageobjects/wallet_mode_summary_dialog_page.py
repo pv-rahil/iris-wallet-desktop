@@ -1,8 +1,6 @@
 """Wallet mode summary dialog page objects module."""
 from __future__ import annotations
 
-from dogtail.tree import root
-
 from accessible_constant import WALLET_MODE_SUMMARY_DIALOG
 from accessible_constant import WALLET_MODE_SUMMARY_DIALOG_CANCEL_BUTTON
 from accessible_constant import WALLET_MODE_SUMMARY_DIALOG_CONTINUE_BUTTON
@@ -24,7 +22,7 @@ class WalletModeSummaryDialogPageObjects(BaseOperations):
         super().__init__(application)
 
         # Lazy evaluation of elements using lambdas
-        self.wallet_mode_summary_dialog = lambda: root.child(
+        self.wallet_mode_summary_dialog = lambda: self.application.parent.child(
             roleName='dialog', name=WALLET_MODE_SUMMARY_DIALOG,
         )
         self.cancel_button = lambda: self.wallet_mode_summary_dialog().child(

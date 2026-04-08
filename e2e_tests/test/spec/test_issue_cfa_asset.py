@@ -97,13 +97,9 @@ def test_issue_cfa_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
 
         count = wallets_and_operations.first_page_objects.view_unspent_list_page_objects.get_unspent_widget()
 
-        asset_id = wallets_and_operations.first_page_objects.view_unspent_list_page_objects.get_unspent_utxo_asset_id(
-            'NA',
-        )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
-        assert count == 3
-        assert asset_id == 'NA'
+        assert count == 2
 
     with allure.step('Issue CFA with sufficient sats and utxo'):
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(

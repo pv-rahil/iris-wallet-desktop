@@ -206,7 +206,7 @@ def test_issue_ifa_multisig_with_sufficient_sats_for_multisig_wallet(wallets_and
 
     with allure.step('Create Utxo for issue IFA asset'):
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER, utxo_required=True,
+            FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name, utxo_required=True,
         )
 
     with allure.step('refresh second multisig wallet'):
@@ -228,7 +228,7 @@ def test_issue_ifa_multisig_with_sufficient_sats_for_multisig_wallet(wallets_and
 
     with allure.step('Issue IFA asset with sufficient sats and utxo from draft'):
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER,
+            FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name,
         )
 
     with allure.step('refresh second multisig wallet'):

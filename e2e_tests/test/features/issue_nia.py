@@ -111,6 +111,10 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
                     app_name=RGB_LEDGER_APP_NAME,
                 )
             self.do_focus_on_application(application)
+
+            if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
+                self.fungible_page_objects.click_refresh_button()
+                
             if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
                 self.fungible_page_objects.click_issue_nia_button()
 

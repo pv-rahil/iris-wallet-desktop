@@ -69,6 +69,22 @@ def test_issue_and_inflate_ifa_single_sig_online(wallets_and_operations: WalletT
 
         assert int(new_balance) == int(initial_balance) + int(INFLATE_AMOUNT)
 
+    with allure.step('Verify inflate amount in transaction frame'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
+            IFA_ASSET_NAME_1,
+        )
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
+        tx_amount = wallets_and_operations.first_page_objects.asset_transaction_detail_page_objects.get_transferred_amount()
+        wallets_and_operations.first_page_objects.asset_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        tx_amount = tx_amount.replace('+', '')
+
+        assert tx_amount == INFLATE_AMOUNT
+
 
 # ============== SINGLE SIG OFFLINE WALLET TESTS ==============
 
@@ -170,6 +186,22 @@ def test_issue_and_inflate_ifa_single_sig_offline(wallets_and_operations: Wallet
 
         assert int(new_balance) == int(initial_balance) + int(INFLATE_AMOUNT)
 
+    with allure.step('Verify inflate amount in transaction frame'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
+            IFA_ASSET_NAME_1,
+        )
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
+        tx_amount = wallets_and_operations.second_page_objects.asset_transaction_detail_page_objects.get_transferred_amount()
+        wallets_and_operations.second_page_objects.asset_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
+        tx_amount = tx_amount.replace('+', '')
+
+        assert tx_amount == INFLATE_AMOUNT
+
 
 # ============== HARDWARE WALLET TESTS ==============
 
@@ -219,6 +251,22 @@ def test_issue_and_inflate_ifa_hardware_wallet(wallets_and_operations: WalletTes
 
         assert int(new_balance) == int(initial_balance) + int(INFLATE_AMOUNT)
 
+    with allure.step('Verify inflate amount in transaction frame'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
+            IFA_ASSET_NAME_1,
+        )
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
+        tx_amount = wallets_and_operations.first_page_objects.asset_transaction_detail_page_objects.get_transferred_amount()
+        wallets_and_operations.first_page_objects.asset_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        tx_amount = tx_amount.replace('+', '')
+
+        assert tx_amount == INFLATE_AMOUNT
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
@@ -259,7 +307,7 @@ def test_inflate_ifa_multisig_on_device_online(wallets_and_operations: WalletTes
         )
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER,
+            FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -271,7 +319,7 @@ def test_inflate_ifa_multisig_on_device_online(wallets_and_operations: WalletTes
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.inflate_features.inflate_ifa_asset_for_multisig(
-            FIRST_APPLICATION, IFA_ASSET_NAME_1, INFLATE_AMOUNT, utxo_required=True,
+            FIRST_APPLICATION, IFA_ASSET_NAME_1, INFLATE_AMOUNT, wallet_variant_name, utxo_required=True,
         )
 
     with allure.step('Sign UTXO PSBT from second wallet'):

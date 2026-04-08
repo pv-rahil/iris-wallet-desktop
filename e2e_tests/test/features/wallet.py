@@ -182,11 +182,12 @@ class Wallet(MainPageObjects, BaseOperations):
                 self.welcome_page_objects.click_restore_button()
             return
 
-        if effective_variant in HARDWARE_WALLET_VARIANTS:
+        if effective_variant in HARDWARE_WALLET_VARIANTS and effective_variant not in MULTISIG_HARDWARE_VARIANTS:
             self.set_up_hardware_wallet(application)
 
-        if self.do_is_displayed(self.welcome_page_objects.create_button()):
-            self.welcome_page_objects.click_create_button()
+        if effective_variant not in MULTISIG_VARIANTS:
+            if self.do_is_displayed(self.welcome_page_objects.create_button()):
+                self.welcome_page_objects.click_create_button()
 
         if effective_variant == ONLINE_WATCH_ONLY:
             xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app()
@@ -335,7 +336,11 @@ class Wallet(MainPageObjects, BaseOperations):
 
         # Handle hardware wallet flow for multisig
         if wallet_variant and wallet_variant in MULTISIG_HARDWARE_VARIANTS:
-            self.set_up_hardware_wallet(application)
+            self.hw_emulator = self.set_up_hardware_wallet(
+                application,
+                terminate_emulator=False,
+                reset_regtest_flag=False,
+            )
 
         colored_xpub = None
         cosigner_string = None
@@ -887,13 +892,26 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.welcome_page_objects.restore_button()):
             self.welcome_page_objects.click_restore_button()
 
-    def set_up_hardware_wallet(self, application):
+    def set_up_hardware_wallet(
+        self,
+        application,
+        terminate_emulator: bool = True,
+        reset_regtest_flag: bool = True,
+    ):
         """
         Set up the hardware wallet.
+
+        Args:
+            application: The application name.
+            terminate_emulator: Whether to terminate the emulator after setup.
+                For multisig, set to False to keep emulator running for later signing.
+            reset_regtest_flag: Whether to reset regtest before starting emulator.
+                For multisig, set to False to let the coordinator manage regtest lifecycle.
         """
+        speculos_process = None
         try:
             speculos_process = handle_hardware_wallet(
-                app_name=RGB_LEDGER_APP_NAME, reset=True,
+                app_name=RGB_LEDGER_APP_NAME, reset=reset_regtest_flag,
             )
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.hw_connect_page_objects.ledger_option()):
@@ -906,14 +924,20 @@ class Wallet(MainPageObjects, BaseOperations):
                 self.hw_device_selection_dialog_page_objects.click_connect_button()
             self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
             for _ in range(2):
+                time.sleep(1)
                 self.hw_emulator_page_objects.click_right_arrow_key(5)
                 self.hw_emulator_page_objects.press_left_and_right()
             self.do_focus_on_application(application)
             time.sleep(2)
         except Exception as e:
+            if speculos_process:
+                speculos_process.terminate()
             raise e
         finally:
-            speculos_process.terminate()
+            if terminate_emulator and speculos_process:
+                speculos_process.terminate()
+
+        return speculos_process
 
     def set_up_watch_only_wallet(self, xpub_vanilla: str | None, xpub_colored: str | None, fingerprint: str | None):
         """Apply provided xpubs and fingerprint to watch-only dialog in second app."""
@@ -1058,9 +1082,14 @@ class Wallet(MainPageObjects, BaseOperations):
                     self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
             if self.hw_emulator:
-                self.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_rgb, is_issue_ifa,
-                )
+                if variant_name in MULTISIG_HARDWARE_VARIANTS:
+                    self.sign_multisig_on_hardware_wallet(
+                        LEDGER_EMULATOR_APP_NAME,
+                    )
+                else:
+                    self.confirm_transaction_on_hardware_wallet(
+                        LEDGER_EMULATOR_APP_NAME, is_rgb, is_issue_ifa,
+                    )
 
                 self.do_focus_on_application(application)
 
@@ -1111,7 +1140,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
     def confirm_transaction_on_hardware_wallet(self, application, is_rgb: bool = False, is_issue_ifa: bool = False):
         """
-        Confirm transaction on hardware wallet.
+        Confirm transaction on hardware wallet for single-sig.
         """
         self.do_focus_on_application(application)
         time.sleep(3)
@@ -1130,6 +1159,22 @@ class Wallet(MainPageObjects, BaseOperations):
             time.sleep(2)
             self.hw_emulator_page_objects.click_right_arrow_key(1)
             self.hw_emulator_page_objects.press_left_and_right()
+
+    def sign_multisig_on_hardware_wallet(self, application):
+        """
+        Sign multisig transaction on hardware wallet.
+        Sequence: 13 right, left+right, 2s delay, 4 right, left+right
+        """
+        self.do_focus_on_application(application)
+        time.sleep(2)
+        # First sequence: 13 right arrows then left+right
+        self.hw_emulator_page_objects.click_right_arrow_key(13)
+        self.hw_emulator_page_objects.press_left_and_right()
+        # Delay 2 seconds
+        time.sleep(2)
+        # Second sequence: 4 right arrows then left+right
+        self.hw_emulator_page_objects.click_right_arrow_key(4)
+        self.hw_emulator_page_objects.press_left_and_right()
 
     def usb_sync(self, is_receive=False):
         """

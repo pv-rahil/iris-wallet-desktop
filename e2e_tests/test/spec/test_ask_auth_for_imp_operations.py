@@ -824,7 +824,7 @@ def test_ask_auth_for_imp_question_issue_ifa_on_for_multisig(wallets_and_operati
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, IFA_ASSET_TICKER, is_native_auth_enabled=True,
+            FIRST_APPLICATION, IFA_ASSET_TICKER, wallet_variant_name, is_native_auth_enabled=True,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -1245,7 +1245,7 @@ def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operat
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, IFA_ASSET_TICKER,
+            FIRST_APPLICATION, IFA_ASSET_TICKER, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,

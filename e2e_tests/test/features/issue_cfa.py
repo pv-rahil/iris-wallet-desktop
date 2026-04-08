@@ -47,6 +47,9 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
             if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
                 self.sidebar_page_objects.click_collectibles_button()
+                
+            if self.do_is_displayed(self.collectible_page_objects.refresh_button()):
+                self.collectible_page_objects.click_refresh_button()
 
             if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
                 self.collectible_page_objects.click_issue_cfa_button()

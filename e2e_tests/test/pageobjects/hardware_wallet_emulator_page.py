@@ -8,7 +8,6 @@ import subprocess
 import time
 
 from dogtail.rawinput import keyCombo
-from dogtail.tree import root
 
 from e2e_tests.test.utilities.base_operation import BaseOperations
 
@@ -27,7 +26,7 @@ class HardwareWalletEmulatorPageObjects(BaseOperations):
         """
         super().__init__(application)
 
-        self.hw_emulator_window = lambda: root.child(
+        self.hw_emulator_window = lambda: self.application.parent.child(
             roleName='filler', name='Ledger Nano SP Emulator',
         )
 

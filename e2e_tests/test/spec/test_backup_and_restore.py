@@ -958,7 +958,7 @@ def test_issue_ifa_for_multisig(test_environment, wallets_and_operations: Wallet
         )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, IFA_TICKER, utxo_required=True,
+            FIRST_APPLICATION, IFA_TICKER, wallet_variant_name, utxo_required=True,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -974,7 +974,7 @@ def test_issue_ifa_for_multisig(test_environment, wallets_and_operations: Wallet
         )
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, IFA_TICKER,
+            FIRST_APPLICATION, IFA_TICKER, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,

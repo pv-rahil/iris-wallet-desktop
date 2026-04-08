@@ -208,7 +208,7 @@ def test_send_ifa_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
         )
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER,
+            FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,

@@ -425,17 +425,16 @@ class SendRGBAssetWidget(QWidget):
                 # Save draft transfer if UTXOs missing, to avoid manual re-entry
                 try:
                     wallet_service = WalletDataService.get_session()
-                    if wallet_service is None:
-                        return
-                    wallet_service.upsert_draft_transfer(
-                        asset_id=self._view_model.cfa_view_model.asset_id,
-                        recipient_id=self.send_rgb_asset_page.asset_address_value.text(),
-                        amount=int(
-                            self.send_rgb_asset_page.asset_amount_value.text(),
-                        ),
-                        fee_rate=SettingCardRepository.get_default_fee_rate().fee_rate,
-                        min_confirmation=SettingCardRepository.get_default_min_confirmation().min_confirmation,
-                    )
+                    if wallet_service is not None:
+                        wallet_service.upsert_draft_transfer(
+                            asset_id=self._view_model.cfa_view_model.asset_id,
+                            recipient_id=self.send_rgb_asset_page.asset_address_value.text(),
+                            amount=int(
+                                self.send_rgb_asset_page.asset_amount_value.text(),
+                            ),
+                            fee_rate=SettingCardRepository.get_default_fee_rate().fee_rate,
+                            min_confirmation=SettingCardRepository.get_default_min_confirmation().min_confirmation,
+                        )
                 except Exception as e:
                     print(f"Failed to save draft: {e}")
 
@@ -456,7 +455,7 @@ class SendRGBAssetWidget(QWidget):
                         self._retry_after_utxo = False
                         return
                 self._view_model.utxo_creation_view_model.create_utxos_begin(
-                    purpose='send_rgb', num=3 if self.is_multisig else 1,
+                    purpose='send_rgb', num=3,
                 )
                 return
 

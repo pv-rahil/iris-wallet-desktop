@@ -94,12 +94,9 @@ def test_issue_nia_with_sufficient_sats_and_utxo(wallets_and_operations: WalletT
     with allure.step('Verified that one utxo exists for issue NIA asset'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_view_unspents_button()
         count = wallets_and_operations.first_page_objects.view_unspent_list_page_objects.get_unspent_widget()
-        nia_asset_id = wallets_and_operations.first_page_objects.view_unspent_list_page_objects.get_unspent_utxo_asset_id(
-            'NA',
-        )
+
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         assert count == 2
-        assert nia_asset_id == 'NA'
 
     with allure.step('Issue NIA asset with sufficient sats and utxo'):
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(

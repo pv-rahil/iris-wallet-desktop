@@ -7,6 +7,7 @@ from __future__ import annotations
 import time
 
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
@@ -183,8 +184,11 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         :param receiver_invoice: The recipient's invoice.
         :param amount: The amount to send.
+        :param wallet_variant_name: The wallet variant name.
+        :param utxo_required: Whether UTXO creation is required.
         :param is_native_auth_enabled: Whether native auth is enabled.
         """
+        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
         self.do_focus_on_application(application)
 
         if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
@@ -202,6 +206,11 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         if utxo_required:
             handle_utxo_confirmation_dialog(self, self, utxo_required=True)
+
+            if is_hardware:
+                self.wallet_features.sign_multisig_on_hardware_wallet(
+                    LEDGER_EMULATOR_APP_NAME,
+                )
 
         if wallet_variant_name in REQUIRE_USB_VARIANTS:
             self.wallet_features.usb_sync()

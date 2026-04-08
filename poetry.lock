@@ -3236,7 +3236,7 @@ version = "0.3.0b4"
 description = "RGB Lib Python language bindings."
 optional = false
 python-versions = ">=3.9.0"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "rgb_lib-0.3.0b4-py3-none-macosx_12_0_arm64.whl", hash = "sha256:dac156401abc7881e94eb5ebcbe3204b83b67669ddcc7fdfbc0ba476e91e60b2"},
     {file = "rgb_lib-0.3.0b4-py3-none-macosx_12_0_x86_64.whl", hash = "sha256:20d3f552ca202c7564ed9e501f569c17e31d7dc8051fc8d076d11011062e1703"},
@@ -3556,4 +3556,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "e2831306dcd241f39c65aa8ec4022fadcefb619fd4a53ba51e5b29d0e09ef7bc"
+content-hash = "e47df0dfdab1ae2a7b29d2317f4452b72b6c36adedbfeb6d58b2b45f687d2851"

@@ -9,10 +9,13 @@ import allure
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import MULTISIG_LOAD_VARIANTS
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
+from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import map_load_to_create
 from src.model.enums.enums_model import TransactionStatusEnumModel
@@ -275,6 +278,7 @@ def verify_transfer_status_and_received_amount(
                 asset_name,
             )
         elif asset_type == 'cfa':
+            second_page_objects.sidebar_page_objects.click_collectibles_button()
             second_page_objects.collectible_page_objects.click_refresh_button()
             second_page_objects.collectible_page_objects.click_cfa_frame(
                 asset_name,
@@ -282,6 +286,8 @@ def verify_transfer_status_and_received_amount(
 
         received_amount = second_page_objects.asset_detail_page_objects.get_total_balance()
         second_page_objects.asset_detail_page_objects.click_close_button()
+        
+        mine(1)
 
     with allure.step('Verify assertions'):
         assert received_amount == expected_amount
@@ -500,7 +506,7 @@ def setup_multisig_wallets(
         wallet_variant_name: Wallet variant name.
     """
     is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
-    is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
     is_online = wallet_variant_name not in REQUIRE_USB_VARIANTS
     if is_load_variant:
         wallet_variant_name = map_load_to_create(wallet_variant_name)
@@ -512,7 +518,7 @@ def setup_multisig_wallets(
 
     with allure.step('Initiate second multisig wallet'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION, variant=wallet_variant_name, fund=False,
+            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE, fund=False,
         )
 
     with allure.step('Import cosigner data into first multisig wallet'):
