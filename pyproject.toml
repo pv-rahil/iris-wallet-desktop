@@ -27,7 +27,6 @@ pydenticon = "^0.3.0"
 base58 = "^2.1.1"
 bip32 = "^4.0"
 rgb-lib = "0.3.0b4"
-dogtail = "1.0.7"
 hid = "^1.0.9"
 ledger-bitcoin = "^0.4.0"
 [tool.poetry.dev-dependencies]
@@ -56,7 +55,7 @@ pyinstaller = ">=4.5.1"
 pylint = "3.1.0"
 
 # Extra package required only for Linux OS, used exclusively in Linux end-to-end tests.
-dogtail = { version = "^1.0.7", platform = "linux" }
+dogtail = { version = "^1.0.7" , platform = "linux" }
 python3-xlib = { version = "^0.15", platform = "linux" }
 python3-pyatspi = { version = "^1.19.0", platform = "linux" }
 allure-pytest = { version = "^2.13.5", platform = "linux" }

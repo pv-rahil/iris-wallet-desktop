@@ -192,8 +192,8 @@ def send_asset_flow_with_verification(
 
     with allure.step(f'Navigate to {asset_type} asset and send'):
         focus_and_navigate_to_asset(
-            wallets_and_operations.first_page_objects,
             wallets_and_operations.first_page_operations,
+            wallets_and_operations.first_page_objects,
             asset_name,
             asset_type=asset_type,
         )
@@ -310,9 +310,13 @@ def focus_and_navigate_to_asset(
         page_objects.sidebar_page_objects.click_inflatable_button()
         page_objects.inflatable_page_objects.click_ifa_frame(asset_name)
     elif asset_type == 'nia':
+        page_objects.sidebar_page_objects.click_fungibles_button()
         page_objects.fungible_page_objects.click_nia_frame(asset_name)
     elif asset_type == 'cfa':
+        page_objects.sidebar_page_objects.click_collectibles_button()
         page_objects.collectible_page_objects.click_cfa_frame(asset_name)
+        
+    page_objects.asset_detail_page_objects.click_send_button()
 
 
 def initiate_third_wallet_and_get_invoice(
@@ -550,12 +554,14 @@ def setup_multisig_wallets(
                     application=FIRST_APPLICATION,
                     is_hardware=is_hardware,
                     is_online=is_online,
+                    wallet_variant_name = wallet_variant_name
                 )
             else:
                 wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
                     application=FIRST_APPLICATION,
                     is_hardware=is_hardware,
                     is_online=is_online,
+                    wallet_variant_name = wallet_variant_name
                 )
 
 

@@ -889,16 +889,16 @@ files = [
 
 [[package]]
 name = "dogtail"
-version = "1.0.7"
+version = "1.0.8"
 description = "GUI test tool and automation framework that uses Accessibility (a11y) technologies to communicate with desktop applications."
 optional = false
 python-versions = "*"
-groups = ["main", "dev"]
+groups = ["dev"]
+markers = "sys_platform == \"linux\""
 files = [
-    {file = "dogtail-1.0.7-py3-none-any.whl", hash = "sha256:efbb225cbdbe0e6fb3b9aa5cf479d1907355126027b79973ea62263db4c5ad3c"},
-    {file = "dogtail-1.0.7.tar.gz", hash = "sha256:55447073c962ef5d1845d11972e21ac9579240490de82b4e3770b9a8c3a4fb3b"},
+    {file = "dogtail-1.0.8-py3-none-any.whl", hash = "sha256:da6936cd512176d0bea2847d55e55bc8a04e9490dfac296b31c962e98c9ac522"},
+    {file = "dogtail-1.0.8.tar.gz", hash = "sha256:293b6c08e322c73cc1ec894fced70d9d879bd7e9ed8826b3ab0de5a89984ec80"},
 ]
-markers = {dev = "sys_platform == \"linux\""}
 
 [[package]]
 name = "ecdsa"
@@ -3556,4 +3556,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "ef8139baa21d3365d235a866cc2394c530a58ddb7dc5df01c0ff9d5eb69fa62f"
+content-hash = "e2831306dcd241f39c65aa8ec4022fadcefb619fd4a53ba51e5b29d0e09ef7bc"

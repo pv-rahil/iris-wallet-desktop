@@ -180,7 +180,7 @@ def test_send_and_receive_ifa_asset_operation_for_offline_wallet(wallets_and_ope
         asset_type='ifa',
     )
 
-
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Automation of send operation for IFA asset in iris wallet for multisig')
 @allure.story('Testing send IFA asset with invalid invoice for multisig')
@@ -229,7 +229,7 @@ def test_send_ifa_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
             TranslationManager.translate('invalid_invoice'),
         )
 
-
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Automation of receive, send, and transaction status for IFA asset in iris wallet for multisig')
 @allure.story('End-to-End testing of receiving, sending, and verifying transaction status for IFA asset for multisig')

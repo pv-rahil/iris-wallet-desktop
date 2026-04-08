@@ -10,6 +10,7 @@ import subprocess
 import shutil
 import time
 import tomllib
+from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 
 
 BRIDGE_CONFIG_PATH = os.path.join(
@@ -375,22 +376,23 @@ def start_regtest_services() -> bool:
             text=True,
             check=True,
         )
-        print('Waiting for bridge to be ready...')
-        for _ in range(60):
-            try:
-                subprocess.run(
-                    [
-                        'curl', '-fsS',
-                        'http://127.0.0.1:8141/info',
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                print('Bridge service started successfully')
-                return True
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                time.sleep(1)
+        if is_ci_environment():
+            print('Waiting for bridge to be ready...')
+            for _ in range(60):
+                try:
+                    subprocess.run(
+                        [
+                            'curl', '-fsS',
+                            'http://127.0.0.1:8141/info',
+                        ],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    print('Bridge service started successfully')
+                    return True
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    time.sleep(1)
         print('Regtest services started successfully')
         return True
     except subprocess.CalledProcessError as e:

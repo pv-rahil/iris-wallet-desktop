@@ -6,6 +6,7 @@ It includes classes and fixtures for setting up and tearing down the test enviro
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -129,9 +130,11 @@ class TestEnvironment:
 
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
-        env = None
+        env = os.environ.copy()
+        env["QT_ACCESSIBILITY"] = "1"
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
-            env, _ = setup_fake_usb()
+            usb_env, _ = setup_fake_usb()
+            env.update(usb_env)
 
         self.first_process = subprocess.Popen(
             [f'e2e_tests/applications/iris-wallet-vault_{
@@ -150,11 +153,9 @@ class TestEnvironment:
             check=True,
         )
         print(f"[SETUP] Initializing {FIRST_APPLICATION}")
-        app = self._find_application_node(FIRST_APPLICATION)
-        print(f"""
-              [SETUP] Successfully identified Application node for
-              {FIRST_APPLICATION}: {app}""")
-        self.first_application = app
+        # Use frame node for better element scoping when multiple apps are running
+        self.first_application = self._find_application_frame(FIRST_APPLICATION)
+        print(f"[SETUP] Successfully identified frame for {FIRST_APPLICATION}: {self.first_application}")
         self.first_page_features = MainFeatures(self.first_application)
         self.first_page_objects = MainPageObjects(self.first_application)
         self.first_page_operations = BaseOperations(self.first_application)
@@ -179,11 +180,9 @@ class TestEnvironment:
                 check=True,
             )
             print(f"[SETUP] Initializing {SECOND_APPLICATION}")
-            self.second_application = self._find_application_node(
-                SECOND_APPLICATION,
-            )
-            print(f"""[SETUP] Successfully identified Application node for
-                  {SECOND_APPLICATION}: {self.second_application}""")
+            # Use frame node for better element scoping when multiple apps are running
+            self.second_application = self._find_application_frame(SECOND_APPLICATION)
+            print(f"[SETUP] Successfully identified frame for {SECOND_APPLICATION}: {self.second_application}")
             self.second_page_features = MainFeatures(self.second_application)
             self.second_page_objects = MainPageObjects(self.second_application)
             self.second_page_operations = BaseOperations(
@@ -207,11 +206,9 @@ class TestEnvironment:
                 check=True,
             )
             print(f"[SETUP] Initializing {THIRD_APPLICATION}")
-            self.third_application = self._find_application_node(
-                THIRD_APPLICATION,
-            )
-            print(f"""[SETUP] Successfully identified Application node for
-                  {THIRD_APPLICATION}: {self.third_application}""")
+            # Use frame node for better element scoping when multiple apps are running
+            self.third_application = self._find_application_frame(THIRD_APPLICATION)
+            print(f"[SETUP] Successfully identified frame for {THIRD_APPLICATION}: {self.third_application}")
             self.third_page_features = MainFeatures(self.third_application)
             self.third_page_objects = MainPageObjects(self.third_application)
             self.third_page_operations = BaseOperations(
@@ -246,25 +243,104 @@ class TestEnvironment:
         except Exception:
             pass
 
-        print(f"""[WARN] No parent application node found for '
-              {app_name}'. Using dogtail fallback.""")
         # This is dogtail's standard way to get application root by hint
         return root.application(app_name)
 
-    def _find_showing_frame(self, app_name):
-        """Helper to find a showing frame for a given app name."""
-        # Try to find visible frame under visible application nodes first
-        apps = [a for a in root.applications() if 'iris' in a.name.lower()]
-        for app in apps:
-            if app.showing:
-                try:
-                    frame = app.child(roleName='frame', name=app_name)
-                    if frame and frame.showing:
-                        return frame
-                except Exception:
-                    pass
+    def _find_application_frame(self, app_name):
+        """
+        Helper to find the frame node for a given app name.
+        This is used for single-sig to ensure element searches are scoped to the correct frame.
+        Returns frame node instead of application node for better element scoping.
 
-        # Fallback to direct search and hope for the best
+        Args:
+            app_name: Name of the frame to find (e.g., "Iris Wallet Regtest test_app_1").
+
+        Returns:
+            Node: The frame node for the application.
+        """
+        # Extract app identifier from frame name
+        match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
+        target_app_identifier = match.group(1) if match else None
+
+        # Search through all applications to find the correct frame
+        try:
+            apps = [a for a in root.applications() if 'iris' in a.name.lower()]
+
+            # Sort apps to prioritize the target app
+            if target_app_identifier:
+                apps = sorted(apps, key=lambda a: 0 if target_app_identifier in a.name else 1)
+
+            for app in apps:
+                # Check if this app matches the target identifier
+                if target_app_identifier and target_app_identifier not in app.name:
+                    continue
+
+                # Find the frame within this application
+                for child in app.children:
+                    if child.roleName == 'frame' and child.name == app_name:
+                        print(f"[DEBUG] Found frame '{app_name}' under app '{app.name}'")
+                        return child
+        except Exception:
+            pass
+
+        # Fallback - find frame directly from root
+        try:
+            frame = root.child(roleName='frame', name=app_name)
+            if frame:
+                return frame
+        except Exception:
+            pass
+
+        print(f"[WARN] No frame found for '{app_name}'")
+        return None
+
+    def _find_showing_frame(self, app_name, retry_count=3, retry_delay=1.0):
+        """Helper to find a showing frame for a given app name.
+
+        Args:
+            app_name: Name of the frame to find.
+            retry_count: Number of retries if frame not found or not showing.
+            retry_delay: Delay between retries in seconds.
+        """
+        # Extract app identifier from frame name (e.g., "test_app_1" from "Iris Wallet Regtest test_app_1")
+        # The frame name format is "Iris Wallet Regtest {app_identifier}"
+        # The application name format is "iris-wallet-vault_{app_identifier}"
+        match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
+        target_app_identifier = match.group(1) if match else None
+
+        for attempt in range(retry_count):
+            # Try to find visible frame under visible application nodes first
+            apps = [a for a in root.applications() if 'iris' in a.name.lower()]
+            print(f"[FIND_FRAME] Attempt {attempt+1}/{retry_count}, found {len(apps)} iris apps, target: {target_app_identifier}")
+
+            # Sort apps to prioritize the target app
+            if target_app_identifier:
+                # Sort so that apps matching target_app_identifier come first
+                apps = sorted(apps, key=lambda a: 0 if target_app_identifier in a.name else 1)
+
+            for app in apps:
+                if app.showing:
+                    # Check if this app matches the target identifier
+                    if target_app_identifier and target_app_identifier not in app.name:
+                        print(f"[FIND_FRAME] Skipping app '{app.name}' (doesn't match target '{target_app_identifier}')")
+                        continue
+
+                    try:
+                        frame = app.child(roleName='frame', name=app_name)
+                        if frame and frame.showing:
+                            print(f"[FIND_FRAME] Found showing frame '{app_name}' under app '{app.name}'")
+                            return frame
+                    except Exception as e:
+                        print(f"[FIND_FRAME] No frame '{app_name}' under app '{app.name}': {e}")
+                        continue
+
+            # Wait before retry
+            if attempt < retry_count - 1:
+                print(f"[FIND_FRAME] Frame not showing, waiting {retry_delay}s...")
+                time.sleep(retry_delay)
+
+        # Fallback to direct search
+        print(f"[FIND_FRAME] Using fallback direct search for '{app_name}'")
         return root.child(roleName='frame', name=app_name)
 
     def wait_for_application(self, name, timeout=60):
@@ -400,12 +476,27 @@ class TestEnvironment:
             check=True,
         )
 
-        self.first_application = root.child(
-            roleName='frame', name=FIRST_APPLICATION,
-        )
+        # Use the same helper as launch_applications for consistent node finding
+        self.first_application = self._find_showing_frame(FIRST_APPLICATION)
+        print(f"[RESET] first_application node: {self.first_application}")
+        print(f"[RESET] first_application.showing: {getattr(self.first_application, 'showing', 'N/A')}")
+
+        # Ensure the frame is actually showing before proceeding
+        if not getattr(self.first_application, 'showing', False):
+            print("[RESET] Warning: frame not showing, waiting...")
+            time.sleep(2.0)
+            self.first_application = self._find_showing_frame(FIRST_APPLICATION)
+
         self.first_page_features = MainFeatures(self.first_application)
         self.first_page_objects = MainPageObjects(self.first_application)
         self.first_page_operations = BaseOperations(self.first_application)
+        print(f"[RESET] Page objects reinitialized for {FIRST_APPLICATION}")
+
+        # Force AT-SPI tree refresh to clear stale element caches
+        # This is critical after reset to avoid "Could not find accessible on path" errors
+        _ = root.children
+        time.sleep(0.5)
+        print(f"[RESET] AT-SPI tree refreshed")
 
     def reset_second_instance(self, reset_data: bool = True):
         """Reset and relaunch only the second application instance.

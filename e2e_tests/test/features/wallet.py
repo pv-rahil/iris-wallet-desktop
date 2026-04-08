@@ -39,7 +39,7 @@ from e2e_tests.test.utilities.executable_shell_script import send_to_address
 from e2e_tests.test.utilities.fake_usb import clear_fake_usb_mount_all
 from e2e_tests.test.utilities.multisig_coordinator import get_multisig_coordinator
 from e2e_tests.test.utilities.reset_app import delete_app_data
-from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
+from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet, map_to_load_variant
 from e2e_tests.test.utilities.wallet_variants import map_load_to_create
 from e2e_tests.test.utilities.wallet_variants import resolve_steps as resolve_wallet_steps
 from src.utils.constant import APP_NAME
@@ -61,20 +61,40 @@ class Wallet(MainPageObjects, BaseOperations):
         self.address = None
         self.hw_emulator = None
 
-    def _refresh_application(self):
+    def _refresh_application(self, application_name: str = None):
         """
         Refresh the application node and reinitialize all page objects.
         Call this after the application is reset/relaunched to get fresh element references.
+
+        Args:
+            application_name: The name of the application to find. If None, uses self.application.name.
         """
-        # Get fresh application node from root
-        if self.application and hasattr(self.application, 'name'):
-            name = self.application.name
+        # Get the application name from parameter or existing application
+        name = application_name
+        if name:
             try:
-                self.application = root.child(roleName='frame', name=name, showingOnly=True)
+                # Search through all iris applications to find the showing frame
+                frame = None
+                for app in root.applications():
+                    if 'iris' in app.name.lower():
+                        try:
+                            found_frame = app.child(roleName='frame', name=name)
+                            if found_frame and found_frame.showing:
+                                frame = found_frame
+                                break
+                        except Exception:
+                            continue
+
+                # Fallback to direct search if not found
+                if not frame:
+                    frame = root.child(roleName='frame', name=name, showingOnly=True)
+
+                self.application = frame
                 # Reinitialize all page objects with fresh application
                 super().__init__(self.application)
+                print(f"[REFRESH] Successfully refreshed application: {name}")
             except Exception as e:
-                print(f"[WARN] Failed to refresh application: {e}")
+                print(f"[WARN] Failed to refresh application '{name}': {e}")
 
     def _resolve_effective_variant(self, application: str, variant: str, is_load_wallet: bool) -> str | None:
         """
@@ -397,7 +417,7 @@ class Wallet(MainPageObjects, BaseOperations):
         else:
             self.trigger_usb_sync(self)
 
-    def load_multisig_wallet(self, application: str, is_hardware: bool = False, is_online: bool = False):
+    def load_multisig_wallet(self, application: str, is_hardware: bool = False, is_online: bool = False, wallet_variant_name:str = None):
         """
         Load a multisig wallet using saved credentials.
         Resets the app and loads wallet with stored credentials.
@@ -414,19 +434,21 @@ class Wallet(MainPageObjects, BaseOperations):
             print(f"[ERROR] No load credentials found for {application}")
             return
 
-        # Refresh application node and page objects after reset
-        self._refresh_application()
+        subprocess.run(['wmctrl', '-a', application], check=False)
+
+        # Give window manager time to switch
+        time.sleep(0.5)
 
         # Focus on the reset application
+        # Note: env.reset_first_instance() already created fresh page objects
         self.do_focus_on_application(application)
 
         # Step 1: TNC scroll and accept
-        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
-            self.term_and_condition_page_objects.scroll_to_end()
-        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
-            self.term_and_condition_page_objects.click_accept_button()
+        self._accept_terms_and_conditions()
+        
+        wallet_variant_name = map_to_load_variant(wallet_variant_name)
 
-        self.drive_selection_flow(application, ONLINE_CREATE_ON_DEVICE)
+        self.drive_selection_flow(application,wallet_variant_name)
 
         # Step 3: Click restore button
         if self.do_is_displayed(self.welcome_page_objects.restore_button()):
@@ -603,7 +625,18 @@ class Wallet(MainPageObjects, BaseOperations):
         Only used for single-sig load: Creates wallet on second app, collects credentials.
         Multisig load is handled directly in load_wallet().
         """
-        second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+        # Get the second app frame from the TestEnvironment to ensure correct app context
+        env = self.get_current_environment()
+        second_app = None
+        if env and hasattr(env, 'second_application'):
+            second_app = env.second_application
+            print(f"[SETUP_SECOND] Using second_application from env: {second_app}")
+
+        # Fallback to finding frame directly if not available from env
+        if not second_app:
+            second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+            print(f"[SETUP_SECOND] Fallback: found frame from root: {second_app}")
+
         if not second_app:
             # mnemonic, password, xpub_vanilla, xpub_colored, fingerprint
             return None, None, None, None, None

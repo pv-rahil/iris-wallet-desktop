@@ -161,6 +161,14 @@ jobs:
           - test_view_unspent
           - test_refresh_transfer
           - test_inflate_asset
+        wallet_variant:
+          - online_create_on_device
+          - online_load_on_device
+          # - online_watch_only
+          # - online_create_hardware
+          # - online_load_hardware
+          - offline_create_on_device
+          - offline_load_on_device
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
@@ -252,6 +260,7 @@ jobs:
         uses: ./.github/actions/setup-e2e-environment
         with:
           test-file: ${{ matrix.test_file }}
+          wallet-variant: ${{ matrix.wallet_variant }}
 
       - name: Stop screen recording
         if: always()

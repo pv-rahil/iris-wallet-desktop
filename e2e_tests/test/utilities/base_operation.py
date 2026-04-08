@@ -316,13 +316,19 @@ class BaseOperations:
         Focuses on the given application and waits for AT-SPI to synchronize.
 
         Args:
-            application (str): The name of the application to focus on.
+            application (str or Node): The name of the application to focus on, or a frame node.
             verify_ready (bool): If True, wait for AT-SPI tree to be ready.
 
         Returns:
             None
         """
-        self.activate_window_by_name(application)
+        # Handle both string application names and frame node objects
+        app_name = application
+        if hasattr(application, 'name'):
+            # It's a node object, extract the name
+            app_name = application.name
+
+        self.activate_window_by_name(app_name)
 
         if verify_ready:
             # Give AT-SPI time to synchronize after window switch

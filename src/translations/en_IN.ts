@@ -2197,6 +2197,10 @@ If you understand the above remarks and wish to proceed, press the button below 
         <translation>Cosigner {0}</translation>
     </message>
     <message>
+        <source>required_signatures_help</source>
+        <translation>Required number of signatures to authorize transactions (2-15)</translation>
+    </message>
+    <message>
         <source>total_cosigners_help</source>
         <translation>Total number of participants in the multisig wallet (2-15)</translation>
     </message>
@@ -2449,6 +2453,10 @@ If you understand the above remarks and wish to proceed, press the button below 
     <message>
         <source>draft</source>
         <translation>DRAFT</translation>
+    </message>
+    <message>
+        <source>transition_type</source>
+        <translation>Transition Type:</translation>
     </message>
 </context>
 </TS>

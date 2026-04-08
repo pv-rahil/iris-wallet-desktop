@@ -28,6 +28,26 @@
     margin-bottom: 4px;
 }
 
+#label_text{
+    font-family: "Inter";
+    font-size: 13px;
+    color: #9A9A9A;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+#value_text{
+    font-family: "Inter";
+    font-size: 13px;
+    color: #FFFFFF;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
 #info_card {
     background-color: rgba(3, 11, 37, 0.5);
     border: 1px solid #313952;

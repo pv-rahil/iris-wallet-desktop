@@ -215,7 +215,7 @@ class InspectionDetailDialog(QDialog):
             txid = txid.replace('Outpoint(txid=', '').split(',')[0].strip()
         return txid
 
-    def _create_rgb_io_card(self, index: int, label_key: str, assignment, clean_type: str, is_concealed: bool = False) -> QFrame:
+    def _create_rgb_io_card(self, index: int, label_key: str, assignment, is_concealed: bool = False) -> QFrame:
         """Create an RGB input/output card."""
         card = QFrame()
         card.setObjectName('item_card')
@@ -243,15 +243,8 @@ class InspectionDetailDialog(QDialog):
         h.addWidget(amt)
         l.addLayout(h)
 
-        type_text = QCoreApplication.translate(
-            IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transaction_type', 'Transaction type',
-        )
-        body = QLabel(f"{type_text}: {clean_type}")
-        body.setObjectName('card_body')
-        l.addWidget(body)
-
         if is_concealed:
-            meta = QLabel('🔒')
+            meta = QLabel('??')
             meta.setObjectName('card_meta')
             l.addWidget(meta)
 
@@ -274,31 +267,65 @@ class InspectionDetailDialog(QDialog):
         }
 
         for _op_idx, op in enumerate(self.rgb_details.operations):
-            asset_label_text = QCoreApplication.translate(
-                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_id', 'Asset id',
-            )
-            asset_title = QLabel(f"{asset_label_text}: {op.asset_id}")
-            asset_title.setObjectName('section_title')
-            asset_title.setStyleSheet(
-                'font-size: 11px; color: #00FFA3; margin-top: 6px;',
-            )
-            self.scroll_layout.addWidget(asset_title)
-
             for _t_idx, trans in enumerate(op.transitions):
                 raw_type = str(trans.type)
                 clean_type = transition_type_map.get(raw_type, raw_type)
 
+                asset_label_text = QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'asset_id_label', 'Asset id',
+                )
+                type_text = QCoreApplication.translate(
+                    IRIS_WALLET_TRANSLATIONS_CONTEXT, 'transition_type', 'Transition type',
+                )
+
+                title_container = QWidget()
+                title_layout = QVBoxLayout(title_container)
+                title_layout.setContentsMargins(0, 6, 0, 0)
+                title_layout.setSpacing(2)
+
+                # Asset id row
+                asset_id_row = QHBoxLayout()
+                asset_id_row.setSpacing(4)
+                asset_id_label = QLabel()
+                asset_id_label.setObjectName('label_text')
+                asset_id_label.setText(asset_label_text)
+                asset_id_row.addWidget(asset_id_label)
+
+                asset_id_value = QLabel()
+                asset_id_value.setObjectName('value_text')
+                asset_id_value.setText(op.asset_id)
+                asset_id_row.addWidget(asset_id_value)
+                asset_id_row.addStretch()
+                title_layout.addLayout(asset_id_row)
+
+                # Transition type row
+                type_row = QHBoxLayout()
+                type_row.setSpacing(4)
+                type_label = QLabel()
+                type_label.setObjectName('label_text')
+                type_label.setText(type_text)
+                type_row.addWidget(type_label)
+
+                type_value = QLabel()
+                type_value.setObjectName('value_text')
+                type_value.setText(clean_type)
+                type_row.addWidget(type_value)
+                type_row.addStretch()
+                title_layout.addLayout(type_row)
+
+                self.scroll_layout.addWidget(title_container)
+
                 if trans.inputs:
                     for j, ri in enumerate(trans.inputs):
                         card = self._create_rgb_io_card(
-                            j, 'input', ri.assignment, clean_type,
+                            j, 'input', ri.assignment,
                         )
                         self.scroll_layout.addWidget(card)
 
                 if trans.outputs:
                     for j, ro in enumerate(trans.outputs):
                         card = self._create_rgb_io_card(
-                            j, 'output', ro.assignment, clean_type, ro.is_concealed,
+                            j, 'output', ro.assignment, is_concealed=ro.is_concealed,
                         )
                         self.scroll_layout.addWidget(card)
 
