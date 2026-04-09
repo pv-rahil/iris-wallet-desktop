@@ -330,7 +330,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
 
         # Sync with bridge again and finish
         self.run_in_thread(
-            RgbRepository.sync_with_bridge,
+            RgbRepository.sync_with_hub,
             {
                 'callback': lambda _: self.secondary_issuance_success.emit(),
                 'error_callback': lambda _: self.secondary_issuance_success.emit(),

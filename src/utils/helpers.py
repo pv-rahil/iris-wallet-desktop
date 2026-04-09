@@ -250,17 +250,17 @@ def get_bitcoin_config(network: BitcoinNetwork, password) -> ConfigModel:
     """
     try:
         # Network-specific configurations - use if/elif since BitcoinNetwork is not hashable
-        if network == BitcoinNetwork.MAINNET():
+        if network == BitcoinNetwork.MAINNET:
             network_config = {
                 SAVED_INDEXER_URL: INDEXER_URL_MAINNET,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_MAINNET,
             }
-        elif network == BitcoinNetwork.TESTNET():
+        elif network == BitcoinNetwork.TESTNET:
             network_config = {
                 SAVED_INDEXER_URL: INDEXER_URL_TESTNET,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_TESTNET,
             }
-        elif network == BitcoinNetwork.REGTEST():
+        elif network == BitcoinNetwork.REGTEST:
             network_config = {
                 SAVED_INDEXER_URL: INDEXER_URL_REGTEST,
                 SAVED_PROXY_ENDPOINT: PROXY_ENDPOINT_REGTEST,
@@ -292,11 +292,11 @@ def get_bitcoin_network_from_enum(network: NetworkEnumModel | BitcoinNetwork) ->
         return network
 
     mapping = {
-        NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET(),
-        NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET(),
-        NetworkEnumModel.TESTNET4: BitcoinNetwork.TESTNET4(),
-        NetworkEnumModel.SIGNET: BitcoinNetwork.SIGNET(),
-        NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST(),
+        NetworkEnumModel.MAINNET: BitcoinNetwork.MAINNET,
+        NetworkEnumModel.TESTNET: BitcoinNetwork.TESTNET,
+        NetworkEnumModel.TESTNET4: BitcoinNetwork.TESTNET4,
+        NetworkEnumModel.SIGNET: BitcoinNetwork.SIGNET,
+        NetworkEnumModel.REGTEST: BitcoinNetwork.REGTEST,
     }
 
     try:

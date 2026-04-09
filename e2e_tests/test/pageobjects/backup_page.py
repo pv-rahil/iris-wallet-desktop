@@ -202,7 +202,7 @@ class BackupPageObjects(BaseOperations):
             otp_code = totp.now()
             time_remaining = totp.interval - (time.time() % totp.interval)
 
-            if time_remaining < 15:
+            if time_remaining < 25:
                 time.sleep(time_remaining)  # Wait for new OTP generation
             else:
                 break  # Proceed with the valid OTP

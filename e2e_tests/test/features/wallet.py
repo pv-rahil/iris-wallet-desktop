@@ -278,7 +278,7 @@ class Wallet(MainPageObjects, BaseOperations):
                 SECOND_APPLICATION, OFFLINE_CREATE_ON_DEVICE, is_load_wallet=True,
             )
 
-            xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app(
+            xpub_vanilla, xpub_colored, fingerprint, _ = second_wallet.collect_keyring_values_from_app(
                 SECOND_APPLICATION,
             )
 
@@ -548,7 +548,7 @@ class Wallet(MainPageObjects, BaseOperations):
                 SECOND_APPLICATION, OFFLINE_MULTISIG_ON_DEVICE, is_load_wallet=True,
             )
 
-            xpub_vanilla, xpub_colored, fingerprint, _ = self.collect_keyring_values_from_app(
+            xpub_vanilla, xpub_colored, fingerprint, _ = second_wallet.collect_keyring_values_from_app(
                 SECOND_APPLICATION,
             )
 
@@ -776,7 +776,7 @@ class Wallet(MainPageObjects, BaseOperations):
             self.selection_page_objects.click_continue_button()
 
         # Step 4: Entry type (Create/Load)
-        if self.do_is_displayed(self.selection_page_objects.option_1_button()):
+        if step4!= 0 and self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step4)
             self.selection_page_objects.click_continue_button()
 
@@ -972,11 +972,21 @@ class Wallet(MainPageObjects, BaseOperations):
     def collect_keyring_values_from_app(self, app_name: str = FIRST_APPLICATION, is_load_wallet: bool = False) -> tuple[str | None, str | None, str | None, str | None]:
         """Focus the first application and read xpubs + fingerprint from About page copy buttons."""
         self.do_focus_on_application(app_name)
-        try:
-            first_app = root.child(roleName='frame', name=app_name)
-        except Exception:
-            first_app = None
+        
+        # Get the first app frame from the TestEnvironment to ensure correct app context
+        # This is the same approach used in setup_second_wallet for the second app
+        env = self.get_current_environment()
+        first_app = None
+        if env and hasattr(env, 'first_application'):
+            first_app = env.first_application
+        if env and hasattr(env, 'second_application'):
+            first_app = env.second_application
 
+
+        # Fallback to finding frame directly if not available from env
+        if not first_app:
+            first_app = root.child(roleName='frame', name=app_name)
+            
         if not first_app:
             return None, None, None, None
 

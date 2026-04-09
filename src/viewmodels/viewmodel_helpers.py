@@ -258,7 +258,7 @@ def on_success_multisig_post_base(viewmodel, success_callback=None):
 
     # Sync with bridge again
     viewmodel.run_in_thread(
-        RgbRepository.sync_with_bridge,
+        RgbRepository.sync_with_hub,
         {
             'callback': success_callback or (lambda _: None),
             'error_callback': success_callback or (lambda _: None),

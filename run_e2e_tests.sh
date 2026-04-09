@@ -232,6 +232,9 @@ run_e2e_tests() {
     local reports_root_dir="allure-reports"
     local EXIT_CODE=0
 
+    # Suppress Qt accessibility spam
+    export QT_LOGGING_RULES="qt.accessibility.atspi=false"
+
     echo "Running E2E tests"
 
     # Clean previous aggregated results and recreate root

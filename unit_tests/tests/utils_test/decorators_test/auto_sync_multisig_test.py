@@ -66,7 +66,7 @@ def test_decorator_not_multisig(mock_colored_wallet):
         return 'success'
 
     assert my_method() == 'success'
-    mock_colored_wallet.wallet.sync_with_bridge.assert_not_called()
+    mock_colored_wallet.wallet.sync_with_hub.assert_not_called()
 
 
 @patch('src.utils.decorators.auto_sync_multisig.SettingRepository')
@@ -81,7 +81,7 @@ def test_decorator_multisig_offline(mock_colored_wallet, mock_setting_repo):
         return 'success'
 
     assert my_method() == 'success'
-    mock_colored_wallet.wallet.sync_with_bridge.assert_not_called()
+    mock_colored_wallet.wallet.sync_with_hub.assert_not_called()
 
 
 @patch('src.utils.decorators.auto_sync_multisig.SettingRepository')
@@ -91,14 +91,14 @@ def test_decorator_multisig_online_success(mock_colored_wallet, mock_setting_rep
     mock_colored_wallet.is_multisig = True
     mock_setting_repo.get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
     mock_colored_wallet.online = True
-    mock_colored_wallet.wallet.sync_with_bridge.return_value = None
+    mock_colored_wallet.wallet.sync_with_hub.return_value = None
 
     @auto_sync_multisig()
     def my_method():
         return 'success'
 
     assert my_method() == 'success'
-    mock_colored_wallet.wallet.sync_with_bridge.assert_called_once_with(
+    mock_colored_wallet.wallet.sync_with_hub.assert_called_once_with(
         online=True,
     )
 
@@ -111,7 +111,7 @@ def test_decorator_multisig_online_pending_blocking(mock_colored_wallet, mock_se
     mock_setting_repo.get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     mock_sync_result = MagicMock()
-    mock_colored_wallet.wallet.sync_with_bridge.return_value = mock_sync_result
+    mock_colored_wallet.wallet.sync_with_hub.return_value = mock_sync_result
 
     @auto_sync_multisig(check_pending_ops=True)
     def my_method():
@@ -130,7 +130,7 @@ def test_decorator_sync_error(mock_colored_wallet, mock_setting_repo):
     mock_colored_wallet.is_multisig = True
     mock_setting_repo.get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
-    mock_colored_wallet.wallet.sync_with_bridge.side_effect = Exception(
+    mock_colored_wallet.wallet.sync_with_hub.side_effect = Exception(
         'sync failed',
     )
 
@@ -151,7 +151,7 @@ def test_decorator_common_exception_passthrough(mock_colored_wallet, mock_settin
     mock_colored_wallet.is_multisig = True
     mock_setting_repo.get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
-    mock_colored_wallet.wallet.sync_with_bridge.side_effect = CommonException(
+    mock_colored_wallet.wallet.sync_with_hub.side_effect = CommonException(
         'specific error',
     )
 

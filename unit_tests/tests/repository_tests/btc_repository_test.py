@@ -34,7 +34,7 @@ def mock_wallet():
         mock_wallet = MagicMock()
         mock_colored_wallet.wallet = mock_wallet
         mock_colored_wallet.online = True
-        # Disable multisig sync in decorator to avoid sync_with_bridge calls during tests
+        # Disable multisig sync in decorator to avoid sync_with_hub calls during tests
         mock_decorator_wallet.is_multisig = False
         yield mock_wallet
 

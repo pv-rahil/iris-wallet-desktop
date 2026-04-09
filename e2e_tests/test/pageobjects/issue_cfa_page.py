@@ -4,6 +4,7 @@ IssueCfaPageObjects class provides methods to interact with the issue CFA page.
 from __future__ import annotations
 
 from dogtail.rawinput import keyCombo
+from dogtail.tree import root
 
 from accessible_constant import CFA_ASSET_AMOUNT
 from accessible_constant import CFA_ASSET_DESCRIPTION
@@ -50,7 +51,7 @@ class IssueCfaPageObjects(BaseOperations):
         self.upload_file_button = lambda: self.perform_action_on_element(
             role_name='push button', name=CFA_UPLOAD_FILE_BUTTON,
         )
-        self.file_dialog = lambda: self.application.parent.child(roleName=FILE_CHOOSER)
+        self.file_dialog = lambda: root.child(roleName=FILE_CHOOSER)
         self.cfa_asset_media = lambda: self.file_dialog().child(
             roleName='table cell', name='sample.png',
         )

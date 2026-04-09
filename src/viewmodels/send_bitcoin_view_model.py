@@ -243,7 +243,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
 
         # Sync with bridge again as requested
         self.run_in_thread(
-            RgbRepository.sync_with_bridge,
+            RgbRepository.sync_with_hub,
             {
                 'callback': lambda _: self._page_navigation.bitcoin_page(),
                 'error_callback': lambda _: self._page_navigation.bitcoin_page(),

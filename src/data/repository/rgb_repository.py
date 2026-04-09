@@ -7,7 +7,6 @@ from rgb_lib import AssetNia
 from rgb_lib import Assets
 from rgb_lib import AssetUda
 from rgb_lib import Balance
-from rgb_lib import ExpirationRelative
 from rgb_lib import InitOperationResult
 from rgb_lib import Invoice
 from rgb_lib import OperationInfo
@@ -102,21 +101,11 @@ class RgbRepository:
             online_kwargs = {
                 'online': colored_wallet.online,
             } if colored_wallet.is_multisig else {}
-            data: ReceiveData
-            if colored_wallet.is_multisig:
-                data = colored_wallet.wallet.witness_receive(
-                    **online_kwargs,
-                    asset_id=invoice.asset_id, assignment=invoice.assignment, duration_seconds=invoice.duration_seconds,
-                    transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
-                )
-            else:
-                expiration = ExpirationRelative(
-                    duration_seconds=invoice.duration_seconds, exact=True,
-                )
-                data = colored_wallet.wallet.witness_receive(
-                    asset_id=invoice.asset_id, assignment=invoice.assignment, expiration=expiration,
-                    transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
-                )
+            data: ReceiveData = colored_wallet.wallet.witness_receive(
+                **online_kwargs,
+                asset_id=invoice.asset_id, assignment=invoice.assignment, expiration_timestamp=None,
+                transport_endpoints=invoice.transport_endpoints, min_confirmations=invoice.min_confirmations,
+            )
             cache = Cache.get_cache_session()
             if cache is not None:
                 cache.invalidate_cache()
@@ -138,14 +127,11 @@ class RgbRepository:
             )
 
             recipient_map = {asset_detail.asset_id: [recipient]}
-            expiration = ExpirationRelative(
-                duration_seconds=asset_detail.duration_seconds, exact=True,
-            )
 
             data: OperationResult = colored_wallet.wallet.send(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=asset_detail.donation,
                 fee_rate=asset_detail.fee_rate, min_confirmations=asset_detail.min_confirmations, skip_sync=asset_detail.skip_sync,
-                expiration=expiration,
+                expiration_timestamp=None,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -267,12 +253,9 @@ class RgbRepository:
                 transport_endpoints=detail.transport_endpoints,
             )
             recipient_map = {detail.asset_id: [recipient]}
-            expiration = ExpirationRelative(
-                duration_seconds=detail.duration_seconds, exact=True,
-            )
             result: SendBeginResult = colored_wallet.wallet.send_begin(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration=expiration,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration_timestamp=detail.duration_seconds,
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
@@ -298,7 +281,7 @@ class RgbRepository:
         with repository_custom_context():
             fascia_path = None
             entropy = None
-            sync_result = colored_wallet.wallet.sync_with_bridge(
+            sync_result:OperationInfo = colored_wallet.wallet.sync_with_hub(
                 online=colored_wallet.online,
             )
             if sync_result:
@@ -453,10 +436,10 @@ class RgbRepository:
             return data
 
     @staticmethod
-    def sync_with_bridge() -> OperationInfo:
+    def sync_with_hub() -> OperationInfo:
         """Sync with the multisig bridge and get pending operations."""
         with repository_custom_context():
-            data: OperationInfo = colored_wallet.wallet.sync_with_bridge(
+            data: OperationInfo = colored_wallet.wallet.sync_with_hub(
                 online=colored_wallet.online,
             )
             return data

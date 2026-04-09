@@ -23,16 +23,19 @@ services:
     ports:
       - 50001:50001
   proxy:
-    image: proxy:updated
+    image: ghcr.io/rgb-tools/rgb-proxy-server:0.3.0
     ports:
       - 3000:3000
 
-  rgb-multisig-bridge:
-    image: rgb-multisig-bridge:latest
-    user: "1000:1000"
-    command: /usr/bridge --daemon-listening-port 8141
+  rgb-multisig-hub:
+    image: ghcr.io/rgb-tools/rgb-multisig-hub:0.1.0
+    user: 1000:1000
     ports:
-      - 8141:8141
+      - 8141:3001
     volumes:
-      - ./bridge:/usr/bridge
-      - ./bridge/config.toml:/usr/bridge/config.toml:ro
+      - ./hub:/srv/data
+      - ./hub/config.toml:/srv/data/config.toml:ro
+
+
+volumes:
+  hub:

@@ -402,9 +402,9 @@ def test_on_success_multisig_post(send_bitcoin_view_model, mocker):
     hw_slot.assert_called_once()
     mock_toast.assert_called_once()
     mock_run.assert_called_once()
-    assert 'sync_with_bridge' in str(
+    assert 'sync_with_hub' in str(
         mock_run.call_args[0],
-    ) or mock_run.call_args[0][0].__name__ == 'sync_with_bridge'
+    ) or mock_run.call_args[0][0].__name__ == 'sync_with_hub'
 
 
 def test_on_psbt_signed_and_finalized_hw_online_triggers_broadcast(send_bitcoin_view_model, mocker):

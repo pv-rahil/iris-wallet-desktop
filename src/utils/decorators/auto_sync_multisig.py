@@ -46,7 +46,7 @@ def auto_sync_multisig(check_pending_ops: bool = False) -> Callable[..., Any]:
                     return method(*args, **kwargs)
                 try:
                     logger.info('Auto-syncing multisig wallet...')
-                    sync_result = colored_wallet.wallet.sync_with_bridge(
+                    sync_result = colored_wallet.wallet.sync_with_hub(
                         online=colored_wallet.online,
                     )
 

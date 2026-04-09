@@ -583,15 +583,15 @@ def test_inflate_init_without_session(mock_get_session, mock_wallet):
     assert res == result_obj
 
 
-def test_sync_with_bridge(mock_wallet):
-    """sync_with_bridge should call wallet.sync_with_bridge with online= and return OperationInfo."""
+def test_sync_with_hub(mock_wallet):
+    """sync_with_hub should call wallet.sync_with_hub with online= and return OperationInfo."""
     mock_info = MagicMock(spec=OperationInfo)
-    mock_wallet.sync_with_bridge.return_value = mock_info
+    mock_wallet.sync_with_hub.return_value = mock_info
 
-    result = RgbRepository.sync_with_bridge()
+    result = RgbRepository.sync_with_hub()
 
     assert result == mock_info
-    mock_wallet.sync_with_bridge.assert_called_once_with(online=True)
+    mock_wallet.sync_with_hub.assert_called_once_with(online=True)
 
 
 @patch('src.data.service.wallet_data_service.WalletDataService.get_session')

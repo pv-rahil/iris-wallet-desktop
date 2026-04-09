@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dogtail.rawinput import keyCombo
+from dogtail.tree import root
 
 from accessible_constant import COLORED_XPUB_COPY_BUTTON
 from accessible_constant import DOWNLOAD_DEBUG_LOG
@@ -46,7 +47,7 @@ class AboutPageObjects(BaseOperations):
         self.download_debug_log = lambda: self.perform_action_on_element(
             role_name='push button', name=DOWNLOAD_DEBUG_LOG,
         )
-        self.file_explorer = lambda: self.application.parent.child(
+        self.file_explorer = lambda: root.child(
             roleName=FILE_CHOOSER,
         )
 

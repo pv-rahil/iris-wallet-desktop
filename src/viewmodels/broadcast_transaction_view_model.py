@@ -441,7 +441,7 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
 
         # Fallback if global state empty (orphan page load?)
         self.run_in_thread(
-            RgbRepository.sync_with_bridge,
+            RgbRepository.sync_with_hub,
             {
                 'args': [],
                 'callback': self._on_fetch_pending_operation_success,

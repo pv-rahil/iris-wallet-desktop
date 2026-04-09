@@ -13,7 +13,6 @@ from rgb_lib import AssetSchema
 from rgb_lib import AssetUda
 from rgb_lib import Assignment
 from rgb_lib import Balance
-from rgb_lib import ExpirationAbsolute
 from rgb_lib import Outpoint
 from rgb_lib import RgbLibError
 from rgb_lib import TransferKind
@@ -117,7 +116,7 @@ class TransferAsset(BaseModel):
     recipient_id: str | None = None
     receive_utxo: Outpoint | None = None
     change_utxo: Outpoint | None = None
-    expiration: ExpirationAbsolute | None = None
+    expiration: int | None = None
     transport_endpoints: list[TransferTransportEndpoint | None] | None = []
     invoice_string: str | None = None
     consignment_path: str | None = None

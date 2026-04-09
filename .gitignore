@@ -38,6 +38,5 @@ dataldk2
 allure-results
 .pytest_cache
 
-rgb-multisig-bridge
 private-key-file
-bridge
+hub

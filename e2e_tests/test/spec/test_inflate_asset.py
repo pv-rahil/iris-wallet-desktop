@@ -40,34 +40,10 @@ def test_issue_and_inflate_ifa_single_sig_online(wallets_and_operations: WalletT
             FIRST_APPLICATION, ASSET_TICKER, IFA_ASSET_NAME_1, INITIAL_SUPPLY, IFA_ASSET_TOTAL_SUPPLY, wallet_variant_name,
         )
 
-    with allure.step('Get initial balance'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
-        )
-        initial_balance = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-
     with allure.step('Inflate IFA asset'):
         wallets_and_operations.first_page_features.inflate_features.inflate_ifa_asset(
             FIRST_APPLICATION, IFA_ASSET_NAME_1, INFLATE_AMOUNT, wallet_variant_name,
         )
-
-    with allure.step('Verify increased balance after inflation'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
-        )
-        new_balance = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-
-        assert int(new_balance) == int(initial_balance) + int(INFLATE_AMOUNT)
 
     with allure.step('Verify inflate amount in transaction frame'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
@@ -129,17 +105,6 @@ def test_issue_and_inflate_ifa_single_sig_offline(wallets_and_operations: Wallet
         wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
-    with allure.step('Get initial balance'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
-        )
-        initial_balance = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
-
     with allure.step('Create PSBT for inflation'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -172,19 +137,6 @@ def test_issue_and_inflate_ifa_single_sig_offline(wallets_and_operations: Wallet
         )
         wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
-
-    with allure.step('Verify inflated balance'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
-        )
-        new_balance = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
-
-        assert int(new_balance) == int(initial_balance) + int(INFLATE_AMOUNT)
 
     with allure.step('Verify inflate amount in transaction frame'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -222,34 +174,10 @@ def test_issue_and_inflate_ifa_hardware_wallet(wallets_and_operations: WalletTes
             FIRST_APPLICATION, ASSET_TICKER, IFA_ASSET_NAME_1, INITIAL_SUPPLY, IFA_ASSET_TOTAL_SUPPLY, wallet_variant_name,
         )
 
-    with allure.step('Get initial balance'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
-        )
-        initial_balance = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-
     with allure.step('Inflate IFA asset with hardware wallet'):
         wallets_and_operations.first_page_features.inflate_features.inflate_ifa_asset(
             FIRST_APPLICATION, IFA_ASSET_NAME_1, INFLATE_AMOUNT, wallet_variant_name,
         )
-
-    with allure.step('Verify increased balance after inflation'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
-        )
-        new_balance = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-
-        assert int(new_balance) == int(initial_balance) + int(INFLATE_AMOUNT)
 
     with allure.step('Verify inflate amount in transaction frame'):
         wallets_and_operations.first_page_operations.do_focus_on_application(

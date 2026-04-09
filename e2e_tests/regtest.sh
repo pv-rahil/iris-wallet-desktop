@@ -24,9 +24,9 @@ _start_services() {
     _stop_services
 
     mkdir -p "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2}
-    mkdir -p "$SCRIPT_DIR"/bridge
+    mkdir -p "$SCRIPT_DIR"/hub
     # Ensure config.toml exists as a file before docker-compose mounts it
-    touch "$SCRIPT_DIR"/bridge/config.toml
+    touch "$SCRIPT_DIR"/hub/config.toml
     # see compose.yaml for the exposed ports
     EXPOSED_PORTS=(3000 50001)
     for port in "${EXPOSED_PORTS[@]}"; do
@@ -47,7 +47,7 @@ _start_services() {
 
 _stop_services() {
     $COMPOSE down --remove-orphans
-    rm -rf "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2} "$SCRIPT_DIR"/bridge{/rgb_multisig_bridge_db,/files,/logs}
+    rm -rf "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2} "$SCRIPT_DIR"/hub{/rgb_multisig_bridge_db,/files,/logs}
 }
 
 _mine() {

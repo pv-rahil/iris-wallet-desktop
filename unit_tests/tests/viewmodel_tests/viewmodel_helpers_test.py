@@ -411,7 +411,7 @@ def test_handle_viewmodel_error_shows_generic_error_for_non_common_exception(
     mock_toast_error.assert_called_once()
 
 
-@patch('src.viewmodels.viewmodel_helpers.RgbRepository.sync_with_bridge')
+@patch('src.viewmodels.viewmodel_helpers.RgbRepository.sync_with_hub')
 @patch('src.viewmodels.viewmodel_helpers.ToastManager.success')
 def test_on_success_multisig_post_base_emits_success_signal(
     mock_toast_success, mock_sync, mock_viewmodel,
@@ -424,7 +424,7 @@ def test_on_success_multisig_post_base_emits_success_signal(
     mock_toast_success.assert_called_once()
 
 
-@patch('src.viewmodels.viewmodel_helpers.RgbRepository.sync_with_bridge')
+@patch('src.viewmodels.viewmodel_helpers.RgbRepository.sync_with_hub')
 @patch('src.viewmodels.viewmodel_helpers.ToastManager.success')
 def test_on_success_multisig_post_base_calls_run_in_thread(
     mock_toast_success, mock_sync, mock_viewmodel,

@@ -195,7 +195,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
             return
         self.is_loading.emit(True)
         self.run_in_thread(
-            RgbRepository.sync_with_bridge,
+            RgbRepository.sync_with_hub,
             {
                 'args': [],
                 'callback': self.on_multisig_sync_done,
@@ -458,7 +458,7 @@ class HeaderFrameViewModel(QObject, ThreadManager):
 
         When watch-only initiates a send/inflate operation, the PSBT is saved immediately
         but RGB context (fascia_path, entropy, min_confirmations) comes later from
-        sync_with_bridge. This method updates those PSBTs with the RGB context.
+        sync_with_hub. This method updates those PSBTs with the RGB context.
         """
         wallet_service = WalletDataService.get_session()
         if wallet_service is None:

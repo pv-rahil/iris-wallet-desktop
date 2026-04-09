@@ -26,7 +26,7 @@ pydenticon = "^0.3.0"
 # Development dependencies
 base58 = "^2.1.1"
 bip32 = "^4.0"
-rgb-lib = "0.3.0b4"
+rgb-lib = "0.3.0b5"
 hid = "^1.0.9"
 ledger-bitcoin = "^0.4.0"
 [tool.poetry.dev-dependencies]
