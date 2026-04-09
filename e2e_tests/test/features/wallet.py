@@ -462,8 +462,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if wallet_variant_name is not None:
             wallet_variant_name = map_to_load_variant(wallet_variant_name)
-
-        self.drive_selection_flow(application, wallet_variant_name)
+            self.drive_selection_flow(application, wallet_variant_name)
 
         # Step 3: Click restore button
         if self.do_is_displayed(self.welcome_page_objects.restore_button()):
@@ -776,7 +775,7 @@ class Wallet(MainPageObjects, BaseOperations):
             self.selection_page_objects.click_continue_button()
 
         # Step 4: Entry type (Create/Load)
-        if step4!= 0 and self.do_is_displayed(self.selection_page_objects.option_1_button()):
+        if step4 != 0 and self.do_is_displayed(self.selection_page_objects.option_1_button()):
             self.selection_page_objects.select_option(step4)
             self.selection_page_objects.click_continue_button()
 
@@ -972,7 +971,7 @@ class Wallet(MainPageObjects, BaseOperations):
     def collect_keyring_values_from_app(self, app_name: str = FIRST_APPLICATION, is_load_wallet: bool = False) -> tuple[str | None, str | None, str | None, str | None]:
         """Focus the first application and read xpubs + fingerprint from About page copy buttons."""
         self.do_focus_on_application(app_name)
-        
+
         # Get the first app frame from the TestEnvironment to ensure correct app context
         # This is the same approach used in setup_second_wallet for the second app
         env = self.get_current_environment()
@@ -982,11 +981,10 @@ class Wallet(MainPageObjects, BaseOperations):
         if env and hasattr(env, 'second_application'):
             first_app = env.second_application
 
-
         # Fallback to finding frame directly if not available from env
         if not first_app:
             first_app = root.child(roleName='frame', name=app_name)
-            
+
         if not first_app:
             return None, None, None, None
 

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import os
 import re
-import time
 import subprocess
+import time
 
 import pyotp
 from dotenv import load_dotenv
@@ -111,12 +111,12 @@ class BackupPageObjects(BaseOperations):
         if self.do_is_displayed(self.backup_window()):
             self.do_click(self.backup_window())
             subprocess.run(
-                        [
-                            'wmctrl', '-r', ':ACTIVE:', '-b',
-                            'add,maximized_vert,maximized_horz',
-                        ],
-                        check=False, capture_output=True, timeout=2,
-                    )
+                [
+                    'wmctrl', '-r', ':ACTIVE:', '-b',
+                    'add,maximized_vert,maximized_horz',
+                ],
+                check=False, capture_output=True, timeout=2,
+            )
             return True
         return False
 
@@ -198,14 +198,19 @@ class BackupPageObjects(BaseOperations):
         """
         totp = pyotp.TOTP(GOOGLE_AUTHENTICATOR)
 
+        # Get fresh OTP with enough time remaining for typing
+        # 30 seconds buffer ensures enough time for slow typing
         while True:
-            otp_code = totp.now()
             time_remaining = totp.interval - (time.time() % totp.interval)
 
-            if time_remaining < 25:
-                time.sleep(time_remaining)  # Wait for new OTP generation
+            if time_remaining < 30:
+                # Not enough time - wait for new OTP cycle
+                # Wait for new OTP + small buffer
+                time.sleep(time_remaining + 0.5)
             else:
-                break  # Proceed with the valid OTP
+                # Enough time - get fresh OTP and return
+                otp_code = totp.now()
+                break
 
         # Format the OTP as "XXX XXX"
         formatted_otp = f"{otp_code[:3]} {otp_code[3:]}"

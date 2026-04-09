@@ -50,6 +50,7 @@ def test_issue_and_inflate_ifa_single_sig_online(wallets_and_operations: WalletT
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME_1,
         )

@@ -269,10 +269,12 @@ def verify_transfer_status_and_received_amount(
         if asset_type == 'ifa':
             second_page_objects.sidebar_page_objects.click_inflatable_button()
             second_page_objects.inflatable_page_objects.click_refresh_button()
+            second_page_objects.inflatable_page_objects.click_refresh_button()
             second_page_objects.inflatable_page_objects.click_ifa_frame(
                 asset_name,
             )
         elif asset_type == 'nia':
+            second_page_objects.fungible_page_objects.click_refresh_button()
             second_page_objects.fungible_page_objects.click_refresh_button()
             second_page_objects.fungible_page_objects.click_nia_frame(
                 asset_name,
@@ -280,13 +282,14 @@ def verify_transfer_status_and_received_amount(
         elif asset_type == 'cfa':
             second_page_objects.sidebar_page_objects.click_collectibles_button()
             second_page_objects.collectible_page_objects.click_refresh_button()
+            second_page_objects.collectible_page_objects.click_refresh_button()
             second_page_objects.collectible_page_objects.click_cfa_frame(
                 asset_name,
             )
 
         received_amount = second_page_objects.asset_detail_page_objects.get_total_balance()
         second_page_objects.asset_detail_page_objects.click_close_button()
-        
+
         mine(1)
 
     with allure.step('Verify assertions'):
@@ -384,16 +387,19 @@ def verify_transfer_status_on_app3(
         if asset_type == 'ifa':
             third_page_objects.sidebar_page_objects.click_inflatable_button()
             third_page_objects.inflatable_page_objects.click_refresh_button()
+            third_page_objects.inflatable_page_objects.click_refresh_button()
             third_page_objects.inflatable_page_objects.click_ifa_frame(
                 asset_name,
             )
         elif asset_type == 'nia':
+            third_page_objects.fungible_page_objects.click_refresh_button()
             third_page_objects.fungible_page_objects.click_refresh_button()
             third_page_objects.fungible_page_objects.click_nia_frame(
                 asset_name,
             )
         elif asset_type == 'cfa':
             third_page_objects.sidebar_page_objects.click_collectibles_button()
+            third_page_objects.collectible_page_objects.click_refresh_button()
             third_page_objects.collectible_page_objects.click_refresh_button()
             third_page_objects.collectible_page_objects.click_cfa_frame(
                 asset_name,
