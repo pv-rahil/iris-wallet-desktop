@@ -384,18 +384,20 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if import_all:
             # For watch-only wallets: import all other cosigners
-            all_cosigners = coordinator.get_all_other_cosigner_strings(application)
-            
+            all_cosigners = coordinator.get_all_other_cosigner_strings(
+                application)
+
             # Step 2 (Review frame): Enter first cosigner string (from App 1 - offline signer)
             if all_cosigners and len(all_cosigners) >= 1:
                 _, first_cosigner_string = all_cosigners[0]
                 if first_cosigner_string:
                     # Enter in the review frame input field
-                    self.multisig_setup_page_objects.enter_review_cosigner_string(first_cosigner_string)
+                    self.multisig_setup_page_objects.enter_review_cosigner_string(
+                        first_cosigner_string)
                     # Click next to proceed to cosigner frame
                     if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
                         self.multisig_setup_page_objects.click_continue_button()
-            
+
             # Step 3 (Cosigner frame): Enter remaining cosigner strings (from App 3, etc.)
             if len(all_cosigners) >= 2:
                 for index, (_, cosigner_string) in enumerate(all_cosigners[1:], start=2):
@@ -1011,26 +1013,25 @@ class Wallet(MainPageObjects, BaseOperations):
         """Focus the first application and read xpubs + fingerprint from About page copy buttons."""
         self.do_focus_on_application(app_name)
 
-        # Get the first app frame from the TestEnvironment to ensure correct app context
-        # This is the same approach used in setup_second_wallet for the second app
+        # Get the app frame from the TestEnvironment to ensure correct app context
         env = self.get_current_environment()
-        first_app = None
-        if env and hasattr(env, 'first_application'):
-            first_app = env.first_application
-        if env and hasattr(env, 'second_application'):
-            first_app = env.second_application
+        target_app = None
+        if env and hasattr(env, 'first_application') and app_name == FIRST_APPLICATION:
+            target_app = env.first_application
+        elif env and hasattr(env, 'second_application') and app_name == SECOND_APPLICATION:
+            target_app = env.second_application
 
         # Fallback to finding frame directly if not available from env
-        if not first_app:
-            first_app = root.child(roleName='frame', name=app_name)
+        if not target_app:
+            target_app = root.child(roleName='frame', name=app_name)
 
-        if not first_app:
+        if not target_app:
             return None, None, None, None
 
-        sidebar_page = SidebarPageObjects(first_app)
-        about_page = AboutPageObjects(first_app)
-        setting_page = SettingsPageObjects(first_app)
-        keyring_dialog_page = KeyringDialogBoxPageObjects(first_app)
+        sidebar_page = SidebarPageObjects(target_app)
+        about_page = AboutPageObjects(target_app)
+        setting_page = SettingsPageObjects(target_app)
+        keyring_dialog_page = KeyringDialogBoxPageObjects(target_app)
 
         xpub_vanilla = None
         xpub_colored = None
@@ -1204,7 +1205,7 @@ class Wallet(MainPageObjects, BaseOperations):
             # NIA or send BTC: 4 right + both
             self.hw_emulator_page_objects.click_right_arrow_key(4)
             self.hw_emulator_page_objects.press_left_and_right()
-        
+
         time.sleep(2)
 
     def sign_multisig_on_hardware_wallet(self, application):

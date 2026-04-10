@@ -140,7 +140,6 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 5
       matrix:
         test_file:
           - test_keyring_dialog

@@ -143,6 +143,14 @@ runs:
           echo "iris-wallet-vault_test_app_3-0.2.0-x86_64.AppImage downloaded"
         fi
 
+        # Download iris-wallet-vault_test_app_4 AppImage (|| true prevents grep failure)
+        APP4_URL=$(echo "$RELEASES_JSON" | grep -m1 "browser_download_url.*iris-wallet-vault_test_app_4.*\.AppImage" | cut -d '"' -f 4 || true)
+        if [ -n "$APP4_URL" ]; then
+          curl -L -H "Authorization: token $GITHUB_TOKEN" -o e2e_tests/applications/iris-wallet-vault_test_app_4-0.2.0-x86_64.AppImage "$APP4_URL"
+          chmod +x e2e_tests/applications/iris-wallet-vault_test_app_4-0.2.0-x86_64.AppImage
+          echo "iris-wallet-vault_test_app_4-0.2.0-x86_64.AppImage downloaded"
+        fi
+
         # List downloaded AppImages
         echo "Downloaded AppImages:"
         ls -la e2e_tests/applications/ 2>/dev/null || echo "No AppImages found in releases"
