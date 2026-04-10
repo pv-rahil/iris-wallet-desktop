@@ -24,3 +24,6 @@ class WalletTestSetup:
     third_page_features: MainFeatures
     third_page_objects: MainPageObjects
     third_page_operations: BaseOperations
+    fourth_page_features: MainFeatures
+    fourth_page_objects: MainPageObjects
+    fourth_page_operations: BaseOperations

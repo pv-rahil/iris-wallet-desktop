@@ -8,7 +8,10 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -17,6 +20,7 @@ from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wall
 from e2e_tests.test.utilities.test_helpers import multisig_issue_asset_flow
 from e2e_tests.test.utilities.test_helpers import refresh_second_wallet_and_verify_asset
 from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_three_app_wallets
 
 ASSET_TICKER = 'TTK'
 NIA_ASSET_NAME = 'Tether'
@@ -188,6 +192,7 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue NIA asset for multisig wallet')
 @allure.story('Issue NIA asset with multisig wallet requiring two applications')
@@ -210,6 +215,7 @@ def test_issue_nia_multisig_without_sufficient_sats_for_multisig_wallet(wallets_
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue NIA asset for multisig wallet')
 @allure.story('Issue NIA asset with sufficient sats for multisig wallet')
@@ -231,3 +237,92 @@ def test_issue_nia_multisig_with_sufficient_sats_for_multisig_wallet(wallets_and
     refresh_second_wallet_and_verify_asset(
         wallets_and_operations, NIA_ASSET_NAME, asset_type='nia',
     )
+
+
+# ==============================================================================
+# Offline Multisig Tests (3 apps - issue flow without send)
+# ==============================================================================
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Issue NIA asset for offline multisig')
+@allure.story('Issue NIA asset without sufficient sats for offline multisig wallet')
+def test_issue_nia_without_sufficient_sats_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test NIA asset issuance without sufficient sats for offline multisig wallet (3 apps).
+    """
+    setup_offline_multisig_three_app_wallets(wallets_and_operations, wallet_variant_name)
+
+    with allure.step('Issue NIA asset without sufficient sats'):
+        description = wallets_and_operations.second_page_features.issue_nia_features.issue_nia_asset_without_sat(
+            SECOND_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT,
+        )
+
+    assert description == ISSUE_NIA_TOASTER_MESSAGE
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Issue NIA asset for offline multisig')
+@allure.story('Issue NIA asset with sufficient sats for offline multisig wallet')
+def test_issue_nia_with_sufficient_sats_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test NIA asset issuance with sufficient sats for offline multisig wallet (3 apps).
+    """
+    setup_offline_multisig_three_app_wallets(wallets_and_operations, wallet_variant_name)
+
+    # Fund the second wallet (online coordinator)
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+
+    # Refresh third wallet
+    with allure.step('Refresh third multisig wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+
+    # Issue NIA asset from second wallet
+    with allure.step('Issue NIA asset from second wallet (online coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
+            SECOND_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT, wallet_variant_name,
+        )
+
+    # Refresh third wallet and sign
+    with allure.step('Refresh third wallet and sign PSBT'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    # Sign from first wallet (offline signer) - required for 2-of-2 multisig
+    # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
+    with allure.step('Sign PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    # Refresh second wallet and verify
+    with allure.step('Refresh second wallet and verify asset'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        asset_name = wallets_and_operations.second_page_objects.fungible_page_objects.get_nia_asset_name(
+            NIA_ASSET_NAME,
+        )
+        assert asset_name == NIA_ASSET_NAME

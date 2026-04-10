@@ -8,12 +8,16 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.multisig_coordinator import get_multisig_coordinator
 from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_three_app_wallets
 from src.utils.error_message import ERROR_INSUFFICIENT_FUNDS
 
 ASSET_TICKER = 'IFK'
@@ -163,6 +167,7 @@ def test_issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue IFA asset for multisig wallet')
 @allure.story('Issue IFA asset with multisig wallet requiring two applications')
@@ -185,6 +190,7 @@ def test_issue_ifa_multisig_without_sufficient_sats_for_multisig_wallet(wallets_
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [True], indirect=True)
 @allure.feature('Issue IFA asset for multisig wallet')
 @allure.story('Issue IFA asset with sufficient sats for multisig wallet')
@@ -242,6 +248,105 @@ def test_issue_ifa_multisig_with_sufficient_sats_for_multisig_wallet(wallets_and
             FIRST_APPLICATION,
         )
         asset_name = wallets_and_operations.first_page_objects.inflatable_page_objects.get_ifa_asset_name(
+            IFA_ASSET_NAME,
+        )
+        assert asset_name == IFA_ASSET_NAME
+
+
+# ==============================================================================
+# Offline Multisig Tests (3 apps - issue flow without send)
+# ==============================================================================
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Issue IFA asset for offline multisig')
+@allure.story('Issue IFA asset without sufficient sats for offline multisig wallet')
+def test_issue_ifa_without_sufficient_sats_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test IFA asset issuance without sufficient sats for offline multisig wallet (3 apps).
+    """
+    setup_offline_multisig_three_app_wallets(wallets_and_operations, wallet_variant_name)
+
+    with allure.step('Issue IFA asset without sufficient sats'):
+        description = wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_asset_without_sat(
+            SECOND_APPLICATION, ASSET_TICKER, IFA_ASSET_NAME, ASSET_AMOUNT, IFA_ASSET_TOTAL_SUPPLY,
+        )
+
+    assert description == ERROR_INSUFFICIENT_FUNDS
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Issue IFA asset for offline multisig')
+@allure.story('Issue IFA asset with sufficient sats for offline multisig wallet')
+def test_issue_ifa_with_sufficient_sats_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test IFA asset issuance with sufficient sats for offline multisig wallet (3 apps).
+    """
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    setup_offline_multisig_three_app_wallets(wallets_and_operations, wallet_variant_name)
+
+    # Fund the second wallet (online coordinator)
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+
+    # Refresh third wallet
+    with allure.step('Refresh third multisig wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+
+    # Issue IFA asset from second wallet
+    with allure.step('Issue IFA asset from second wallet (online coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
+            SECOND_APPLICATION, ASSET_TICKER, wallet_variant_name, utxo_required=True,
+        )
+
+    # Refresh third wallet and sign
+    with allure.step('Refresh third wallet and sign PSBT'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE, is_issue_ifa=True,
+        )
+
+    # Sign from first wallet if hardware
+    if is_hardware:
+        with allure.step('Sign PSBT from first wallet (offline hardware signer)'):
+            wallets_and_operations.first_page_operations.do_focus_on_application(
+                FIRST_APPLICATION,
+            )
+            wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+            wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+                FIRST_APPLICATION, wallet_variant_name, is_issue_ifa=True,
+            )
+
+    # Refresh second wallet and issue from draft
+    with allure.step('Refresh second wallet and issue IFA from draft'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
+            f'{IFA_ASSET_NAME} (Draft)',
+        )
+        wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
+        wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
+
+    # Verify asset
+    with allure.step('Verify asset name'):
+        asset_name = wallets_and_operations.second_page_objects.inflatable_page_objects.get_ifa_asset_name(
             IFA_ASSET_NAME,
         )
         assert asset_name == IFA_ASSET_NAME

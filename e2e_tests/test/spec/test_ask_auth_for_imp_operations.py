@@ -485,6 +485,7 @@ def test_ask_auth_for_imp_question_send_ifa_off(wallets_and_operations: WalletTe
 
 # ============== MULTISIG ASK AUTH FOR IMPORTANT OPERATIONS TESTS ==============
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Ask authorization for important operations for multisig')
 @allure.story('Toggling on ask authorization for import operations for multisig')
@@ -566,6 +567,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on_for_multisig(wallets_and_oper
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Issuing and sending the RGB assets for multisig')
 def test_ask_auth_for_imp_question_issue_nia_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -577,7 +579,7 @@ def test_ask_auth_for_imp_question_issue_nia_on_for_multisig(wallets_and_operati
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_1, ASSET_AMOUNT, is_native_auth_enabled=True,
+            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_1, ASSET_AMOUNT, wallet_variant_name, is_native_auth_enabled=True,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -600,6 +602,7 @@ def test_ask_auth_for_imp_question_issue_nia_on_for_multisig(wallets_and_operati
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending NIA asset for multisig')
 def test_ask_auth_for_imp_question_send_nia_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -674,6 +677,7 @@ def test_ask_auth_for_imp_question_send_nia_on_for_multisig(wallets_and_operatio
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Issuing CFA asset for multisig')
 def test_ask_auth_for_imp_question_issue_cfa_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -686,7 +690,7 @@ def test_ask_auth_for_imp_question_issue_cfa_on_for_multisig(wallets_and_operati
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME_1, ASSET_DESCRIPTION, ASSET_AMOUNT, is_native_auth_enabled=True,
+            FIRST_APPLICATION, ASSET_NAME_1, ASSET_DESCRIPTION, ASSET_AMOUNT, wallet_variant_name, is_native_auth_enabled=True,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -701,7 +705,7 @@ def test_ask_auth_for_imp_question_issue_cfa_on_for_multisig(wallets_and_operati
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME_1, is_native_auth_enabled=True,
+            FIRST_APPLICATION, ASSET_NAME_1, wallet_variant_name, is_native_auth_enabled=True,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -710,6 +714,7 @@ def test_ask_auth_for_imp_question_issue_cfa_on_for_multisig(wallets_and_operati
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending CFA asset for multisig')
 def test_ask_auth_for_imp_question_send_cfa_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -797,6 +802,7 @@ def test_ask_auth_for_imp_question_send_cfa_on_for_multisig(wallets_and_operatio
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Issuing IFA asset for multisig')
 def test_ask_auth_for_imp_question_issue_ifa_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -833,6 +839,7 @@ def test_ask_auth_for_imp_question_issue_ifa_on_for_multisig(wallets_and_operati
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending IFA asset for multisig')
 def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -918,6 +925,7 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(wallets_and_operatio
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Ask authorization for important operations for multisig')
 @allure.story('Toggling off ask authorization for import operations for multisig')
@@ -975,6 +983,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_off_for_multisig(wallets_and_ope
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Issuing NIA asset for multisig')
 def test_ask_auth_for_imp_question_issue_nia_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -987,7 +996,7 @@ def test_ask_auth_for_imp_question_issue_nia_off_for_multisig(wallets_and_operat
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_2, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_2, ASSET_AMOUNT, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -1001,7 +1010,7 @@ def test_ask_auth_for_imp_question_issue_nia_off_for_multisig(wallets_and_operat
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER,
+            FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -1010,6 +1019,7 @@ def test_ask_auth_for_imp_question_issue_nia_off_for_multisig(wallets_and_operat
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending NIA asset for multisig')
 def test_ask_auth_for_imp_question_send_nia_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -1095,6 +1105,7 @@ def test_ask_auth_for_imp_question_send_nia_off_for_multisig(wallets_and_operati
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Issuing CFA asset for multisig')
 def test_ask_auth_for_imp_question_issue_cfa_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -1107,7 +1118,7 @@ def test_ask_auth_for_imp_question_issue_cfa_off_for_multisig(wallets_and_operat
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME_2, ASSET_DESCRIPTION, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_NAME_2, ASSET_DESCRIPTION, ASSET_AMOUNT, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -1122,7 +1133,7 @@ def test_ask_auth_for_imp_question_issue_cfa_off_for_multisig(wallets_and_operat
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME_2,
+            FIRST_APPLICATION, ASSET_NAME_2, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -1131,6 +1142,7 @@ def test_ask_auth_for_imp_question_issue_cfa_off_for_multisig(wallets_and_operat
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending CFA asset for multisig')
 def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -1218,6 +1230,7 @@ def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(wallets_and_operati
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Issuing IFA asset for multisig')
 def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
@@ -1230,7 +1243,7 @@ def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operat
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, IFA_ASSET_TICKER, IFA_ASSET_NAME_2, IFA_ASSET_TOTAL_SUPPLY, ASSET_AMOUNT,
+            FIRST_APPLICATION, IFA_ASSET_TICKER, IFA_ASSET_NAME_2, IFA_ASSET_TOTAL_SUPPLY, ASSET_AMOUNT, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -1254,6 +1267,7 @@ def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operat
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending IFA asset for multisig')
 def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):

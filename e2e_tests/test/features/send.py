@@ -13,7 +13,7 @@ from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_dialog
+from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
@@ -189,45 +189,73 @@ class SendOperation(MainPageObjects, BaseOperations):
         :param is_native_auth_enabled: Whether native auth is enabled.
         """
         is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-        self.do_focus_on_application(application)
+        hardware_wallet_emulator = None
+        try:
+            if is_hardware and utxo_required:
+                hardware_wallet_emulator = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
+            self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
-            self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
-        self.do_focus_on_application(application)
+            if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
+                self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+            self.do_focus_on_application(application)
 
-        if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
-            self.send_asset_page_objects.enter_asset_amount(amount)
+            if amount and hasattr(self.send_asset_page_objects, 'asset_amount_input') and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
+                self.send_asset_page_objects.enter_asset_amount(amount)
 
-        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
-            self.send_asset_page_objects.click_send_button()
+            if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+                self.send_asset_page_objects.click_send_button()
 
-        if is_native_auth_enabled:
-            self.enter_native_password()
+            if is_native_auth_enabled:
+                self.enter_native_password()
 
-        if utxo_required:
-            handle_utxo_confirmation_dialog(self, self, utxo_required=True)
-
-            if is_hardware:
-                self.wallet_features.sign_multisig_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+            if utxo_required:
+                handle_utxo_confirmation_with_hardware_wallet(
+                    self, self, self.wallet_features, LEDGER_EMULATOR_APP_NAME,
+                    utxo_required=True, is_hardware=is_hardware,
                 )
 
-        if wallet_variant_name in REQUIRE_USB_VARIANTS:
-            self.wallet_features.usb_sync()
+            if wallet_variant_name in REQUIRE_USB_VARIANTS:
+                self.wallet_features.usb_sync()
+        except Exception as e:
+            raise e
+        finally:
+            if hardware_wallet_emulator:
+                hardware_wallet_emulator.terminate()
 
-    def send_asset_for_multisig(self, application, _wallet_variant_name, is_native_auth_enabled: bool = False):
+    def send_asset_for_multisig(self, application, wallet_variant_name, is_native_auth_enabled: bool = False):
         """
         Send asset for multisig wallet
 
         :param is_native_auth_enabled: Whether native auth is enabled.
         """
         self.do_focus_on_application(application)
+        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+        hw_emu = None
+        try:
+            if is_hardware:
+                hw_emu = handle_hardware_wallet(
+                        app_name=RGB_LEDGER_APP_NAME,
+                    )
 
-        if self.do_is_displayed(self.asset_detail_page_objects.resume_draft_frame()):
-            self.asset_detail_page_objects.click_resume_draft_frame()
+            if self.do_is_displayed(self.asset_detail_page_objects.resume_draft_frame()):
+                self.asset_detail_page_objects.click_resume_draft_frame()
 
-        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
-            self.send_asset_page_objects.click_send_button()
+            if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+                self.send_asset_page_objects.click_send_button()
 
-        if is_native_auth_enabled:
-            self.enter_native_password()
+            if is_native_auth_enabled:
+                self.enter_native_password()
+                
+            if hw_emu:
+                handle_utxo_confirmation_with_hardware_wallet(
+                    self, self, self.wallet_features, LEDGER_EMULATOR_APP_NAME,
+                    utxo_required=False, is_hardware=is_hardware,
+                )
+            
+        except Exception as e:
+            raise e
+        finally:
+            if hw_emu:
+                hw_emu.terminate()

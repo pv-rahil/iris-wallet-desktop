@@ -16,7 +16,7 @@ from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 
 BRIDGE_CONFIG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    'bridge',
+    'hub',
     'config.toml',
 )
 

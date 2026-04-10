@@ -140,6 +140,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 5
       matrix:
         test_file:
           - test_keyring_dialog
@@ -162,13 +163,17 @@ jobs:
           - test_refresh_transfer
           - test_inflate_asset
         wallet_variant:
+          # All single-sig variants
+          - online_watch_only
           - online_create_on_device
+          - online_create_hardware
           - online_load_on_device
-          # - online_watch_only
-          # - online_create_hardware
-          # - online_load_hardware
+          - online_load_hardware
           - offline_create_on_device
+          # - offline_create_hardware
           - offline_load_on_device
+          # - offline_load_hardware
+
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard

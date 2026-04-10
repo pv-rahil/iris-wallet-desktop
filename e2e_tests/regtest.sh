@@ -47,7 +47,7 @@ _start_services() {
 
 _stop_services() {
     $COMPOSE down --remove-orphans
-    rm -rf "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2} "$SCRIPT_DIR"/hub{/rgb_multisig_bridge_db,/files,/logs}
+    rm -rf "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2} "$SCRIPT_DIR"/hub{/rgb_multisig_hub_db,/files,/logs}
 }
 
 _mine() {

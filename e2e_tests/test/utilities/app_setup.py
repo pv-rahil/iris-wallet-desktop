@@ -20,10 +20,14 @@ from dogtail.tree import root
 from accessible_constant import APP1_NAME
 from accessible_constant import APP2_NAME
 from accessible_constant import APP3_NAME
+from accessible_constant import APP4_NAME
 from accessible_constant import FAKEUSB_MOUNT_PATH
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FIRST_APPLICATION_PATH
 from accessible_constant import FIRST_SERVICE
+from accessible_constant import FOURTH_APPLICATION
+from accessible_constant import FOURTH_APPLICATION_PATH
+from accessible_constant import FOURTH_SERVICE
 from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
@@ -62,7 +66,7 @@ class TestEnvironment:
         if isinstance(multi_instance, bool):
             self.num_instances = 2 if multi_instance else 1
         elif isinstance(multi_instance, int):
-            self.num_instances = max(1, min(3, multi_instance))
+            self.num_instances = max(1, min(4, multi_instance))
         else:
             self.num_instances = 2
         # Track originally requested count before we possibly bump due to variant
@@ -73,22 +77,27 @@ class TestEnvironment:
         self.first_process: subprocess.Popen | None = None
         self.second_process: subprocess.Popen | None = None
         self.third_process: subprocess.Popen | None = None
+        self.fourth_process: subprocess.Popen | None = None
 
         self.first_application = None
         self.second_application = None
         self.third_application = None
+        self.fourth_application = None
 
         self.first_page_features: MainFeatures | None = None
         self.second_page_features: MainFeatures | None = None
         self.third_page_features: MainFeatures | None = None
+        self.fourth_page_features: MainFeatures | None = None
 
         self.first_page_objects: MainPageObjects | None = None
         self.second_page_objects: MainPageObjects | None = None
         self.third_page_objects: MainPageObjects | None = None
+        self.fourth_page_objects: MainPageObjects | None = None
 
         self.first_page_operations: BaseOperations | None = None
         self.second_page_operations: BaseOperations | None = None
         self.third_page_operations: BaseOperations | None = None
+        self.fourth_page_operations: BaseOperations | None = None
 
         # Determine whether to enable Fake USB environment based on variant
         self.wallet_variant_name = (wallet_variant_name or '').lower()
@@ -105,6 +114,10 @@ class TestEnvironment:
             self.remove_keyring_entries(
                 service=THIRD_SERVICE, app_name=APP3_NAME,
             )
+        if self.num_instances >= 4:
+            self.remove_keyring_entries(
+                service=FOURTH_SERVICE, app_name=APP4_NAME,
+            )
 
         # Warm up AT-SPI before launching applications
         # This ensures the accessibility tree is initialized and cached
@@ -119,12 +132,15 @@ class TestEnvironment:
         app1_data = actual_path.replace(APP_NAME, FIRST_APPLICATION_PATH)
         app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
         app3_data = actual_path.replace(APP_NAME, THIRD_APPLICATION_PATH)
+        app4_data = actual_path.replace(APP_NAME, FOURTH_APPLICATION_PATH)
 
         delete_app_data(app1_data)
         if self.num_instances >= 2:
             delete_app_data(app2_data)
         if self.num_instances >= 3:
             delete_app_data(app3_data)
+        if self.num_instances >= 4:
+            delete_app_data(app4_data)
 
         shutil.rmtree(FAKEUSB_MOUNT_PATH, ignore_errors=True)
 
@@ -225,6 +241,36 @@ class TestEnvironment:
             self.third_page_objects = MainPageObjects(self.third_application)
             self.third_page_operations = BaseOperations(
                 self.third_application,
+            )
+
+        if self.num_instances >= 4:
+            self.fourth_process = subprocess.Popen(
+                [f'e2e_tests/applications/iris-wallet-vault_{
+                    APP4_NAME
+                }-{__version__}-x86_64.AppImage'],
+                env=env,
+            )
+            self.wait_for_application(FOURTH_APPLICATION)
+
+            subprocess.run(
+                [
+                    'wmctrl', '-r', FOURTH_APPLICATION, '-b',
+                    'add,maximized_vert,maximized_horz',
+                ],
+                check=True,
+            )
+            print(f"[SETUP] Initializing {FOURTH_APPLICATION}")
+            # Use frame node for better element scoping when multiple apps are running
+            self.fourth_application = self._find_application_frame(
+                FOURTH_APPLICATION,
+            )
+            print(f"[SETUP] Successfully identified frame for {
+                  FOURTH_APPLICATION
+                  }: {self.fourth_application}")
+            self.fourth_page_features = MainFeatures(self.fourth_application)
+            self.fourth_page_objects = MainPageObjects(self.fourth_application)
+            self.fourth_page_operations = BaseOperations(
+                self.fourth_application,
             )
 
     def _find_application_node(self, app_name):
@@ -428,6 +474,8 @@ class TestEnvironment:
             self.terminate_process(self.second_process)
         if self.num_instances >= 3:
             self.terminate_process(self.third_process)
+        if self.num_instances >= 4:
+            self.terminate_process(self.fourth_process)
 
         if self.fake_usb:
             self.fake_usb.cleanup()
@@ -653,6 +701,13 @@ def wallets_and_operations(test_environment: TestEnvironment):
             """
             return self._env.third_page_features if self._env.num_instances >= 3 else None
 
+        @property
+        def fourth_page_features(self):
+            """
+            Returns the fourth page features.
+            """
+            return self._env.fourth_page_features if self._env.num_instances >= 4 else None
+
         # Objects
         @property
         def first_page_objects(self):
@@ -675,6 +730,13 @@ def wallets_and_operations(test_environment: TestEnvironment):
             """
             return self._env.third_page_objects if self._env.num_instances >= 3 else None
 
+        @property
+        def fourth_page_objects(self):
+            """
+            Returns the fourth page objects.
+            """
+            return self._env.fourth_page_objects if self._env.num_instances >= 4 else None
+
         # Operations
         @property
         def first_page_operations(self):
@@ -696,6 +758,13 @@ def wallets_and_operations(test_environment: TestEnvironment):
             Returns the third page operations.
             """
             return self._env.third_page_operations if self._env.num_instances >= 3 else None
+
+        @property
+        def fourth_page_operations(self):
+            """
+            Returns the fourth page operations.
+            """
+            return self._env.fourth_page_operations if self._env.num_instances >= 4 else None
 
     return _HandlesProxy(test_environment)
 

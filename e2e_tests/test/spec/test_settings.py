@@ -257,6 +257,7 @@ def test_set_valid_electrum_url(wallets_and_operations: WalletTestSetup):
 
 # ============== MULTISIG SETTINGS TESTS ==============
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Set default fee rate for multisig')
 @allure.story('Sets default fee rate for sending assets for multisig')
@@ -295,6 +296,7 @@ def test_set_default_fee_rate_for_multisig(wallets_and_operations: WalletTestSet
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Set default minimum confirmation for multisig')
 @allure.story('Sets default minimum confirmation for sending assets for multisig')
@@ -318,6 +320,7 @@ def test_set_default_min_confirmation_for_multisig(wallets_and_operations: Walle
     assert toast_description == INFO_SET_MIN_CONFIRMATION_SUCCESSFULLY
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Set indexer URL for multisig')
 @allure.story('Setting an invalid indexer url for the wallet for multisig')
@@ -345,6 +348,7 @@ def test_set_invalid_electrum_url_for_multisig(wallets_and_operations: WalletTes
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Set RGB proxy URL for multisig')
 @allure.story('Setting a RGB proxy url for the wallet for multisig')
@@ -380,6 +384,7 @@ def test_set_rgb_proxy_url_for_multisig(wallets_and_operations: WalletTestSetup)
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Set RGB proxy URL for multisig')
 @allure.story('Setting an invalid RGB proxy url for the wallet for multisig')
@@ -407,6 +412,7 @@ def test_set_invalid_rgb_proxy_url_for_multisig(wallets_and_operations: WalletTe
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
 
+@pytest.mark.skip_for_single_sig
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Set indexer URL for multisig')
 @allure.story('Setting an indexer url for the wallet for multisig')

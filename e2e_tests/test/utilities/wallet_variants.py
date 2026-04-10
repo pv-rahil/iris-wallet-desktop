@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from typing import Tuple
 
 from accessible_constant import NAME_TO_STEPS
@@ -86,15 +87,20 @@ def map_load_to_create(variant_name: str) -> str:
     return mapped
 
 
-def handle_hardware_wallet(app_name: str, reset: bool = False) -> subprocess.Popen:
-    """Launch the Speculos emulator for a given hardware wallet app."""
+def handle_hardware_wallet(app_name: str, reset: bool = False):
     if reset:
         reset_regtest()
 
-    return subprocess.Popen(
+    proc = subprocess.Popen(
         ['speculos', '-m', 'nanosp', f"e2e_tests/ledger_app/{app_name}.elf"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
+
+    # Give time to create window
+    time.sleep(1)
+
+    # Move Speculos window to background
+    subprocess.run(['wmctrl', '-r', 'Speculos', '-b', 'add,below'])
+
+    return proc

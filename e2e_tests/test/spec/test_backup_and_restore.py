@@ -7,9 +7,12 @@ import pytest
 from dotenv import load_dotenv
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
@@ -19,6 +22,7 @@ from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.test_helpers import refresh_collectibles_on_app2
 from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardware_wallets
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from src.utils.info_message import INFO_BACKUP_COMPLETED
@@ -621,6 +625,7 @@ def test_watch_only_backup_and_restore(test_environment, wallets_and_operations:
 # ============== MULTISIG BACKUP AND RESTORE TESTS ==============
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Mnemonic and backup configuration for multisig')
 @allure.story('Mnemonic and backup configuration functionality for multisig')
@@ -660,6 +665,7 @@ def test_mnemonic_and_backup_configure_for_multisig(wallets_and_operations: Wall
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Issue NIA for multisig')
@@ -672,7 +678,7 @@ def test_issue_nia_for_multisig(test_environment, wallets_and_operations: Wallet
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, NIA_TICKER, NIA_NAME, ISSUE_AMOUNT,
+            FIRST_APPLICATION, NIA_TICKER, NIA_NAME, ISSUE_AMOUNT, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -688,7 +694,7 @@ def test_issue_nia_for_multisig(test_environment, wallets_and_operations: Wallet
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, NIA_TICKER,
+            FIRST_APPLICATION, NIA_TICKER, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -697,6 +703,7 @@ def test_issue_nia_for_multisig(test_environment, wallets_and_operations: Wallet
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Issue CFA for multisig')
@@ -710,7 +717,7 @@ def test_issue_cfa_for_multisig(test_environment, wallets_and_operations: Wallet
         )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, CFA_NAME, CFA_DESC, ISSUE_AMOUNT,
+            FIRST_APPLICATION, CFA_NAME, CFA_DESC, ISSUE_AMOUNT, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -727,7 +734,7 @@ def test_issue_cfa_for_multisig(test_environment, wallets_and_operations: Wallet
         )
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, CFA_NAME,
+            FIRST_APPLICATION, CFA_NAME, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -736,6 +743,7 @@ def test_issue_cfa_for_multisig(test_environment, wallets_and_operations: Wallet
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Send CFA for multisig')
@@ -810,6 +818,7 @@ def test_send_cfa_for_multisig(test_environment, wallets_and_operations: WalletT
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Send NIA for multisig')
@@ -883,6 +892,7 @@ def test_send_nia_for_multisig(test_environment, wallets_and_operations: WalletT
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Send BTC for multisig')
@@ -945,6 +955,7 @@ def test_send_btc_for_multisig(test_environment, wallets_and_operations: WalletT
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Issue IFA for multisig')
@@ -992,6 +1003,7 @@ def test_issue_ifa_for_multisig(test_environment, wallets_and_operations: Wallet
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for multisig')
 @allure.story('Send IFA for multisig')
@@ -1066,6 +1078,7 @@ def test_send_ifa_for_multisig(test_environment, wallets_and_operations: WalletT
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup page for multisig')
 @allure.story('Backup page functionality for multisig')
@@ -1090,6 +1103,7 @@ def test_backup_for_multisig(test_environment, wallets_and_operations: WalletTes
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Restore page for multisig')
 @allure.story('Restore page functionality for multisig')
@@ -1156,3 +1170,153 @@ def test_restore_for_multisig(test_environment, wallets_and_operations: WalletTe
     assert NIA_RECEIVE_AMOUNT_BEFORE == nia_received_amount_after
     assert IFA_RECEIVE_AMOUNT_BEFORE == ifa_received_amount_after
     assert BTC_BALANCE_BEFORE == btc_balance_after
+
+
+# ==============================================================================
+# Offline Multisig Tests (4 apps - backup and restore flow)
+# ==============================================================================
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Backup and restore offline multisig wallet with asset transfers')
+def test_backup_and_restore_for_offline_multisig(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test backup and restore functionality for offline multisig wallet (4 apps).
+    - App 1: Offline multisig wallet (signer)
+    - App 2: Online multisig wallet (coordinator)
+    - App 3: Online multisig wallet (cosigner)
+    - App 4: Receiver wallet
+    """
+    global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
+    global NIA_RECEIVE_AMOUNT_BEFORE, CFA_RECEIVE_AMOUNT_BEFORE, IFA_RECEIVE_AMOUNT_BEFORE, BTC_BALANCE_BEFORE
+    
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    
+    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+    
+    # Fund the second wallet (online coordinator)
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+    
+    # Issue NIA asset from second wallet
+    with allure.step('Issue NIA asset from second wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
+            SECOND_APPLICATION, NIA_TICKER, NIA_NAME, ISSUE_AMOUNT, wallet_variant_name,
+        )
+        # Refresh and sign from third wallet
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+        # Sign from first wallet (offline signer) - required for 2-of-2 multisig
+        # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+    
+    # Get invoice from fourth wallet and send NIA
+    with allure.step('Get invoice from fourth wallet and send NIA asset'):
+        invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
+            FOURTH_APPLICATION,
+        )
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(NIA_NAME)
+        wallets_and_operations.second_page_features.send_features.send_asset_flow(
+            SECOND_APPLICATION, invoice, SEND_AMOUNT, wallet_variant_name,
+        )
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+        # Sign from first wallet (offline signer) - required for 2-of-2 multisig
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+    
+    # Capture balances before backup
+    with allure.step('Capture NIA received amount in fourth wallet before backup'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(
+            FOURTH_APPLICATION,
+        )
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_nia_frame(NIA_NAME)
+        NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
+    
+    # Backup second wallet
+    with allure.step('Backup second online multisig wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.second_page_objects.settings_page_objects.click_backup_button()
+        MNEMONIC = wallets_and_operations.second_page_objects.backup_page_objects.get_mnemonic()
+        PASSWORD = wallets_and_operations.second_page_objects.backup_page_objects.get_password()
+        XPUB_VANILLA = wallets_and_operations.second_page_objects.backup_page_objects.get_xpub_vanilla()
+        XPUB_COLORED = wallets_and_operations.second_page_objects.backup_page_objects.get_xpub_colored()
+        MASTER_FINGERPRINT = wallets_and_operations.second_page_objects.backup_page_objects.get_master_fingerprint()
+        wallets_and_operations.second_page_objects.backup_page_objects.click_backup_button()
+        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        assert description == INFO_BACKUP_COMPLETED
+    
+    # Reset and restore second wallet
+    with allure.step('Reset and restore second wallet'):
+        test_environment.restart_single_instance(reset_data=True)
+        
+        wallets_and_operations.second_page_objects.term_and_condition_page_objects.scroll_to_end()
+        wallets_and_operations.second_page_objects.term_and_condition_page_objects.click_accept_button()
+        wallets_and_operations.second_page_features.wallet_features.drive_selection_flow(
+            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE,
+        )
+        wallets_and_operations.second_page_objects.welcome_page_objects.click_restore_button()
+        wallets_and_operations.second_page_features.wallet_features.google_auth(
+            mnemonic=MNEMONIC,
+            password=PASSWORD,
+        )
+        wallets_and_operations.second_page_operations.wait_for_toaster_message()
+        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        assert description == INFO_RESTORE_COMPLETED
+        wallets_and_operations.second_page_objects.enter_wallet_password_page_objects.enter_password(
+            password=PASSWORD,
+        )
+        wallets_and_operations.second_page_objects.enter_wallet_password_page_objects.click_login_button()
+    
+    # Verify NIA balance after restore
+    with allure.step('Verify NIA balance after restore'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(NIA_NAME)
+        nia_balance_after = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
+        
+        expected_balance = str(int(ISSUE_AMOUNT) - int(SEND_AMOUNT))
+        assert nia_balance_after == expected_balance

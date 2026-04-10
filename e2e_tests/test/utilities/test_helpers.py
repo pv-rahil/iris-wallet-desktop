@@ -4,14 +4,18 @@ Common test helpers for e2e tests to reduce code duplication.
 """
 from __future__ import annotations
 
+import threading
 import allure
 
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import MULTISIG_LOAD_VARIANTS
+from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
@@ -545,7 +549,7 @@ def setup_multisig_wallets(
     with allure.step('Finalize second multisig wallet setup'):
         wallets_and_operations.second_page_features.wallet_features.finalize_multisig_setup(
             application=SECOND_APPLICATION,
-        )
+        )    
 
     # Handle load wallet flow - only for FIRST application
     if is_load_variant:
@@ -578,6 +582,307 @@ def setup_multisig_wallets(
                 )
 
 
+def setup_offline_multisig_two_app_wallets(
+    wallets_and_operations,
+    wallet_variant_name,
+) -> None:
+    """
+    Setup offline multisig wallet with 2 applications for UI tests (about, help, login auth, keyring, settings).
+    Both wallets are proper multisig wallets - NOT watch-only.
+    
+    App 1: Offline multisig wallet (signer) - hardware or on-device
+    App 2: Online multisig wallet (paired coordinator) - on-device
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        wallet_variant_name: Wallet variant name.
+    """
+    is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    
+    # Map load variant to create variant for first wallet
+    first_wallet_variant = wallet_variant_name
+    if is_load_variant:
+        first_wallet_variant = map_load_to_create(wallet_variant_name)
+
+    # App 1: Offline multisig wallet (signer)
+    with allure.step('Initiate first offline multisig wallet (signer)'):
+        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+            application=FIRST_APPLICATION, variant=first_wallet_variant, fund=False,
+        )
+
+    # App 2: Online multisig wallet (paired coordinator) - always online on-device
+    with allure.step('Initiate second online multisig wallet (paired coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
+            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE, fund=False,
+        )
+
+    # Import cosigner data
+    with allure.step('Import cosigner data into first offline multisig wallet'):
+        wallets_and_operations.first_page_features.wallet_features.import_multisig_data(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Import cosigner data into second online multisig wallet'):
+        wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
+            application=SECOND_APPLICATION,
+        )
+
+    # Finalize setup
+    with allure.step('Finalize first offline multisig wallet setup'):
+        wallets_and_operations.first_page_features.wallet_features.finalize_multisig_setup(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Finalize second online multisig wallet setup'):
+        wallets_and_operations.second_page_features.wallet_features.finalize_multisig_setup(
+            application=SECOND_APPLICATION,
+        )
+
+    # Handle load wallet flow for first application
+    if is_load_variant:
+        is_online = wallet_variant_name not in REQUIRE_USB_VARIANTS
+        with allure.step('Save credentials from first multisig wallet for load'):
+            wallets_and_operations.first_page_features.wallet_features.save_multisig_load_credentials(
+                application=FIRST_APPLICATION,
+                is_hardware=is_hardware,
+                is_online=is_online,
+            )
+
+        with allure.step('Load first multisig wallet with saved credentials'):
+            env = wallets_and_operations.first_page_features.wallet_features.get_current_environment()
+            if env:
+                env.reset_first_instance()
+                updated_wallet_features = env.first_page_features.wallet_features
+                updated_wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                    wallet_variant_name=first_wallet_variant,
+                )
+            else:
+                wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                    wallet_variant_name=first_wallet_variant,
+                )
+
+
+def setup_offline_multisig_hardware_wallets(
+    wallets_and_operations,
+    wallet_variant_name,
+) -> None:
+    """
+    Setup offline multisig wallet with 4 applications for transaction flow tests.
+    
+    - App 1: Offline multisig wallet (signer) - hardware or on-device
+    - App 2: Online multisig wallet (watch-only coordinator) - imports both signers' data
+    - App 3: Online multisig wallet (cosigner) - on-device
+    - App 4: Receiver wallet (single-sig)
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        wallet_variant_name: Wallet variant name.
+    """
+    is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    
+    # Map load variant to create variant for first wallet
+    first_wallet_variant = wallet_variant_name
+    if is_load_variant:
+        first_wallet_variant = map_load_to_create(wallet_variant_name)
+
+    # App 1: Offline multisig wallet (signer)
+    with allure.step('Initiate first offline multisig wallet (signer)'):
+        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+            application=FIRST_APPLICATION, variant=first_wallet_variant, fund=False,
+        )
+
+    # App 2: Online multisig wallet (watch-only coordinator)
+    with allure.step('Initiate second online multisig wallet (watch-only coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
+            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_WATCH_ONLY, fund=False,
+        )
+
+    # App 3: Online multisig wallet (cosigner) - on-device variant
+    with allure.step('Initiate third online multisig wallet (cosigner)'):
+        wallets_and_operations.third_page_features.wallet_features.create_and_fund_wallet(
+            application=THIRD_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE, fund=False,
+        )
+
+    # Import cosigner data
+    with allure.step('Import cosigner data into first offline multisig wallet'):
+        wallets_and_operations.first_page_features.wallet_features.import_multisig_data(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Import all cosigner data into second watch-only multisig wallet'):
+        wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
+            application=SECOND_APPLICATION, import_all=True,
+        )
+
+    with allure.step('Import cosigner data into third online multisig wallet'):
+        wallets_and_operations.third_page_features.wallet_features.import_multisig_data(
+            application=THIRD_APPLICATION,
+        )
+
+    # Finalize setup
+    with allure.step('Finalize first offline multisig wallet setup'):
+        wallets_and_operations.first_page_features.wallet_features.finalize_multisig_setup(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Finalize second online multisig wallet setup'):
+        wallets_and_operations.second_page_features.wallet_features.finalize_multisig_setup(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Finalize third online multisig wallet setup'):
+        wallets_and_operations.third_page_features.wallet_features.finalize_multisig_setup(
+            application=THIRD_APPLICATION,
+        )
+
+    # App 4: Create receiver wallet (single-sig)
+    with allure.step('Initiate fourth receiver wallet'):
+        wallets_and_operations.fourth_page_features.wallet_features.create_and_fund_wallet(
+            application=FOURTH_APPLICATION, variant=ONLINE_CREATE_ON_DEVICE, fund=False,
+        )
+
+    # Handle load wallet flow for first application
+    if is_load_variant:
+        is_online = wallet_variant_name not in REQUIRE_USB_VARIANTS
+        with allure.step('Save credentials from first multisig wallet for load'):
+            wallets_and_operations.first_page_features.wallet_features.save_multisig_load_credentials(
+                application=FIRST_APPLICATION,
+                is_hardware=is_hardware,
+                is_online=is_online,
+            )
+
+        with allure.step('Load first multisig wallet with saved credentials'):
+            env = wallets_and_operations.first_page_features.wallet_features.get_current_environment()
+            if env:
+                env.reset_first_instance()
+                updated_wallet_features = env.first_page_features.wallet_features
+                updated_wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                    wallet_variant_name=first_wallet_variant,
+                )
+            else:
+                wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                    wallet_variant_name=first_wallet_variant,
+                )
+
+
+def setup_offline_multisig_three_app_wallets(
+    wallets_and_operations,
+    wallet_variant_name,
+) -> None:
+    """
+    Setup offline multisig wallet with 3 applications for issue tests (NIA/IFA/CFA).
+    All wallets are proper multisig wallets - NOT watch-only.
+    
+    - App 1: Offline multisig wallet (signer) - hardware or on-device
+    - App 2: Online multisig wallet (coordinator) - on-device
+    - App 3: Online multisig wallet (cosigner) - on-device
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        wallet_variant_name: Wallet variant name.
+    """
+    is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    
+    # Map load variant to create variant for first wallet
+    first_wallet_variant = wallet_variant_name
+    if is_load_variant:
+        first_wallet_variant = map_load_to_create(wallet_variant_name)
+
+    # App 1: Offline multisig wallet (signer)
+    with allure.step('Initiate first offline multisig wallet (signer)'):
+        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+            application=FIRST_APPLICATION, variant=first_wallet_variant, fund=False,
+        )
+
+    # App 2: Online multisig wallet (coordinator) - on-device variant
+    with allure.step('Initiate second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
+            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE, fund=False,
+        )
+
+    # App 3: Online multisig wallet (cosigner) - on-device variant
+    with allure.step('Initiate third online multisig wallet (cosigner)'):
+        wallets_and_operations.third_page_features.wallet_features.create_and_fund_wallet(
+            application=THIRD_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE, fund=False,
+        )
+
+    # Import cosigner data
+    with allure.step('Import cosigner data into first offline multisig wallet'):
+        wallets_and_operations.first_page_features.wallet_features.import_multisig_data(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Import cosigner data into second online multisig wallet'):
+        wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Import cosigner data into third online multisig wallet'):
+        wallets_and_operations.third_page_features.wallet_features.import_multisig_data(
+            application=THIRD_APPLICATION,
+        )
+
+    # Finalize setup
+    with allure.step('Finalize first offline multisig wallet setup'):
+        wallets_and_operations.first_page_features.wallet_features.finalize_multisig_setup(
+            application=FIRST_APPLICATION,
+        )
+
+    with allure.step('Finalize second online multisig wallet setup'):
+        wallets_and_operations.second_page_features.wallet_features.finalize_multisig_setup(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Finalize third online multisig wallet setup'):
+        wallets_and_operations.third_page_features.wallet_features.finalize_multisig_setup(
+            application=THIRD_APPLICATION,
+        )
+
+    # Handle load wallet flow for first application
+    if is_load_variant:
+        is_online = wallet_variant_name not in REQUIRE_USB_VARIANTS
+        with allure.step('Save credentials from first multisig wallet for load'):
+            wallets_and_operations.first_page_features.wallet_features.save_multisig_load_credentials(
+                application=FIRST_APPLICATION,
+                is_hardware=is_hardware,
+                is_online=is_online,
+            )
+
+        with allure.step('Load first multisig wallet with saved credentials'):
+            env = wallets_and_operations.first_page_features.wallet_features.get_current_environment()
+            if env:
+                env.reset_first_instance()
+                updated_wallet_features = env.first_page_features.wallet_features
+                updated_wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                    wallet_variant_name=first_wallet_variant,
+                )
+            else:
+                wallets_and_operations.first_page_features.wallet_features.load_multisig_wallet(
+                    application=FIRST_APPLICATION,
+                    is_hardware=is_hardware,
+                    is_online=is_online,
+                    wallet_variant_name=first_wallet_variant,
+                )
+
+
 def fund_and_refresh_multisig_wallets(
     wallets_and_operations,
     asset_type: str = 'ifa',
@@ -604,6 +909,35 @@ def fund_and_refresh_multisig_wallets(
             wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         elif asset_type == 'cfa':
             wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+
+
+def fund_and_refresh_offline_multisig_wallets(
+    wallets_and_operations,
+    asset_type: str = 'ifa',
+) -> None:
+    """
+    Fund second wallet (online coordinator) and refresh third wallet for offline multisig.
+    For offline multisig hardware wallet setup with 4 apps.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        asset_type: Asset type ('ifa', 'nia', 'cfa') for refresh button.
+    """
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Refresh third multisig wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        if asset_type == 'ifa':
+            wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+        elif asset_type == 'nia':
+            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        elif asset_type == 'cfa':
+            wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
 
 
 def refresh_second_wallet_and_verify_asset(
@@ -777,6 +1111,7 @@ def multisig_send_asset_flow_with_verification(
                 asset_ticker,
             )
         elif asset_type == 'nia':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
             wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
                 asset_name,
@@ -797,10 +1132,13 @@ def multisig_send_asset_flow_with_verification(
             SECOND_APPLICATION,
         )
         if asset_type == 'ifa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
             wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
         elif asset_type == 'nia':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
             wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         elif asset_type == 'cfa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
             wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
@@ -811,18 +1149,21 @@ def multisig_send_asset_flow_with_verification(
             FIRST_APPLICATION,
         )
         if asset_type == 'ifa':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
             wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
                 asset_name,
             )
         elif asset_type == 'nia':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
             wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
                 asset_name,
             )
         elif asset_type == 'cfa':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
             wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
             wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
@@ -835,10 +1176,13 @@ def multisig_send_asset_flow_with_verification(
             SECOND_APPLICATION,
         )
         if asset_type == 'ifa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
             wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
         elif asset_type == 'nia':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
             wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         elif asset_type == 'cfa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
             wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
@@ -850,16 +1194,19 @@ def multisig_send_asset_flow_with_verification(
                 FIRST_APPLICATION,
             )
             if asset_type == 'ifa':
+                wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
                 wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
                 wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
                     asset_name,
                 )
             elif asset_type == 'nia':
+                wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
                 wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
                 wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
                     asset_name,
                 )
             elif asset_type == 'cfa':
+                wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
                 wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
                 wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
                     asset_name,
@@ -888,6 +1235,237 @@ def multisig_send_asset_flow_with_verification(
                     asset_name,
                 )
             received_amount = wallets_and_operations.third_page_objects.asset_detail_page_objects.get_total_balance()
+            assert received_amount == send_amount
+
+
+def offline_multisig_send_asset_flow_with_verification(
+    wallets_and_operations,
+    invoice: str,
+    asset_name: str,
+    asset_ticker: str,
+    send_amount: str,
+    wallet_variant_name: str,
+    asset_type: str = 'ifa',
+    verify_assertions: bool = True,
+) -> None:
+    """
+    Execute offline multisig send asset flow with 4 apps:
+    - App 1: Offline hardware wallet (signer)
+    - App 2: Online watch-only wallet (coordinator)
+    - App 3: Online on-device wallet (cosigner)
+    - App 4: Receiver wallet
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        invoice: Invoice for sending.
+        asset_name: Asset name.
+        asset_ticker: Asset ticker for UTXO creation.
+        send_amount: Amount to send.
+        wallet_variant_name: Wallet variant name.
+        asset_type: Asset type ('ifa', 'nia', 'cfa').
+        verify_assertions: Whether to verify assertions.
+    """
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+
+    with allure.step('Issue asset from second wallet (online coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        if asset_type == 'ifa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+        elif asset_type == 'nia':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        elif asset_type == 'cfa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
+            SECOND_APPLICATION, asset_ticker, asset_name, '2000', wallet_variant_name,
+        )
+        # Refresh third wallet
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        if asset_type == 'nia':
+            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        elif asset_type == 'ifa':
+            wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+        elif asset_type == 'cfa':
+            wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
+        # Sign from third wallet (cosigner)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+        # Sign from first wallet (offline signer) - required for 2-of-2 multisig
+        # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        if asset_type == 'nia':
+            wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        elif asset_type == 'ifa':
+            wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+        elif asset_type == 'cfa':
+            wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+        # Refresh second wallet
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        if asset_type == 'nia':
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        elif asset_type == 'ifa':
+            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+        elif asset_type == 'cfa':
+            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+
+    with allure.step('Create UTXO PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        if asset_type == 'ifa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
+                asset_ticker,
+            )
+        elif asset_type == 'nia':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+                asset_name,
+            )
+        elif asset_type == 'cfa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
+                asset_name,
+            )
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+        wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount, wallet_variant_name=wallet_variant_name, utxo_required=True,
+        )
+
+    with allure.step('Sign PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        if asset_type == 'ifa':
+            wallets_and_operations.third_page_objects.sidebar_page_objects.click_inflatable_button()
+            wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+        elif asset_type == 'nia':
+            wallets_and_operations.third_page_objects.sidebar_page_objects.click_fungibles_button()
+            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        elif asset_type == 'cfa':
+            wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
+            wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    # Sign from first wallet (offline signer) - required for 2-of-2 multisig
+    # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
+    with allure.step('Sign PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        if asset_type == 'ifa':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+            wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+        elif asset_type == 'nia':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+            wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        elif asset_type == 'cfa':
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
+            wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step(f'Send {asset_type} asset from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        if asset_type == 'ifa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
+                asset_name,
+            )
+        elif asset_type == 'nia':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+                asset_name,
+            )
+        elif asset_type == 'cfa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+            wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
+                asset_name,
+            )
+        wallets_and_operations.second_page_features.send_features.send_asset_for_multisig(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+
+    if verify_assertions:
+        with allure.step('Verify transfer status on second wallet'):
+            wallets_and_operations.second_page_operations.do_focus_on_application(
+                SECOND_APPLICATION,
+            )
+            if asset_type == 'ifa':
+                wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+                wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+                wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
+                    asset_name,
+                )
+            elif asset_type == 'nia':
+                wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+                wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+                wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+                    asset_name,
+                )
+            elif asset_type == 'cfa':
+                wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+                wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+                wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
+                    asset_name,
+                )
+            actual_transfer_status = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_transfer_status()
+            assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
+
+        with allure.step('Verify received amount on fourth wallet (receiver)'):
+            wallets_and_operations.fourth_page_operations.do_focus_on_application(
+                FOURTH_APPLICATION,
+            )
+            if asset_type == 'ifa':
+                wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_inflatable_button()
+                wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
+                wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
+                wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_ifa_frame(
+                    asset_name,
+                )
+            elif asset_type == 'nia':
+                wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_fungibles_button()
+                wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
+                wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
+                wallets_and_operations.fourth_page_objects.fungible_page_objects.click_nia_frame(
+                    asset_name,
+                )
+            elif asset_type == 'cfa':
+                wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_collectibles_button()
+                wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
+                wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
+                wallets_and_operations.fourth_page_objects.collectible_page_objects.click_cfa_frame(
+                    asset_name,
+                )
+            received_amount = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
             assert received_amount == send_amount
 
 
@@ -957,5 +1535,43 @@ def handle_utxo_confirmation_dialog(
         if page_operations.do_is_displayed(page_objects.confirmation_dialog_page_objects.confirmation_continue_button()):
             page_objects.confirmation_dialog_page_objects.click_confirmation_continue_button()
     else:
+        if page_operations.do_is_displayed(page_objects.success_page_objects.home_button()):
+            page_objects.success_page_objects.click_home_button()
+
+
+def handle_utxo_confirmation_with_hardware_wallet(
+    page_objects,
+    page_operations,
+    wallet_feature,
+    application: str,
+    utxo_required: bool = False,
+    is_hardware: bool = False,
+) -> None:
+    """
+    Handle UTXO confirmation dialog with hardware wallet signing.
+
+    Args:
+        page_objects: Page objects instance.
+        page_operations: Page operations instance.
+        wallet_feature: Wallet feature instance.
+        application: Application name.
+        utxo_required: Whether UTXO creation is required.
+        is_hardware: Whether this is a hardware wallet.
+    """
+    if utxo_required:
+        page_operations.do_focus_on_application(CONFIRMATION_DIALOG)
+        if page_operations.do_is_displayed(page_objects.confirmation_dialog_page_objects.confirmation_dialog()):
+            page_objects.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if page_operations.do_is_displayed(page_objects.confirmation_dialog_page_objects.confirmation_continue_button()):
+            page_objects.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+        # After clicking continue, app sends request to hardware wallet
+        # Then we do the button presses to register policy and sign
+        if is_hardware:
+            wallet_feature.sign_multisig_on_hardware_wallet(application)
+    else:
+        if is_hardware:
+            wallet_feature.sign_multisig_on_hardware_wallet(application)
         if page_operations.do_is_displayed(page_objects.success_page_objects.home_button()):
             page_objects.success_page_objects.click_home_button()

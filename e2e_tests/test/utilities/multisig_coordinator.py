@@ -129,6 +129,23 @@ class MultisigSetupCoordinator:
                 return string
         return None
 
+    def get_all_other_cosigner_strings(self, application: str) -> list[tuple[str, str]]:
+        """
+        Get all cosigner strings from other applications.
+        Used for watch-only wallets that need to import multiple cosigners.
+
+        Args:
+            application: Current application name
+
+        Returns:
+            List of tuples (app_name, cosigner_string) for all other applications
+        """
+        return [
+            (app, string)
+            for app, string in self._cosigner_strings.items()
+            if app != application
+        ]
+
     def get_other_colored_xpub(self, application: str) -> str | None:
         """
         Get the colored xpub from the other application.

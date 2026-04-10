@@ -3312,14 +3312,14 @@ files = [
 
 [[package]]
 name = "speculos"
-version = "0.25.13"
+version = "0.26.3"
 description = "Ledger Stax, Flex, Apex+ and Nano S+/X application emulator"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "speculos-0.25.13-py3-none-any.whl", hash = "sha256:9de1b163d6d2ce1591781e3c5e803713f474e0f03eabcc4b6b58afeccf0e6243"},
-    {file = "speculos-0.25.13.tar.gz", hash = "sha256:1c0dff71d366608f6b287e0fffc811eacb7d28341a3f8a31e25fefcd3406bb89"},
+    {file = "speculos-0.26.3-py3-none-any.whl", hash = "sha256:344d07b162bd617c5fe099cc4e72c9ab6c95d1edc556ab689c08d9379c8635c3"},
+    {file = "speculos-0.26.3.tar.gz", hash = "sha256:22dbf93506b0c979e78739fd796271a81c590bf53e7a2fb97276f0be7508bb50"},
 ]
 
 [package.dependencies]
@@ -3556,4 +3556,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "2d32060d60046dd3ab812426f98bf8e014a01ecc9f0aa3ea5ae8b2eff4572a66"
+content-hash = "92dc2672485ec5fc60c88ea6e7c4cc34e10bae9400b9a64d4a91536dda72a17b"

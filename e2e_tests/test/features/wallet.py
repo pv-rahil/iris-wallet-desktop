@@ -198,7 +198,12 @@ class Wallet(MainPageObjects, BaseOperations):
 
         self._handle_password_setup()
 
-        if effective_variant in MULTISIG_VARIANTS:
+        # For watch-only multisig, the UI shows cosigner import cards, not export buttons
+        # Register the application but skip key export (watch-only doesn't have its own keys)
+        if effective_variant == ONLINE_MULTISIG_WATCH_ONLY:
+            coordinator = get_multisig_coordinator()
+            coordinator.register_application(application)
+        elif effective_variant in MULTISIG_VARIANTS:
             self.initiate_multisig_setup(application, effective_variant)
 
     def fund_wallet(self, application):
@@ -338,7 +343,6 @@ class Wallet(MainPageObjects, BaseOperations):
         if wallet_variant and wallet_variant in MULTISIG_HARDWARE_VARIANTS:
             self.hw_emulator = self.set_up_hardware_wallet(
                 application,
-                terminate_emulator=False,
                 reset_regtest_flag=False,
             )
 
@@ -356,9 +360,21 @@ class Wallet(MainPageObjects, BaseOperations):
         if cosigner_string:
             coordinator.store_cosigner_string(application, cosigner_string)
 
-    def import_multisig_data(self, application: str):
+    def import_multisig_data(self, application: str, import_all: bool = False):
         """
         Phase 2: Import the other cosigner's data.
+
+        For watch-only multisig wallets (import_all=True):
+        - Step 2 (Review frame): Enter first cosigner string (from App 1), click next
+        - Step 3 (Cosigner frame): Enter remaining cosigner strings (index 2+), click continue
+
+        For signer wallets (import_all=False):
+        - Import only one other cosigner at index 2
+
+        Args:
+            application: Application name.
+            import_all: If True, import all other cosigner strings (for watch-only wallets).
+                       If False, import only one other cosigner (for signer wallets).
         """
         coordinator = get_multisig_coordinator()
         self.do_focus_on_application(application)
@@ -366,13 +382,36 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
             self.multisig_setup_page_objects.click_continue_button()
 
-        other_cosigner_string = coordinator.get_other_cosigner_string(
-            application,
-        )
-        if other_cosigner_string:
-            self.multisig_setup_page_objects.import_cosigner_data(
-                2, other_cosigner_string,
+        if import_all:
+            # For watch-only wallets: import all other cosigners
+            all_cosigners = coordinator.get_all_other_cosigner_strings(application)
+            
+            # Step 2 (Review frame): Enter first cosigner string (from App 1 - offline signer)
+            if all_cosigners and len(all_cosigners) >= 1:
+                _, first_cosigner_string = all_cosigners[0]
+                if first_cosigner_string:
+                    # Enter in the review frame input field
+                    self.multisig_setup_page_objects.enter_review_cosigner_string(first_cosigner_string)
+                    # Click next to proceed to cosigner frame
+                    if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
+                        self.multisig_setup_page_objects.click_continue_button()
+            
+            # Step 3 (Cosigner frame): Enter remaining cosigner strings (from App 3, etc.)
+            if len(all_cosigners) >= 2:
+                for index, (_, cosigner_string) in enumerate(all_cosigners[1:], start=2):
+                    if cosigner_string:
+                        self.multisig_setup_page_objects.import_cosigner_data(
+                            index, cosigner_string,
+                        )
+        else:
+            # For signer wallets: import only one other cosigner
+            other_cosigner_string = coordinator.get_other_cosigner_string(
+                application,
             )
+            if other_cosigner_string:
+                self.multisig_setup_page_objects.import_cosigner_data(
+                    2, other_cosigner_string,
+                )
 
     def finalize_multisig_setup(self, application: str):
         """
@@ -1149,40 +1188,41 @@ class Wallet(MainPageObjects, BaseOperations):
     def confirm_transaction_on_hardware_wallet(self, application, is_rgb: bool = False, is_issue_ifa: bool = False):
         """
         Confirm transaction on hardware wallet for single-sig.
+        - For RGB/inflate: 4 right + both, then 5 right + both
+        - For NIA/CFA/IFA/send BTC: 4 right + both
         """
         self.do_focus_on_application(application)
         time.sleep(3)
-        if is_rgb:
+        if is_rgb or is_issue_ifa:
+            # RGB or inflate: 4 right + both, then 5 right + both
+            self.hw_emulator_page_objects.click_right_arrow_key(4)
+            self.hw_emulator_page_objects.press_left_and_right()
+            time.sleep(1)
             self.hw_emulator_page_objects.click_right_arrow_key(5)
             self.hw_emulator_page_objects.press_left_and_right()
         else:
-            if is_issue_ifa:
-                num_of_iter = 3
-            else:
-                num_of_iter = 2
-            for _ in range(num_of_iter):
-                time.sleep(1)
-                self.hw_emulator_page_objects.click_right_arrow_key(4)
-                self.hw_emulator_page_objects.press_left_and_right()
-            time.sleep(2)
-            self.hw_emulator_page_objects.click_right_arrow_key(1)
+            # NIA or send BTC: 4 right + both
+            self.hw_emulator_page_objects.click_right_arrow_key(4)
             self.hw_emulator_page_objects.press_left_and_right()
+        
+        time.sleep(2)
 
     def sign_multisig_on_hardware_wallet(self, application):
         """
         Sign multisig transaction on hardware wallet.
-        Sequence: 13 right, left+right, 2s delay, 4 right, left+right
+        Called after app sends SIGN_PSBT request.
+        Sequence: 13 right + left+right (register policy), then 4 right + left+right (sign)
         """
         self.do_focus_on_application(application)
+        # First sequence: 13 right arrows then left+right (register wallet policy)
+        self.hw_emulator_page_objects.click_right_arrow_key(13, delay=0.8)
+        self.hw_emulator_page_objects.press_left_and_right(duration=0.2)
+        # Wait for sign transaction screen to appear
         time.sleep(2)
-        # First sequence: 13 right arrows then left+right
-        self.hw_emulator_page_objects.click_right_arrow_key(13)
-        self.hw_emulator_page_objects.press_left_and_right()
-        # Delay 2 seconds
+        # Second sequence: 4 right arrows then left+right (sign transaction)
+        self.hw_emulator_page_objects.click_right_arrow_key(4, delay=0.8)
+        self.hw_emulator_page_objects.press_left_and_right(duration=0.2)
         time.sleep(2)
-        # Second sequence: 4 right arrows then left+right
-        self.hw_emulator_page_objects.click_right_arrow_key(4)
-        self.hw_emulator_page_objects.press_left_and_right()
 
     def usb_sync(self, is_receive=False):
         """

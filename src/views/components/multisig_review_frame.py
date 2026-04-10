@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from accessible_constant import MULTISIG_COLORED_XPUB_COPY_BUTTON
 from accessible_constant import MULTISIG_COSIGNER_STRING_COPY_BUTTON
+from accessible_constant import MULTISIG_REVIEW_COSIGNER_STRING_INPUT
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 
 
@@ -213,6 +214,10 @@ class ReviewFrame(QFrame):
             ),
             full_width=True,
         )
+        if self.cosigner_string_value_widget:
+            self.cosigner_string_value_widget.setAccessibleName(
+                MULTISIG_REVIEW_COSIGNER_STRING_INPUT,
+            )
         if self.cosigner_string_copy_btn:
             self.cosigner_string_copy_btn.setAccessibleName(
                 MULTISIG_COSIGNER_STRING_COPY_BUTTON,

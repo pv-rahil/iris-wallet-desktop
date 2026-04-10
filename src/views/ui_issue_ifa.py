@@ -11,7 +11,6 @@ from PySide6.QtCore import QSize
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog
 from PySide6.QtWidgets import QFrame
 from PySide6.QtWidgets import QGridLayout
 from PySide6.QtWidgets import QHBoxLayout
@@ -25,14 +24,11 @@ import src.resources_rc
 from accessible_constant import ISSUE_IFA_ASSET_CLOSE_BUTTON
 from accessible_constant import ISSUE_IFA_BUTTON
 from src.data.repository.setting_card_repository import SettingCardRepository
-from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.common_operation_model import IssueAssetDraftModel
 from src.model.common_operation_model import PsbtData
 from src.model.common_operation_model import ReceiveAssetModel
 from src.model.enums.enums_model import PsbtStatus
-from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletSignatureType
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.model.setting_model import DefaultFeeRate

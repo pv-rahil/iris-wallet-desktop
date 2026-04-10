@@ -13,15 +13,18 @@ VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d '
 APP1_NAME=$(grep '^APP1_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
 APP2_NAME=$(grep '^APP2_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
 APP3_NAME=$(grep '^APP3_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+APP4_NAME=$(grep '^APP4_NAME' accessible_constant.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
 
 # Paths for the built applications
 FIRST_WALLET_NAME="iris-wallet-vault_${APP1_NAME}-${VERSION}-x86_64.AppImage"
 SECOND_WALLET_NAME="iris-wallet-vault_${APP2_NAME}-${VERSION}-x86_64.AppImage"
 THIRD_WALLET_NAME="iris-wallet-vault_${APP3_NAME}-${VERSION}-x86_64.AppImage"
+FOURTH_WALLET_NAME="iris-wallet-vault_${APP4_NAME}-${VERSION}-x86_64.AppImage"
 
 APP1_PATH="$APPLICATIONS_DIR/$FIRST_WALLET_NAME"
 APP2_PATH="$APPLICATIONS_DIR/$SECOND_WALLET_NAME"
 APP3_PATH="$APPLICATIONS_DIR/$THIRD_WALLET_NAME"
+APP4_PATH="$APPLICATIONS_DIR/$FOURTH_WALLET_NAME"
 
 # Paths for constants file
 CONSTANT_FILE="./src/utils/constant.py"
@@ -168,6 +171,11 @@ build_applications() {
     wait $!
     move_application "$THIRD_WALLET_NAME"
 
+    echo "Building fourth wallet..."
+    build-iris-wallet --network regtest --distribution appimage --app-name "${APP4_NAME}" &
+    wait $!
+    move_application "$FOURTH_WALLET_NAME"
+
     echo "Build process completed."
 }
 
@@ -184,7 +192,7 @@ ensure_applications_exist() {
         exit 0
     fi
 
-    if [[ ! -f "$APP1_PATH" || ! -f "$APP2_PATH" || ! -f "$APP3_PATH" ]]; then
+    if [[ ! -f "$APP1_PATH" || ! -f "$APP2_PATH" || ! -f "$APP3_PATH" || ! -f "$APP4_PATH" ]]; then
         echo "One or more applications are missing. Initiating build..."
         build_applications
     else

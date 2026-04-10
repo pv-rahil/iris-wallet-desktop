@@ -7,15 +7,19 @@ from src.utils.constant import APP_NAME
 APP1_NAME = 'test_app_1'
 APP2_NAME = 'test_app_2'
 APP3_NAME = 'test_app_3'
+APP4_NAME = 'test_app_4'
 FIRST_SERVICE = f"{APP_NAME}_{APP1_NAME}"
 SECOND_SERVICE = f"{APP_NAME}_{APP2_NAME}"
 THIRD_SERVICE = f"{APP_NAME}_{APP3_NAME}"
+FOURTH_SERVICE = f"{APP_NAME}_{APP4_NAME}"
 FIRST_APPLICATION = f"Iris Wallet Regtest {APP1_NAME}"
 SECOND_APPLICATION = f"Iris Wallet Regtest {APP2_NAME}"
 THIRD_APPLICATION = f"Iris Wallet Regtest {APP3_NAME}"
+FOURTH_APPLICATION = f"Iris Wallet Regtest {APP4_NAME}"
 FIRST_APPLICATION_PATH = f"{APP_NAME}_{APP1_NAME}"
 SECOND_APPLICATION_PATH = f"{APP_NAME}_{APP2_NAME}"
 THIRD_APPLICATION_PATH = f"{APP_NAME}_{APP3_NAME}"
+FOURTH_APPLICATION_PATH = f"{APP_NAME}_{APP4_NAME}"
 RGB_LEDGER_APP_NAME = 'rgb_ledger_app'
 LEDGER_EMULATOR_APP_NAME = 'Ledger Nano SP Emulator'
 HARDWARE_WALLET_VARIANTS = [
@@ -26,6 +30,9 @@ HARDWARE_WALLET_VARIANTS = [
 REQUIRE_USB_VARIANTS = [
     'offline_create_hardware', 'offline_create_on_device',
     'online_watch_only', 'offline_load_on_device', 'offline_load_hardware',
+    'offline_multisig_on_device', 'offline_multisig_hardware',
+    'offline_multisig_load_on_device', 'offline_multisig_load_hardware',
+    'online_multisig_watch_only'
 ]
 LOAD_WALLET_VARIANT = [
     'offline_load_hardware', 'offline_load_on_device',
@@ -54,12 +61,14 @@ ONLINE_MULTISIG_HARDWARE = 'online_multisig_hardware'
 ONLINE_MULTISIG_WATCH_ONLY = 'online_multisig_watch_only'
 OFFLINE_MULTISIG_ON_DEVICE = 'offline_multisig_on_device'
 OFFLINE_MULTISIG_HARDWARE = 'offline_multisig_hardware'
+OFFLINE_MULTISIG_WATCH_ONLY = 'offline_multisig_watch_only'
 
 # Multisig wallet variants - Load
 ONLINE_MULTISIG_LOAD_ON_DEVICE = 'online_multisig_load_on_device'
 ONLINE_MULTISIG_LOAD_HARDWARE = 'online_multisig_load_hardware'
 OFFLINE_MULTISIG_LOAD_ON_DEVICE = 'offline_multisig_load_on_device'
 OFFLINE_MULTISIG_LOAD_HARDWARE = 'offline_multisig_load_hardware'
+OFFLINE_MULTISIG_LOAD_WATCH_ONLY = 'offline_multisig_load_watch_only'
 
 # Multisig create variants grouping
 MULTISIG_CREATE_VARIANTS = [
@@ -68,6 +77,7 @@ MULTISIG_CREATE_VARIANTS = [
     ONLINE_MULTISIG_WATCH_ONLY,
     OFFLINE_MULTISIG_ON_DEVICE,
     OFFLINE_MULTISIG_HARDWARE,
+    OFFLINE_MULTISIG_WATCH_ONLY,
 ]
 
 # Multisig load variants grouping
@@ -76,6 +86,7 @@ MULTISIG_LOAD_VARIANTS = [
     ONLINE_MULTISIG_LOAD_HARDWARE,
     OFFLINE_MULTISIG_LOAD_ON_DEVICE,
     OFFLINE_MULTISIG_LOAD_HARDWARE,
+    OFFLINE_MULTISIG_LOAD_WATCH_ONLY,
 ]
 
 # All multisig variants
@@ -86,6 +97,12 @@ MULTISIG_HARDWARE_VARIANTS = [
     ONLINE_MULTISIG_HARDWARE,
     OFFLINE_MULTISIG_HARDWARE,
     ONLINE_MULTISIG_LOAD_HARDWARE,
+    OFFLINE_MULTISIG_LOAD_HARDWARE,
+]
+
+# Offline multisig hardware variants (require 4 apps)
+OFFLINE_MULTISIG_HARDWARE_VARIANTS = [
+    OFFLINE_MULTISIG_HARDWARE,
     OFFLINE_MULTISIG_LOAD_HARDWARE,
 ]
 
@@ -126,12 +143,14 @@ NAME_TO_STEPS: dict[str, tuple[int, int, int, int, int]] = {
     # Offline Multisig - Create
     OFFLINE_MULTISIG_ON_DEVICE: (2, 2, 0, 1, 1),
     OFFLINE_MULTISIG_HARDWARE: (2, 2, 0, 1, 2),
+    OFFLINE_MULTISIG_WATCH_ONLY: (2, 2, 2, 1, 0),
     # Online Multisig - Load
     ONLINE_MULTISIG_LOAD_ON_DEVICE: (2, 1, 1, 2, 1),
     ONLINE_MULTISIG_LOAD_HARDWARE: (2, 1, 1, 2, 2),
     # Offline Multisig - Load
     OFFLINE_MULTISIG_LOAD_ON_DEVICE: (2, 2, 0, 2, 1),
     OFFLINE_MULTISIG_LOAD_HARDWARE: (2, 2, 0, 2, 2),
+    OFFLINE_MULTISIG_LOAD_WATCH_ONLY: (2, 2, 2, 2, 0),
 }
 
 
@@ -421,3 +440,4 @@ MULTISIG_COSIGNER_CARD_TITLE = 'multisig_cosigner_card_title'
 MULTISIG_COSIGNER_CARD_DESCRIPTION = 'multisig_cosigner_card_description'
 MULTISIG_COSIGNER_CARD_PUBLIC_KEY = 'multisig_cosigner_card_public_key'
 MULTISIG_COSIGNER_CARD_THRESHOLD = 'multisig_cosigner_card_threshold'
+MULTISIG_REVIEW_COSIGNER_STRING_INPUT = 'multisig_review_cosigner_string_input'

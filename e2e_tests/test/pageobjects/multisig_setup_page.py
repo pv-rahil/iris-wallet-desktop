@@ -11,6 +11,7 @@ from accessible_constant import MULTISIG_COSIGNER_STRING_COPY_BUTTON
 from accessible_constant import MULTISIG_COSIGNER_STRING_INPUT
 from accessible_constant import MULTISIG_EXPORT_BUTTON
 from accessible_constant import MULTISIG_REQUIRED_SIGNER_INPUT
+from accessible_constant import MULTISIG_REVIEW_COSIGNER_STRING_INPUT
 from accessible_constant import MULTISIG_SETUP_PAGE
 from accessible_constant import MULTISIG_TOTAL_SIGNER_INPUT
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -63,6 +64,35 @@ class MultisigSetupPageObjects(BaseOperations):
             role_name='push button', name=MULTISIG_COSIGNER_STRING_COPY_BUTTON,
             application_node=application,
         )
+
+    def get_review_cosigner_string_input(self):
+        """
+        Get the review frame cosigner string input field.
+        Used by watch-only multisig wallets to enter the first cosigner's data.
+
+        Returns:
+            The review frame cosigner string input element or None.
+        """
+        return self.perform_action_on_element(
+            role_name='text', name=MULTISIG_REVIEW_COSIGNER_STRING_INPUT,
+            application_node=self.application,
+        )
+
+    def enter_review_cosigner_string(self, cosigner_string: str):
+        """
+        Enter cosigner string into the review frame input field.
+        Used by watch-only multisig wallets to enter the first cosigner's data.
+
+        Args:
+            cosigner_string: The cosigner details string to enter.
+
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        input_field = self.get_review_cosigner_string_input()
+        if input_field and self.do_is_displayed(input_field):
+            return self.do_set_text(input_field, cosigner_string)
+        return None
 
     def get_cosigner_card(self, index: int):
         """

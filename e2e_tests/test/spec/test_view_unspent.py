@@ -9,10 +9,12 @@ import pytest
 
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import SECOND_APPLICATION
+from accessible_constant import OFFLINE_MULTISIG_HARDWARE_VARIANTS
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardware_wallets
 
 
 @pytest.mark.skip_for_offline_wallet
@@ -67,6 +69,7 @@ def test_view_unspent_list_for_offline_wallet(wallets_and_operations: WalletTest
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('View unspent list for multisig')
 @allure.story('Verify outpoint in unspent list for multisig')
@@ -88,5 +91,33 @@ def test_view_unspent_list_for_multisig(wallets_and_operations: WalletTestSetup,
         wallets_and_operations.first_page_objects.view_unspent_list_page_objects.click_unspent_frame()
         actual_outpoint = wallets_and_operations.first_page_objects.view_unspent_list_page_objects.get_unspent_utxo_outpoint()
         outpoint = wallets_and_operations.first_page_operations.do_get_copied_address()
+
+        assert actual_outpoint == outpoint
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@pytest.mark.parametrize('wallet_variant_name', OFFLINE_MULTISIG_HARDWARE_VARIANTS)
+@allure.feature('View unspent list for offline multisig')
+@allure.story('Verify outpoint in unspent list for offline multisig')
+def test_view_unspent_list_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test view unspent list for offline multisig (hardware and on-device)."""
+
+    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+
+    with allure.step('Fund watch-only coordinator wallet'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+
+    with allure.step('Verifies the outpoint for offline multisig'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_view_unspents_button()
+        wallets_and_operations.second_page_objects.view_unspent_list_page_objects.click_unspent_frame()
+        actual_outpoint = wallets_and_operations.second_page_objects.view_unspent_list_page_objects.get_unspent_utxo_outpoint()
+        outpoint = wallets_and_operations.second_page_operations.do_get_copied_address()
 
         assert actual_outpoint == outpoint

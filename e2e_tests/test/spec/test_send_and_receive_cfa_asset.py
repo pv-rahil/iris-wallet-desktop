@@ -6,7 +6,12 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import FOURTH_APPLICATION
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import OFFLINE_MULTISIG_HARDWARE
+from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
@@ -15,10 +20,13 @@ from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.test_helpers import focus_and_navigate_to_asset
 from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import fund_and_refresh_offline_multisig_wallets
 from e2e_tests.test.utilities.test_helpers import multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.test_helpers import offline_multisig_send_asset_flow_with_verification
 from e2e_tests.test.utilities.test_helpers import offline_wallet_send_asset_flow
 from e2e_tests.test.utilities.test_helpers import send_asset_flow_with_verification
 from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardware_wallets
 from e2e_tests.test.utilities.test_helpers import verify_expired_invoice_validation
 from e2e_tests.test.utilities.test_helpers import verify_invalid_invoice_validation
 from e2e_tests.test.utilities.translation_utils import TranslationManager
@@ -177,6 +185,7 @@ def test_send_and_receive_cfa_asset_operation_for_offline_wallet(wallets_and_ope
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Automation of send operation for CFA asset in iris wallet for multisig')
 @allure.story('Testing send CFA asset with invalid invoice for multisig')
@@ -189,7 +198,7 @@ def test_send_cfa_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
 
     with allure.step('Issue CFA asset for multisig wallet'):
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME, ASSET_DESCRIPTION, ASSET_AMOUNT,
+            FIRST_APPLICATION, ASSET_NAME, ASSET_DESCRIPTION, ASSET_AMOUNT, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -203,7 +212,7 @@ def test_send_cfa_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
         )
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME,
+            FIRST_APPLICATION, ASSET_NAME, wallet_variant_name,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -227,6 +236,7 @@ def test_send_cfa_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Automation of receive, send, and transaction status for CFA asset in iris wallet for multisig')
 @allure.story('End-to-End testing of receiving, sending, and verifying transaction status for CFA asset for multisig')
@@ -242,6 +252,37 @@ def test_send_and_receive_cfa_asset_multisig_operation(wallets_and_operations: W
         )
 
     multisig_send_asset_flow_with_verification(
+        wallets_and_operations=wallets_and_operations,
+        invoice=invoice,
+        asset_name=ASSET_NAME,
+        asset_ticker=ASSET_NAME,
+        send_amount=SEND_AMOUNT,
+        wallet_variant_name=wallet_variant_name,
+        asset_type='cfa',
+        verify_assertions=True,
+    )
+
+
+# ==============================================================================
+# Offline Multisig Tests (4 apps - full transaction flow)
+# ==============================================================================
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Automation of receive, send, and transaction status for CFA asset in iris wallet for offline multisig')
+@allure.story('End-to-End testing of receiving, sending, and verifying transaction status for CFA asset for offline multisig')
+def test_send_and_receive_cfa_asset_offline_multisig_operation(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test send and receive operation for CFA asset for offline multisig (hardware and on-device, create and load)"""
+
+    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+
+    with allure.step('Get invoice from fourth receiver wallet'):
+        invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
+            FOURTH_APPLICATION,
+        )
+
+    offline_multisig_send_asset_flow_with_verification(
         wallets_and_operations=wallets_and_operations,
         invoice=invoice,
         asset_name=ASSET_NAME,

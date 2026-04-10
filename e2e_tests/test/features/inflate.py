@@ -4,7 +4,7 @@ This module contains the Inflate class, which provides methods for secondary iss
 """
 from __future__ import annotations
 
-from accessible_constant import CONFIRMATION_DIALOG
+from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
@@ -45,8 +45,7 @@ class Inflate(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
                 self.sidebar_page_objects.click_inflatable_button()
 
-            if self.do_is_displayed(self.inflatable_page_objects.ifa_asset_name):
-                self.inflatable_page_objects.click_ifa_frame(asset_name)
+            self.inflatable_page_objects.click_ifa_frame(asset_name)
 
             # Click secondary issuance button
             if self.do_is_displayed(self.asset_detail_page_objects.secondary_issuance_button()):
@@ -133,8 +132,7 @@ class Inflate(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
                 self.sidebar_page_objects.click_inflatable_button()
 
-            if self.do_is_displayed(self.inflatable_page_objects.ifa_asset_name):
-                self.inflatable_page_objects.click_ifa_frame(asset_name)
+            self.inflatable_page_objects.click_ifa_frame(asset_name)
 
             # Click secondary issuance button
             if self.do_is_displayed(self.asset_detail_page_objects.secondary_issuance_button()):
@@ -169,62 +167,84 @@ class Inflate(MainPageObjects, BaseOperations):
         Perform secondary issuance (inflate) for multisig wallet.
         """
         is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-        self.do_focus_on_application(application)
-
-        # Navigate to IFA asset detail page
-        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
-            self.sidebar_page_objects.click_inflatable_button()
-
-        self.inflatable_page_objects.click_ifa_frame(asset_name)
-
-        # Click secondary issuance button
-        if self.do_is_displayed(self.asset_detail_page_objects.secondary_issuance_button()):
-            self.asset_detail_page_objects.click_secondary_issuance_button()
-
-        # Enter inflate amount
-        if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
-            self.issue_ifa_page_objects.enter_asset_amount(inflate_amount)
-
-        # Native auth if required
-        if is_native_auth_enabled is True:
-            self.enter_native_password()
-
-        # Click issue button to inflate
-        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
-            self.issue_ifa_page_objects.click_issue_ifa_button()
-
-        if utxo_required:
-            self.do_focus_on_application(CONFIRMATION_DIALOG)
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
-
-            if is_hardware:
-                self.wallet_feature.sign_multisig_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+        hardware_wallet_emulator = None
+        try:
+            if is_hardware and utxo_required:
+                hardware_wallet_emulator = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
                 )
-        else:
-            if self.do_is_displayed(self.success_page_objects.home_button()):
-                self.success_page_objects.click_home_button()
+            self.do_focus_on_application(application)
 
-    def inflate_ifa_asset_from_draft(self, application, asset_name):
+            # Navigate to IFA asset detail page
+            if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+                self.sidebar_page_objects.click_inflatable_button()
+
+            self.inflatable_page_objects.click_ifa_frame(asset_name)
+
+            # Click secondary issuance button
+            if self.do_is_displayed(self.asset_detail_page_objects.secondary_issuance_button()):
+                self.asset_detail_page_objects.click_secondary_issuance_button()
+
+            # Enter inflate amount
+            if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
+                self.issue_ifa_page_objects.enter_asset_amount(inflate_amount)
+
+            # Native auth if required
+            if is_native_auth_enabled is True:
+                self.enter_native_password()
+
+            # Click issue button to inflate
+            if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+                self.issue_ifa_page_objects.click_issue_ifa_button()
+
+            if utxo_required:
+                handle_utxo_confirmation_with_hardware_wallet(
+                    self, self, self.wallet_feature, LEDGER_EMULATOR_APP_NAME,
+                    utxo_required=True, is_hardware=is_hardware,
+                )
+            else:
+                if self.do_is_displayed(self.success_page_objects.home_button()):
+                    self.success_page_objects.click_home_button()
+        except Exception as e:
+            raise e
+        finally:
+            if hardware_wallet_emulator:
+                hardware_wallet_emulator.terminate()
+
+    def inflate_ifa_asset_from_draft(self, application, asset_name, wallet_variant_name: str | None = None):
         """
         Finalize inflation from draft after PSBT is signed and broadcast.
         """
-        self.do_focus_on_application(application)
+        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+        hardware_wallet_emulator = None
+        try:
+            if is_hardware:
+                hardware_wallet_emulator = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
+            self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
-            self.sidebar_page_objects.click_inflatable_button()
+            if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+                self.sidebar_page_objects.click_inflatable_button()
 
-        # Click on the draft frame
-        self.inflatable_page_objects.click_ifa_frame(asset_name)
+            # Click on the draft frame
+            self.inflatable_page_objects.click_ifa_frame(asset_name)
 
-        self.asset_detail_page_objects.click_resume_secondary_issuance_draft_frame()
+            self.asset_detail_page_objects.click_resume_secondary_issuance_draft_frame()
 
-        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
-            self.issue_ifa_page_objects.click_issue_ifa_button()
+            if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+                self.issue_ifa_page_objects.click_issue_ifa_button()
+                
+            if is_hardware:
+                handle_utxo_confirmation_with_hardware_wallet(
+                    self, self, self.wallet_feature, LEDGER_EMULATOR_APP_NAME,
+                    utxo_required=False, is_hardware=is_hardware,
+                )
 
-        if self.do_is_displayed(self.success_page_objects.home_button()):
-            self.success_page_objects.click_home_button()
+            if self.do_is_displayed(self.success_page_objects.home_button()):
+                self.success_page_objects.click_home_button()
+        except Exception as e:
+            raise e
+        finally:
+            if hardware_wallet_emulator:
+                hardware_wallet_emulator.terminate()

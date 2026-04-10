@@ -46,7 +46,6 @@ class BtcRepository:
             data: BtcBalance = colored_wallet.wallet.get_btc_balance(
                 online=colored_wallet.online, skip_sync=False,
             )
-            print("AVAILABLE BITCOIN",data)
             return BalanceResponseModel(
                 vanilla=data.vanilla,
                 colored=data.colored,

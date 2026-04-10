@@ -9,7 +9,11 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import OFFLINE_MULTISIG_HARDWARE
+from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
@@ -19,6 +23,7 @@ from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.test_helpers import initiate_third_wallet_and_get_invoice
 from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardware_wallets
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from src.utils.info_message import INFO_BITCOIN_SENT
 
@@ -397,6 +402,7 @@ def test_send_bitcoin_with_invalid_invoice_for_offline(wallets_and_operations: W
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin with zero balance for multisig')
 @allure.story('Wallet send bitcoin operation with zero balance for multisig')
@@ -437,6 +443,7 @@ def test_send_bitcoin_with_zero_balance_for_multisig(wallets_and_operations: Wal
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin with invalid invoice for multisig')
 @allure.story('Wallet send bitcoin operation with invalid invoice for multisig')
@@ -473,6 +480,7 @@ def test_send_bitcoin_with_invalid_invoice_for_multisig(wallets_and_operations: 
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin for multisig')
 @allure.story('Wallet send bitcoin operation for multisig')
@@ -533,6 +541,7 @@ def test_send_bitcoin_for_multisig(wallets_and_operations: WalletTestSetup, wall
 
 
 @pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Iris wallet send bitcoin with custom fee rate for multisig')
 @allure.story('Wallet send bitcoin operation with custom fee rate for multisig')
@@ -592,3 +601,160 @@ def test_send_bitcoin_with_custom_fee_rate_for_multisig(wallets_and_operations: 
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+
+# ==============================================================================
+# Offline Multisig Tests (4 apps - full transaction flow)
+# ==============================================================================
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Iris wallet send bitcoin for offline multisig')
+@allure.story('Wallet send bitcoin operation for offline multisig')
+def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test sending bitcoin for offline multisig (hardware and on-device, create and load)."""
+    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+
+    # Fund the second wallet (online coordinator)
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+
+    with allure.step('Get bitcoin address from fourth wallet'):
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
+        address, _ = wallets_and_operations.fourth_page_features.receive_features.receive(
+            FOURTH_APPLICATION,
+        )
+
+    with allure.step('Create PSBT for bitcoin send from second wallet (online coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
+            SECOND_APPLICATION, address, AMOUNT, wallet_variant_name,
+        )
+
+    with allure.step('Sign PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, wallet_variant_name,
+        )
+
+    # Sign from first wallet (offline signer) - required for 2-of-2 multisig
+    # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
+    with allure.step('Sign PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Broadcast PSBT from second wallet'):
+        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+
+    with allure.step('Refresh and verify transaction'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(
+            FOURTH_APPLICATION,
+        )
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_refresh_button()
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
+        tx_id = wallets_and_operations.fourth_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
+
+    with allure.step('Verify transaction id'):
+        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
+        assert description == INFO_BITCOIN_SENT.format(tx_id)
+
+    with allure.step('Close pages'):
+        wallets_and_operations.fourth_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Iris wallet send bitcoin with custom fee rate for offline multisig')
+@allure.story('Wallet send bitcoin operation with custom fee rate for offline multisig')
+def test_send_bitcoin_with_custom_fee_rate_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test sending bitcoin with custom fee rate for offline multisig (hardware and on-device, create and load)."""
+    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+
+    # Fund the second wallet (online coordinator)
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+
+    with allure.step('Get bitcoin address from fourth wallet'):
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
+        address, copied_address = wallets_and_operations.fourth_page_features.receive_features.receive(
+            FOURTH_APPLICATION,
+        )
+
+    with allure.step('Verify address'):
+        assert copied_address == address
+
+    with allure.step('Create PSBT for bitcoin send with custom fee rate from second wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
+            SECOND_APPLICATION, copied_address, AMOUNT, wallet_variant_name, FEE_RATE,
+        )
+
+    with allure.step('Sign PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, wallet_variant_name,
+        )
+
+    # Sign from first wallet (offline signer) - required for 2-of-2 multisig
+    # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
+    with allure.step('Sign PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Broadcast PSBT from second wallet'):
+        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+
+    with allure.step('Refresh and verify transaction'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(
+            FOURTH_APPLICATION,
+        )
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_refresh_button()
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
+        tx_id = wallets_and_operations.fourth_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
+
+    with allure.step('Verify transaction id'):
+        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
+        assert description == INFO_BITCOIN_SENT.format(tx_id)
+
+    with allure.step('Close pages'):
+        wallets_and_operations.fourth_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()

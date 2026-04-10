@@ -13,6 +13,7 @@ from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.test_helpers import BaseIssueAsset
+from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
@@ -71,7 +72,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
             if hardware_wallet_emulator:
                 self.wallet_feature.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_issue_ifa=True,
+                    LEDGER_EMULATOR_APP_NAME,
                 )
 
             # IFA-specific: native auth and success flow
@@ -177,67 +178,83 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
         Issues an IFA asset with sufficient sats and no UTXO.
         """
         is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-        self.do_focus_on_application(application)
-
-        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
-            self.sidebar_page_objects.click_inflatable_button()
-
-        self.inflatable_page_objects.click_ifa_frame(asset_ticker)
-
-        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
-            self.issue_ifa_page_objects.click_issue_ifa_button()
-
-        if is_native_auth_enabled:
-            self.enter_native_password()
-
-        if utxo_required:
-            self.do_focus_on_application(CONFIRMATION_DIALOG)
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
-
-            if is_hardware:
-                self.wallet_feature.sign_multisig_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+        hardware_wallet_emulator = None
+        try:
+            if is_hardware and utxo_required:
+                hardware_wallet_emulator = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
                 )
-        else:
-            if self.do_is_displayed(self.success_page_objects.home_button()):
-                self.success_page_objects.click_home_button()
+            self.do_focus_on_application(application)
 
-    def issue_ifa_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount, is_native_auth_enabled: bool = False):
+            if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+                self.sidebar_page_objects.click_inflatable_button()
+
+            self.inflatable_page_objects.click_ifa_frame(asset_ticker)
+
+            if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+                self.issue_ifa_page_objects.click_issue_ifa_button()
+
+            if is_native_auth_enabled:
+                self.enter_native_password()
+
+            if utxo_required:
+                handle_utxo_confirmation_with_hardware_wallet(
+                    self, self, self.wallet_feature, LEDGER_EMULATOR_APP_NAME,
+                    utxo_required=True, is_hardware=is_hardware,
+                )
+            else:
+                if self.do_is_displayed(self.success_page_objects.home_button()):
+                    self.success_page_objects.click_home_button()
+        except Exception as e:
+            raise e
+        finally:
+            if hardware_wallet_emulator:
+                hardware_wallet_emulator.terminate()
+
+    def issue_ifa_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """
-        Issues an NIA asset with sufficient sats for multisig wallet.
+        Issues an IFA asset with sufficient sats for multisig wallet.
+        This triggers UTXO creation which requires PSBT signing by cosigner.
         """
-        self.do_focus_on_application(application)
+        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+        hardware_wallet_emulator = None
+        try:
+            if is_hardware:
+                hardware_wallet_emulator = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
+            self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
-            self.sidebar_page_objects.click_inflatable_button()
+            if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+                self.sidebar_page_objects.click_inflatable_button()
 
-        if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
-            self.inflatable_page_objects.click_issue_ifa_button()
+            if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
+                self.inflatable_page_objects.click_issue_ifa_button()
 
-        if self.do_is_displayed(self.issue_ifa_page_objects.asset_ticker()):
-            self.issue_ifa_page_objects.enter_asset_ticker(asset_ticker)
+            if self.do_is_displayed(self.issue_ifa_page_objects.asset_ticker()):
+                self.issue_ifa_page_objects.enter_asset_ticker(asset_ticker)
 
-        if self.do_is_displayed(self.issue_ifa_page_objects.asset_name()):
-            self.issue_ifa_page_objects.enter_asset_name(asset_name)
+            if self.do_is_displayed(self.issue_ifa_page_objects.asset_name()):
+                self.issue_ifa_page_objects.enter_asset_name(asset_name)
 
-        if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
-            self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
+            if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
+                self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
 
-        if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
-            self.issue_ifa_page_objects.enter_asset_amount(asset_amount)
+            if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
+                self.issue_ifa_page_objects.enter_asset_amount(asset_amount)
 
-        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
-            self.issue_ifa_page_objects.click_issue_ifa_button()
+            if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+                self.issue_ifa_page_objects.click_issue_ifa_button()
 
-        if is_native_auth_enabled:
-            self.enter_native_password()
+            if is_native_auth_enabled:
+                self.enter_native_password()
 
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-            self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+            handle_utxo_confirmation_with_hardware_wallet(
+                self, self, self.wallet_feature, LEDGER_EMULATOR_APP_NAME,
+                utxo_required=True, is_hardware=is_hardware,
+            )
+        except Exception as e:
+            raise e
+        finally:
+            if hardware_wallet_emulator:
+                hardware_wallet_emulator.terminate()

@@ -1,7 +1,7 @@
 """Module containing RgbRepository."""
 from __future__ import annotations
 
-from rgb_lib import AssetCfa
+from rgb_lib import AssetCfa, InflateBeginResult
 from rgb_lib import AssetIfa
 from rgb_lib import AssetNia
 from rgb_lib import Assets
@@ -131,7 +131,7 @@ class RgbRepository:
             data: OperationResult = colored_wallet.wallet.send(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=asset_detail.donation,
                 fee_rate=asset_detail.fee_rate, min_confirmations=asset_detail.min_confirmations, skip_sync=asset_detail.skip_sync,
-                expiration_timestamp=None,
+                expiration_timestamp=asset_detail.duration_seconds,
             )
             cache = Cache.get_cache_session()
             if cache is not None:
@@ -208,7 +208,7 @@ class RgbRepository:
             return data
 
     @staticmethod
-    @check_colorable_available(required_utxos=3)
+    @check_colorable_available(required_utxos=2)
     @auto_sync_multisig()
     def issue_asset_ifa(asset: IssueAssetIfaRequestModel) -> AssetIfa:
         """Issue asset."""
@@ -255,7 +255,8 @@ class RgbRepository:
             recipient_map = {detail.asset_id: [recipient]}
             result: SendBeginResult = colored_wallet.wallet.send_begin(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration_timestamp=detail.duration_seconds,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, 
+                expiration_timestamp=detail.duration_seconds,dry_run=False
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
@@ -320,7 +321,7 @@ class RgbRepository:
             recipient_map = {detail.asset_id: [recipient]}
             result: InitOperationResult = colored_wallet.wallet.send_init(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, duration_seconds=detail.duration_seconds,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, expiration_timestamp=detail.duration_seconds,
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
@@ -373,21 +374,21 @@ class RgbRepository:
     @staticmethod
     @auto_sync_multisig(check_pending_ops=True)
     @check_colorable_available(required_utxos=3)
-    def inflate_begin(detail: InflateRequestModel) -> str:
+    def inflate_begin(detail: InflateRequestModel) -> InflateBeginResult:
         """Create psbt for inflate rgb asset"""
         with repository_custom_context():
-            psbt: str = colored_wallet.wallet.inflate_begin(
+            data: InflateBeginResult = colored_wallet.wallet.inflate_begin(
                 online=colored_wallet.online, asset_id=detail.asset_id, inflation_amounts=detail.inflation_amounts,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,dry_run=False
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
                 wallet_service.add_psbt(
                     PsbtData(
-                        psbt_base64=psbt, purpose='inflate_asset',
+                        psbt_base64=data.psbt, purpose='inflate_asset',
                     ),
                 )
-            return psbt
+            return data.psbt
 
     @staticmethod
     @auto_sync_multisig(check_pending_ops=True)

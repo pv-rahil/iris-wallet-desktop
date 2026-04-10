@@ -540,6 +540,12 @@ class MultisigSetupPage(QWidget):
         self.review_frame.cosigner_string_value_widget.setReadOnly(False)
         if self.review_frame.cosigner_string_copy_btn:
             self.review_frame.cosigner_string_copy_btn.hide()
+            # Set full width (694) since no copy button
+            self.review_frame.cosigner_string_value_widget.setFixedWidth(694)
+        if self.review_frame.xpub_colored_copy_btn:
+            self.review_frame.xpub_colored_copy_btn.hide()
+            # Set full width (694) since no copy button
+            self.review_frame.xpub_colored_value_widget.setFixedWidth(694)
         self.reset_button = SecondaryButton()
         self.reset_button.setIcon(QIcon(':/assets/x_cross.png'))
         self.reset_button.setIconSize(QSize(18, 18))
