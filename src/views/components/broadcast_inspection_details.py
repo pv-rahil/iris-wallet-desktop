@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QLabel
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import QVBoxLayout
 
-from accessible_constant import CLEAR_PSBT_BUTTON
+from accessible_constant import BROADCAST_TRANSACTION_PAGE_BUTTON, CLEAR_PSBT_BUTTON
 from accessible_constant import EXPORT_PSBT_BUTTON
 from accessible_constant import IMPORT_PSBT_BUTTON
 from accessible_constant import REJECT_PSBT_BUTTON
@@ -460,12 +460,14 @@ class BroadcastInspectionDetails(QFrame):
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_transaction',
                 ),
             )
+            self.btn_primary.setAccessibleName(BROADCAST_TRANSACTION_PAGE_BUTTON)
         else:
             self.btn_primary.setText(
                 QCoreApplication.translate(
                     IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_psbt',
                 ),
             )
+            self.btn_primary.setAccessibleName(SIGN_PSBT_PAGE_BUTTON)
 
         if self._is_multisig:
             self.btn_import.setText(
@@ -494,6 +496,7 @@ class BroadcastInspectionDetails(QFrame):
                         IRIS_WALLET_TRANSLATIONS_CONTEXT, 'post_to_multisig',
                     ),
                 )
+                self.btn_primary.setAccessibleName(BROADCAST_TRANSACTION_PAGE_BUTTON)
 
         # Retranslate inspection static labels
         self.inspect_loading.setText(

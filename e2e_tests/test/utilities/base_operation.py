@@ -216,6 +216,7 @@ class BaseOperations:
             timeout = get_default_timeout(15)
 
         if not element:
+            print(f'[ELEMENT NOT FOUND] Element is None or empty')
             return False
 
         end_time = time.time() + timeout
@@ -230,6 +231,13 @@ class BaseOperations:
                 pass
 
             time.sleep(interval)
+
+        # Log when element not found after timeout
+        try:
+            element_info = f"role={element.roleName}, name={element.name}" if hasattr(element, 'roleName') else str(element)
+            print(f'[ELEMENT NOT FOUND] Timeout after {timeout}s waiting for: {element_info}')
+        except Exception:
+            print(f'[ELEMENT NOT FOUND] Timeout after {timeout}s')
 
         return False
 
@@ -643,7 +651,7 @@ class BaseOperations:
             self._consecutive_failures = 0
 
         print(f"""[WARN] Element not found after
-              {timeout}s and {attempt} attempts""")
+              {timeout}s and {attempt} attempts: role={role_name}, name/desc={identifier}""")
 
         return False
 

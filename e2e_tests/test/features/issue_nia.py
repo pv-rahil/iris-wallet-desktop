@@ -4,6 +4,7 @@ This module contains the IssueNia class, which provides methods for issuing NIA 
 """
 from __future__ import annotations
 
+from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
@@ -187,6 +188,12 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
+            
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
         self.wallet_feature.usb_sync(is_receive=True)
 
@@ -222,6 +229,48 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
         finally:
             if hardware_wallet_emulator:
                 hardware_wallet_emulator.terminate()
+
+    def issue_nia_for_offline_multisig_wallet(self, application, asset_ticker, asset_name, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+        """
+        Issues an NIA asset for offline multisig wallet.
+        Creates PSBT on watch-only coordinator, then USB syncs to pass PSBT to offline signer.
+        No hardware signing happens here - signing is done separately via sign_psbt.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
+            self.sidebar_page_objects.click_fungibles_button()
+
+        if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
+            self.fungible_page_objects.click_issue_nia_button()
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_ticker()):
+            self.issue_nia_page_objects.enter_asset_ticker(asset_ticker)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_name()):
+            self.issue_nia_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.asset_amount()):
+            self.issue_nia_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
+            self.issue_nia_page_objects.click_issue_nia_button()
+
+        if is_native_auth_enabled:
+            self.enter_native_password()
+
+        # Handle UTXO confirmation dialog (no hardware signing)
+        self.do_focus_on_application(CONFIRMATION_DIALOG)
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+        self.do_focus_on_application(application)
+
+        # USB sync to pass PSBT to offline wallet
+        self.wallet_feature.usb_sync()
 
     def issue_nia_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """

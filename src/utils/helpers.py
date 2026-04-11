@@ -462,6 +462,9 @@ def register_multisig_button(
 ):
     """
     Registers a button to automatically react to multisig pending state changes.
+    
+    When a multisig operation is pending, clicking the button will show a toast
+    instead of performing the normal navigation action.
     """
     if not isinstance(button, QPushButton):
         return
@@ -473,9 +476,6 @@ def register_multisig_button(
             )
         pending_handler = default_pending_handler
 
-    # State to track the currently connected handler without mutating Qt object properties
-    state = {'current_handler': None}
-
     def state_update_callback(is_pending: bool):
         try:
             # Check if the underlying C++ object is still alive
@@ -486,22 +486,19 @@ def register_multisig_button(
         if not isinstance(button, QPushButton):
             return
 
-        new_handler = pending_handler if is_pending else normal_handler
+        # Disconnect ALL clicked handlers to avoid duplicate connections
+        try:
+            button.clicked.disconnect()
+        except (TypeError, RuntimeError):
+            pass
 
-        if state['current_handler'] == new_handler:
-            return
+        # Connect the appropriate handler based on pending state
+        if is_pending:
+            button.clicked.connect(pending_handler)
+        else:
+            button.clicked.connect(normal_handler)
 
-        if state['current_handler'] is not None:
-            try:
-                button.clicked.disconnect(state['current_handler'])
-            except (TypeError, RuntimeError):
-                pass
-
-        if new_handler is not None:
-            button.clicked.connect(new_handler)
-
-        state['current_handler'] = new_handler
-
+        # Update visual state via QSS property
         button.setProperty('pending', 'true' if is_pending else 'false')
         button.style().polish(button)
 

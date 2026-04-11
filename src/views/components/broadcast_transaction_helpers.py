@@ -123,6 +123,9 @@ class InspectionUIHandler:
             self._widget.handle_button_enable()
             if self._widget.is_multisig:
                 self._widget.sign_status_label.hide()
+            # Stop loading overlay so UI doesn't stay disabled
+            self._widget.loading_overlay.stop()
+            self._widget.loading_overlay.make_parent_disabled_during_loading(False)
             return
 
         self._widget.psbt_details = details
@@ -144,13 +147,23 @@ class InspectionUIHandler:
 
     def handle_rgb_transfer_inspection_result(self, rgb_details: dict | None) -> None:
         """Handle the async RGB transfer inspection result."""
+        if rgb_details is None:
+            # Inspection failed - reset state and stop loading
+            self._widget.rgb_details = None
+            self._widget.loading_overlay.stop()
+            self._widget.loading_overlay.make_parent_disabled_during_loading(False)
+            self._widget.handle_button_enable()
+            return
+
         self._widget.rgb_details = rgb_details
         summary = BroadcastTransactionService.rgb_transfer_inspection_summary(
             rgb_details, self._widget.pending_transfer_type,
         )
 
         min_conf = None
-        if self._widget.current_operation and self._widget.current_operation.details:
+        if self._widget.current_operation and hasattr(
+            self._widget.current_operation, 'details',
+        ) and self._widget.current_operation.details:
             min_conf = self._widget.current_operation.details.min_confirmations
         elif self._widget.stored_context:
             min_conf = self._widget.stored_context.get('min_confirmations')

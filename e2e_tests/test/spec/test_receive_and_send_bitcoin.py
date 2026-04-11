@@ -8,7 +8,7 @@ import re
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION
+from accessible_constant import FIRST_APPLICATION, ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
@@ -615,7 +615,6 @@ def test_send_bitcoin_with_custom_fee_rate_for_multisig(wallets_and_operations: 
 def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test sending bitcoin for offline multisig (hardware and on-device, create and load)."""
     setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
 
     # Fund the second wallet (online coordinator)
     with allure.step('Fund second online multisig wallet (coordinator)'):
@@ -624,6 +623,9 @@ def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSet
         )
 
     with allure.step('Get bitcoin address from fourth wallet'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(
+            FOURTH_APPLICATION,
+        )
         wallets_and_operations.fourth_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, _ = wallets_and_operations.fourth_page_features.receive_features.receive(
@@ -637,7 +639,7 @@ def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSet
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
-            SECOND_APPLICATION, address, AMOUNT, wallet_variant_name,
+            application=SECOND_APPLICATION, receiver_invoice=address, amount=AMOUNT, wallet_variant_name=wallet_variant_name,
         )
 
     with allure.step('Sign PSBT from third wallet (cosigner)'):
@@ -645,7 +647,7 @@ def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSet
             THIRD_APPLICATION,
         )
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, wallet_variant_name,
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
 
     # Sign from first wallet (offline signer) - required for 2-of-2 multisig
@@ -658,8 +660,13 @@ def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSet
             FIRST_APPLICATION, wallet_variant_name,
         )
 
-    with allure.step('Broadcast PSBT from second wallet'):
-        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+    with allure.step('Broadcast PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        description = wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
 
     with allure.step('Refresh and verify transaction'):
         wallets_and_operations.fourth_page_operations.do_focus_on_application(
@@ -669,17 +676,14 @@ def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSet
         wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
         tx_id = wallets_and_operations.fourth_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
 
+    with allure.step('Close pages'):
+        wallets_and_operations.fourth_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
+        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
     with allure.step('Verify transaction id'):
         tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert description == INFO_BITCOIN_SENT.format(tx_id)
 
-    with allure.step('Close pages'):
-        wallets_and_operations.fourth_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
 
 @pytest.mark.skip_for_single_sig
@@ -689,8 +693,6 @@ def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSet
 @allure.story('Wallet send bitcoin operation with custom fee rate for offline multisig')
 def test_send_bitcoin_with_custom_fee_rate_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test sending bitcoin with custom fee rate for offline multisig (hardware and on-device, create and load)."""
-    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
 
     # Fund the second wallet (online coordinator)
     with allure.step('Fund second online multisig wallet (coordinator)'):
@@ -736,8 +738,13 @@ def test_send_bitcoin_with_custom_fee_rate_for_offline_multisig(wallets_and_oper
             FIRST_APPLICATION, wallet_variant_name,
         )
 
-    with allure.step('Broadcast PSBT from second wallet'):
-        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+    with allure.step('Broadcast PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        description = wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
 
     with allure.step('Refresh and verify transaction'):
         wallets_and_operations.fourth_page_operations.do_focus_on_application(

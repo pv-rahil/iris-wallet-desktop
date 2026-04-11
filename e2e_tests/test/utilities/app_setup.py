@@ -624,9 +624,15 @@ class TestEnvironment:
             check=True,
         )
 
-        self.second_application = root.child(
-            roleName='frame', name=SECOND_APPLICATION,
-        )
+        # Get the frame from the application node (more reliable than root.child)
+        app_node = self._find_application_node(SECOND_APPLICATION)
+        if app_node:
+            self.second_application = app_node.child(roleName='frame', name=SECOND_APPLICATION)
+        else:
+            # Fallback to direct search
+            self.second_application = root.child(
+                roleName='frame', name=SECOND_APPLICATION,
+            )
         self.second_page_features = MainFeatures(self.second_application)
         self.second_page_objects = MainPageObjects(self.second_application)
         self.second_page_operations = BaseOperations(self.second_application)

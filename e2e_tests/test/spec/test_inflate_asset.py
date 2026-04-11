@@ -306,12 +306,11 @@ def test_inflate_ifa_multisig_on_device_online(wallets_and_operations: WalletTes
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Secondary Issuance - Offline Multisig')
-@allure.story('Inflate IFA asset for offline multisig')
-def test_inflate_ifa_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """Test secondary issuance (inflate) for offline multisig wallet (hardware and on-device)."""
+@allure.story('Create UTXO PSBT for inflation')
+def test_offline_multisig_create_utxo_for_inflate_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test secondary issuance (inflate) for offline multisig wallet - Create UTXO PSBT."""
 
     setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
 
     fund_and_refresh_offline_multisig_wallets(wallets_and_operations, asset_type='ifa')
 
@@ -339,6 +338,14 @@ def test_inflate_ifa_offline_multisig(wallets_and_operations: WalletTestSetup, w
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Broadcast PSBT for IFA issuance from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
         )
 
     with allure.step('Issue IFA asset from draft'):
@@ -376,6 +383,25 @@ def test_inflate_ifa_offline_multisig(wallets_and_operations: WalletTestSetup, w
             FIRST_APPLICATION, wallet_variant_name,
         )
 
+    with allure.step('Broadcast UTXO PSBT for inflation from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Secondary Issuance - Offline Multisig')
+@allure.story('Create inflate PSBT and broadcast')
+def test_offline_multisig_inflate_transfer_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test secondary issuance (inflate) for offline multisig wallet - Inflate PSBT."""
+
     with allure.step('Create inflate PSBT from draft'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -401,6 +427,25 @@ def test_inflate_ifa_offline_multisig(wallets_and_operations: WalletTestSetup, w
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
+
+    with allure.step('Broadcast inflation PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Secondary Issuance - Offline Multisig')
+@allure.story('Verify inflate amount')
+def test_offline_multisig_verify_inflate_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test secondary issuance (inflate) for offline multisig wallet - Verify."""
 
     with allure.step('Verify inflate amount in transaction frame'):
         wallets_and_operations.second_page_operations.do_focus_on_application(

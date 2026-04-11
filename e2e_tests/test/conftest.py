@@ -3,7 +3,9 @@ End-to-End testing script.
 """
 from __future__ import annotations
 
+import gc
 import os
+import subprocess
 import time
 
 import pytest
@@ -47,6 +49,47 @@ def _refresh_atspi_tree():
         _ = root.children
     except Exception:
         pass
+
+
+def _restart_atspi():
+    """Restart AT-SPI registry daemon to clear all caches."""
+    try:
+        # Kill the AT-SPI registry daemon
+        subprocess.run(
+            ['pkill', '-f', 'at-spi2-registryd'],
+            capture_output=True,
+            timeout=5,
+        )
+        time.sleep(1)
+        # It should auto-restart via D-Bus activation, but we can also trigger it
+        subprocess.run(
+            ['busctl', '--user', 'call', 'org.a11y.Bus', '/org/a11y/bus', 'org.a11y.Bus', 'GetAddress'],
+            capture_output=True,
+            timeout=5,
+        )
+        time.sleep(2)  # Wait for AT-SPI to fully restart
+    except Exception:
+        pass
+
+
+def _aggressive_cleanup():
+    """Aggressive cleanup to prevent AT-SPI exhaustion in long tests."""
+    # Refresh AT-SPI tree
+    try:
+        _ = root.children
+    except Exception:
+        pass
+    # Force garbage collection
+    gc.collect()
+    # Small delay to let UI settle
+    time.sleep(0.5)
+
+
+def _full_atspi_reset():
+    """Full AT-SPI reset - restart service and clear all caches. Use sparingly."""
+    _aggressive_cleanup()
+    _restart_atspi()
+    _aggressive_cleanup()
 
 
 def _reset_operations_state(test_environment):
@@ -174,29 +217,31 @@ def cleanup_between_tests(request):
     - Refreshing AT-SPI tree to clear stale caches
     - Resetting all BaseOperations state
     - Adding stabilization delays in CI
+    - Full AT-SPI reset for all tests
     """
     # Before test: nothing to do
     yield
 
     # After test: perform cleanup
+    test_name = request.node.name
+    print(f'\n[CLEANUP] Test completed: {test_name}')
+
     try:
+        # Full AT-SPI reset for all tests
+        print('[CLEANUP] Running full AT-SPI reset')
+        _full_atspi_reset()
+
         # Get the test_environment fixture if it exists
         if 'test_environment' in request.fixturenames:
             test_env = request.getfixturevalue('test_environment')
-
-            print('\n[CLEANUP] Running inter-test cleanup')
-
-            # 1. Refresh AT-SPI tree to clear stale element caches
-            _refresh_atspi_tree()
-
-            # 2. Reset state in BaseOperations instances
+            # Reset state in BaseOperations instances
             _reset_operations_state(test_env)
 
-            # Stabilization delay (longer in CI)
-            delay = CI_STABILIZATION_DELAY if _is_ci_environment() else LOCAL_STABILIZATION_DELAY
-            _stabilize_ui(delay)
+        # Stabilization delay (longer in CI)
+        delay = CI_STABILIZATION_DELAY if _is_ci_environment() else LOCAL_STABILIZATION_DELAY
+        _stabilize_ui(delay)
 
-            print('[CLEANUP] Complete')
+        print('[CLEANUP] Complete')
     except Exception as e:
         # Don't fail tests if cleanup has issues
         print(f'[CLEANUP] Warning: Cleanup encountered an error: {e}')

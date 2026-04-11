@@ -702,15 +702,21 @@ class HeaderFrame(QFrame, QObject):
         matched_signed_count = self._count_matched_signed_psbts(drafts)
 
         if signed_count > 0:
+            # Reset the action mode since we have signed PSBTs to broadcast
+            self._psbt_action_mode = None
             label_text = QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
             ).format(signed_count)
         elif matched_signed_count > 0:
+            # Reset the action mode since we have matched signed PSBTs
+            self._psbt_action_mode = None
             label_text = QCoreApplication.translate(
                 IRIS_WALLET_TRANSLATIONS_CONTEXT, 'broadcast_psbt_detection_label', None,
             ).format(matched_signed_count)
         else:
-            label_text = 'Sign Needed (Use Offline Wallet)'
+            label_text = QCoreApplication.translate(
+                IRIS_WALLET_TRANSLATIONS_CONTEXT, 'sign_needed_use_offline_wallet', None,
+            )
             self._psbt_action_mode = 'offline_sign_needed'
 
         self.psbt_info_label.setText(label_text)

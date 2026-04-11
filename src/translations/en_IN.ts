@@ -2458,5 +2458,9 @@ If you understand the above remarks and wish to proceed, press the button below 
         <source>transition_type</source>
         <translation>Transition Type:</translation>
     </message>
+    <message>
+        <source>sign_needed_use_offline_wallet</source>
+        <translation>Sign Needed (Use Offline Wallet)</translation>
+    </message>
 </context>
 </TS>

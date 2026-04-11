@@ -1016,9 +1016,9 @@ class Wallet(MainPageObjects, BaseOperations):
         # Get the app frame from the TestEnvironment to ensure correct app context
         env = self.get_current_environment()
         target_app = None
-        if env and hasattr(env, 'first_application') and app_name == FIRST_APPLICATION:
+        if env and hasattr(env, 'first_application'):
             target_app = env.first_application
-        elif env and hasattr(env, 'second_application') and app_name == SECOND_APPLICATION:
+        elif env and hasattr(env, 'second_application'):
             target_app = env.second_application
 
         # Fallback to finding frame directly if not available from env
@@ -1097,7 +1097,7 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
                 self.fungible_page_objects.click_refresh_button()
 
-            if variant_name == ONLINE_WATCH_ONLY:
+            if variant_name == ONLINE_WATCH_ONLY or variant_name in REQUIRE_USB_VARIANTS:
                 if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
                     self.fungible_page_objects.click_usb_sync_frame()
 
@@ -1141,7 +1141,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
                 self.do_focus_on_application(application)
 
-            if variant_name == ONLINE_WATCH_ONLY:
+            if variant_name == ONLINE_WATCH_ONLY or variant_name in REQUIRE_USB_VARIANTS:
                 self.usb_sync(is_receive=True)
 
         except Exception as e:
@@ -1150,18 +1150,24 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.hw_emulator:
                 self.hw_emulator.terminate()
 
-    def broadcast_psbt(self, application):
+    def broadcast_psbt(self, application,is_multisig:bool=False):
         """
         Broadcast psbt.
         """
         description = None
         self.do_focus_on_application(application)
+        
+        if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
+            self.sidebar_page_objects.click_fungibles_button()
 
         if self.do_is_displayed(self.fungible_page_objects.usb_sync_frame()):
             self.fungible_page_objects.click_usb_sync_frame()
 
         if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
             self.usb_sync_dialog_page_objects.click_continue_button()
+            
+        if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
+            self.fungible_page_objects.click_refresh_button()
 
         if self.do_is_displayed(self.fungible_page_objects.psbt_info_frame()):
             self.fungible_page_objects.click_psbt_info_frame()
@@ -1169,15 +1175,16 @@ class Wallet(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.broadcast_transaction_page_objects.broadcast_button()):
             self.broadcast_transaction_page_objects.click_broadcast_button()
 
-        self.do_focus_on_application(CONFIRMATION_DIALOG)
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+        if not is_multisig:
+            self.do_focus_on_application(CONFIRMATION_DIALOG)
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+                self.confirmation_dialog_page_objects.click_confirmation_dialog()
 
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_checkbox()):
-            self.confirmation_dialog_page_objects.click_confirmation_checkbox()
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_checkbox()):
+                self.confirmation_dialog_page_objects.click_confirmation_checkbox()
 
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
         _, description = self.toaster_page_objects.click_toaster_frame()
 

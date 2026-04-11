@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 
+from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
@@ -238,6 +239,12 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
+        
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
         self.wallet_features.usb_sync(is_receive=True)
 
@@ -278,6 +285,55 @@ class IssueCfa(MainPageObjects, BaseOperations):
         finally:
             if hardware_wallet_emulator:
                 hardware_wallet_emulator.terminate()
+
+    def issue_cfa_for_offline_multisig_wallet(self, application, asset_name, asset_description, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+        """
+        Issues a CFA asset for offline multisig wallet.
+        Creates PSBT on watch-only coordinator, then USB syncs to pass PSBT to offline signer.
+        No hardware signing happens here - signing is done separately via sign_psbt.
+        """
+        self.do_focus_on_application(application)
+        copy_cfa_image_to_home_directory(os.getcwd())
+
+        if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
+            self.sidebar_page_objects.click_collectibles_button()
+
+        if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
+            self.collectible_page_objects.click_issue_cfa_button()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
+            self.issue_cfa_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
+            self.issue_cfa_page_objects.enter_asset_description(asset_description)
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
+            self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
+            self.issue_cfa_page_objects.click_upload_file_button()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
+            self.issue_cfa_page_objects.click_cfa_asset_media()
+
+        if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
+            self.issue_cfa_page_objects.click_issue_cfa_button()
+
+        if is_native_auth_enabled:
+            self.enter_native_password()
+
+        # Handle UTXO confirmation dialog (no hardware signing)
+        self.do_focus_on_application(CONFIRMATION_DIALOG)
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+        self.do_focus_on_application(application)
+
+        # USB sync to pass PSBT to offline wallet
+        self.wallet_feature.usb_sync()
 
     def issue_cfa_with_sufficient_sats_for_multisig_wallet(self, application, asset_name, asset_description, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """

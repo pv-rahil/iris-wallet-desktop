@@ -135,32 +135,13 @@ jobs:
   #         if-no-files-found: ignore
 
   e2e-dogtail:
-    name: E2E Dogtail tests
+    name: E2E (${{ matrix.wallet_variant }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
-        test_file:
-          - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_login_app_auth
-          - test_ask_auth_for_imp_operations
-          - test_settings
-          - test_help
-          - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_nia_asset
-          - test_send_and_receive_ifa_asset
-          - test_send_and_receive_cfa_asset
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_issue_nia_asset
-          - test_issue_ifa_asset
-          - test_issue_cfa_asset
-          - test_view_unspent
-          - test_refresh_transfer
-          - test_inflate_asset
         wallet_variant:
           # All single-sig variants
           - online_watch_only
@@ -241,19 +222,7 @@ jobs:
           # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
           echo "GTK_CSD=0" >> $GITHUB_ENV
 
-      - name: Start screen recording
-        run: |
-          # Install ffmpeg for screen recording
-          sudo apt-get install -y ffmpeg
-
-          # Start recording the virtual display
-          ffmpeg -video_size 1920x1080 -framerate 15 -f x11grab -i :99.0 \
-            -codec:v libx264 -preset ultrafast -crf 28 \
-            /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4 &
-          echo "RECORDER_PID=$!" >> $GITHUB_ENV
-          sleep 2
-
-      - name: Run E2E Dogtail Test
+      - name: Run E2E Dogtail Tests (${{ matrix.wallet_variant }})
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -263,26 +232,15 @@ jobs:
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
         uses: ./.github/actions/setup-e2e-environment
         with:
-          test-file: ${{ matrix.test_file }}
+          test-file: all
           wallet-variant: ${{ matrix.wallet_variant }}
 
-      - name: Stop screen recording
-        if: always()
-        run: |
-          # Stop ffmpeg gracefully
-          if [ -n "$RECORDER_PID" ]; then
-            kill -INT $RECORDER_PID 2>/dev/null || true
-            sleep 3
-            # Force kill if still running
-            kill -9 $RECORDER_PID 2>/dev/null || true
-          fi
-
-      - name: Upload screen recording
+      - name: Upload Allure results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
-          path: /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4
+          name: allure-results-${{ matrix.wallet_variant }}
+          path: allure-results/${{ matrix.wallet_variant }}/
           retention-days: 7
           if-no-files-found: ignore
 

@@ -181,6 +181,8 @@ class LoadingTranslucentScreen(QWidget):
 
     def eventFilter(self, obj, event):  # pylint:disable=invalid-name
         """Filter events for the parent widget to adjust the loading screen size."""
+        if not isinstance(event, QEvent):
+            return False
         if isinstance(obj, QWidget) and event.type() == QEvent.Resize:
             self.setFixedSize(obj.size())
         return super().eventFilter(obj, event)

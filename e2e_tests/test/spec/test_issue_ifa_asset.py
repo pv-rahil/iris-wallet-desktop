@@ -332,6 +332,15 @@ def test_issue_ifa_with_sufficient_sats_for_offline_multisig(wallets_and_operati
                 FIRST_APPLICATION, wallet_variant_name, is_issue_ifa=True,
             )
 
+    # Broadcast PSBT from second wallet (coordinator)
+    with allure.step('Broadcast PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
+
     # Refresh second wallet and issue from draft
     with allure.step('Refresh second wallet and issue IFA from draft'):
         wallets_and_operations.second_page_operations.do_focus_on_application(

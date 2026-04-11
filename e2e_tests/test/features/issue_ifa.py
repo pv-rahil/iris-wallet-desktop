@@ -170,6 +170,12 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
+            
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
         self.wallet_feature.usb_sync(is_receive=True)
 
@@ -210,6 +216,51 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
         finally:
             if hardware_wallet_emulator:
                 hardware_wallet_emulator.terminate()
+
+    def issue_ifa_for_offline_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+        """
+        Issues an IFA asset for offline multisig wallet.
+        Creates PSBT on watch-only coordinator, then USB syncs to pass PSBT to offline signer.
+        No hardware signing happens here - signing is done separately via sign_psbt.
+        """
+        self.do_focus_on_application(application)
+
+        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+            self.sidebar_page_objects.click_inflatable_button()
+
+        if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
+            self.inflatable_page_objects.click_issue_ifa_button()
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_ticker()):
+            self.issue_ifa_page_objects.enter_asset_ticker(asset_ticker)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_name()):
+            self.issue_ifa_page_objects.enter_asset_name(asset_name)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
+            self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
+            self.issue_ifa_page_objects.enter_asset_amount(asset_amount)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
+            self.issue_ifa_page_objects.click_issue_ifa_button()
+
+        if is_native_auth_enabled:
+            self.enter_native_password()
+
+        # Handle UTXO confirmation dialog (no hardware signing)
+        self.do_focus_on_application(CONFIRMATION_DIALOG)
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+            self.confirmation_dialog_page_objects.click_confirmation_dialog()
+
+        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+
+        self.do_focus_on_application(application)
+
+        # USB sync to pass PSBT to offline wallet
+        self.wallet_feature.usb_sync()
 
     def issue_ifa_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """

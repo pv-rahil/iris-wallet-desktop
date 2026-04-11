@@ -403,8 +403,20 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             {
                 'args': [psbt],
                 'callback': self._on_inspect_psbt_success,
-                'error_callback': self.on_error,
+                'error_callback': self._on_inspect_psbt_error,
             },
+        )
+
+    def _on_inspect_psbt_error(self, error: Exception) -> None:
+        """Handle error for PSBT inspection - emit None so UI can handle failure."""
+        self._inspecting_psbt = None  # Reset guard
+        self.is_loading.emit(False)
+        self.psbt_inspection_ready.emit(None)  # Emit None to signal failure
+        msg = error.message if hasattr(error, 'message') else str(error)
+        ToastManager.error(description=msg)
+        logger.error(
+            'PSBT inspection failed: %s, Message: %s',
+            type(error).__name__, str(error),
         )
 
     def inspect_rgb_transfer(self, fascia_path: str, psbt: str, entropy: int):
@@ -422,8 +434,20 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             {
                 'args': [rebased_path, psbt, entropy],
                 'callback': self._on_inspect_rgb_transfer_success,
-                'error_callback': self.on_error,
+                'error_callback': self._on_inspect_rgb_transfer_error,
             },
+        )
+
+    def _on_inspect_rgb_transfer_error(self, error: Exception) -> None:
+        """Handle error for RGB transfer inspection - emit None so UI can handle failure."""
+        self._inspecting_rgb = None  # Reset guard
+        self.is_loading.emit(False)
+        self.rgb_transfer_inspection_ready.emit(None)  # Emit None to signal failure
+        msg = error.message if hasattr(error, 'message') else str(error)
+        ToastManager.error(description=msg)
+        logger.error(
+            'RGB transfer inspection failed: %s, Message: %s',
+            type(error).__name__, str(error),
         )
 
     def fetch_pending_operation(self):

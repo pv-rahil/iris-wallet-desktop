@@ -14,6 +14,7 @@ from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -31,6 +32,7 @@ from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardwar
 from e2e_tests.test.utilities.test_helpers import verify_expired_invoice_validation
 from e2e_tests.test.utilities.test_helpers import verify_invalid_invoice_validation
 from e2e_tests.test.utilities.translation_utils import TranslationManager
+from src.model.enums.enums_model import TransactionStatusEnumModel
 
 ASSET_TICKER = 'TTK'
 NIA_ASSET_NAME = 'Tether'
@@ -284,24 +286,15 @@ def test_send_nia_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
     fund_and_refresh_offline_multisig_wallets(wallets_and_operations, asset_type='nia')
 
     with allure.step('Issue NIA asset for offline multisig wallet'):
-        # Issue from second wallet (online coordinator)
+        # Issue from second wallet (online coordinator) - creates PSBT and syncs to offline
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
+        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_for_offline_multisig_wallet(
             SECOND_APPLICATION, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT, wallet_variant_name,
         )
-        # Refresh third wallet
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        # Sign from third wallet (cosigner)
-        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
-        )
-        # Sign from first wallet (offline signer) - required for 2-of-2 multisig
-        # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
+
+        # Refresh and sign from first wallet (offline signer)
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
@@ -309,11 +302,37 @@ def test_send_nia_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
-        # Refresh second wallet
+
+        # Broadcast PSBT from second wallet (coordinator)
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
+
+        # Refresh and sign from third wallet (cosigner)
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+        # Refresh second wallet (coordinator)
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Issue NIA asset (offline multisig)'):
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+            f"{NIA_ASSET_NAME} (Draft)",
+        )
+        wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
+        wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
     with allure.step('Navigate to NIA asset for sending'):
         focus_and_navigate_to_asset(
@@ -334,25 +353,104 @@ def test_send_nia_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
 @pytest.mark.skip_for_single_sig
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
-@allure.feature('Automation of receive, send, and transaction status for NIA asset in iris wallet for offline multisig')
-@allure.story('End-to-End testing of receiving, sending, and verifying transaction status for NIA asset for offline multisig')
-def test_send_and_receive_nia_asset_offline_multisig_operation(wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """Test send and receive operation for NIA asset for offline multisig (hardware and on-device, create and load)"""
-
-    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
-
+@allure.feature('Offline multisig send NIA asset')
+@allure.story('Create utxo PSBT, sign with offline signer and cosigner, then broadcast')
+def test_offline_multisig_create_utxo_for_send_nia(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test send NIA asset in offline multisig setup (4 apps) - Create UTXO for send."""
     with allure.step('Get invoice from fourth receiver wallet'):
-        invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
-            FOURTH_APPLICATION,
+        invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(FOURTH_APPLICATION)
+
+    # Create UTXO PSBT
+    with allure.step('Create UTXO PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(NIA_ASSET_NAME)
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
+        wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
+            wallet_variant_name=wallet_variant_name, utxo_required=True,
         )
 
-    offline_multisig_send_asset_flow_with_verification(
-        wallets_and_operations=wallets_and_operations,
-        invoice=invoice,
-        asset_name=NIA_ASSET_NAME,
-        asset_ticker=NIA_ASSET_NAME,
-        send_amount=SEND_AMOUNT,
-        wallet_variant_name=wallet_variant_name,
-        asset_type='nia',
-        verify_assertions=True,
-    )
+    # Sign UTXO PSBT from cosigner first
+    with allure.step('Sign UTXO PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE)
+
+    # Sign UTXO PSBT from offline signer
+    with allure.step('Sign UTXO PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(FIRST_APPLICATION, wallet_variant_name)
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Offline multisig send NIA asset')
+@allure.story('Create transfer PSBT, sign with offline signer and cosigner, then broadcast')
+def test_offline_multisig_send_transfer_nia(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test send NIA asset in offline multisig setup (4 apps) - Send transfer."""
+    
+    # Broadcast UTXO PSBT
+    with allure.step('Broadcast UTXO PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+
+    # Send asset
+    with allure.step('Send NIA asset from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(NIA_ASSET_NAME)
+        wallets_and_operations.second_page_features.send_features.send_asset_for_multisig(SECOND_APPLICATION, wallet_variant_name)
+
+    # Sign transfer PSBT from offline signer first
+    with allure.step('Sign transfer PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(FIRST_APPLICATION, wallet_variant_name)
+
+    # Sign transfer PSBT from cosigner
+    with allure.step('Sign transfer PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE)
+
+   
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Offline multisig send NIA asset')
+@allure.story('Verify transaction status and amount')
+def test_offline_multisig_verify_for_nia(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup):
+    """Test send NIA asset in offline multisig setup (4 apps) - Verify transfer."""
+    
+ # Broadcast transfer PSBT
+    with allure.step('Broadcast transfer PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+
+    # Verify transfer status on sender (second wallet)
+    with allure.step('Verify transfer status on second wallet (sender)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(SECOND_APPLICATION, verify_ready=True)
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(NIA_ASSET_NAME)
+        actual_transfer_status = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_transfer_status()
+        assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
+
+    # Verify received amount on receiver (fourth wallet)
+    with allure.step('Verify received amount on fourth wallet (receiver)'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(FOURTH_APPLICATION, verify_ready=True)
+        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_nia_frame(NIA_ASSET_NAME)
+        received_amount = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
+        assert received_amount == SEND_AMOUNT

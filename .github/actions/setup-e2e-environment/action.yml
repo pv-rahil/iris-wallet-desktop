@@ -129,6 +129,10 @@ runs:
         export GDK_SYNCHRONIZE=1
         export __GLX_VENDOR_LIBRARY_NAME=mesa
         sleep 3  # Increased to 3s for better UI stability
-        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
+        if [ "${{ inputs.test-file }}" = "all" ]; then
+          poetry run e2e-test all --wallet-variant ${{ inputs.wallet-variant }}
+        else
+          poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
+        fi
         '
       shell: bash

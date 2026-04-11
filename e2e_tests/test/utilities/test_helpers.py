@@ -4,8 +4,13 @@ Common test helpers for e2e tests to reduce code duplication.
 """
 from __future__ import annotations
 
-import threading
+import gc
+import subprocess
+import time
+
+from dogtail.tree import root
 import allure
+from dogtail import utils
 
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
@@ -23,6 +28,47 @@ from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import map_load_to_create
 from src.model.enums.enums_model import TransactionStatusEnumModel
+
+
+def _restart_atspi():
+    """Restart AT-SPI registry daemon to clear all caches."""
+    try:
+        # Kill the AT-SPI registry daemon
+        subprocess.run(
+            ['pkill', '-f', 'at-spi2-registryd'],
+            capture_output=True,
+            timeout=5,
+        )
+        time.sleep(1)
+        # It should auto-restart via D-Bus activation, but we can also trigger it
+        subprocess.run(
+            ['busctl', '--user', 'call', 'org.a11y.Bus', '/org/a11y/bus', 'org.a11y.Bus', 'GetAddress'],
+            capture_output=True,
+            timeout=5,
+        )
+        time.sleep(2)  # Wait for AT-SPI to fully restart
+    except Exception:
+        pass
+
+
+def _aggressive_cleanup():
+    """Aggressive cleanup to prevent AT-SPI exhaustion in long tests."""
+    # Refresh AT-SPI tree
+    try:
+        _ = root.children
+    except Exception:
+        pass
+    # Force garbage collection
+    gc.collect()
+    # Small delay to let UI settle
+    time.sleep(0.5)
+
+
+def _full_atspi_reset():
+    """Full AT-SPI reset - restart service and clear all caches. Use sparingly."""
+    _aggressive_cleanup()
+    _restart_atspi()
+    _aggressive_cleanup()
 
 
 class BaseIssueAsset:
@@ -112,6 +158,7 @@ def verify_expired_invoice_validation(
             SECOND_APPLICATION,
         )
         if asset_type == 'ifa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
             wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
                 asset_name,
             )
@@ -121,6 +168,7 @@ def verify_expired_invoice_validation(
                 asset_name,
             )
         elif asset_type == 'cfa':
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
             wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
                 asset_name,
             )
@@ -1265,206 +1313,201 @@ def offline_multisig_send_asset_flow_with_verification(
         asset_type: Asset type ('ifa', 'nia', 'cfa').
         verify_assertions: Whether to verify assertions.
     """
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
 
-    with allure.step('Issue asset from second wallet (online coordinator)'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
+    # Helper to get sidebar/refresh/page objects based on asset type
+    def get_asset_nav_objects(page_objects):
         if asset_type == 'ifa':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+            return (
+                page_objects.sidebar_page_objects.click_inflatable_button,
+                page_objects.inflatable_page_objects,
+            )
         elif asset_type == 'nia':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        elif asset_type == 'cfa':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
-            SECOND_APPLICATION, asset_ticker, asset_name, '2000', wallet_variant_name,
-        )
-        # Refresh third wallet
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        if asset_type == 'nia':
-            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        elif asset_type == 'ifa':
-            wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
-        elif asset_type == 'cfa':
-            wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
-        # Sign from third wallet (cosigner)
-        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
-        )
-        # Sign from first wallet (offline signer) - required for 2-of-2 multisig
-        # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        if asset_type == 'nia':
-            wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-        elif asset_type == 'ifa':
-            wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
-        elif asset_type == 'cfa':
-            wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name,
-        )
-        # Refresh second wallet
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        if asset_type == 'nia':
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        elif asset_type == 'ifa':
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        elif asset_type == 'cfa':
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+            return (
+                page_objects.sidebar_page_objects.click_fungibles_button,
+                page_objects.fungible_page_objects,
+            )
+        else:  # cfa
+            return (
+                page_objects.sidebar_page_objects.click_collectibles_button,
+                page_objects.collectible_page_objects,
+            )
 
+    def get_asset_frame(sidebar_click, page_obj, name):
+        sidebar_click()
+        page_obj.click_refresh_button()
+        if asset_type == 'ifa':
+            page_obj.click_ifa_frame(name)
+        elif asset_type == 'nia':
+            page_obj.click_nia_frame(name)
+        else:
+            page_obj.click_cfa_frame(name)
+
+    # Step 1: Create UTXO PSBT from second wallet (coordinator)
     with allure.step('Create UTXO PSBT from second wallet (coordinator)'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+            SECOND_APPLICATION, verify_ready=False,
         )
-        if asset_type == 'ifa':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_ticker,
-            )
-        elif asset_type == 'nia':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
+        sidebar_click, page_obj = get_asset_nav_objects(
+            wallets_and_operations.second_page_objects,
+        )
+        get_asset_frame(sidebar_click, page_obj, asset_ticker)
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
         wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
-            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount, wallet_variant_name=wallet_variant_name, utxo_required=True,
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount,
+            wallet_variant_name=wallet_variant_name, utxo_required=True,
         )
 
-    with allure.step('Sign PSBT from third wallet (cosigner)'):
+    # Refresh AT-SPI after UTXO creation
+    _aggressive_cleanup()
+
+    # Step 2: Sign UTXO PSBT from third wallet (cosigner)
+    with allure.step('Sign UTXO PSBT from third wallet (cosigner)'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
+            THIRD_APPLICATION, verify_ready=False,
         )
-        if asset_type == 'ifa':
-            wallets_and_operations.third_page_objects.sidebar_page_objects.click_inflatable_button()
-            wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
-        elif asset_type == 'nia':
-            wallets_and_operations.third_page_objects.sidebar_page_objects.click_fungibles_button()
-            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        elif asset_type == 'cfa':
-            wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
-            wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
+        sidebar_click, page_obj = get_asset_nav_objects(
+            wallets_and_operations.third_page_objects,
+        )
+        sidebar_click()
+        page_obj.click_refresh_button()
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
             THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
 
-    # Sign from first wallet (offline signer) - required for 2-of-2 multisig
-    # App 2 is watch-only coordinator, so both App 1 and App 3 must sign
-    with allure.step('Sign PSBT from first wallet (offline signer)'):
+    # Step 3: Sign UTXO PSBT from first wallet (offline signer)
+    with allure.step('Sign UTXO PSBT from first wallet (offline signer)'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
+            FIRST_APPLICATION, verify_ready=False,
         )
-        if asset_type == 'ifa':
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
-            wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
-        elif asset_type == 'nia':
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
-            wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-        elif asset_type == 'cfa':
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-            wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        sidebar_click, page_obj = get_asset_nav_objects(
+            wallets_and_operations.first_page_objects,
+        )
+        sidebar_click()
+        page_obj.click_refresh_button()
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
 
+    # Refresh AT-SPI after signing round
+    _aggressive_cleanup()
+
+    # Step 4: Broadcast UTXO PSBT from second wallet (coordinator)
+    with allure.step('Broadcast UTXO PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION, verify_ready=False,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
+
+    # Refresh AT-SPI after broadcast
+    _aggressive_cleanup()
+
+    # Step 5: Send asset from second wallet (coordinator)
     with allure.step(f'Send {asset_type} asset from second wallet (coordinator)'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+            SECOND_APPLICATION, verify_ready=False,
         )
+        sidebar_click, page_obj = get_asset_nav_objects(
+            wallets_and_operations.second_page_objects,
+        )
+        sidebar_click()
+        page_obj.click_refresh_button()
+        page_obj.click_refresh_button()
         if asset_type == 'ifa':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
-            )
+            page_obj.click_ifa_frame(asset_name)
         elif asset_type == 'nia':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
+            page_obj.click_nia_frame(asset_name)
+        else:
+            page_obj.click_cfa_frame(asset_name)
         wallets_and_operations.second_page_features.send_features.send_asset_for_multisig(
             SECOND_APPLICATION, wallet_variant_name,
         )
 
+    # Step 6: Sign transfer PSBT from first wallet (offline signer) - MUST be first for USB sync
+    with allure.step('Sign transfer PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION, verify_ready=False,
+        )
+        sidebar_click, page_obj = get_asset_nav_objects(
+            wallets_and_operations.first_page_objects,
+        )
+        sidebar_click()
+        page_obj.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    # Refresh AT-SPI after signing round
+    _aggressive_cleanup()
+
+    # Step 7: Sign transfer PSBT from third wallet (cosigner) - after offline signer has signed
+    with allure.step('Sign transfer PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION, verify_ready=False,
+        )
+        sidebar_click, page_obj = get_asset_nav_objects(
+            wallets_and_operations.third_page_objects,
+        )
+        sidebar_click()
+        page_obj.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    # Full AT-SPI reset before broadcast - this is where tests often get stuck
+    _full_atspi_reset()
+
+    # Refresh AT-SPI after signing round
+    _aggressive_cleanup()
+
+    # Step 8: Broadcast transfer PSBT from second wallet (coordinator)
+    with allure.step('Broadcast transfer PSBT from second wallet (coordinator)'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION, verify_ready=False,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
+
+    # Final AT-SPI refresh before assertions
+    _aggressive_cleanup()
+
     if verify_assertions:
         with allure.step('Verify transfer status on second wallet'):
             wallets_and_operations.second_page_operations.do_focus_on_application(
-                SECOND_APPLICATION,
+                SECOND_APPLICATION, verify_ready=True,
             )
+            sidebar_click, page_obj = get_asset_nav_objects(
+                wallets_and_operations.second_page_objects,
+            )
+            sidebar_click()
+            page_obj.click_refresh_button()
             if asset_type == 'ifa':
-                wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-                wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-                wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-                    asset_name,
-                )
+                page_obj.click_ifa_frame(asset_name)
             elif asset_type == 'nia':
-                wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-                wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-                wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
-                    asset_name,
-                )
-            elif asset_type == 'cfa':
-                wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-                wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-                wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
-                    asset_name,
-                )
+                page_obj.click_nia_frame(asset_name)
+            else:
+                page_obj.click_cfa_frame(asset_name)
             actual_transfer_status = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_transfer_status()
             assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
 
         with allure.step('Verify received amount on fourth wallet (receiver)'):
             wallets_and_operations.fourth_page_operations.do_focus_on_application(
-                FOURTH_APPLICATION,
+                FOURTH_APPLICATION, verify_ready=True,
             )
+            sidebar_click, page_obj = get_asset_nav_objects(
+                wallets_and_operations.fourth_page_objects,
+            )
+            sidebar_click()
+            page_obj.click_refresh_button()
+            page_obj.click_refresh_button()
             if asset_type == 'ifa':
-                wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_inflatable_button()
-                wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
-                wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
-                wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_ifa_frame(
-                    asset_name,
-                )
+                page_obj.click_ifa_frame(asset_name)
             elif asset_type == 'nia':
-                wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_fungibles_button()
-                wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
-                wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
-                wallets_and_operations.fourth_page_objects.fungible_page_objects.click_nia_frame(
-                    asset_name,
-                )
-            elif asset_type == 'cfa':
-                wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_collectibles_button()
-                wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
-                wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
-                wallets_and_operations.fourth_page_objects.collectible_page_objects.click_cfa_frame(
-                    asset_name,
-                )
+                page_obj.click_nia_frame(asset_name)
+            else:
+                page_obj.click_cfa_frame(asset_name)
             received_amount = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
             assert received_amount == send_amount
 
