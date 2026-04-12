@@ -462,7 +462,7 @@ def register_multisig_button(
 ):
     """
     Registers a button to automatically react to multisig pending state changes.
-    
+
     When a multisig operation is pending, clicking the button will show a toast
     instead of performing the normal navigation action.
     """

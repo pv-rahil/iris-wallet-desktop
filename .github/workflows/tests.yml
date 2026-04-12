@@ -139,8 +139,28 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 5
       matrix:
+        test_file:
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_login_app_auth
+          - test_ask_auth_for_imp_operations
+          - test_settings
+          - test_help
+          - test_about
+          - test_backup_and_restore
+          - test_send_and_receive_nia_asset
+          - test_send_and_receive_ifa_asset
+          - test_send_and_receive_cfa_asset
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_issue_nia_asset
+          - test_issue_ifa_asset
+          - test_issue_cfa_asset
+          - test_view_unspent
+          - test_refresh_transfer
+          - test_inflate_asset
         wallet_variant:
           # All single-sig variants
           - online_watch_only

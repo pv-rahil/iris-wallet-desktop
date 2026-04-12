@@ -385,7 +385,8 @@ class Wallet(MainPageObjects, BaseOperations):
         if import_all:
             # For watch-only wallets: import all other cosigners
             all_cosigners = coordinator.get_all_other_cosigner_strings(
-                application)
+                application,
+            )
 
             # Step 2 (Review frame): Enter first cosigner string (from App 1 - offline signer)
             if all_cosigners and len(all_cosigners) >= 1:
@@ -393,7 +394,8 @@ class Wallet(MainPageObjects, BaseOperations):
                 if first_cosigner_string:
                     # Enter in the review frame input field
                     self.multisig_setup_page_objects.enter_review_cosigner_string(
-                        first_cosigner_string)
+                        first_cosigner_string,
+                    )
                     # Click next to proceed to cosigner frame
                     if self.do_is_displayed(self.multisig_setup_page_objects.continue_button()):
                         self.multisig_setup_page_objects.click_continue_button()
@@ -1112,7 +1114,6 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.fungible_page_objects.psbt_info_frame()):
                 self.fungible_page_objects.click_psbt_info_frame()
 
-
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.broadcast_transaction_page_objects.sign_psbt_button()):
@@ -1150,13 +1151,13 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.hw_emulator:
                 self.hw_emulator.terminate()
 
-    def broadcast_psbt(self, application,is_multisig:bool=False):
+    def broadcast_psbt(self, application, is_multisig: bool = False):
         """
         Broadcast psbt.
         """
         description = None
         self.do_focus_on_application(application)
-        
+
         if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
             self.sidebar_page_objects.click_fungibles_button()
 
@@ -1165,7 +1166,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.usb_sync_dialog_page_objects.continue_button()):
             self.usb_sync_dialog_page_objects.click_continue_button()
-            
+
         if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
             self.fungible_page_objects.click_refresh_button()
 

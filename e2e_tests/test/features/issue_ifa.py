@@ -13,6 +13,11 @@ from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.test_helpers import BaseIssueAsset
+from e2e_tests.test.utilities.test_helpers import handle_confirmation_dialog_and_usb_sync
+from e2e_tests.test.utilities.test_helpers import handle_native_auth_and_focus
+from e2e_tests.test.utilities.test_helpers import handle_native_auth_utxo_and_success
+from e2e_tests.test.utilities.test_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
+from e2e_tests.test.utilities.test_helpers import handle_success_home_button
 from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
@@ -46,7 +51,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
             if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
                 self.sidebar_page_objects.click_inflatable_button()
-                
+
             if self.do_is_displayed(self.inflatable_page_objects.refresh_button()):
                 self.inflatable_page_objects.click_refresh_button()
 
@@ -76,13 +81,9 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
                 )
 
             # IFA-specific: native auth and success flow
-            if is_native_auth_enabled is True:
-                self.enter_native_password()
-
-            self.do_focus_on_application(application)
-
-            if self.do_is_displayed(self.success_page_objects.home_button()):
-                self.success_page_objects.click_home_button()
+            handle_native_auth_and_focus(
+                self, application, is_native_auth_enabled)
+            handle_success_home_button(self)
         except Exception as e:
             raise e
         finally:
@@ -139,7 +140,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
-            
+
         if self.do_is_displayed(self.success_page_objects.home_button()):
             self.success_page_objects.click_home_button()
 
@@ -173,14 +174,8 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
-            
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-            self.confirmation_dialog_page_objects.click_confirmation_dialog()
 
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
-
-        self.wallet_feature.usb_sync(is_receive=True)
+        handle_confirmation_dialog_and_usb_sync(self, self.wallet_feature)
 
     def issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, wallet_variant_name: str | None = None, utxo_required: bool = False, is_native_auth_enabled: bool = False):
         """
@@ -203,24 +198,19 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
             if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
                 self.issue_ifa_page_objects.click_issue_ifa_button()
 
-            if is_native_auth_enabled:
-                self.enter_native_password()
-
-            if utxo_required:
-                handle_utxo_confirmation_with_hardware_wallet(
-                    self, self, self.wallet_feature, LEDGER_EMULATOR_APP_NAME,
-                    utxo_required=True, is_hardware=is_hardware,
-                )
-            else:
-                if self.do_is_displayed(self.success_page_objects.home_button()):
-                    self.success_page_objects.click_home_button()
+            handle_native_auth_utxo_and_success(
+                self, application, self.wallet_feature,
+                is_native_auth_enabled=is_native_auth_enabled,
+                utxo_required=utxo_required,
+                is_hardware=is_hardware,
+            )
         except Exception as e:
             raise e
         finally:
             if hardware_wallet_emulator:
                 hardware_wallet_emulator.terminate()
 
-    def issue_ifa_for_offline_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+    def issue_ifa_for_offline_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount, _wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """
         Issues an IFA asset for offline multisig wallet.
         Creates PSBT on watch-only coordinator, then USB syncs to pass PSBT to offline signer.
@@ -249,21 +239,9 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
 
-        if is_native_auth_enabled:
-            self.enter_native_password()
-
-        # Handle UTXO confirmation dialog (no hardware signing)
-        self.do_focus_on_application(CONFIRMATION_DIALOG)
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-            self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
-
-        self.do_focus_on_application(application)
-
-        # USB sync to pass PSBT to offline wallet
-        self.wallet_feature.usb_sync()
+        handle_offline_multisig_utxo_confirmation_and_usb_sync(
+            self, application, self.wallet_feature, is_native_auth_enabled,
+        )
 
     def issue_ifa_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, total_supply, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """
@@ -292,7 +270,9 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
                 self.issue_ifa_page_objects.enter_asset_name(asset_name)
 
             if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
-                self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
+                self.issue_ifa_page_objects.enter_asset_total_supply(
+                    total_supply,
+                )
 
             if self.do_is_displayed(self.issue_ifa_page_objects.asset_amount()):
                 self.issue_ifa_page_objects.enter_asset_amount(asset_amount)

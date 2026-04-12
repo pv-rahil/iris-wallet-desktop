@@ -4,14 +4,17 @@ This module contains the Inflate class, which provides methods for secondary iss
 """
 from __future__ import annotations
 
-from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
-from accessible_constant import HARDWARE_WALLET_VARIANTS, REQUIRE_USB_VARIANTS
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.test_helpers import handle_native_auth_and_focus
+from e2e_tests.test.utilities.test_helpers import handle_success_home_button
+from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
@@ -65,13 +68,9 @@ class Inflate(MainPageObjects, BaseOperations):
                 )
 
             # Native auth if required
-            if is_native_auth_enabled is True:
-                self.enter_native_password()
-
-            self.do_focus_on_application(application)
-
-            if self.do_is_displayed(self.success_page_objects.home_button()):
-                self.success_page_objects.click_home_button()
+            handle_native_auth_and_focus(
+                self, application, is_native_auth_enabled)
+            handle_success_home_button(self)
         except Exception as e:
             raise e
         finally:
@@ -115,7 +114,7 @@ class Inflate(MainPageObjects, BaseOperations):
         return description
 
     def inflate_ifa_asset_begin(
-        self, application, asset_name, inflate_amount, variant_name: str | None = None, is_native_auth_enabled: bool = False,utxo_required:bool =  False
+        self, application, asset_name, inflate_amount, variant_name: str | None = None, is_native_auth_enabled: bool = False, utxo_required: bool = False,
     ):
         """
         Create PSBT for secondary issuance (inflate) for watch-only/offline/hardware/multisig wallets.
@@ -149,11 +148,11 @@ class Inflate(MainPageObjects, BaseOperations):
             # Click issue button to create PSBT
             if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
                 self.issue_ifa_page_objects.click_issue_ifa_button()
-                
+
             if utxo_required:
                 if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
                     self.confirmation_dialog_page_objects.click_confirmation_dialog()
-                    
+
                 if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
                     self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
@@ -248,7 +247,7 @@ class Inflate(MainPageObjects, BaseOperations):
 
             if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
                 self.issue_ifa_page_objects.click_issue_ifa_button()
-                
+
             if is_hardware:
                 handle_utxo_confirmation_with_hardware_wallet(
                     self, self, self.wallet_feature, LEDGER_EMULATOR_APP_NAME,

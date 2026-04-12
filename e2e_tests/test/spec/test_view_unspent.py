@@ -8,8 +8,8 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import SECOND_APPLICATION
 from accessible_constant import OFFLINE_MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -104,7 +104,9 @@ def test_view_unspent_list_for_multisig(wallets_and_operations: WalletTestSetup,
 def test_view_unspent_list_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test view unspent list for offline multisig (hardware and on-device)."""
 
-    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+    setup_offline_multisig_hardware_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
     with allure.step('Fund watch-only coordinator wallet'):
         wallets_and_operations.second_page_features.wallet_features.fund_wallet(

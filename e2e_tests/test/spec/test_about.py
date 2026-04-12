@@ -142,7 +142,9 @@ def test_download_debug_log_for_multisig_wallet(wallets_and_operations: WalletTe
 @allure.story('Tests for copy buttons for indexer info for offline multisig wallet')
 def test_indexer_info_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test asserting indexer info for offline multisig wallet (2 apps)"""
-    setup_offline_multisig_two_app_wallets(wallets_and_operations, wallet_variant_name)
+    setup_offline_multisig_two_app_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
     with allure.step('Indexer URL from second wallet'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -160,7 +162,7 @@ def test_indexer_info_for_offline_multisig_wallet(wallets_and_operations: Wallet
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.story('Tests for copy buttons for RGB proxy info for offline multisig wallet')
-def test_rgb_proxy_info_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup,):
+def test_rgb_proxy_info_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup):
     """Test asserting RGB proxy info for offline multisig wallet (2 apps)"""
 
     with allure.step('RGB proxy URL from second wallet'):
@@ -180,7 +182,7 @@ def test_rgb_proxy_info_for_offline_multisig_wallet(wallets_and_operations: Wall
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('About page tests for offline multisig wallet')
 @allure.story('Tests for download debug log for offline multisig wallet')
-def test_download_debug_log_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_download_debug_log_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup):
     """Test for downloading debug logs for offline multisig wallet (2 apps)"""
 
     with allure.step('Download debug logs from second wallet'):

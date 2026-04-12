@@ -143,7 +143,6 @@ def test_rgb_section_rendering(qtbot, mock_psbt_details, mock_rgb_details):
         assert '300' in texts
         assert '500' in texts
 
-
         # Make sure mapping successfully recognized the type
         assert any('Inflation' in text for text in texts)
 

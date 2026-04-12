@@ -141,7 +141,9 @@ def test_help_page_for_multisig_wallet(wallets_and_operations: WalletTestSetup, 
 @allure.story('Tests for elements in help page for offline multisig wallet')
 def test_help_page_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test help page for offline multisig wallet (2 apps)"""
-    setup_offline_multisig_two_app_wallets(wallets_and_operations, wallet_variant_name)
+    setup_offline_multisig_two_app_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
     with allure.step('Navigating to help page from second wallet'):
         wallets_and_operations.second_page_operations.do_focus_on_application(

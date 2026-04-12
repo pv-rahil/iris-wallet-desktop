@@ -7,8 +7,8 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-from PySide6.QtGui import QShowEvent
 from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import QGraphicsBlurEffect
 
 from src.views.components.confirmation_dialog import ConfirmationDialog

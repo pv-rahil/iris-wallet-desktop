@@ -252,7 +252,9 @@ def test_issue_nia_without_sufficient_sats_for_offline_multisig(wallets_and_oper
     """
     Test NIA asset issuance without sufficient sats for offline multisig wallet (3 apps).
     """
-    setup_offline_multisig_three_app_wallets(wallets_and_operations, wallet_variant_name)
+    setup_offline_multisig_three_app_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
     with allure.step('Issue NIA asset without sufficient sats'):
         description = wallets_and_operations.second_page_features.issue_nia_features.issue_nia_asset_without_sat(
@@ -271,7 +273,9 @@ def test_issue_nia_with_sufficient_sats_for_offline_multisig(wallets_and_operati
     """
     Test NIA asset issuance with sufficient sats for offline multisig wallet (3 apps).
     """
-    setup_offline_multisig_three_app_wallets(wallets_and_operations, wallet_variant_name)
+    setup_offline_multisig_three_app_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
     # Fund the second wallet (online coordinator)
     with allure.step('Fund second online multisig wallet (coordinator)'):

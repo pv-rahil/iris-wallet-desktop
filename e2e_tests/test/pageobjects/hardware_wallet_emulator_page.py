@@ -48,7 +48,7 @@ class HardwareWalletEmulatorPageObjects(BaseOperations):
                 window = self.hw_emulator_window()
                 # Check if window has content (labels, text, etc.)
                 children = window.findChildren(
-                    lambda x: x.roleName in ['label', 'text', 'push button']
+                    lambda x: x.roleName in ['label', 'text', 'push button'],
                 )
                 if children:
                     return True
@@ -72,7 +72,7 @@ class HardwareWalletEmulatorPageObjects(BaseOperations):
         try:
             window = self.hw_emulator_window()
             initial_children = window.findChildren(
-                lambda x: x.roleName in ['label', 'text', 'push button']
+                lambda x: x.roleName in ['label', 'text', 'push button'],
             )
             initial_content = [c.name for c in initial_children if c.name]
         except Exception:
@@ -83,7 +83,7 @@ class HardwareWalletEmulatorPageObjects(BaseOperations):
             try:
                 window = self.hw_emulator_window()
                 children = window.findChildren(
-                    lambda x: x.roleName in ['label', 'text', 'push button']
+                    lambda x: x.roleName in ['label', 'text', 'push button'],
                 )
                 current_content = [c.name for c in children if c.name]
 

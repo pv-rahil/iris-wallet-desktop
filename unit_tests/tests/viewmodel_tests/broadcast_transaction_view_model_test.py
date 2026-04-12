@@ -547,7 +547,9 @@ def test_on_inspect_rgb_transfer_error(vm, mocker):
     vm._on_inspect_rgb_transfer_error(error)
 
     assert vm._inspecting_rgb is None  # Guard reset
-    mock_toast.assert_called_once_with(description='rgb transfer inspect failed')
+    mock_toast.assert_called_once_with(
+        description='rgb transfer inspect failed',
+    )
     mock_logger.assert_called_once()
     slot.assert_called_with(None)  # Emits None to signal failure
 

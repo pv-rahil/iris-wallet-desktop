@@ -231,7 +231,9 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
-        ToastManager.success(description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY)
+        ToastManager.success(
+            description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY,
+        )
 
     def _respond_to_multisig_operation(self, operation_idx: int | None, response: RespondToOperation) -> None:
         """Post an ACK/NACK response for a multisig pending operation."""
@@ -442,7 +444,9 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
         """Handle error for RGB transfer inspection - emit None so UI can handle failure."""
         self._inspecting_rgb = None  # Reset guard
         self.is_loading.emit(False)
-        self.rgb_transfer_inspection_ready.emit(None)  # Emit None to signal failure
+        self.rgb_transfer_inspection_ready.emit(
+            None,
+        )  # Emit None to signal failure
         msg = error.message if hasattr(error, 'message') else str(error)
         ToastManager.error(description=msg)
         logger.error(

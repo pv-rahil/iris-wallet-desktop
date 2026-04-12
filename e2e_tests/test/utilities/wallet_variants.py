@@ -88,6 +88,13 @@ def map_load_to_create(variant_name: str) -> str:
 
 
 def handle_hardware_wallet(app_name: str, reset: bool = False):
+    """
+    Handle hardware wallet setup and teardown.
+
+    Args:
+        app_name: Name of the hardware wallet app
+        reset: Whether to reset the regtest environment
+    """
     if reset:
         reset_regtest()
 
@@ -101,6 +108,11 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
     time.sleep(1)
 
     # Move Speculos window to background
-    subprocess.run(['wmctrl', '-r', 'Speculos', '-b', 'add,below'])
+    subprocess.run(
+        [
+            'wmctrl', '-r', 'Speculos',
+            '-b', 'add,below',
+        ], check=False,
+    )
 
     return proc

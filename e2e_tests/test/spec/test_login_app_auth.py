@@ -74,6 +74,7 @@ def test_login_app_with_authentication(wallets_and_operations: WalletTestSetup):
 
         assert False is wallets_and_operations.first_page_objects.settings_page_objects.login_auth_toggle_button().checked
 
+
 @pytest.mark.skip_for_single_sig
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
@@ -105,6 +106,7 @@ def test_login_app_toggle_button_on_for_multisig(test_environment, wallets_and_o
         wallets_and_operations.first_page_objects.settings_page_objects.click_login_app_toggle_button()
 
         test_environment.restart_single_instance(reset_data=False)
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.skip_for_offline_wallet
@@ -160,7 +162,9 @@ def test_login_app_toggle_button_on_for_offline_multisig(test_environment, walle
         None
     """
     with allure.step('Setup offline multisig wallets'):
-        setup_offline_multisig_two_app_wallets(wallets_and_operations, wallet_variant_name)
+        setup_offline_multisig_two_app_wallets(
+            wallets_and_operations, wallet_variant_name,
+        )
 
     with allure.step('Toggle the login app auth button to on and restart the application'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -177,7 +181,7 @@ def test_login_app_toggle_button_on_for_offline_multisig(test_environment, walle
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Login app for offline multisig')
 @allure.story('Test login app with authentication for offline multisig')
-def test_login_app_with_authentication_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_login_app_with_authentication_for_offline_multisig(wallets_and_operations: WalletTestSetup):
     """
     Test the login app with authentication functionality for offline multisig (2 apps).
 

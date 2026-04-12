@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 
-from accessible_constant import HARDWARE_WALLET_VARIANTS, LEDGER_EMULATOR_APP_NAME
+from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
@@ -162,8 +162,8 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.send_asset_page_objects.send_button()):
             self.send_asset_page_objects.click_send_button()
-            
-        try:   
+
+        try:
             if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
                 self.confirmation_dialog_page_objects.click_confirmation_dialog()
 
@@ -207,7 +207,9 @@ class SendOperation(MainPageObjects, BaseOperations):
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
-                self.send_asset_page_objects.enter_asset_invoice(receiver_invoice)
+                self.send_asset_page_objects.enter_asset_invoice(
+                    receiver_invoice,
+                )
 
             if amount and self.do_is_displayed(self.send_asset_page_objects.asset_amount_input()):
                 self.send_asset_page_objects.enter_asset_amount(amount)
@@ -223,7 +225,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                     self, self, self.wallet_features, LEDGER_EMULATOR_APP_NAME,
                     utxo_required=True, is_hardware=is_hardware,
                 )
-                
+
             try:
                 if self.do_is_displayed(self.bitcoin_detail_page_objects.bitcoin_close_button()):
                     self.bitcoin_detail_page_objects.click_bitcoin_close_button()
@@ -251,8 +253,8 @@ class SendOperation(MainPageObjects, BaseOperations):
         try:
             if is_hardware and not usb_require:
                 hw_emu = handle_hardware_wallet(
-                        app_name=RGB_LEDGER_APP_NAME,
-                    )
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
 
             if self.do_is_displayed(self.asset_detail_page_objects.resume_draft_frame()):
                 self.asset_detail_page_objects.click_resume_draft_frame()
@@ -262,15 +264,17 @@ class SendOperation(MainPageObjects, BaseOperations):
 
             if is_native_auth_enabled:
                 self.enter_native_password()
-                
+
             if hw_emu:
-                self.wallet_features.sign_multisig_on_hardware_wallet(LEDGER_EMULATOR_APP_NAME)
-                 
+                self.wallet_features.sign_multisig_on_hardware_wallet(
+                    LEDGER_EMULATOR_APP_NAME,
+                )
+
             if usb_require:
                 self.wallet_features.usb_sync()
                 # Wait for USB sync to complete before switching apps
                 time.sleep(3)
-            
+
         except Exception as e:
             raise e
         finally:
@@ -280,7 +284,7 @@ class SendOperation(MainPageObjects, BaseOperations):
     def send_asset_for_single_sig_offline(self, application, is_native_auth_enabled: bool = False):
         """
         Send asset for single-sig offline wallet (watch-only with hardware signer)
-        
+
         :param application: Application instance.
         :param is_native_auth_enabled: Whether native auth is enabled.
         """
@@ -295,8 +299,8 @@ class SendOperation(MainPageObjects, BaseOperations):
 
         if is_native_auth_enabled:
             self.enter_native_password()
-        
+
         if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
             self.receive_asset_page_objects.click_receive_asset_close_button()
-            
+
         self.wallet_features.usb_sync()

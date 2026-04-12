@@ -576,7 +576,7 @@ class TestEnvironment:
         # This is critical after reset to avoid "Could not find accessible on path" errors
         _ = root.children
         time.sleep(0.5)
-        print(f"[RESET] AT-SPI tree refreshed")
+        print('[RESET] AT-SPI tree refreshed')
 
     def reset_second_instance(self, reset_data: bool = True):
         """Reset and relaunch only the second application instance.
@@ -627,7 +627,9 @@ class TestEnvironment:
         # Get the frame from the application node (more reliable than root.child)
         app_node = self._find_application_node(SECOND_APPLICATION)
         if app_node:
-            self.second_application = app_node.child(roleName='frame', name=SECOND_APPLICATION)
+            self.second_application = app_node.child(
+                roleName='frame', name=SECOND_APPLICATION,
+            )
         else:
             # Fallback to direct search
             self.second_application = root.child(

@@ -145,10 +145,14 @@ def _isolate_user_dirs():
     """Redirect user data/config/cache dirs to a temporary location for the entire test session."""
     # Set environment variables before any Qt/PySide6 path resolution
     os.environ['HOME'] = _ISOLATION_DIR
-    os.environ['XDG_DATA_HOME'] = os.path.join(_ISOLATION_DIR, '.local', 'share')
+    os.environ['XDG_DATA_HOME'] = os.path.join(
+        _ISOLATION_DIR, '.local', 'share',
+    )
     os.environ['XDG_CONFIG_HOME'] = os.path.join(_ISOLATION_DIR, '.config')
     os.environ['XDG_CACHE_HOME'] = os.path.join(_ISOLATION_DIR, '.cache')
-    os.environ['IRIS_WALLET_DATA_DIR'] = os.path.join(_ISOLATION_DIR, 'iris-wallet-vault')
+    os.environ['IRIS_WALLET_DATA_DIR'] = os.path.join(
+        _ISOLATION_DIR, 'iris-wallet-vault',
+    )
     yield
     # Cleanup happens at session end via atexit or finalizer
 
@@ -159,13 +163,15 @@ def _mock_app_paths(monkeypatch):
     from src.model.common_operation_model import AppPathsModel
     from src.utils.constant import APP_DIR, APP_NAME, CACHE_FOLDER_NAME, LOG_FOLDER_NAME
     from src.utils.constant import MNEMONIC_KEY, MULTISIG_COSIGNERS_FILE_NAME, WALLET_DATA_FOLDER_NAME
-    
+
     app_path = os.path.join(_ISOLATION_DIR, APP_DIR)
     os.makedirs(app_path, exist_ok=True)
-    
+
     mock_app_paths = AppPathsModel(
         app_path=app_path,
-        iriswallet_temp_folder_path=os.path.join(_ISOLATION_DIR, 'temp', f'{APP_NAME}_regtest'),
+        iriswallet_temp_folder_path=os.path.join(
+            _ISOLATION_DIR, 'temp', f'{APP_NAME}_regtest',
+        ),
         cache_path=os.path.join(app_path, CACHE_FOLDER_NAME),
         app_logs_path=os.path.join(app_path, LOG_FOLDER_NAME),
         pickle_file_path=os.path.join(app_path, 'token.pickle'),
@@ -173,16 +179,25 @@ def _mock_app_paths(monkeypatch):
         backup_folder_path=os.path.join(_ISOLATION_DIR, 'temp', 'backup'),
         restore_folder_path=os.path.join(_ISOLATION_DIR, 'temp', 'restore'),
         mnemonic_file_path=os.path.join(app_path, MNEMONIC_KEY),
-        wallet_data_folder_path=os.path.join(app_path, WALLET_DATA_FOLDER_NAME),
-        multisig_cosigners_file_path=os.path.join(app_path, MULTISIG_COSIGNERS_FILE_NAME),
+        wallet_data_folder_path=os.path.join(
+            app_path, WALLET_DATA_FOLDER_NAME,
+        ),
+        multisig_cosigners_file_path=os.path.join(
+            app_path, MULTISIG_COSIGNERS_FILE_NAME,
+        ),
         download_consignment_path=os.path.join(_ISOLATION_DIR, 'downloads'),
     )
-    
+
     # Patch app_paths globally
-    monkeypatch.setattr('src.utils.build_app_path.app_paths', mock_app_paths, raising=False)
-    
+    monkeypatch.setattr(
+        'src.utils.build_app_path.app_paths',
+        mock_app_paths, raising=False,
+    )
+
     # Patch local_store.base_path
-    monkeypatch.setattr('src.utils.local_store.local_store.base_path', app_path, raising=False)
+    monkeypatch.setattr(
+        'src.utils.local_store.local_store.base_path', app_path, raising=False,
+    )
 
 
 @pytest.fixture(autouse=True)

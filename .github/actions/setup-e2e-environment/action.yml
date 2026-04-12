@@ -8,7 +8,6 @@ inputs:
   wallet-variant:
     description: 'Wallet variant to test (e.g., online_create_on_device, online_load_on_device)'
     required: true
-    default: 'online_create_on_device'
 
 runs:
   using: "composite"
@@ -129,10 +128,5 @@ runs:
         export GDK_SYNCHRONIZE=1
         export __GLX_VENDOR_LIBRARY_NAME=mesa
         sleep 3  # Increased to 3s for better UI stability
-        if [ "${{ inputs.test-file }}" = "all" ]; then
-          poetry run e2e-test all --wallet-variant ${{ inputs.wallet-variant }}
-        else
-          poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
-        fi
-        '
+        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
       shell: bash

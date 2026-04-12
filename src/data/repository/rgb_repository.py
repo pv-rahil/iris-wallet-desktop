@@ -1,12 +1,13 @@
 """Module containing RgbRepository."""
 from __future__ import annotations
 
-from rgb_lib import AssetCfa, InflateBeginResult
+from rgb_lib import AssetCfa
 from rgb_lib import AssetIfa
 from rgb_lib import AssetNia
 from rgb_lib import Assets
 from rgb_lib import AssetUda
 from rgb_lib import Balance
+from rgb_lib import InflateBeginResult
 from rgb_lib import InitOperationResult
 from rgb_lib import Invoice
 from rgb_lib import OperationInfo
@@ -255,8 +256,8 @@ class RgbRepository:
             recipient_map = {detail.asset_id: [recipient]}
             result: SendBeginResult = colored_wallet.wallet.send_begin(
                 online=colored_wallet.online, recipient_map=recipient_map, donation=detail.donation,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, 
-                expiration_timestamp=detail.duration_seconds,dry_run=False
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,
+                expiration_timestamp=detail.duration_seconds, dry_run=False,
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
@@ -283,7 +284,7 @@ class RgbRepository:
         with repository_custom_context():
             fascia_path = None
             entropy = None
-            sync_result:OperationInfo = colored_wallet.wallet.sync_with_hub(
+            sync_result: OperationInfo = colored_wallet.wallet.sync_with_hub(
                 online=colored_wallet.online,
             )
             if sync_result:
@@ -380,7 +381,7 @@ class RgbRepository:
         with repository_custom_context():
             data: InflateBeginResult = colored_wallet.wallet.inflate_begin(
                 online=colored_wallet.online, asset_id=detail.asset_id, inflation_amounts=detail.inflation_amounts,
-                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations,dry_run=False
+                fee_rate=detail.fee_rate, min_confirmations=detail.min_confirmations, dry_run=False,
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:

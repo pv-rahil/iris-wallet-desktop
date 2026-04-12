@@ -256,7 +256,7 @@ def start_bridge_service() -> bool:
             cwd=e2e_tests_dir,
             capture_output=True,
             text=True,
-
+            check=False,
         )
 
         # Wait for the bridge to be reachable

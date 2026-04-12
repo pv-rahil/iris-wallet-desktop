@@ -8,12 +8,12 @@ import pytest
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
-from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
@@ -370,10 +370,13 @@ def test_refresh_transfer_send_and_validate_for_multisig(test_environment: TestE
 def test_refresh_transfer_setup_and_issue_nia_for_offline_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Setup wallets and issue NIA asset for offline multisig refresh transfer tests"""
 
-    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    setup_offline_multisig_hardware_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
-    fund_and_refresh_offline_multisig_wallets(wallets_and_operations, asset_type='nia')
+    fund_and_refresh_offline_multisig_wallets(
+        wallets_and_operations, asset_type='nia',
+    )
 
     with allure.step('Issue NIA asset from watch-only coordinator (App 2)'):
         wallets_and_operations.second_page_operations.do_focus_on_application(

@@ -8,15 +8,15 @@ import pytest
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
-from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
-from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.test_helpers import focus_and_refresh_asset_list
+from e2e_tests.test.utilities.test_helpers import focus_refresh_and_sign_psbt
 from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.test_helpers import fund_and_refresh_offline_multisig_wallets
 from e2e_tests.test.utilities.test_helpers import initiate_third_wallet_and_get_invoice
@@ -246,24 +246,25 @@ def test_hide_exhausted_asset_on_multisig(wallets_and_operations: WalletTestSetu
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
             FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME, ASSET_AMOUNT, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
+        focus_refresh_and_sign_psbt(
+            wallets_and_operations.second_page_operations,
+            wallets_and_operations.second_page_objects,
+            wallets_and_operations.second_page_features,
             SECOND_APPLICATION, wallet_variant_name,
         )
-        wallets_and_operations.first_page_operations.do_focus_on_application(
+        focus_and_refresh_asset_list(
+            wallets_and_operations.first_page_operations,
+            wallets_and_operations.first_page_objects,
             FIRST_APPLICATION,
         )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
             FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        focus_and_refresh_asset_list(
+            wallets_and_operations.second_page_operations,
+            wallets_and_operations.second_page_objects,
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
 
     with allure.step('Generate invoice and send asset for multisig'):
         invoice = initiate_third_wallet_and_get_invoice(
@@ -321,10 +322,13 @@ def test_hide_exhausted_asset_off_multisig(wallets_and_operations: WalletTestSet
 def test_hide_exhausted_asset_on_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for hiding exhausted asset for offline multisig (hardware and on-device)"""
 
-    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    setup_offline_multisig_hardware_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
-    fund_and_refresh_offline_multisig_wallets(wallets_and_operations, asset_type='nia')
+    fund_and_refresh_offline_multisig_wallets(
+        wallets_and_operations, asset_type='nia',
+    )
 
     with allure.step('Navigating to settings page from watch-only coordinator'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -340,20 +344,18 @@ def test_hide_exhausted_asset_on_offline_multisig(wallets_and_operations: Wallet
         )
 
     with allure.step('Sign PSBT from cosigner (App 3)'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+        focus_refresh_and_sign_psbt(
+            wallets_and_operations.third_page_operations,
+            wallets_and_operations.third_page_objects,
+            wallets_and_operations.third_page_features,
             THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
 
     with allure.step('Sign PSBT from offline signer (App 1) - required for 2-of-2 multisig'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+        focus_refresh_and_sign_psbt(
+            wallets_and_operations.first_page_operations,
+            wallets_and_operations.first_page_objects,
+            wallets_and_operations.first_page_features,
             FIRST_APPLICATION, wallet_variant_name,
         )
 
@@ -397,7 +399,7 @@ def test_hide_exhausted_asset_on_offline_multisig(wallets_and_operations: Wallet
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Hide exhausted asset for offline multisig')
 @allure.story('Toggling off hide exhausted asset for offline multisig')
-def test_hide_exhausted_asset_off_offline_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_hide_exhausted_asset_off_offline_multisig(wallets_and_operations: WalletTestSetup):
     """Test for showing exhausted asset for offline multisig"""
 
     with allure.step('Navigating to settings page from watch-only coordinator'):

@@ -269,9 +269,11 @@ def test_keyring_dialog_for_offline_multisig(test_environment, wallets_and_opera
     """
     global XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-    
+
     with allure.step('Setup offline multisig wallets'):
-        setup_offline_multisig_two_app_wallets(wallets_and_operations, wallet_variant_name)
+        setup_offline_multisig_two_app_wallets(
+            wallets_and_operations, wallet_variant_name,
+        )
 
     with allure.step('Copy xpubs/fingerprint from settings page for offline multisig'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -279,7 +281,7 @@ def test_keyring_dialog_for_offline_multisig(test_environment, wallets_and_opera
         )
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
-        
+
         if is_hardware:
             wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_xpub_vanilla_copy_button()
             XPUB_VANILLA = wallets_and_operations.second_page_operations.do_get_copied_address()
@@ -287,7 +289,7 @@ def test_keyring_dialog_for_offline_multisig(test_environment, wallets_and_opera
             XPUB_COLORED = wallets_and_operations.second_page_operations.do_get_copied_address()
             wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_fingerprint_copy_button()
             MASTER_FINGERPRINT = wallets_and_operations.second_page_operations.do_get_copied_address()
-        
+
         wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
         PASSWORD = wallets_and_operations.second_page_operations.do_get_copied_address()
         wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_check_box()
@@ -319,7 +321,7 @@ def test_keyring_option_for_offline_multisig(wallets_and_operations: WalletTestS
     :param wallet_variant_name: The wallet variant name.
     """
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-    
+
     with allure.step('Restart the app for testing keyring option for offline multisig'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -338,7 +340,7 @@ def test_keyring_option_for_offline_multisig(wallets_and_operations: WalletTestS
             timeout=5,
         )
         wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
-        
+
         if is_hardware:
             wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
                 XPUB_VANILLA,
@@ -349,7 +351,7 @@ def test_keyring_option_for_offline_multisig(wallets_and_operations: WalletTestS
             wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_fingerprint_value(
                 MASTER_FINGERPRINT,
             )
-        
+
         wallets_and_operations.second_page_objects.restore_wallet_page_objects.enter_password_value(
             PASSWORD,
         )

@@ -8,13 +8,14 @@ import re
 import allure
 import pytest
 
-from accessible_constant import FIRST_APPLICATION, ONLINE_MULTISIG_ON_DEVICE
+from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import OFFLINE_MULTISIG_HARDWARE
 from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
@@ -614,7 +615,9 @@ def test_send_bitcoin_with_custom_fee_rate_for_multisig(wallets_and_operations: 
 @allure.story('Wallet send bitcoin operation for offline multisig')
 def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test sending bitcoin for offline multisig (hardware and on-device, create and load)."""
-    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+    setup_offline_multisig_hardware_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
 
     # Fund the second wallet (online coordinator)
     with allure.step('Fund second online multisig wallet (coordinator)'):
@@ -683,7 +686,6 @@ def test_send_bitcoin_for_offline_multisig(wallets_and_operations: WalletTestSet
     with allure.step('Verify transaction id'):
         tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert description == INFO_BITCOIN_SENT.format(tx_id)
-
 
 
 @pytest.mark.skip_for_single_sig

@@ -49,7 +49,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
             if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
                 self.sidebar_page_objects.click_collectibles_button()
-                
+
             if self.do_is_displayed(self.collectible_page_objects.refresh_button()):
                 self.collectible_page_objects.click_refresh_button()
 
@@ -239,7 +239,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
-        
+
         if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
             self.confirmation_dialog_page_objects.click_confirmation_dialog()
 
@@ -264,7 +264,9 @@ class IssueCfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
                 self.sidebar_page_objects.click_collectibles_button()
 
-            self.collectible_page_objects.click_cfa_frame(f"{asset_name} (Draft)")
+            self.collectible_page_objects.click_cfa_frame(
+                f"{asset_name} (Draft)",
+            )
 
             if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
                 self.issue_cfa_page_objects.click_issue_cfa_button()
@@ -286,7 +288,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
             if hardware_wallet_emulator:
                 hardware_wallet_emulator.terminate()
 
-    def issue_cfa_for_offline_multisig_wallet(self, application, asset_name, asset_description, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+    def issue_cfa_for_offline_multisig_wallet(self, application, asset_name, asset_description, asset_amount, _wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """
         Issues a CFA asset for offline multisig wallet.
         Creates PSBT on watch-only coordinator, then USB syncs to pass PSBT to offline signer.
@@ -305,7 +307,9 @@ class IssueCfa(MainPageObjects, BaseOperations):
             self.issue_cfa_page_objects.enter_asset_name(asset_name)
 
         if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
-            self.issue_cfa_page_objects.enter_asset_description(asset_description)
+            self.issue_cfa_page_objects.enter_asset_description(
+                asset_description,
+            )
 
         if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
             self.issue_cfa_page_objects.enter_asset_amount(asset_amount)

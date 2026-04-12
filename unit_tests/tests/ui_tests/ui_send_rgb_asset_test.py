@@ -12,6 +12,7 @@ from PySide6.QtCore import QCoreApplication
 from rgb_lib import AssetSchema
 from rgb_lib import RgbLibError
 
+from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import ToastPreset
 from src.model.rgb_model import Balance
 from src.model.rgb_model import ListTransferAssetWithBalanceResponseModel
@@ -760,7 +761,9 @@ def test_show_send_rgb_psbt_page_multisig(send_rgb_asset_widget: SendRGBAssetWid
     send_rgb_asset_widget.asset_type = AssetSchema.NIA
     send_rgb_asset_widget.is_multisig = True
 
-    mock_toast = mocker.patch('src.views.ui_send_rgb_asset.ToastManager.success')
+    mock_toast = mocker.patch(
+        'src.views.ui_send_rgb_asset.ToastManager.success',
+    )
     mock_nav = mocker.patch.object(
         send_rgb_asset_widget, 'rgb_asset_page_navigation',
     )
@@ -804,7 +807,11 @@ def test_send_rgb_asset_button_hardware_wallet(send_rgb_asset_widget: SendRGBAss
     mock_decoded_rgb_invoice = MagicMock()
     mock_decoded_rgb_invoice.recipient_id = 'recipient_id'
     mock_decoded_rgb_invoice.transport_endpoints = 'some_endpoints'
-    mock_decoded_rgb_invoice.assignment = type('DummyAssign', (object,), {'__init__': lambda self, amount=1: setattr(self, 'amount', amount)})()
+    mock_decoded_rgb_invoice.assignment = type(
+        'DummyAssign', (object,), {
+            '__init__': lambda self, amount=1: setattr(self, 'amount', amount),
+        },
+    )()
     mocker.patch(
         'src.data.repository.rgb_repository.RgbRepository.decode_invoice',
         return_value=mock_decoded_rgb_invoice,
@@ -843,7 +850,11 @@ def test_send_rgb_asset_button_watch_only(send_rgb_asset_widget: SendRGBAssetWid
     mock_decoded_rgb_invoice = MagicMock()
     mock_decoded_rgb_invoice.recipient_id = 'recipient_id'
     mock_decoded_rgb_invoice.transport_endpoints = 'some_endpoints'
-    mock_decoded_rgb_invoice.assignment = type('DummyAssign', (object,), {'__init__': lambda self, amount=1: setattr(self, 'amount', amount)})()
+    mock_decoded_rgb_invoice.assignment = type(
+        'DummyAssign', (object,), {
+            '__init__': lambda self, amount=1: setattr(self, 'amount', amount),
+        },
+    )()
     mocker.patch(
         'src.data.repository.rgb_repository.RgbRepository.decode_invoice',
         return_value=mock_decoded_rgb_invoice,
@@ -881,7 +892,9 @@ def test_handle_send_rgb_hw_dialog_update_success(send_rgb_asset_widget: SendRGB
     )
 
     from src.model.enums.enums_model import PsbtStatus
-    send_rgb_asset_widget.handle_send_rgb_hw_dialog_update('msg', PsbtStatus.SUCCESS)
+    send_rgb_asset_widget.handle_send_rgb_hw_dialog_update(
+        'msg', PsbtStatus.SUCCESS,
+    )
 
     dummy.accept.assert_called_once()
 
@@ -904,7 +917,6 @@ def test_handle_send_rgb_hw_dialog_update_utxo_error(send_rgb_asset_widget: Send
         send_rgb_asset_widget._view_model.utxo_creation_view_model, 'create_utxos_begin',
     )
 
-    from src.model.enums.enums_model import PsbtStatus
     send_rgb_asset_widget.handle_send_rgb_hw_dialog_update(
         'NoAvailableUtxos error', PsbtStatus.ERROR,
     )
@@ -964,306 +976,9 @@ def test_on_utxo_posted_to_bridge(send_rgb_asset_widget: SendRGBAssetWidget, moc
     send_rgb_asset_widget._view_model.utxo_creation_view_model.current_purpose = 'send_rgb'
     send_rgb_asset_widget.send_rgb_hw_dialog = MagicMock()
 
-    mock_toast = mocker.patch('src.views.ui_send_rgb_asset.ToastManager.success')
-    mock_nav = mocker.patch.object(
-        send_rgb_asset_widget, 'rgb_asset_page_navigation',
+    mock_toast = mocker.patch(
+        'src.views.ui_send_rgb_asset.ToastManager.success',
     )
-
-    send_rgb_asset_widget._on_utxo_posted_to_bridge()
-
-    mock_toast.assert_called_once()
-    mock_nav.assert_called_once()
-    send_rgb_asset_widget.send_rgb_hw_dialog.accept.assert_called_once()
-
-
-def test_on_utxo_posted_to_bridge_wrong_purpose(send_rgb_asset_widget: SendRGBAssetWidget):
-    """_on_utxo_posted_to_bridge should return early if purpose is not 'send_rgb'."""
-    send_rgb_asset_widget._view_model.utxo_creation_view_model.current_purpose = 'other'
-    send_rgb_asset_widget._on_utxo_posted_to_bridge()
-    # Should return early
-
-
-def test_on_utxo_posted_to_bridge_not_visible(send_rgb_asset_widget: SendRGBAssetWidget):
-    """_on_utxo_posted_to_bridge should return early if widget not visible."""
-    send_rgb_asset_widget._view_model.utxo_creation_view_model.current_purpose = 'send_rgb'
-    send_rgb_asset_widget.hide()
-    send_rgb_asset_widget._on_utxo_posted_to_bridge()
-    # Should return early
-
-
-def test_send_rgb_asset_widget_with_draft_data(qtbot, mocker):
-    """Test SendRGBAssetWidget initialization with draft_data."""
-    mock_navigation = MagicMock()
-    view_model = MagicMock(MainViewModel(mock_navigation))
-    asset_balance = Balance(future=100, spendable=50, settled=100)
-    txn_list = MagicMock(ListTransferAssetWithBalanceResponseModel)
-    txn_list.asset_balance = asset_balance
-    view_model.cfa_view_model.txn_list = txn_list
-    view_model.cfa_view_model.is_loading = MagicMock()
-    view_model.cfa_view_model.stop_loading = MagicMock()
-
-    draft_data = {
-        'asset_id': 'test-asset-id',
-        'recipient_id': 'test-recipient',
-        'amount': 100,
-    }
-
-    widget = SendRGBAssetWidget(view_model, draft_data=draft_data)
-    qtbot.addWidget(widget)
-
-    assert widget.asset_id == 'test-asset-id'
-    assert widget.send_rgb_asset_page.asset_address_value.text() == 'test-recipient'
-    assert widget.send_rgb_asset_page.asset_amount_value.text() == '100'
-
-
-def test_set_originating_page_ifa(send_rgb_asset_widget: SendRGBAssetWidget):
-    """Test the set_originating_page method for IFA asset type."""
-    send_rgb_asset_widget.set_originating_page(AssetSchema.IFA)
-    assert send_rgb_asset_widget.asset_type == AssetSchema.IFA
-
-
-def test_rgb_asset_page_navigation_ifa(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """Test the rgb_asset_page_navigation method for IFA asset type."""
-    mock_page_navigation = MagicMock()
-    mock_sidebar = MagicMock()
-    send_rgb_asset_widget._view_model.page_navigation = mock_page_navigation
-    mock_page_navigation.sidebar.return_value = mock_sidebar
-
-    send_rgb_asset_widget.asset_type = AssetSchema.IFA
-    send_rgb_asset_widget.rgb_asset_page_navigation()
-
-    mock_sidebar.my_inflatable.setChecked.assert_called_once_with(True)
-    mock_page_navigation.inflatable_asset_page.assert_called_once()
-
-
-def test_show_send_rgb_psbt_page_ifa(send_rgb_asset_widget: SendRGBAssetWidget):
-    """For IFA asset type, page name should be 'IFA page'."""
-    send_rgb_asset_widget.show()
-    send_rgb_asset_widget.asset_type = AssetSchema.IFA
-    send_rgb_asset_widget.is_multisig = False
-    with patch('src.views.ui_send_rgb_asset.ReceiveAssetModel') as mock_receive_model:
-        model_instance = MagicMock()
-        mock_receive_model.return_value = model_instance
-        psbt = 'psbt-ifa'
-
-        send_rgb_asset_widget.show_send_rgb_psbt_page(psbt)
-
-        mock_receive_model.assert_called_once_with(
-            page_name='IFA page', address_info='psbt_info', psbt=psbt, is_signed=False,
-        )
-
-
-def test_show_send_rgb_psbt_page_multisig(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """For multisig wallet, show_send_rgb_psbt_page should show toast and navigate back."""
-    send_rgb_asset_widget.show()
-    send_rgb_asset_widget.asset_type = AssetSchema.NIA
-    send_rgb_asset_widget.is_multisig = True
-
-    mock_toast = mocker.patch('src.views.ui_send_rgb_asset.ToastManager.success')
-    mock_nav = mocker.patch.object(
-        send_rgb_asset_widget, 'rgb_asset_page_navigation',
-    )
-
-    send_rgb_asset_widget.show_send_rgb_psbt_page('psbt-mSIG')
-
-    mock_toast.assert_called_once()
-    mock_nav.assert_called_once()
-
-
-def test_show_send_rgb_psbt_page_not_visible(send_rgb_asset_widget: SendRGBAssetWidget):
-    """show_send_rgb_psbt_page should return early when widget not visible."""
-    send_rgb_asset_widget.hide()
-    send_rgb_asset_widget.show_send_rgb_psbt_page('psbt')
-    # Should not raise any errors and should return early
-
-
-def test_show_send_rgb_psbt_page_no_psbt(send_rgb_asset_widget: SendRGBAssetWidget):
-    """show_send_rgb_psbt_page should handle empty/None psbt gracefully."""
-    send_rgb_asset_widget.show()
-    send_rgb_asset_widget.show_send_rgb_psbt_page(None)
-    send_rgb_asset_widget.show_send_rgb_psbt_page('')
-    # Should not raise any errors
-
-
-def test_send_rgb_asset_button_hardware_wallet(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """Test send_rgb_asset_button for hardware wallet + online wallet path."""
-    mock_send_rgb_asset_page = MagicMock()
-    send_rgb_asset_widget.send_rgb_asset_page = mock_send_rgb_asset_page
-    mock_send_rgb_asset_page.asset_address_value.text.return_value = 'some_invoice'
-    mock_send_rgb_asset_page.asset_amount_value.text.return_value = '10'
-    mock_send_rgb_asset_page.fee_rate_value.text.return_value = '0.01'
-
-    mock_default_min_confirmation = MagicMock()
-    mock_default_min_confirmation.min_confirmation = 1
-    mocker.patch(
-        'src.data.repository.setting_card_repository.SettingCardRepository.get_default_min_confirmation',
-        return_value=mock_default_min_confirmation,
-    )
-
-    mock_decoded_rgb_invoice = MagicMock()
-    mock_decoded_rgb_invoice.recipient_id = 'recipient_id'
-    mock_decoded_rgb_invoice.transport_endpoints = 'some_endpoints'
-    mock_decoded_rgb_invoice.assignment = type('DummyAssign', (object,), {'__init__': lambda self, amount=1: setattr(self, 'amount', amount)})()
-    mocker.patch(
-        'src.data.repository.rgb_repository.RgbRepository.decode_invoice',
-        return_value=mock_decoded_rgb_invoice,
-    )
-
-    # Force hardware wallet + online wallet path
-    send_rgb_asset_widget.is_hardware_wallet = True
-    send_rgb_asset_widget.is_online_wallet = True
-    send_rgb_asset_widget.is_watch_only = False
-    send_rgb_asset_widget.is_multisig = False
-
-    mock_send_begin = MagicMock()
-    send_rgb_asset_widget._view_model.cfa_view_model.send_begin = mock_send_begin
-
-    send_rgb_asset_widget.send_rgb_asset_button()
-
-    assert send_rgb_asset_widget.loading_performer == 'SEND_BUTTON'
-    mock_send_begin.assert_called_once()
-
-
-def test_send_rgb_asset_button_watch_only(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """Test send_rgb_asset_button for watch-only wallet path."""
-    mock_send_rgb_asset_page = MagicMock()
-    send_rgb_asset_widget.send_rgb_asset_page = mock_send_rgb_asset_page
-    mock_send_rgb_asset_page.asset_address_value.text.return_value = 'some_invoice'
-    mock_send_rgb_asset_page.asset_amount_value.text.return_value = '10'
-    mock_send_rgb_asset_page.fee_rate_value.text.return_value = '0.01'
-
-    mock_default_min_confirmation = MagicMock()
-    mock_default_min_confirmation.min_confirmation = 1
-    mocker.patch(
-        'src.data.repository.setting_card_repository.SettingCardRepository.get_default_min_confirmation',
-        return_value=mock_default_min_confirmation,
-    )
-
-    mock_decoded_rgb_invoice = MagicMock()
-    mock_decoded_rgb_invoice.recipient_id = 'recipient_id'
-    mock_decoded_rgb_invoice.transport_endpoints = 'some_endpoints'
-    mock_decoded_rgb_invoice.assignment = type('DummyAssign', (object,), {'__init__': lambda self, amount=1: setattr(self, 'amount', amount)})()
-    mocker.patch(
-        'src.data.repository.rgb_repository.RgbRepository.decode_invoice',
-        return_value=mock_decoded_rgb_invoice,
-    )
-
-    # Force watch-only path
-    send_rgb_asset_widget.is_hardware_wallet = False
-    send_rgb_asset_widget.is_online_wallet = False
-    send_rgb_asset_widget.is_watch_only = True
-    send_rgb_asset_widget.is_multisig = False
-
-    mock_send_begin = MagicMock()
-    send_rgb_asset_widget._view_model.cfa_view_model.send_begin = mock_send_begin
-
-    send_rgb_asset_widget.send_rgb_asset_button()
-
-    mock_send_begin.assert_called_once()
-
-
-def test_handle_send_rgb_hw_dialog_update_not_visible(send_rgb_asset_widget: SendRGBAssetWidget):
-    """handle_send_rgb_hw_dialog_update should return early when widget not visible."""
-    send_rgb_asset_widget.hide()
-    send_rgb_asset_widget.handle_send_rgb_hw_dialog_update('msg', MagicMock())
-    # Should return early without processing
-
-
-def test_handle_send_rgb_hw_dialog_update_success(send_rgb_asset_widget: SendRGBAssetWidget, mocker, monkeypatch):
-    """handle_send_rgb_hw_dialog_update should accept dialog on SUCCESS status."""
-    send_rgb_asset_widget.show()
-    dummy = MagicMock()
-    dummy.isVisible.return_value = True
-    monkeypatch.setattr(
-        'src.views.ui_send_rgb_asset.HardwareWalletOperationDialog.get_instance',
-        lambda parent: dummy,
-    )
-
-    from src.model.enums.enums_model import PsbtStatus
-    send_rgb_asset_widget.handle_send_rgb_hw_dialog_update('msg', PsbtStatus.SUCCESS)
-
-    dummy.accept.assert_called_once()
-
-
-def test_handle_send_rgb_hw_dialog_update_utxo_error(send_rgb_asset_widget: SendRGBAssetWidget, mocker, monkeypatch):
-    """handle_send_rgb_hw_dialog_update should handle NoAvailableUtxos error and create UTXOs."""
-    send_rgb_asset_widget.show()
-    send_rgb_asset_widget.is_multisig = False
-    send_rgb_asset_widget.is_watch_only = False
-
-    dummy = MagicMock()
-    dummy.isVisible.return_value = True
-    monkeypatch.setattr(
-        'src.views.ui_send_rgb_asset.HardwareWalletOperationDialog.get_instance',
-        lambda parent: dummy,
-    )
-
-    # Mock the UTXO creation flow
-    mock_create_utxos = mocker.patch.object(
-        send_rgb_asset_widget._view_model.utxo_creation_view_model, 'create_utxos_begin',
-    )
-
-    from src.model.enums.enums_model import PsbtStatus
-    send_rgb_asset_widget.handle_send_rgb_hw_dialog_update(
-        'NoAvailableUtxos error', PsbtStatus.ERROR,
-    )
-
-    assert send_rgb_asset_widget._retry_after_utxo is True
-    mock_create_utxos.assert_called_once_with(purpose='send_rgb', num=3)
-
-
-def test_on_utxo_unsigned_psbt_wrong_purpose(send_rgb_asset_widget: SendRGBAssetWidget):
-    """_on_utxo_unsigned_psbt should return early if purpose is not 'send_rgb'."""
-    send_rgb_asset_widget._view_model.utxo_creation_view_model.current_purpose = 'other_purpose'
-    send_rgb_asset_widget._on_utxo_unsigned_psbt('psbt')
-    # Should return early
-
-
-def test_on_utxo_unsigned_psbt_correct_purpose(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """_on_utxo_unsigned_psbt should navigate to PSBT page for 'send_rgb' purpose."""
-    send_rgb_asset_widget._view_model.utxo_creation_view_model.current_purpose = 'send_rgb'
-    send_rgb_asset_widget.show()
-    mock_show_psbt = mocker.patch.object(
-        send_rgb_asset_widget, 'show_send_rgb_psbt_page',
-    )
-
-    send_rgb_asset_widget._on_utxo_unsigned_psbt('psbt-data')
-
-    mock_show_psbt.assert_called_once_with('psbt-data')
-
-
-def test_on_utxo_created_and_retry_success(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """_on_utxo_created_and_retry should retry send when ok=True and _retry_after_utxo=True."""
-    send_rgb_asset_widget._retry_after_utxo = True
-    mock_send = mocker.patch.object(
-        send_rgb_asset_widget, 'send_rgb_asset_button',
-    )
-
-    send_rgb_asset_widget._on_utxo_created_and_retry(True)
-
-    assert send_rgb_asset_widget._retry_after_utxo is False
-    mock_send.assert_called_once()
-
-
-def test_on_utxo_created_and_retry_not_ok(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """_on_utxo_created_and_retry should not retry when ok=False."""
-    send_rgb_asset_widget._retry_after_utxo = True
-    mock_send = mocker.patch.object(
-        send_rgb_asset_widget, 'send_rgb_asset_button',
-    )
-
-    send_rgb_asset_widget._on_utxo_created_and_retry(False)
-
-    mock_send.assert_not_called()
-
-
-def test_on_utxo_posted_to_bridge(send_rgb_asset_widget: SendRGBAssetWidget, mocker):
-    """_on_utxo_posted_to_bridge should show toast and navigate back."""
-    send_rgb_asset_widget.show()
-    send_rgb_asset_widget._view_model.utxo_creation_view_model.current_purpose = 'send_rgb'
-    send_rgb_asset_widget.send_rgb_hw_dialog = MagicMock()
-
-    mock_toast = mocker.patch('src.views.ui_send_rgb_asset.ToastManager.success')
     mock_nav = mocker.patch.object(
         send_rgb_asset_widget, 'rgb_asset_page_navigation',
     )

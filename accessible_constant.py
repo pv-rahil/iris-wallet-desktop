@@ -32,7 +32,7 @@ REQUIRE_USB_VARIANTS = [
     'online_watch_only', 'offline_load_on_device', 'offline_load_hardware',
     'offline_multisig_on_device', 'offline_multisig_hardware',
     'offline_multisig_load_on_device', 'offline_multisig_load_hardware',
-    'online_multisig_watch_only'
+    'online_multisig_watch_only',
 ]
 LOAD_WALLET_VARIANT = [
     'offline_load_hardware', 'offline_load_on_device',

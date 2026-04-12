@@ -14,6 +14,7 @@ from rgb_lib import Assets
 from rgb_lib import AssetUda
 from rgb_lib import Assignment
 from rgb_lib import Balance
+from rgb_lib import InflateBeginResult
 from rgb_lib import InitOperationResult
 from rgb_lib import Invoice
 from rgb_lib import OperationInfo
@@ -25,7 +26,6 @@ from rgb_lib import RespondToOperation
 from rgb_lib import RgbInspection
 from rgb_lib import SendBeginResult
 from rgb_lib import Transfer
-from rgb_lib import InflateBeginResult
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -213,7 +213,9 @@ def test_inflate_begin_with_session(mock_get_session, mock_wallet):
     psbt = 'psbt_string'
     batch_tx = 2
     details = MagicMock()
-    mock_wallet.inflate_begin.return_value = InflateBeginResult(psbt=psbt, batch_transfer_idx=batch_tx, details=details)
+    mock_wallet.inflate_begin.return_value = InflateBeginResult(
+        psbt=psbt, batch_transfer_idx=batch_tx, details=details,
+    )
     svc = MagicMock()
     mock_get_session.return_value = svc
 

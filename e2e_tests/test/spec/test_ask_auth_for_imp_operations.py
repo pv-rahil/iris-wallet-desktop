@@ -14,8 +14,8 @@ from accessible_constant import NATIVE_AUTH_ENABLE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
-from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import test_environment
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.test_helpers import refresh_collectibles_on_app2
@@ -606,7 +606,7 @@ def test_ask_auth_for_imp_question_issue_nia_on_for_multisig(wallets_and_operati
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending NIA asset for multisig')
-def test_ask_auth_for_imp_question_send_nia_on_for_multisig(test_environment:TestEnvironment,wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_ask_auth_for_imp_question_send_nia_on_for_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Sending NIA asset with ask auth for important operations on for multisig"""
 
     with allure.step('Create invoice for send nia'):
@@ -845,7 +845,7 @@ def test_ask_auth_for_imp_question_issue_ifa_on_for_multisig(wallets_and_operati
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending IFA asset for multisig')
-def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment:TestEnvironment,wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Sending IFA asset with ask auth for important operations on for multisig"""
     with allure.step('Getting an RGB invoice for multisig'):
         wallets_and_operations.third_page_operations.do_focus_on_application(

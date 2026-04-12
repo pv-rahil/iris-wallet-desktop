@@ -125,7 +125,9 @@ class InspectionUIHandler:
                 self._widget.sign_status_label.hide()
             # Stop loading overlay so UI doesn't stay disabled
             self._widget.loading_overlay.stop()
-            self._widget.loading_overlay.make_parent_disabled_during_loading(False)
+            self._widget.loading_overlay.make_parent_disabled_during_loading(
+                False,
+            )
             return
 
         self._widget.psbt_details = details
@@ -151,7 +153,9 @@ class InspectionUIHandler:
             # Inspection failed - reset state and stop loading
             self._widget.rgb_details = None
             self._widget.loading_overlay.stop()
-            self._widget.loading_overlay.make_parent_disabled_during_loading(False)
+            self._widget.loading_overlay.make_parent_disabled_during_loading(
+                False,
+            )
             self._widget.handle_button_enable()
             return
 
