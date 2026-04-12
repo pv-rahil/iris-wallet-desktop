@@ -455,7 +455,7 @@ class SendRGBAssetWidget(QWidget):
                         self._retry_after_utxo = False
                         return
                 self._view_model.utxo_creation_view_model.create_utxos_begin(
-                    purpose='send_rgb', num=1 if self.is_online_wallet and not self.is_hardware_wallet and not self.is_multisig else 3,
+                    purpose='send_rgb', num=3,
                 )
                 return
 
@@ -470,7 +470,7 @@ class SendRGBAssetWidget(QWidget):
         """Navigate to the receive asset page and display the UTXO creation PSBT."""
         if self._view_model.utxo_creation_view_model.current_purpose != 'send_rgb':
             return
-        if psbt and self.is_multisig:
+        if psbt:
             self.show_send_rgb_psbt_page(psbt)
 
     def show_send_rgb_psbt_page(self, psbt):

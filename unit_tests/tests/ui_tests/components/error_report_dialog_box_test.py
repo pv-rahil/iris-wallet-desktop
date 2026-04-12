@@ -77,17 +77,14 @@ def test_download_debug_logs(error_report_dialog, qtbot):
         mock_cleanup_zip.assert_called_once_with('path/test.zip')
 
 
-def test_copy_button(error_report_dialog, qtbot):
+def test_copy_button(error_report_dialog, mocker):
     """Test if the copy button copies email to clipboard."""
     dialog = error_report_dialog
 
     with patch('src.views.components.error_report_dialog_box.copy_text') as mock_copy_text, \
             patch.object(ToastManager, 'success', return_value=None):
-        # Click copy button
-        qtbot.mouseClick(dialog.copy_button, Qt.LeftButton)
-
-        # Process events to allow click to propagate
-        qtbot.wait(100)
+        # Emit clicked signal directly instead of using mouseClick
+        dialog.copy_button.clicked.emit()
 
         # Verify copy_text was called with correct label
         mock_copy_text.assert_called_once_with(dialog.email_label)

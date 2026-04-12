@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 
-from accessible_constant import LEDGER_EMULATOR_APP_NAME
+from accessible_constant import HARDWARE_WALLET_VARIANTS, LEDGER_EMULATOR_APP_NAME
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
@@ -264,7 +264,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.enter_native_password()
                 
             if hw_emu:
-                 self.wallet_features.sign_multisig_on_hardware_wallet(LEDGER_EMULATOR_APP_NAME)
+                self.wallet_features.sign_multisig_on_hardware_wallet(LEDGER_EMULATOR_APP_NAME)
                  
             if usb_require:
                 self.wallet_features.usb_sync()
@@ -276,3 +276,27 @@ class SendOperation(MainPageObjects, BaseOperations):
         finally:
             if hw_emu:
                 hw_emu.terminate()
+
+    def send_asset_for_single_sig_offline(self, application, is_native_auth_enabled: bool = False):
+        """
+        Send asset for single-sig offline wallet (watch-only with hardware signer)
+        
+        :param application: Application instance.
+        :param is_native_auth_enabled: Whether native auth is enabled.
+        """
+        self.do_focus_on_application(application)
+
+        # Click resume draft if displayed (for continuing after UTXO creation)
+        if self.do_is_displayed(self.asset_detail_page_objects.resume_draft_frame()):
+            self.asset_detail_page_objects.click_resume_draft_frame()
+
+        if self.do_is_displayed(self.send_asset_page_objects.send_button()):
+            self.send_asset_page_objects.click_send_button()
+
+        if is_native_auth_enabled:
+            self.enter_native_password()
+        
+        if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+            self.receive_asset_page_objects.click_receive_asset_close_button()
+            
+        self.wallet_features.usb_sync()

@@ -139,10 +139,13 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
+            
+        if self.do_is_displayed(self.success_page_objects.home_button()):
+            self.success_page_objects.click_home_button()
 
         self.do_focus_on_application(application)
 
-        self.wallet_feature.usb_sync(is_receive=True)
+        self.wallet_feature.usb_sync(is_receive=False)
 
     def issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(self, application, asset_ticker, asset_name, asset_amount, total_supply):
         """
@@ -150,8 +153,8 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
         """
         self.do_focus_on_application(application)
 
-        if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
-            self.inflatable_page_objects.issue_ifa_button()
+        if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
+            self.sidebar_page_objects.click_inflatable_button()
 
         if self.do_is_displayed(self.inflatable_page_objects.issue_ifa_button()):
             self.inflatable_page_objects.click_issue_ifa_button()

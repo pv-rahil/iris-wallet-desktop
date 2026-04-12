@@ -333,7 +333,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
         self.do_focus_on_application(application)
 
         # USB sync to pass PSBT to offline wallet
-        self.wallet_feature.usb_sync()
+        self.wallet_features.usb_sync()
 
     def issue_cfa_with_sufficient_sats_for_multisig_wallet(self, application, asset_name, asset_description, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
         """

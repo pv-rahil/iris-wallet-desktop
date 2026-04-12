@@ -146,12 +146,12 @@ def test_indexer_info_for_offline_multisig_wallet(wallets_and_operations: Wallet
 
     with allure.step('Indexer URL from second wallet'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+            FIRST_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_about_button()
-        indexer_url = wallets_and_operations.second_page_objects.about_page_objects.get_indexer_url()
-        wallets_and_operations.second_page_objects.about_page_objects.click_indexer_url_copy_button()
-        copied_indexer_url = wallets_and_operations.second_page_operations.do_get_copied_address()
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
+        indexer_url = wallets_and_operations.first_page_objects.about_page_objects.get_indexer_url()
+        wallets_and_operations.first_page_objects.about_page_objects.click_indexer_url_copy_button()
+        copied_indexer_url = wallets_and_operations.first_page_operations.do_get_copied_address()
 
         assert copied_indexer_url == indexer_url
 
@@ -160,18 +160,17 @@ def test_indexer_info_for_offline_multisig_wallet(wallets_and_operations: Wallet
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.story('Tests for copy buttons for RGB proxy info for offline multisig wallet')
-def test_rgb_proxy_info_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_rgb_proxy_info_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup,):
     """Test asserting RGB proxy info for offline multisig wallet (2 apps)"""
-    setup_offline_multisig_two_app_wallets(wallets_and_operations, wallet_variant_name)
 
     with allure.step('RGB proxy URL from second wallet'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+            FIRST_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_about_button()
-        rgb_proxy_url = wallets_and_operations.second_page_objects.about_page_objects.get_rgb_proxy_url()
-        wallets_and_operations.second_page_objects.about_page_objects.click_rgb_proxy_url_copy_button()
-        copied_rgb_proxy_url = wallets_and_operations.second_page_operations.do_get_copied_address()
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_about_button()
+        rgb_proxy_url = wallets_and_operations.first_page_objects.about_page_objects.get_rgb_proxy_url()
+        wallets_and_operations.first_page_objects.about_page_objects.click_rgb_proxy_url_copy_button()
+        copied_rgb_proxy_url = wallets_and_operations.first_page_operations.do_get_copied_address()
 
         assert copied_rgb_proxy_url == rgb_proxy_url
 
@@ -183,20 +182,19 @@ def test_rgb_proxy_info_for_offline_multisig_wallet(wallets_and_operations: Wall
 @allure.story('Tests for download debug log for offline multisig wallet')
 def test_download_debug_log_for_offline_multisig_wallet(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for downloading debug logs for offline multisig wallet (2 apps)"""
-    setup_offline_multisig_two_app_wallets(wallets_and_operations, wallet_variant_name)
 
     with allure.step('Download debug logs from second wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.about_page_objects.click_download_debug_log()
-        file_name = wallets_and_operations.second_page_objects.about_page_objects.copying_logs_filename() + \
+        wallets_and_operations.first_page_objects.about_page_objects.click_download_debug_log()
+        file_name = wallets_and_operations.first_page_objects.about_page_objects.copying_logs_filename() + \
             '.zip'
         homepath = str(Path.home())
         complete_file_path = homepath+'/'+file_name
-        wallets_and_operations.second_page_objects.about_page_objects.press_enter()
+        wallets_and_operations.first_page_objects.about_page_objects.press_enter()
 
-        _, toaster_desc = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        _, toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         assert toaster_desc == INFO_LOG_SAVE_DESCRIPTION.format(
             complete_file_path,
         )

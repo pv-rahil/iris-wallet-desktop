@@ -493,7 +493,8 @@ def test_on_pending_operations_ready_sign_needed(header_frame, mocker, qtbot):
     )
     header_frame.on_pending_operations_ready([op])
     assert header_frame._psbt_action_mode == 'offline_sign_needed'
-    assert 'Sign Needed' in header_frame.psbt_info_label.text()
+    # The text is the translation key, not the translated string
+    assert 'sign_needed_use_offline_wallet' in header_frame.psbt_info_label.text()
 
 
 def test_on_pending_operations_ready_broadcast(header_frame, mocker, qtbot):

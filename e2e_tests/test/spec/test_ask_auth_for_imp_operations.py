@@ -14,6 +14,7 @@ from accessible_constant import NATIVE_AUTH_ENABLE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -605,7 +606,7 @@ def test_ask_auth_for_imp_question_issue_nia_on_for_multisig(wallets_and_operati
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending NIA asset for multisig')
-def test_ask_auth_for_imp_question_send_nia_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_ask_auth_for_imp_question_send_nia_on_for_multisig(test_environment:TestEnvironment,wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Sending NIA asset with ask auth for important operations on for multisig"""
 
     with allure.step('Create invoice for send nia'):
@@ -674,6 +675,8 @@ def test_ask_auth_for_imp_question_send_nia_on_for_multisig(wallets_and_operatio
         wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
         tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
+
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -842,7 +845,7 @@ def test_ask_auth_for_imp_question_issue_ifa_on_for_multisig(wallets_and_operati
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending IFA asset for multisig')
-def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment:TestEnvironment,wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Sending IFA asset with ask auth for important operations on for multisig"""
     with allure.step('Getting an RGB invoice for multisig'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -922,6 +925,8 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(wallets_and_operatio
         )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1145,7 +1150,7 @@ def test_ask_auth_for_imp_question_issue_cfa_off_for_multisig(wallets_and_operat
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending CFA asset for multisig')
-def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Sending CFA asset with ask auth for important operations off for multisig"""
     with allure.step('Send CFA without native auth'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -1228,6 +1233,8 @@ def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(wallets_and_operati
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
 
+    test_environment.reset_second_instance(reset_data=False)
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.skip_for_offline_wallet
@@ -1270,7 +1277,7 @@ def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operat
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.story('Sending IFA asset for multisig')
-def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Sending IFA asset with ask auth for important operations off for multisig"""
     with allure.step('Getting an RGB invoice for multisig'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -1339,3 +1346,5 @@ def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(wallets_and_operati
         wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
         tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
+
+    test_environment.reset_second_instance(reset_data=False)

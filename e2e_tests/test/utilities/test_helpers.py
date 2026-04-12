@@ -187,41 +187,6 @@ def verify_expired_invoice_validation(
     return validation_label
 
 
-def send_asset_with_invoice(
-    send_features,
-    application,
-    invoice: str,
-    amount: str,
-    wallet_variant_name: str | None = None,
-    purpose: str = 'send_asset',
-) -> None:
-    """
-    Send asset with invoice, handling hardware wallet variant.
-
-    Args:
-        send_features: Send features instance.
-        application: Application instance.
-        invoice: Receiver invoice.
-        amount: Amount to send.
-        wallet_variant_name: Wallet variant name.
-        purpose: Purpose string.
-    """
-    if wallet_variant_name and wallet_variant_name in HARDWARE_WALLET_VARIANTS:
-        send_features.send(
-            application=application,
-            receiver_invoice=invoice,
-            amount=amount,
-            is_hardware_wallet=True,
-            purpose=purpose,
-        )
-    else:
-        send_features.send(
-            application=application,
-            receiver_invoice=invoice,
-            amount=amount,
-        )
-
-
 def send_asset_flow_with_verification(
     wallets_and_operations,
     invoice: str,
@@ -271,84 +236,6 @@ def send_asset_flow_with_verification(
             expected_status,
             asset_type=asset_type,
         )
-
-
-def verify_transfer_status_and_received_amount(
-    first_page_objects,
-    second_page_objects,
-    second_page_operations,
-    asset_name: str,
-    expected_amount: str,
-    expected_status: str,
-    asset_type: str = 'ifa',
-) -> tuple[str, str]:
-    """
-    Verify transfer status and received amount.
-
-    Args:
-        first_page_objects: First app page objects.
-        second_page_objects: Second app page objects.
-        second_page_operations: Second app operations.
-        asset_name: Asset name to verify.
-        expected_amount: Expected received amount.
-        expected_status: Expected transfer status.
-        asset_type: Asset type ('ifa', 'nia', 'cfa').
-
-    Returns:
-        Tuple of (actual_transfer_status, received_amount).
-    """
-    with allure.step('Verify transaction status'):
-        if asset_type == 'ifa':
-            first_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
-            )
-        elif asset_type == 'nia':
-            first_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            first_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-
-        actual_transfer_status = first_page_objects.asset_detail_page_objects.get_transfer_status()
-        first_page_objects.asset_detail_page_objects.click_close_button()
-
-    with allure.step('Verify received amount'):
-        second_page_operations.do_focus_on_application(
-            second_page_operations.application,
-        )
-        if asset_type == 'ifa':
-            second_page_objects.sidebar_page_objects.click_inflatable_button()
-            second_page_objects.inflatable_page_objects.click_refresh_button()
-            second_page_objects.inflatable_page_objects.click_refresh_button()
-            second_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
-            )
-        elif asset_type == 'nia':
-            second_page_objects.fungible_page_objects.click_refresh_button()
-            second_page_objects.fungible_page_objects.click_refresh_button()
-            second_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            second_page_objects.sidebar_page_objects.click_collectibles_button()
-            second_page_objects.collectible_page_objects.click_refresh_button()
-            second_page_objects.collectible_page_objects.click_refresh_button()
-            second_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-
-        received_amount = second_page_objects.asset_detail_page_objects.get_total_balance()
-        second_page_objects.asset_detail_page_objects.click_close_button()
-
-        mine(1)
-
-    with allure.step('Verify assertions'):
-        assert received_amount == expected_amount
-        assert actual_transfer_status == expected_status
-
-    return actual_transfer_status, received_amount
 
 
 def focus_and_navigate_to_asset(
@@ -407,100 +294,6 @@ def initiate_third_wallet_and_get_invoice(
     return invoice
 
 
-def verify_transfer_status_on_app3(
-    first_page_objects,
-    third_page_operations,
-    third_page_objects,
-    asset_name: str,
-    expected_status: str,
-    asset_type: str = 'ifa',
-) -> str:
-    """
-    Verify transfer status and received amount on App 3.
-
-    Args:
-        first_page_objects: First app page objects.
-        third_page_operations: Third app operations.
-        third_page_objects: Third app page objects.
-        asset_name: Asset name to verify.
-        expected_status: Expected transfer status.
-        asset_type: Asset type ('ifa', 'nia', 'cfa').
-
-    Returns:
-        Actual transfer status.
-    """
-    actual_transfer_status = first_page_objects.asset_detail_page_objects.get_transfer_status()
-    assert actual_transfer_status == expected_status
-
-    with allure.step('Verify received amount on App 3'):
-        third_page_operations.do_focus_on_application(
-            third_page_operations.application,
-        )
-        if asset_type == 'ifa':
-            third_page_objects.sidebar_page_objects.click_inflatable_button()
-            third_page_objects.inflatable_page_objects.click_refresh_button()
-            third_page_objects.inflatable_page_objects.click_refresh_button()
-            third_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
-            )
-        elif asset_type == 'nia':
-            third_page_objects.fungible_page_objects.click_refresh_button()
-            third_page_objects.fungible_page_objects.click_refresh_button()
-            third_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            third_page_objects.sidebar_page_objects.click_collectibles_button()
-            third_page_objects.collectible_page_objects.click_refresh_button()
-            third_page_objects.collectible_page_objects.click_refresh_button()
-            third_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-
-    return actual_transfer_status
-
-
-def sign_psbt_and_verify_transfer(
-    wallets_and_operations,
-    wallet_variant_name: str,
-    asset_name: str,
-    asset_type: str = 'ifa',
-) -> None:
-    """
-    Sign PSBT and verify transfer status.
-
-    Args:
-        wallets_and_operations: Wallet test setup instance.
-        wallet_variant_name: Wallet variant name.
-        asset_name: Asset name.
-        asset_type: Asset type ('ifa', 'nia', 'cfa').
-    """
-
-    wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-        SECOND_APPLICATION, wallet_variant_name,
-    )
-
-    with allure.step('Verify transfer status'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-
-
-def refresh_collectibles_on_app2(wallets_and_operations) -> None:
-    """
-    Refresh collectibles on App 2.
-
-    Args:
-        wallets_and_operations: Wallet test setup instance.
-    """
-    wallets_and_operations.second_page_operations.do_focus_on_application(
-        SECOND_APPLICATION,
-    )
-    wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-    wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-    wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-
-
 def handle_hardware_wallet_init(self, variant_name, app_name):
     """
     Initialize hardware wallet emulator if variant is hardware wallet.
@@ -532,23 +325,57 @@ def handle_hardware_wallet_cleanup(self) -> None:
         self.hardware_wallet_emulator.terminate()
 
 
-def get_invoice_from_third_app(
-    third_page_features,
-    application,
-) -> str:
+def refresh_collectibles_on_app2(wallets_and_operations) -> None:
     """
-    Get invoice from third application (for offline wallet tests).
+    Refresh collectibles on App 2.
 
     Args:
-        third_page_features: Third page features instance.
-        application: Application instance.
+        wallets_and_operations: Wallet test setup instance.
+    """
+    wallets_and_operations.second_page_operations.do_focus_on_application(
+        SECOND_APPLICATION,
+    )
+    wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+    wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+    wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+
+
+def refresh_second_wallet_and_verify_asset(
+    wallets_and_operations,
+    asset_name: str,
+    asset_type: str = 'nia',
+) -> str:
+    """
+    Refresh second multisig wallet and verify asset name on first wallet.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        asset_name: Expected asset name.
+        asset_type: Asset type ('nia', 'cfa').
 
     Returns:
-        Generated invoice.
+        Actual asset name.
     """
-    return third_page_features.receive_features.receive_asset_from_sidebar(
-        application,
-    )
+    with allure.step('refresh second multisig wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+
+    with allure.step('Verify asset name'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        if asset_type == 'nia':
+            actual_name = wallets_and_operations.first_page_objects.fungible_page_objects.get_nia_asset_name(
+                asset_name,
+            )
+        else:  # cfa
+            actual_name = wallets_and_operations.first_page_objects.collectible_page_objects.get_cfa_asset_name(
+                asset_name,
+            )
+        assert actual_name == asset_name
+        return actual_name
 
 
 def setup_multisig_wallets(
@@ -986,144 +813,6 @@ def fund_and_refresh_offline_multisig_wallets(
             wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
         elif asset_type == 'cfa':
             wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
-
-
-def refresh_second_wallet_and_verify_asset(
-    wallets_and_operations,
-    asset_name: str,
-    asset_type: str = 'nia',
-) -> str:
-    """
-    Refresh second multisig wallet and verify asset name on first wallet.
-
-    Args:
-        wallets_and_operations: Wallet test setup instance.
-        asset_name: Expected asset name.
-        asset_type: Asset type ('nia', 'cfa').
-
-    Returns:
-        Actual asset name.
-    """
-    with allure.step('refresh second multisig wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-
-    with allure.step('Verify asset name'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        if asset_type == 'nia':
-            actual_name = wallets_and_operations.first_page_objects.fungible_page_objects.get_nia_asset_name(
-                asset_name,
-            )
-        else:  # cfa
-            actual_name = wallets_and_operations.first_page_objects.collectible_page_objects.get_cfa_asset_name(
-                asset_name,
-            )
-        assert actual_name == asset_name
-        return actual_name
-
-
-def offline_wallet_send_asset_flow(
-    wallets_and_operations,
-    invoice: str,
-    asset_name: str,
-    send_amount: str,
-    wallet_variant_name: str,
-    asset_type: str = 'ifa',
-) -> str:
-    """
-    Execute offline wallet send asset flow with PSBT creation, signing, and broadcast.
-
-    Args:
-        wallets_and_operations: Wallet test setup instance.
-        invoice: Invoice for sending.
-        asset_name: Asset name.
-        send_amount: Amount to send.
-        wallet_variant_name: Wallet variant name.
-        asset_type: Asset type ('ifa', 'nia', 'cfa').
-
-    Returns:
-        Transfer status.
-    """
-    with allure.step(f'Send {asset_type} asset for offline wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        if asset_type == 'ifa':
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
-            )
-        elif asset_type == 'nia':
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
-
-    with allure.step(f'Create {asset_type} psbt for offline wallet'):
-        wallets_and_operations.second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount, wallet_variant_name=wallet_variant_name,
-        )
-
-    with allure.step(f'Sign {asset_type} psbt for offline wallet'):
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
-        )
-
-    with allure.step(f'Broadcast {asset_type} psbt for offline wallet'):
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
-            application=SECOND_APPLICATION,
-        )
-
-    with allure.step('Verify transfer status for offline wallet'):
-        if asset_type == 'ifa':
-            wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
-            )
-        elif asset_type == 'nia':
-            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-            wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-        actual_transfer_status = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_transfer_status()
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
-
-    with allure.step('Verify received amount for offline wallet'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        if asset_type == 'ifa':
-            wallets_and_operations.third_page_objects.inflatable_page_objects.click_ifa_frame(
-                asset_name,
-            )
-        elif asset_type == 'nia':
-            wallets_and_operations.third_page_objects.fungible_page_objects.click_nia_frame(
-                asset_name,
-            )
-        elif asset_type == 'cfa':
-            wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
-            wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
-                asset_name,
-            )
-        received_amount = wallets_and_operations.third_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-
-    with allure.step('Verify assertions for offline wallet'):
-        assert received_amount == send_amount
-
-    return actual_transfer_status
 
 
 def multisig_send_asset_flow_with_verification(

@@ -13,6 +13,7 @@ from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -388,16 +389,16 @@ def test_hide_exhausted_asset_on_offline_multisig(wallets_and_operations: Wallet
         child_count = wallets_and_operations.second_page_objects.fungible_page_objects.get_child_count()
         assert len(child_count) == 3
 
+    test_environment.reset_second_instance(reset_data=False)
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Hide exhausted asset for offline multisig')
 @allure.story('Toggling off hide exhausted asset for offline multisig')
-def test_hide_exhausted_asset_off_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_hide_exhausted_asset_off_offline_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for showing exhausted asset for offline multisig"""
-
-    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
 
     with allure.step('Navigating to settings page from watch-only coordinator'):
         wallets_and_operations.second_page_operations.do_focus_on_application(

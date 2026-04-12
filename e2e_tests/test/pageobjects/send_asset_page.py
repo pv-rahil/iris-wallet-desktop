@@ -64,7 +64,6 @@ class SendAssetPageObjects(BaseOperations):
         Returns:
             The result of the action.
         """
-        print('adressssssss',address)
         return self.do_set_text(self.invoice_input(), address) if self.do_is_displayed(self.invoice_input()) else None
 
     def enter_asset_amount(self, amount):

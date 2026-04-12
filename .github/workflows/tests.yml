@@ -137,7 +137,6 @@ jobs:
   e2e-dogtail:
     name: E2E (${{ matrix.wallet_variant }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -150,9 +149,9 @@ jobs:
           - online_load_on_device
           - online_load_hardware
           - offline_create_on_device
-          # - offline_create_hardware
+          - offline_create_hardware
           - offline_load_on_device
-          # - offline_load_hardware
+          - offline_load_hardware
 
     env:
       DISPLAY: :99

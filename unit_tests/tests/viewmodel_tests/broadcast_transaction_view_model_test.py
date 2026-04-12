@@ -215,13 +215,12 @@ def test_inflate_end_flow(vm, mocker, qtbot):
     vm.inflate_end('psbt')
     mock_run.assert_called_once()
 
-    # success
-    res = mocker.Mock(txid='tx123')
+    # success - on_success_inflate_end takes no arguments
     mock_toast = mocker.patch(
         'src.viewmodels.broadcast_transaction_view_model.ToastManager.success',
     )
     with qtbot.waitSignals([vm.is_loading, vm.tx_broadcasted], timeout=1000):
-        vm.on_success_inflate_end(res)
+        vm.on_success_inflate_end()
     mock_toast.assert_called()
 
 
@@ -500,3 +499,63 @@ def test_on_signed_psbt_inspected_error(vm, mocker):
 
     vm._on_signed_psbt_inspected(Exception('fail'))
     mock_run.assert_called_once()  # Still calls respond_to_operation with NACK or error?
+
+
+def test_on_inspect_psbt_error(vm, mocker):
+    """Test _on_inspect_psbt_error handling."""
+    mock_toast = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.ToastManager.error',
+    )
+    mock_logger = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.logger.error',
+    )
+    slot = Mock()
+    vm.psbt_inspection_ready.connect(slot)
+
+    # Test with CommonException (has message attribute)
+    error = CommonException('psbt inspect failed')
+    vm._on_inspect_psbt_error(error)
+
+    assert vm._inspecting_psbt is None  # Guard reset
+    mock_toast.assert_called_once_with(description='psbt inspect failed')
+    mock_logger.assert_called_once()
+    slot.assert_called_with(None)  # Emits None to signal failure
+
+    # Test with regular Exception (no message attribute)
+    slot.reset_mock()
+    mock_toast.reset_mock()
+    error2 = Exception('generic error')
+    vm._on_inspect_psbt_error(error2)
+
+    mock_toast.assert_called_once_with(description='generic error')
+    slot.assert_called_with(None)
+
+
+def test_on_inspect_rgb_transfer_error(vm, mocker):
+    """Test _on_inspect_rgb_transfer_error handling."""
+    mock_toast = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.ToastManager.error',
+    )
+    mock_logger = mocker.patch(
+        'src.viewmodels.broadcast_transaction_view_model.logger.error',
+    )
+    slot = Mock()
+    vm.rgb_transfer_inspection_ready.connect(slot)
+
+    # Test with CommonException (has message attribute)
+    error = CommonException('rgb transfer inspect failed')
+    vm._on_inspect_rgb_transfer_error(error)
+
+    assert vm._inspecting_rgb is None  # Guard reset
+    mock_toast.assert_called_once_with(description='rgb transfer inspect failed')
+    mock_logger.assert_called_once()
+    slot.assert_called_with(None)  # Emits None to signal failure
+
+    # Test with regular Exception (no message attribute)
+    slot.reset_mock()
+    mock_toast.reset_mock()
+    error2 = Exception('generic rgb error')
+    vm._on_inspect_rgb_transfer_error(error2)
+
+    mock_toast.assert_called_once_with(description='generic rgb error')
+    slot.assert_called_with(None)

@@ -25,6 +25,7 @@ from rgb_lib import RespondToOperation
 from rgb_lib import RgbInspection
 from rgb_lib import SendBeginResult
 from rgb_lib import Transfer
+from rgb_lib import InflateBeginResult
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.model.common_operation_model import BroadcastPsbtRequestModel
@@ -210,7 +211,9 @@ def test_inflate_begin_with_session(mock_get_session, mock_wallet):
     """Test inflate_begin adds psbt to session with purpose and returns psbt."""
     # Setup
     psbt = 'psbt_string'
-    mock_wallet.inflate_begin.return_value = psbt
+    batch_tx = 2
+    details = MagicMock()
+    mock_wallet.inflate_begin.return_value = InflateBeginResult(psbt=psbt, batch_transfer_idx=batch_tx, details=details)
     svc = MagicMock()
     mock_get_session.return_value = svc
 

@@ -319,6 +319,15 @@ def test_handle_sync_completed_multisig_restore_fail(welcome_view_model, mocker,
     mock_toast = mocker.patch(
         'src.viewmodels.welcome_view_model.ToastManager.success',
     )
+    # Mock restore_multisig_config_from_file to return False (invalid json)
+    mocker.patch(
+        'src.viewmodels.welcome_view_model.restore_multisig_config_from_file',
+        return_value=False,
+    )
+    # Mock set_keyring_status
+    mocker.patch(
+        'src.viewmodels.welcome_view_model.SettingRepository.set_keyring_status',
+    )
 
     ap = mocker.Mock(
         multisig_cosigners_file_path=str(

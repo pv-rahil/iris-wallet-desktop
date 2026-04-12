@@ -10,12 +10,14 @@ from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LOAD_WALLET_VARIANT
-from accessible_constant import MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import MULTISIG_LOAD_VARIANTS
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
+from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
-from e2e_tests.test.utilities.app_setup import load_qm_translation
+from e2e_tests.test.utilities.app_setup import TestEnvironment, load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -308,11 +310,10 @@ def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wall
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
-@pytest.mark.skip_for_watch_only
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('load wallet for offline wallet')
 @allure.story('load wallet functionality for offline wallet')
-def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_load_wallet_for_offline_wallet(test_environment:TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     This test case is used to load the wallet from the backup.
     """
@@ -336,7 +337,7 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
         )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS or wallet_variant_name == ONLINE_WATCH_ONLY:
             XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
                 is_load_wallet=True,
             )
@@ -347,6 +348,17 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
         PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
 
+    # Configure backup provider (Google) for watch-only wallets
+    if wallet_variant_name == ONLINE_WATCH_ONLY:
+        with allure.step('Configure backup provider (Google) for watch-only'):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
+            wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
+            wallets_and_operations.first_page_features.wallet_features.google_auth()
+            wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
+            wallets_and_operations.first_page_objects.backup_page_objects.click_backup_close_button()
+        
+    test_environment.reset_second_instance(reset_data=False)
+
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
@@ -354,7 +366,7 @@ def test_load_wallet_for_offline_wallet(test_environment, wallets_and_operations
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for offline wallet')
 @allure.story('CFA from B->A via PSBT')
-def test_cfa_transfer_for_offline_wallet(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_cfa_transfer_for_offline_wallet(test_environment:TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Offline E2E using PSBT:
     - Issue CFA in Wallet B and send to A via PSBT (SECOND -> FIRST)
@@ -416,6 +428,8 @@ def test_cfa_transfer_for_offline_wallet(test_environment, wallets_and_operation
         )
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_multisig
@@ -460,7 +474,7 @@ def test_nia_transfer_for_offline_wallet(test_environment, wallets_and_operation
             application=THIRD_APPLICATION,
         )
 
-    with allure.step('Create PSBT for NIA transfer in Wallet A'):
+    with allure.step('Create UTXO PSBT for NIA transfer in Wallet A'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
@@ -473,10 +487,35 @@ def test_nia_transfer_for_offline_wallet(test_environment, wallets_and_operation
             application=SECOND_APPLICATION, receiver_invoice=nia_invoice_b, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name,
         )
 
-    with allure.step('Sign NIA PSBT in Wallet A and broadcast from Wallet B'):
+    with allure.step('Sign UTXO PSBT for NIA transfer'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
         )
+
+    with allure.step('Broadcast UTXO PSBT for NIA transfer'):
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Create transfer PSBT for NIA'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+            NIA_NAME,
+        )
+        wallets_and_operations.second_page_features.send_features.send_asset_for_single_sig_offline(
+            application=SECOND_APPLICATION,
+        )
+
+    with allure.step('Sign transfer PSBT for NIA'):
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
+        )
+
+    with allure.step('Broadcast transfer PSBT for NIA'):
         wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
             application=SECOND_APPLICATION,
         )
@@ -521,33 +560,45 @@ def test_restore_for_offline_wallet(test_environment, wallets_and_operations: Wa
     """
     description = None
     with allure.step('Restore the wallet'):
-        load_variant = map_to_load_variant(wallet_variant_name)
-        wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
-            application=FIRST_APPLICATION, variant=load_variant, fund=False, is_restore_wallet=True,
-        )
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
-        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
-            wallets_and_operations.first_page_features.wallet_features.restore_with_xpubs(
-                xpub_vanilla=XPUB_VANILLA,
-                xpub_colored=XPUB_COLORED,
-                fingerprint=MASTER_FINGERPRINT,
-                password=PASSWORD,
+        if wallet_variant_name == ONLINE_WATCH_ONLY:
+            wallets_and_operations.first_page_features.wallet_features.navigate_to_watch_only_restore(
+                FIRST_APPLICATION,
             )
+            wallets_and_operations.first_page_features.wallet_features.google_auth(
+                password=PASSWORD, xpub_vanilla=XPUB_VANILLA, xpub_colored=XPUB_COLORED, fingerprint=MASTER_FINGERPRINT,
+            )
+            wallets_and_operations.first_page_operations.wait_for_toaster_message()
+            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+            assert description == INFO_RESTORE_COMPLETED
         else:
-            wallets_and_operations.first_page_features.wallet_features.restore_with_mnemonic(
-                mnemonic=MNEMONIC,
+            # Offline wallet restore flow using mnemonic or xpubs
+            load_variant = map_to_load_variant(wallet_variant_name)
+            wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+                application=FIRST_APPLICATION, variant=load_variant, fund=False, is_restore_wallet=True,
+            )
+            wallets_and_operations.first_page_operations.do_focus_on_application(
+                FIRST_APPLICATION,
+            )
+            wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+            if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+                wallets_and_operations.first_page_features.wallet_features.restore_with_xpubs(
+                    xpub_vanilla=XPUB_VANILLA,
+                    xpub_colored=XPUB_COLORED,
+                    fingerprint=MASTER_FINGERPRINT,
+                    password=PASSWORD,
+                )
+            else:
+                wallets_and_operations.first_page_features.wallet_features.restore_with_mnemonic(
+                    mnemonic=MNEMONIC,
+                    password=PASSWORD,
+                )
+            wallets_and_operations.first_page_operations.wait_for_toaster_message()
+            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+            assert description == INFO_RESTORE_COMPLETED
+            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
                 password=PASSWORD,
             )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message()
-        _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        assert description == INFO_RESTORE_COMPLETED
-        wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
-            password=PASSWORD,
-        )
-        wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
+            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
     with allure.step('Capture CFA received amount in Wallet A (post-restore)'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
@@ -937,7 +988,7 @@ def test_send_btc_for_multisig(test_environment, wallets_and_operations: WalletT
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
-        BTC_BALANCE_BEFORE = wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.get_bitcoin_balance()
+        BTC_BALANCE_BEFORE = wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
     with allure.step('Verify transaction in third wallet'):
@@ -1163,10 +1214,619 @@ def test_restore_for_multisig(test_environment, wallets_and_operations: WalletTe
     with allure.step('Capture BTC balance in Wallet A for multisig'):
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
-        btc_balance_after = wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.get_bitcoin_balance()
+        btc_balance_after = wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
     assert CFA_RECEIVE_AMOUNT_BEFORE == cfa_received_amount_after
     assert NIA_RECEIVE_AMOUNT_BEFORE == nia_received_amount_after
     assert IFA_RECEIVE_AMOUNT_BEFORE == ifa_received_amount_after
     assert BTC_BALANCE_BEFORE == btc_balance_after
+
+
+# ==============================================================================
+# OFFLINE MULTISIG BACKUP AND RESTORE TESTS (4 apps)
+# ==============================================================================
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Setup wallets and issue NIA asset')
+def test_offline_multisig_setup_and_issue_nia(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test setup and issue NIA asset for offline multisig wallet (4 apps).
+    - App 1: Offline multisig wallet (signer)
+    - App 2: Online multisig wallet (coordinator)
+    - App 3: Online multisig wallet (cosigner)
+    - App 4: Receiver wallet
+    """
+    global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
+    
+    setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
+    
+    # Fund the second wallet (online coordinator)
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            SECOND_APPLICATION,
+        )
+    
+    # Issue NIA asset from second wallet
+    with allure.step('Issue NIA asset from second wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
+            SECOND_APPLICATION, NIA_TICKER, NIA_NAME, ISSUE_AMOUNT, wallet_variant_name,
+        )
+        # Refresh and sign from third wallet (cosigner)
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+        # Sign from first wallet (offline signer)
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+        # Broadcast PSBT from second wallet (coordinator)
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION, is_multisig=True,
+        )
+    
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Issue CFA asset')
+def test_offline_multisig_issue_cfa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test issue CFA asset for offline multisig wallet (4 apps).
+    """
+    # Get fresh page objects from environment after reset
+    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
+    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
+    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+
+    # Issue CFA asset from second wallet
+    with allure.step('Issue CFA asset from second wallet'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
+            SECOND_APPLICATION, CFA_NAME, CFA_DESC, ISSUE_AMOUNT, wallet_variant_name,
+        )
+        # Refresh and sign from third wallet (cosigner)
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+        # Sign from first wallet (offline signer)
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+        # Broadcast PSBT from second wallet (coordinator)
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Issue IFA asset')
+def test_offline_multisig_issue_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test issue IFA asset for offline multisig wallet (4 apps).
+    """
+    # Get fresh page objects from environment after reset
+    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
+    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
+    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+
+    # Issue IFA asset from second wallet
+    with allure.step('Issue IFA asset from second wallet'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_for_multisig_wallet(
+            SECOND_APPLICATION, IFA_TICKER, IFA_NAME, IFA_TOTAL_SUPPLY, ISSUE_AMOUNT, wallet_variant_name,
+        )
+        # Refresh and sign from third wallet (cosigner)
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+        # Sign from first wallet (offline signer)
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+        # Broadcast PSBT from second wallet (coordinator)
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Send NIA asset and capture balances')
+def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test send NIA asset for offline multisig wallet - prepare for backup.
+    """
+    global NIA_RECEIVE_AMOUNT_BEFORE
+    
+    # Get fresh page objects from environment after reset
+    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
+    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
+    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+
+    # Get invoice from fourth wallet
+    with allure.step('Get invoice from fourth wallet'):
+        invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
+            FOURTH_APPLICATION,
+        )
+
+    # First cycle: Create UTXO for send
+    with allure.step('Create UTXO PSBT for NIA send'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_objects.sidebar_page_objects.click_fungibles_button()
+        second_page_objects.fungible_page_objects.click_refresh_button()
+        second_page_objects.fungible_page_objects.click_nia_frame(NIA_NAME)
+        second_page_objects.asset_detail_page_objects.click_send_button()
+        second_page_features.send_features.create_psbt_for_multisig(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name,
+        )
+
+    with allure.step('Sign UTXO PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign UTXO PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    with allure.step('Broadcast UTXO PSBT'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+
+    # Second cycle: Create transfer PSBT
+    with allure.step('Create transfer PSBT for NIA'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_objects.sidebar_page_objects.click_fungibles_button()
+        second_page_objects.fungible_page_objects.click_refresh_button()
+        second_page_objects.fungible_page_objects.click_nia_frame(NIA_NAME)
+        second_page_features.send_features.send_asset_for_multisig(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign transfer PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign transfer PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    with allure.step('Broadcast transfer PSBT'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+    
+    # Capture balances before backup
+    with allure.step('Capture NIA received amount in fourth wallet before backup'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(FOURTH_APPLICATION)
+        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_nia_frame(NIA_NAME)
+        NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Send CFA asset and capture balances')
+def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test send CFA asset for offline multisig wallet - prepare for backup.
+    """
+    global CFA_RECEIVE_AMOUNT_BEFORE
+    
+    # Get fresh page objects from environment after reset
+    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
+    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
+    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+
+    # Get invoice from fourth wallet
+    with allure.step('Get invoice from fourth wallet'):
+        invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
+            FOURTH_APPLICATION,
+        )
+
+    # First cycle: Create UTXO for send
+    with allure.step('Create UTXO PSBT for CFA send'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_objects.sidebar_page_objects.click_collectibles_button()
+        second_page_objects.collectible_page_objects.click_refresh_button()
+        second_page_objects.collectible_page_objects.click_cfa_frame(CFA_NAME)
+        second_page_objects.asset_detail_page_objects.click_send_button()
+        second_page_features.send_features.create_psbt_for_multisig(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name,
+        )
+
+    with allure.step('Sign UTXO PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign UTXO PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    with allure.step('Broadcast UTXO PSBT'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+
+    # Second cycle: Create transfer PSBT
+    with allure.step('Create transfer PSBT for CFA'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_objects.sidebar_page_objects.click_collectibles_button()
+        second_page_objects.collectible_page_objects.click_refresh_button()
+        second_page_objects.collectible_page_objects.click_cfa_frame(CFA_NAME)
+        second_page_features.send_features.send_asset_for_multisig(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign transfer PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign transfer PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    with allure.step('Broadcast transfer PSBT'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+    
+    # Capture balances before backup
+    with allure.step('Capture CFA received amount in fourth wallet before backup'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(FOURTH_APPLICATION)
+        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_collectibles_button()
+        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_cfa_frame(CFA_NAME)
+        CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Send IFA asset and capture balances')
+def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test send IFA asset for offline multisig wallet - prepare for backup.
+    """
+    global IFA_RECEIVE_AMOUNT_BEFORE
+    
+    # Get fresh page objects from environment after reset
+    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
+    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
+    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+
+    # Get invoice from fourth wallet
+    with allure.step('Get invoice from fourth wallet'):
+        invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
+            FOURTH_APPLICATION,
+        )
+
+    # First cycle: Create UTXO for send
+    with allure.step('Create UTXO PSBT for IFA send'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_objects.sidebar_page_objects.click_inflatable_button()
+        second_page_objects.inflatable_page_objects.click_refresh_button()
+        second_page_objects.inflatable_page_objects.click_ifa_frame(IFA_NAME)
+        second_page_objects.asset_detail_page_objects.click_send_button()
+        second_page_features.send_features.create_psbt_for_multisig(
+            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name,
+        )
+
+    with allure.step('Sign UTXO PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign UTXO PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    with allure.step('Broadcast UTXO PSBT'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+
+    # Second cycle: Create transfer PSBT
+    with allure.step('Create transfer PSBT for IFA'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_objects.sidebar_page_objects.click_inflatable_button()
+        second_page_objects.inflatable_page_objects.click_refresh_button()
+        second_page_objects.inflatable_page_objects.click_ifa_frame(IFA_NAME)
+        second_page_features.send_features.send_asset_for_multisig(
+            SECOND_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign transfer PSBT from first wallet (offline signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Sign transfer PSBT from third wallet (cosigner)'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+
+    with allure.step('Broadcast transfer PSBT'):
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+    
+    # Capture balances before backup
+    with allure.step('Capture IFA received amount in fourth wallet before backup'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(FOURTH_APPLICATION)
+        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_ifa_frame(IFA_NAME)
+        IFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Send BTC and capture balances')
+def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test send BTC for offline multisig wallet - prepare for backup.
+    """
+    global BTC_BALANCE_BEFORE
+    
+    # Get fresh page objects from environment after reset
+    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
+    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
+    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+
+    # Get invoice from fourth wallet and send BTC
+    with allure.step('Get invoice from fourth wallet and send BTC'):
+        invoice = wallets_and_operations.fourth_page_features.receive_features.receive(
+            FOURTH_APPLICATION,
+        )
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_objects.sidebar_page_objects.click_fungibles_button()
+        second_page_objects.fungible_page_objects.click_bitcoin_frame()
+        second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        second_page_features.send_features.send(
+            SECOND_APPLICATION, invoice, BTC_SEND_AMOUNT,
+        )
+        # Sign from first wallet (offline signer)
+        wallets_and_operations.first_page_operations.do_focus_on_application(FIRST_APPLICATION)
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+        # Sign from third wallet (cosigner)
+        wallets_and_operations.third_page_operations.do_focus_on_application(THIRD_APPLICATION)
+        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+        )
+        # Broadcast PSBT from second wallet (coordinator)
+        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
+        second_page_features.wallet_features.broadcast_psbt(SECOND_APPLICATION, is_multisig=True)
+    
+    # Capture BTC balance before backup
+    with allure.step('Capture BTC balance in fourth wallet before backup'):
+        wallets_and_operations.fourth_page_operations.do_focus_on_application(FOURTH_APPLICATION)
+        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_bitcoin_frame()
+        BTC_BALANCE_BEFORE = wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.get_total_balance()
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Backup wallet')
+def test_offline_multisig_backup(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test backup functionality for offline multisig wallet.
+    Backup the FIRST application (offline wallet with USB).
+    """
+    global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
+    is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
+    is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
+    is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
+    
+    # Backup first wallet (offline signer)
+    with allure.step('Backup first offline multisig wallet (signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+        wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+        if is_hardware or is_watch_only:
+            XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
+                is_load_wallet=True,
+            )
+        else:
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
+            MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+        wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
+        PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+        wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
+    
+    # Configure backup and take backup
+    with allure.step('Configure backup for first offline multisig wallet'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
+        wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
+        wallets_and_operations.first_page_features.wallet_features.google_auth()
+        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
+    
+    with allure.step('Take backup of first offline multisig wallet'):
+        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
+        wallets_and_operations.first_page_operations.wait_for_toaster_message()
+        _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        assert description == INFO_BACKUP_COMPLETED
+    
+    # Reset first wallet with data clear
+    test_environment.restart_single_instance(reset_data=True)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Backup and restore for offline multisig')
+@allure.story('Restore wallet and verify balances')
+def test_offline_multisig_restore(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test restore functionality for offline multisig wallet and verify balances.
+    Restore the FIRST application (offline wallet with USB).
+    """
+    global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
+    is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
+    is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
+    
+    # Restore first wallet (offline signer)
+    with allure.step('Restore first offline multisig wallet (signer)'):
+        if is_watch_only:
+            # Watch-only restore flow using Google backup with xpubs
+            wallets_and_operations.first_page_features.wallet_features.navigate_to_watch_only_restore(
+                FIRST_APPLICATION,
+            )
+            wallets_and_operations.first_page_features.wallet_features.google_auth(
+                password=PASSWORD, xpub_vanilla=XPUB_VANILLA, xpub_colored=XPUB_COLORED, fingerprint=MASTER_FINGERPRINT,
+            )
+            wallets_and_operations.first_page_operations.wait_for_toaster_message()
+            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+            assert description == INFO_RESTORE_COMPLETED
+        else:
+            # Offline wallet restore flow using USB sync with mnemonic or xpubs
+            load_variant = map_to_load_variant(wallet_variant_name)
+            wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+                application=FIRST_APPLICATION, variant=load_variant, fund=False, is_restore_wallet=True,
+            )
+            wallets_and_operations.first_page_operations.do_focus_on_application(
+                FIRST_APPLICATION,
+            )
+            wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+            if is_hardware:
+                wallets_and_operations.first_page_features.wallet_features.restore_with_xpubs(
+                    xpub_vanilla=XPUB_VANILLA,
+                    xpub_colored=XPUB_COLORED,
+                    fingerprint=MASTER_FINGERPRINT,
+                    password=PASSWORD,
+                )
+            else:
+                wallets_and_operations.first_page_features.wallet_features.restore_with_mnemonic(
+                    mnemonic=MNEMONIC,
+                    password=PASSWORD,
+                )
+            wallets_and_operations.first_page_operations.wait_for_toaster_message()
+            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+            assert description == INFO_RESTORE_COMPLETED
+            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
+                password=PASSWORD,
+            )
+            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
+    
+    # USB sync to get updated state
+    with allure.step('USB sync to get updated state'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
+        wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+    
+    # Verify NIA balance after restore
+    with allure.step('Verify NIA balance after restore'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(NIA_NAME)
+        nia_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        expected_nia_balance = str(int(ISSUE_AMOUNT) - int(SEND_AMOUNT))
+        assert nia_balance_after == expected_nia_balance
+    
+    # Verify CFA balance after restore
+    with allure.step('Verify CFA balance after restore'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
+        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(CFA_NAME)
+        cfa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        expected_cfa_balance = str(int(ISSUE_AMOUNT) - int(SEND_AMOUNT))
+        assert cfa_balance_after == expected_cfa_balance
+    
+    # Verify IFA balance after restore
+    with allure.step('Verify IFA balance after restore'):
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(IFA_NAME)
+        ifa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        expected_ifa_balance = str(int(ISSUE_AMOUNT) - int(SEND_AMOUNT))
+        assert ifa_balance_after == expected_ifa_balance

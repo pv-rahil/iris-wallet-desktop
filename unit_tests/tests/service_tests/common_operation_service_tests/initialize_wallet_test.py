@@ -33,7 +33,7 @@ def test_initialize_wallet(
     """Test successful wallet initialization"""
     # Setup mocks
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
-    mock_get_network.return_value = BitcoinNetwork.TESTNET()
+    mock_get_network.return_value = BitcoinNetwork.TESTNET
     mock_app_paths.app_path = '/test/path'
 
     mock_keys = MagicMock()
@@ -61,12 +61,12 @@ def test_initialize_wallet(
     mock_repo.init.assert_called_once_with(
         InitRequestModel(
             password='Random@123',
-            network=BitcoinNetwork.TESTNET(),
+            network=BitcoinNetwork.TESTNET,
         ),
     )
     mock_wallet_request.assert_called_once_with(
         data_dir='/test/path',
-        bitcoin_network=BitcoinNetwork.TESTNET(),
+        bitcoin_network=BitcoinNetwork.TESTNET,
         keys=mock_keys_built,
     )
     mock_repo.unlock.assert_called_once_with(mock_wallet_request.return_value)
@@ -109,7 +109,7 @@ def test_initialize_wallet_watch_only_or_hardware_success(
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
     mock_setting_repo.get_wallet_access_type.return_value = WalletAccessType.WATCH_ONLY
     mock_setting_repo.get_key_storage_type.return_value = KeyStorageType.ON_DEVICE
-    mock_get_network.return_value = BitcoinNetwork.TESTNET()
+    mock_get_network.return_value = BitcoinNetwork.TESTNET
     mock_app_paths.app_path = '/test/path'
 
     # Any non-None values are fine for branch coverage
@@ -133,7 +133,7 @@ def test_initialize_wallet_watch_only_missing_values_calls_handler(
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
     mock_setting_repo.get_wallet_access_type.return_value = WalletAccessType.WATCH_ONLY
     mock_setting_repo.get_key_storage_type.return_value = KeyStorageType.ON_DEVICE
-    mock_get_network.return_value = BitcoinNetwork.TESTNET()
+    mock_get_network.return_value = BitcoinNetwork.TESTNET
     mock_local_store.get_value.return_value = None
     mock_handle_exceptions.return_value = ('handled', 'pwd')
 
@@ -150,7 +150,7 @@ def test_initialize_wallet_rgb_lib_error(mock_get_network, mock_setting_repo, mo
     """Test RgbLibError handling in initialize wallet"""
     # Setup mocks
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
-    mock_get_network.return_value = BitcoinNetwork.TESTNET()
+    mock_get_network.return_value = BitcoinNetwork.TESTNET
     mock_repo.init.side_effect = RgbLibError('RGB Lib error')
     mock_handle_exceptions.return_value = 'RGB Lib error response'
 

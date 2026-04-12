@@ -54,13 +54,13 @@ def test_init(mock_generate_keys):
 
     # Execute
     init_request = InitRequestModel(
-        password='test_password', network=BitcoinNetwork.TESTNET(),
+        password='test_password', network=BitcoinNetwork.TESTNET,
     )
     result = CommonOperationRepository.init(init_request)
 
     # Assert
     assert result == mock_keys
-    mock_generate_keys.assert_called_once_with(BitcoinNetwork.TESTNET())
+    mock_generate_keys.assert_called_once_with(BitcoinNetwork.TESTNET)
 
 
 def test_unlock(mock_wallet, mock_colored_wallet):
@@ -78,7 +78,7 @@ def test_unlock(mock_wallet, mock_colored_wallet):
         # Execute
         unlock_request = WalletRequestModel(
             data_dir='/test/path',
-            bitcoin_network=BitcoinNetwork.TESTNET(),
+            bitcoin_network=BitcoinNetwork.TESTNET,
             max_allocations_per_utxo=5,
             keys=keys,
         )
@@ -149,7 +149,7 @@ def test_restore_keys(mocker):
     mock_restore_keys.return_value = mock_keys
 
     # Test data
-    bitcoin_network = BitcoinNetwork.TESTNET()
+    bitcoin_network = BitcoinNetwork.TESTNET
     mnemonic = 'test mnemonic phrase'
 
     # Execute
@@ -286,7 +286,7 @@ def test_unlock_multisig(mocker, mock_colored_wallet):
         # Execute
         unlock_request = WalletRequestModel(
             data_dir='/test/path',
-            bitcoin_network=BitcoinNetwork.TESTNET(),
+            bitcoin_network=BitcoinNetwork.TESTNET,
             max_allocations_per_utxo=5,
             keys=keys,
         )
@@ -318,7 +318,7 @@ def test_get_temp_singlesig_wallet(
     # Setup
     mock_mnemonic_store.decrypted_mnemonic = 'test mnemonic'
     mock_setting_repo.get_wallet_network.return_value = NetworkEnumModel.TESTNET
-    mock_get_network.return_value = BitcoinNetwork.TESTNET()
+    mock_get_network.return_value = BitcoinNetwork.TESTNET
 
     mock_keys = MagicMock()
     mock_keys.account_xpub_vanilla = 'xpub1'

@@ -227,11 +227,11 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_success_inflate_end(self, response: OperationResult):
+    def on_success_inflate_end(self):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
-        ToastManager.success(description=INFO_ASSET_SENT.format(response.txid))
+        ToastManager.success(description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY)
 
     def _respond_to_multisig_operation(self, operation_idx: int | None, response: RespondToOperation) -> None:
         """Post an ACK/NACK response for a multisig pending operation."""

@@ -179,10 +179,31 @@ def test_refresh_transfer_for_offline_wallet(wallets_and_operations: WalletTestS
         wallets_and_operations.second_page_features.send_features.create_psbt(
             application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name,
         )
-    with allure.step('Sign psbt for offline wallet'):
+    with allure.step('Sign UTXO psbt for offline wallet'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
         )
+    with allure.step('Broadcast UTXO psbt for offline wallet'):
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+            application=SECOND_APPLICATION,
+        )
+    with allure.step('Send transfer for offline wallet'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+            ASSET_NAME,
+        )
+        wallets_and_operations.second_page_features.send_features.send_asset_for_single_sig_offline(
+            application=SECOND_APPLICATION,
+        )
+    with allure.step('Sign transfer psbt for offline wallet'):
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
+        )
+    with allure.step('Broadcast transfer psbt for offline wallet'):
         wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
             application=SECOND_APPLICATION,
         )
@@ -231,9 +252,9 @@ def test_refresh_transfer_for_offline_wallet(wallets_and_operations: WalletTestS
 @pytest.mark.skip_for_offline_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Test for refresh transfer for multisig')
-@allure.story('Test for refresh transfer and check status for multisig')
-def test_refresh_transfer_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """Test for refresh transfer for multisig"""
+@allure.story('Setup and issue NIA asset for multisig')
+def test_refresh_transfer_setup_and_issue_nia_for_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Setup wallets and issue NIA asset for refresh transfer tests"""
 
     setup_multisig_wallets(wallets_and_operations, wallet_variant_name)
 
@@ -269,6 +290,18 @@ def test_refresh_transfer_for_multisig(wallets_and_operations: WalletTestSetup, 
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_offline_wallet
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Test for refresh transfer for multisig')
+@allure.story('Send NIA asset and validate transfer status for multisig')
+def test_refresh_transfer_send_and_validate_for_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Send NIA asset and validate transfer status for multisig"""
+
     with allure.step('Generate invoice for multisig'):
         invoice = initiate_third_wallet_and_get_invoice(
             wallets_and_operations.third_page_features,
@@ -326,14 +359,16 @@ def test_refresh_transfer_for_multisig(wallets_and_operations: WalletTestSetup, 
         assert actual_transfer_status_first_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value
         assert actual_transfer_status_third_app == TransactionStatusEnumModel.WAITING_CONFIRMATIONS.value
 
+    test_environment.reset_second_instance(reset_data=False)
+
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Test for refresh transfer for offline multisig')
-@allure.story('Test for refresh transfer and check status for offline multisig')
-def test_refresh_transfer_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """Test for refresh transfer for offline multisig (hardware and on-device)"""
+@allure.story('Setup and issue NIA asset for offline multisig')
+def test_refresh_transfer_setup_and_issue_nia_for_offline_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Setup wallets and issue NIA asset for offline multisig refresh transfer tests"""
 
     setup_offline_multisig_hardware_wallets(wallets_and_operations, wallet_variant_name)
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
@@ -374,6 +409,17 @@ def test_refresh_transfer_for_offline_multisig(wallets_and_operations: WalletTes
         wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
             SECOND_APPLICATION, ASSET_TICKER, wallet_variant_name,
         )
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_single_sig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [4], indirect=True)
+@allure.feature('Test for refresh transfer for offline multisig')
+@allure.story('Send NIA asset and validate transfer status for offline multisig')
+def test_refresh_transfer_send_and_validate_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Send NIA asset and validate transfer status for offline multisig"""
 
     with allure.step('Generate invoice from receiver (App 4)'):
         invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(

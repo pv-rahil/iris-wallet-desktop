@@ -260,6 +260,7 @@ class RgbRepository:
             )
             wallet_service = WalletDataService.get_session()
             if wallet_service is not None:
+                wallet_service.delete_draft_transfer(detail.asset_id)
                 wallet_service.add_psbt(
                     PsbtData(psbt_base64=result.psbt, purpose='send_asset'),
                 )

@@ -12,7 +12,6 @@ from rgb_lib import BitcoinNetwork
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
-from src.model.common_operation_model import WalletRequestModel
 from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import WalletAccessType
 from src.utils.constant import ACCOUNT_XPUB_COLORED
@@ -42,7 +41,7 @@ def test_enter_wallet_password_success(
     # Setup mocks
     mock_app_paths.app_path = '/test/path'
     mock_app_paths.mnemonic_file_path = '/test/mnemonic/path'
-    mock_get_network.return_value = BitcoinNetwork.TESTNET()
+    mock_get_network.return_value = BitcoinNetwork.TESTNET
 
     mock_local_store.get_value.side_effect = [
         'test_xpub_vanilla', 'test_xpub_colored', 'ff',
@@ -75,7 +74,7 @@ def test_enter_wallet_password_success(
     )
     mock_wallet_request.assert_called_once_with(
         data_dir='/test/path',
-        bitcoin_network=BitcoinNetwork.TESTNET(),
+        bitcoin_network=BitcoinNetwork.TESTNET,
         keys=mock_keys,
     )
     mock_unlock_repo.assert_called_once_with(mock_wallet_request.return_value)
@@ -112,7 +111,7 @@ def test_enter_wallet_password_watch_only_hardware_path(
 ):
     """Covers branch where is_watch_only or is_hardware_only -> decrypted_mnemonic is None"""
     mock_app_paths.app_path = '/test/path'
-    mock_get_network.return_value = BitcoinNetwork.TESTNET()
+    mock_get_network.return_value = BitcoinNetwork.TESTNET
     mock_setting_repo.get_wallet_access_type.return_value = WalletAccessType.WATCH_ONLY
     mock_setting_repo.get_key_storage_type.return_value = KeyStorageType.HARDWARE_WALLET
 

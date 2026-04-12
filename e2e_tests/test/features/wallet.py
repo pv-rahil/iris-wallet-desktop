@@ -1089,6 +1089,11 @@ class Wallet(MainPageObjects, BaseOperations):
         Sign psbt.
         """
         try:
+            if variant_name in HARDWARE_WALLET_VARIANTS or variant_name in MULTISIG_HARDWARE_VARIANTS:
+                # RGB Ledger app can sign both BTC and RGB transactions
+                self.hw_emulator = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
@@ -1107,11 +1112,6 @@ class Wallet(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.fungible_page_objects.psbt_info_frame()):
                 self.fungible_page_objects.click_psbt_info_frame()
 
-            if variant_name in HARDWARE_WALLET_VARIANTS:
-                # RGB Ledger app can sign both BTC and RGB transactions
-                self.hw_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
 
             self.do_focus_on_application(application)
 

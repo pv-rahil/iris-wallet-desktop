@@ -10,6 +10,7 @@ from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
@@ -73,10 +74,11 @@ def test_issue_and_inflate_ifa_single_sig_online(wallets_and_operations: WalletT
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
 @pytest.mark.skip_for_hardware_wallet
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
 @allure.feature('Secondary Issuance - Single Sig Offline')
-@allure.story('Issue and inflate IFA asset via PSBT for offline wallet')
-def test_issue_and_inflate_ifa_single_sig_offline(wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """Test issuing and inflating IFA asset via PSBT flow for offline/watch-only wallet."""
+@allure.story('Issue IFA asset via PSBT for offline wallet')
+def test_offline_single_sig_issue_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test issuing IFA asset via PSBT flow for offline/watch-only wallet."""
 
     with allure.step('Create offline wallet (watch-only) and online signing wallet'):
         wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
@@ -88,8 +90,8 @@ def test_issue_and_inflate_ifa_single_sig_offline(wallets_and_operations: Wallet
 
     with allure.step('Issue IFA asset via PSBT flow'):
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_watch_only_wallet(
-            SECOND_APPLICATION, IFA_ASSET_NAME_1,
+        wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(
+            SECOND_APPLICATION, ASSET_TICKER,IFA_ASSET_NAME_1,INITIAL_SUPPLY,IFA_ASSET_TOTAL_SUPPLY
         )
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
@@ -105,44 +107,74 @@ def test_issue_and_inflate_ifa_single_sig_offline(wallets_and_operations: Wallet
             SECOND_APPLICATION,
         )
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-            f'{IFA_ASSET_NAME_1} (Draft)',
+        wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_watch_only_wallet(
+            SECOND_APPLICATION,IFA_ASSET_NAME_1
         )
-        wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
-        wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
+        
+    test_environment.reset_second_instance(reset_data=False)
 
-    with allure.step('Create PSBT for inflation'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+
+@pytest.mark.skip_for_multisig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Secondary Issuance - Single Sig Offline')
+@allure.story('Inflate IFA asset via PSBT for offline wallet')
+def test_offline_single_sig_inflate_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """Test inflating IFA asset via PSBT flow for offline/watch-only wallet."""
+    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
+    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
+    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+
+    # First cycle: Create UTXO for inflation
+    with allure.step('Create UTXO PSBT for inflation'):
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
+        second_page_features.inflate_features.inflate_ifa_asset_begin(
+            SECOND_APPLICATION,IFA_ASSET_NAME_1, INFLATE_AMOUNT,wallet_variant_name,utxo_required=True
+        )
+        
+    with allure.step('Sign UTXO PSBT for inflation'):
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name,
+        )
+
+    with allure.step('Broadcast UTXO PSBT for inflation'):
+        second_page_features.wallet_features.broadcast_psbt(
+            SECOND_APPLICATION,
+        )
+
+    # Second cycle: Create inflation PSBT from draft
+    with allure.step('Create inflation PSBT from draft'):
+        second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        second_page_objects.sidebar_page_objects.click_inflatable_button()
+        second_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME_1,
         )
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_secondary_issuance_button()
-        wallets_and_operations.second_page_objects.issue_ifa_page_objects.enter_asset_amount(
-            INFLATE_AMOUNT,
-        )
-        wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
+        second_page_objects.asset_detail_page_objects.click_resume_secondary_issuance_draft_frame()
+        second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
+        second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
+        second_page_features.wallet_features.usb_sync()
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Broadcast inflation PSBT'):
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+        second_page_features.wallet_features.broadcast_psbt(
             SECOND_APPLICATION,
         )
 
-    with allure.step('Finalize inflation from draft'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-            f'{IFA_ASSET_NAME_1} (Draft)',
-        )
-        wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
-        wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
+
+@pytest.mark.skip_for_multisig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.parametrize('test_environment', [2], indirect=True)
+@allure.feature('Secondary Issuance - Single Sig Offline')
+@allure.story('Verify inflate amount for offline wallet')
+def test_offline_single_sig_verify_inflate_ifa(wallets_and_operations: WalletTestSetup):
+    """Test verifying inflate amount for offline/watch-only wallet."""
 
     with allure.step('Verify inflate amount in transaction frame'):
         wallets_and_operations.second_page_operations.do_focus_on_application(

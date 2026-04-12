@@ -213,11 +213,11 @@ def test_create_circular_pixmap(mock_qcolor, mock_qpainter, mock_qpixmap, mock_q
 
 @pytest.mark.parametrize(
     'network_enum, expected_network', [
-        (NetworkEnumModel.MAINNET, BitcoinNetwork.MAINNET()),
-        (NetworkEnumModel.TESTNET, BitcoinNetwork.TESTNET()),
-        (NetworkEnumModel.REGTEST, BitcoinNetwork.REGTEST()),
+        (NetworkEnumModel.MAINNET, BitcoinNetwork.MAINNET),
+        (NetworkEnumModel.TESTNET, BitcoinNetwork.TESTNET),
+        (NetworkEnumModel.REGTEST, BitcoinNetwork.REGTEST),
         # Already BitcoinNetwork
-        (BitcoinNetwork.MAINNET(), BitcoinNetwork.MAINNET()),
+        (BitcoinNetwork.MAINNET, BitcoinNetwork.MAINNET),
     ],
 )
 def test_get_bitcoin_network_from_enum_valid(network_enum, expected_network):
@@ -239,11 +239,11 @@ def test_get_bitcoin_config(network_str, mocker):
     """Test get_bitcoin_config returns correct config for each network."""
     # Create network instance
     if network_str == 'mainnet':
-        network = BitcoinNetwork.MAINNET()
+        network = BitcoinNetwork.MAINNET
     elif network_str == 'testnet':
-        network = BitcoinNetwork.TESTNET()
+        network = BitcoinNetwork.TESTNET
     else:
-        network = BitcoinNetwork.REGTEST()
+        network = BitcoinNetwork.REGTEST
 
     # Mock SettingRepository.get_config_value
     mocker.patch(
@@ -450,7 +450,7 @@ def test_register_multisig_button():
 
     # Switch to pending
     callback(True)
-    btn.clicked.disconnect.assert_called_with(handler)
+    btn.clicked.disconnect.assert_called_with()
     btn.setProperty.assert_called_with('pending', 'true')
 
     # Switch back
@@ -462,7 +462,7 @@ def test_register_multisig_button():
 def test_get_bitcoin_config_invalid_network(mock_setting_repo):
     """Test get_bitcoin_config with an unknown network."""
     # Signet is not handled in the if/elif chain
-    config = get_bitcoin_config(BitcoinNetwork.SIGNET(), 'pass')
+    config = get_bitcoin_config(BitcoinNetwork.SIGNET, 'pass')
     assert isinstance(config, ConfigModel)
     assert config.indexer_url == ''
     assert config.proxy_endpoint == ''

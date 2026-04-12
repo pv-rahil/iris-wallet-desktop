@@ -5,7 +5,7 @@ This module contains the Inflate class, which provides methods for secondary iss
 from __future__ import annotations
 
 from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
-from accessible_constant import HARDWARE_WALLET_VARIANTS
+from accessible_constant import HARDWARE_WALLET_VARIANTS, REQUIRE_USB_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
@@ -115,14 +115,14 @@ class Inflate(MainPageObjects, BaseOperations):
         return description
 
     def inflate_ifa_asset_begin(
-        self, application, asset_name, inflate_amount, variant_name: str | None = None, is_native_auth_enabled: bool = False,
+        self, application, asset_name, inflate_amount, variant_name: str | None = None, is_native_auth_enabled: bool = False,utxo_required:bool =  False
     ):
         """
         Create PSBT for secondary issuance (inflate) for watch-only/offline/hardware/multisig wallets.
         """
         try:
             hardware_wallet_emulator = None
-            if variant_name in HARDWARE_WALLET_VARIANTS:
+            if variant_name in HARDWARE_WALLET_VARIANTS and variant_name not in REQUIRE_USB_VARIANTS:
                 hardware_wallet_emulator = handle_hardware_wallet(
                     app_name=RGB_LEDGER_APP_NAME,
                 )
@@ -149,11 +149,25 @@ class Inflate(MainPageObjects, BaseOperations):
             # Click issue button to create PSBT
             if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
                 self.issue_ifa_page_objects.click_issue_ifa_button()
+                
+            if utxo_required:
+                if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
+                    self.confirmation_dialog_page_objects.click_confirmation_dialog()
+                    
+                if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
+                    self.confirmation_dialog_page_objects.click_confirmation_continue_button()
 
             if hardware_wallet_emulator:
                 self.wallet_feature.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME, is_issue_ifa=True,
                 )
+            try:
+                if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):
+                    self.receive_asset_page_objects.click_receive_asset_close_button()
+            except Exception as _:
+                pass
+            if variant_name in REQUIRE_USB_VARIANTS:
+                self.wallet_feature.usb_sync()
         except Exception as e:
             raise e
         finally:
