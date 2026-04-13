@@ -445,12 +445,57 @@ def fund_and_refresh_offline_multisig_wallets(
         )
 
     with allure.step('Refresh third multisig wallet (cosigner)'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
+        _refresh_third_wallet_by_asset_type(wallets_and_operations, asset_type)
+
+
+def setup_and_fund_offline_multisig_wallets(
+    wallets_and_operations,
+    wallet_variant_name,
+    asset_type: str = 'nia',
+) -> None:
+    """
+    Setup offline multisig wallets and fund the coordinator in one call.
+    Combines setup_offline_multisig_hardware_wallets and funding.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        wallet_variant_name: Wallet variant name.
+        asset_type: Asset type for refresh (default: 'nia').
+    """
+    setup_offline_multisig_hardware_wallets(
+        wallets_and_operations, wallet_variant_name,
+    )
+
+    with allure.step('Fund second online multisig wallet (coordinator)'):
+        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
+            application=SECOND_APPLICATION,
         )
-        if asset_type == 'ifa':
-            wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
-        elif asset_type == 'nia':
-            wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        elif asset_type == 'cfa':
-            wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
+
+
+def _focus_third_wallet(wallets_and_operations) -> None:
+    """
+    Focus on third wallet.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+    """
+    wallets_and_operations.third_page_operations.do_focus_on_application(
+        THIRD_APPLICATION,
+    )
+
+
+def _refresh_third_wallet_by_asset_type(wallets_and_operations, asset_type: str = 'ifa') -> None:
+    """
+    Focus on third wallet and click refresh button based on asset type.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        asset_type: Asset type ('ifa', 'nia', 'cfa').
+    """
+    _focus_third_wallet(wallets_and_operations)
+    if asset_type == 'ifa':
+        wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+    elif asset_type == 'nia':
+        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+    elif asset_type == 'cfa':
+        wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()

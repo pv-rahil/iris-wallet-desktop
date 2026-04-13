@@ -325,15 +325,9 @@ def test_on_error_native_auth_ifa(vm, mocker):
     mock_toast.assert_called_once()
 
 
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_type')
-def test_issue_ifa_asset_full_flow(mock_get_wallet_type, mock_get_key_storage, mock_get_signature, vm, mocker):
+@patch('src.viewmodels.issue_ifa_view_model.requires_native_authentication', return_value=True)
+def test_issue_ifa_asset_full_flow(mock_requires_auth, vm, mocker):
     """Test issue_ifa_asset start."""
-    # Setup for multisig on-device to trigger native auth
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     def mock_run_in_thread(target, params):
         if 'callback' in params:
@@ -474,16 +468,11 @@ def test_native_auth_inflate_exception(vm, mocker):
     mock_on_error.assert_called_once()
 
 
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_ifa_view_model.requires_native_authentication', return_value=True)
 def test_issue_ifa_asset_multisig_on_device_requires_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, vm,
+    mock_requires_auth, vm,
 ):
     """Test that multisig on-device wallet requires native auth for IFA."""
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(vm, 'run_in_thread') as mock_run:
         vm.issue_ifa_asset('TEST', 'Test Asset', 100, 50)
@@ -494,16 +483,11 @@ def test_issue_ifa_asset_multisig_on_device_requires_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_ifa_view_model.requires_native_authentication', return_value=True)
 def test_issue_ifa_asset_standard_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, vm,
+    mock_requires_auth, vm,
 ):
     """Test that standard online on-device wallet DOES require native auth for IFA."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(vm, 'run_in_thread') as mock_run:
         vm.issue_ifa_asset('TEST', 'Test Asset', 100, 50)
@@ -514,16 +498,11 @@ def test_issue_ifa_asset_standard_wallet_no_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_ifa_view_model.requires_native_authentication', return_value=False)
 def test_issue_ifa_asset_hardware_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, vm,
+    mock_requires_auth, vm,
 ):
     """Test that hardware wallet does not require native auth for IFA."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.HARDWARE_WALLET
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(vm, 'run_in_thread') as mock_run:
         vm.issue_ifa_asset('TEST', 'Test Asset', 100, 50)
@@ -534,16 +513,11 @@ def test_issue_ifa_asset_hardware_wallet_no_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_ifa_view_model.requires_native_authentication', return_value=True)
 def test_secondary_issuance_multisig_on_device_requires_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, vm,
+    mock_requires_auth, vm,
 ):
     """Test that multisig on-device wallet requires native auth for secondary issuance."""
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(vm, 'run_in_thread') as mock_run:
         vm.secondary_issuance('aid', 100, 1, 1)
@@ -554,16 +528,11 @@ def test_secondary_issuance_multisig_on_device_requires_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_ifa_view_model.requires_native_authentication', return_value=True)
 def test_secondary_issuance_standard_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, vm,
+    mock_requires_auth, vm,
 ):
     """Test that standard online on-device wallet DOES require native auth for secondary issuance."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(vm, 'run_in_thread') as mock_run:
         vm.secondary_issuance('aid', 100, 1, 1)
@@ -574,16 +543,11 @@ def test_secondary_issuance_standard_wallet_no_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_ifa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_ifa_view_model.requires_native_authentication', return_value=True)
 def test_secondary_issuance_begin_multisig_on_device_requires_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, vm,
+    mock_requires_auth, vm,
 ):
     """Test that multisig on-device wallet requires native auth for secondary_issuance_begin."""
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(vm, 'run_in_thread') as mock_run:
         vm.secondary_issuance_begin('aid', 100, 1, 1)

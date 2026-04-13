@@ -6,20 +6,21 @@ from __future__ import annotations
 
 import os
 
-from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
-from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.asset_copy import copy_cfa_image_to_home_directory
+from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
+from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
+from e2e_tests.test.utilities.send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
+from e2e_tests.test.utilities.send_flow_helpers import handle_success_home_button
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
-class IssueCfa(MainPageObjects, BaseOperations):
+class IssueCfa(MainPageObjects, BaseOperations, BaseIssueAsset):
     """
     Class for testing CFA asset issuance.
     """
@@ -29,8 +30,17 @@ class IssueCfa(MainPageObjects, BaseOperations):
         Initialize the IssueCfa class.
         """
         self.hardware_wallet_emulator = None
-        self.wallet_features = Wallet(application)
+        self.wallet_feature: Wallet = Wallet(application)
         super().__init__(application)
+
+    def _get_issue_page_objects(self):
+        """Get the issue page objects for CFA asset type."""
+        return self.issue_cfa_page_objects
+
+    @property
+    def wallet_features(self):
+        """Alias for wallet_feature for backward compatibility."""
+        return self.wallet_feature
 
     def issue_cfa_with_sufficient_sats_and_utxo(
         self, application, asset_name, asset_description,
@@ -77,8 +87,9 @@ class IssueCfa(MainPageObjects, BaseOperations):
                 self.issue_cfa_page_objects.click_issue_cfa_button()
 
             if self.hardware_wallet_emulator:
+                # CFA doesn't need UTXO signing, just final transaction
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+                    LEDGER_EMULATOR_APP_NAME, is_online=True,
                 )
 
             if is_native_auth is True:
@@ -181,8 +192,9 @@ class IssueCfa(MainPageObjects, BaseOperations):
                 self.issue_cfa_page_objects.click_issue_cfa_button()
 
             if self.hardware_wallet_emulator:
+                # CFA doesn't need UTXO signing, just final transaction
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+                    LEDGER_EMULATOR_APP_NAME, is_online=True,
                 )
 
             self.do_focus_on_application(application)
@@ -248,17 +260,15 @@ class IssueCfa(MainPageObjects, BaseOperations):
 
         self.wallet_features.usb_sync(is_receive=True)
 
-    def issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_name, wallet_variant_name: str | None = None, utxo_required: bool = False, is_native_auth_enabled: bool = False):
+    def issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
+        self, application, asset_name, wallet_variant_name: str | None = None,
+        utxo_required: bool = False, is_native_auth_enabled: bool = False,
+    ):
         """
         Issues an CFA asset with sufficient sats and no UTXO.
         """
-        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-        hardware_wallet_emulator = None
-        try:
-            if is_hardware and utxo_required:
-                hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
+        is_hardware = self._is_multisig_hardware(wallet_variant_name)
+        with self._multisig_asset_operation_context(wallet_variant_name, utxo_required):
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.sidebar_page_objects.collectibles_button()):
@@ -268,27 +278,23 @@ class IssueCfa(MainPageObjects, BaseOperations):
                 f"{asset_name} (Draft)",
             )
 
-            if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
-                self.issue_cfa_page_objects.click_issue_cfa_button()
+            self._click_issue_button_if_displayed()
 
             if is_native_auth_enabled:
                 self.enter_native_password()
 
             if not utxo_required:
-                if self.do_is_displayed(self.success_page_objects.home_button()):
-                    self.success_page_objects.click_home_button()
+                handle_success_home_button(self)
             else:
                 handle_utxo_confirmation_with_hardware_wallet(
                     self, self, self.wallet_features, LEDGER_EMULATOR_APP_NAME,
                     utxo_required=True, is_hardware=is_hardware,
                 )
-        except Exception as e:
-            raise e
-        finally:
-            if hardware_wallet_emulator:
-                hardware_wallet_emulator.terminate()
 
-    def issue_cfa_for_offline_multisig_wallet(self, application, asset_name, asset_description, asset_amount, _wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+    def issue_cfa_for_offline_multisig_wallet(
+        self, application, asset_name, asset_description, asset_amount,
+        _wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False,
+    ):
         """
         Issues a CFA asset for offline multisig wallet.
         Creates PSBT on watch-only coordinator, then USB syncs to pass PSBT to offline signer.
@@ -323,34 +329,20 @@ class IssueCfa(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
 
-        if is_native_auth_enabled:
-            self.enter_native_password()
+        handle_offline_multisig_utxo_confirmation_and_usb_sync(
+            self, application, self.wallet_features, is_native_auth_enabled,
+        )
 
-        # Handle UTXO confirmation dialog (no hardware signing)
-        self.do_focus_on_application(CONFIRMATION_DIALOG)
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-            self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-        if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-            self.confirmation_dialog_page_objects.click_confirmation_continue_button()
-
-        self.do_focus_on_application(application)
-
-        # USB sync to pass PSBT to offline wallet
-        self.wallet_features.usb_sync()
-
-    def issue_cfa_with_sufficient_sats_for_multisig_wallet(self, application, asset_name, asset_description, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+    def issue_cfa_with_sufficient_sats_for_multisig_wallet(
+        self, application, asset_name, asset_description, asset_amount,
+        wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False,
+    ):
         """
         Issues a CFA asset with sufficient sats for multisig wallet.
         This triggers UTXO creation which requires PSBT signing by cosigner.
         """
-        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-        hardware_wallet_emulator = None
-        try:
-            if is_hardware:
-                hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
+        is_hardware = self._is_multisig_hardware(wallet_variant_name)
+        with self._multisig_asset_operation_context(wallet_variant_name, utxo_required=True):
             self.do_focus_on_application(application)
             copy_cfa_image_to_home_directory(os.getcwd())
 
@@ -360,16 +352,14 @@ class IssueCfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.collectible_page_objects.issue_cfa_button()):
                 self.collectible_page_objects.click_issue_cfa_button()
 
-            if self.do_is_displayed(self.issue_cfa_page_objects.asset_name()):
-                self.issue_cfa_page_objects.enter_asset_name(asset_name)
+            self._enter_asset_name_if_displayed(asset_name)
 
             if self.do_is_displayed(self.issue_cfa_page_objects.asset_description()):
                 self.issue_cfa_page_objects.enter_asset_description(
                     asset_description,
                 )
 
-            if self.do_is_displayed(self.issue_cfa_page_objects.asset_amount()):
-                self.issue_cfa_page_objects.enter_asset_amount(asset_amount)
+            self._enter_asset_amount_if_displayed(asset_amount)
 
             if self.do_is_displayed(self.issue_cfa_page_objects.upload_file_button()):
                 self.issue_cfa_page_objects.click_upload_file_button()
@@ -377,8 +367,7 @@ class IssueCfa(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.issue_cfa_page_objects.cfa_asset_media()):
                 self.issue_cfa_page_objects.click_cfa_asset_media()
 
-            if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
-                self.issue_cfa_page_objects.click_issue_cfa_button()
+            self._click_issue_button_if_displayed()
 
             if is_native_auth_enabled:
                 self.enter_native_password()
@@ -387,8 +376,3 @@ class IssueCfa(MainPageObjects, BaseOperations):
                 self, self, self.wallet_features, LEDGER_EMULATOR_APP_NAME,
                 utxo_required=True, is_hardware=is_hardware,
             )
-        except Exception as e:
-            raise e
-        finally:
-            if hardware_wallet_emulator:
-                hardware_wallet_emulator.terminate()

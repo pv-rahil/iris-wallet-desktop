@@ -237,9 +237,8 @@ class BaseOperations:
             element_info = f"role={element.roleName}, name={
                 element.name
             }" if hasattr(element, 'roleName') else str(element)
-            print(f'[ELEMENT NOT FOUND] Timeout after {
-                  timeout
-                  }s waiting for: {element_info}')
+            print(f"""[ELEMENT NOT FOUND] Timeout after
+                  {timeout}s waiting for: {element_info}""")
         except Exception:
             print(f'[ELEMENT NOT FOUND] Timeout after {timeout}s')
 

@@ -33,14 +33,14 @@ def test_handle_utxo_error_returns_false_for_unrelated_error():
     assert retry is False
 
 
-@patch('src.views.components.ifa_hw_helpers.get_unspent_utxo_count')
+@patch('src.views.components.ifa_hw_helpers.compute_needed_utxos_for_ifa')
 @patch('src.views.components.ifa_hw_helpers.SettingRepository')
-def test_handle_utxo_error_creates_utxos_for_multisig(mock_repo, mock_get_count):
+def test_handle_utxo_error_creates_utxos_for_multisig(mock_repo, mock_compute_utxos):
     """Test handle_utxo_error creates UTXOs for multisig wallet."""
     # Setup
     mock_repo.get_wallet_signature_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
     mock_repo.get_wallet_access_type.return_value = WalletAccessType.WITH_PRIVATE_KEY
-    mock_get_count.return_value = 0
+    mock_compute_utxos.return_value = 2
     parent = MagicMock()
     utxo_viewmodel = MagicMock()
 
@@ -64,14 +64,14 @@ def test_handle_utxo_error_creates_utxos_for_multisig(mock_repo, mock_get_count)
         utxo_viewmodel.create_utxos_begin.assert_called_once()
 
 
-@patch('src.views.components.ifa_hw_helpers.get_unspent_utxo_count')
+@patch('src.views.components.ifa_hw_helpers.compute_needed_utxos_for_ifa')
 @patch('src.views.components.ifa_hw_helpers.SettingRepository')
-def test_handle_utxo_error_sets_retry_for_secondary_issuance(mock_repo, mock_get_count):
+def test_handle_utxo_error_sets_retry_for_secondary_issuance(mock_repo, mock_compute_utxos):
     """Test handle_utxo_error sets retry flag for secondary issuance."""
     # Setup
     mock_repo.get_wallet_signature_type.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
     mock_repo.get_wallet_access_type.return_value = WalletAccessType.WITH_PRIVATE_KEY
-    mock_get_count.return_value = 0
+    mock_compute_utxos.return_value = 3
     parent = MagicMock()
     utxo_viewmodel = MagicMock()
 

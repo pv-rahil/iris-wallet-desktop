@@ -151,17 +151,11 @@ def test_on_send_click(mock_run_in_thread, cfa_view_model):
     assert cfa_view_model.min_confirmation == min_confirmation
 
 
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.cfa_view_model.requires_native_authentication', return_value=True)
 def test_on_send_click_multisig_on_device_requires_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, cfa_view_model,
+    mock_requires_auth, cfa_view_model,
 ):
     """Test that multisig on-device wallet requires native auth for send asset."""
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
-
     assignment = Assignment.FUNGIBLE(amount=100)
     cfa_view_model.asset_id = 'test_asset_id'
 
@@ -174,17 +168,11 @@ def test_on_send_click_multisig_on_device_requires_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.cfa_view_model.requires_native_authentication', return_value=True)
 def test_on_send_click_standard_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, cfa_view_model,
+    mock_requires_auth, cfa_view_model,
 ):
     """Test that standard online on-device wallet DOES require native auth."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
-
     assignment = Assignment.FUNGIBLE(amount=100)
     cfa_view_model.asset_id = 'test_asset_id'
 
@@ -197,17 +185,11 @@ def test_on_send_click_standard_wallet_no_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.cfa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.cfa_view_model.requires_native_authentication', return_value=False)
 def test_on_send_click_hardware_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, cfa_view_model,
+    mock_requires_auth, cfa_view_model,
 ):
     """Test that hardware wallet does not require native auth for send asset."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.HARDWARE_WALLET
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
-
     assignment = Assignment.FUNGIBLE(amount=100)
     cfa_view_model.asset_id = 'test_asset_id'
 

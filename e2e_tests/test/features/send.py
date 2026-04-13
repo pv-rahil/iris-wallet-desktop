@@ -13,7 +13,7 @@ from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
+from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
@@ -63,8 +63,9 @@ class SendOperation(MainPageObjects, BaseOperations):
             if is_hardware_wallet:
                 # RGB app handles both BTC and RGB transactions
                 is_rgb = purpose == 'send_asset'
+                # Assume online hardware wallet for send operations
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb,
+                    LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb, is_online=True,
                 )
         except Exception as e:
             raise e

@@ -49,6 +49,7 @@ from src.views.components.hw_operation_dialog import HardwareWalletOperationDial
 from src.views.components.ifa_hw_helpers import delete_active_secondary_draft_on_success
 from src.views.components.ifa_hw_helpers import handle_success_dialog
 from src.views.components.ifa_hw_helpers import handle_utxo_error
+from src.views.components.issue_asset_helpers import compute_needed_utxos_for_ifa
 from src.views.components.issue_asset_helpers import show_utxo_confirmation_dialog
 from src.views.components.issue_ifa_form import IssueIFAForm
 from src.views.components.toast import ToastManager
@@ -763,9 +764,7 @@ class IssueIFAWidget(QWidget):
         # For HW-online, proceed directly to PSBT creation
         if self.is_hardware_wallet and not self.is_offline_wallet:
             self._retry_after_utxo_inflate = bool(self.secondary_issuance)
-        current = get_unspent_utxo_count()
-        needed = 3 - max(0, current - 1)
-        needed = needed if needed > 0 else 1
+        needed = compute_needed_utxos_for_ifa()
         # Show confirmation dialog for multisig/watch-only wallets
         accepted, _ = show_utxo_confirmation_dialog(
             self, self._utxo_dialog_active,

@@ -12,10 +12,7 @@ from PySide6.QtWidgets import QFileDialog
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.issue_asset_service import IssueAssetService
-from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import IssueAssetCfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
@@ -24,6 +21,9 @@ from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.error_message import ERROR_UNEXPECTED
 from src.utils.hardware_client_store import hardware_client_store
+from src.utils.helpers import build_issue_asset_options
+from src.utils.helpers import handle_issue_asset_exception
+from src.utils.helpers import requires_native_authentication
 from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.info_message import INFO_NO_FILE
 from src.utils.worker import ThreadManager
@@ -63,18 +63,7 @@ class IssueCFAViewModel(QObject, ThreadManager):
         self.asset_ticker = asset_ticker
         self.amount = amount
 
-        # Check if native auth is required for multisig or on-device key variants
-        is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
-        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-
-        # Native auth required for: multisig on-device, or online on-device (non-multisig)
-        requires_native_auth = (is_multisig and is_on_device) or (
-            is_online and is_on_device and not is_multisig
-        )
-
-        if requires_native_auth:
+        if requires_native_authentication():
             self.run_in_thread(
                 SettingRepository.native_authentication,
                 {
@@ -88,36 +77,40 @@ class IssueCFAViewModel(QObject, ThreadManager):
 
     def _proceed_with_issue_cfa(self):
         """Proceed with CFA issuance after native auth or directly for non-auth variants."""
-        try:
-            if self.amount is None or self.asset_name is None or self.asset_ticker is None:
-                raise CommonException(ERROR_FIELD_MISSING)
-            amount_num = int(self.amount)
-            formatted_amount = [amount_num]
-            if self.uploaded_file_path is None:
-                ToastManager.error(description=INFO_NO_FILE)
-                self.is_loading.emit(False)
-                return
+        # Validate required fields
+        if self.amount is None or self.asset_name is None or self.asset_ticker is None:
+            ToastManager.error(description=ERROR_FIELD_MISSING)
+            self.is_loading.emit(False)
+            return
 
-            request_model = IssueAssetCfaRequestModel(
-                amounts=formatted_amount,
-                ticker=self.asset_ticker,
-                name=self.asset_name,
-                file_path=self.uploaded_file_path,
-            )
+        try:
+            amount_num = int(self.amount)
+        except (ValueError, TypeError):
+            ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
+            self.is_loading.emit(False)
+            return
+
+        formatted_amount = [amount_num]
+        if self.uploaded_file_path is None:
+            ToastManager.error(description=INFO_NO_FILE)
+            self.is_loading.emit(False)
+            return
+
+        request_model = IssueAssetCfaRequestModel(
+            amounts=formatted_amount,
+            ticker=self.asset_ticker,
+            name=self.asset_name,
+            file_path=self.uploaded_file_path,
+        )
+        try:
             self.run_in_thread(
                 IssueAssetService.issue_asset_cfa,
-                {
-                    'args': [request_model],
-                    'callback': self.on_success,
-                    'error_callback': self.on_error,
-                },
+                build_issue_asset_options(
+                    request_model, self.on_success, self.on_error,
+                ),
             )
-        except CommonException as exc:
-            self.is_loading.emit(False)
-            ToastManager.error(description=exc.message)
-        except Exception:
-            self.is_loading.emit(False)
-            ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
+        except Exception as exc:
+            handle_issue_asset_exception(exc, self.is_loading)
 
     def on_success_native_auth_cfa(self, success: bool):
         """Callback function after native authentication successful"""

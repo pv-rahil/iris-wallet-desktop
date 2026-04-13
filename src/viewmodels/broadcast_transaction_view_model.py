@@ -7,7 +7,6 @@ from __future__ import annotations
 from PySide6.QtCore import QObject
 from PySide6.QtCore import Signal
 from rgb_lib import OperationInfo
-from rgb_lib import OperationResult
 from rgb_lib import RespondToOperation
 
 from src.data.repository.btc_repository import BtcRepository
@@ -227,12 +226,12 @@ class BroadcastTransactionViewModel(QObject, ThreadManager):
             },
         )
 
-    def on_success_inflate_end(self):
+    def on_success_inflate_end(self,result):
         """Handle success message for broadcast"""
         self.is_loading.emit(False)
         self.tx_broadcasted.emit(True)
         ToastManager.success(
-            description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY,
+            description=INFO_ASSET_ISSUED_INFLATED_SUCCESSFULLY.format(result.txid),
         )
 
     def _respond_to_multisig_operation(self, operation_idx: int | None, response: RespondToOperation) -> None:

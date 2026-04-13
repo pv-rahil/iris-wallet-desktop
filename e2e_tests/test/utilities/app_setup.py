@@ -153,9 +153,9 @@ class TestEnvironment:
             env.update(usb_env)
 
         self.first_process = subprocess.Popen(
-            [f'e2e_tests/applications/iris-wallet-vault_{
+            [f"""e2e_tests/applications/iris-wallet-vault_{
                 APP1_NAME
-            }-{__version__}-x86_64.AppImage'],
+            }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
         self.wait_for_application(FIRST_APPLICATION)
@@ -173,9 +173,8 @@ class TestEnvironment:
         self.first_application = self._find_application_frame(
             FIRST_APPLICATION,
         )
-        print(f"[SETUP] Successfully identified frame for {
-              FIRST_APPLICATION
-              }: {self.first_application}")
+        print(f"""[SETUP] Successfully identified frame for
+              {FIRST_APPLICATION}: {self.first_application}""")
         self.first_page_features = MainFeatures(self.first_application)
         self.first_page_objects = MainPageObjects(self.first_application)
         self.first_page_operations = BaseOperations(self.first_application)
@@ -184,9 +183,9 @@ class TestEnvironment:
 
         if self.num_instances >= 2:
             self.second_process = subprocess.Popen(
-                [f'e2e_tests/applications/iris-wallet-vault_{
+                [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP2_NAME
-                }-{__version__}-x86_64.AppImage'],
+                }-{__version__}-x86_64.AppImage"""],
                 env=env,
             )
             self.wait_for_application(SECOND_APPLICATION)
@@ -204,9 +203,8 @@ class TestEnvironment:
             self.second_application = self._find_application_frame(
                 SECOND_APPLICATION,
             )
-            print(f"[SETUP] Successfully identified frame for {
-                  SECOND_APPLICATION
-                  }: {self.second_application}")
+            print(f"""[SETUP] Successfully identified frame for
+                  {SECOND_APPLICATION}: {self.second_application}""")
             self.second_page_features = MainFeatures(self.second_application)
             self.second_page_objects = MainPageObjects(self.second_application)
             self.second_page_operations = BaseOperations(
@@ -215,9 +213,9 @@ class TestEnvironment:
 
         if self.num_instances >= 3:
             self.third_process = subprocess.Popen(
-                [f'e2e_tests/applications/iris-wallet-vault_{
+                [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
-                }-{__version__}-x86_64.AppImage'],
+                }-{__version__}-x86_64.AppImage"""],
                 env=env,
             )
             self.wait_for_application(THIRD_APPLICATION)
@@ -234,9 +232,8 @@ class TestEnvironment:
             self.third_application = self._find_application_frame(
                 THIRD_APPLICATION,
             )
-            print(f"[SETUP] Successfully identified frame for {
-                  THIRD_APPLICATION
-                  }: {self.third_application}")
+            print(f"""[SETUP] Successfully identified frame for
+                  {THIRD_APPLICATION}: {self.third_application}""")
             self.third_page_features = MainFeatures(self.third_application)
             self.third_page_objects = MainPageObjects(self.third_application)
             self.third_page_operations = BaseOperations(
@@ -264,9 +261,8 @@ class TestEnvironment:
             self.fourth_application = self._find_application_frame(
                 FOURTH_APPLICATION,
             )
-            print(f"[SETUP] Successfully identified frame for {
-                  FOURTH_APPLICATION
-                  }: {self.fourth_application}")
+            print(f"""[SETUP] Successfully identified frame for
+                  {FOURTH_APPLICATION}: {self.fourth_application}""")
             self.fourth_page_features = MainFeatures(self.fourth_application)
             self.fourth_page_objects = MainPageObjects(self.fourth_application)
             self.fourth_page_operations = BaseOperations(
@@ -338,9 +334,8 @@ class TestEnvironment:
                 # Find the frame within this application
                 for child in app.children:
                     if child.roleName == 'frame' and child.name == app_name:
-                        print(f"[DEBUG] Found frame '{
-                              app_name
-                              }' under app '{app.name}'")
+                        print(f"""[DEBUG] Found frame '
+                              {app_name}' under app '{app.name}'""")
                         return child
         except Exception:
             pass
@@ -373,9 +368,8 @@ class TestEnvironment:
         for attempt in range(retry_count):
             # Try to find visible frame under visible application nodes first
             apps = [a for a in root.applications() if 'iris' in a.name.lower()]
-            print(f"[FIND_FRAME] Attempt {
-                  attempt+1
-                  }/{retry_count}, found {len(apps)} iris apps, target: {target_app_identifier}")
+            print(f"""[FIND_FRAME] Attempt
+                  {attempt+1}/{retry_count}, found {len(apps)} iris apps, target: {target_app_identifier}""")
 
             # Sort apps to prioritize the target app
             if target_app_identifier:
@@ -388,29 +382,25 @@ class TestEnvironment:
                 if app.showing:
                     # Check if this app matches the target identifier
                     if target_app_identifier and target_app_identifier not in app.name:
-                        print(f"[FIND_FRAME] Skipping app '{
-                              app.name
-                              }' (doesn't match target '{target_app_identifier}')")
+                        print(f"""[FIND_FRAME] Skipping app '
+                              {app.name}' (doesn't match target '{target_app_identifier}')""")
                         continue
 
                     try:
                         frame = app.child(roleName='frame', name=app_name)
                         if frame and frame.showing:
-                            print(f"[FIND_FRAME] Found showing frame '{
-                                  app_name
-                                  }' under app '{app.name}'")
+                            print(f"""[FIND_FRAME] Found showing frame '
+                                  {app_name}' under app '{app.name}'""")
                             return frame
                     except Exception as e:
-                        print(f"[FIND_FRAME] No frame '{
-                              app_name
-                              }' under app '{app.name}': {e}")
+                        print(f"""[FIND_FRAME] No frame '
+                              {app_name}' under app '{app.name}': {e}""")
                         continue
 
             # Wait before retry
             if attempt < retry_count - 1:
-                print(f"[FIND_FRAME] Frame not showing, waiting {
-                      retry_delay
-                      }s...")
+                print(f"""[FIND_FRAME] Frame not showing, waiting
+                      {retry_delay}s...""")
                 time.sleep(retry_delay)
 
         # Fallback to direct search
@@ -537,9 +527,9 @@ class TestEnvironment:
 
         # Relaunch first application and reinitialize its page abstractions
         self.first_process = subprocess.Popen(
-            [f'e2e_tests/applications/iris-wallet-vault_{
+            [f"""e2e_tests/applications/iris-wallet-vault_{
                 APP1_NAME
-            }-{__version__}-x86_64.AppImage'],
+            }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
         self.wait_for_application(FIRST_APPLICATION)
@@ -555,9 +545,8 @@ class TestEnvironment:
         # Use the same helper as launch_applications for consistent node finding
         self.first_application = self._find_showing_frame(FIRST_APPLICATION)
         print(f"[RESET] first_application node: {self.first_application}")
-        print(f"[RESET] first_application.showing: {
-              getattr(self.first_application, 'showing', 'N/A')
-              }")
+        print(f"""[RESET] first_application.showing:
+              {getattr(self.first_application, 'showing', 'N/A')}""")
 
         # Ensure the frame is actually showing before proceeding
         if not getattr(self.first_application, 'showing', False):
@@ -609,9 +598,9 @@ class TestEnvironment:
 
         # Relaunch second application and reinitialize its page abstractions
         self.second_process = subprocess.Popen(
-            [f'e2e_tests/applications/iris-wallet-vault_{
+            [f"""e2e_tests/applications/iris-wallet-vault_{
                 APP2_NAME
-            }-{__version__}-x86_64.AppImage'],
+            }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
         self.wait_for_application(SECOND_APPLICATION)

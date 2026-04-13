@@ -77,14 +77,9 @@ def test_handle_receive_asset_reuse_existing_psbt(receive_rgb_asset_widget: Rece
         mock_show.assert_called_once_with('psbt123')
 
 
-def test_handle_receive_asset_create_utxos_when_no_psbt(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mocker):
+def test_handle_receive_asset_create_utxos_when_no_psbt(receive_rgb_asset_widget: ReceiveRGBAssetWidget, mock_wallet_session, mocker):
     """If no PSBT, create_utxos_begin('receive_asset') is called."""
     widget = receive_rgb_asset_widget
-    svc = MagicMock()
-    svc.list_psbt.return_value = []
-    mocker.patch(
-        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
-    )
     mocker.patch(
         'src.views.ui_receive_rgb_asset.SettingRepository.get_wallet_signature_type',
         return_value=None,

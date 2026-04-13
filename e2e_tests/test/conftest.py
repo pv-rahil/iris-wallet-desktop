@@ -27,7 +27,7 @@ from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SINGLE_SIG_VARIANTS
-from e2e_tests.test.utilities.test_helpers import _full_atspi_reset
+from e2e_tests.test.utilities.atspi_helpers import _full_atspi_reset
 
 # Timing constants
 CI_STABILIZATION_DELAY = 2.0
@@ -177,11 +177,12 @@ def cleanup_between_tests(request):
     - Adding stabilization delays in CI
     - Full AT-SPI reset for all tests
     """
+    test_name = request.node.name
+    print(f'\n[Starting] Test started: {test_name}')
     # Before test: nothing to do
     yield
 
     # After test: perform cleanup
-    test_name = request.node.name
     print(f'\n[CLEANUP] Test completed: {test_name}')
 
     try:

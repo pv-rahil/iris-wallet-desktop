@@ -60,8 +60,9 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
             if self.do_is_displayed(self.sidebar_page_objects.receive_asset_button()):
                 self.sidebar_page_objects.click_receive_asset_button()
             if self.hardware_wallet_emulator:
+                # Assume online hardware wallet for receive operations
                 self.wallet_feature.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+                    LEDGER_EMULATOR_APP_NAME, is_online=True,
                 )
             if self.do_is_displayed(self.receive_asset_page_objects.invoice_copy_button()):
                 self.receive_asset_page_objects.click_invoice_copy_button()

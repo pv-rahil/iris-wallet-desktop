@@ -1,4 +1,4 @@
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, too-many-locals
 """
 Dialog for displaying detailed PSBT and RGB inspection information.
 """

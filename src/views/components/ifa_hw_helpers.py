@@ -7,11 +7,11 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
-from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.error_message import ERROR_NOT_ENOUGH_UNCOLORED
 from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING
 from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.hw_operation_dialog import HardwareWalletOperationDialog
+from src.views.components.issue_asset_helpers import compute_needed_utxos_for_ifa
 
 
 def handle_utxo_error(
@@ -55,9 +55,8 @@ def handle_utxo_error(
             return True, False
     retry_after_utxo_inflate = bool(secondary_issuance)
     utxo_purpose = 'inflation_utxo' if secondary_issuance else 'issue_asset_ifa'
-    current = get_unspent_utxo_count()
-    needed = 3 - max(0, current - 1)
-    needed = needed if needed > 0 else 1
+    # 3 UTXOs needed for inflate, 2 for issue
+    needed = compute_needed_utxos_for_ifa()
     utxo_creation_view_model.create_utxos_begin(
         purpose=utxo_purpose, num=needed,
     )

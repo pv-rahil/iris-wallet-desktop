@@ -167,16 +167,11 @@ def test_on_send_click(send_bitcoin_view_model):
     send_bitcoin_view_model.run_in_thread.assert_called_once()
 
 
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.send_bitcoin_view_model.requires_native_authentication', return_value=True)
 def test_on_send_click_multisig_on_device_requires_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, send_bitcoin_view_model,
+    mock_requires_auth, send_bitcoin_view_model,
 ):
     """Test that multisig on-device wallet requires native auth for send bitcoin."""
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(send_bitcoin_view_model, 'run_in_thread') as mock_run:
         send_bitcoin_view_model.on_send_click('addr', 100, 2)
@@ -187,16 +182,11 @@ def test_on_send_click_multisig_on_device_requires_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.send_bitcoin_view_model.requires_native_authentication', return_value=True)
 def test_on_send_click_standard_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, send_bitcoin_view_model,
+    mock_requires_auth, send_bitcoin_view_model,
 ):
     """Test that standard online on-device wallet DOES require native auth."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(send_bitcoin_view_model, 'run_in_thread') as mock_run:
         send_bitcoin_view_model.on_send_click('addr', 100, 2)
@@ -207,16 +197,11 @@ def test_on_send_click_standard_wallet_no_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.send_bitcoin_view_model.requires_native_authentication', return_value=False)
 def test_on_send_click_hardware_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, send_bitcoin_view_model,
+    mock_requires_auth, send_bitcoin_view_model,
 ):
     """Test that hardware wallet does not require native auth for send bitcoin."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.HARDWARE_WALLET
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(send_bitcoin_view_model, 'run_in_thread') as mock_run:
         send_bitcoin_view_model.on_send_click('addr', 100, 2)

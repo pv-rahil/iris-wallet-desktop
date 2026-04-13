@@ -37,7 +37,7 @@ def sign_and_broadcast_psbt_offline_single_sig(
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name,
+            FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
         )
 
     with allure.step('Broadcast PSBT from second wallet (coordinator)'):
@@ -140,6 +140,48 @@ def focus_and_refresh_asset_list(
         page_objects.collectible_page_objects.click_refresh_button()
 
 
+def sign_psbt_from_two_wallets_and_broadcast(
+    wallets_and_operations,
+    wallet_variant_name: str,
+    first_wallet_app: str,
+    second_wallet_app: str,
+    third_wallet_app: str,
+    asset_type: str = 'nia',
+) -> None:
+    """
+    Sign PSBT from two wallets (cosigner and offline signer) and broadcast from coordinator.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        wallet_variant_name: Wallet variant name for offline signer.
+        first_wallet_app: First wallet application (offline signer).
+        second_wallet_app: Second wallet application (coordinator/broadcaster).
+        third_wallet_app: Third wallet application (cosigner).
+        asset_type: Asset type for refresh ('ifa', 'nia', 'cfa').
+    """
+    # Sign from third wallet (cosigner)
+    focus_refresh_and_sign_psbt(
+        wallets_and_operations.third_page_operations,
+        wallets_and_operations.third_page_objects,
+        wallets_and_operations.third_page_features,
+        third_wallet_app, ONLINE_MULTISIG_ON_DEVICE, asset_type,
+    )
+    # Sign from first wallet (offline signer)
+    focus_refresh_and_sign_psbt(
+        wallets_and_operations.first_page_operations,
+        wallets_and_operations.first_page_objects,
+        wallets_and_operations.first_page_features,
+        first_wallet_app, wallet_variant_name, asset_type,
+    )
+    # Broadcast PSBT from second wallet (coordinator)
+    wallets_and_operations.second_page_operations.do_focus_on_application(
+        SECOND_APPLICATION,
+    )
+    wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+        second_wallet_app, is_multisig=True,
+    )
+
+
 def handle_utxo_confirmation_dialog(
     page_objects,
     page_operations,
@@ -239,16 +281,16 @@ def offline_multisig_send_asset_flow_with_verification(
                 page_objects.sidebar_page_objects.click_inflatable_button,
                 page_objects.inflatable_page_objects,
             )
-        elif asset_type == 'nia':
+        if asset_type == 'nia':
             return (
                 page_objects.sidebar_page_objects.click_fungibles_button,
                 page_objects.fungible_page_objects,
             )
-        else:  # cfa
-            return (
-                page_objects.sidebar_page_objects.click_collectibles_button,
-                page_objects.collectible_page_objects,
-            )
+        # cfa
+        return (
+            page_objects.sidebar_page_objects.click_collectibles_button,
+            page_objects.collectible_page_objects,
+        )
 
     def get_asset_frame(sidebar_click, page_obj, name):
         sidebar_click()

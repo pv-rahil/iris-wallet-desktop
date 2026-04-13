@@ -9,6 +9,7 @@ from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
 from src.model.enums.enums_model import WalletType
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
+from src.utils.decorators.check_colorable_available import get_unspent_utxo_count
 from src.utils.info_message import INFO_UTXO_CREATION_REQUIRED_FOR_ISSUING
 from src.views.components.confirmation_dialog import ConfirmationDialog
 from src.views.components.toast import ToastManager
@@ -130,4 +131,30 @@ def compute_needed_utxos(current_count: int, required: int = 1) -> int:
         Number of UTXOs to create (minimum 1).
     """
     needed = required - current_count
+    return needed if needed > 0 else 1
+
+
+def compute_needed_utxos_for_ifa() -> int:
+    """
+    Compute the number of UTXOs needed for IFA operations.
+    For single-sig online wallets, creates only 1 UTXO.
+    For other wallet types, creates UTXOs based on current count and needed amount.
+
+    Args:
+        needed_utxos: Number of UTXOs needed for the operation (2 for issue, 3 for inflate).
+
+    Returns:
+        Number of UTXOs to create (minimum 1).
+    """
+    # For single-sig online wallets, create only 1 UTXO
+    is_single_sig_online = (
+        SettingRepository.get_wallet_signature_type(
+        ) == WalletSignatureType.STANDARD_TYPE_WALLET
+        and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET and 
+        not SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+    )
+    if is_single_sig_online:
+        return 1
+    current = get_unspent_utxo_count()
+    needed = 2 - max(0, current)
     return needed if needed > 0 else 1

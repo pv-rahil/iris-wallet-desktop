@@ -4,22 +4,12 @@ This module contains the IssueNia class, which provides methods for issuing NIA 
 """
 from __future__ import annotations
 
-from accessible_constant import CONFIRMATION_DIALOG
-from accessible_constant import HARDWARE_WALLET_VARIANTS
-from accessible_constant import LEDGER_EMULATOR_APP_NAME
-from accessible_constant import MULTISIG_HARDWARE_VARIANTS
-from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
+from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.test_helpers import BaseIssueAsset
-from e2e_tests.test.utilities.test_helpers import handle_confirmation_dialog_and_usb_sync
-from e2e_tests.test.utilities.test_helpers import handle_native_auth_and_focus
-from e2e_tests.test.utilities.test_helpers import handle_native_auth_utxo_and_success
-from e2e_tests.test.utilities.test_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
-from e2e_tests.test.utilities.test_helpers import handle_success_home_button
-from e2e_tests.test.utilities.test_helpers import handle_utxo_confirmation_with_hardware_wallet
-from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
+from e2e_tests.test.utilities.send_flow_helpers import handle_confirmation_dialog_and_usb_sync
+from e2e_tests.test.utilities.send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
 
 
 class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
@@ -32,18 +22,19 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
         Initialize the IssueNia class with the application.
         """
         self.hardware_wallet_emulator = None
-        self.wallet_feature = Wallet(application)
+        self.wallet_feature: Wallet = Wallet(application)
         super().__init__(application)
+
+    def _get_issue_page_objects(self):
+        """Get the issue page objects for NIA asset type."""
+        return self.issue_nia_page_objects
 
     def issue_nia_with_sufficient_sats_and_no_utxo(self, application, asset_ticker, asset_name, asset_amount, variant_name):
         """
         Issues an NIA asset with sufficient sats and no UTXO.
         """
         try:
-            if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
+            self._init_hardware_wallet(variant_name)
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
@@ -64,10 +55,7 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
             if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
                 self.issue_nia_page_objects.click_issue_nia_button()
 
-            if self.hardware_wallet_emulator:
-                self.wallet_feature.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
-                )
+            self._confirm_on_hardware_wallet(self.wallet_feature)
 
             # NIA-specific: focus and success flow
             self.do_focus_on_application(application)
@@ -77,7 +65,6 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
         except Exception as e:
             raise e
         finally:
-            # NIA: cleanup using helper method
             self._cleanup_hardware_wallet()
 
     def issue_nia_asset_without_sat(self, application, asset_ticker, asset_name, asset_amount):
@@ -112,11 +99,7 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
         """
         Issues an NIA asset with sufficient sats and UTXO.
         """
-        try:
-            if variant_name in HARDWARE_WALLET_VARIANTS:
-                self.hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
+        with self._asset_operation_context(variant_name):
             self.do_focus_on_application(application)
 
             if self.do_is_displayed(self.fungible_page_objects.refresh_button()):
@@ -126,33 +109,14 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
                 self.fungible_page_objects.click_issue_nia_button()
 
             self.do_focus_on_application(application)
-            if self.do_is_displayed(self.issue_nia_page_objects.asset_ticker()):
-                self.issue_nia_page_objects.enter_asset_ticker(asset_ticker)
+            self._enter_asset_ticker_if_displayed(asset_ticker)
+            self._enter_asset_name_if_displayed(asset_name)
+            self._enter_asset_amount_if_displayed(asset_amount)
+            self._click_issue_button_if_displayed()
 
-            if self.do_is_displayed(self.issue_nia_page_objects.asset_name()):
-                self.issue_nia_page_objects.enter_asset_name(asset_name)
-
-            if self.do_is_displayed(self.issue_nia_page_objects.asset_amount()):
-                self.issue_nia_page_objects.enter_asset_amount(asset_amount)
-
-            if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
-                self.issue_nia_page_objects.click_issue_nia_button()
-
-            if self.hardware_wallet_emulator:
-                self.wallet_feature.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
-                )
-
-            # NIA with native auth: password entry and success flow
-            handle_native_auth_and_focus(
-                self, application, is_native_auth_enabled)
-            handle_success_home_button(self)
-        except Exception as e:
-            raise e
-        finally:
-            # NIA: terminate hardware wallet emulator directly
-            if self.hardware_wallet_emulator:
-                self.hardware_wallet_emulator.terminate()
+            self._handle_issue_confirmation_and_success(
+                application, is_native_auth_enabled,
+            )
 
     def issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_ticker):
         """
@@ -192,37 +156,27 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         handle_confirmation_dialog_and_usb_sync(self, self.wallet_feature)
 
-    def issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(self, application, asset_ticker, wallet_variant_name: str | None = None, utxo_required: bool = False, is_native_auth_enabled: bool = False):
+    def issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
+        self, application, asset_ticker, wallet_variant_name: str | None = None,
+        utxo_required: bool = False, is_native_auth_enabled: bool = False,
+    ):
         """
         Issues an NIA asset with sufficient sats and no UTXO.
         """
-        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-        hardware_wallet_emulator = None
-        try:
-            if is_hardware and utxo_required:
-                hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
-            self.do_focus_on_application(application)
 
+        def navigate_to_nia():
             self.fungible_page_objects.click_nia_frame(asset_ticker)
+            self._click_issue_button_if_displayed()
 
-            if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
-                self.issue_nia_page_objects.click_issue_nia_button()
+        self._handle_multisig_inflate_flow(
+            application, wallet_variant_name, utxo_required, is_native_auth_enabled,
+            pre_flow_callback=navigate_to_nia,
+        )
 
-            handle_native_auth_utxo_and_success(
-                self, application, self.wallet_feature,
-                is_native_auth_enabled=is_native_auth_enabled,
-                utxo_required=utxo_required,
-                is_hardware=is_hardware,
-            )
-        except Exception as e:
-            raise e
-        finally:
-            if hardware_wallet_emulator:
-                hardware_wallet_emulator.terminate()
-
-    def issue_nia_for_offline_multisig_wallet(self, application, asset_ticker, asset_name, asset_amount, _wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+    def issue_nia_for_offline_multisig_wallet(
+        self, application, asset_ticker, asset_name, asset_amount,
+        _wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False,
+    ):
         """
         Issues an NIA asset for offline multisig wallet.
         Creates PSBT on watch-only coordinator, then USB syncs to pass PSBT to offline signer.
@@ -252,44 +206,21 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
             self, application, self.wallet_feature, is_native_auth_enabled,
         )
 
-    def issue_nia_with_sufficient_sats_for_multisig_wallet(self, application, asset_ticker, asset_name, asset_amount, wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False):
+    def issue_nia_with_sufficient_sats_for_multisig_wallet(
+        self, application, asset_ticker, asset_name, asset_amount,
+        wallet_variant_name: str | None = None, is_native_auth_enabled: bool = False,
+    ):
         """
         Issues an NIA asset with sufficient sats for multisig wallet.
         This triggers UTXO creation which requires PSBT signing by cosigner.
         """
-        is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-        hardware_wallet_emulator = None
-        try:
-            if is_hardware:
-                hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
-            self.do_focus_on_application(application)
 
+        def navigate_to_issue():
             if self.do_is_displayed(self.fungible_page_objects.issue_nia_button()):
                 self.fungible_page_objects.click_issue_nia_button()
 
-            if self.do_is_displayed(self.issue_nia_page_objects.asset_ticker()):
-                self.issue_nia_page_objects.enter_asset_ticker(asset_ticker)
-
-            if self.do_is_displayed(self.issue_nia_page_objects.asset_name()):
-                self.issue_nia_page_objects.enter_asset_name(asset_name)
-
-            if self.do_is_displayed(self.issue_nia_page_objects.asset_amount()):
-                self.issue_nia_page_objects.enter_asset_amount(asset_amount)
-
-            if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
-                self.issue_nia_page_objects.click_issue_nia_button()
-
-            if is_native_auth_enabled:
-                self.enter_native_password()
-
-            handle_utxo_confirmation_with_hardware_wallet(
-                self, self, self.wallet_feature, LEDGER_EMULATOR_APP_NAME,
-                utxo_required=True, is_hardware=is_hardware,
-            )
-        except Exception as e:
-            raise e
-        finally:
-            if hardware_wallet_emulator:
-                hardware_wallet_emulator.terminate()
+        self._handle_multisig_issue_flow(
+            application, wallet_variant_name, is_native_auth_enabled,
+            asset_ticker, asset_name, asset_amount,
+            pre_issue_callback=navigate_to_issue,
+        )

@@ -77,12 +77,14 @@ class SettingsPageObjects(BaseOperations):
         if self.do_is_displayed(self.keyring_toggle_button()):
             self.keyring_toggle_button().grabFocus()
             return pressKey('space')
+        return None
 
     def click_login_app_toggle_button(self):
         """Click on login app toggle button"""
         if self.do_is_displayed(self.login_auth_toggle_button()):
             self.login_auth_toggle_button().grabFocus()
             return pressKey('space')
+        return None
 
     def _click_frame_with_press_release(self, frame):
         """Click on a frame using press and release method."""
@@ -130,12 +132,14 @@ class SettingsPageObjects(BaseOperations):
         if self.do_is_displayed(self.hide_exhausted_asset_toggle_button()):
             self.hide_exhausted_asset_toggle_button().grabFocus()
             return pressKey('space')
+        return None
 
     def click_ask_auth_imp_question(self):
         """Click on the ask auth imp question toggle button"""
         if self.do_is_displayed(self.ask_auth_for_imp_question_toggle()):
             self.ask_auth_for_imp_question_toggle().grabFocus()
             return pressKey('space')
+        return None
 
     def set_keyring_enable_ci(self):
         """Use Plaintext keyring (enable) only in CI."""

@@ -1,4 +1,4 @@
-# pylint: disable=consider-using-with, too-many-branches, too-many-lines, too-many-statements
+# pylint: disable=consider-using-with, too-many-branches, too-many-lines, too-many-statements, too-many-nested-blocks, too-many-public-methods
 """
 Wallet class for creating and funding a wallet.
 """
@@ -261,9 +261,9 @@ class Wallet(MainPageObjects, BaseOperations):
             delete_app_data(app2_data)
             # Launch temp second instance with default environment (not TestEnvironment)
             proc = subprocess.Popen(
-                [f"e2e_tests/applications/iris-wallet-vault_{
+                [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP2_NAME
-                }-{__version__}-x86_64.AppImage"],
+                }-{__version__}-x86_64.AppImage"""],
                 env=None,
             )
             # Wait for the second application window
@@ -568,9 +568,9 @@ class Wallet(MainPageObjects, BaseOperations):
             delete_app_data(app2_data)
             # Launch temp second instance with default environment (not TestEnvironment)
             proc = subprocess.Popen(
-                [f"e2e_tests/applications/iris-wallet-vault_{
+                [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP2_NAME
-                }-{__version__}-x86_64.AppImage"],
+                }-{__version__}-x86_64.AppImage"""],
                 env=None,
             )
             # Wait for the second application window
@@ -687,16 +687,14 @@ class Wallet(MainPageObjects, BaseOperations):
         second_app = None
         if env and hasattr(env, 'second_application'):
             second_app = env.second_application
-            print(f"[SETUP_SECOND] Using second_application from env: {
-                  second_app
-                  }")
+            print(f"""[SETUP_SECOND] Using second_application from env:
+                  {second_app}""")
 
         # Fallback to finding frame directly if not available from env
         if not second_app:
             second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
-            print(f"[SETUP_SECOND] Fallback: found frame from root: {
-                  second_app
-                  }")
+            print(f"""[SETUP_SECOND] Fallback: found frame from root:
+                  {second_app}""")
 
         if not second_app:
             # mnemonic, password, xpub_vanilla, xpub_colored, fingerprint
@@ -1194,23 +1192,70 @@ class Wallet(MainPageObjects, BaseOperations):
 
         return description
 
-    def confirm_transaction_on_hardware_wallet(self, application, is_rgb: bool = False, is_issue_ifa: bool = False):
+    def confirm_transaction_on_hardware_wallet(
+        self, application, is_rgb: bool = False, is_ifa: bool = False,
+        is_inflate: bool = False, is_online: bool = True,
+    ):
         """
         Confirm transaction on hardware wallet for single-sig.
-        - For RGB/inflate: 4 right + both, then 5 right + both
-        - For NIA/CFA/IFA/send BTC: 4 right + both
+
+        For online single-sig hardware wallet:
+        - IFA issue: 2 UTXOs (4 right + both each), no final RGB signing
+        - IFA inflate: 2 UTXOs (4 right + both each), then 5 right + both (RGB signing)
+        - RGB send: 3 UTXOs (4 right + both each), then 5 right + both
+
+        For offline single-sig hardware wallet (no UTXO creation needed):
+        - RGB/inflate: 4 right + both, then 5 right + both
+        - NIA/CFA/IFA/send BTC: 4 right + both
+
+        Args:
+            application: Application name.
+            is_rgb: Whether this is an RGB send transaction.
+            is_ifa: Whether this is an IFA issue or inflate operation (for UTXO count).
+            is_inflate: Whether this is an IFA inflate operation (for final RGB signing).
+            is_online: Whether this is an online hardware wallet (True for online, False for offline).
         """
         self.do_focus_on_application(application)
         time.sleep(3)
-        if is_rgb or is_issue_ifa:
-            # RGB or inflate: 4 right + both, then 5 right + both
+
+        # Determine UTXO count for online single-sig hardware wallet
+        utxo_count = 0
+        if is_online:
+            # Online hardware variants need UTXO signing before final transaction
+            if is_ifa:
+                # IFA issue/inflate needs 2 UTXOs
+                utxo_count = 2
+            elif is_rgb:
+                # RGB send needs 3 UTXOs
+                utxo_count = 3
+
+        # Sign UTXOs first (for online hardware wallet)
+        for _ in range(utxo_count):
+            self.do_focus_on_application(application)
+            time.sleep(2)
             self.hw_emulator_page_objects.click_right_arrow_key(4)
             self.hw_emulator_page_objects.press_left_and_right()
             time.sleep(1)
-            self.hw_emulator_page_objects.click_right_arrow_key(5)
-            self.hw_emulator_page_objects.press_left_and_right()
+
+        # Final transaction signing
+        if is_inflate or is_rgb:
+            if is_online:
+                # Online: 5 right + both (after UTXO signing)
+                self.do_focus_on_application(application)
+                time.sleep(1)
+                self.hw_emulator_page_objects.click_right_arrow_key(5)
+                self.hw_emulator_page_objects.press_left_and_right()
+            else:
+                # Offline: 4 right + both, then 5 right + both
+                self.hw_emulator_page_objects.click_right_arrow_key(4)
+                self.hw_emulator_page_objects.press_left_and_right()
+                time.sleep(1)
+                self.do_focus_on_application(application)
+                time.sleep(1)
+                self.hw_emulator_page_objects.click_right_arrow_key(5)
+                self.hw_emulator_page_objects.press_left_and_right()
         else:
-            # NIA or send BTC: 4 right + both
+            # NIA/CFA/receive/IFA issue: 4 right + both
             self.hw_emulator_page_objects.click_right_arrow_key(4)
             self.hw_emulator_page_objects.press_left_and_right()
 

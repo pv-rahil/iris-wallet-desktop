@@ -18,8 +18,20 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.test_helpers import refresh_collectibles_on_app2
-from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_collectibles
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_inflatable
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_click_inflatable
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_navigate_to_ifa_tx
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet
+from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_click_bitcoin_frame
+from e2e_tests.test.utilities.send_flow_helpers import issue_cfa_multisig_flow
+from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
+from e2e_tests.test.utilities.send_flow_helpers import refresh_collectibles_on_app2
+from e2e_tests.test.utilities.send_flow_helpers import verify_tx_on_third_wallet
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from src.data.repository.setting_repository import SettingRepository
 from src.utils.info_message import INFO_ASSET_SENT
 from src.utils.info_message import INFO_BITCOIN_SENT
@@ -242,10 +254,7 @@ def test_ask_auth_for_imp_question_send_ifa_on(wallets_and_operations: WalletTes
         )
 
     with allure.step('Sending the IFA asset'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+        focus_first_wallet_and_click_inflatable(wallets_and_operations)
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME_1,
         )
@@ -255,15 +264,9 @@ def test_ask_auth_for_imp_question_send_ifa_on(wallets_and_operations: WalletTes
         )
         _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
     with allure.step('asserting tx id'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+        focus_second_wallet_and_navigate_to_ifa_tx(
+            wallets_and_operations, IFA_ASSET_NAME_1,
         )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
-        )
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
         tx_id = wallets_and_operations.second_page_objects.asset_transaction_detail_page_objects.get_tx_id()
         wallets_and_operations.second_page_objects.asset_transaction_detail_page_objects.click_close_button()
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
@@ -454,10 +457,7 @@ def test_ask_auth_for_imp_question_send_ifa_off(wallets_and_operations: WalletTe
         )
 
     with allure.step('Sending the IFA asset'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+        focus_first_wallet_and_click_inflatable(wallets_and_operations)
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME_2,
@@ -468,10 +468,7 @@ def test_ask_auth_for_imp_question_send_ifa_off(wallets_and_operations: WalletTe
         )
         _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
     with allure.step('asserting tx id'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+        focus_second_wallet_and_click_inflatable(wallets_and_operations)
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_NAME_2,
@@ -523,10 +520,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on_for_multisig(wallets_and_oper
             wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
 
     with allure.step('Getting the receiver\'s address for multisig'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_bitcoin_frame()
+        focus_third_wallet_and_click_bitcoin_frame(wallets_and_operations)
         wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, _ = wallets_and_operations.third_page_features.receive_features.receive(
             THIRD_APPLICATION,
@@ -661,19 +655,9 @@ def test_ask_auth_for_imp_question_send_nia_on_for_multisig(test_environment: Te
         _, toaster_description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
 
     with allure.step('Verify received amount on App 3'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
+        tx_id = verify_tx_on_third_wallet(
+            wallets_and_operations, ASSET_NAME_1, asset_type='nia',
         )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_nia_frame(
-            ASSET_NAME_1,
-        )
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
-        tx_id = wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.get_tx_id()
-        wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
 
     test_environment.reset_second_instance(reset_data=False)
@@ -695,9 +679,7 @@ def test_ask_auth_for_imp_question_issue_cfa_on_for_multisig(wallets_and_operati
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
             FIRST_APPLICATION, ASSET_NAME_1, ASSET_DESCRIPTION, ASSET_AMOUNT, wallet_variant_name, is_native_auth_enabled=True,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
+        focus_second_wallet(wallets_and_operations)
         wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
@@ -731,11 +713,7 @@ def test_ask_auth_for_imp_question_send_cfa_on_for_multisig(wallets_and_operatio
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        focus_first_wallet_and_click_collectibles(wallets_and_operations)
         wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
             ASSET_NAME_1,
         )
@@ -788,19 +766,9 @@ def test_ask_auth_for_imp_question_send_cfa_on_for_multisig(wallets_and_operatio
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
 
     with allure.step('Verify received amount on App 3'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
+        tx_id = verify_tx_on_third_wallet(
+            wallets_and_operations, ASSET_NAME_1, asset_type='cfa',
         )
-        wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME_1,
-        )
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
-        tx_id = wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.get_tx_id()
-        wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
 
 
@@ -820,9 +788,7 @@ def test_ask_auth_for_imp_question_issue_ifa_on_for_multisig(wallets_and_operati
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_for_multisig_wallet(
             FIRST_APPLICATION, IFA_ASSET_TICKER, IFA_ASSET_NAME_1, IFA_ASSET_TOTAL_SUPPLY, ASSET_AMOUNT, is_native_auth_enabled=True,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
+        focus_second_wallet(wallets_and_operations)
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
@@ -856,11 +822,7 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment: Te
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+        focus_first_wallet_and_click_inflatable(wallets_and_operations)
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_TICKER,
         )
@@ -903,16 +865,9 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment: Te
         wallets_and_operations.third_page_operations.do_focus_on_application(
             THIRD_APPLICATION,
         )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.third_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_1,
+        tx_id = verify_tx_on_third_wallet(
+            wallets_and_operations, IFA_ASSET_NAME_1, asset_type='ifa',
         )
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
-        tx_id = wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.get_tx_id()
-        wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
     with allure.step('Refresh from third app and first app'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -995,32 +950,9 @@ def test_ask_auth_for_imp_question_issue_nia_off_for_multisig(wallets_and_operat
     """Issuing NIA asset with ask auth for important operations off for multisig"""
 
     with allure.step('Issue NIA asset for multisig without native auth'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
+        issue_nia_multisig_flow(
+            wallets_and_operations, wallet_variant_name, ASSET_TICKER, ASSET_NAME_2, ASSET_AMOUNT,
         )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME_2, ASSET_AMOUNT, wallet_variant_name,
-        )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
-        )
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name,
-        )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
 
 
 @pytest.mark.skip_for_single_sig
@@ -1081,19 +1013,9 @@ def test_ask_auth_for_imp_question_send_nia_off_for_multisig(wallets_and_operati
         _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
     with allure.step('Verify received amount on App 3'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
+        tx_id = verify_tx_on_third_wallet(
+            wallets_and_operations, ASSET_NAME_2, asset_type='nia',
         )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_nia_frame(
-            ASSET_NAME_2,
-        )
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
-        tx_id = wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.get_tx_id()
-        wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
 
     with allure.step('Refresh from third app and first app'):
@@ -1117,33 +1039,9 @@ def test_ask_auth_for_imp_question_issue_cfa_off_for_multisig(wallets_and_operat
     """Issuing CFA asset with ask auth for important operations off for multisig"""
 
     with allure.step('Issue CFA asset for multisig without native auth'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
+        issue_cfa_multisig_flow(
+            wallets_and_operations, wallet_variant_name, ASSET_NAME_2, ASSET_DESCRIPTION, ASSET_AMOUNT,
         )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME_2, ASSET_DESCRIPTION, ASSET_AMOUNT, wallet_variant_name,
-        )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
-        )
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_NAME_2, wallet_variant_name,
-        )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
 
 
 @pytest.mark.skip_for_single_sig
@@ -1209,16 +1107,9 @@ def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(test_environment: T
         wallets_and_operations.third_page_operations.do_focus_on_application(
             THIRD_APPLICATION,
         )
-        wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME_2,
+        tx_id = verify_tx_on_third_wallet(
+            wallets_and_operations, ASSET_NAME_2, asset_type='cfa',
         )
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
-        tx_id = wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.get_tx_id()
-        wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
 
     with allure.step('Refresh from third app and first app'):
@@ -1288,11 +1179,7 @@ def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(test_environment: T
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+        focus_first_wallet_and_click_inflatable(wallets_and_operations)
         wallets_and_operations.first_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_ASSET_TICKER,
         )
@@ -1335,16 +1222,9 @@ def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(test_environment: T
         wallets_and_operations.third_page_operations.do_focus_on_application(
             THIRD_APPLICATION,
         )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.third_page_objects.inflatable_page_objects.click_ifa_frame(
-            IFA_ASSET_NAME_2,
+        tx_id = verify_tx_on_third_wallet(
+            wallets_and_operations, IFA_ASSET_NAME_2, asset_type='ifa',
         )
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_rgb_transaction_on_chain_frame()
-        tx_id = wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.get_tx_id()
-        wallets_and_operations.third_page_objects.asset_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
         assert toaster_description == INFO_ASSET_SENT.format(tx_id)
 
     test_environment.reset_second_instance(reset_data=False)

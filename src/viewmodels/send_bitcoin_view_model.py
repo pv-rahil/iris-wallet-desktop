@@ -22,6 +22,7 @@ from src.model.enums.enums_model import WalletType
 from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.hardware_client_store import hardware_client_store
+from src.utils.helpers import requires_native_authentication
 from src.utils.info_message import INFO_BITCOIN_SENT
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_REGISTER_WALLET_AND_SIGN_FROM_HARDWARE_WALLET
@@ -60,18 +61,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.fee_rate = fee_rate
         self.send_button_clicked.emit(True)
 
-        # Check if native auth is required for multisig or on-device key variants
-        is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
-        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-
-        # Native auth required for: multisig on-device, or online on-device (non-multisig)
-        requires_native_auth = (is_multisig and is_on_device) or (
-            is_online and is_on_device and not is_multisig
-        )
-
-        if requires_native_auth:
+        if requires_native_authentication():
             self.run_in_thread(
                 SettingRepository.native_authentication,
                 {
@@ -147,18 +137,7 @@ class SendBitcoinViewModel(QObject, ThreadManager):
         self.fee_rate = fee_rate
         self.send_button_clicked.emit(True)
 
-        # Check if native auth is required for multisig or on-device key variants
-        is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
-        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-
-        # Native auth required for: multisig on-device, or online on-device (non-multisig)
-        requires_native_auth = (is_multisig and is_on_device) or (
-            is_online and is_on_device and not is_multisig
-        )
-
-        if requires_native_auth:
+        if requires_native_authentication():
             self.run_in_thread(
                 SettingRepository.native_authentication,
                 {

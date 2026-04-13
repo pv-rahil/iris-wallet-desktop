@@ -8,7 +8,6 @@ import pytest
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
-from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
@@ -16,20 +15,24 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.test_helpers import focus_and_navigate_to_asset
-from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import fund_and_refresh_offline_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import multisig_send_asset_flow_with_verification
-from e2e_tests.test.utilities.test_helpers import navigate_to_asset_and_click_send
-from e2e_tests.test.utilities.test_helpers import offline_multisig_create_utxo_for_send_test_flow
-from e2e_tests.test.utilities.test_helpers import send_asset_flow_with_verification
-from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardware_wallets
-from e2e_tests.test.utilities.test_helpers import sign_and_broadcast_psbt_offline_multisig
-from e2e_tests.test.utilities.test_helpers import sign_and_broadcast_psbt_offline_single_sig
-from e2e_tests.test.utilities.test_helpers import verify_expired_invoice_validation
-from e2e_tests.test.utilities.test_helpers import verify_invalid_invoice_validation
+from e2e_tests.test.utilities.psbt_helpers import focus_and_refresh_asset_list
+from e2e_tests.test.utilities.psbt_helpers import focus_refresh_and_sign_psbt
+from e2e_tests.test.utilities.send_flow_helpers import focus_and_navigate_to_asset
+from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_balance
+from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_transfer_status
+from e2e_tests.test.utilities.send_flow_helpers import offline_multisig_create_utxo_for_send_test_flow
+from e2e_tests.test.utilities.send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
+from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
+from e2e_tests.test.utilities.send_flow_helpers import send_asset_flow_with_verification
+from e2e_tests.test.utilities.send_flow_helpers import verify_expired_invoice_validation
+from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation
+from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation_step
 from e2e_tests.test.utilities.translation_utils import TranslationManager
+from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
 ASSET_NAME = 'CFA'
@@ -169,32 +172,10 @@ def test_send_cfa_with_expired_invoice_for_offline_wallet(test_environment: Test
 @allure.story('Create utxo PSBT, sign with offline signer, then broadcast')
 def test_offline_single_sig_create_utxo_for_send_cfa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send CFA asset in offline single-sig setup (3 apps) - Create UTXO for send."""
-    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
-    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
-    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
-    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
-
-    with allure.step('Get invoice from third receiver wallet'):
-        invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION,
-        )
-
-    # Create UTXO PSBT
-    with allure.step('Create UTXO PSBT from second wallet (watch-only coordinator)'):
-        navigate_to_asset_and_click_send(
-            second_page_operations, second_page_objects, ASSET_NAME, asset_type='cfa',
-        )
-        second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=SEND_AMOUNT,
-            wallet_variant_name=wallet_variant_name,
-        )
-
-    # Sign and broadcast UTXO PSBT
-    sign_and_broadcast_psbt_offline_single_sig(
-        wallets_and_operations, wallet_variant_name, second_page_operations, second_page_features,
+    offline_single_sig_create_utxo_for_send_test_flow(
+        wallets_and_operations, wallet_variant_name, ASSET_NAME, SEND_AMOUNT,
+        asset_type='cfa', test_environment=test_environment,
     )
-
-    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_multisig
@@ -204,27 +185,9 @@ def test_offline_single_sig_create_utxo_for_send_cfa(test_environment: TestEnvir
 @allure.story('Create transfer PSBT, sign with offline signer, then broadcast')
 def test_offline_single_sig_send_transfer_cfa(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send CFA asset in offline single-sig setup (3 apps) - Send transfer."""
-    # Get fresh page objects from environment after reset
-    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
-    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
-    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
-    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
-
-    # Send asset
-    with allure.step('Send CFA asset from second wallet (coordinator)'):
-        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-        second_page_objects.sidebar_page_objects.click_collectibles_button()
-        second_page_objects.collectible_page_objects.click_refresh_button()
-        second_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME,
-        )
-        second_page_features.send_features.send_asset_for_single_sig_offline(
-            SECOND_APPLICATION,
-        )
-
-    # Sign and broadcast transfer PSBT
-    sign_and_broadcast_psbt_offline_single_sig(
-        wallets_and_operations, wallet_variant_name, second_page_operations, second_page_features,
+    send_flow = OfflineSendFlow(wallets_and_operations)
+    send_flow.send_transfer_single_sig(
+        wallet_variant_name, ASSET_NAME, asset_type='cfa',
     )
 
 
@@ -236,34 +199,21 @@ def test_offline_single_sig_send_transfer_cfa(wallets_and_operations: WalletTest
 def test_offline_single_sig_verify_for_cfa(wallets_and_operations: WalletTestSetup):
     """Test send CFA asset in offline single-sig setup (3 apps) - Verify transfer."""
     # Verify transfer status on sender (second wallet)
-    with allure.step('Verify transfer status on second wallet (sender)'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION, verify_ready=True,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME,
-        )
-        actual_transfer_status = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_transfer_status()
-        assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
+    actual_transfer_status = navigate_to_asset_and_get_transfer_status(
+        wallets_and_operations.second_page_operations,
+        wallets_and_operations.second_page_objects,
+        ASSET_NAME, asset_type='cfa',
+    )
+    assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
 
     # Verify received amount on receiver (third wallet)
-    with allure.step('Verify received amount on third wallet (receiver)'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION, verify_ready=True,
-        )
-        wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME,
-        )
-        received_amount = wallets_and_operations.third_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_close_button()
-
-    with allure.step('Verify assertions'):
-        assert received_amount == SEND_AMOUNT
+    received_amount = navigate_to_asset_and_get_balance(
+        wallets_and_operations.third_page_operations,
+        wallets_and_operations.third_page_objects,
+        ASSET_NAME, asset_type='cfa',
+        application=THIRD_APPLICATION,
+    )
+    assert received_amount == SEND_AMOUNT
 
 
 @pytest.mark.skip_for_single_sig
@@ -282,24 +232,25 @@ def test_send_cfa_with_invalid_invoice_for_multisig(wallets_and_operations: Wall
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_for_multisig_wallet(
             FIRST_APPLICATION, ASSET_NAME, ASSET_DESCRIPTION, ASSET_AMOUNT, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+        focus_refresh_and_sign_psbt(
+            wallets_and_operations.second_page_operations,
+            wallets_and_operations.second_page_objects,
+            wallets_and_operations.second_page_features,
+            SECOND_APPLICATION, wallet_variant_name, asset_type='cfa',
         )
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
+        focus_and_refresh_asset_list(
+            wallets_and_operations.first_page_operations,
+            wallets_and_operations.first_page_objects,
+            FIRST_APPLICATION, asset_type='cfa',
         )
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_multisig_wallet(
             FIRST_APPLICATION, ASSET_NAME, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
+        focus_and_refresh_asset_list(
+            wallets_and_operations.second_page_operations,
+            wallets_and_operations.second_page_objects,
+            SECOND_APPLICATION, asset_type='cfa',
         )
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
 
     with allure.step('Navigate to CFA asset for sending'):
         focus_and_navigate_to_asset(
@@ -374,37 +325,11 @@ def test_send_cfa_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
             SECOND_APPLICATION, ASSET_NAME, ASSET_DESCRIPTION, ASSET_AMOUNT, wallet_variant_name,
         )
 
-        # Refresh and sign from first wallet (offline signer)
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
+        # Sign, broadcast, and refresh for offline multisig
+        send_flow = OfflineSendFlow(wallets_and_operations)
+        send_flow.issue_sign_refresh_multisig(
+            wallet_variant_name, ASSET_NAME, asset_type='cfa',
         )
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name,
-        )
-
-        # Broadcast PSBT from second wallet (coordinator)
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
-            SECOND_APPLICATION, is_multisig=True,
-        )
-
-        # Refresh and sign from third wallet (cosigner)
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
-        )
-
-        # Refresh second wallet (coordinator)
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
 
     with allure.step('Issue CFA asset (offline multisig)'):
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
@@ -423,11 +348,7 @@ def test_send_cfa_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
         )
 
     with allure.step('Verify invalid invoice validation for CFA asset (offline multisig)'):
-        verify_invalid_invoice_validation(
-            wallets_and_operations.second_page_objects,
-            INVOICE,
-            TranslationManager.translate('invalid_invoice'),
-        )
+        verify_invalid_invoice_validation_step(wallets_and_operations, INVOICE)
 
 
 @pytest.mark.skip_for_single_sig
@@ -455,28 +376,9 @@ def test_offline_multisig_create_utxo_for_send_cfa(test_environment: TestEnviron
 @allure.story('Create transfer PSBT, sign with offline signer and cosigner, then broadcast')
 def test_offline_multisig_send_transfer_cfa(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send CFA asset in offline multisig setup (4 apps) - Send transfer."""
-    # Get fresh page objects from environment after reset
-    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
-    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
-    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
-    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
-
-    # Send asset
-    with allure.step('Send CFA asset from second wallet (coordinator)'):
-        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-        second_page_objects.sidebar_page_objects.click_collectibles_button()
-        second_page_objects.collectible_page_objects.click_refresh_button()
-        second_page_objects.collectible_page_objects.click_refresh_button()
-        second_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME,
-        )
-        second_page_features.send_features.send_asset_for_multisig(
-            SECOND_APPLICATION, wallet_variant_name,
-        )
-
-    # Sign and broadcast transfer PSBT
-    sign_and_broadcast_psbt_offline_multisig(
-        wallets_and_operations, wallet_variant_name, second_page_operations, second_page_features,
+    send_flow = OfflineSendFlow(wallets_and_operations)
+    send_flow.send_transfer_multisig(
+        wallet_variant_name, ASSET_NAME, asset_type='cfa',
     )
 
 
@@ -488,28 +390,19 @@ def test_offline_multisig_send_transfer_cfa(wallets_and_operations: WalletTestSe
 def test_offline_multisig_verify_for_cfa(wallets_and_operations: WalletTestSetup):
     """Test send CFA asset in offline multisig setup (4 apps) - Verify transfer."""
     # Verify transfer status on sender (second wallet)
-    with allure.step('Verify transfer status on second wallet (sender)'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION, verify_ready=True,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME,
-        )
-        actual_transfer_status = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_transfer_status()
-        assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
+    actual_transfer_status = navigate_to_asset_and_get_transfer_status(
+        wallets_and_operations.second_page_operations,
+        wallets_and_operations.second_page_objects,
+        ASSET_NAME, asset_type='cfa',
+    )
+    assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
 
     # Verify received amount on receiver (fourth wallet)
-    with allure.step('Verify received amount on fourth wallet (receiver)'):
-        wallets_and_operations.fourth_page_operations.do_focus_on_application(
-            FOURTH_APPLICATION, verify_ready=True,
-        )
-        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_cfa_frame(
-            ASSET_NAME,
-        )
-        received_amount = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
-        assert received_amount == SEND_AMOUNT
+    received_amount = navigate_to_asset_and_get_balance(
+        wallets_and_operations.fourth_page_operations,
+        wallets_and_operations.fourth_page_objects,
+        ASSET_NAME, asset_type='cfa',
+        application=FOURTH_APPLICATION,
+        refresh_count=2,
+    )
+    assert received_amount == SEND_AMOUNT

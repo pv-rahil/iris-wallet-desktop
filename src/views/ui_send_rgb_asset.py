@@ -454,8 +454,16 @@ class SendRGBAssetWidget(QWidget):
                     if not accepted:
                         self._retry_after_utxo = False
                         return
+                # For single-sig online wallets, create only 1 UTXO
+                is_single_sig_online = (
+                    SettingRepository.get_wallet_signature_type(
+                    ) == WalletSignatureType.STANDARD_TYPE_WALLET
+                    and not SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+                    and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+                )
+                num_utxos = 1 if is_single_sig_online else 3
                 self._view_model.utxo_creation_view_model.create_utxos_begin(
-                    purpose='send_rgb', num=3,
+                    purpose='send_rgb', num=num_utxos,
                 )
                 return
 

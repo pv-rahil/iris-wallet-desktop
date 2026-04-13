@@ -17,9 +17,6 @@ from PySide6.QtWidgets import QFileDialog
 
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.issue_asset_service import IssueAssetService
-from src.model.enums.enums_model import KeyStorageType
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import Balance
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
@@ -311,16 +308,11 @@ def test_on_success_native_auth_cfa_exception(mock_toast_manager, issue_cfa_view
     issue_cfa_view_model.is_loading.emit.assert_called_once_with(False)
 
 
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_cfa_view_model.requires_native_authentication', return_value=True)
 def test_issue_cfa_asset_multisig_on_device_requires_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_cfa_view_model,
+    mock_requires_auth, issue_cfa_view_model,
 ):
     """Test that multisig on-device wallet requires native auth for CFA."""
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(issue_cfa_view_model, 'run_in_thread') as mock_run:
         issue_cfa_view_model.issue_cfa_asset('TEST', 'Test Asset', '100')
@@ -331,16 +323,11 @@ def test_issue_cfa_asset_multisig_on_device_requires_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_cfa_view_model.requires_native_authentication', return_value=True)
 def test_issue_cfa_asset_standard_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_cfa_view_model,
+    mock_requires_auth, issue_cfa_view_model,
 ):
     """Test that standard online on-device wallet DOES require native auth for CFA."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     # Set file path to avoid file missing error
     issue_cfa_view_model.uploaded_file_path = '/path/to/file.png'
@@ -354,16 +341,11 @@ def test_issue_cfa_asset_standard_wallet_no_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_cfa_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_cfa_view_model.requires_native_authentication', return_value=False)
 def test_issue_cfa_asset_hardware_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_cfa_view_model,
+    mock_requires_auth, issue_cfa_view_model,
 ):
     """Test that hardware wallet does not require native auth for CFA."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.HARDWARE_WALLET
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     # Set file path to avoid file missing error
     issue_cfa_view_model.uploaded_file_path = '/path/to/file.png'

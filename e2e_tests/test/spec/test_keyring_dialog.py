@@ -14,8 +14,9 @@ from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_two_app_wallets
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_two_app_wallets
 
 MNEMONIC = None
 PASSWORD = None
@@ -169,9 +170,7 @@ def test_keyring_dialog_for_multisig(test_environment, wallets_and_operations: W
         setup_multisig_wallets(wallets_and_operations, wallet_variant_name)
 
     with allure.step('Copy mnemonic from setting page for multisig'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
+        focus_first_wallet(wallets_and_operations)
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()

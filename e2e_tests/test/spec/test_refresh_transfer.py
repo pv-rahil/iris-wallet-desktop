@@ -16,13 +16,19 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import fund_and_refresh_offline_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import initiate_third_wallet_and_get_invoice
-from e2e_tests.test.utilities.test_helpers import multisig_send_asset_flow_with_verification
-from e2e_tests.test.utilities.test_helpers import offline_multisig_send_asset_flow_with_verification
-from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardware_wallets
+from e2e_tests.test.utilities.psbt_helpers import offline_multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_click_fungibles
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.send_flow_helpers import generate_multisig_invoice_and_send
+from e2e_tests.test.utilities.send_flow_helpers import initiate_third_wallet_and_get_invoice
+from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
+from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
 ASSET_TICKER = 'TTK'
@@ -188,11 +194,7 @@ def test_refresh_transfer_for_offline_wallet(wallets_and_operations: WalletTestS
             application=SECOND_APPLICATION,
         )
     with allure.step('Send transfer for offline wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        focus_second_wallet_and_click_fungibles(wallets_and_operations)
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             ASSET_NAME,
         )
@@ -261,35 +263,10 @@ def test_refresh_transfer_setup_and_issue_nia_for_multisig(test_environment: Tes
     fund_and_refresh_multisig_wallets(wallets_and_operations, asset_type='nia')
 
     with allure.step('Issue NIA asset for multisig wallet'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
+        issue_nia_multisig_flow(
+            wallets_and_operations, wallet_variant_name, ASSET_TICKER, ASSET_NAME, ASSET_AMOUNT,
         )
-        wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER, ASSET_NAME, ASSET_AMOUNT, wallet_variant_name,
-        )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
-        )
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
-            FIRST_APPLICATION, ASSET_TICKER, wallet_variant_name,
-        )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        focus_first_wallet_and_refresh_fungible(wallets_and_operations)
 
     test_environment.reset_second_instance(reset_data=False)
 
@@ -302,20 +279,12 @@ def test_refresh_transfer_setup_and_issue_nia_for_multisig(test_environment: Tes
 def test_refresh_transfer_send_and_validate_for_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Send NIA asset and validate transfer status for multisig"""
 
-    with allure.step('Generate invoice for multisig'):
-        invoice = initiate_third_wallet_and_get_invoice(
-            wallets_and_operations.third_page_features,
-            THIRD_APPLICATION,
-            ONLINE_CREATE_ON_DEVICE,
-        )
-
-    multisig_send_asset_flow_with_verification(
-        invoice=invoice,
-        wallets_and_operations=wallets_and_operations,
-        asset_ticker=ASSET_TICKER,
-        asset_name=ASSET_NAME,
-        wallet_variant_name=wallet_variant_name,
-        send_amount=SEND_AMOUNT,
+    generate_multisig_invoice_and_send(
+        wallets_and_operations,
+        ASSET_NAME,
+        ASSET_TICKER,
+        SEND_AMOUNT,
+        wallet_variant_name,
         asset_type='nia',
         verify_assertions=False,
     )
@@ -387,28 +356,19 @@ def test_refresh_transfer_setup_and_issue_nia_for_offline_multisig(test_environm
         )
 
     with allure.step('Sign PSBT from cosigner (App 3)'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+        focus_third_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
             THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
 
     with allure.step('Sign PSBT from offline signer (App 1) - required for 2-of-2 multisig'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        focus_first_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Issue NIA asset from draft'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        focus_second_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
             SECOND_APPLICATION, ASSET_TICKER, wallet_variant_name,
         )

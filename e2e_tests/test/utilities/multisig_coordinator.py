@@ -1,3 +1,4 @@
+# pylint: disable=too-many-arguments
 """
 Multisig setup coordinator for parallel wallet creation.
 Handles synchronization between two applications during multisig wallet setup.

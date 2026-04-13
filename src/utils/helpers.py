@@ -32,6 +32,7 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import WalletAccessType
 from src.model.enums.enums_model import WalletSignatureType
+from src.model.enums.enums_model import WalletType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import ACCOUNT_XPUB_COLORED
 from src.utils.constant import ACCOUNT_XPUB_VANILLA
@@ -46,6 +47,7 @@ from src.utils.constant import SAVED_INDEXER_URL
 from src.utils.constant import SAVED_PROXY_ENDPOINT
 from src.utils.constant import VANILLA_KEYCHAIN
 from src.utils.custom_exception import CommonException
+from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
 from src.utils.gauth import TOKEN_PICKLE_PATH
 from src.utils.info_message import INFO_MULTISIG_TRANSACTION_PENDING
 from src.utils.logging import logger
@@ -503,3 +505,78 @@ def register_multisig_button(
         button.style().polish(button)
 
     connect_multisig_pending_signal(view_model, state_update_callback)
+
+
+def requires_native_authentication() -> bool:
+    """
+    Check if native authentication is required for the current wallet configuration.
+
+    Native auth is required for:
+    - Multisig on-device wallets
+    - Online on-device wallets (non-multisig)
+
+    Returns:
+        bool: True if native authentication is required, False otherwise.
+    """
+
+    is_multisig = SettingRepository.get_wallet_signature_type(
+    ) == WalletSignatureType.MULTI_SIG_WALLET
+    is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
+    is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
+
+    return (is_multisig and is_on_device) or (is_online and is_on_device and not is_multisig)
+
+
+def get_error_description(error: Exception) -> str:
+    """
+    Extract error description from an exception.
+
+    Args:
+        error: The exception to extract the description from.
+
+    Returns:
+        str: The error message if it's a CommonException, otherwise a generic error message.
+    """
+
+    if isinstance(error, CommonException):
+        return error.message
+    return ERROR_SOMETHING_WENT_WRONG
+
+
+def handle_issue_asset_exception(exc: Exception, is_loading_signal) -> None:
+    """
+    Handle exceptions during asset issuance.
+
+    Args:
+        exc: The exception that occurred.
+        is_loading_signal: The signal to emit False when loading is complete.
+    """
+
+    is_loading_signal.emit(False)
+    if isinstance(exc, CommonException):
+        ToastManager.error(description=exc.message)
+    else:
+        ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
+
+
+def build_issue_asset_options(
+    request_model: object,
+    on_success,
+    on_error,
+) -> dict:
+    """
+    Build the standard options dict for asset issuance operations.
+
+    Args:
+        request_model: The request model to pass as an argument.
+        on_success: Callback for successful execution.
+        on_error: Callback for error handling.
+
+    Returns:
+        dict: The options dictionary for run_in_thread.
+    """
+    return {
+        'args': [request_model],
+        'callback': on_success,
+        'error_callback': on_error,
+    }

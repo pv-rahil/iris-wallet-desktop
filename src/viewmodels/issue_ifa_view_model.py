@@ -17,7 +17,6 @@ from src.model.enums.enums_model import KeyStorageType
 from src.model.enums.enums_model import NativeAuthType
 from src.model.enums.enums_model import PsbtStatus
 from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import InflateRequestModel
 from src.model.rgb_model import IssueAssetIfaRequestModel
 from src.model.rgb_model import IssueAssetResponseModel
@@ -25,6 +24,10 @@ from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_AUTHENTICATION_CANCELLED
 from src.utils.error_message import ERROR_FIELD_MISSING
 from src.utils.error_message import ERROR_SOMETHING_WENT_WRONG
+from src.utils.helpers import build_issue_asset_options
+from src.utils.helpers import get_error_description
+from src.utils.helpers import handle_issue_asset_exception
+from src.utils.helpers import requires_native_authentication
 from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_TX_BROADCAST
@@ -71,18 +74,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.amount = amount
         self.inflation_amounts = inflation_amounts
 
-        # Check if native auth is required for multisig or on-device key variants
-        is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
-        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-
-        # Native auth required for: multisig on-device, or online on-device (non-multisig)
-        requires_native_auth = (is_multisig and is_on_device) or (
-            is_online and is_on_device and not is_multisig
-        )
-
-        if requires_native_auth:
+        if requires_native_authentication():
             self.run_in_thread(
                 SettingRepository.native_authentication,
                 {
@@ -96,37 +88,42 @@ class IssueIFAViewModel(QObject, ThreadManager):
 
     def _proceed_with_issue_ifa(self):
         """Proceed with IFA issuance after native auth or directly for non-auth variants."""
+        # Validate required fields
+        if (
+            self.asset_ticker is None
+            or self.asset_name is None
+            or self.amount is None
+            or self.inflation_amounts is None
+        ):
+            ToastManager.error(description=ERROR_FIELD_MISSING)
+            self.is_loading.emit(False)
+            return
+
         try:
-            if (
-                self.asset_ticker is None
-                or self.asset_name is None
-                or self.amount is None
-                or self.inflation_amounts is None
-            ):
-                raise CommonException(ERROR_FIELD_MISSING)
+            amount = int(self.amount)
+            inflation = int(self.inflation_amounts)
+        except (ValueError, TypeError):
+            ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
+            self.is_loading.emit(False)
+            return
 
-            request = IssueAssetIfaRequestModel(
-                amounts=[int(self.amount)],
-                ticker=self.asset_ticker,
-                name=self.asset_name,
-                precision=0,
-                inflation_amounts=[int(self.inflation_amounts)],
-            )
+        request = IssueAssetIfaRequestModel(
+            amounts=[amount],
+            ticker=self.asset_ticker,
+            name=self.asset_name,
+            precision=0,
+            inflation_amounts=[inflation],
+        )
 
+        try:
             self.run_in_thread(
                 RgbRepository.issue_asset_ifa,
-                {
-                    'args': [request],
-                    'callback': self.on_success,
-                    'error_callback': self.on_error,
-                },
+                build_issue_asset_options(
+                    request, self.on_success, self.on_error,
+                ),
             )
-        except CommonException as exc:
-            self.is_loading.emit(False)
-            ToastManager.error(description=exc.message)
-        except Exception:
-            self.is_loading.emit(False)
-            ToastManager.error(description=ERROR_SOMETHING_WENT_WRONG)
+        except Exception as exc:
+            handle_issue_asset_exception(exc, self.is_loading)
 
     def on_success_native_auth_ifa(self, success: bool):
         """Callback after native authentication for IFA."""
@@ -139,10 +136,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
     def on_error_native_auth_ifa(self, error: Exception):
         """Error callback for native auth."""
         self.is_loading.emit(False)
-        description = error.message if isinstance(
-            error, CommonException,
-        ) else ERROR_SOMETHING_WENT_WRONG
-        ToastManager.error(description=description)
+        ToastManager.error(description=get_error_description(error))
 
     def on_success(self, response: IssueAssetResponseModel) -> None:
         """Handle success response of IFA issuance."""
@@ -177,18 +171,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.fee_rate = fee_rate
         self.is_loading.emit(True)
 
-        # Check if native auth is required for multisig or on-device key variants
-        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-        is_multisig_wallet = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
-
-        # Native auth required for: multisig on-device, or online on-device (non-multisig)
-        requires_native_auth = (is_multisig_wallet and is_on_device) or (
-            is_online and is_on_device and not is_multisig_wallet
-        )
-
-        if requires_native_auth:
+        if requires_native_authentication():
             self.run_in_thread(
                 SettingRepository.native_authentication,
                 {
@@ -242,18 +225,7 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.min_confirmation = min_confirmation
         self.is_loading.emit(True)
 
-        # Check if native auth is required for multisig or on-device key variants
-        is_multisig = SettingRepository.get_wallet_signature_type(
-        ) == WalletSignatureType.MULTI_SIG_WALLET
-        is_on_device = SettingRepository.get_key_storage_type() == KeyStorageType.ON_DEVICE
-        is_online = SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
-
-        # Native auth required for: multisig on-device, or online on-device (non-multisig)
-        requires_native_auth = (is_multisig and is_on_device) or (
-            is_online and is_on_device and not is_multisig
-        )
-
-        if requires_native_auth:
+        if requires_native_authentication():
             self.run_in_thread(
                 SettingRepository.native_authentication,
                 {

@@ -12,9 +12,6 @@ import pytest
 
 from src.data.repository.rgb_repository import RgbRepository
 from src.data.repository.setting_repository import SettingRepository
-from src.model.enums.enums_model import KeyStorageType
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import Balance
 from src.model.rgb_model import IssueAssetResponseModel
 from src.utils.custom_exception import CommonException
@@ -304,16 +301,11 @@ def test_on_error_no_available_utxos_triggers_utxo_creation_started(mock_toast_e
     mock_toast_error.assert_not_called()
 
 
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_nia_view_model.requires_native_authentication', return_value=True)
 def test_on_issue_click_multisig_on_device_requires_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_nia_view_model,
+    mock_requires_auth, issue_nia_view_model,
 ):
     """Test that multisig on-device wallet requires native auth."""
-    mock_get_signature.return_value = WalletSignatureType.MULTI_SIG_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(issue_nia_view_model, 'run_in_thread') as mock_run:
         issue_nia_view_model.on_issue_click('TEST', 'Test Asset', '100')
@@ -324,16 +316,11 @@ def test_on_issue_click_multisig_on_device_requires_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_nia_view_model.requires_native_authentication', return_value=True)
 def test_on_issue_click_standard_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_nia_view_model,
+    mock_requires_auth, issue_nia_view_model,
 ):
     """Test that standard online on-device wallet DOES require native auth."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.ON_DEVICE
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(issue_nia_view_model, 'run_in_thread') as mock_run:
         issue_nia_view_model.on_issue_click('TEST', 'Test Asset', '100')
@@ -344,16 +331,11 @@ def test_on_issue_click_standard_wallet_no_native_auth(
         assert call_args[0] is expected_method
 
 
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_signature_type')
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_key_storage_type')
-@patch('src.viewmodels.issue_nia_view_model.SettingRepository.get_wallet_type')
+@patch('src.viewmodels.issue_nia_view_model.requires_native_authentication', return_value=False)
 def test_on_issue_click_hardware_wallet_no_native_auth(
-    mock_get_wallet_type, mock_get_key_storage, mock_get_signature, issue_nia_view_model,
+    mock_requires_auth, issue_nia_view_model,
 ):
     """Test that hardware wallet does not require native auth."""
-    mock_get_signature.return_value = WalletSignatureType.STANDARD_TYPE_WALLET
-    mock_get_key_storage.return_value = KeyStorageType.HARDWARE_WALLET
-    mock_get_wallet_type.return_value = WalletType.ONLINE_TYPE_WALLET
 
     with patch.object(issue_nia_view_model, 'run_in_thread') as mock_run:
         issue_nia_view_model.on_issue_click('TEST', 'Test Asset', '100')

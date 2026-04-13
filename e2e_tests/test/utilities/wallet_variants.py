@@ -1,3 +1,4 @@
+# pylint: disable=consider-using-with
 """Wallet variant utilities."""
 from __future__ import annotations
 

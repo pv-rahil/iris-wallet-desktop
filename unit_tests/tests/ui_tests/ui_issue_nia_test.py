@@ -111,14 +111,9 @@ def test_handle_nia_issue_reuse_existing_psbt(issue_nia_widget: IssueNIAWidget, 
         mock_show.assert_called_once_with('psbt123')
 
 
-def test_handle_nia_issue_create_utxos_when_no_psbt(issue_nia_widget: IssueNIAWidget, mocker):
+def test_handle_nia_issue_create_utxos_when_no_psbt(issue_nia_widget: IssueNIAWidget, mock_wallet_session, mocker):
     """Cover else branch -> create_utxos_for_issue called."""
     widget = issue_nia_widget
-    svc = MagicMock()
-    svc.list_psbt.return_value = []
-    mocker.patch(
-        'src.data.service.wallet_data_service.WalletDataService.get_session', return_value=svc,
-    )
     mocker.patch(
         'src.views.ui_issue_nia.get_unspent_utxo_count', return_value=0,
     )

@@ -22,14 +22,25 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.test_helpers import focus_and_refresh_asset_list
-from e2e_tests.test.utilities.test_helpers import focus_refresh_and_sign_psbt
-from e2e_tests.test.utilities.test_helpers import fund_and_refresh_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import refresh_collectibles_on_app2
-from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_hardware_wallets
-from e2e_tests.test.utilities.test_helpers import sign_and_broadcast_psbt_offline_multisig
+from e2e_tests.test.utilities.psbt_helpers import focus_refresh_and_sign_psbt
+from e2e_tests.test.utilities.psbt_helpers import sign_psbt_from_two_wallets_and_broadcast
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_bitcoin_frame
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_collectibles
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_inflatable
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_inflatable
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_click_fungibles
+from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet
+from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_click_bitcoin_frame
+from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_refresh_bitcoin
+from e2e_tests.test.utilities.send_flow_helpers import refresh_collectibles_on_app2
 from e2e_tests.test.utilities.translation_utils import TranslationManager
+from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_and_fund_offline_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from src.utils.info_message import INFO_BACKUP_COMPLETED
 from src.utils.info_message import INFO_RESTORE_COMPLETED
@@ -166,10 +177,7 @@ def test_nia_and_cfa_transfer(test_environment, wallets_and_operations: WalletTe
         )
 
     with allure.step('Capture CFA received amount in Wallet A'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
+        focus_first_wallet_and_click_collectibles(wallets_and_operations)
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
@@ -502,11 +510,7 @@ def test_nia_transfer_for_offline_wallet(test_environment, wallets_and_operation
         )
 
     with allure.step('Create transfer PSBT for NIA'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        focus_second_wallet_and_click_fungibles(wallets_and_operations)
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             NIA_NAME,
         )
@@ -735,26 +739,17 @@ def test_issue_nia_for_multisig(test_environment, wallets_and_operations: Wallet
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
             FIRST_APPLICATION, NIA_TICKER, NIA_NAME, ISSUE_AMOUNT, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        focus_second_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Issue NIA from draft'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        focus_first_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_multisig_wallet(
             FIRST_APPLICATION, NIA_TICKER, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        focus_second_wallet_and_refresh_fungible(wallets_and_operations)
 
 
 @pytest.mark.skip_for_single_sig
@@ -817,11 +812,7 @@ def test_send_cfa_for_multisig(test_environment, wallets_and_operations: WalletT
         )
 
     with allure.step('Create UTXO PSBT for CFA send from multisig'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        focus_first_wallet_and_click_collectibles(wallets_and_operations)
         wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
             CFA_NAME,
         )
@@ -851,20 +842,14 @@ def test_send_cfa_for_multisig(test_environment, wallets_and_operations: WalletT
         wallets_and_operations.first_page_features.send_features.send_asset_for_multisig(
             FIRST_APPLICATION, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
+        focus_second_wallet(wallets_and_operations)
         wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Capture CFA amount in multisig wallet'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        focus_first_wallet_and_click_collectibles(wallets_and_operations)
         wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
             CFA_NAME,
         )
@@ -906,10 +891,7 @@ def test_send_nia_for_multisig(test_environment, wallets_and_operations: WalletT
         )
 
     with allure.step('Sign NIA send PSBT from second wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        focus_second_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
@@ -925,10 +907,7 @@ def test_send_nia_for_multisig(test_environment, wallets_and_operations: WalletT
         wallets_and_operations.first_page_features.send_features.send_asset_for_multisig(
             FIRST_APPLICATION, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        focus_second_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
@@ -958,48 +937,34 @@ def test_send_btc_for_multisig(test_environment, wallets_and_operations: WalletT
     global BTC_BALANCE_BEFORE
 
     with allure.step('Get bitcoin address from third wallet'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.fungible_page_objects.click_bitcoin_frame()
+        focus_third_wallet_and_click_bitcoin_frame(wallets_and_operations)
         wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, _ = wallets_and_operations.third_page_features.receive_features.receive(
             THIRD_APPLICATION,
         )
 
     with allure.step('Create PSBT for BTC send from multisig'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
+        focus_first_wallet_and_click_bitcoin_frame(wallets_and_operations)
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.create_psbt(
             FIRST_APPLICATION, address, BTC_SEND_AMOUNT,
         )
 
     with allure.step('Sign BTC PSBT from second wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
+        focus_second_wallet(wallets_and_operations)
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
         _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
 
     with allure.step('Refresh and verify BTC transaction'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+        focus_first_wallet_and_refresh_fungible(wallets_and_operations)
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         BTC_BALANCE_BEFORE = wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
     with allure.step('Verify transaction in third wallet'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_refresh_button()
+        focus_third_wallet_and_refresh_bitcoin(wallets_and_operations)
         wallets_and_operations.third_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
         tx_id = wallets_and_operations.third_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
         wallets_and_operations.third_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
@@ -1111,9 +1076,7 @@ def test_send_ifa_for_multisig(test_environment, wallets_and_operations: WalletT
         wallets_and_operations.first_page_features.send_features.send_asset_for_multisig(
             FIRST_APPLICATION, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
+        focus_second_wallet(wallets_and_operations)
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
@@ -1244,17 +1207,10 @@ def test_offline_multisig_setup_and_issue_nia(test_environment, wallets_and_oper
     - App 3: Online multisig wallet (cosigner)
     - App 4: Receiver wallet
     """
-    global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
 
-    setup_offline_multisig_hardware_wallets(
+    setup_and_fund_offline_multisig_wallets(
         wallets_and_operations, wallet_variant_name,
     )
-
-    # Fund the second wallet (online coordinator)
-    with allure.step('Fund second online multisig wallet (coordinator)'):
-        wallets_and_operations.second_page_features.wallet_features.fund_wallet(
-            SECOND_APPLICATION,
-        )
 
     # Issue NIA asset from second wallet
     with allure.step('Issue NIA asset from second wallet'):
@@ -1264,26 +1220,11 @@ def test_offline_multisig_setup_and_issue_nia(test_environment, wallets_and_oper
         wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
             SECOND_APPLICATION, NIA_TICKER, NIA_NAME, ISSUE_AMOUNT, wallet_variant_name,
         )
-        # Refresh and sign from third wallet (cosigner)
-        focus_refresh_and_sign_psbt(
-            wallets_and_operations.third_page_operations,
-            wallets_and_operations.third_page_objects,
-            wallets_and_operations.third_page_features,
-            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
-        )
-        # Sign from first wallet (offline signer)
-        focus_refresh_and_sign_psbt(
-            wallets_and_operations.first_page_operations,
-            wallets_and_operations.first_page_objects,
-            wallets_and_operations.first_page_features,
-            FIRST_APPLICATION, wallet_variant_name,
-        )
-        # Broadcast PSBT from second wallet (coordinator)
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
-            SECOND_APPLICATION, is_multisig=True,
+        # Sign from both wallets and broadcast
+        sign_psbt_from_two_wallets_and_broadcast(
+            wallets_and_operations, wallet_variant_name,
+            FIRST_APPLICATION, SECOND_APPLICATION, THIRD_APPLICATION,
+            asset_type='nia',
         )
 
     test_environment.reset_second_instance(reset_data=False)
@@ -1357,18 +1298,13 @@ def test_offline_multisig_issue_ifa(test_environment: TestEnvironment, wallets_a
             SECOND_APPLICATION, IFA_TICKER, IFA_NAME, IFA_TOTAL_SUPPLY, ISSUE_AMOUNT, wallet_variant_name,
         )
         # Refresh and sign from third wallet (cosigner)
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
+        focus_third_wallet(wallets_and_operations)
         wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
             THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
         # Sign from first wallet (offline signer)
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+        focus_first_wallet_and_refresh_inflatable(wallets_and_operations)
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
@@ -1817,7 +1753,6 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
     Test restore functionality for offline multisig wallet and verify balances.
     Restore the FIRST application (offline wallet with USB).
     """
-    global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
     is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
     is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
 

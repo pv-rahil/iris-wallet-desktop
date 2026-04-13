@@ -26,6 +26,15 @@ import pytest
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
+from src.model.common_operation_model import AppPathsModel
+from src.utils.constant import APP_DIR
+from src.utils.constant import APP_NAME
+from src.utils.constant import CACHE_FOLDER_NAME
+from src.utils.constant import LOG_FOLDER_NAME
+from src.utils.constant import MNEMONIC_KEY
+from src.utils.constant import MULTISIG_COSIGNERS_FILE_NAME
+from src.utils.constant import WALLET_DATA_FOLDER_NAME
+
 
 @pytest.fixture(scope='session', autouse=True)
 def qt_app():
@@ -160,9 +169,6 @@ def _isolate_user_dirs():
 @pytest.fixture(autouse=True)
 def _mock_app_paths(monkeypatch):
     """Mock app_paths and local_store to use isolated test directories."""
-    from src.model.common_operation_model import AppPathsModel
-    from src.utils.constant import APP_DIR, APP_NAME, CACHE_FOLDER_NAME, LOG_FOLDER_NAME
-    from src.utils.constant import MNEMONIC_KEY, MULTISIG_COSIGNERS_FILE_NAME, WALLET_DATA_FOLDER_NAME
 
     app_path = os.path.join(_ISOLATION_DIR, APP_DIR)
     os.makedirs(app_path, exist_ok=True)
@@ -179,11 +185,11 @@ def _mock_app_paths(monkeypatch):
         backup_folder_path=os.path.join(_ISOLATION_DIR, 'temp', 'backup'),
         restore_folder_path=os.path.join(_ISOLATION_DIR, 'temp', 'restore'),
         mnemonic_file_path=os.path.join(app_path, MNEMONIC_KEY),
-        wallet_data_folder_path=os.path.join(
-            app_path, WALLET_DATA_FOLDER_NAME,
-        ),
         multisig_cosigners_file_path=os.path.join(
             app_path, MULTISIG_COSIGNERS_FILE_NAME,
+        ),
+        wallet_data_folder_path=os.path.join(
+            app_path, WALLET_DATA_FOLDER_NAME,
         ),
         download_consignment_path=os.path.join(_ISOLATION_DIR, 'downloads'),
     )

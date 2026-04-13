@@ -891,7 +891,6 @@ def test_handle_send_rgb_hw_dialog_update_success(send_rgb_asset_widget: SendRGB
         lambda parent: dummy,
     )
 
-    from src.model.enums.enums_model import PsbtStatus
     send_rgb_asset_widget.handle_send_rgb_hw_dialog_update(
         'msg', PsbtStatus.SUCCESS,
     )

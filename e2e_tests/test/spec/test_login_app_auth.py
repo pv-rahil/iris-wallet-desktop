@@ -12,8 +12,8 @@ from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.test_helpers import setup_multisig_wallets
-from e2e_tests.test.utilities.test_helpers import setup_offline_multisig_two_app_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_two_app_wallets
 
 
 @pytest.mark.skip_for_multisig
