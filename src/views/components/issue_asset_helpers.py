@@ -150,8 +150,8 @@ def compute_needed_utxos_for_ifa() -> int:
     is_single_sig_online = (
         SettingRepository.get_wallet_signature_type(
         ) == WalletSignatureType.STANDARD_TYPE_WALLET
-        and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET and 
-        not SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+        and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET and
+        SettingRepository.get_wallet_access_type() != WalletAccessType.WATCH_ONLY
     )
     if is_single_sig_online:
         return 1

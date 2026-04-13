@@ -458,7 +458,7 @@ class SendRGBAssetWidget(QWidget):
                 is_single_sig_online = (
                     SettingRepository.get_wallet_signature_type(
                     ) == WalletSignatureType.STANDARD_TYPE_WALLET
-                    and not SettingRepository.get_wallet_access_type() == WalletAccessType.WATCH_ONLY
+                    and SettingRepository.get_wallet_access_type() != WalletAccessType.WATCH_ONLY
                     and SettingRepository.get_wallet_type() == WalletType.ONLINE_TYPE_WALLET
                 )
                 num_utxos = 1 if is_single_sig_online else 3

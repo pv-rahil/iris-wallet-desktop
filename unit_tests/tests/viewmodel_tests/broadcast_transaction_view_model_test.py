@@ -215,12 +215,14 @@ def test_inflate_end_flow(vm, mocker, qtbot):
     vm.inflate_end('psbt')
     mock_run.assert_called_once()
 
-    # success - on_success_inflate_end takes no arguments
+    # success - on_success_inflate_end takes result argument with txid
     mock_toast = mocker.patch(
         'src.viewmodels.broadcast_transaction_view_model.ToastManager.success',
     )
+    mock_result = mocker.Mock()
+    mock_result.txid = 'test_txid_123'
     with qtbot.waitSignals([vm.is_loading, vm.tx_broadcasted], timeout=1000):
-        vm.on_success_inflate_end()
+        vm.on_success_inflate_end(mock_result)
     mock_toast.assert_called()
 
 
