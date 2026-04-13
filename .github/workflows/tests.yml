@@ -135,11 +135,10 @@ jobs:
           if-no-files-found: ignore
 
   e2e-dogtail:
-    name: E2E (${{ matrix.wallet_variant }})
+    name: E2E Dogtail tests
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      max-parallel: 5
       matrix:
         test_file:
           - test_keyring_dialog
@@ -241,7 +240,7 @@ jobs:
           # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
           echo "GTK_CSD=0" >> $GITHUB_ENV
 
-      - name: Run E2E Dogtail Tests (${{ matrix.wallet_variant }})
+      - name: Run E2E Dogtail Test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -251,7 +250,7 @@ jobs:
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
         uses: ./.github/actions/setup-e2e-environment
         with:
-          test-file: all
+          test-file: ${{ matrix.test_file }}
           wallet-variant: ${{ matrix.wallet_variant }}
 
       - name: Upload Allure results
