@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name, unused-import,unused-argument, too-many-statements, too-many-lines
+# pylint: disable=redefined-outer-name, unused-import, unused-argument, too-many-statements, too-many-lines
 """Test module for the backup page functionality"""
 from __future__ import annotations
 
@@ -22,17 +22,12 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.psbt_helpers import focus_refresh_and_sign_psbt
-from e2e_tests.test.utilities.psbt_helpers import sign_psbt_from_two_wallets_and_broadcast
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_bitcoin_frame
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_collectibles
-from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_inflatable
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_fungible
-from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_inflatable
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_click_fungibles
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_refresh_fungible
-from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet
 from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_click_bitcoin_frame
 from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_refresh_bitcoin
 from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
@@ -42,7 +37,6 @@ from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multi
 from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_and_fund_offline_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
-from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from e2e_tests.test.utilities.wallet_variants import map_to_load_variant
 from src.utils.info_message import INFO_BACKUP_COMPLETED
 from src.utils.info_message import INFO_RESTORE_COMPLETED
@@ -1212,7 +1206,7 @@ def test_restore_for_multisig(test_environment, wallets_and_operations: WalletTe
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Backup and restore for offline multisig')
 @allure.story('Setup wallets and issue NIA asset')
-def test_offline_multisig_setup_and_issue_nia(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_offline_multisig_setup_and_issue_nia(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test setup and issue NIA asset for offline multisig wallet (4 apps).
     - App 1: Offline multisig wallet (signer)
@@ -1327,7 +1321,7 @@ def test_offline_multisig_issue_ifa(test_environment: TestEnvironment, wallets_a
         wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1342,12 +1336,14 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
     global NIA_RECEIVE_AMOUNT_BEFORE
 
     # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=1)
     get_fresh_page_objects(wallets_and_operations, app_index=2)
+    get_fresh_page_objects(wallets_and_operations, app_index=3)
 
     # Create UTXO and transfer using helper flow
     send_flow = OfflineSendFlow(wallets_and_operations)
     send_flow.send_transfer_multisig(
-        wallet_variant_name, NIA_NAME, asset_type='nia',
+        wallet_variant_name, NIA_NAME, asset_type='nia', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
@@ -1364,7 +1360,7 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
         NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1379,12 +1375,14 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
     global CFA_RECEIVE_AMOUNT_BEFORE
 
     # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=1)
     get_fresh_page_objects(wallets_and_operations, app_index=2)
+    get_fresh_page_objects(wallets_and_operations, app_index=3)
 
     # Create UTXO and transfer using helper flow
     send_flow = OfflineSendFlow(wallets_and_operations)
     send_flow.send_transfer_multisig(
-        wallet_variant_name, CFA_NAME, asset_type='cfa',
+        wallet_variant_name, CFA_NAME, asset_type='cfa', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
@@ -1401,7 +1399,7 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1416,12 +1414,14 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
     global IFA_RECEIVE_AMOUNT_BEFORE
 
     # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=1)
     get_fresh_page_objects(wallets_and_operations, app_index=2)
+    get_fresh_page_objects(wallets_and_operations, app_index=3)
 
     # Create UTXO and transfer using helper flow
     send_flow = OfflineSendFlow(wallets_and_operations)
     send_flow.send_transfer_multisig(
-        wallet_variant_name, IFA_NAME, asset_type='ifa',
+        wallet_variant_name, IFA_NAME, asset_type='ifa', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
@@ -1438,7 +1438,7 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
         IFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1453,20 +1453,22 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
     global BTC_BALANCE_BEFORE
 
     # Get fresh page objects from environment after reset
-    second_page_objects, second_page_features, second_page_operations = get_fresh_page_objects(
-        wallets_and_operations, app_index=2,
-    )
+    get_fresh_page_objects(wallets_and_operations, app_index=1)
+    get_fresh_page_objects(wallets_and_operations, app_index=2)
+    get_fresh_page_objects(wallets_and_operations, app_index=3)
 
     # Get invoice from fourth wallet and send BTC
     with allure.step('Get invoice from fourth wallet and send BTC'):
         invoice = wallets_and_operations.fourth_page_features.receive_features.receive(
             FOURTH_APPLICATION,
         )
-        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-        second_page_objects.sidebar_page_objects.click_fungibles_button()
-        second_page_objects.fungible_page_objects.click_bitcoin_frame()
-        second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        second_page_features.send_features.send(
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
+        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
+        wallets_and_operations.second_page_features.send_features.send(
             SECOND_APPLICATION, invoice, BTC_SEND_AMOUNT,
         )
         # Sign from first wallet (offline signer)
@@ -1484,8 +1486,10 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
             THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
         # Broadcast PSBT from second wallet (coordinator)
-        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-        second_page_features.wallet_features.broadcast_psbt(
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
             SECOND_APPLICATION, is_multisig=True,
         )
 
@@ -1498,7 +1502,7 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
         wallets_and_operations.fourth_page_objects.fungible_page_objects.click_bitcoin_frame()
         BTC_BALANCE_BEFORE = wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.get_total_balance()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1515,6 +1519,11 @@ def test_offline_multisig_backup(test_environment, wallets_and_operations: Walle
     is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
     _is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
     is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
+
+    # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=1)
+    get_fresh_page_objects(wallets_and_operations, app_index=2)
+    get_fresh_page_objects(wallets_and_operations, app_index=3)
 
     # Backup first wallet (offline signer)
     with allure.step('Backup first offline multisig wallet (signer)'):
@@ -1563,6 +1572,9 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
     """
     is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
     is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
+
+    # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=1)
 
     # Restore first wallet (offline signer)
     with allure.step('Restore first offline multisig wallet (signer)'):

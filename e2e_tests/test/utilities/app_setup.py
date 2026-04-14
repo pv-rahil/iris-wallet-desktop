@@ -628,6 +628,79 @@ class TestEnvironment:
         self.second_page_objects = MainPageObjects(self.second_application)
         self.second_page_operations = BaseOperations(self.second_application)
 
+    def reset_third_instance(self, reset_data: bool = True):
+        """Reset and relaunch only the third application instance.
+
+        This is used for offline multisig tests where we need to refresh
+        the third app (cosigner) to update the AT-SPI tree.
+
+        Args:
+            reset_data (bool): If True, clears the third app's data directory before relaunching.
+        """
+        # If less than 3 instances are active, nothing to do
+        if self.num_instances < 3:
+            return
+
+        # Kill only the third process
+        self.terminate_process(self.third_process)
+        self.third_process = None
+
+        # Optionally clear only the third app's data
+        if reset_data:
+            actual_path = os.path.dirname(local_store.get_path())
+            app3_data = actual_path.replace(APP_NAME, THIRD_APPLICATION_PATH)
+            delete_app_data(app3_data)
+
+        # Recreate Fake USB environment if required by variant
+        env = None
+        if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
+            env, _ = setup_fake_usb()
+
+        # Relaunch third application and reinitialize its page abstractions
+        self.third_process = subprocess.Popen(
+            [f"""e2e_tests/applications/iris-wallet-vault_{
+                APP3_NAME
+            }-{__version__}-x86_64.AppImage"""],
+            env=env,
+        )
+        self.wait_for_application(THIRD_APPLICATION)
+
+        subprocess.run(
+            [
+                'wmctrl', '-r', THIRD_APPLICATION, '-b',
+                'add,maximized_vert,maximized_horz',
+            ],
+            check=True,
+        )
+
+        # Get the frame from the application node
+        app_node = self._find_application_node(THIRD_APPLICATION)
+        if app_node:
+            self.third_application = app_node.child(
+                roleName='frame', name=THIRD_APPLICATION,
+            )
+        else:
+            # Fallback to direct search
+            self.third_application = root.child(
+                roleName='frame', name=THIRD_APPLICATION,
+            )
+        self.third_page_features = MainFeatures(self.third_application)
+        self.third_page_objects = MainPageObjects(self.third_application)
+        self.third_page_operations = BaseOperations(self.third_application)
+
+    def reset_offline_multisig_instances(self, reset_data: bool = False):
+        """Reset first, second, and third application instances for offline multisig tests.
+
+        This refreshes the AT-SPI tree for all three apps without clearing data,
+        which is needed before backup/restore tests to ensure fresh page objects.
+
+        Args:
+            reset_data (bool): If True, clears app data directories before relaunching.
+        """
+        self.reset_first_instance(reset_data=reset_data)
+        self.reset_second_instance(reset_data=reset_data)
+        self.reset_third_instance(reset_data=reset_data)
+
     def remove_keyring_entries(self, service, app_name):
         """Removes keyring entries for a given service and application name."""
         keys = [

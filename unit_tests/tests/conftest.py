@@ -39,7 +39,6 @@ from src.utils.constant import WALLET_DATA_FOLDER_NAME
 @pytest.fixture(scope='session', autouse=True)
 def qt_app():
     """Fixture to set up the QApplication instance for the test session."""
-    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
@@ -145,45 +144,45 @@ def mock_toast_manager(mocker, request):
 # ---------------- Global Safety Fixtures -----------------
 
 
-# Create a session-scoped temporary directory for isolation
-_ISOLATION_DIR = tempfile.mkdtemp(prefix='iris_wallet_tests_')
-
-
 @pytest.fixture(scope='session', autouse=True)
 def _isolate_user_dirs():
     """Redirect user data/config/cache dirs to a temporary location for the entire test session."""
-    # Set environment variables before any Qt/PySide6 path resolution
-    os.environ['HOME'] = _ISOLATION_DIR
-    os.environ['XDG_DATA_HOME'] = os.path.join(
-        _ISOLATION_DIR, '.local', 'share',
-    )
-    os.environ['XDG_CONFIG_HOME'] = os.path.join(_ISOLATION_DIR, '.config')
-    os.environ['XDG_CACHE_HOME'] = os.path.join(_ISOLATION_DIR, '.cache')
-    os.environ['IRIS_WALLET_DATA_DIR'] = os.path.join(
-        _ISOLATION_DIR, 'iris-wallet-vault',
-    )
-    yield
-    # Cleanup happens at session end via atexit or finalizer
+    with tempfile.TemporaryDirectory(prefix='iris_wallet_tests_') as td:
+        os.environ.setdefault('HOME', td)
+        os.environ.setdefault(
+            'XDG_DATA_HOME', os.path.join(td, '.local', 'share'),
+        )
+        os.environ.setdefault('XDG_CONFIG_HOME', os.path.join(td, '.config'))
+        os.environ.setdefault('XDG_CACHE_HOME', os.path.join(td, '.cache'))
+        os.environ.setdefault(
+            'IRIS_WALLET_DATA_DIR',
+            os.path.join(td, 'iris-wallet-vault'),
+        )
+        yield
 
 
 @pytest.fixture(autouse=True)
 def _mock_app_paths(monkeypatch):
     """Mock app_paths and local_store to use isolated test directories."""
+    # Get the isolation directory from environment
+    td = os.environ.get('IRIS_WALLET_DATA_DIR', tempfile.gettempdir())
+    # Go up one level to get the temp directory
+    td = os.path.dirname(td) if td.endswith('iris-wallet-vault') else td
 
-    app_path = os.path.join(_ISOLATION_DIR, APP_DIR)
+    app_path = os.path.join(td, APP_DIR)
     os.makedirs(app_path, exist_ok=True)
 
     mock_app_paths = AppPathsModel(
         app_path=app_path,
         iriswallet_temp_folder_path=os.path.join(
-            _ISOLATION_DIR, 'temp', f'{APP_NAME}_regtest',
+            td, 'temp', f'{APP_NAME}_regtest',
         ),
         cache_path=os.path.join(app_path, CACHE_FOLDER_NAME),
         app_logs_path=os.path.join(app_path, LOG_FOLDER_NAME),
         pickle_file_path=os.path.join(app_path, 'token.pickle'),
         config_file_path=os.path.join(app_path, f'{APP_NAME}-regtest.ini'),
-        backup_folder_path=os.path.join(_ISOLATION_DIR, 'temp', 'backup'),
-        restore_folder_path=os.path.join(_ISOLATION_DIR, 'temp', 'restore'),
+        backup_folder_path=os.path.join(td, 'temp', 'backup'),
+        restore_folder_path=os.path.join(td, 'temp', 'restore'),
         mnemonic_file_path=os.path.join(app_path, MNEMONIC_KEY),
         multisig_cosigners_file_path=os.path.join(
             app_path, MULTISIG_COSIGNERS_FILE_NAME,
@@ -191,7 +190,7 @@ def _mock_app_paths(monkeypatch):
         wallet_data_folder_path=os.path.join(
             app_path, WALLET_DATA_FOLDER_NAME,
         ),
-        download_consignment_path=os.path.join(_ISOLATION_DIR, 'downloads'),
+        download_consignment_path=os.path.join(td, 'downloads'),
     )
 
     # Patch app_paths globally
