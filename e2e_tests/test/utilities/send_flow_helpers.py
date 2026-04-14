@@ -22,6 +22,7 @@ from e2e_tests.test.utilities.psbt_helpers import sign_and_broadcast_psbt_offlin
 from e2e_tests.test.utilities.psbt_helpers import sign_and_broadcast_psbt_offline_single_sig
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import _refresh_third_wallet_by_asset_type
+from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_three_app_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
@@ -549,9 +550,10 @@ def navigate_to_asset_and_click_send(
     asset_name: str,
     asset_type: str = 'ifa',
     refresh: bool = True,
+    click_send: bool = True,
 ) -> None:
     """
-    Navigate to asset detail page and click send button.
+    Navigate to asset detail page and optionally click send button.
 
     Args:
         page_operations: Page operations instance.
@@ -559,6 +561,7 @@ def navigate_to_asset_and_click_send(
         asset_name: Asset name to navigate to.
         asset_type: Asset type ('ifa', 'nia', 'cfa').
         refresh: Whether to refresh before clicking asset.
+        click_send: Whether to click send button. Set to False for draft transfers.
     """
     page_operations.do_focus_on_application(page_operations.application)
 
@@ -578,7 +581,8 @@ def navigate_to_asset_and_click_send(
             page_objects.collectible_page_objects.click_refresh_button()
         page_objects.collectible_page_objects.click_cfa_frame(asset_name)
 
-    page_objects.asset_detail_page_objects.click_send_button()
+    if click_send:
+        page_objects.asset_detail_page_objects.click_send_button()
 
 
 def multisig_send_asset_flow_with_verification(
@@ -1178,7 +1182,7 @@ def navigate_to_asset_and_get_balance(
         page_objects.sidebar_page_objects.click_collectibles_button()
         page_objects.collectible_page_objects.click_cfa_frame(asset_name)
 
-    balance = page_objects.asset_detail_page_objects.get_asset_balance()
+    balance = page_objects.asset_detail_page_objects.get_total_balance()
     page_objects.asset_detail_page_objects.click_close_button()
     return balance
 
@@ -1356,6 +1360,7 @@ class OfflineSendFlow:
     ) -> None:
         """
         Send transfer for single sig offline wallet.
+        Resumes the draft transfer created after UTXO creation.
 
         Args:
             wallet_variant_name: Wallet variant name.
@@ -1363,22 +1368,27 @@ class OfflineSendFlow:
             asset_type: Asset type ('ifa', 'nia', 'cfa').
             refresh_count: Number of times to refresh.
         """
-        # Get invoice from third wallet (receiver)
-        focus_third_wallet(self.wallets_and_operations)
-        invoice = self.wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION,
-        )
-
-        # Create transfer PSBT from second wallet (coordinator)
+        # Navigate to the asset (don't click send - we're resuming a draft)
         navigate_to_asset_and_click_send(
             self.wallets_and_operations.second_page_operations,
             self.wallets_and_operations.second_page_objects,
-            asset_name, asset_type=asset_type,
+            asset_name, asset_type=asset_type, click_send=False,
         )
-        self.wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
-            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=None,
-            wallet_variant_name=wallet_variant_name, utxo_required=False,
-        )
+
+        # Resume the draft transfer (created after UTXO creation)
+        if self.wallets_and_operations.second_page_operations.do_is_displayed(
+            self.wallets_and_operations.second_page_objects.asset_detail_page_objects.resume_draft_frame(),
+        ):
+            self.wallets_and_operations.second_page_objects.asset_detail_page_objects.click_resume_draft_frame()
+
+        # Click send button to proceed with the draft
+        if self.wallets_and_operations.second_page_operations.do_is_displayed(
+            self.wallets_and_operations.second_page_objects.send_asset_page_objects.send_button(),
+        ):
+            self.wallets_and_operations.second_page_objects.send_asset_page_objects.click_send_button()
+
+        # USB sync to pass PSBT to offline signer
+        self.wallets_and_operations.second_page_features.wallet_features.usb_sync()
 
         # Sign and broadcast transfer PSBT
         sign_and_broadcast_psbt_offline_single_sig(
@@ -1405,33 +1415,106 @@ class OfflineSendFlow:
         wallet_variant_name: str,
         asset_name: str,
         asset_type: str = 'nia',
+        send_amount: str | None = None,
     ) -> None:
         """
-        Send transfer for multisig offline wallet.
+        Complete send transfer flow for multisig offline wallet.
+        Creates UTXO, signs and broadcasts it, then creates transfer PSBT and broadcasts.
+
+        Args:
+            wallet_variant_name: Wallet variant name.
+            asset_name: Asset name.
+            asset_type: Asset type ('ifa', 'nia', 'cfa').
+            send_amount: Amount to send (optional, uses default if not provided).
+        """
+        # Step 1: Get invoice from fourth wallet (receiver)
+        with allure.step('Get invoice from fourth wallet (receiver)'):
+            self.wallets_and_operations.fourth_page_operations.do_focus_on_application(
+                FOURTH_APPLICATION,
+            )
+            invoice = self.wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
+                FOURTH_APPLICATION,
+            )
+
+        # Step 2: Create UTXO PSBT from second wallet (coordinator)
+        with allure.step('Create UTXO PSBT from second wallet (coordinator)'):
+            navigate_to_asset_and_click_send(
+                self.wallets_and_operations.second_page_operations,
+                self.wallets_and_operations.second_page_objects,
+                asset_name, asset_type=asset_type,
+            )
+            self.wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
+                application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount,
+                wallet_variant_name=wallet_variant_name, utxo_required=True,
+            )
+
+        # Step 3: Sign and broadcast UTXO PSBT
+        sign_and_broadcast_psbt_offline_multisig(
+            self.wallets_and_operations, wallet_variant_name,
+            self.wallets_and_operations.second_page_operations,
+            self.wallets_and_operations.second_page_features,
+        )
+
+        # Step 4: Resume and broadcast transfer PSBT
+        self._resume_and_broadcast_transfer(
+            wallet_variant_name, asset_name, asset_type,
+        )
+
+    def resume_transfer_multisig(
+        self,
+        wallet_variant_name: str,
+        asset_name: str,
+        asset_type: str = 'nia',
+    ) -> None:
+        """
+        Resume draft transfer for multisig offline wallet.
+        Used after UTXO has already been created and broadcast in a previous test.
 
         Args:
             wallet_variant_name: Wallet variant name.
             asset_name: Asset name.
             asset_type: Asset type ('ifa', 'nia', 'cfa').
         """
-        # Get invoice from fourth wallet (receiver)
-        self.wallets_and_operations.fourth_page_operations.do_focus_on_application(
-            FOURTH_APPLICATION,
-        )
-        invoice = self.wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
-            FOURTH_APPLICATION,
+        self._resume_and_broadcast_transfer(
+            wallet_variant_name, asset_name, asset_type,
         )
 
-        # Create transfer PSBT from second wallet (coordinator)
-        navigate_to_asset_and_click_send(
-            self.wallets_and_operations.second_page_operations,
-            self.wallets_and_operations.second_page_objects,
-            asset_name, asset_type=asset_type,
-        )
-        self.wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
-            application=SECOND_APPLICATION, receiver_invoice=invoice, amount=None,
-            wallet_variant_name=wallet_variant_name, utxo_required=False,
-        )
+    def _resume_and_broadcast_transfer(
+        self,
+        wallet_variant_name: str,
+        asset_name: str,
+        asset_type: str,
+    ) -> None:
+        """
+        Internal method to resume draft transfer and broadcast it.
+
+        Args:
+            wallet_variant_name: Wallet variant name.
+            asset_name: Asset name.
+            asset_type: Asset type ('ifa', 'nia', 'cfa').
+        """
+        # Navigate to asset and resume draft transfer
+        with allure.step('Navigate to asset and resume draft transfer'):
+            navigate_to_asset_and_click_send(
+                self.wallets_and_operations.second_page_operations,
+                self.wallets_and_operations.second_page_objects,
+                asset_name, asset_type=asset_type, click_send=False,
+            )
+
+            # Resume the draft transfer (created after UTXO creation)
+            if self.wallets_and_operations.second_page_operations.do_is_displayed(
+                self.wallets_and_operations.second_page_objects.asset_detail_page_objects.resume_draft_frame(),
+            ):
+                self.wallets_and_operations.second_page_objects.asset_detail_page_objects.click_resume_draft_frame()
+
+            # Click send button to proceed with the draft
+            if self.wallets_and_operations.second_page_operations.do_is_displayed(
+                self.wallets_and_operations.second_page_objects.send_asset_page_objects.send_button(),
+            ):
+                self.wallets_and_operations.second_page_objects.send_asset_page_objects.click_send_button()
+
+        # USB sync to pass PSBT to offline signer
+        self.wallets_and_operations.second_page_features.wallet_features.usb_sync()
 
         # Sign and broadcast transfer PSBT
         sign_and_broadcast_psbt_offline_multisig(
@@ -1447,16 +1530,72 @@ class OfflineSendFlow:
         asset_type: str = 'ifa',
     ) -> None:
         """
-        Issue, sign, and refresh for multisig offline wallet.
+        Sign and broadcast issue PSBT for offline multisig wallet.
+        After issue_ifa_for_offline_multisig_wallet creates PSBT and syncs to offline signer,
+        this method signs with offline signer, syncs back, signs with cosigner, and broadcasts.
 
         Args:
             wallet_variant_name: Wallet variant name.
             asset_name: Asset name.
             asset_type: Asset type ('ifa', 'nia', 'cfa').
         """
-        # This would issue an asset, sign the PSBT, and refresh
-        # Implementation depends on the specific test flow
-        pass  # pylint: disable=unnecessary-pass
+        # Step 1: Sign PSBT from first wallet (offline signer with hardware wallet)
+        with allure.step('Sign issue PSBT from first wallet (offline signer)'):
+            self.wallets_and_operations.first_page_operations.do_focus_on_application(
+                FIRST_APPLICATION,
+            )
+            # Refresh to see the PSBT from USB sync
+            if asset_type == 'ifa':
+                self.wallets_and_operations.first_page_objects.sidebar_page_objects.click_inflatable_button()
+                self.wallets_and_operations.first_page_objects.inflatable_page_objects.click_refresh_button()
+            elif asset_type == 'nia':
+                self.wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+                self.wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
+            else:  # cfa
+                self.wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
+                self.wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+
+            self.wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+                FIRST_APPLICATION, wallet_variant_name,
+            )
+
+        # Step 3: Sign PSBT from third wallet (cosigner)
+        with allure.step('Sign issue PSBT from third wallet (cosigner)'):
+            self.wallets_and_operations.third_page_operations.do_focus_on_application(
+                THIRD_APPLICATION,
+            )
+            if asset_type == 'ifa':
+                self.wallets_and_operations.third_page_objects.sidebar_page_objects.click_inflatable_button()
+                self.wallets_and_operations.third_page_objects.inflatable_page_objects.click_refresh_button()
+            elif asset_type == 'nia':
+                self.wallets_and_operations.third_page_objects.sidebar_page_objects.click_fungibles_button()
+                self.wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
+            else:  # cfa
+                self.wallets_and_operations.third_page_objects.sidebar_page_objects.click_collectibles_button()
+                self.wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
+
+            self.wallets_and_operations.third_page_features.wallet_features.sign_psbt(
+                THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+            )
+
+        # Step 4: Broadcast from second wallet (coordinator)
+        with allure.step('Broadcast issue PSBT from second wallet (coordinator)'):
+            self.wallets_and_operations.second_page_operations.do_focus_on_application(
+                SECOND_APPLICATION,
+            )
+            if asset_type == 'ifa':
+                self.wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+                self.wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+            elif asset_type == 'nia':
+                self.wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+                self.wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+            else:  # cfa
+                self.wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+                self.wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+
+            self.wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+                SECOND_APPLICATION, is_multisig=True,
+            )
 
 
 def click_issue_button_get_toaster_and_close(page_objects) -> str:
@@ -1524,3 +1663,44 @@ def handle_success_home_button_and_success(page_objects) -> None:
     """
     if page_objects.success_page_objects.home_button():
         page_objects.success_page_objects.click_home_button()
+
+
+def verify_offline_multisig_transfer(
+    wallets_and_operations,
+    asset_name: str,
+    send_amount: str,
+    asset_type: str = 'nia',
+) -> None:
+    """
+    Verify transfer status and received amount for offline multisig wallet tests.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance.
+        asset_name: Asset name to verify.
+        send_amount: Expected received amount.
+        asset_type: Asset type ('ifa', 'nia', 'cfa').
+    """
+    # Get fresh page objects from environment after reset
+    second_page_objects, _, second_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
+
+    # Verify transfer status on sender (second wallet)
+    actual_transfer_status = navigate_to_asset_and_get_transfer_status(
+        second_page_operations,
+        second_page_objects,
+        asset_name,
+        asset_type=asset_type,
+    )
+    assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
+
+    # Verify received amount on receiver (fourth wallet)
+    received_amount = navigate_to_asset_and_get_balance(
+        wallets_and_operations.fourth_page_operations,
+        wallets_and_operations.fourth_page_objects,
+        asset_name,
+        asset_type=asset_type,
+        application=FOURTH_APPLICATION,
+        refresh_count=2,
+    )
+    assert received_amount == send_amount

@@ -499,3 +499,80 @@ def _refresh_third_wallet_by_asset_type(wallets_and_operations, asset_type: str 
         wallets_and_operations.third_page_objects.fungible_page_objects.click_refresh_button()
     elif asset_type == 'cfa':
         wallets_and_operations.third_page_objects.collectible_page_objects.click_refresh_button()
+
+
+# pylint: disable=too-many-return-statements
+def get_fresh_page_objects(wallets_and_operations, app_index: int = 2):
+    """
+    Get fresh page objects from environment after reset.
+
+    This is critical after reset_second_instance or reset_first_instance to ensure
+    we have the updated application nodes and avoid stale element references.
+
+    Args:
+        wallets_and_operations: Wallet test setup instance (proxy).
+        app_index: Application index (1=first, 2=second, 3=third, 4=fourth).
+
+    Returns:
+        Tuple of (page_objects, page_features, page_operations) for the specified app.
+    """
+    # Get environment from wallet_features
+    if app_index == 1:
+        env = wallets_and_operations.first_page_features.wallet_features.get_current_environment()
+    elif app_index == 2:
+        env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
+    elif app_index == 3:
+        env = wallets_and_operations.third_page_features.wallet_features.get_current_environment()
+    else:
+        env = wallets_and_operations.fourth_page_features.wallet_features.get_current_environment()
+
+    if not env:
+        # Fallback to proxy properties
+        if app_index == 1:
+            return (
+                wallets_and_operations.first_page_objects,
+                wallets_and_operations.first_page_features,
+                wallets_and_operations.first_page_operations,
+            )
+        if app_index == 2:
+            return (
+                wallets_and_operations.second_page_objects,
+                wallets_and_operations.second_page_features,
+                wallets_and_operations.second_page_operations,
+            )
+        if app_index == 3:
+            return (
+                wallets_and_operations.third_page_objects,
+                wallets_and_operations.third_page_features,
+                wallets_and_operations.third_page_operations,
+            )
+        return (
+            wallets_and_operations.fourth_page_objects,
+            wallets_and_operations.fourth_page_features,
+            wallets_and_operations.fourth_page_operations,
+        )
+
+    # Get fresh page objects from environment
+    if app_index == 1:
+        return (
+            env.first_page_objects,
+            env.first_page_features,
+            env.first_page_operations,
+        )
+    if app_index == 2:
+        return (
+            env.second_page_objects,
+            env.second_page_features,
+            env.second_page_operations,
+        )
+    if app_index == 3:
+        return (
+            env.third_page_objects,
+            env.third_page_features,
+            env.third_page_operations,
+        )
+    return (
+        env.fourth_page_objects,
+        env.fourth_page_features,
+        env.fourth_page_operations,
+    )

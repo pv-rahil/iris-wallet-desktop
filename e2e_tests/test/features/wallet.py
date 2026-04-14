@@ -1267,11 +1267,13 @@ class Wallet(MainPageObjects, BaseOperations):
         Called after app sends SIGN_PSBT request.
         Sequence: 13 right + left+right (register policy), then 4 right + left+right (sign)
         """
+        time.sleep(2)
         self.do_focus_on_application(application)
         # First sequence: 13 right arrows then left+right (register wallet policy)
         self.hw_emulator_page_objects.click_right_arrow_key(13, delay=0.8)
         self.hw_emulator_page_objects.press_left_and_right(duration=0.2)
         # Wait for sign transaction screen to appear
+        self.do_focus_on_application(application)
         time.sleep(2)
         # Second sequence: 4 right arrows then left+right (sign transaction)
         self.hw_emulator_page_objects.click_right_arrow_key(4, delay=0.8)

@@ -12,8 +12,8 @@ from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
-from e2e_tests.test.utilities.atspi_helpers import _aggressive_cleanup
-from e2e_tests.test.utilities.atspi_helpers import _full_atspi_reset
+from e2e_tests.test.utilities.atspi_helpers import aggressive_cleanup
+from e2e_tests.test.utilities.atspi_helpers import refresh_atspi_tree
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
 
@@ -71,6 +71,10 @@ def sign_and_broadcast_psbt_offline_multisig(
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
             FIRST_APPLICATION, wallet_variant_name,
         )
+
+    # USB sync from first wallet back to coordinator so cosigner can access signed PSBT
+    with allure.step('USB sync from first wallet back to coordinator'):
+        wallets_and_operations.first_page_features.wallet_features.usb_sync()
 
     with allure.step('Sign PSBT from third wallet (cosigner)'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -318,7 +322,7 @@ def offline_multisig_send_asset_flow_with_verification(
         )
 
     # Refresh AT-SPI after UTXO creation
-    _aggressive_cleanup()
+    aggressive_cleanup()
 
     # Step 2: Sign UTXO PSBT from third wallet (cosigner)
     with allure.step('Sign UTXO PSBT from third wallet (cosigner)'):
@@ -349,7 +353,7 @@ def offline_multisig_send_asset_flow_with_verification(
         )
 
     # Refresh AT-SPI after signing round
-    _aggressive_cleanup()
+    aggressive_cleanup()
 
     # Step 4: Broadcast UTXO PSBT from second wallet (coordinator)
     with allure.step('Broadcast UTXO PSBT from second wallet (coordinator)'):
@@ -361,7 +365,7 @@ def offline_multisig_send_asset_flow_with_verification(
         )
 
     # Refresh AT-SPI after broadcast
-    _aggressive_cleanup()
+    aggressive_cleanup()
 
     # Step 5: Send asset from second wallet (coordinator)
     with allure.step(f'Send {asset_type} asset from second wallet (coordinator)'):
@@ -399,7 +403,7 @@ def offline_multisig_send_asset_flow_with_verification(
         )
 
     # Refresh AT-SPI after signing round
-    _aggressive_cleanup()
+    aggressive_cleanup()
 
     # Step 7: Sign transfer PSBT from third wallet (cosigner) - after offline signer has signed
     with allure.step('Sign transfer PSBT from third wallet (cosigner)'):
@@ -416,10 +420,10 @@ def offline_multisig_send_asset_flow_with_verification(
         )
 
     # Full AT-SPI reset before broadcast - this is where tests often get stuck
-    _full_atspi_reset()
+    refresh_atspi_tree()
 
     # Refresh AT-SPI after signing round
-    _aggressive_cleanup()
+    aggressive_cleanup()
 
     # Step 8: Broadcast transfer PSBT from second wallet (coordinator)
     with allure.step('Broadcast transfer PSBT from second wallet (coordinator)'):
@@ -431,7 +435,7 @@ def offline_multisig_send_asset_flow_with_verification(
         )
 
     # Final AT-SPI refresh before assertions
-    _aggressive_cleanup()
+    aggressive_cleanup()
 
     if verify_assertions:
         with allure.step('Verify transfer status on second wallet'):

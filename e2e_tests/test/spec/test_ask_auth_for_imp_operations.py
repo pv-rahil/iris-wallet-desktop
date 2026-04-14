@@ -31,6 +31,7 @@ from e2e_tests.test.utilities.send_flow_helpers import issue_cfa_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import refresh_collectibles_on_app2
 from e2e_tests.test.utilities.send_flow_helpers import verify_tx_on_third_wallet
+from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from src.data.repository.setting_repository import SettingRepository
 from src.utils.info_message import INFO_ASSET_SENT
@@ -1133,6 +1134,10 @@ def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(test_environment: T
 @allure.story('Issuing IFA asset for multisig')
 def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Issuing IFA asset with ask auth for important operations off for multisig"""
+    # Get fresh page objects from environment after reset
+    second_page_objects, second_page_features, second_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
 
     with allure.step('Issue IFA asset for multisig without native auth'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
@@ -1143,11 +1148,11 @@ def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operat
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_for_multisig_wallet(
             FIRST_APPLICATION, IFA_ASSET_TICKER, IFA_ASSET_NAME_2, IFA_ASSET_TOTAL_SUPPLY, ASSET_AMOUNT, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
+        second_page_objects.inflatable_page_objects.click_refresh_button()
+        second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
         wallets_and_operations.first_page_operations.do_focus_on_application(
@@ -1158,10 +1163,10 @@ def test_ask_auth_for_imp_question_issue_ifa_off_for_multisig(wallets_and_operat
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
             FIRST_APPLICATION, IFA_ASSET_TICKER, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+        second_page_objects.inflatable_page_objects.click_refresh_button()
 
 
 @pytest.mark.skip_for_single_sig

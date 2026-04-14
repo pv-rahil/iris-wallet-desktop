@@ -7,7 +7,6 @@ import os
 import time
 
 import pytest
-from dogtail.tree import root
 
 from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import MULTISIG_VARIANTS
@@ -27,7 +26,7 @@ from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SINGLE_SIG_VARIANTS
-from e2e_tests.test.utilities.atspi_helpers import _full_atspi_reset
+from e2e_tests.test.utilities.atspi_helpers import refresh_atspi_tree
 
 # Timing constants
 CI_STABILIZATION_DELAY = 2.0
@@ -37,17 +36,6 @@ LOCAL_STABILIZATION_DELAY = 0.5
 def _is_ci_environment():
     """Check if running in CI environment."""
     return os.getenv('CI', '').lower() in ('true', '1', 'yes')
-
-
-def _refresh_atspi_tree():
-    """
-    Force AT-SPI tree refresh by accessing root.
-    This helps clear stale element caches between tests.
-    """
-    try:
-        _ = root.children
-    except Exception:
-        pass
 
 
 def _reset_operations_state(test_environment):
@@ -188,7 +176,7 @@ def cleanup_between_tests(request):
     try:
         # Full AT-SPI reset for all tests
         print('[CLEANUP] Running full AT-SPI reset')
-        _full_atspi_reset()
+        refresh_atspi_tree()
 
         # Get the test_environment fixture if it exists
         if 'test_environment' in request.fixturenames:

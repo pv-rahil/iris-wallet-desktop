@@ -20,6 +20,7 @@ from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_navigate_to_ifa_tx
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_refresh_inflatable
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 
@@ -124,10 +125,10 @@ def test_offline_single_sig_issue_ifa(test_environment: TestEnvironment, wallets
 @allure.story('Inflate IFA asset via PSBT for offline wallet')
 def test_offline_single_sig_inflate_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test inflating IFA asset via PSBT flow for offline/watch-only wallet."""
-    env = wallets_and_operations.second_page_features.wallet_features.get_current_environment()
-    second_page_objects = env.second_page_objects if env else wallets_and_operations.second_page_objects
-    second_page_features = env.second_page_features if env else wallets_and_operations.second_page_features
-    second_page_operations = env.second_page_operations if env else wallets_and_operations.second_page_operations
+    # Get fresh page objects from environment after reset
+    second_page_objects, second_page_features, second_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
 
     # First cycle: Create UTXO for inflation
     with allure.step('Create UTXO PSBT for inflation'):
@@ -375,12 +376,16 @@ def test_offline_multisig_create_utxo_for_inflate_ifa(test_environment: TestEnvi
 @allure.story('Create inflate PSBT and broadcast')
 def test_offline_multisig_inflate_transfer_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test secondary issuance (inflate) for offline multisig wallet - Inflate PSBT."""
+    # Get fresh page objects from environment after reset
+    _, second_page_features, second_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
 
     with allure.step('Create inflate PSBT from draft'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_features.inflate_features.inflate_ifa_asset_from_draft(
+        second_page_features.inflate_features.inflate_ifa_asset_from_draft(
             SECOND_APPLICATION, IFA_ASSET_NAME_1,
         )
 
@@ -403,10 +408,10 @@ def test_offline_multisig_inflate_transfer_ifa(test_environment: TestEnvironment
         )
 
     with allure.step('Broadcast inflation PSBT from second wallet (coordinator)'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
+        second_page_features.wallet_features.broadcast_psbt(
             SECOND_APPLICATION, is_multisig=True,
         )
 
@@ -420,14 +425,18 @@ def test_offline_multisig_inflate_transfer_ifa(test_environment: TestEnvironment
 @allure.story('Verify inflate amount')
 def test_offline_multisig_verify_inflate_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test secondary issuance (inflate) for offline multisig wallet - Verify."""
+    # Get fresh page objects from environment after reset
+    second_page_objects, _, _ = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
 
     with allure.step('Verify inflate amount in transaction frame'):
         focus_second_wallet_and_navigate_to_ifa_tx(
             wallets_and_operations, IFA_ASSET_NAME_1,
         )
-        tx_amount = wallets_and_operations.second_page_objects.asset_transaction_detail_page_objects.get_transferred_amount()
-        wallets_and_operations.second_page_objects.asset_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
+        tx_amount = second_page_objects.asset_transaction_detail_page_objects.get_transferred_amount()
+        second_page_objects.asset_transaction_detail_page_objects.click_close_button()
+        second_page_objects.asset_detail_page_objects.click_close_button()
         tx_amount = tx_amount.replace('+', '')
 
         assert tx_amount == INFLATE_AMOUNT

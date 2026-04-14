@@ -101,11 +101,6 @@ runs:
         # Set accessibility and enable debugging for better AT-SPI stability
         gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
         gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
-        # Start AT-SPI services and wait for them to initialize (suppress logs)
-        /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
-        /usr/libexec/at-spi2-registryd 2>/dev/null &
-        # Wait for AT-SPI to be fully ready (increased to 18s for reliability on slower runners)
-        sleep 18
         # Verify AT-SPI services are running
         pgrep -f "at-spi-bus-launcher" >/dev/null || echo "⚠️  AT-SPI bus launcher not running"
         pgrep -f "at-spi2-registryd" >/dev/null || echo "⚠️  AT-SPI registryd not running"

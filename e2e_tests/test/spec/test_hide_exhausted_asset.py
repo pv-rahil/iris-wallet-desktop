@@ -24,6 +24,7 @@ from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 
@@ -377,16 +378,21 @@ def test_hide_exhausted_asset_on_offline_multisig(wallets_and_operations: Wallet
 def test_hide_exhausted_asset_off_offline_multisig(wallets_and_operations: WalletTestSetup):
     """Test for showing exhausted asset for offline multisig"""
 
+    # Get fresh page objects from environment after reset
+    second_page_objects, _, second_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
+
     with allure.step('Navigating to settings page from watch-only coordinator'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
-        wallets_and_operations.second_page_objects.settings_page_objects.click_hide_exhausted_asset_toggle_button()
+        second_page_objects.sidebar_page_objects.click_settings_button()
+        second_page_objects.settings_page_objects.click_hide_exhausted_asset_toggle_button()
 
     with allure.step('Verify asset is visible for offline multisig'):
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        child_count = wallets_and_operations.second_page_objects.fungible_page_objects.get_child_count()
+        second_page_objects.sidebar_page_objects.click_fungibles_button()
+        second_page_objects.fungible_page_objects.click_refresh_button()
+        child_count = second_page_objects.fungible_page_objects.get_child_count()
 
         assert len(child_count) == 4

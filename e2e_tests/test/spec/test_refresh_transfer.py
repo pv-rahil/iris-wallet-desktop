@@ -27,6 +27,7 @@ from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
@@ -383,6 +384,10 @@ def test_refresh_transfer_setup_and_issue_nia_for_offline_multisig(test_environm
 @allure.story('Send NIA asset and validate transfer status for offline multisig')
 def test_refresh_transfer_send_and_validate_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Send NIA asset and validate transfer status for offline multisig"""
+    # Get fresh page objects from environment after reset
+    second_page_objects, _, second_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
 
     with allure.step('Generate invoice from receiver (App 4)'):
         invoice = wallets_and_operations.fourth_page_features.receive_features.receive_asset_from_sidebar(
@@ -401,32 +406,32 @@ def test_refresh_transfer_send_and_validate_for_offline_multisig(wallets_and_ope
     )
 
     with allure.step('Refresh transfer for offline multisig'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        second_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.fourth_page_operations.do_focus_on_application(
             FOURTH_APPLICATION,
         )
         wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        second_page_objects.fungible_page_objects.click_refresh_button()
         wallets_and_operations.fourth_page_operations.do_focus_on_application(
             FOURTH_APPLICATION,
         )
         wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
 
     with allure.step('Validate transfer status for offline multisig'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
+        second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+        second_page_objects.fungible_page_objects.click_nia_frame(
             ASSET_NAME,
         )
-        actual_transfer_status_second_app = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_transfer_status()
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
+        actual_transfer_status_second_app = second_page_objects.asset_detail_page_objects.get_transfer_status()
+        second_page_objects.asset_detail_page_objects.click_close_button()
         wallets_and_operations.fourth_page_operations.do_focus_on_application(
             FOURTH_APPLICATION,
         )

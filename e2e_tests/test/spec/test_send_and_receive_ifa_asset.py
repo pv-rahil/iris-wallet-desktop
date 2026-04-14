@@ -28,9 +28,11 @@ from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
 from e2e_tests.test.utilities.send_flow_helpers import verify_expired_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation_step
+from e2e_tests.test.utilities.send_flow_helpers import verify_offline_multisig_transfer
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
+from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
@@ -373,7 +375,7 @@ def test_offline_multisig_create_utxo_for_send_ifa(test_environment: TestEnviron
 def test_offline_multisig_send_transfer_ifa(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send IFA asset in offline multisig setup (4 apps) - Send transfer."""
     send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.send_transfer_multisig(
+    send_flow.resume_transfer_multisig(
         wallet_variant_name, IFA_ASSET_NAME, asset_type='ifa',
     )
 
@@ -385,20 +387,9 @@ def test_offline_multisig_send_transfer_ifa(wallets_and_operations: WalletTestSe
 @allure.story('Verify transaction status and amount')
 def test_offline_multisig_verify_for_ifa(wallets_and_operations: WalletTestSetup):
     """Test send IFA asset in offline multisig setup (4 apps) - Verify transfer."""
-    # Verify transfer status on sender (second wallet)
-    actual_transfer_status = navigate_to_asset_and_get_transfer_status(
-        wallets_and_operations.second_page_operations,
-        wallets_and_operations.second_page_objects,
-        IFA_ASSET_NAME, asset_type='ifa',
+    verify_offline_multisig_transfer(
+        wallets_and_operations,
+        asset_name=IFA_ASSET_NAME,
+        send_amount=SEND_AMOUNT,
+        asset_type='ifa',
     )
-    assert actual_transfer_status == TransactionStatusEnumModel.WAITING_COUNTERPARTY.value
-
-    # Verify received amount on receiver (fourth wallet)
-    received_amount = navigate_to_asset_and_get_balance(
-        wallets_and_operations.fourth_page_operations,
-        wallets_and_operations.fourth_page_objects,
-        IFA_ASSET_NAME, asset_type='ifa',
-        application=FOURTH_APPLICATION,
-        refresh_count=2,
-    )
-    assert received_amount == SEND_AMOUNT
