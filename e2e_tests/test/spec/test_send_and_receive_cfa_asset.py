@@ -6,7 +6,6 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION

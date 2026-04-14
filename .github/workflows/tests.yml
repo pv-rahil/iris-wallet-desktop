@@ -119,7 +119,7 @@ jobs:
 
       - name: Run unit tests (fail if coverage < 90%)
         run: |
-          poetry run pytest -v \
+          poetry run pytest -v --maxfail=1 \
             --cov=src \
             --cov-fail-under=90 \
             --cov-report=html:coverage-report \

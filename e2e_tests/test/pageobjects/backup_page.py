@@ -203,7 +203,7 @@ class BackupPageObjects(BaseOperations):
         while True:
             time_remaining = totp.interval - (time.time() % totp.interval)
 
-            if time_remaining < 30:
+            if time_remaining < 25:
                 # Not enough time - wait for new OTP cycle
                 # Wait for new OTP + small buffer
                 time.sleep(time_remaining + 0.5)

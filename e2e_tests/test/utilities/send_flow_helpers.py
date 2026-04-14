@@ -23,7 +23,6 @@ from e2e_tests.test.utilities.psbt_helpers import sign_and_broadcast_psbt_offlin
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import _refresh_third_wallet_by_asset_type
 from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
-from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_three_app_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
 
 
@@ -406,6 +405,24 @@ def verify_transfer_status_and_received_amount(
         asset_type: Asset type ('ifa', 'nia', 'cfa').
     """
     with allure.step('Verify transfer status on sender'):
+        if asset_type == 'ifa':
+            first_page_objects.sidebar_page_objects.click_inflatable_button()
+            first_page_objects.inflatable_page_objects.click_refresh_button()
+            first_page_objects.inflatable_page_objects.click_ifa_frame(
+                asset_name,
+            )
+        elif asset_type == 'nia':
+            first_page_objects.sidebar_page_objects.click_fungibles_button()
+            first_page_objects.fungible_page_objects.click_refresh_button()
+            first_page_objects.fungible_page_objects.click_nia_frame(
+                asset_name,
+            )
+        elif asset_type == 'cfa':
+            first_page_objects.sidebar_page_objects.click_collectibles_button()
+            first_page_objects.collectible_page_objects.click_refresh_button()
+            first_page_objects.collectible_page_objects.click_cfa_frame(
+                asset_name,
+            )
         actual_transfer_status = first_page_objects.asset_detail_page_objects.get_transfer_status()
         assert actual_transfer_status == expected_status
 
@@ -909,6 +926,9 @@ def offline_multisig_issue_asset_test_flow(
     Execute offline multisig issue asset test flow with 3 apps.
     Handles funding, issuing, and signing for offline multisig wallet tests.
 
+    Note: This function assumes wallets are already set up via setup_offline_multisig_three_app_wallets
+    in the preceding "without sufficient sats" test.
+
     Args:
         wallets_and_operations: Wallet test setup instance.
         wallet_variant_name: Wallet variant name.
@@ -918,9 +938,6 @@ def offline_multisig_issue_asset_test_flow(
         is_issue_ifa: Whether this is an IFA issue (for hardware wallet signing).
     """
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-    setup_offline_multisig_three_app_wallets(
-        wallets_and_operations, wallet_variant_name,
-    )
 
     # Fund the second wallet (online coordinator)
     with allure.step('Fund second online multisig wallet (coordinator)'):

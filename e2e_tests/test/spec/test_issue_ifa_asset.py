@@ -8,20 +8,12 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import MULTISIG_HARDWARE_VARIANTS
-from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
-from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.multisig_coordinator import get_multisig_coordinator
-from e2e_tests.test.utilities.psbt_helpers import focus_and_refresh_asset_list
-from e2e_tests.test.utilities.psbt_helpers import focus_refresh_and_sign_psbt
-from e2e_tests.test.utilities.send_flow_helpers import multisig_issue_asset_flow
 from e2e_tests.test.utilities.send_flow_helpers import offline_multisig_issue_asset_test_flow
-from e2e_tests.test.utilities.send_flow_helpers import refresh_second_wallet_and_verify_asset
-from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_three_app_wallets
 from src.utils.error_message import ERROR_INSUFFICIENT_FUNDS

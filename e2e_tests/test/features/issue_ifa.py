@@ -69,6 +69,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
         """
         Issues an IFA asset without sufficient sats and captures toaster message.
         """
+        description = None
         self.do_focus_on_application(application)
         if self.do_is_displayed(self.sidebar_page_objects.inflatable_button()):
             self.sidebar_page_objects.click_inflatable_button()
@@ -88,8 +89,15 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
         if self.do_is_displayed(self.issue_ifa_page_objects.asset_total_supply()):
             self.issue_ifa_page_objects.enter_asset_total_supply(total_supply)
 
-        # Click issue button, get toaster, close and navigate
-        return click_issue_button_get_toaster_and_close(self)
+        description = click_issue_button_get_toaster_and_close(self)
+
+        if self.do_is_displayed(self.issue_ifa_page_objects.close_button()):
+            self.issue_ifa_page_objects.click_close_button()
+
+        if self.do_is_displayed(self.sidebar_page_objects.fungibles_button()):
+            self.sidebar_page_objects.click_fungibles_button()
+
+        return description
 
     def issue_ifa_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name):
         """
