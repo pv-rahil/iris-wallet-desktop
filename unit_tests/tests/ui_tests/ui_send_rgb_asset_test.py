@@ -911,6 +911,24 @@ def test_handle_send_rgb_hw_dialog_update_utxo_error(send_rgb_asset_widget: Send
         lambda parent: dummy,
     )
 
+    # Mock SettingRepository to simulate non-single-sig-online wallet (creates 3 UTXOs)
+    mocker.patch(
+        'src.views.ui_send_rgb_asset.SettingRepository.get_wallet_signature_type',
+        return_value=MagicMock(value='multisig'),
+    )
+    mocker.patch(
+        'src.views.ui_send_rgb_asset.WalletSignatureType',
+        STANDARD_TYPE_WALLET=MagicMock(value='standard'),
+    )
+    mocker.patch(
+        'src.views.ui_send_rgb_asset.WalletAccessType',
+        WATCH_ONLY=MagicMock(value='watch_only'),
+    )
+    mocker.patch(
+        'src.views.ui_send_rgb_asset.WalletType',
+        ONLINE_TYPE_WALLET=MagicMock(value='online'),
+    )
+
     # Mock the UTXO creation flow
     mock_create_utxos = mocker.patch.object(
         send_rgb_asset_widget._view_model.utxo_creation_view_model, 'create_utxos_begin',

@@ -10,6 +10,7 @@ import pytest
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
+from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import SECOND_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
@@ -46,7 +47,7 @@ def test_keyring_dialog(test_environment, wallets_and_operations: WalletTestSetu
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         # If hardware watch-only wallet, the dialog shows xpubs and fingerprint instead of mnemonic
-        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS or wallet_variant_name == ONLINE_WATCH_ONLY:
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_vanilla_copy_button()
             XPUB_VANILLA = wallets_and_operations.first_page_operations.do_get_copied_address()
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_colored_copy_button()
@@ -103,7 +104,7 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup, wallet_variant_
             timeout=5,
         )
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-        if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+        if wallet_variant_name in HARDWARE_WALLET_VARIANTS or wallet_variant_name == ONLINE_WATCH_ONLY:
             wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
                 XPUB_VANILLA,
             )
@@ -127,7 +128,7 @@ def test_keyring_option(wallets_and_operations: WalletTestSetup, wallet_variant_
             timeout=5,
         ):
             wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-            if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+            if wallet_variant_name in HARDWARE_WALLET_VARIANTS or wallet_variant_name == ONLINE_WATCH_ONLY:
                 wallets_and_operations.first_page_objects.restore_wallet_page_objects.enter_xpub_vanilla_value(
                     XPUB_VANILLA,
                 )

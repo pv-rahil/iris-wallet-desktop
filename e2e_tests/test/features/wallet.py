@@ -33,6 +33,7 @@ from e2e_tests.test.pageobjects.keyring_dialog_page import KeyringDialogBoxPageO
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.pageobjects.settings_page_object import SettingsPageObjects
 from e2e_tests.test.pageobjects.sidebar_page import SidebarPageObjects
+from e2e_tests.test.utilities.atspi_helpers import refresh_atspi_tree
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.executable_shell_script import send_to_address
@@ -259,16 +260,17 @@ class Wallet(MainPageObjects, BaseOperations):
             actual_path = os.path.dirname(local_store.get_path())
             app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
             delete_app_data(app2_data)
-            # Launch temp second instance with default environment (not TestEnvironment)
+            # Launch temp second instance with proper environment for AT-SPI
+            app_env = os.environ.copy()
+            app_env['QT_ACCESSIBILITY'] = '1'
             proc = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP2_NAME
                 }-{__version__}-x86_64.AppImage"""],
-                env=None,
+                env=app_env,
             )
-            # Wait for the second application window
-            if hasattr(env, 'wait_for_application'):
-                env.wait_for_application(SECOND_APPLICATION)
+            # Wait for the second application window using TestEnvironment method
+            env.wait_for_application(SECOND_APPLICATION)
             # Maximize the second window for stability
             subprocess.run(
                 [
@@ -277,11 +279,26 @@ class Wallet(MainPageObjects, BaseOperations):
                 ],
                 check=True,
             )
-            second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+            # Use TestEnvironment's method to find the application frame
+            # pylint: disable=protected-access
+            app_node = env._find_application_node(SECOND_APPLICATION)
+            if app_node:
+                second_app = app_node.child(
+                    roleName='frame', name=SECOND_APPLICATION,
+                )
+            else:
+                # Fallback to direct search
+                second_app = root.child(
+                    roleName='frame', name=SECOND_APPLICATION,
+                )
             second_wallet = Wallet(second_app)
             second_wallet.create_wallet(
                 SECOND_APPLICATION, OFFLINE_CREATE_ON_DEVICE, is_load_wallet=True,
             )
+
+            # Refresh AT-SPI tree after wallet creation to get fresh element references
+            refresh_atspi_tree()
+            time.sleep(1)
 
             xpub_vanilla, xpub_colored, fingerprint, _ = second_wallet.collect_keyring_values_from_app(
                 SECOND_APPLICATION,
@@ -305,10 +322,8 @@ class Wallet(MainPageObjects, BaseOperations):
         finally:
             # Safely terminate the temp second process
             try:
-                if proc and hasattr(env, 'terminate_process'):
+                if proc:
                     env.terminate_process(proc)
-                elif proc:
-                    proc.terminate()
             except Exception:
                 pass
 
@@ -566,16 +581,17 @@ class Wallet(MainPageObjects, BaseOperations):
             actual_path = os.path.dirname(local_store.get_path())
             app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
             delete_app_data(app2_data)
-            # Launch temp second instance with default environment (not TestEnvironment)
+            # Launch temp second instance with proper environment for AT-SPI
+            app_env = os.environ.copy()
+            app_env['QT_ACCESSIBILITY'] = '1'
             proc = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP2_NAME
                 }-{__version__}-x86_64.AppImage"""],
-                env=None,
+                env=app_env,
             )
-            # Wait for the second application window
-            if hasattr(env, 'wait_for_application'):
-                env.wait_for_application(SECOND_APPLICATION)
+            # Wait for the second application window using TestEnvironment method
+            env.wait_for_application(SECOND_APPLICATION)
             # Maximize the second window for stability
             subprocess.run(
                 [
@@ -584,11 +600,26 @@ class Wallet(MainPageObjects, BaseOperations):
                 ],
                 check=True,
             )
-            second_app = root.child(roleName='frame', name=SECOND_APPLICATION)
+            # Use TestEnvironment's method to find the application frame
+            # pylint: disable=protected-access
+            app_node = env._find_application_node(SECOND_APPLICATION)
+            if app_node:
+                second_app = app_node.child(
+                    roleName='frame', name=SECOND_APPLICATION,
+                )
+            else:
+                # Fallback to direct search
+                second_app = root.child(
+                    roleName='frame', name=SECOND_APPLICATION,
+                )
             second_wallet = Wallet(second_app)
             second_wallet.create_wallet(
                 SECOND_APPLICATION, OFFLINE_MULTISIG_ON_DEVICE, is_load_wallet=True,
             )
+
+            # Refresh AT-SPI tree after wallet creation to get fresh element references
+            refresh_atspi_tree()
+            time.sleep(1)
 
             xpub_vanilla, xpub_colored, fingerprint, _ = second_wallet.collect_keyring_values_from_app(
                 SECOND_APPLICATION,
@@ -612,10 +643,8 @@ class Wallet(MainPageObjects, BaseOperations):
         finally:
             # Safely terminate the temp second process
             try:
-                if proc and hasattr(env, 'terminate_process'):
+                if proc:
                     env.terminate_process(proc)
-                elif proc:
-                    proc.terminate()
             except Exception:
                 pass
 
@@ -1016,9 +1045,9 @@ class Wallet(MainPageObjects, BaseOperations):
         # Get the app frame from the TestEnvironment to ensure correct app context
         env = self.get_current_environment()
         target_app = None
-        if env and hasattr(env, 'first_application'):
+        if app_name == FIRST_APPLICATION and env and hasattr(env, 'first_application'):
             target_app = env.first_application
-        elif env and hasattr(env, 'second_application'):
+        elif app_name == SECOND_APPLICATION and env and hasattr(env, 'second_application'):
             target_app = env.second_application
 
         # Fallback to finding frame directly if not available from env

@@ -2,9 +2,6 @@ name: Setup E2E Test Environment
 description: Configure environment for Dogtail GUI automation testing
 
 inputs:
-  test-file:
-    description: 'Test file to run'
-    required: true
   wallet-variant:
     description: 'Wallet variant to test (e.g., online_create_on_device, online_load_on_device)'
     required: true
@@ -31,7 +28,6 @@ runs:
         # Generate the private key for the bridge service
         biscuit keypair --only-private-key > "$PRIVATE_KEY_FILE"
         echo "Generated private key file at $PRIVATE_KEY_FILE"
-        cat "$PRIVATE_KEY_FILE"
         # Copy to project root where biscuit_auth.py can find it
         cp "$PRIVATE_KEY_FILE" private-key-file
         echo "Copied private-key-file to project root"
@@ -123,6 +119,6 @@ runs:
         export GDK_SYNCHRONIZE=1
         export __GLX_VENDOR_LIBRARY_NAME=mesa
         sleep 3  # Increased to 3s for better UI stability
-        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
+        poetry run e2e-test all --wallet-variant ${{ inputs.wallet-variant }}
         '
       shell: bash

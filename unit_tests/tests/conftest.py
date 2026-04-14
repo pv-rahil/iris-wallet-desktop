@@ -39,6 +39,7 @@ from src.utils.constant import WALLET_DATA_FOLDER_NAME
 @pytest.fixture(scope='session', autouse=True)
 def qt_app():
     """Fixture to set up the QApplication instance for the test session."""
+    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
@@ -85,24 +86,10 @@ def mock_timer(mocker, request):
     """
     Prevent HeaderFrameViewModel from starting infinite thread loops via QTimer.
     Skip for header_frame_view_model_test.py so it can test the actual logic.
-    Skip for repository tests that don't need this mock.
     """
     if 'header_frame_view_model_test.py' in str(request.fspath):
         return
 
-    if 'repository_tests' in str(request.fspath):
-        return
-
-    if 'loading_screen_test.py' in str(request.fspath):
-        return
-
-    if 'custom_toast_test.py' in str(request.fspath):
-        return
-
-    # Mock QTimer.start() globally to prevent timers from running
-    mocker.patch('PySide6.QtCore.QTimer.start', return_value=None)
-
-    # Also mock the specific network check method
     mocker.patch(
         'src.viewmodels.header_frame_view_model.HeaderFrameViewModel.start_network_check',
     )
@@ -299,6 +286,16 @@ def _mock_wallet_session(monkeypatch):
         def delete_draft_issue_asset(self, draft_id):
             """Delete draft issue asset."""
             drafts[:] = [d for d in drafts if d.get('id') != draft_id]
+
+        def upsert_draft_transfer(self, asset_id, recipient_id, amount, fee_rate, min_confirmation):
+            """Upsert draft transfer."""
+            drafts.append({
+                'asset_id': asset_id,
+                'recipient_id': recipient_id,
+                'amount': amount,
+                'fee_rate': fee_rate,
+                'min_confirmation': min_confirmation,
+            })
 
     monkeypatch.setattr(
         'src.data.service.wallet_data_service.WalletDataService.get_session',
