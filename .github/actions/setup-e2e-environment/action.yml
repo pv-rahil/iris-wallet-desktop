@@ -2,6 +2,9 @@ name: Setup E2E Test Environment
 description: Configure environment for Dogtail GUI automation testing
 
 inputs:
+  test-file:
+    description: 'Test file to run'
+    required: true
   wallet-variant:
     description: 'Wallet variant to test (e.g., online_create_on_device, online_load_on_device)'
     required: true
@@ -119,6 +122,6 @@ runs:
         export GDK_SYNCHRONIZE=1
         export __GLX_VENDOR_LIBRARY_NAME=mesa
         sleep 3  # Increased to 3s for better UI stability
-        poetry run e2e-test all --wallet-variant ${{ inputs.wallet-variant }}
+        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
         '
       shell: bash

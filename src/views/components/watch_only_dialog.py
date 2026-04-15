@@ -52,7 +52,7 @@ class WatchOnlyDialog(QDialog):
             Qt.WindowType.FramelessWindowHint,
         )
         self.setStyleSheet(load_stylesheet('views/qss/watch_only_dialog.qss'))
-        self.setMinimumSize(500, 420)
+        self.setMinimumSize(500, 480)
 
         self.dialog_box_vertical_layout = QVBoxLayout(self)
         self.dialog_box_vertical_layout.setContentsMargins(28, 24, 28, 28)
@@ -72,9 +72,9 @@ class WatchOnlyDialog(QDialog):
         self.input_frame = QFrame(self)
         self.input_frame.setFrameShape(QFrame.StyledPanel)
         self.input_frame.setFrameShadow(QFrame.Raised)
-        self.input_frame.setFixedHeight(250)
         self.input_layout = QVBoxLayout(self.input_frame)
         self.input_layout.setContentsMargins(10, 0, 12, -1)
+        self.input_layout.setSpacing(10)
 
         # Xpub Vanilla
         self.xpub_vanilla_label = QLabel()
@@ -236,7 +236,7 @@ class WatchOnlyDialog(QDialog):
 
         # All validations passed
         self.error_label.setVisible(False)
-        self.setMinimumSize(480, 420)
+        self.setMinimumSize(480, 480)
         # Re-enable checkbox when inputs are valid
         self.check_box.setEnabled(True)
         self.continue_btn.setEnabled(
@@ -252,7 +252,7 @@ class WatchOnlyDialog(QDialog):
         fingerprint = self.fingerprint_input.text().strip()
         # Save to ini
         self.error_label.setVisible(False)
-        self.setMinimumSize(480, 420)
+        self.setMinimumSize(480, 480)
         local_store.set_value(ACCOUNT_XPUB_VANILLA, vanilla)
         local_store.set_value(ACCOUNT_XPUB_COLORED, colored)
         local_store.set_value(MASTER_FINGERPRINT, fingerprint)

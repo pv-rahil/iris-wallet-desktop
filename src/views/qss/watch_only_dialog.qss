@@ -41,5 +41,5 @@ QLabel#error_label {
     padding-left:8px;
 }
 QLabel#fingerprint_label,#xpub_colored_label,#xpub_vanilla_label{
-    padding-bottom: -10px;
+    padding-bottom: 0px;
 }

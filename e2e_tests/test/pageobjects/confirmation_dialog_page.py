@@ -3,6 +3,8 @@ Confirmation Dialog page objects for interacting with the confirmation dialog pa
 """
 from __future__ import annotations
 
+from dogtail.rawinput import keyCombo
+
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import CONFIRMATION_DIALOG_CANCEL_BUTTON
 from accessible_constant import CONFIRMATION_DIALOG_CHECKBOX
@@ -46,8 +48,10 @@ class ConfirmationDialogPageObjects(BaseOperations):
         Clicks the confirmation checkbox on the confirmation dialog page.
         """
         if self.do_is_displayed(self.confirmation_checkbox()):
-            return self.do_click(self.confirmation_checkbox())
-        return None
+            self.confirmation_checkbox().grabFocus()
+            keyCombo('space')
+            return True
+        return False
 
     def click_confirmation_cancel_button(self):
         """

@@ -10,6 +10,7 @@ from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
+from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.atspi_helpers import aggressive_cleanup
@@ -22,6 +23,7 @@ def sign_and_broadcast_psbt_offline_single_sig(
     wallet_variant_name: str,
     second_page_operations,
     second_page_features,
+    is_rgb: bool = True,
 ) -> None:
     """
     Sign PSBT from offline signer and broadcast for offline single-sig wallet.
@@ -37,7 +39,7 @@ def sign_and_broadcast_psbt_offline_single_sig(
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
+            FIRST_APPLICATION, wallet_variant_name, is_rgb=is_rgb,
         )
 
     with allure.step('Broadcast PSBT from second wallet (coordinator)'):
@@ -219,6 +221,7 @@ def handle_utxo_confirmation_with_hardware_wallet(
     application: str,
     utxo_required: bool = False,
     is_hardware: bool = False,
+    wallet_variant=None,
 ) -> None:
     """
     Handle UTXO confirmation dialog with hardware wallet signing.
@@ -229,7 +232,7 @@ def handle_utxo_confirmation_with_hardware_wallet(
         wallet_feature: Wallet feature instance.
         application: Application name.
         utxo_required: Whether UTXO creation is required.
-        is_hardware: Whether this is a hardware wallet.
+    is_hardware: Whether this is a hardware wallet.
     """
     if utxo_required:
         page_operations.do_focus_on_application(CONFIRMATION_DIALOG)
@@ -241,7 +244,7 @@ def handle_utxo_confirmation_with_hardware_wallet(
 
         # After clicking continue, app sends request to hardware wallet
         # Then we do the button presses to register policy and sign
-        if is_hardware:
+        if is_hardware and wallet_variant not in REQUIRE_USB_VARIANTS:
             wallet_feature.sign_multisig_on_hardware_wallet(application)
     else:
         if is_hardware:

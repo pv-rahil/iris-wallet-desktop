@@ -132,7 +132,7 @@ def test_issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
     with allure.step('Create an unsigned PSBT for IFA issuance from draft'):
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
         wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_watch_only_wallet(
-            SECOND_APPLICATION, IFA_ASSET_NAME,
+            SECOND_APPLICATION, IFA_ASSET_NAME, utxo_required=True,
         )
 
     with allure.step('Sign the IFA PSBT'):

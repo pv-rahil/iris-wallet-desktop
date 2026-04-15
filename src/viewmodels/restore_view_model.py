@@ -78,7 +78,7 @@ class RestoreViewModel(QObject, ThreadManager):
             else:
                 self._store_software_wallet_data()
             is_set_password: bool = set_value(
-                WALLET_PASSWORD_KEY, self.password, network,
+                WALLET_PASSWORD_KEY, self.password, network.value,
             )
 
             if is_set_password:

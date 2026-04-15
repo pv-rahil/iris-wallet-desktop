@@ -170,7 +170,7 @@ def test_issue_cfa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
     with allure.step('Create a psbt for issue asset'):
         wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
         wallets_and_operations.second_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_no_utxo_watch_only_wallet(
-            SECOND_APPLICATION, CFA_ASSET_NAME,
+            SECOND_APPLICATION, CFA_ASSET_NAME, utxo_required=True,
         )
 
     with allure.step('Sign the cfa psbt'):

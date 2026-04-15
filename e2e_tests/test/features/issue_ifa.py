@@ -7,6 +7,7 @@ from __future__ import annotations
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_dialog
 from e2e_tests.test.utilities.send_flow_helpers import click_issue_button_get_toaster_and_close
 from e2e_tests.test.utilities.send_flow_helpers import handle_confirmation_dialog_and_usb_sync
 from e2e_tests.test.utilities.send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
@@ -99,7 +100,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         return description
 
-    def issue_ifa_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name):
+    def issue_ifa_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name, utxo_required=False):
         """
         Initiate IFA issuance from a draft in watch-only/offline mode to create an unsigned PSBT.
         After this, the test should sign and broadcast, then return to finalize issuance from the draft again.
@@ -112,9 +113,9 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
         if self.do_is_displayed(self.issue_ifa_page_objects.issue_ifa_button()):
             self.issue_ifa_page_objects.click_issue_ifa_button()
 
-        if self.do_is_displayed(self.success_page_objects.home_button()):
-            self.success_page_objects.click_home_button()
-
+        handle_utxo_confirmation_dialog(
+            self, self, utxo_required=utxo_required,
+        )
         self.do_focus_on_application(application)
 
         self.wallet_feature.usb_sync(is_receive=False)

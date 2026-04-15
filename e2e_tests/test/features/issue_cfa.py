@@ -15,6 +15,7 @@ from e2e_tests.test.utilities.asset_copy import copy_cfa_image_to_home_directory
 from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
+from e2e_tests.test.utilities.send_flow_helpers import handle_confirmation_dialog_and_usb_sync
 from e2e_tests.test.utilities.send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
 from e2e_tests.test.utilities.send_flow_helpers import handle_success_home_button
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
@@ -207,7 +208,7 @@ class IssueCfa(MainPageObjects, BaseOperations, BaseIssueAsset):
             if self.hardware_wallet_emulator:
                 self.hardware_wallet_emulator.terminate()
 
-    def issue_cfa_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name):
+    def issue_cfa_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_name, utxo_required: bool = False):
         """
         Issues an CFA asset with sufficient sats and no UTXO.
         """
@@ -217,6 +218,9 @@ class IssueCfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_cfa_page_objects.issue_cfa_button()):
             self.issue_cfa_page_objects.click_issue_cfa_button()
+
+        if utxo_required:
+            handle_confirmation_dialog_and_usb_sync(self, self.wallet_features)
 
         self.do_focus_on_application(application)
 

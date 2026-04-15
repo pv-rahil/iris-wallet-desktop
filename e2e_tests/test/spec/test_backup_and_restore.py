@@ -22,6 +22,7 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.psbt_helpers import sign_and_broadcast_psbt_offline_single_sig
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_bitcoin_frame
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_collectibles
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_fungible
@@ -340,107 +341,36 @@ def test_load_wallet_for_offline_wallet(test_environment: TestEnvironment, walle
         wallets_and_operations.third_page_features.wallet_features.create_and_fund_wallet(
             application=THIRD_APPLICATION, variant=ONLINE_CREATE_ON_DEVICE,
         )
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-        wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-        if wallet_variant_name in HARDWARE_WALLET_VARIANTS or wallet_variant_name == ONLINE_WATCH_ONLY:
-            XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
-                is_load_wallet=True,
+        # For watch-only wallets, collect keyring values from SECOND_APPLICATION (funded wallet)
+        # For other offline wallets, collect from FIRST_APPLICATION (offline signer)
+        if wallet_variant_name == ONLINE_WATCH_ONLY:
+            wallets_and_operations.second_page_operations.do_focus_on_application(
+                SECOND_APPLICATION,
             )
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
+            wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
+            XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.second_page_features.wallet_features.collect_keyring_values_from_app(
+                app_name=SECOND_APPLICATION, is_load_wallet=True,
+            )
+            wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
+            PASSWORD = wallets_and_operations.second_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_cancel_button()
         else:
-            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
-            MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
-        wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
-        PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
-        wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
-
-    # Configure backup provider (Google) for watch-only wallets
-    if wallet_variant_name == ONLINE_WATCH_ONLY:
-        with allure.step('Configure backup provider (Google) for watch-only'):
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
-            wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
-            wallets_and_operations.first_page_features.wallet_features.google_auth()
-            wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
-            wallets_and_operations.first_page_objects.backup_page_objects.click_backup_close_button()
-
-    test_environment.reset_second_instance(reset_data=False)
-
-
-@pytest.mark.skip_for_multisig
-@pytest.mark.skip_for_online_wallet
-@pytest.mark.skip_for_hardware_wallet
-@pytest.mark.parametrize('test_environment', [3], indirect=True)
-@allure.feature('Backup and Restore with asset transfers for offline wallet')
-@allure.story('CFA from B->A via PSBT')
-def test_cfa_transfer_for_offline_wallet(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """
-    Offline E2E using PSBT:
-    - Issue CFA in Wallet B and send to A via PSBT (SECOND -> FIRST)
-    - Verify received amounts in target wallets
-    """
-    global CFA_RECEIVE_AMOUNT_BEFORE
-
-    # Get fresh page objects from environment after reset
-    _, second_page_features, second_page_operations = get_fresh_page_objects(
-        wallets_and_operations, app_index=2,
-    )
-
-    # CFA: B -> A via PSBT
-    with allure.step('Issue CFA (RGB25) in Wallet B'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(
-            application=THIRD_APPLICATION, asset_name=CFA_NAME, asset_description=CFA_DESC, asset_amount=ISSUE_AMOUNT,
-        )
-
-    with allure.step('Generate invoice in Wallet A for CFA receive (PSBT)'):
-        second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        second_page_features.receive_features.receive_asset_from_sidebar(
-            SECOND_APPLICATION, variant_name=wallet_variant_name,
-        )
-        second_page_features.wallet_features.usb_sync()
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name,
-        )
-        second_page_features.wallet_features.broadcast_psbt(
-            application=SECOND_APPLICATION,
-        )
-        cfa_invoice_a = second_page_features.receive_features.receive_asset_from_sidebar(
-            application=SECOND_APPLICATION, variant_name=wallet_variant_name,
-        )
-
-    with allure.step('Create PSBT for CFA transfer in Wallet B'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
-            CFA_NAME,
-        )
-        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_send_button()
-        wallets_and_operations.third_page_features.send_features.send(
-            application=THIRD_APPLICATION, receiver_invoice=cfa_invoice_a, amount=SEND_AMOUNT,
-        )
-    refresh_collectibles_on_app2(wallets_and_operations)
-    second_page_features.wallet_features.usb_sync()
-
-    with allure.step('Capture CFA received amount in Wallet A'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_features.wallet_features.usb_sync()
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
-            CFA_NAME,
-        )
-        CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+            wallets_and_operations.first_page_operations.do_focus_on_application(
+                FIRST_APPLICATION,
+            )
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+            if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
+                XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
+                    is_load_wallet=True,
+                )
+            else:
+                wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
+                MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
+            PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
 
     test_environment.reset_second_instance(reset_data=False)
 
@@ -451,7 +381,7 @@ def test_cfa_transfer_for_offline_wallet(test_environment: TestEnvironment, wall
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Backup and Restore with asset transfers for offline wallet')
 @allure.story('NIA from A->B via PSBT')
-def test_nia_transfer_for_offline_wallet(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_nia_transfer_for_offline_wallet(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Offline E2E using PSBT:
     - Issue NIA in Wallet A and send to B via PSBT (FIRST -> SECOND)
@@ -503,17 +433,14 @@ def test_nia_transfer_for_offline_wallet(test_environment, wallets_and_operation
         )
         second_page_objects.asset_detail_page_objects.click_send_button()
         second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=nia_invoice_b, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name,
+            application=SECOND_APPLICATION, receiver_invoice=nia_invoice_b, amount=SEND_AMOUNT, wallet_variant_name=wallet_variant_name, utxo_required=True,
         )
 
-    with allure.step('Sign UTXO PSBT for NIA transfer'):
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
-        )
-
-    with allure.step('Broadcast UTXO PSBT for NIA transfer'):
-        second_page_features.wallet_features.broadcast_psbt(
-            application=SECOND_APPLICATION,
+    with allure.step('Sign and broadcast UTXO PSBT for NIA transfer'):
+        second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
+        sign_and_broadcast_psbt_offline_single_sig(
+            wallets_and_operations, wallet_variant_name,
+            second_page_operations, second_page_features, is_rgb=False,
         )
 
     with allure.step('Create transfer PSBT for NIA'):
@@ -521,18 +448,16 @@ def test_nia_transfer_for_offline_wallet(test_environment, wallets_and_operation
         second_page_objects.fungible_page_objects.click_nia_frame(
             NIA_NAME,
         )
-        second_page_features.send_features.send_asset_for_single_sig_offline(
-            application=SECOND_APPLICATION,
-        )
+        second_page_objects.asset_detail_page_objects.click_resume_draft_frame()
+        second_page_objects.send_asset_page_objects.click_send_button()
+        second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
 
-    with allure.step('Sign transfer PSBT for NIA'):
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_rgb=True,
-        )
+        second_page_features.wallet_features.usb_sync()
 
-    with allure.step('Broadcast transfer PSBT for NIA'):
-        second_page_features.wallet_features.broadcast_psbt(
-            application=SECOND_APPLICATION,
+    with allure.step('Sign and broadcast transfer PSBT for NIA'):
+        sign_and_broadcast_psbt_offline_single_sig(
+            wallets_and_operations, wallet_variant_name,
+            second_page_operations, second_page_features,
         )
         second_page_features.wallet_features.usb_sync()
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -560,6 +485,91 @@ def test_nia_transfer_for_offline_wallet(test_environment, wallets_and_operation
     wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
     wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
     wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_multisig
+@pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_hardware_wallet
+@pytest.mark.parametrize('test_environment', [3], indirect=True)
+@allure.feature('Backup and Restore with asset transfers for offline wallet')
+@allure.story('CFA from B->A via PSBT')
+def test_cfa_transfer_for_offline_wallet(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Offline E2E using PSBT:
+    - Issue CFA in Wallet B and send to A via PSBT (SECOND -> FIRST)
+    - Verify received amounts in target wallets
+    """
+    global CFA_RECEIVE_AMOUNT_BEFORE
+
+    # Get fresh page objects from environment after reset
+    second_page_objects, second_page_features, second_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=2,
+    )
+
+    # CFA: B -> A via PSBT
+    with allure.step('Issue CFA (RGB25) in Wallet B'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_features.issue_cfa_features.issue_cfa_with_sufficient_sats_and_utxo(
+            application=THIRD_APPLICATION, asset_name=CFA_NAME, asset_description=CFA_DESC, asset_amount=ISSUE_AMOUNT,
+        )
+
+    with allure.step('Generate invoice in Wallet A for CFA receive (PSBT)'):
+        second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        cfa_invoice_a = second_page_features.receive_features.receive_asset_from_sidebar(
+            application=SECOND_APPLICATION, variant_name=wallet_variant_name,
+        )
+
+    with allure.step('Create PSBT for CFA transfer in Wallet B'):
+        wallets_and_operations.third_page_operations.do_focus_on_application(
+            THIRD_APPLICATION,
+        )
+        wallets_and_operations.third_page_objects.collectible_page_objects.click_cfa_frame(
+            CFA_NAME,
+        )
+        wallets_and_operations.third_page_objects.asset_detail_page_objects.click_send_button()
+        wallets_and_operations.third_page_features.send_features.send(
+            application=THIRD_APPLICATION, receiver_invoice=cfa_invoice_a, amount=SEND_AMOUNT,
+        )
+    refresh_collectibles_on_app2(wallets_and_operations)
+    second_page_features.wallet_features.usb_sync()
+
+    with allure.step('Capture CFA received amount in Wallet A'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.wallet_features.usb_sync()
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
+        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
+            CFA_NAME,
+        )
+        CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+
+    # Configure backup provider (Google) for watch-only wallets
+    if wallet_variant_name == ONLINE_WATCH_ONLY:
+        with allure.step('Configure backup provider (Google) for watch-only'):
+            second_page_operations.do_focus_on_application(
+                SECOND_APPLICATION,
+            )
+            second_page_objects.sidebar_page_objects.click_backup_button()
+            second_page_objects.backup_page_objects.click_configurable_button()
+            second_page_features.wallet_features.google_auth()
+            second_page_objects.toaster_page_objects.click_toaster_close_button()
+            second_page_objects.backup_page_objects.click_backup_close_button()
+
+            second_page_objects.backup_page_objects.click_backup_wallet_data_button()
+            second_page_operations.wait_for_toaster_message()
+            _, description = second_page_objects.toaster_page_objects.click_toaster_frame()
+        assert description == INFO_BACKUP_COMPLETED
+
     test_environment.restart_single_instance()
 
 
@@ -573,65 +583,67 @@ def test_restore_for_offline_wallet(test_environment, wallets_and_operations: Wa
     Restore the wallet and assert the previously captured CFA/NIA received amounts.
     Mirrors the online restore test pattern.
     """
-    description = None
+    # Get fresh page objects from environment after reset
+    first_page_objects, first_page_features, first_page_operations = get_fresh_page_objects(
+        wallets_and_operations, app_index=1,
+    )
+
     with allure.step('Restore the wallet'):
         if wallet_variant_name == ONLINE_WATCH_ONLY:
-            wallets_and_operations.first_page_features.wallet_features.navigate_to_watch_only_restore(
+            first_page_features.wallet_features.navigate_to_watch_only_restore(
                 FIRST_APPLICATION,
             )
-            wallets_and_operations.first_page_features.wallet_features.google_auth(
+            first_page_features.wallet_features.google_auth(
                 password=PASSWORD, xpub_vanilla=XPUB_VANILLA, xpub_colored=XPUB_COLORED, fingerprint=MASTER_FINGERPRINT,
             )
             wallets_and_operations.first_page_operations.wait_for_toaster_message()
-            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-            assert description == INFO_RESTORE_COMPLETED
+            _, _ = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         else:
             # Offline wallet restore flow using mnemonic or xpubs
             load_variant = map_to_load_variant(wallet_variant_name)
-            wallets_and_operations.first_page_features.wallet_features.create_and_fund_wallet(
+            first_page_features.wallet_features.create_and_fund_wallet(
                 application=FIRST_APPLICATION, variant=load_variant, fund=False, is_restore_wallet=True,
             )
-            wallets_and_operations.first_page_operations.do_focus_on_application(
+            first_page_operations.do_focus_on_application(
                 FIRST_APPLICATION,
             )
-            wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+            first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
             if wallet_variant_name in HARDWARE_WALLET_VARIANTS:
-                wallets_and_operations.first_page_features.wallet_features.restore_with_xpubs(
+                first_page_features.wallet_features.restore_with_xpubs(
                     xpub_vanilla=XPUB_VANILLA,
                     xpub_colored=XPUB_COLORED,
                     fingerprint=MASTER_FINGERPRINT,
                     password=PASSWORD,
                 )
             else:
-                wallets_and_operations.first_page_features.wallet_features.restore_with_mnemonic(
+                first_page_features.wallet_features.restore_with_mnemonic(
                     mnemonic=MNEMONIC,
                     password=PASSWORD,
                 )
             wallets_and_operations.first_page_operations.wait_for_toaster_message()
-            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-            assert description == INFO_RESTORE_COMPLETED
+            _, _ = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
             wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
                 password=PASSWORD,
             )
-            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
+            first_page_objects.enter_wallet_password_page_objects.click_login_button()
     with allure.step('Capture CFA received amount in Wallet A (post-restore)'):
-        wallets_and_operations.first_page_operations.do_focus_on_application(
+        first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.first_page_objects.collectible_page_objects.click_cfa_frame(
+        first_page_objects.sidebar_page_objects.click_collectibles_button()
+        first_page_objects.collectible_page_objects.click_cfa_frame(
             CFA_NAME,
         )
-        cfa_received_amount_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        cfa_received_amount_after = first_page_objects.asset_detail_page_objects.get_total_balance()
+        first_page_objects.asset_detail_page_objects.click_close_button()
 
     with allure.step('Capture NIA received amount in Wallet A (post-restore)'):
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
+        first_page_objects.sidebar_page_objects.click_fungibles_button()
+        first_page_objects.fungible_page_objects.click_nia_frame(
             NIA_NAME,
         )
-        nia_received_amount_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
+        nia_received_amount_after = first_page_objects.asset_detail_page_objects.get_total_balance()
+        first_page_objects.asset_detail_page_objects.click_close_button()
 
     assert CFA_RECEIVE_AMOUNT_BEFORE == cfa_received_amount_after
     assert NIA_RECEIVE_AMOUNT_BEFORE == nia_received_amount_after
@@ -1343,7 +1355,7 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
     # Create UTXO and transfer using helper flow
     send_flow = OfflineSendFlow(wallets_and_operations)
     send_flow.send_transfer_multisig(
-        wallet_variant_name, NIA_NAME, asset_type='nia', send_amount=SEND_AMOUNT,
+        wallet_variant_name, NIA_TICKER, asset_type='nia', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup

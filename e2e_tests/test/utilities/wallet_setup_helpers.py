@@ -34,6 +34,7 @@ def setup_multisig_wallets(
     is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
     is_online = wallet_variant_name not in REQUIRE_USB_VARIANTS
+    is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
     if is_load_variant:
         wallet_variant_name = map_load_to_create(wallet_variant_name)
 
@@ -42,9 +43,11 @@ def setup_multisig_wallets(
             application=FIRST_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
+    # Pass the same variant to second app - variant resolution will handle it properly
+    # For ONLINE_MULTISIG_WATCH_ONLY: FIRST_APP -> OFFLINE_MULTISIG_ON_DEVICE, SECOND_APP -> ONLINE_MULTISIG_WATCH_ONLY
     with allure.step('Initiate second multisig wallet'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE, fund=False,
+            application=SECOND_APPLICATION, variant=wallet_variant_name, fund=False,
         )
 
     with allure.step('Import cosigner data into first multisig wallet'):
@@ -52,9 +55,10 @@ def setup_multisig_wallets(
             application=FIRST_APPLICATION,
         )
 
+    # For watch-only, import all cosigner data from other wallets
     with allure.step('Import cosigner data into second multisig wallet'):
         wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
-            application=SECOND_APPLICATION,
+            application=SECOND_APPLICATION, import_all=is_watch_only,
         )
 
     with allure.step('Finalize first multisig wallet setup'):

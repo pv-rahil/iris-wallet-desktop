@@ -229,12 +229,20 @@ def test_on_error_hardware_wallet_emits_error(send_bitcoin_view_model, mocker):
 def test_send_btc_begin_hw_online_emits_signing_and_calls_repo(send_bitcoin_view_model, mocker):
     """send_btc_begin should emit signing state when HW+online and schedule repo call."""
     mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.requires_native_authentication',
+        return_value=False,
+    )
+    mocker.patch(
         'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_key_storage_type',
         return_value=KeyStorageType.HARDWARE_WALLET,
     )
     mocker.patch(
         'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_type',
         return_value=WalletType.ONLINE_TYPE_WALLET,
+    )
+    mocker.patch(
+        'src.viewmodels.send_bitcoin_view_model.SettingRepository.get_wallet_signature_type',
+        return_value=WalletSignatureType.STANDARD_TYPE_WALLET,
     )
     send_bitcoin_view_model.run_in_thread = Mock()
     hw_slot = MagicMock()

@@ -163,7 +163,7 @@ def test_issue_nia_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
 
     with allure.step('Create a psbt for issue asset'):
         wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(
-            SECOND_APPLICATION, ASSET_TICKER,
+            SECOND_APPLICATION, ASSET_TICKER, utxo_required=True,
         )
 
     with allure.step('Sign the nia psbt'):

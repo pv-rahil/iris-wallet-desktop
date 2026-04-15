@@ -25,11 +25,9 @@ from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_re
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_sign
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet
 from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_refresh_bitcoin
-from e2e_tests.test.utilities.send_flow_helpers import initiate_third_wallet_and_get_invoice
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_and_fund_offline_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
-from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from src.utils.info_message import INFO_BITCOIN_SENT
 
 AMOUNT = '50000000'
@@ -291,6 +289,7 @@ def test_receive_and_send_bitcoin_for_offline(wallets_and_operations: WalletTest
         address, copied_address = wallets_and_operations.second_page_features.receive_features.receive(
             application=SECOND_APPLICATION,
         )
+        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
     with allure.step('Verify address'):
         assert copied_address == address
@@ -302,7 +301,7 @@ def test_receive_and_send_bitcoin_for_offline(wallets_and_operations: WalletTest
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, wallet_variant_name=wallet_variant_name,
+            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, wallet_variant_name=wallet_variant_name, utxo_required=False,
         )
     with allure.step('sign psbt for send_btc'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
@@ -355,7 +354,7 @@ def test_send_bitcoin_with_custom_fee_rate_for_offline(wallets_and_operations: W
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.second_page_features.send_features.create_psbt(
-            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE, wallet_variant_name=wallet_variant_name,
+            application=SECOND_APPLICATION, receiver_invoice=copied_address, amount=AMOUNT, fee_rate=FEE_RATE, wallet_variant_name=wallet_variant_name, utxo_required=False,
         )
 
     with allure.step('Sign psbt for send_btc with custom fee rate'):
@@ -506,7 +505,7 @@ def test_send_bitcoin_for_multisig(wallets_and_operations: WalletTestSetup, wall
         focus_first_wallet_and_click_bitcoin_frame(wallets_and_operations)
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.create_psbt(
-            FIRST_APPLICATION, address, AMOUNT,
+            FIRST_APPLICATION, address, AMOUNT, utxo_required=False,
         )
         focus_second_wallet(wallets_and_operations)
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
@@ -566,7 +565,7 @@ def test_send_bitcoin_with_custom_fee_rate_for_multisig(wallets_and_operations: 
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.create_psbt(
-            FIRST_APPLICATION, copied_address, AMOUNT, FEE_RATE,
+            FIRST_APPLICATION, copied_address, AMOUNT, FEE_RATE, utxo_required=False,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,

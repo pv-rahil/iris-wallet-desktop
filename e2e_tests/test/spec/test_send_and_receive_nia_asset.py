@@ -6,9 +6,7 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
-from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
@@ -16,12 +14,7 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.psbt_helpers import focus_and_refresh_asset_list
-from e2e_tests.test.utilities.psbt_helpers import focus_refresh_and_sign_psbt
 from e2e_tests.test.utilities.send_flow_helpers import focus_and_navigate_to_asset
-from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_fungible
-from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_refresh_fungible
-from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_refresh_fungible
 from e2e_tests.test.utilities.send_flow_helpers import generate_invoice_and_send_asset
 from e2e_tests.test.utilities.send_flow_helpers import initiate_third_wallet_and_get_invoice
 from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
@@ -31,7 +24,6 @@ from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get
 from e2e_tests.test.utilities.send_flow_helpers import offline_multisig_create_utxo_for_send_test_flow
 from e2e_tests.test.utilities.send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
 from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
-from e2e_tests.test.utilities.send_flow_helpers import send_asset_flow_with_verification
 from e2e_tests.test.utilities.send_flow_helpers import verify_expired_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation_step
@@ -39,7 +31,6 @@ from e2e_tests.test.utilities.send_flow_helpers import verify_offline_multisig_t
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
-from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel

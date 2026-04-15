@@ -13,6 +13,7 @@ from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_dialog
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
@@ -139,7 +140,10 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.hardware_wallet.terminate()
         return description
 
-    def create_psbt(self, application, receiver_invoice, amount=None, fee_rate=None, wallet_variant_name=None, is_native_auth_enabled: bool = False):
+    def create_psbt(
+        self, application, receiver_invoice, amount=None, fee_rate=None, wallet_variant_name=None,
+        is_native_auth_enabled: bool = False, utxo_required: bool = True,
+    ):
         """
         Create psbt
 
@@ -164,14 +168,8 @@ class SendOperation(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.send_asset_page_objects.send_button()):
             self.send_asset_page_objects.click_send_button()
 
-        try:
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-            if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                self.confirmation_dialog_page_objects.click_confirmation_continue_button()
-        except Exception as _:
-            pass
+        if utxo_required:
+            handle_utxo_confirmation_dialog(self, self, utxo_required=True)
 
         if is_native_auth_enabled:
             self.enter_native_password()
@@ -224,7 +222,7 @@ class SendOperation(MainPageObjects, BaseOperations):
             if utxo_required:
                 handle_utxo_confirmation_with_hardware_wallet(
                     self, self, self.wallet_features, LEDGER_EMULATOR_APP_NAME,
-                    utxo_required=True, is_hardware=is_hardware,
+                    utxo_required=True, is_hardware=is_hardware, wallet_variant=wallet_variant_name,
                 )
 
             try:

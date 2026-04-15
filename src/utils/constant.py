@@ -111,9 +111,9 @@ IRIS_WALLET_TRANSLATIONS_CONTEXT = 'iris_wallet_vault'
 
 # Rgb lib commit ID
 RGB_LIB_VERSION_KEY = 'rgb_lib_version'
-CURRENT_RGB_LIB_VERSION = '0.3.0b4'
+CURRENT_RGB_LIB_VERSION = '0.3.0b5'
 COMPATIBLE_RGB_LIB_VERSION = [
-    '0.3.0b4',
+    '0.3.0b5',
 ]
 
 # Directory names used in paths

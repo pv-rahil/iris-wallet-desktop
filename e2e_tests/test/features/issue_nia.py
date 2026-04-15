@@ -118,7 +118,7 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
                 application, is_native_auth_enabled,
             )
 
-    def issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_ticker):
+    def issue_nia_with_sufficient_sats_and_no_utxo_watch_only_wallet(self, application, asset_ticker, utxo_required: bool = False):
         """
         Issues an NIA asset with sufficient sats and no UTXO.
         """
@@ -128,6 +128,9 @@ class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):
 
         if self.do_is_displayed(self.issue_nia_page_objects.issue_nia_button()):
             self.issue_nia_page_objects.click_issue_nia_button()
+
+        if utxo_required:
+            handle_confirmation_dialog_and_usb_sync(self, self.wallet_feature)
 
         self.do_focus_on_application(application)
 

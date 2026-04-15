@@ -521,9 +521,12 @@ class TestEnvironment:
             delete_app_data(app1_data)
 
         # Recreate Fake USB environment if required by variant
-        env = None
+        # Always include QT_ACCESSIBILITY for AT-SPI to work properly
+        env = os.environ.copy()
+        env['QT_ACCESSIBILITY'] = '1'
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
-            env, _ = setup_fake_usb()
+            usb_env, _ = setup_fake_usb()
+            env.update(usb_env)
 
         # Relaunch first application and reinitialize its page abstractions
         self.first_process = subprocess.Popen(
@@ -592,9 +595,12 @@ class TestEnvironment:
             delete_app_data(app2_data)
 
         # Recreate Fake USB environment if required by variant
-        env = None
+        # Always include QT_ACCESSIBILITY for AT-SPI to work properly
+        env = os.environ.copy()
+        env['QT_ACCESSIBILITY'] = '1'
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
-            env, _ = setup_fake_usb()
+            usb_env, _ = setup_fake_usb()
+            env.update(usb_env)
 
         # Relaunch second application and reinitialize its page abstractions
         self.second_process = subprocess.Popen(
@@ -652,9 +658,12 @@ class TestEnvironment:
             delete_app_data(app3_data)
 
         # Recreate Fake USB environment if required by variant
-        env = None
+        # Always include QT_ACCESSIBILITY for AT-SPI to work properly
+        env = os.environ.copy()
+        env['QT_ACCESSIBILITY'] = '1'
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
-            env, _ = setup_fake_usb()
+            usb_env, _ = setup_fake_usb()
+            env.update(usb_env)
 
         # Relaunch third application and reinitialize its page abstractions
         self.third_process = subprocess.Popen(

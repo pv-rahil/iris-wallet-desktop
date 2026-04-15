@@ -9,6 +9,7 @@ from accessible_constant import REQUIRE_USB_VARIANTS
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_dialog
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.send_flow_helpers import click_issue_button_get_toaster_and_close
 from e2e_tests.test.utilities.send_flow_helpers import handle_success_home_button
@@ -112,11 +113,7 @@ class Inflate(MainPageObjects, BaseOperations, BaseIssueAsset):
                 self.issue_ifa_page_objects.click_issue_ifa_button()
 
             if utxo_required:
-                if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_dialog()):
-                    self.confirmation_dialog_page_objects.click_confirmation_dialog()
-
-                if self.do_is_displayed(self.confirmation_dialog_page_objects.confirmation_continue_button()):
-                    self.confirmation_dialog_page_objects.click_confirmation_continue_button()
+                handle_utxo_confirmation_dialog(self, self, utxo_required=True)
 
             is_online = self._is_online_hardware(variant_name)
             self._confirm_on_hardware_wallet(
