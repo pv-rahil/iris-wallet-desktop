@@ -99,14 +99,47 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
     if reset:
         reset_regtest()
 
+    elf_path = f"e2e_tests/ledger_app/{app_name}.elf"
+    print(f"[HW_WALLET] Starting speculos with: speculos -m nanosp {elf_path}")
+
     proc = subprocess.Popen(
-        ['speculos', '-m', 'nanosp', f"e2e_tests/ledger_app/{app_name}.elf"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        ['speculos', '-m', 'nanosp', elf_path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
 
-    # Give time to create window
-    time.sleep(1)
+    # Wait for speculos window to be visible (up to 10 seconds)
+    max_wait = 10
+    speculos_ready = False
+    for i in range(max_wait):
+        # Check if process is still running
+        if proc.poll() is not None:
+            stdout, stderr = proc.communicate()
+            print(f"[HW_WALLET] Speculos exited with code {proc.returncode}")
+            print(f"""[HW_WALLET] stdout:
+                  {stdout.decode() if stdout else 'empty'}""")
+            print(f"""[HW_WALLET] stderr:
+                  {stderr.decode() if stderr else 'empty'}""")
+            raise RuntimeError(f"""Speculos failed to start:
+                               {stderr.decode() if stderr else 'unknown error'}""")
+
+        result = subprocess.run(
+            ['wmctrl', '-l'],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if 'Speculos' in result.stdout:
+            print(f"[HW_WALLET] Speculos window found after {i+1}s")
+            speculos_ready = True
+            break
+        time.sleep(1)
+
+    if not speculos_ready:
+        print('[HW_WALLET] WARNING: Speculos window not found, but process is running')
+
+    # Give additional time for speculos to be fully ready
+    time.sleep(2)
 
     # Move Speculos window to background
     subprocess.run(
@@ -116,4 +149,5 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
         ], check=False,
     )
 
+    print(f"[HW_WALLET] Speculos started successfully with PID {proc.pid}")
     return proc

@@ -129,21 +129,6 @@ def test_fail_transfer_for_offline(wallets_and_operations: WalletTestSetup, wall
         )
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_receive_button()
         wallets_and_operations.second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_usb_sync_frame()
-        wallets_and_operations.second_page_objects.usb_sync_dialog_page_objects.click_continue_button()
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name,
-        )
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
-            application=SECOND_APPLICATION,
-        )
-
-    with allure.step('Generate an invoice'):
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
-            asset_name=NIA_ASSET_NAME,
-        )
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_receive_button()
-        wallets_and_operations.second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
 
     with allure.step('Failing the transfer for offline wallet'):
         wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(

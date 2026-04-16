@@ -628,21 +628,19 @@ class TestEnvironment:
             ],
             check=True,
         )
-
-        # Get the frame from the application node (more reliable than root.child)
-        app_node = self._find_application_node(SECOND_APPLICATION)
-        if app_node:
-            self.second_application = app_node.child(
-                roleName='frame', name=SECOND_APPLICATION,
-            )
-        else:
-            # Fallback to direct search
-            self.second_application = root.child(
-                roleName='frame', name=SECOND_APPLICATION,
-            )
+        print(f"[RESET] Initializing {SECOND_APPLICATION}")
+        self.second_application = self._find_showing_frame(SECOND_APPLICATION)
+        print(f"""[RESET] Successfully identified frame for
+              {SECOND_APPLICATION}: {self.second_application}""")
         self.second_page_features = MainFeatures(self.second_application)
         self.second_page_objects = MainPageObjects(self.second_application)
         self.second_page_operations = BaseOperations(self.second_application)
+        print(f"[RESET] Page objects reinitialized for {SECOND_APPLICATION}")
+
+        # Force AT-SPI tree refresh
+        _ = root.children
+        time.sleep(0.5)
+        print('[RESET] AT-SPI tree refreshed')
 
     def reset_third_instance(self, reset_data: bool = True):
         """Reset and relaunch only the third application instance.
@@ -691,26 +689,78 @@ class TestEnvironment:
             ],
             check=True,
         )
-
-        # Get the frame from the application node
-        app_node = self._find_application_node(THIRD_APPLICATION)
-        if app_node:
-            self.third_application = app_node.child(
-                roleName='frame', name=THIRD_APPLICATION,
-            )
-        else:
-            # Fallback to direct search
-            self.third_application = root.child(
-                roleName='frame', name=THIRD_APPLICATION,
-            )
+        print(f"[RESET] Initializing {THIRD_APPLICATION}")
+        self.third_application = self._find_showing_frame(THIRD_APPLICATION)
+        print(f"""[RESET] Successfully identified frame for
+              {THIRD_APPLICATION}: {self.third_application}""")
         self.third_page_features = MainFeatures(self.third_application)
         self.third_page_objects = MainPageObjects(self.third_application)
         self.third_page_operations = BaseOperations(self.third_application)
+        print(f"[RESET] Page objects reinitialized for {THIRD_APPLICATION}")
+
+        # Force AT-SPI tree refresh
+        _ = root.children
+        time.sleep(0.5)
+        print('[RESET] AT-SPI tree refreshed')
+
+    def reset_fourth_instance(self, reset_data: bool = False):
+        """Reset and relaunch only the fourth application instance.
+
+        Args:
+            reset_data (bool): If True, clears the fourth app's data directory before relaunching.
+        """
+        # If only less than 4 instances are active, nothing to do
+        if self.num_instances < 4:
+            return
+
+        # Kill only the fourth process
+        self.terminate_process(self.fourth_process)
+        self.fourth_process = None
+
+        # Optionally clear only the fourth app's data
+        if reset_data:
+            actual_path = os.path.dirname(local_store.get_path())
+            app4_data = actual_path.replace(APP_NAME, FOURTH_APPLICATION_PATH)
+            delete_app_data(app4_data)
+
+        # Always include QT_ACCESSIBILITY for AT-SPI to work properly
+        env = os.environ.copy()
+        env['QT_ACCESSIBILITY'] = '1'
+
+        # Relaunch fourth application and reinitialize its page abstractions
+        self.fourth_process = subprocess.Popen(
+            [f'e2e_tests/applications/iris-wallet-vault_{
+                APP4_NAME
+            }-{__version__}-x86_64.AppImage'],
+            env=env,
+        )
+        self.wait_for_application(FOURTH_APPLICATION)
+
+        subprocess.run(
+            [
+                'wmctrl', '-r', FOURTH_APPLICATION, '-b',
+                'add,maximized_vert,maximized_horz',
+            ],
+            check=True,
+        )
+        print(f"[RESET] Initializing {FOURTH_APPLICATION}")
+        self.fourth_application = self._find_showing_frame(FOURTH_APPLICATION)
+        print(f"""[RESET] Successfully identified frame for
+              {FOURTH_APPLICATION}: {self.fourth_application}""")
+        self.fourth_page_features = MainFeatures(self.fourth_application)
+        self.fourth_page_objects = MainPageObjects(self.fourth_application)
+        self.fourth_page_operations = BaseOperations(self.fourth_application)
+        print(f"[RESET] Page objects reinitialized for {FOURTH_APPLICATION}")
+
+        # Force AT-SPI tree refresh
+        _ = root.children
+        time.sleep(0.5)
+        print('[RESET] AT-SPI tree refreshed')
 
     def reset_offline_multisig_instances(self, reset_data: bool = False):
-        """Reset first, second, and third application instances for offline multisig tests.
+        """Reset first, second, third, and fourth application instances for offline multisig tests.
 
-        This refreshes the AT-SPI tree for all three apps without clearing data,
+        This refreshes the AT-SPI tree for all four apps without clearing data,
         which is needed before backup/restore tests to ensure fresh page objects.
 
         Args:
@@ -719,6 +769,7 @@ class TestEnvironment:
         self.reset_first_instance(reset_data=reset_data)
         self.reset_second_instance(reset_data=reset_data)
         self.reset_third_instance(reset_data=reset_data)
+        self.reset_fourth_instance(reset_data=reset_data)
 
     def remove_keyring_entries(self, service, app_name):
         """Removes keyring entries for a given service and application name."""
