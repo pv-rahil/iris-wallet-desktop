@@ -1471,7 +1471,7 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
 
     # Get invoice from fourth wallet and send BTC
     with allure.step('Get invoice from fourth wallet and send BTC'):
-        invoice = wallets_and_operations.fourth_page_features.receive_features.receive(
+        _, invoice = wallets_and_operations.fourth_page_features.receive_features.receive(
             FOURTH_APPLICATION,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -1556,17 +1556,18 @@ def test_offline_multisig_backup(test_environment, wallets_and_operations: Walle
         wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
 
     # Configure backup and take backup
-    with allure.step('Configure backup for first offline multisig wallet'):
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
-        wallets_and_operations.first_page_features.wallet_features.google_auth()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
+    if wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY:
+        with allure.step('Configure backup for first offline multisig wallet'):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
+            wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
+            wallets_and_operations.first_page_features.wallet_features.google_auth()
+            wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
 
-    with allure.step('Take backup of first offline multisig wallet'):
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
-        wallets_and_operations.first_page_operations.wait_for_toaster_message()
-        _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        assert description == INFO_BACKUP_COMPLETED
+        with allure.step('Take backup of first offline multisig wallet'):
+            wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
+            wallets_and_operations.first_page_operations.wait_for_toaster_message()
+            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+            assert description == INFO_BACKUP_COMPLETED
 
     # Reset first wallet with data clear
     test_environment.restart_single_instance(reset_data=True)
