@@ -100,7 +100,12 @@ runs:
           xserver-xorg-video-modesetting \
           x11-utils \
           x11-xserver-utils \
-          python3-pyqt6
+          python3-pyqt6 \
+          libqt6gui6 \
+          libqt6widgets6 \
+          libqt6core6 \
+          libqt6dbus6 \
+          qt6-base-dev
         sudo gem install fpm -f
       shell: bash
 

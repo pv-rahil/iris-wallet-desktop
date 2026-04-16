@@ -2,6 +2,7 @@
 """Wallet variant utilities."""
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from typing import Tuple
@@ -99,6 +100,17 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
     if reset:
         reset_regtest()
 
+    # Set environment variables for software OpenGL rendering (required for CI)
+    env = os.environ.copy()
+    env['LIBGL_ALWAYS_SOFTWARE'] = '1'
+    env['MESA_LOADER_DRIVER_OVERRIDE'] = 'llvmpipe'
+    env['QT_OPENGL'] = 'software'
+    env['QT_XCB_GL_INTEGRATION'] = 'none'
+    env['QT_QUICK_BACKEND'] = 'software'
+
+    elf_path = f"e2e_tests/ledger_app/{app_name}.elf"
+    print(f"[HW_WALLET] Starting speculos: speculos -m nanosp --display qt {elf_path}")
+
     proc = subprocess.Popen(
         [
             'speculos',
@@ -106,14 +118,24 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
             '--display', 'qt',
             '--apdu-port', '9999',
             '--api-port', '5001',
-            f"e2e_tests/ledger_app/{app_name}.elf",
+            elf_path,
         ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
     )
 
-    # Give time to create window
-    time.sleep(1)
+    # Wait and check if process is still running
+    time.sleep(2)
+
+    if proc.poll() is not None:
+        stdout, stderr = proc.communicate()
+        print(f"[HW_WALLET] Speculos exited with code {proc.returncode}")
+        print(f"[HW_WALLET] stdout: {stdout.decode() if stdout else 'empty'}")
+        print(f"[HW_WALLET] stderr: {stderr.decode() if stderr else 'empty'}")
+        raise RuntimeError(f"Speculos failed to start: {stderr.decode() if stderr else 'unknown error'}")
+
+    print(f"[HW_WALLET] Speculos running with PID {proc.pid}")
 
     # Move Speculos window to background
     subprocess.run(
