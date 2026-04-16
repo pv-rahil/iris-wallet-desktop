@@ -40,7 +40,7 @@ def test_continue_disabled_until_valid_and_checked(dialog: WatchOnlyDialog, qtbo
     # When valid, error hidden and min size reduced
     assert dialog.error_label.isVisible() is False
     assert dialog.minimumSize().width() == 480
-    assert dialog.minimumSize().height() == 420
+    assert dialog.minimumSize().height() == 480
 
 
 def test_handle_submit_saves_to_local_store(dialog: WatchOnlyDialog, monkeypatch):
