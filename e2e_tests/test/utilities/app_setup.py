@@ -126,8 +126,12 @@ class TestEnvironment:
 
         self.launch_applications()
 
-    def reset_app_data(self):
-        """Resets the app data by deleting relevant directories."""
+    def reset_app_data(self, preserve_fake_usb: bool = False):
+        """Resets the app data by deleting relevant directories.
+
+        Args:
+            preserve_fake_usb: If True, do not delete the fake USB mount directory.
+        """
         actual_path = os.path.dirname(local_store.get_path())
         app1_data = actual_path.replace(APP_NAME, FIRST_APPLICATION_PATH)
         app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
@@ -142,7 +146,9 @@ class TestEnvironment:
         if self.num_instances >= 4:
             delete_app_data(app4_data)
 
-        shutil.rmtree(FAKEUSB_MOUNT_PATH, ignore_errors=True)
+        # Only clean fake USB if not explicitly preserved (for backup/restore tests)
+        if not preserve_fake_usb:
+            shutil.rmtree(FAKEUSB_MOUNT_PATH, ignore_errors=True)
 
     def launch_applications(self):
         """Launches the required iris wallet applications and maximizes the windows."""
@@ -479,11 +485,15 @@ class TestEnvironment:
 
         self.launch_applications()
 
-    def restart_single_instance(self, reset_data: bool = True):
+    def restart_single_instance(self, reset_data: bool = True, preserve_fake_usb: bool = False):
         """Restart only the first application instance and ensure environment runs single-instance.
 
         This is useful for flows where we initially needed multiple instances (e.g. load/on-device),
         but subsequent tests should continue with a single app instance only.
+
+        Args:
+            reset_data: If True, clears app data directories before relaunching.
+            preserve_fake_usb: If True, preserves the fake USB mount (for backup/restore tests).
         """
         # Terminate any running processes (first/second/third if present)
         self.terminate()
@@ -493,7 +503,7 @@ class TestEnvironment:
 
         # Optionally clear app data (first app only is strictly necessary here)
         if reset_data:
-            self.reset_app_data()
+            self.reset_app_data(preserve_fake_usb=preserve_fake_usb)
 
         # Relaunch only the first application
         self.launch_applications()

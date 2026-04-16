@@ -10,6 +10,7 @@ from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LOAD_WALLET_VARIANT
+from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import MULTISIG_LOAD_VARIANTS
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
@@ -31,7 +32,8 @@ from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_c
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_refresh_fungible
 from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_click_bitcoin_frame
 from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_refresh_bitcoin
-from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
+from e2e_tests.test.utilities.send_flow_helpers import offline_issue_sign_refresh_multisig
+from e2e_tests.test.utilities.send_flow_helpers import offline_send_transfer_multisig
 from e2e_tests.test.utilities.send_flow_helpers import refresh_collectibles_on_app2
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
@@ -570,7 +572,7 @@ def test_cfa_transfer_for_offline_wallet(test_environment: TestEnvironment, wall
             _, description = second_page_objects.toaster_page_objects.click_toaster_frame()
         assert description == INFO_BACKUP_COMPLETED
 
-    test_environment.restart_single_instance()
+    test_environment.restart_single_instance(preserve_fake_usb=True)
 
 
 @pytest.mark.skip_for_multisig
@@ -1241,9 +1243,8 @@ def test_offline_multisig_setup_and_issue_nia(test_environment: TestEnvironment,
         )
 
     # Sign, broadcast, and refresh for offline multisig
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.issue_sign_refresh_multisig(
-        wallet_variant_name, NIA_NAME, asset_type='nia',
+    offline_issue_sign_refresh_multisig(
+        wallets_and_operations, wallet_variant_name, NIA_NAME, asset_type='nia',
     )
 
     # Issue the draft NIA asset
@@ -1280,9 +1281,8 @@ def test_offline_multisig_issue_cfa(test_environment: TestEnvironment, wallets_a
         )
 
     # Sign, broadcast, and refresh for offline multisig
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.issue_sign_refresh_multisig(
-        wallet_variant_name, CFA_NAME, asset_type='cfa',
+    offline_issue_sign_refresh_multisig(
+        wallets_and_operations, wallet_variant_name, CFA_NAME, asset_type='cfa',
     )
 
     # Issue the draft CFA asset
@@ -1319,9 +1319,8 @@ def test_offline_multisig_issue_ifa(test_environment: TestEnvironment, wallets_a
         )
 
     # Sign, broadcast, and refresh for offline multisig
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.issue_sign_refresh_multisig(
-        wallet_variant_name, IFA_NAME, asset_type='ifa',
+    offline_issue_sign_refresh_multisig(
+        wallets_and_operations, wallet_variant_name, IFA_NAME, asset_type='ifa',
     )
 
     # Issue the draft IFA asset
@@ -1347,15 +1346,9 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
     """
     global NIA_RECEIVE_AMOUNT_BEFORE
 
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=1)
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-    get_fresh_page_objects(wallets_and_operations, app_index=3)
-
-    # Create UTXO and transfer using helper flow
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.send_transfer_multisig(
-        wallet_variant_name, NIA_TICKER, asset_type='nia', send_amount=SEND_AMOUNT,
+    # Create UTXO and transfer using helper function
+    offline_send_transfer_multisig(
+        wallets_and_operations, wallet_variant_name, NIA_TICKER, asset_type='nia', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
@@ -1391,10 +1384,9 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
     get_fresh_page_objects(wallets_and_operations, app_index=2)
     get_fresh_page_objects(wallets_and_operations, app_index=3)
 
-    # Create UTXO and transfer using helper flow
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.send_transfer_multisig(
-        wallet_variant_name, CFA_NAME, asset_type='cfa', send_amount=SEND_AMOUNT,
+    # Create UTXO and transfer using helper function
+    offline_send_transfer_multisig(
+        wallets_and_operations, wallet_variant_name, CFA_NAME, asset_type='cfa', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
@@ -1430,10 +1422,9 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
     get_fresh_page_objects(wallets_and_operations, app_index=2)
     get_fresh_page_objects(wallets_and_operations, app_index=3)
 
-    # Create UTXO and transfer using helper flow
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.send_transfer_multisig(
-        wallet_variant_name, IFA_NAME, asset_type='ifa', send_amount=SEND_AMOUNT,
+    # Create UTXO and transfer using helper function
+    offline_send_transfer_multisig(
+        wallets_and_operations, wallet_variant_name, IFA_NAME, asset_type='ifa', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
@@ -1522,13 +1513,13 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Backup and restore for offline multisig')
 @allure.story('Backup wallet')
-def test_offline_multisig_backup(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_offline_multisig_backup(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test backup functionality for offline multisig wallet.
     Backup the FIRST application (offline wallet with USB).
     """
     global MNEMONIC, PASSWORD, XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT
-    is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
     _is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
     is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
 
@@ -1545,9 +1536,12 @@ def test_offline_multisig_backup(test_environment, wallets_and_operations: Walle
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         if is_hardware or is_watch_only:
-            XPUB_VANILLA, XPUB_COLORED, MASTER_FINGERPRINT, PASSWORD = wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
-                is_load_wallet=True,
-            )
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_vanilla_copy_button()
+            XPUB_VANILLA = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_colored_copy_button()
+            XPUB_COLORED = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_fingerprint_copy_button()
+            MASTER_FINGERPRINT = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
         else:
             wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
             MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
@@ -1568,9 +1562,18 @@ def test_offline_multisig_backup(test_environment, wallets_and_operations: Walle
             wallets_and_operations.first_page_operations.wait_for_toaster_message()
             _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
             assert description == INFO_BACKUP_COMPLETED
+    else:
+        # For hardware/on-device variants, perform USB sync to create backup .zip on fake USB
+        with allure.step('USB sync to create backup for offline multisig wallet'):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+            wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
+            wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+            wallets_and_operations.first_page_operations.wait_for_toaster_message()
 
-    # Reset first wallet with data clear
-    test_environment.restart_single_instance(reset_data=True)
+    # Reset first wallet with data clear, but preserve fake USB for restore test
+    test_environment.restart_single_instance(
+        reset_data=True, preserve_fake_usb=True,
+    )
 
 
 @pytest.mark.skip_for_single_sig
@@ -1583,7 +1586,7 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
     Test restore functionality for offline multisig wallet and verify balances.
     Restore the FIRST application (offline wallet with USB).
     """
-    is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
+    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
     is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
 
     # Get fresh page objects from environment after reset

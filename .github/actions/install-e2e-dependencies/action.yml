@@ -93,7 +93,12 @@ runs:
           python3-dev \
           libhidapi-hidraw0 \
           libhidapi-libusb0 \
-          libhidapi-dev
+          libhidapi-dev \
+          xserver-xorg-core \
+          xserver-xorg-video-all \
+          xserver-xorg-video-modesetting \
+          x11-utils \
+          x11-xserver-utils
         sudo gem install fpm -f
       shell: bash
 

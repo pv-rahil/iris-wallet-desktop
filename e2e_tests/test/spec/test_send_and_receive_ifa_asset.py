@@ -22,9 +22,11 @@ from e2e_tests.test.utilities.send_flow_helpers import generate_invoice_and_send
 from e2e_tests.test.utilities.send_flow_helpers import generate_multisig_invoice_and_send
 from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_balance
 from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_transfer_status
+from e2e_tests.test.utilities.send_flow_helpers import offline_issue_sign_refresh_multisig
 from e2e_tests.test.utilities.send_flow_helpers import offline_multisig_create_utxo_for_send_test_flow
+from e2e_tests.test.utilities.send_flow_helpers import offline_resume_transfer_multisig
+from e2e_tests.test.utilities.send_flow_helpers import offline_send_transfer_single_sig
 from e2e_tests.test.utilities.send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
-from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
 from e2e_tests.test.utilities.send_flow_helpers import verify_expired_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation_step
@@ -192,9 +194,8 @@ def test_offline_single_sig_create_utxo_for_send_ifa(test_environment: TestEnvir
 @allure.story('Create transfer PSBT, sign with offline signer, then broadcast')
 def test_offline_single_sig_send_transfer_ifa(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send IFA asset in offline single-sig setup (3 apps) - Send transfer."""
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.send_transfer_single_sig(
-        wallet_variant_name, IFA_ASSET_NAME, asset_type='ifa', refresh_count=2,
+    offline_send_transfer_single_sig(
+        wallets_and_operations, wallet_variant_name, IFA_ASSET_NAME, asset_type='ifa', refresh_count=2,
     )
 
 
@@ -324,9 +325,8 @@ def test_send_ifa_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
         )
 
         # Sign, broadcast, and refresh for offline multisig
-        send_flow = OfflineSendFlow(wallets_and_operations)
-        send_flow.issue_sign_refresh_multisig(
-            wallet_variant_name, IFA_ASSET_NAME, asset_type='ifa',
+        offline_issue_sign_refresh_multisig(
+            wallets_and_operations, wallet_variant_name, IFA_ASSET_NAME, asset_type='ifa',
         )
 
     with allure.step('Issue IFA asset (offline multisig)'):
@@ -374,9 +374,8 @@ def test_offline_multisig_create_utxo_for_send_ifa(test_environment: TestEnviron
 @allure.story('Create transfer PSBT, sign with offline signer and cosigner, then broadcast')
 def test_offline_multisig_send_transfer_ifa(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send IFA asset in offline multisig setup (4 apps) - Send transfer."""
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.resume_transfer_multisig(
-        wallet_variant_name, IFA_ASSET_NAME, asset_type='ifa',
+    offline_resume_transfer_multisig(
+        wallets_and_operations, wallet_variant_name, IFA_ASSET_NAME, asset_type='ifa',
     )
 
 

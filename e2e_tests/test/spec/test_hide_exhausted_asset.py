@@ -22,8 +22,8 @@ from e2e_tests.test.utilities.send_flow_helpers import generate_multisig_invoice
 from e2e_tests.test.utilities.send_flow_helpers import initiate_third_wallet_and_get_invoice
 from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.send_flow_helpers import offline_send_transfer_single_sig
 from e2e_tests.test.utilities.send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
-from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
@@ -176,10 +176,9 @@ def test_hide_exhausted_asset_on_offline(wallets_and_operations: WalletTestSetup
             asset_type='nia',
         )
 
-        # Use OfflineSendFlow helper to complete the transfer
-        send_flow = OfflineSendFlow(wallets_and_operations)
-        send_flow.send_transfer_single_sig(
-            wallet_variant_name, ASSET_NAME, asset_type='nia', refresh_count=1,
+        # Use helper function to complete the transfer
+        offline_send_transfer_single_sig(
+            wallets_and_operations, wallet_variant_name, ASSET_NAME, asset_type='nia', refresh_count=1,
         )
 
         child_count = wallets_and_operations.second_page_objects.fungible_page_objects.get_child_count()

@@ -210,14 +210,20 @@ jobs:
         run: |
           poetry run pip install keyring keyrings.alt
 
-      - name: Start Xvfb & openbox
+      - name: Start Xvfb with GLX & openbox
         run: |
           XAUTH="$RUNNER_TEMP/.Xauthority"
           touch "$XAUTH"; echo "XAUTHORITY=$XAUTH" >> $GITHUB_ENV
           xauth -f "$XAUTH" add :99 . $(mcookie)
 
-          Xvfb :99 -screen 0 1920x1080x24 -ac & echo "XVFB_PID=$!" >> $GITHUB_ENV
-          sleep 4
+          # Start Xvfb with GLX extension enabled
+          Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
+          sleep 5
+          # Wait for X to be ready
+          for i in {1..30}; do
+            xdpyinfo -display :99 >/dev/null 2>&1 && break
+            sleep 1
+          done
           openbox & sleep 3
 
       - name: Compile QT resources

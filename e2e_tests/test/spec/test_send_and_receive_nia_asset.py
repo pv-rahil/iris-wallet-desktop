@@ -21,9 +21,11 @@ from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
 from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_balance
 from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_transfer_status
+from e2e_tests.test.utilities.send_flow_helpers import offline_issue_sign_refresh_multisig
 from e2e_tests.test.utilities.send_flow_helpers import offline_multisig_create_utxo_for_send_test_flow
+from e2e_tests.test.utilities.send_flow_helpers import offline_resume_transfer_multisig
+from e2e_tests.test.utilities.send_flow_helpers import offline_send_transfer_single_sig
 from e2e_tests.test.utilities.send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
-from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
 from e2e_tests.test.utilities.send_flow_helpers import verify_expired_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation_step
@@ -183,9 +185,8 @@ def test_offline_single_sig_create_utxo_for_send_nia(test_environment: TestEnvir
 @allure.story('Create transfer PSBT, sign with offline signer, then broadcast')
 def test_offline_single_sig_send_transfer_nia(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send NIA asset in offline single-sig setup (3 apps) - Send transfer."""
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.send_transfer_single_sig(
-        wallet_variant_name, NIA_ASSET_NAME, asset_type='nia', refresh_count=2,
+    offline_send_transfer_single_sig(
+        wallets_and_operations, wallet_variant_name, NIA_ASSET_NAME, asset_type='nia', refresh_count=2,
     )
 
 
@@ -301,9 +302,8 @@ def test_send_nia_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
         )
 
         # Sign, broadcast, and refresh for offline multisig
-        send_flow = OfflineSendFlow(wallets_and_operations)
-        send_flow.issue_sign_refresh_multisig(
-            wallet_variant_name, NIA_ASSET_NAME, asset_type='nia',
+        offline_issue_sign_refresh_multisig(
+            wallets_and_operations, wallet_variant_name, NIA_ASSET_NAME, asset_type='nia',
         )
 
     with allure.step('Issue NIA asset (offline multisig)'):
@@ -347,9 +347,8 @@ def test_offline_multisig_create_utxo_for_send_nia(test_environment: TestEnviron
 @allure.story('Create transfer PSBT, sign with offline signer and cosigner, then broadcast')
 def test_offline_multisig_send_transfer_nia(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send NIA asset in offline multisig setup (4 apps) - Send transfer."""
-    send_flow = OfflineSendFlow(wallets_and_operations)
-    send_flow.resume_transfer_multisig(
-        wallet_variant_name, NIA_ASSET_NAME, asset_type='nia',
+    offline_resume_transfer_multisig(
+        wallets_and_operations, wallet_variant_name, NIA_ASSET_NAME, asset_type='nia',
     )
 
 
