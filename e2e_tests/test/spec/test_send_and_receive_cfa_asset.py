@@ -214,6 +214,7 @@ def test_offline_single_sig_verify_for_cfa(wallets_and_operations: WalletTestSet
         wallets_and_operations.third_page_objects,
         ASSET_NAME, asset_type='cfa',
         application=THIRD_APPLICATION,
+        refresh_count=1,
     )
     assert received_amount == SEND_AMOUNT
 
