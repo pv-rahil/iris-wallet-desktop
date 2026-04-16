@@ -102,9 +102,13 @@ runs:
         # Set accessibility and enable debugging for better AT-SPI stability
         gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
         gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
+        # Start AT-SPI services and wait for them to initialize (increased to 18s for reliability on slower runners)
+        /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
+        /usr/libexec/at-spi2-registryd 2>/dev/null &
+        sleep 18
         # Verify AT-SPI services are running
-        pgrep -f "at-spi-bus-launcher" >/dev/null || echo "⚠️  AT-SPI bus launcher not running"
-        pgrep -f "at-spi2-registryd" >/dev/null || echo "⚠️  AT-SPI registryd not running"
+        pgrep -f "at-spi-bus-launcher" >/dev/null || echo "AT-SPI bus launcher not running"
+        pgrep -f "at-spi2-registryd" >/dev/null || echo "AT-SPI registryd not running"
         # Ensure the test password is visible to the AppImage subprocesses
         export NATIVE_AUTHENTICATION_PASSWORD="123456"
         # Dogtail configuration for CI stability (exported for Python tests)
@@ -123,6 +127,9 @@ runs:
         export QT_DISABLE_WINDOW_TRANSPARENCY=1
         export GDK_SYNCHRONIZE=1
         export __GLX_VENDOR_LIBRARY_NAME=mesa
+        # Add poetry venv bin to PATH for speculos (Ledger emulator) accessibility
+        POETRY_VENV_BIN="$(poetry env info --path)/bin"
+        export PATH="$POETRY_VENV_BIN:$PATH"
         sleep 3  # Increased to 3s for better UI stability
         poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
         '

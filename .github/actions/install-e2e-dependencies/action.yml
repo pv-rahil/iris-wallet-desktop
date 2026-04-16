@@ -94,6 +94,7 @@ runs:
           libhidapi-hidraw0 \
           libhidapi-libusb0 \
           libhidapi-dev \
+          qemu-user-static \
           xserver-xorg-core \
           xserver-xorg-video-all \
           xserver-xorg-video-modesetting \

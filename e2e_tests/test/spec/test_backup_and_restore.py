@@ -1379,11 +1379,6 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
     """
     global CFA_RECEIVE_AMOUNT_BEFORE
 
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=1)
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-    get_fresh_page_objects(wallets_and_operations, app_index=3)
-
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
         wallets_and_operations, wallet_variant_name, CFA_NAME, asset_type='cfa', send_amount=SEND_AMOUNT,
@@ -1417,11 +1412,6 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
     """
     global IFA_RECEIVE_AMOUNT_BEFORE
 
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=1)
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-    get_fresh_page_objects(wallets_and_operations, app_index=3)
-
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
         wallets_and_operations, wallet_variant_name, IFA_NAME, asset_type='ifa', send_amount=SEND_AMOUNT,
@@ -1454,11 +1444,6 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
     Test send BTC for offline multisig wallet - prepare for backup.
     """
     global BTC_BALANCE_BEFORE
-
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=1)
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-    get_fresh_page_objects(wallets_and_operations, app_index=3)
 
     # Get invoice from fourth wallet and send BTC
     with allure.step('Get invoice from fourth wallet and send BTC'):
