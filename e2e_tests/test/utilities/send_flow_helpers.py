@@ -1534,9 +1534,8 @@ class OfflineSendFlow:
             self.second_page_objects.send_asset_page_objects.send_button(),
         ):
             self.second_page_objects.send_asset_page_objects.click_send_button()
-            
-        self.second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
 
+        self.second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
 
         # USB sync to pass PSBT to offline signer
         self.second_page_features.wallet_features.usb_sync()

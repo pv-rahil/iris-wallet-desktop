@@ -194,6 +194,10 @@ jobs:
         run: |
           echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
           echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
+          # Qt-specific software OpenGL settings
+          echo "QT_OPENGL=software" >> $GITHUB_ENV
+          echo "QT_QUICK_BACKEND=software" >> $GITHUB_ENV
+          echo "QSG_RENDER_LOOP=basic" >> $GITHUB_ENV
 
       - name: Preinstall keyring backends (system Python)
         run: |
