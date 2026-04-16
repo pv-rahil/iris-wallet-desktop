@@ -263,7 +263,7 @@ run_e2e_tests() {
             echo "Running full test suite (per-file)..."
             for test_file in "${TEST_FILES[@]}"; do
                 print_test_header "$(basename "$test_file")" "$test_file" "$SPECIFIED_WALLET_VARIANT"
-                if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                if ! pytest -s "$test_file" --timeout=300 --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
                     print_failure "$(basename "$test_file")" "$SPECIFIED_WALLET_VARIANT"
                     EXIT_CODE=1
                 fi
@@ -275,7 +275,7 @@ run_e2e_tests() {
             fi
         elif [[ -n "$TEST_FILE" ]]; then
             print_test_header "$TEST_FILE" "$TESTS_DIR/$TEST_FILE" "$SPECIFIED_WALLET_VARIANT"
-            if ! pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+            if ! pytest -s "$TESTS_DIR/$TEST_FILE" --timeout=300 --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
                 print_failure "$TEST_FILE" "$SPECIFIED_WALLET_VARIANT"
                 exit 1
             fi
@@ -310,7 +310,7 @@ run_e2e_tests() {
                 echo "Running full test suite (per-file)..."
                 for test_file in "${TEST_FILES[@]}"; do
                     print_test_header "$(basename "$test_file")" "$test_file" "$variant"
-                    if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                    if ! pytest -s "$test_file" --timeout=300 --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
                         print_failure "$(basename "$test_file")" "$variant"
                         variant_exit_code=1
                     fi
@@ -322,7 +322,7 @@ run_e2e_tests() {
                 fi
             elif [[ -n "$TEST_FILE" ]]; then
                 print_test_header "$TEST_FILE" "$TESTS_DIR/$TEST_FILE" "$variant"
-                if ! pytest -s "$TESTS_DIR/$TEST_FILE" --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                if ! pytest -s "$TESTS_DIR/$TEST_FILE" --timeout=300 --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
                     print_failure "$TEST_FILE" "$variant"
                     failures+=("$variant")
                 fi

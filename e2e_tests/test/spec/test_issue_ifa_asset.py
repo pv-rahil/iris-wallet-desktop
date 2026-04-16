@@ -134,6 +134,7 @@ def test_issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
         wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_watch_only_wallet(
             SECOND_APPLICATION, IFA_ASSET_NAME, utxo_required=True,
         )
+        wallets_and_operations.second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
 
     with allure.step('Sign the IFA PSBT'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(

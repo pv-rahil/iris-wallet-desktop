@@ -1518,6 +1518,9 @@ def test_offline_multisig_backup(test_environment: TestEnvironment, wallets_and_
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
+        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
+        wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
         wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
         if is_hardware or is_watch_only:
@@ -1638,8 +1641,7 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         nia_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        expected_nia_balance = str(int(ISSUE_AMOUNT) - int(SEND_AMOUNT))
-        assert nia_balance_after == expected_nia_balance
+        assert nia_balance_after == NIA_RECEIVE_AMOUNT_BEFORE
 
     # Verify CFA balance after restore
     with allure.step('Verify CFA balance after restore'):
@@ -1650,8 +1652,7 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         cfa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        expected_cfa_balance = str(int(ISSUE_AMOUNT) - int(SEND_AMOUNT))
-        assert cfa_balance_after == expected_cfa_balance
+        assert cfa_balance_after == CFA_RECEIVE_AMOUNT_BEFORE
 
     # Verify IFA balance after restore
     with allure.step('Verify IFA balance after restore'):
@@ -1662,5 +1663,4 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         ifa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        expected_ifa_balance = str(int(ISSUE_AMOUNT) - int(SEND_AMOUNT))
-        assert ifa_balance_after == expected_ifa_balance
+        assert ifa_balance_after == IFA_RECEIVE_AMOUNT_BEFORE
