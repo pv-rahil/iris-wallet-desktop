@@ -1322,7 +1322,7 @@ def offline_single_sig_create_utxo_for_send_test_flow(
         wallets_and_operations.second_page_objects,
         asset_name, asset_type=asset_type,
     )
-    wallets_and_operations.second_page_features.send_features.create_psbt_for_multisig(
+    wallets_and_operations.second_page_features.send_features.create_psbt(
         application=SECOND_APPLICATION, receiver_invoice=invoice, amount=send_amount,
         wallet_variant_name=wallet_variant_name, utxo_required=True,
     )
@@ -1534,6 +1534,9 @@ class OfflineSendFlow:
             self.second_page_objects.send_asset_page_objects.send_button(),
         ):
             self.second_page_objects.send_asset_page_objects.click_send_button()
+            
+        self.second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
+
 
         # USB sync to pass PSBT to offline signer
         self.second_page_features.wallet_features.usb_sync()

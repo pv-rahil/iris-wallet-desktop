@@ -305,7 +305,7 @@ class WelcomeWidget(QWidget):
             if dialog.exec() == QDialog.Accepted:
                 selected_drive = dialog.get_selected_drive()
                 selected_wallet = dialog.list_usb_zip_files(selected_drive)
-                if selected_drive:
+                if selected_drive and selected_wallet:
                     blur_effect = QGraphicsBlurEffect()
                     blur_effect.setBlurRadius(10)
                     self.setGraphicsEffect(blur_effect)

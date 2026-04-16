@@ -1303,7 +1303,7 @@ class Wallet(MainPageObjects, BaseOperations):
         self.hw_emulator_page_objects.press_left_and_right(duration=0.2)
         # Wait for sign transaction screen to appear
         self.do_focus_on_application(application)
-        time.sleep(2)
+        time.sleep(3)
         # Second sequence: 4 right arrows then left+right (sign transaction)
         self.hw_emulator_page_objects.click_right_arrow_key(4, delay=0.8)
         self.hw_emulator_page_objects.press_left_and_right(duration=0.2)

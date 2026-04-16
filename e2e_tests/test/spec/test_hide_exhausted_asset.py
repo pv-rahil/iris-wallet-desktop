@@ -22,6 +22,8 @@ from e2e_tests.test.utilities.send_flow_helpers import generate_multisig_invoice
 from e2e_tests.test.utilities.send_flow_helpers import initiate_third_wallet_and_get_invoice
 from e2e_tests.test.utilities.send_flow_helpers import issue_nia_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
+from e2e_tests.test.utilities.send_flow_helpers import OfflineSendFlow
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
@@ -167,33 +169,17 @@ def test_hide_exhausted_asset_on_offline(wallets_and_operations: WalletTestSetup
         wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
-    with allure.step('Generating a RGB invoice for offline wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION,
-        )
-
-    with allure.step('Send asset to the second page for offline wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
-            ASSET_NAME,
-        )
-        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_send_button()
-        wallets_and_operations.second_page_features.send_features.create_psbt(
-            SECOND_APPLICATION, invoice, ASSET_AMOUNT, wallet_variant_name=wallet_variant_name,
+    with allure.step('Create UTXO and send asset to the third wallet for offline wallet'):
+        # Create UTXO for send (also signs and broadcasts UTXO PSBT)
+        offline_single_sig_create_utxo_for_send_test_flow(
+            wallets_and_operations, wallet_variant_name, ASSET_NAME, ASSET_AMOUNT,
+            asset_type='nia',
         )
 
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
-        )
-
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
-            SECOND_APPLICATION,
+        # Use OfflineSendFlow helper to complete the transfer
+        send_flow = OfflineSendFlow(wallets_and_operations)
+        send_flow.send_transfer_single_sig(
+            wallet_variant_name, ASSET_NAME, asset_type='nia', refresh_count=1,
         )
 
         child_count = wallets_and_operations.second_page_objects.fungible_page_objects.get_child_count()

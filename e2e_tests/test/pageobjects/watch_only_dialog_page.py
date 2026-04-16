@@ -1,6 +1,8 @@
 """Watch only dialog page objects module."""
 from __future__ import annotations
 
+from dogtail.rawinput import keyCombo
+
 from accessible_constant import WATCH_ONLY_CANCEL_BUTTON
 from accessible_constant import WATCH_ONLY_CHECKBOX
 from accessible_constant import WATCH_ONLY_CONTINUE_BUTTON
@@ -121,4 +123,7 @@ class WatchOnlyDialogPageObjects(BaseOperations):
         Returns:
             The result of the click action or None if the checkbox is not displayed.
         """
-        return self.do_click(self.watch_only_checkbox()) if self.do_is_displayed(self.watch_only_checkbox()) else None
+        if self.do_is_displayed(self.watch_only_checkbox()):
+            self.watch_only_checkbox().grabFocus()
+            keyCombo('space')
+        return False
