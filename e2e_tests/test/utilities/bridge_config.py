@@ -363,26 +363,29 @@ def restart_bridge_for_config_reload() -> bool:
 
         print('[BRIDGE] Recreating bridge with fresh data for config reload...')
 
-        # Force kill container directly (faster than compose stop)
-        print('[BRIDGE] Killing container...')
-        subprocess.run(
-            ['docker', 'kill', 'rgb-multisig-hub'],
+        # Stop and remove container using docker compose (matches regtest.sh)
+        print('[BRIDGE] Stopping container via docker compose...')
+        result = subprocess.run(
+            ['docker', 'compose', 'stop', 'rgb-multisig-hub'],
+            cwd=e2e_tests_dir,
             capture_output=True,
             text=True,
             check=False,
         )
+        print(f'[BRIDGE] Stop result: {result.stdout or result.stderr}')
 
-        # Remove container directly
-        print('[BRIDGE] Removing container...')
-        subprocess.run(
-            ['docker', 'rm', '-f', 'rgb-multisig-hub'],
+        print('[BRIDGE] Removing container via docker compose...')
+        result = subprocess.run(
+            ['docker', 'compose', 'rm', '-sf', 'rgb-multisig-hub'],
+            cwd=e2e_tests_dir,
             capture_output=True,
             text=True,
             check=False,
         )
+        print(f'[BRIDGE] Remove result: {result.stdout or result.stderr}')
 
         # Small delay to avoid race conditions
-        time.sleep(1)
+        time.sleep(2)
 
         # Clean bind-mounted hub data
         print('[BRIDGE] Cleaning bind-mounted data...')
@@ -393,10 +396,13 @@ def restart_bridge_for_config_reload() -> bool:
                 shutil.rmtree(subdir_path, ignore_errors=True)
                 print(f'[BRIDGE] Removed {subdir}')
 
-        # Start fresh container
-        print('[BRIDGE] Starting fresh container...')
+        # Start fresh container with --force-recreate
+        print('[BRIDGE] Starting fresh container with --force-recreate...')
         result = subprocess.run(
-            ['docker', 'compose', 'up', '-d', 'rgb-multisig-hub'],
+            [
+                'docker', 'compose', 'up', '-d',
+                '--force-recreate', 'rgb-multisig-hub',
+            ],
             cwd=e2e_tests_dir,
             capture_output=True,
             text=True,

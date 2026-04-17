@@ -4,6 +4,8 @@ Hardware device selection dialog page objects class for interacting with the har
 """
 from __future__ import annotations
 
+from dogtail.rawinput import keyCombo
+
 from accessible_constant import HW_DEVICE_SELECTION_DIALOG
 from accessible_constant import HW_DEVICE_SELECTION_DIALOG_CANCEL_BUTTON
 from accessible_constant import HW_DEVICE_SELECTION_DIALOG_CONNECT_BUTTON
@@ -48,4 +50,8 @@ class HWDeviceSelectionDialogPageObjects(BaseOperations):
 
     def click_ledger_emulator_radio_button(self):
         """Clicks the ledger emulator radio button."""
-        return self.do_click(self.ledger_emulator_radio_button()) if self.do_is_displayed(self.ledger_emulator_radio_button()) else None
+        if self.do_is_displayed(self.ledger_emulator_radio_button()):
+            self.ledger_emulator_radio_button().grabFocus()
+            keyCombo('space')
+            return True
+        return False
