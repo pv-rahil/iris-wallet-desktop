@@ -99,7 +99,8 @@ runs:
           xserver-xorg-video-all \
           xserver-xorg-video-modesetting \
           x11-utils \
-          x11-xserver-utils
+          x11-xserver-utils \
+          xdotool
         sudo gem install fpm -f
       shell: bash
 

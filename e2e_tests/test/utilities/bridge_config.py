@@ -346,6 +346,88 @@ def start_regtest_services() -> bool:
         return False
 
 
+def restart_bridge_for_config_reload() -> bool:
+    """
+    Recreate the bridge container with fresh data after config update.
+
+    This always removes the container and cleans data to ensure the new
+    config is loaded with a clean state. Use this after updating the bridge config.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    try:
+        e2e_tests_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..'),
+        )
+
+        print('[BRIDGE] Recreating bridge with fresh data for config reload...')
+
+        # Force kill container directly (faster than compose stop)
+        print('[BRIDGE] Killing container...')
+        subprocess.run(
+            ['docker', 'kill', 'rgb-multisig-hub'],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        # Remove container directly
+        print('[BRIDGE] Removing container...')
+        subprocess.run(
+            ['docker', 'rm', '-f', 'rgb-multisig-hub'],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        # Small delay to avoid race conditions
+        time.sleep(1)
+
+        # Clean bind-mounted hub data
+        print('[BRIDGE] Cleaning bind-mounted data...')
+        bridge_data_dir = os.path.join(e2e_tests_dir, 'hub')
+        for subdir in ['rgb_multisig_hub_db', 'files', 'logs']:
+            subdir_path = os.path.join(bridge_data_dir, subdir)
+            if os.path.exists(subdir_path):
+                shutil.rmtree(subdir_path, ignore_errors=True)
+                print(f'[BRIDGE] Removed {subdir}')
+
+        # Start fresh container
+        print('[BRIDGE] Starting fresh container...')
+        result = subprocess.run(
+            ['docker', 'compose', 'up', '-d', 'rgb-multisig-hub'],
+            cwd=e2e_tests_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        print(f'[BRIDGE] Container started: {result.stdout or result.stderr}')
+
+        # Wait for bridge to be ready
+        print('[BRIDGE] Waiting for bridge to be ready...')
+        for i in range(30):
+            try:
+                subprocess.run(
+                    [
+                        'curl', '-fsS', '--max-time', '5',
+                        'http://127.0.0.1:8141/info',
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                print(f'[BRIDGE] Bridge ready after {i+1}s')
+                return True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                time.sleep(1)
+        print('ERROR: Bridge did not become ready after 30s')
+        return False
+    except subprocess.CalledProcessError as e:
+        print(f'ERROR: Failed to recreate bridge: {e.stderr}')
+        return False
+
+
 def stop_regtest_services() -> bool:
     """
     Stop all regtest services using regtest.sh script.

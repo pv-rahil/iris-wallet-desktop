@@ -580,7 +580,7 @@ def navigate_to_asset_and_click_send(
         refresh: Whether to refresh before clicking asset.
         click_send: Whether to click send button. Set to False for draft transfers.
     """
-    page_operations.do_focus_on_application(page_operations.application)
+    page_operations.do_focus_on_application(SECOND_APPLICATION)
 
     if asset_type == 'ifa':
         page_objects.sidebar_page_objects.click_inflatable_button()

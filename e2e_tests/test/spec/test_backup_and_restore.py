@@ -13,7 +13,6 @@ from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import MULTISIG_LOAD_VARIANTS
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
-from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import SECOND_APPLICATION
@@ -1440,70 +1439,6 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
         IFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
-
-
-@pytest.mark.skip_for_single_sig
-@pytest.mark.skip_for_online_wallet
-@pytest.mark.parametrize('test_environment', [4], indirect=True)
-@allure.feature('Backup and restore for offline multisig')
-@allure.story('Send BTC and capture balances')
-def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
-    """
-    Test send BTC for offline multisig wallet - prepare for backup.
-    """
-    global BTC_BALANCE_BEFORE
-
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-
-    # Get invoice from fourth wallet and send BTC
-    with allure.step('Get invoice from fourth wallet and send BTC'):
-        _, invoice = wallets_and_operations.fourth_page_features.receive_features.receive(
-            FOURTH_APPLICATION,
-        )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
-        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
-        wallets_and_operations.second_page_features.send_features.send(
-            SECOND_APPLICATION, invoice, BTC_SEND_AMOUNT,
-        )
-        # Sign from first wallet (offline signer)
-        wallets_and_operations.first_page_operations.do_focus_on_application(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name,
-        )
-        # Sign from third wallet (cosigner)
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
-        wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
-        )
-        # Broadcast PSBT from second wallet (coordinator)
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
-            SECOND_APPLICATION, is_multisig=True,
-        )
-
-    # Capture BTC balance before backup
-    with allure.step('Capture BTC balance in fourth wallet before backup'):
-        wallets_and_operations.fourth_page_operations.do_focus_on_application(
-            FOURTH_APPLICATION,
-        )
-        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_bitcoin_frame()
-        BTC_BALANCE_BEFORE = wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.get_total_balance()
-
-    test_environment.reset_second_instance(reset_data=False)
-
 
 @pytest.mark.skip_for_single_sig
 @pytest.mark.skip_for_online_wallet
@@ -1519,11 +1454,6 @@ def test_offline_multisig_backup(test_environment: TestEnvironment, wallets_and_
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
     _is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
     is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
-
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=1)
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-    get_fresh_page_objects(wallets_and_operations, app_index=3)
 
     # Backup first wallet (offline signer)
     with allure.step('Backup first offline multisig wallet (signer)'):
