@@ -11,7 +11,7 @@ import threading
 from e2e_tests.test.utilities.bridge_config import generate_biscuit_token
 from e2e_tests.test.utilities.bridge_config import get_bridge_public_key
 from e2e_tests.test.utilities.bridge_config import reset_bridge_config
-from e2e_tests.test.utilities.bridge_config import restart_bridge_container
+from e2e_tests.test.utilities.bridge_config import start_regtest_services
 from e2e_tests.test.utilities.bridge_config import stop_regtest_services
 from e2e_tests.test.utilities.bridge_config import update_bridge_config
 
@@ -230,7 +230,7 @@ class MultisigSetupCoordinator:
     def update_bridge_config(self, threshold: int = 2):
         """
         Update the bridge config.toml with collected xpubs and root public key.
-        Then restart the bridge container to reload the config.
+        Then start regtest services to load the config.
 
         Args:
             threshold: The threshold for the multisig (default 2).
@@ -247,8 +247,7 @@ class MultisigSetupCoordinator:
                 root_public_key=root_public_key,
             )
 
-            # Restart only the bridge container instead of all services
-            restart_bridge_container()
+            start_regtest_services()
             self._bridge_updated = True
 
 

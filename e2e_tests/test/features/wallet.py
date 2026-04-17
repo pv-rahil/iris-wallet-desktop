@@ -979,42 +979,26 @@ class Wallet(MainPageObjects, BaseOperations):
         """
         speculos_process = None
         try:
-            print("[HW_SETUP] Starting speculos...")
             speculos_process = handle_hardware_wallet(
                 app_name=RGB_LEDGER_APP_NAME, reset=reset_regtest_flag,
             )
-            print("[HW_SETUP] Speculos started, focusing on wallet app...")
             self.do_focus_on_application(application)
-            print("[HW_SETUP] Looking for ledger option on hardware connect page...")
             if self.do_is_displayed(self.hw_connect_page_objects.ledger_option()):
-                print("[HW_SETUP] Clicking ledger option...")
                 self.hw_connect_page_objects.click_ledger_option()
-            print("[HW_SETUP] Looking for continue button...")
             if self.do_is_displayed(self.hw_connect_page_objects.continue_button()):
-                print("[HW_SETUP] Clicking continue button...")
                 self.hw_connect_page_objects.click_continue_button()
-            print("[HW_SETUP] Looking for ledger emulator radio button...")
             if self.do_is_displayed(self.hw_device_selection_dialog_page_objects.ledger_emulator_radio_button()):
-                print("[HW_SETUP] Clicking ledger emulator radio button...")
                 self.hw_device_selection_dialog_page_objects.click_ledger_emulator_radio_button()
-            print("[HW_SETUP] Looking for connect button...")
             if self.do_is_displayed(self.hw_device_selection_dialog_page_objects.connect_button()):
-                print("[HW_SETUP] Clicking connect button...")
                 self.hw_device_selection_dialog_page_objects.click_connect_button()
-            print(f"[HW_SETUP] Focusing on speculos window: {LEDGER_EMULATOR_APP_NAME}")
             self.do_focus_on_application(LEDGER_EMULATOR_APP_NAME)
-            print("[HW_SETUP] Interacting with speculos emulator...")
-            for i in range(2):
+            for _ in range(2):
                 time.sleep(1)
-                print(f"[HW_SETUP] Emulator interaction round {i+1}")
                 self.hw_emulator_page_objects.click_right_arrow_key(5)
                 self.hw_emulator_page_objects.press_left_and_right()
-            print("[HW_SETUP] Focusing back on wallet app...")
             self.do_focus_on_application(application)
             time.sleep(2)
-            print("[HW_SETUP] Hardware wallet setup complete!")
         except Exception as e:
-            print(f"[HW_SETUP] ERROR: {e}")
             if speculos_process:
                 speculos_process.terminate()
             raise e
