@@ -23,6 +23,10 @@ _die () {
 _start_services() {
     _stop_services
 
+    # Export UID/GID for docker compose user directive
+    export UID=$(id -u)
+    export GID=$(id -g)
+
     mkdir -p "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2}
     mkdir -p "$SCRIPT_DIR"/hub
     touch "$SCRIPT_DIR"/hub/config.toml

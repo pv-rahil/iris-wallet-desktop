@@ -29,13 +29,9 @@ services:
 
   rgb-multisig-hub:
     image: ghcr.io/rgb-tools/rgb-multisig-hub:0.1.0
-    user: 1000:1000
+    user: "${UID:-1000}:${GID:-1000}"
     ports:
       - 8141:3001
     volumes:
       - ./hub:/srv/data
       - ./hub/config.toml:/srv/data/config.toml:ro
-
-
-volumes:
-  hub:
