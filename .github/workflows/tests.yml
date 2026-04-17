@@ -165,14 +165,14 @@ jobs:
           # All single-sig variants
           # - online_watch_only
           # - online_create_on_device
-          - online_create_hardware
+          # - online_create_hardware
           # - online_load_on_device
           # - online_load_hardware
           # - offline_create_on_device
           # - offline_create_hardware
           # - offline_load_on_device
           # - offline_load_hardware
-          # - online_multisig_on_device
+          - online_multisig_on_device
 
     env:
       DISPLAY: :99

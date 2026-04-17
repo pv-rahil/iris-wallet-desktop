@@ -131,7 +131,6 @@ runs:
         POETRY_VENV_BIN="$(poetry env info --path)/bin"
         export PATH="$POETRY_VENV_BIN:$PATH"
         sleep 3  # Increased to 3s for better UI stability
-        # poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
-        poetry run speculos e2e_tests/ledger_app/rgb_ledger_app.elf
+        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
         '
       shell: bash

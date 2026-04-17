@@ -116,6 +116,56 @@ rgb_lib_version = "0.3"
         f.write(default_config)
 
 
+def restart_bridge_container() -> bool:
+    """
+    Restart only the rgb-multisig-bridge container to reload config.toml.
+    This is more efficient than restarting all regtest services.
+
+    Returns:
+        True if restart successful, False otherwise.
+    """
+    try:
+        e2e_tests_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..'),
+        )
+
+        # Restart only the bridge container
+        subprocess.run(
+            ['docker', 'compose', 'restart', 'rgb-multisig-hub'],
+            cwd=e2e_tests_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        # Wait for the bridge to be reachable
+        print('Waiting for bridge to be ready after restart...')
+        for i in range(60):
+            try:
+                subprocess.run(
+                    [
+                        'curl', '-fsS',
+                        'http://127.0.0.1:8141/info',
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                print(f'Bridge service restarted successfully (attempt {i+1})')
+                return True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                time.sleep(1)
+
+        print('ERROR: Bridge did not become reachable after restart')
+        return False
+    except subprocess.CalledProcessError as e:
+        print(f'ERROR: Failed to restart bridge container: {e.stderr}')
+        return False
+    except FileNotFoundError:
+        print('ERROR: docker command not found')
+        return False
+
+
 def generate_biscuit_token(colored_xpub: str) -> str | None:
     """
     Generate a biscuit token for a cosigner's colored xpub.
