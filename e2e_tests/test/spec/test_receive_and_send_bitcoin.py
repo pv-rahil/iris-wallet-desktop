@@ -19,12 +19,11 @@ from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
-from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet
-from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_click_bitcoin_frame
-from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wallet_and_click_bitcoin_frame
+from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_third_wallet_and_refresh_bitcoin
 from e2e_tests.test.utilities.send_flow_helpers import focus_first_wallet_and_sign
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet
-from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet_and_refresh_bitcoin
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_and_fund_offline_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets

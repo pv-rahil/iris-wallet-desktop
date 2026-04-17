@@ -16,10 +16,10 @@ from accessible_constant import ONLINE_LOAD_HARDWARE
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_native_auth_and_focus
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_native_auth_utxo_and_success
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_success_home_button
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
-from e2e_tests.test.utilities.send_flow_helpers import handle_native_auth_and_focus
-from e2e_tests.test.utilities.send_flow_helpers import handle_native_auth_utxo_and_success
-from e2e_tests.test.utilities.send_flow_helpers import handle_success_home_button
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 

@@ -14,10 +14,10 @@ from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.asset_copy import copy_cfa_image_to_home_directory
 from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_confirmation_dialog_and_usb_sync
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_success_home_button
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
-from e2e_tests.test.utilities.send_flow_helpers import handle_confirmation_dialog_and_usb_sync
-from e2e_tests.test.utilities.send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
-from e2e_tests.test.utilities.send_flow_helpers import handle_success_home_button
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 

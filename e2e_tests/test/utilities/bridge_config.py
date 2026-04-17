@@ -88,8 +88,6 @@ def update_bridge_config(
 
     config_lines.append('rgb_lib_version = "0.3"')
 
-    print('-'*100)
-
     with open(BRIDGE_CONFIG_PATH, 'w', encoding='utf-8') as f:
         f.write('\n'.join(config_lines) + '\n')
 
@@ -299,6 +297,16 @@ def start_regtest_services() -> bool:
                 if os.path.exists(subdir_path):
                     shutil.rmtree(subdir_path, ignore_errors=True)
                     print(f'[BRIDGE] Removed {subdir}')
+
+            # Fix permissions: ensure hub directory is owned by UID 1000 (container user)
+            if os.path.exists(bridge_data_dir):
+                print('[BRIDGE] Setting hub directory ownership to UID 1000:1000...')
+                subprocess.run(
+                    ['chown', '-R', '1000:1000', bridge_data_dir],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
             # Start fresh container
             print('[BRIDGE] Starting fresh container...')
             result = subprocess.run(
@@ -395,6 +403,17 @@ def restart_bridge_for_config_reload() -> bool:
             if os.path.exists(subdir_path):
                 shutil.rmtree(subdir_path, ignore_errors=True)
                 print(f'[BRIDGE] Removed {subdir}')
+
+        # Fix permissions: ensure hub directory is owned by UID 1000 (container user)
+        # This prevents "Permission denied" errors when container tries to create log dirs
+        if os.path.exists(bridge_data_dir):
+            print('[BRIDGE] Setting hub directory ownership to UID 1000:1000...')
+            subprocess.run(
+                ['chown', '-R', '1000:1000', bridge_data_dir],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
 
         # Start fresh container with --force-recreate
         print('[BRIDGE] Starting fresh container with --force-recreate...')

@@ -25,19 +25,7 @@ _start_services() {
 
     mkdir -p "$SCRIPT_DIR"/data{core,index,ldk0,ldk1,ldk2}
     mkdir -p "$SCRIPT_DIR"/hub
-    # Create minimal valid config.toml for bridge to start
-    if [ ! -s "$SCRIPT_DIR"/hub/config.toml ]; then
-        cat > "$SCRIPT_DIR"/hub/config.toml << 'EOF'
-cosigner_xpubs = [
-    "PLACEHOLDER_XPUB_1",
-    "PLACEHOLDER_XPUB_2",
-]
-threshold_colored = 2
-threshold_vanilla = 2
-root_public_key = "PLACEHOLDER_ROOT_KEY"
-rgb_lib_version = "0.3"
-EOF
-    fi
+    touch "$SCRIPT_DIR"/hub/config.toml
     # see compose.yaml for the exposed ports
     EXPOSED_PORTS=(3000 50001)
     for port in "${EXPOSED_PORTS[@]}"; do

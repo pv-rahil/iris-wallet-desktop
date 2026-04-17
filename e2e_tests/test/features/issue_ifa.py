@@ -7,10 +7,10 @@ from __future__ import annotations
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.multisig_send_flow_helpers import click_issue_button_get_toaster_and_close
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_confirmation_dialog_and_usb_sync
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_dialog
-from e2e_tests.test.utilities.send_flow_helpers import click_issue_button_get_toaster_and_close
-from e2e_tests.test.utilities.send_flow_helpers import handle_confirmation_dialog_and_usb_sync
-from e2e_tests.test.utilities.send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
 
 
 class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):

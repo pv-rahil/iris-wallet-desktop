@@ -8,8 +8,8 @@ from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.send_flow_helpers import handle_confirmation_dialog_and_usb_sync
-from e2e_tests.test.utilities.send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_confirmation_dialog_and_usb_sync
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_offline_multisig_utxo_confirmation_and_usb_sync
 
 
 class IssueNia(MainPageObjects, BaseOperations, BaseIssueAsset):

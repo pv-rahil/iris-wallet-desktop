@@ -9,10 +9,10 @@ from accessible_constant import REQUIRE_USB_VARIANTS
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_issue_asset import BaseIssueAsset
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.multisig_send_flow_helpers import click_issue_button_get_toaster_and_close
+from e2e_tests.test.utilities.multisig_send_flow_helpers import handle_success_home_button
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_dialog
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
-from e2e_tests.test.utilities.send_flow_helpers import click_issue_button_get_toaster_and_close
-from e2e_tests.test.utilities.send_flow_helpers import handle_success_home_button
 
 
 class Inflate(MainPageObjects, BaseOperations, BaseIssueAsset):

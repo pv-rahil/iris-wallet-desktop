@@ -14,22 +14,22 @@ from e2e_tests.test.utilities.app_setup import test_environment
 from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
+from e2e_tests.test.utilities.multisig_send_flow_helpers import multisig_send_asset_flow_with_verification
+from e2e_tests.test.utilities.multisig_send_flow_helpers import navigate_to_asset_and_get_balance
+from e2e_tests.test.utilities.multisig_send_flow_helpers import navigate_to_asset_and_get_transfer_status
+from e2e_tests.test.utilities.multisig_send_flow_helpers import offline_issue_sign_refresh_multisig
+from e2e_tests.test.utilities.multisig_send_flow_helpers import offline_multisig_create_utxo_for_send_test_flow
+from e2e_tests.test.utilities.multisig_send_flow_helpers import offline_resume_transfer_multisig
+from e2e_tests.test.utilities.multisig_send_flow_helpers import offline_send_transfer_single_sig
+from e2e_tests.test.utilities.multisig_send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
+from e2e_tests.test.utilities.multisig_send_flow_helpers import verify_offline_multisig_transfer
 from e2e_tests.test.utilities.psbt_helpers import focus_and_refresh_asset_list
 from e2e_tests.test.utilities.psbt_helpers import focus_refresh_and_sign_psbt
 from e2e_tests.test.utilities.send_flow_helpers import focus_and_navigate_to_asset
-from e2e_tests.test.utilities.send_flow_helpers import multisig_send_asset_flow_with_verification
-from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_balance
-from e2e_tests.test.utilities.send_flow_helpers import navigate_to_asset_and_get_transfer_status
-from e2e_tests.test.utilities.send_flow_helpers import offline_issue_sign_refresh_multisig
-from e2e_tests.test.utilities.send_flow_helpers import offline_multisig_create_utxo_for_send_test_flow
-from e2e_tests.test.utilities.send_flow_helpers import offline_resume_transfer_multisig
-from e2e_tests.test.utilities.send_flow_helpers import offline_send_transfer_single_sig
-from e2e_tests.test.utilities.send_flow_helpers import offline_single_sig_create_utxo_for_send_test_flow
 from e2e_tests.test.utilities.send_flow_helpers import send_asset_flow_with_verification
 from e2e_tests.test.utilities.send_flow_helpers import verify_expired_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation
 from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_validation_step
-from e2e_tests.test.utilities.send_flow_helpers import verify_offline_multisig_transfer
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
@@ -189,7 +189,7 @@ def test_offline_single_sig_create_utxo_for_send_cfa(test_environment: TestEnvir
 def test_offline_single_sig_send_transfer_cfa(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send CFA asset in offline single-sig setup (3 apps) - Send transfer."""
     offline_send_transfer_single_sig(
-        wallets_and_operations, wallet_variant_name, ASSET_NAME, asset_type='cfa',
+        wallets_and_operations, wallet_variant_name, ASSET_NAME, asset_type='cfa', refresh_count=2,
     )
 
 
