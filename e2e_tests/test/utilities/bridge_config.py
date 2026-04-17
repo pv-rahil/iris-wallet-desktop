@@ -410,6 +410,15 @@ def restart_bridge_for_config_reload() -> bool:
         )
         print(f'[BRIDGE] Container started: {result.stdout or result.stderr}')
 
+        # Show container logs for debugging
+        print('[BRIDGE] Container logs:')
+        logs_result = subprocess.run(
+            ['docker', 'logs', 'rgb-multisig-hub'],
+            capture_output=True,
+            text=True,
+        )
+        print(logs_result.stdout or logs_result.stderr)
+
         # Wait for bridge to be ready
         print('[BRIDGE] Waiting for bridge to be ready...')
         for i in range(30):
