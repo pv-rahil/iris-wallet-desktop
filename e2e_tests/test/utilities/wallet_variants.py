@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from typing import Tuple
 
 from accessible_constant import NAME_TO_STEPS
@@ -99,11 +100,38 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
     if reset:
         reset_regtest()
 
+    elf_path = f"e2e_tests/ledger_app/{app_name}.elf"
+    print(f"[HW_WALLET] Starting speculos with: {elf_path}")
+
+    # Build speculos command
+    speculos_cmd = ['speculos', '-m', 'nanosp', '--display', 'qt', elf_path]
+
     proc = subprocess.Popen(
-        ['speculos', '-m', 'nanosp', f"e2e_tests/ledger_app/{app_name}.elf"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        speculos_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
+
+    # Wait for speculos to initialize
+    time.sleep(3)
+
+    # Check if speculos is still running
+    if proc.poll() is not None:
+        stdout, stderr = proc.communicate()
+        print(f"[HW_WALLET] Speculos FAILED to start!")
+        print(f"[HW_WALLET] Exit code: {proc.returncode}")
+        print(f"[HW_WALLET] stdout: {stdout.decode() if stdout else 'empty'}")
+        print(f"[HW_WALLET] stderr: {stderr.decode() if stderr else 'empty'}")
+        raise RuntimeError(f"Speculos failed to start: {stderr.decode() if stderr else 'unknown error'}")
+
+    print(f"[HW_WALLET] Speculos started successfully with PID {proc.pid}")
+
+    # List all windows to verify speculos window exists
+    try:
+        result = subprocess.run(['wmctrl', '-l'], capture_output=True, text=True, check=False)
+        print(f"[HW_WALLET] Current windows:\n{result.stdout}")
+    except Exception as e:
+        print(f"[HW_WALLET] Could not list windows: {e}")
 
     if not is_ci_environment():
         # Move Speculos window to background
