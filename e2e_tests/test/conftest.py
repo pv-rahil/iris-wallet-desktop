@@ -158,6 +158,7 @@ def cleanup_between_tests(request):
 
     This fixture ensures clean state when using module-scoped test_environment
     by:
+    - Refreshing AT-SPI tree BEFORE each test to clear stale caches
     - Yielding before the test runs
     - Performing cleanup after the test completes
     - Refreshing AT-SPI tree to clear stale caches
@@ -167,7 +168,16 @@ def cleanup_between_tests(request):
     """
     test_name = request.node.name
     print(f'\n[Starting] Test started: {test_name}')
-    # Before test: nothing to do
+
+    # Before test: refresh AT-SPI tree to clear stale element caches
+    # This is critical when tests run sequentially with shared app instances
+    try:
+        refresh_atspi_tree()
+        delay = CI_STABILIZATION_DELAY if _is_ci_environment() else LOCAL_STABILIZATION_DELAY
+        _stabilize_ui(delay)
+    except Exception as e:
+        print(f'[SETUP] Warning: Pre-test refresh encountered an error: {e}')
+
     yield
 
     # After test: perform cleanup

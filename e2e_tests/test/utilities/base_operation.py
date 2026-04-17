@@ -621,8 +621,9 @@ class BaseOperations:
                 )
 
                 if elements:
-                    element = elements[-1]
-                    if self._is_element_ready(element):
+                    # Use _get_first_ready_element to find a showing element
+                    element = self._get_first_ready_element(elements)
+                    if element:
                         validated_element = self._validate_and_return_element(
                             element,
                         )
