@@ -1,4 +1,4 @@
-# pylint: disable=consider-using-with, too-many-branches, too-many-lines, too-many-statements, too-many-nested-blocks, too-many-public-methods
+# pylint: disable=consider-using-with, too-many-branches, too-many-lines, too-many-statements, too-many-nested-blocks, too-many-public-methods, too-many-arguments
 """
 Wallet class for creating and funding a wallet.
 """
@@ -1223,7 +1223,7 @@ class Wallet(MainPageObjects, BaseOperations):
 
     def confirm_transaction_on_hardware_wallet(
         self, application, is_rgb: bool = False, is_ifa: bool = False,
-        is_inflate: bool = False, is_online: bool = True,
+        is_inflate: bool = False, is_online: bool = True, is_btc: bool = False,
     ):
         """
         Confirm transaction on hardware wallet for single-sig.
@@ -1232,10 +1232,11 @@ class Wallet(MainPageObjects, BaseOperations):
         - IFA issue: 2 UTXOs (4 right + both each), no final RGB signing
         - IFA inflate: 2 UTXOs (4 right + both each), then 5 right + both (RGB signing)
         - RGB send: 3 UTXOs (4 right + both each), then 5 right + both
+        - BTC send: 5 right + both (no UTXOs needed)
 
         For offline single-sig hardware wallet (no UTXO creation needed):
-        - RGB/inflate: 4 right + both, then 5 right + both
-        - NIA/CFA/IFA/send BTC: 4 right + both
+        - RGB/inflate/BTC send: 4 right + both, then 5 right + both
+        - NIA/CFA/IFA issue: 4 right + both
 
         Args:
             application: Application name.
@@ -1243,6 +1244,7 @@ class Wallet(MainPageObjects, BaseOperations):
             is_ifa: Whether this is an IFA issue or inflate operation (for UTXO count).
             is_inflate: Whether this is an IFA inflate operation (for final RGB signing).
             is_online: Whether this is an online hardware wallet (True for online, False for offline).
+            is_btc: Whether this is a BTC send transaction.
         """
         self.do_focus_on_application(application)
         time.sleep(3)
@@ -1283,6 +1285,11 @@ class Wallet(MainPageObjects, BaseOperations):
                 time.sleep(1)
                 self.hw_emulator_page_objects.click_right_arrow_key(5)
                 self.hw_emulator_page_objects.press_left_and_right()
+        elif is_btc:
+            self.do_focus_on_application(application)
+            time.sleep(1)
+            self.hw_emulator_page_objects.click_right_arrow_key(5)
+            self.hw_emulator_page_objects.press_left_and_right()
         else:
             # NIA/CFA/receive/IFA issue: 4 right + both
             self.hw_emulator_page_objects.click_right_arrow_key(4)

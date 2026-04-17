@@ -413,9 +413,11 @@ def restart_bridge_for_config_reload() -> bool:
         # Show container logs for debugging
         print('[BRIDGE] Container logs:')
         logs_result = subprocess.run(
-            ['docker', 'logs', 'rgb-multisig-hub'],
+            ['docker', 'compose', 'logs', 'rgb-multisig-hub'],
+            cwd=e2e_tests_dir,
             capture_output=True,
             text=True,
+            check=False,
         )
         print(logs_result.stdout or logs_result.stderr)
 
