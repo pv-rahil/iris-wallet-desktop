@@ -97,7 +97,7 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
         app_name: Name of the hardware wallet app
         reset: Whether to reset the regtest environment
     """
-    if reset:
+    if reset and not is_ci_environment():
         reset_regtest()
 
     proc = subprocess.Popen(

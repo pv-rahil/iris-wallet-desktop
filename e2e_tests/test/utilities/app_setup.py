@@ -771,6 +771,12 @@ class TestEnvironment:
         self.reset_third_instance(reset_data=reset_data)
         self.reset_fourth_instance(reset_data=reset_data)
 
+        # Additional wait to ensure all apps are fully stable after reset
+        time.sleep(2.0)
+        # Final AT-SPI tree refresh to clear any stale references
+        _ = root.children
+        print('[RESET] All offline multisig instances reset and stable')
+
     def remove_keyring_entries(self, service, app_name):
         """Removes keyring entries for a given service and application name."""
         keys = [

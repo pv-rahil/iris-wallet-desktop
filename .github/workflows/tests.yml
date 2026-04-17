@@ -336,8 +336,7 @@ jobs:
         uses: geekyeggo/delete-artifact@v5
         with:
           name: |
-            allure-results-embedded-*
-            allure-results-remote-*
+            allure-results/${{ matrix.test_file }}-${{ matrix.wallet_variant }}
             coverage-report
           failOnError: false
 

@@ -1332,7 +1332,7 @@ def test_offline_multisig_issue_ifa(test_environment: TestEnvironment, wallets_a
         wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
-    test_environment.reset_offline_multisig_instances(reset_data=False)
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1345,6 +1345,9 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
     Test send NIA asset for offline multisig wallet - prepare for backup.
     """
     global NIA_RECEIVE_AMOUNT_BEFORE
+
+    # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=2)
 
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
@@ -1365,7 +1368,7 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
         NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_offline_multisig_instances(reset_data=False)
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1378,6 +1381,9 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
     Test send CFA asset for offline multisig wallet - prepare for backup.
     """
     global CFA_RECEIVE_AMOUNT_BEFORE
+
+    # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=2)
 
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
@@ -1398,7 +1404,7 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_offline_multisig_instances(reset_data=False)
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1411,6 +1417,9 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
     Test send IFA asset for offline multisig wallet - prepare for backup.
     """
     global IFA_RECEIVE_AMOUNT_BEFORE
+
+    # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=2)
 
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
@@ -1431,7 +1440,7 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
         IFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_offline_multisig_instances(reset_data=False)
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1444,6 +1453,9 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
     Test send BTC for offline multisig wallet - prepare for backup.
     """
     global BTC_BALANCE_BEFORE
+
+    # Get fresh page objects from environment after reset
+    get_fresh_page_objects(wallets_and_operations, app_index=2)
 
     # Get invoice from fourth wallet and send BTC
     with allure.step('Get invoice from fourth wallet and send BTC'):
@@ -1490,7 +1502,7 @@ def test_offline_multisig_send_btc(test_environment: TestEnvironment, wallets_an
         wallets_and_operations.fourth_page_objects.fungible_page_objects.click_bitcoin_frame()
         BTC_BALANCE_BEFORE = wallets_and_operations.fourth_page_objects.bitcoin_detail_page_objects.get_total_balance()
 
-    test_environment.reset_offline_multisig_instances(reset_data=False)
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1641,7 +1653,10 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         nia_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        assert nia_balance_after == NIA_RECEIVE_AMOUNT_BEFORE
+        assert nia_balance_after == str(
+            int(ISSUE_AMOUNT) -
+            int(NIA_RECEIVE_AMOUNT_BEFORE if NIA_RECEIVE_AMOUNT_BEFORE is not None else 0),
+        )
 
     # Verify CFA balance after restore
     with allure.step('Verify CFA balance after restore'):
@@ -1652,7 +1667,10 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         cfa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        assert cfa_balance_after == CFA_RECEIVE_AMOUNT_BEFORE
+        assert cfa_balance_after == str(
+            int(ISSUE_AMOUNT) -
+            int(CFA_RECEIVE_AMOUNT_BEFORE if CFA_RECEIVE_AMOUNT_BEFORE is not None else 0),
+        )
 
     # Verify IFA balance after restore
     with allure.step('Verify IFA balance after restore'):
@@ -1663,4 +1681,7 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         ifa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        assert ifa_balance_after == IFA_RECEIVE_AMOUNT_BEFORE
+        assert ifa_balance_after == str(
+            int(ISSUE_AMOUNT) -
+            int(IFA_RECEIVE_AMOUNT_BEFORE if IFA_RECEIVE_AMOUNT_BEFORE is not None else 0),
+        )

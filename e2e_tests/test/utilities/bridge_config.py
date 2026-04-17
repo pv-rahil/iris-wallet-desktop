@@ -88,6 +88,8 @@ def update_bridge_config(
 
     config_lines.append('rgb_lib_version = "0.3"')
 
+    print('-'*100)
+
     with open(BRIDGE_CONFIG_PATH, 'w', encoding='utf-8') as f:
         f.write('\n'.join(config_lines) + '\n')
 
@@ -263,8 +265,8 @@ def start_regtest_services() -> bool:
     Start all regtest services using regtest.sh script.
     This starts bitcoind, electrs, proxy, and rgb-multisig-bridge.
 
-    In CI, if bridge is already running, stop bridge, clean data, and start fresh
-    to load the new config with updated xpubs.
+    In CI, if bridge is already running, stop container, clean bind-mounted data,
+    and start fresh to load the new config with updated xpubs.
 
     Returns:
         True if start successful, False otherwise.
@@ -276,31 +278,37 @@ def start_regtest_services() -> bool:
 
         # In CI, check if bridge is already running
         if is_ci_environment() and is_bridge_running():
-            print('Bridge already running in CI, stopping and cleaning bridge data...')
-            # Stop the bridge container
-            subprocess.run(
-                ['docker', 'compose', 'stop', 'rgb-multisig-hub'],
+            print(
+                '[BRIDGE] Bridge already running in CI, recreating with fresh data...',
+            )
+            # Stop and remove container
+            print('[BRIDGE] Stopping and removing container...')
+            result = subprocess.run(
+                ['docker', 'compose', 'rm', '-sf', 'rgb-multisig-hub'],
                 cwd=e2e_tests_dir,
                 capture_output=True,
                 text=True,
                 check=True,
             )
-            # Clean bridge data directory
+            print(f'[BRIDGE] Container removed: {result.stdout}')
+            # Clean bind-mounted hub data (docker rm -sf doesn't clean bind mounts)
+            print('[BRIDGE] Cleaning bind-mounted data...')
             bridge_data_dir = os.path.join(e2e_tests_dir, 'hub')
             for subdir in ['rgb_multisig_hub_db', 'files', 'logs']:
                 subdir_path = os.path.join(bridge_data_dir, subdir)
                 if os.path.exists(subdir_path):
-                    print(f'Removing bridge data: {subdir_path}')
                     shutil.rmtree(subdir_path, ignore_errors=True)
-            # Start the bridge container fresh
-            print('Starting bridge container with new config...')
-            subprocess.run(
+                    print(f'[BRIDGE] Removed {subdir}')
+            # Start fresh container
+            print('[BRIDGE] Starting fresh container...')
+            result = subprocess.run(
                 ['docker', 'compose', 'up', '-d', 'rgb-multisig-hub'],
                 cwd=e2e_tests_dir,
                 capture_output=True,
                 text=True,
                 check=True,
             )
+            print(f'[BRIDGE] Container started: {result.stdout}')
         else:
             # Local or bridge not running: use regtest.sh to start all services
             regtest_path = os.path.join(e2e_tests_dir, 'regtest.sh')
