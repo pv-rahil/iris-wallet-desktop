@@ -34,7 +34,6 @@ def setup_multisig_wallets(
     is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
     is_online = wallet_variant_name not in REQUIRE_USB_VARIANTS
-    is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
     if is_load_variant:
         wallet_variant_name = map_load_to_create(wallet_variant_name)
 
@@ -44,7 +43,6 @@ def setup_multisig_wallets(
         )
 
     # Pass the same variant to second app - variant resolution will handle it properly
-    # For ONLINE_MULTISIG_WATCH_ONLY: FIRST_APP -> OFFLINE_MULTISIG_ON_DEVICE, SECOND_APP -> ONLINE_MULTISIG_WATCH_ONLY
     with allure.step('Initiate second multisig wallet'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
             application=SECOND_APPLICATION, variant=wallet_variant_name, fund=False,
@@ -55,10 +53,9 @@ def setup_multisig_wallets(
             application=FIRST_APPLICATION,
         )
 
-    # For watch-only, import all cosigner data from other wallets
     with allure.step('Import cosigner data into second multisig wallet'):
         wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
-            application=SECOND_APPLICATION, import_all=is_watch_only,
+            application=SECOND_APPLICATION, import_all=False,
         )
 
     with allure.step('Finalize first multisig wallet setup'):
@@ -108,7 +105,7 @@ def setup_offline_multisig_two_app_wallets(
 ) -> None:
     """
     Setup offline multisig wallet with 2 applications for UI tests (about, help, login auth, keyring, settings).
-    Both wallets are proper multisig wallets - NOT watch-only.
+    For watch-only variant: App 1 = watch-only, App 2 = signer, spawn temp App 3 = second signer.
 
     App 1: Offline multisig wallet (signer) - hardware or on-device
     App 2: Online multisig wallet (paired coordinator) - on-device
@@ -119,11 +116,20 @@ def setup_offline_multisig_two_app_wallets(
     """
     is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
     is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
+    is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
 
     # Map load variant to create variant for first wallet
     first_wallet_variant = wallet_variant_name
     if is_load_variant:
         first_wallet_variant = map_load_to_create(wallet_variant_name)
+
+    # For watch-only: App 1 = watch-only, App 2 = signer, spawn temp App 3 = second signer
+    if is_watch_only:
+        with allure.step('Setup watch-only wallet with temp third signer'):
+            wallets_and_operations.first_page_features.wallet_features.setup_multisig_watch_only_with_temp_signer(
+                wallets_and_operations,
+            )
+        return
 
     # App 1: Offline multisig wallet (signer)
     with allure.step('Initiate first offline multisig wallet (signer)'):
@@ -332,7 +338,7 @@ def setup_offline_multisig_three_app_wallets(
     # App 2: Online multisig wallet (coordinator) - on-device variant
     with allure.step('Initiate second online multisig wallet (coordinator)'):
         wallets_and_operations.second_page_features.wallet_features.create_and_fund_wallet(
-            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_ON_DEVICE, fund=False,
+            application=SECOND_APPLICATION, variant=ONLINE_MULTISIG_WATCH_ONLY, fund=False,
         )
 
     # App 3: Online multisig wallet (cosigner) - on-device variant
@@ -347,9 +353,9 @@ def setup_offline_multisig_three_app_wallets(
             application=FIRST_APPLICATION,
         )
 
-    with allure.step('Import cosigner data into second online multisig wallet'):
+    with allure.step('Import all cosigner data into second watch-only multisig wallet'):
         wallets_and_operations.second_page_features.wallet_features.import_multisig_data(
-            application=SECOND_APPLICATION,
+            application=SECOND_APPLICATION, import_all=True,
         )
 
     with allure.step('Import cosigner data into third online multisig wallet'):

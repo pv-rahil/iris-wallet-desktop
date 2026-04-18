@@ -303,7 +303,7 @@ def test_send_and_receive_ifa_asset_multisig_operation(wallets_and_operations: W
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Automation of send operation for IFA asset in iris wallet for offline multisig')
 @allure.story('Testing send IFA asset with invalid invoice for offline multisig')
-def test_send_ifa_with_invalid_invoice_for_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_send_ifa_with_invalid_invoice_for_offline_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test send IFA asset with invalid invoice for offline multisig (hardware and on-device, create and load)"""
 
     setup_offline_multisig_hardware_wallets(
@@ -346,6 +346,8 @@ def test_send_ifa_with_invalid_invoice_for_offline_multisig(wallets_and_operatio
 
     with allure.step('Verify invalid invoice validation for IFA asset (offline multisig)'):
         verify_invalid_invoice_validation_step(wallets_and_operations, INVOICE)
+
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig

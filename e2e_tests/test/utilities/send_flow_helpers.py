@@ -5,8 +5,10 @@ Send flow and verification helper functions for e2e tests.
 from __future__ import annotations
 
 import re
+import time
 
 import allure
+from dogtail.tree import root
 
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import SECOND_APPLICATION
@@ -530,21 +532,30 @@ def navigate_to_asset_and_click_send(
         click_send: Whether to click send button. Set to False for draft transfers.
     """
     page_operations.do_focus_on_application(SECOND_APPLICATION)
+    # Wait for application to be ready after reset
+    time.sleep(2)
+
+    # Force AT-SPI tree refresh to ensure elements are visible
+    _ = root.children
+    time.sleep(0.5)
 
     if asset_type == 'ifa':
         page_objects.sidebar_page_objects.click_inflatable_button()
         if refresh:
             page_objects.inflatable_page_objects.click_refresh_button()
+            time.sleep(1)  # Wait for asset list to reload after refresh
         page_objects.inflatable_page_objects.click_ifa_frame(asset_name)
     elif asset_type == 'nia':
         page_objects.sidebar_page_objects.click_fungibles_button()
         if refresh:
             page_objects.fungible_page_objects.click_refresh_button()
+            time.sleep(1)  # Wait for asset list to reload after refresh
         page_objects.fungible_page_objects.click_nia_frame(asset_name)
     elif asset_type == 'cfa':
         page_objects.sidebar_page_objects.click_collectibles_button()
         if refresh:
             page_objects.collectible_page_objects.click_refresh_button()
+            time.sleep(1)  # Wait for asset list to reload after refresh
         page_objects.collectible_page_objects.click_cfa_frame(asset_name)
 
     if click_send:

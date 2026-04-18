@@ -41,7 +41,18 @@ class CollectiblePageObjects(BaseOperations):
         """
         Click the CFA frame if it's displayed.
         """
+        # Find the label first
         self.cfa_asset_name = self.perform_action_on_element(
             role_name='label', name=asset_name,
         )
-        return self.do_click(self.cfa_asset_name) if self.do_is_displayed(self.cfa_asset_name) else None
+        if self.cfa_asset_name and self.do_is_displayed(self.cfa_asset_name):
+            # Click on the parent frame to trigger navigation
+            try:
+                parent_frame = self.cfa_asset_name.parent
+                if parent_frame:
+                    return self.do_click(parent_frame)
+            except Exception:
+                pass
+            # Fallback to clicking the label directly
+            return self.do_click(self.cfa_asset_name)
+        return None

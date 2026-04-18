@@ -52,7 +52,6 @@ def sign_and_broadcast_psbt_offline_multisig(
     wallet_variant_name: str,
     second_page_operations,
     second_page_features,
-    cosigner_variant: str = 'ONLINE_MULTISIG_ON_DEVICE',
 ) -> None:
     """
     Sign PSBT from offline signer, cosigner, and broadcast for offline multisig wallet.
@@ -62,10 +61,7 @@ def sign_and_broadcast_psbt_offline_multisig(
         wallet_variant_name: Wallet variant name.
         second_page_operations: Second page operations instance.
         second_page_features: Second page features instance.
-        cosigner_variant: Cosigner wallet variant name.
     """
-    cosigner = cosigner_variant if cosigner_variant != 'ONLINE_MULTISIG_ON_DEVICE' else ONLINE_MULTISIG_ON_DEVICE
-
     with allure.step('Sign PSBT from first wallet (offline signer)'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
@@ -79,11 +75,8 @@ def sign_and_broadcast_psbt_offline_multisig(
         wallets_and_operations.first_page_features.wallet_features.usb_sync()
 
     with allure.step('Sign PSBT from third wallet (cosigner)'):
-        wallets_and_operations.third_page_operations.do_focus_on_application(
-            THIRD_APPLICATION,
-        )
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, cosigner,
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
 
     with allure.step('Broadcast PSBT from second wallet (coordinator)'):

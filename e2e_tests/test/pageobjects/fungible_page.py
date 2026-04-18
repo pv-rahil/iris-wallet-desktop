@@ -91,10 +91,21 @@ class FungiblePageObjects(BaseOperations):
         Returns:
             bool: True if the frame is clicked, None otherwise.
         """
+        # Find the label first
         self.nia_asset_name = self.perform_action_on_element(
             role_name='label', name=asset_name,
         )
-        return self.do_click(self.nia_asset_name) if self.do_is_displayed(self.nia_asset_name) else None
+        if self.nia_asset_name and self.do_is_displayed(self.nia_asset_name):
+            # Click on the parent frame to trigger navigation
+            try:
+                parent_frame = self.nia_asset_name.parent
+                if parent_frame:
+                    return self.do_click(parent_frame)
+            except Exception:
+                pass
+            # Fallback to clicking the label directly
+            return self.do_click(self.nia_asset_name)
+        return None
 
     def get_backup_tooltip(self):
         """

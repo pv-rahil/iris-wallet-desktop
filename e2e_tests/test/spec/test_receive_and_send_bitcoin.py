@@ -304,7 +304,7 @@ def test_receive_and_send_bitcoin_for_offline(wallets_and_operations: WalletTest
         )
     with allure.step('sign psbt for send_btc'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name,
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_btc=True,
         )
     with allure.step('Broadcast psbt for send_btc'):
         description = wallets_and_operations.second_page_features.wallet_features.broadcast_psbt(
@@ -358,7 +358,7 @@ def test_send_bitcoin_with_custom_fee_rate_for_offline(wallets_and_operations: W
 
     with allure.step('Sign psbt for send_btc with custom fee rate'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            application=FIRST_APPLICATION, variant_name=wallet_variant_name,
+            application=FIRST_APPLICATION, variant_name=wallet_variant_name, is_btc=True,
         )
 
     with allure.step('Broadcast psbt for send_btc with custom fee rate'):

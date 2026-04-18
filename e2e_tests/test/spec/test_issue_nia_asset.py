@@ -273,7 +273,7 @@ def test_issue_nia_with_sufficient_sats_for_offline_multisig(wallets_and_operati
     Test NIA asset issuance with sufficient sats for offline multisig wallet (3 apps).
     """
 
-    def issue_nia_wrapper(app, _asset_identifier, wallet_variant, _utxo_required=False):
+    def issue_nia_wrapper(app, _asset_identifier, wallet_variant):
         wallets_and_operations.second_page_features.issue_nia_features.issue_nia_with_sufficient_sats_for_multisig_wallet(
             app, ASSET_TICKER, NIA_ASSET_NAME, ASSET_AMOUNT, wallet_variant,
         )
@@ -289,6 +289,13 @@ def test_issue_nia_with_sufficient_sats_for_offline_multisig(wallets_and_operati
     # Refresh second wallet and verify
     with allure.step('Refresh second wallet and verify asset'):
         focus_second_wallet(wallets_and_operations)
+        with allure.step('Issuing NIA asset'):
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
+                ASSET_TICKER,
+            )
+            wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
+            wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
+
         wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
         asset_name = wallets_and_operations.second_page_objects.fungible_page_objects.get_nia_asset_name(
             NIA_ASSET_NAME,

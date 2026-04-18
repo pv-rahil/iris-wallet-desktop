@@ -72,7 +72,7 @@ class BackupService:
     def _upload_multisig_config(backup: GoogleDriveManager, hashed_mnemonic: str, backup_folder_path: str) -> bool:
         """Upload multisig configuration if applicable."""
         if SettingRepository.get_wallet_signature_type() != WalletSignatureType.MULTI_SIG_WALLET:
-            return True
+            return False
 
         req_signers, tot_signers = SettingRepository.get_multisig_config()
         cosigners = SettingRepository.get_cosigners()

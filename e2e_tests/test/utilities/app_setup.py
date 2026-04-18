@@ -365,6 +365,9 @@ class TestEnvironment:
             retry_count: Number of retries if frame not found or not showing.
             retry_delay: Delay between retries in seconds.
         """
+        def timeout_handler(signum, frame):
+            raise TimeoutError('AT-SPI call timed out')
+
         # Extract app identifier from frame name (e.g., "test_app_1" from "Iris Wallet Regtest test_app_1")
         # The frame name format is "Iris Wallet Regtest {app_identifier}"
         # The application name format is "iris-wallet-vault_{app_identifier}"
@@ -372,10 +375,32 @@ class TestEnvironment:
         target_app_identifier = match.group(1) if match else None
 
         for attempt in range(retry_count):
-            # Try to find visible frame under visible application nodes first
-            apps = [a for a in root.applications() if 'iris' in a.name.lower()]
-            print(f"""[FIND_FRAME] Attempt
-                  {attempt+1}/{retry_count}, found {len(apps)} iris apps, target: {target_app_identifier}""")
+            try:
+                # Set timeout for AT-SPI calls
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(5)  # 5 second timeout per attempt
+
+                # Try to find visible frame under visible application nodes first
+                apps = [
+                    a for a in root.applications(
+                    ) if 'iris' in a.name.lower()
+                ]
+                print(f"""[FIND_FRAME] Attempt
+                      {attempt+1}/{retry_count}, found {len(apps)} iris apps, target: {target_app_identifier}""")
+                signal.alarm(0)  # Cancel alarm after successful call
+
+            except TimeoutError:
+                print('[FIND_FRAME] AT-SPI timeout getting applications')
+                signal.alarm(0)
+                if attempt < retry_count - 1:
+                    time.sleep(retry_delay)
+                continue
+            except Exception as e:
+                signal.alarm(0)
+                print(f"[FIND_FRAME] Exception: {e}")
+                if attempt < retry_count - 1:
+                    time.sleep(retry_delay)
+                continue
 
             # Sort apps to prioritize the target app
             if target_app_identifier:
@@ -415,20 +440,35 @@ class TestEnvironment:
 
     def wait_for_application(self, name, timeout=60):
         """Wait for the application and its main frame to be visible."""
+        def timeout_handler(signum, frame):
+            raise TimeoutError('AT-SPI call timed out')
+
         print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                # Use our helper to see if an application node with a frame exists
-                app = self._find_application_node(name)
-                if app:
-                    # Also check if it has a showing frame
-                    frame = app.child(roleName='frame', name=name)
-                    if frame and frame.showing:
-                        print(f"[SETUP] {name} is showing and ready.")
-                        return True
-            except Exception:
-                pass
+                # Set timeout for AT-SPI calls
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(5)  # 5 second timeout per iteration
+
+                try:
+                    # Use our helper to see if an application node with a frame exists
+                    app = self._find_application_node(name)
+                    if app:
+                        # Also check if it has a showing frame
+                        frame = app.child(roleName='frame', name=name)
+                        if frame and frame.showing:
+                            signal.alarm(0)  # Cancel alarm
+                            print(f"[SETUP] {name} is showing and ready.")
+                            return True
+                except TimeoutError:
+                    print(f"[SETUP] AT-SPI timeout while searching for {name}")
+                finally:
+                    signal.alarm(0)  # Ensure alarm is cancelled
+
+            except Exception as e:
+                signal.alarm(0)
+                print(f"[SETUP] Exception while searching for {name}: {e}")
             time.sleep(1.0)
         raise TimeoutError(
             f"""Application '{name}' failed to start or show frame within {
@@ -508,7 +548,7 @@ class TestEnvironment:
         # Relaunch only the first application
         self.launch_applications()
 
-    def reset_first_instance(self, reset_data: bool = True):
+    def reset_first_instance(self, reset_data: bool = True, skip_warmup: bool = False):
         """Reset and relaunch only the first application instance.
 
         This is used for multisig load flow where we:
@@ -519,6 +559,7 @@ class TestEnvironment:
 
         Args:
             reset_data (bool): If True, clears the first app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # Kill only the first process
         self.terminate_process(self.first_process)
@@ -575,12 +616,13 @@ class TestEnvironment:
         print(f"[RESET] Page objects reinitialized for {FIRST_APPLICATION}")
 
         # Force AT-SPI tree refresh to clear stale element caches
-        # This is critical after reset to avoid "Could not find accessible on path" errors
-        _ = root.children
-        time.sleep(0.5)
-        print('[RESET] AT-SPI tree refreshed')
+        # Skip if part of batch reset (will be done once at the end)
+        if not skip_warmup:
+            warm_up_atspi(timeout=10)
+            time.sleep(1.0)
+            print('[RESET] AT-SPI tree refreshed')
 
-    def reset_second_instance(self, reset_data: bool = True):
+    def reset_second_instance(self, reset_data: bool = True, skip_warmup: bool = False):
         """Reset and relaunch only the second application instance.
 
         This is useful when a test uses the second app to prepare credentials/backup
@@ -589,6 +631,7 @@ class TestEnvironment:
 
         Args:
             reset_data (bool): If True, clears the second app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # If only one instance is active, nothing to do
         if self.num_instances < 2:
@@ -637,12 +680,15 @@ class TestEnvironment:
         self.second_page_operations = BaseOperations(self.second_application)
         print(f"[RESET] Page objects reinitialized for {SECOND_APPLICATION}")
 
-        # Force AT-SPI tree refresh
-        _ = root.children
-        time.sleep(0.5)
-        print('[RESET] AT-SPI tree refreshed')
+        # Force AT-SPI tree refresh with longer delay to ensure elements are visible
+        # Skip if part of batch reset (will be done once at the end)
+        if not skip_warmup:
+            warm_up_atspi(timeout=10)
+            # Additional wait for UI and AT-SPI bus to stabilize
+            time.sleep(2.0)
+            print('[RESET] AT-SPI tree refreshed')
 
-    def reset_third_instance(self, reset_data: bool = True):
+    def reset_third_instance(self, reset_data: bool = True, skip_warmup: bool = False):
         """Reset and relaunch only the third application instance.
 
         This is used for offline multisig tests where we need to refresh
@@ -650,6 +696,7 @@ class TestEnvironment:
 
         Args:
             reset_data (bool): If True, clears the third app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # If less than 3 instances are active, nothing to do
         if self.num_instances < 3:
@@ -699,15 +746,18 @@ class TestEnvironment:
         print(f"[RESET] Page objects reinitialized for {THIRD_APPLICATION}")
 
         # Force AT-SPI tree refresh
-        _ = root.children
-        time.sleep(0.5)
-        print('[RESET] AT-SPI tree refreshed')
+        # Skip if part of batch reset (will be done once at the end)
+        if not skip_warmup:
+            warm_up_atspi(timeout=10)
+            time.sleep(1.0)
+            print('[RESET] AT-SPI tree refreshed')
 
-    def reset_fourth_instance(self, reset_data: bool = False):
+    def reset_fourth_instance(self, reset_data: bool = False, skip_warmup: bool = False):
         """Reset and relaunch only the fourth application instance.
 
         Args:
             reset_data (bool): If True, clears the fourth app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # If only less than 4 instances are active, nothing to do
         if self.num_instances < 4:
@@ -753,9 +803,11 @@ class TestEnvironment:
         print(f"[RESET] Page objects reinitialized for {FOURTH_APPLICATION}")
 
         # Force AT-SPI tree refresh
-        _ = root.children
-        time.sleep(0.5)
-        print('[RESET] AT-SPI tree refreshed')
+        # Skip if part of batch reset (will be done once at the end)
+        if not skip_warmup:
+            warm_up_atspi(timeout=10)
+            time.sleep(1.0)
+            print('[RESET] AT-SPI tree refreshed')
 
     def reset_offline_multisig_instances(self, reset_data: bool = False):
         """Reset first, second, third, and fourth application instances for offline multisig tests.
@@ -766,15 +818,18 @@ class TestEnvironment:
         Args:
             reset_data (bool): If True, clears app data directories before relaunching.
         """
-        self.reset_first_instance(reset_data=reset_data)
-        self.reset_second_instance(reset_data=reset_data)
-        self.reset_third_instance(reset_data=reset_data)
-        self.reset_fourth_instance(reset_data=reset_data)
-
-        # Additional wait to ensure all apps are fully stable after reset
+        # Reset all instances with skip_warmup=True to avoid redundant AT-SPI calls
+        # Each reset adds 2s delay between kills to prevent AT-SPI bus overload
+        self.reset_first_instance(reset_data=reset_data, skip_warmup=True)
+        time.sleep(2.0)  # Delay between resets to prevent AT-SPI bus overload
+        self.reset_second_instance(reset_data=reset_data, skip_warmup=True)
         time.sleep(2.0)
-        # Final AT-SPI tree refresh to clear any stale references
-        _ = root.children
+        self.reset_third_instance(reset_data=reset_data, skip_warmup=True)
+        time.sleep(2.0)
+        self.reset_fourth_instance(reset_data=reset_data, skip_warmup=True)
+
+        # Final AT-SPI tree refresh to clear any stale references (done once for all)
+        warm_up_atspi(timeout=10)
         print('[RESET] All offline multisig instances reset and stable')
 
     def remove_keyring_entries(self, service, app_name):

@@ -293,7 +293,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
             sidebar_page.click_fungibles_button()
         return xpub_vanilla, xpub_colored, fingerprint, password
 
-    def sign_psbt(self, application, variant_name, is_rgb: bool = False, is_issue_ifa: bool = False):
+    def sign_psbt(self, application, variant_name, is_rgb: bool = False, is_issue_ifa: bool = False, is_btc: bool = False):
         """
         Sign psbt.
         """
@@ -344,7 +344,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
                     )
                 else:
                     self.confirm_transaction_on_hardware_wallet(
-                        LEDGER_EMULATOR_APP_NAME, is_rgb, is_issue_ifa,
+                        LEDGER_EMULATOR_APP_NAME, is_rgb, is_issue_ifa, is_btc,
                     )
 
                 self.do_focus_on_application(application)

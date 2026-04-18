@@ -10,7 +10,6 @@ from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import LEDGER_EMULATOR_APP_NAME
-from accessible_constant import MULTISIG_HARDWARE_VARIANTS
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
@@ -352,8 +351,6 @@ def offline_multisig_issue_asset_test_flow(
     Execute offline multisig issue asset test flow with 3 apps.
     Handles funding, issuing, and signing for offline multisig wallet tests.
     """
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-
     # Fund the second wallet (online coordinator)
     with allure.step('Fund second online multisig wallet (coordinator)'):
         wallets_and_operations.second_page_features.wallet_features.fund_wallet(
@@ -377,8 +374,14 @@ def offline_multisig_issue_asset_test_flow(
             wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
         issue_func(
             SECOND_APPLICATION, asset_identifier,
-            wallet_variant_name, utxo_required=True,
+            wallet_variant_name,
         )
+
+    with allure.step(''):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.wallet_features.usb_sync()
 
     # Refresh third wallet and sign
     with allure.step('Refresh third wallet and sign PSBT'):
@@ -387,15 +390,13 @@ def offline_multisig_issue_asset_test_flow(
             THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE, is_issue_ifa=is_issue_ifa,
         )
 
-    # Sign from first wallet if hardware
-    if is_hardware:
-        with allure.step('Sign PSBT from first wallet (offline hardware signer)'):
-            wallets_and_operations.first_page_operations.do_focus_on_application(
-                FIRST_APPLICATION,
-            )
-            wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-                FIRST_APPLICATION, wallet_variant_name, is_issue_ifa=is_issue_ifa,
-            )
+    with allure.step('Sign PSBT from first wallet (offline hardware signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name, is_issue_ifa=is_issue_ifa,
+        )
 
     # Broadcast from second wallet
     with allure.step('Broadcast PSBT from second wallet (coordinator)'):
@@ -724,19 +725,16 @@ def _resume_and_broadcast_transfer_offline(
     with allure.step('Sign PSBT from third wallet (cosigner)'):
         _refresh_third_wallet_by_asset_type(wallets_and_operations, asset_type)
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, wallet_variant_name, is_rgb=True,
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE, is_rgb=True,
         )
 
-    # Sign from first wallet if hardware
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-    if is_hardware:
-        with allure.step('Sign PSBT from first wallet (offline hardware signer)'):
-            wallets_and_operations.first_page_operations.do_focus_on_application(
-                FIRST_APPLICATION,
-            )
-            wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-                FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
-            )
+    with allure.step('Sign PSBT from first wallet (offline hardware signer)'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
+        )
 
     # Broadcast from second wallet
     with allure.step('Broadcast PSBT from second wallet (coordinator)'):
@@ -891,19 +889,16 @@ def offline_resume_transfer_multisig(
     with allure.step('Sign PSBT from third wallet'):
         _refresh_third_wallet_by_asset_type(wallets_and_operations, asset_type)
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, wallet_variant_name, is_rgb=True,
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE, is_rgb=True,
         )
 
-    # Sign from first wallet if hardware
-    is_hardware = wallet_variant_name in MULTISIG_HARDWARE_VARIANTS
-    if is_hardware:
-        with allure.step('Sign PSBT from first wallet'):
-            wallets_and_operations.first_page_operations.do_focus_on_application(
-                FIRST_APPLICATION,
-            )
-            wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-                FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
-            )
+    with allure.step('Sign PSBT from first wallet'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
+        wallets_and_operations.first_page_features.wallet_features.sign_psbt(
+            FIRST_APPLICATION, wallet_variant_name, is_rgb=True,
+        )
 
     # Broadcast from second wallet
     with allure.step('Broadcast PSBT from second wallet'):

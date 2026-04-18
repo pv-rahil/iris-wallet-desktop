@@ -18,6 +18,7 @@ from dogtail.tree import root
 from dotenv import load_dotenv
 from Xlib import display
 from Xlib import X
+from Xlib.error import BadWindow
 
 from accessible_constant import TOASTER_DESCRIPTION
 from e2e_tests.test.utilities.dogtail_config import get_default_timeout
@@ -288,39 +289,61 @@ class BaseOperations:
             time.sleep(0.5)
         return ''
 
-    def activate_window_by_name(self, window_name):
+    def activate_window_by_name(self, window_name, max_retries=3):
         """
         Activates the window with the given name.
 
         Args:
             window_name (str): The name of the window to activate.
+            max_retries (int): Maximum number of retries if window list is stale.
 
         Returns:
             None
         """
-        d = display.Display()
-        root_screen = d.screen().root
-        root_screen.change_attributes(event_mask=X.SubstructureNotifyMask)
+        for attempt in range(max_retries):
+            d = display.Display()
+            root_screen = d.screen().root
+            root_screen.change_attributes(event_mask=X.SubstructureNotifyMask)
 
-        # Get window list
-        raw_data = root_screen.get_full_property(
-            d.intern_atom(
-                '_NET_CLIENT_LIST',
-            ),
-            X.AnyPropertyType,
-        ).value
-        for window_id in raw_data:
-            window = d.create_resource_object('window', window_id)
-            window_name_property = window.get_wm_name()
-
-            if window_name_property and re.search(window_name, window_name_property):
-                window.set_input_focus(X.RevertToParent, X.CurrentTime)
-                window.raise_window()
-                d.sync()
-                print(f"Activated window: {window_name}")
+            # Get window list
+            try:
+                raw_data = root_screen.get_full_property(
+                    d.intern_atom(
+                        '_NET_CLIENT_LIST',
+                    ),
+                    X.AnyPropertyType,
+                ).value
+            except Exception:
+                if attempt < max_retries - 1:
+                    time.sleep(0.5)
+                    continue
+                print(
+                    f"Window '{
+                        window_name
+                    }' not found (failed to get window list)",
+                )
                 return
 
-        print(f"Window '{window_name}' not found")
+            for window_id in raw_data:
+                try:
+                    window = d.create_resource_object('window', window_id)
+                    window_name_property = window.get_wm_name()
+
+                    if window_name_property and re.search(window_name, window_name_property):
+                        window.set_input_focus(X.RevertToParent, X.CurrentTime)
+                        window.raise_window()
+                        d.sync()
+                        print(f"Activated window: {window_name}")
+                        return
+                except BadWindow:
+                    # Window was destroyed between getting the list and accessing it
+                    continue
+
+            # Window not found in this attempt, retry if we have attempts left
+            if attempt < max_retries - 1:
+                time.sleep(0.5)
+
+        print(f"Window '{window_name}' not found after {max_retries} attempts")
 
     def do_focus_on_application(self, application, verify_ready=True):
         """
@@ -359,8 +382,14 @@ class BaseOperations:
         """
         Ensures self.application is a valid, showing node.
         If it's not showing, attempts to find a showing one with the same name and role.
+        Also forces refresh of children to ensure AT-SPI tree is populated.
         """
         if self.application and hasattr(self.application, 'showing') and self.application.showing:
+            # Force refresh of children by accessing them
+            try:
+                _ = list(self.application.children)
+            except Exception:
+                pass
             return
 
         # Node is dead or hidden. Try to find a showing one with same name and role.
@@ -374,6 +403,8 @@ class BaseOperations:
                 )
                 if new_node:
                     self.application = new_node
+                    # Force refresh of children
+                    _ = list(self.application.children)
                     print(f"""
                           [RECOVERY] Switched to showing
                           {role} node for '{name}'""")
@@ -621,9 +652,8 @@ class BaseOperations:
                 )
 
                 if elements:
-                    # Use _get_first_ready_element to find a showing element
-                    element = self._get_first_ready_element(elements)
-                    if element:
+                    element = elements[-1]
+                    if self._is_element_ready(element):
                         validated_element = self._validate_and_return_element(
                             element,
                         )

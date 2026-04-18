@@ -7,7 +7,6 @@ import pytest
 from dotenv import load_dotenv
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import MULTISIG_HARDWARE_VARIANTS
@@ -1267,15 +1266,13 @@ def test_offline_multisig_issue_cfa(test_environment: TestEnvironment, wallets_a
     """
     Test issue CFA asset for offline multisig wallet (4 apps).
     """
-    # Get fresh page objects from environment after reset
-    _, second_page_features, second_page_operations = get_fresh_page_objects(
-        wallets_and_operations, app_index=2,
-    )
 
     # Issue CFA asset from second wallet (creates PSBT and syncs to offline signer)
     with allure.step('Issue CFA asset from second wallet'):
-        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-        second_page_features.issue_cfa_features.issue_cfa_for_offline_multisig_wallet(
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.issue_cfa_features.issue_cfa_for_offline_multisig_wallet(
             SECOND_APPLICATION, CFA_NAME, CFA_DESC, ISSUE_AMOUNT, wallet_variant_name,
         )
 
@@ -1305,15 +1302,13 @@ def test_offline_multisig_issue_ifa(test_environment: TestEnvironment, wallets_a
     """
     Test issue IFA asset for offline multisig wallet (4 apps).
     """
-    # Get fresh page objects from environment after reset
-    _, second_page_features, second_page_operations = get_fresh_page_objects(
-        wallets_and_operations, app_index=2,
-    )
 
     # Issue IFA asset from second wallet (creates PSBT and syncs to offline signer)
     with allure.step('Issue IFA asset from second wallet'):
-        second_page_operations.do_focus_on_application(SECOND_APPLICATION)
-        second_page_features.issue_ifa_features.issue_ifa_for_offline_multisig_wallet(
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
+        wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_for_offline_multisig_wallet(
             SECOND_APPLICATION, IFA_TICKER, IFA_NAME, IFA_TOTAL_SUPPLY, ISSUE_AMOUNT, wallet_variant_name,
         )
 
@@ -1345,29 +1340,26 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
     """
     global NIA_RECEIVE_AMOUNT_BEFORE
 
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
         wallets_and_operations, wallet_variant_name, NIA_TICKER, asset_type='nia', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
-    with allure.step('Capture NIA received amount in fourth wallet before backup'):
-        wallets_and_operations.fourth_page_operations.do_focus_on_application(
-            FOURTH_APPLICATION,
+    with allure.step('Capture NIA received amount in second wallet before backup'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
         )
-        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.fungible_page_objects.click_nia_frame(
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_nia_frame(
             NIA_NAME,
         )
-        NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
+        NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1381,27 +1373,23 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
     """
     global CFA_RECEIVE_AMOUNT_BEFORE
 
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
         wallets_and_operations, wallet_variant_name, CFA_NAME, asset_type='cfa', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
-    with allure.step('Capture CFA received amount in fourth wallet before backup'):
-        wallets_and_operations.fourth_page_operations.do_focus_on_application(
-            FOURTH_APPLICATION,
+    with allure.step('Capture CFA received amount in second wallet before backup'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
         )
-        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_collectibles_button()
-        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.collectible_page_objects.click_cfa_frame(
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_collectibles_button()
+        wallets_and_operations.second_page_objects.collectible_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
             CFA_NAME,
         )
-        CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
+        CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
 
     test_environment.reset_second_instance(reset_data=False)
 
@@ -1417,27 +1405,24 @@ def test_offline_multisig_send_ifa(test_environment: TestEnvironment, wallets_an
     """
     global IFA_RECEIVE_AMOUNT_BEFORE
 
-    # Get fresh page objects from environment after reset
-    get_fresh_page_objects(wallets_and_operations, app_index=2)
-
     # Create UTXO and transfer using helper function
     offline_send_transfer_multisig(
         wallets_and_operations, wallet_variant_name, IFA_NAME, asset_type='ifa', send_amount=SEND_AMOUNT,
     )
 
     # Capture balances before backup
-    with allure.step('Capture IFA received amount in fourth wallet before backup'):
-        wallets_and_operations.fourth_page_operations.do_focus_on_application(
-            FOURTH_APPLICATION,
+    with allure.step('Capture IFA received amount in second wallet before backup'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
         )
-        wallets_and_operations.fourth_page_objects.sidebar_page_objects.click_inflatable_button()
-        wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.fourth_page_objects.inflatable_page_objects.click_ifa_frame(
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+        wallets_and_operations.second_page_objects.inflatable_page_objects.click_ifa_frame(
             IFA_NAME,
         )
-        IFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.fourth_page_objects.asset_detail_page_objects.get_total_balance()
-        wallets_and_operations.fourth_page_objects.asset_detail_page_objects.click_close_button()
+        IFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
+        wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
 
 
 @pytest.mark.skip_for_single_sig
@@ -1495,10 +1480,13 @@ def test_offline_multisig_backup(test_environment: TestEnvironment, wallets_and_
     else:
         # For hardware/on-device variants, perform USB sync to create backup .zip on fake USB
         with allure.step('USB sync to create backup for offline multisig wallet'):
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
-            wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
-            wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
-            wallets_and_operations.first_page_operations.wait_for_toaster_message()
+            wallets_and_operations.second_page_operations.do_focus_on_application(
+                SECOND_APPLICATION,
+            )
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+            wallets_and_operations.second_page_objects.fungible_page_objects.click_usb_sync_frame()
+            wallets_and_operations.second_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+            wallets_and_operations.second_page_operations.wait_for_toaster_message()
 
     # Reset first wallet with data clear, but preserve fake USB for restore test
     test_environment.restart_single_instance(
@@ -1583,10 +1571,7 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         nia_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        assert nia_balance_after == str(
-            int(ISSUE_AMOUNT) -
-            int(NIA_RECEIVE_AMOUNT_BEFORE if NIA_RECEIVE_AMOUNT_BEFORE is not None else 0),
-        )
+        assert nia_balance_after == NIA_RECEIVE_AMOUNT_BEFORE
 
     # Verify CFA balance after restore
     with allure.step('Verify CFA balance after restore'):
@@ -1597,10 +1582,7 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         cfa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        assert cfa_balance_after == str(
-            int(ISSUE_AMOUNT) -
-            int(CFA_RECEIVE_AMOUNT_BEFORE if CFA_RECEIVE_AMOUNT_BEFORE is not None else 0),
-        )
+        assert cfa_balance_after == CFA_RECEIVE_AMOUNT_BEFORE
 
     # Verify IFA balance after restore
     with allure.step('Verify IFA balance after restore'):
@@ -1611,7 +1593,4 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
         )
         ifa_balance_after = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
-        assert ifa_balance_after == str(
-            int(ISSUE_AMOUNT) -
-            int(IFA_RECEIVE_AMOUNT_BEFORE if IFA_RECEIVE_AMOUNT_BEFORE is not None else 0),
-        )
+        assert ifa_balance_after == IFA_RECEIVE_AMOUNT_BEFORE

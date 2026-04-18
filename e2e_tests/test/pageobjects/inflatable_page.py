@@ -56,7 +56,21 @@ class InflatablePageObjects(BaseOperations):
 
     def click_ifa_frame(self, asset_name):
         """Clicks an IFA asset frame by visible asset label name."""
+        # Wait for scroll area to be populated with assets
+        if self.do_is_displayed(self.scroll_area()):
+            pass  # Scroll area exists, assets should be visible
+        # Find the label first
         self.ifa_asset_name = self.perform_action_on_element(
             role_name='label', name=asset_name,
         )
-        return self.do_click(self.ifa_asset_name) if self.do_is_displayed(self.ifa_asset_name) else None
+        if self.ifa_asset_name and self.do_is_displayed(self.ifa_asset_name):
+            # Click on the parent frame to trigger navigation
+            try:
+                parent_frame = self.ifa_asset_name.parent
+                if parent_frame:
+                    return self.do_click(parent_frame)
+            except Exception:
+                pass
+            # Fallback to clicking the label directly
+            return self.do_click(self.ifa_asset_name)
+        return None

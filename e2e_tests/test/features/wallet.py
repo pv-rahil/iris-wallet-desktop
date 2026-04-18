@@ -11,6 +11,7 @@ import time
 from dogtail.tree import root
 
 from accessible_constant import APP2_NAME
+from accessible_constant import APP3_NAME
 from accessible_constant import FIRST_APPLICATION
 from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import LOAD_WALLET_VARIANT
@@ -19,11 +20,14 @@ from accessible_constant import MULTISIG_VARIANTS
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
 from accessible_constant import OFFLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
+from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import ONLINE_MULTISIG_WATCH_ONLY
 from accessible_constant import ONLINE_WATCH_ONLY
 from accessible_constant import REQUIRE_USB_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import SECOND_APPLICATION_PATH
+from accessible_constant import THIRD_APPLICATION
+from accessible_constant import THIRD_APPLICATION_PATH
 from e2e_tests.test.features.wallet_operations import WalletOperationsMixin
 from e2e_tests.test.utilities.atspi_helpers import refresh_atspi_tree
 from e2e_tests.test.utilities.executable_shell_script import mine
@@ -124,7 +128,6 @@ class Wallet(WalletOperationsMixin):
         """Handle ONLINE_MULTISIG_WATCH_ONLY variant resolution."""
         if multi_instance:
             return OFFLINE_MULTISIG_ON_DEVICE if application == FIRST_APPLICATION else ONLINE_MULTISIG_WATCH_ONLY
-        self.setup_multisig_watch_only_single_instance()
         return None
 
     def _handle_second_application_variant(self, variant: str, is_load_wallet: bool) -> str:
@@ -140,16 +143,22 @@ class Wallet(WalletOperationsMixin):
         if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
             self.term_and_condition_page_objects.click_accept_button()
 
-    def _handle_password_setup(self):
+    def _handle_password_setup(self, wallet_and_operation=None):
         """Handle password setup flow."""
-        if self.do_is_displayed(self.set_password_page_objects.password_input()):
-            self.set_password_page_objects.enter_password('walletpassword')
-        if self.do_is_displayed(self.set_password_page_objects.confirm_password_input()):
-            self.set_password_page_objects.enter_confirm_password(
+        if wallet_and_operation:
+            wallet = wallet_and_operation
+        else:
+            wallet = self
+        if wallet.do_is_displayed(wallet.set_password_page_objects.password_input()):
+            wallet.set_password_page_objects.enter_password(
                 'walletpassword',
             )
-        if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
-            self.set_password_page_objects.click_proceed_button()
+        if wallet.do_is_displayed(wallet.set_password_page_objects.confirm_password_input()):
+            wallet.set_password_page_objects.enter_confirm_password(
+                'walletpassword',
+            )
+        if wallet.do_is_displayed(wallet.set_password_page_objects.proceed_button()):
+            wallet.set_password_page_objects.click_proceed_button()
 
     def create_wallet(self, application, variant: str, is_load_wallet: bool = False):
         """
@@ -543,79 +552,133 @@ class Wallet(WalletOperationsMixin):
         if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
             self.enter_wallet_password_page_objects.click_login_button()
 
-    def setup_multisig_watch_only_single_instance(self):
+    def setup_multisig_watch_only_with_temp_signer(self, wallets_and_operations):
         """
-        Single-instance multisig watch-only flow: spawn a temp second app,
-        create offline multisig wallet, collect xpubs/fingerprint,
-        and configure the first app as multisig watch-only.
+        Setup watch-only wallet for 2-app multisig tests.
+        App 1 = watch-only (main wallet for tests)
+        App 2 = signer 1 (already running)
+        Spawn temp App 3 = signer 2
+
+        Flow:
+        1. Setup App 2 as signer (OFFLINE_MULTISIG_ON_DEVICE)
+        2. Spawn temp App 3 as second signer
+        3. Setup multisig on both signers
+        4. Setup watch-only on App 1 with cosigner data from both signers
+
+        Args:
+            wallets_and_operations: Wallet test setup instance.
         """
         env = self.get_current_environment()
         if not env:
             return
-        # Prepare FIRST app to the multisig watch-only dialog
-        self.do_focus_on_application(FIRST_APPLICATION)
-        if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
-            self.term_and_condition_page_objects.scroll_to_end()
-        if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
-            self.term_and_condition_page_objects.click_accept_button()
-        self.drive_selection_flow(
-            FIRST_APPLICATION, ONLINE_MULTISIG_WATCH_ONLY,
-        )
-        if self.do_is_displayed(self.welcome_page_objects.create_button()):
-            self.welcome_page_objects.click_create_button()
+
+        coordinator = get_multisig_coordinator()
+        coordinator.reset()
+
+        # Get correct wallet instances for each app
+        second_wallet = wallets_and_operations.second_page_features.wallet_features
+
         proc = None
         try:
+            # Step 1: Setup App 2 as first signer
+            second_wallet.do_focus_on_application(SECOND_APPLICATION)
+            if second_wallet.do_is_displayed(second_wallet.term_and_condition_page_objects.tnc_scrollbar()):
+                second_wallet.term_and_condition_page_objects.scroll_to_end()
+            if second_wallet.do_is_displayed(second_wallet.term_and_condition_page_objects.accept_button()):
+                second_wallet.term_and_condition_page_objects.click_accept_button()
+            second_wallet.drive_selection_flow(
+                SECOND_APPLICATION, OFFLINE_MULTISIG_ON_DEVICE,
+            )
+            if second_wallet.do_is_displayed(second_wallet.welcome_page_objects.create_button()):
+                second_wallet.welcome_page_objects.click_create_button()
+            self._handle_password_setup(second_wallet)
+            second_wallet.initiate_multisig_setup(
+                SECOND_APPLICATION, OFFLINE_MULTISIG_ON_DEVICE,
+            )
+
+            # Step 2: Spawn temp App 3 as second signer
             actual_path = os.path.dirname(local_store.get_path())
-            app2_data = actual_path.replace(APP_NAME, SECOND_APPLICATION_PATH)
-            delete_app_data(app2_data)
-            # Launch temp second instance with proper environment for AT-SPI
+            app3_data = actual_path.replace(APP_NAME, THIRD_APPLICATION_PATH)
+            delete_app_data(app3_data)
+
             app_env = os.environ.copy()
             app_env['QT_ACCESSIBILITY'] = '1'
+
             proc = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
-                    APP2_NAME
+                    APP3_NAME
                 }-{__version__}-x86_64.AppImage"""],
                 env=app_env,
             )
-            # Wait for the second application window using TestEnvironment method
-            env.wait_for_application(SECOND_APPLICATION)
-            # Maximize the second window for stability
+            env.wait_for_application(THIRD_APPLICATION)
             subprocess.run(
                 [
-                    'wmctrl', '-r', SECOND_APPLICATION, '-b',
+                    'wmctrl', '-r', THIRD_APPLICATION, '-b',
                     'add,maximized_vert,maximized_horz',
                 ],
                 check=True,
             )
-            # Use TestEnvironment's method to find the application frame
+
+            # Get reference to temp third app
             # pylint: disable=protected-access
-            app_node = env._find_application_node(SECOND_APPLICATION)
-            if app_node:
-                second_app = app_node.child(
-                    roleName='frame', name=SECOND_APPLICATION,
+            app3_node = env._find_application_node(THIRD_APPLICATION)
+            if app3_node:
+                third_app = app3_node.child(
+                    roleName='frame', name=THIRD_APPLICATION,
                 )
             else:
-                # Fallback to direct search
-                second_app = root.child(
-                    roleName='frame', name=SECOND_APPLICATION,
+                third_app = root.child(
+                    roleName='frame', name=THIRD_APPLICATION,
                 )
-            second_wallet = Wallet(second_app)
-            second_wallet.create_wallet(
-                SECOND_APPLICATION, OFFLINE_MULTISIG_ON_DEVICE, is_load_wallet=True,
+
+            third_wallet = Wallet(third_app)
+
+            # Step 3: Setup App 3 as second signer
+            third_wallet.do_focus_on_application(THIRD_APPLICATION)
+            if third_wallet.do_is_displayed(third_wallet.term_and_condition_page_objects.tnc_scrollbar()):
+                third_wallet.term_and_condition_page_objects.scroll_to_end()
+            if third_wallet.do_is_displayed(third_wallet.term_and_condition_page_objects.accept_button()):
+                third_wallet.term_and_condition_page_objects.click_accept_button()
+            third_wallet.drive_selection_flow(
+                THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
+            )
+            if third_wallet.do_is_displayed(third_wallet.welcome_page_objects.create_button()):
+                third_wallet.welcome_page_objects.click_create_button()
+            self._handle_password_setup(third_wallet)
+            third_wallet.initiate_multisig_setup(
+                THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
             )
 
-            # Refresh AT-SPI tree after wallet creation to get fresh element references
             refresh_atspi_tree()
             time.sleep(1)
 
-            xpub_vanilla, xpub_colored, fingerprint, _ = second_wallet.collect_keyring_values_from_app(
-                SECOND_APPLICATION,
+            # Step 4: Import cosigner data on both signers
+            second_wallet.do_focus_on_application(SECOND_APPLICATION)
+            second_wallet.import_multisig_data(
+                SECOND_APPLICATION, import_all=False,
+            )
+            third_wallet.import_multisig_data(
+                THIRD_APPLICATION, import_all=False,
             )
 
+            # Step 5: Finalize both signers
+            second_wallet.finalize_multisig_setup(SECOND_APPLICATION)
+            third_wallet.finalize_multisig_setup(THIRD_APPLICATION)
+
+            refresh_atspi_tree()
+            time.sleep(1)
+
+            # Step 6: Setup watch-only on App 1 (self = first_page_features.wallet_features)
             self.do_focus_on_application(FIRST_APPLICATION)
-            self.set_up_watch_only_wallet(
-                xpub_vanilla, xpub_colored, fingerprint,
+            if self.do_is_displayed(self.term_and_condition_page_objects.tnc_scrollbar()):
+                self.term_and_condition_page_objects.scroll_to_end()
+            if self.do_is_displayed(self.term_and_condition_page_objects.accept_button()):
+                self.term_and_condition_page_objects.click_accept_button()
+            self.drive_selection_flow(
+                FIRST_APPLICATION, ONLINE_MULTISIG_WATCH_ONLY,
             )
+            if self.do_is_displayed(self.welcome_page_objects.create_button()):
+                self.welcome_page_objects.click_create_button()
 
             if self.do_is_displayed(self.set_password_page_objects.password_input()):
                 self.set_password_page_objects.enter_password('walletpassword')
@@ -625,10 +688,17 @@ class Wallet(WalletOperationsMixin):
                 )
             if self.do_is_displayed(self.set_password_page_objects.proceed_button()):
                 self.set_password_page_objects.click_proceed_button()
+
+            # Import all cosigner data for watch-only (from both signers)
+            self.import_multisig_data(FIRST_APPLICATION, import_all=True)
+
+            # Finalize watch-only setup
+            self.finalize_multisig_setup(FIRST_APPLICATION)
+
         except Exception as e:
-            print(f"Error in setup_multisig_watch_only_single_instance: {e}")
+            print(f"Error in setup_multisig_watch_only_with_temp_signer: {e}")
         finally:
-            # Safely terminate the temp second process
+            # Safely terminate the temp third process
             try:
                 if proc:
                     env.terminate_process(proc)

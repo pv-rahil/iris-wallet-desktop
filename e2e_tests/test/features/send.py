@@ -66,7 +66,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                 is_rgb = purpose == 'send_asset'
                 # Assume online hardware wallet for send operations
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb, is_online=True,
+                    LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb, is_online=True, is_btc=True,
                 )
         except Exception as e:
             raise e
@@ -128,7 +128,7 @@ class SendOperation(MainPageObjects, BaseOperations):
 
             if is_hardware_wallet:
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME,
+                    LEDGER_EMULATOR_APP_NAME, is_btc=True,
                 )
 
             self.do_focus_on_application(application)
