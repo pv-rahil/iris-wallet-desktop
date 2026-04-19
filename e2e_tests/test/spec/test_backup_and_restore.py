@@ -1391,7 +1391,7 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig

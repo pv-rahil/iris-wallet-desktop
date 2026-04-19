@@ -911,6 +911,12 @@ class Wallet(WalletOperationsMixin):
             self.selection_page_objects.select_option(step5)
             self.selection_page_objects.click_continue_button()
 
-        # Handle wallet mode summary dialog if it appears
-        if self.do_is_displayed(self.wallet_mode_summary_dialog_page_objects.continue_button()):
-            self.wallet_mode_summary_dialog_page_objects.click_continue_button()
+        # Handle wallet mode summary dialog if it appears, otherwise click continue on selection page
+        for _ in range(3):
+            if self.do_is_displayed(self.wallet_mode_summary_dialog_page_objects.continue_button()):
+                self.wallet_mode_summary_dialog_page_objects.click_continue_button()
+                break
+            if self.do_is_displayed(self.selection_page_objects.continue_button()):
+                self.selection_page_objects.click_continue_button()
+            else:
+                break

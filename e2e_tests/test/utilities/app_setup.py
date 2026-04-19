@@ -39,6 +39,7 @@ from accessible_constant import THIRD_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 from e2e_tests.test.utilities.dogtail_config import warm_up_atspi
 from e2e_tests.test.utilities.fake_usb import setup_fake_usb
 from e2e_tests.test.utilities.reset_app import delete_app_data
@@ -154,6 +155,13 @@ class TestEnvironment:
         """Launches the required iris wallet applications and maximizes the windows."""
         env = os.environ.copy()
         env['QT_ACCESSIBILITY'] = '1'
+
+        # Use software rendering in CI to avoid OpenGL context limits
+        if is_ci_environment():
+            env['QT_QUICK_BACKEND'] = 'software'
+            env['QSG_RHI_BACKEND'] = 'software'
+            env['LIBGL_ALWAYS_SOFTWARE'] = '1'
+
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
             usb_env, _ = setup_fake_usb()
             env.update(usb_env)

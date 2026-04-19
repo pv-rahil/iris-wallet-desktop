@@ -11,6 +11,7 @@ from dogtail.rawinput import keyCombo
 from dogtail.tree import root
 
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 
 
 class HardwareWalletEmulatorPageObjects(BaseOperations):
@@ -102,15 +103,22 @@ class HardwareWalletEmulatorPageObjects(BaseOperations):
 
         :param duration: time in seconds to hold the keys
         """
+        # Use longer duration in CI for more reliable key registration
+        actual_duration = duration * 2 if is_ci_environment() else duration
+
         # keydown both
         subprocess.run(['xdotool', 'keydown', 'Left'], check=True)
         subprocess.run(['xdotool', 'keydown', 'Right'], check=True)
 
-        time.sleep(duration)
+        time.sleep(actual_duration)
 
         # keyup both
         subprocess.run(['xdotool', 'keyup', 'Left'], check=True)
         subprocess.run(['xdotool', 'keyup', 'Right'], check=True)
+
+        # Extra delay in CI for screen to update
+        if is_ci_environment():
+            time.sleep(0.5)
 
     def click_right_arrow_key(self, num, delay: float = 0.2):
         """Clicks the right arrow key.
@@ -119,6 +127,12 @@ class HardwareWalletEmulatorPageObjects(BaseOperations):
             num: Number of times to press the right arrow key.
             delay: Delay in seconds between each key press (default 0.2s).
         """
-        for _ in range(num):
+        # Use longer delay in CI for more reliable navigation
+        actual_delay = delay * 2 if is_ci_environment() else delay
+
+        for i in range(num):
             keyCombo('Right')
-            time.sleep(delay)
+            time.sleep(actual_delay)
+            # Extra delay every few presses in CI to allow screen updates
+            if is_ci_environment() and (i + 1) % 3 == 0:
+                time.sleep(0.3)

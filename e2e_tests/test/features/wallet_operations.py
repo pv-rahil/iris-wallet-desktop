@@ -429,6 +429,10 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
         self.do_focus_on_application(application)
         time.sleep(3)
 
+        # Wait for speculos to show the initial screen
+        if not self.hw_emulator_page_objects.wait_for_screen_change(timeout=15):
+            print('[WARN] Speculos screen change not detected, proceeding anyway')
+
         # Determine UTXO count for online single-sig hardware wallet
         utxo_count = 0
         if is_online:
@@ -441,9 +445,13 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
                 utxo_count = 3
 
         # Sign UTXOs first (for online hardware wallet)
-        for _ in range(utxo_count):
+        for i in range(utxo_count):
             self.do_focus_on_application(application)
             time.sleep(2)
+            # Wait for speculos to show UTXO signing screen
+            if not self.hw_emulator_page_objects.wait_for_screen_change(timeout=15):
+                print(f"""[WARN] Speculos screen change not detected for UTXO
+                      {i+1}, proceeding anyway""")
             self.hw_emulator_page_objects.click_right_arrow_key(4)
             self.hw_emulator_page_objects.press_left_and_right()
             time.sleep(1)
@@ -454,24 +462,45 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
                 # Online: 5 right + both (after UTXO signing)
                 self.do_focus_on_application(application)
                 time.sleep(1)
+                # Wait for final RGB signing screen
+                if not self.hw_emulator_page_objects.wait_for_screen_change(timeout=15):
+                    print(
+                        '[WARN] Speculos screen change not detected for final signing, proceeding anyway',
+                    )
                 self.hw_emulator_page_objects.click_right_arrow_key(5)
                 self.hw_emulator_page_objects.press_left_and_right()
             else:
                 # Offline: 4 right + both, then 5 right + both
+                # Wait for first signing screen
+                if not self.hw_emulator_page_objects.wait_for_screen_change(timeout=15):
+                    print(
+                        '[WARN] Speculos screen change not detected, proceeding anyway',
+                    )
                 self.hw_emulator_page_objects.click_right_arrow_key(4)
                 self.hw_emulator_page_objects.press_left_and_right()
                 time.sleep(1)
                 self.do_focus_on_application(application)
                 time.sleep(1)
+                # Wait for second signing screen
+                if not self.hw_emulator_page_objects.wait_for_screen_change(timeout=15):
+                    print(
+                        '[WARN] Speculos screen change not detected, proceeding anyway',
+                    )
                 self.hw_emulator_page_objects.click_right_arrow_key(5)
                 self.hw_emulator_page_objects.press_left_and_right()
         elif is_btc:
             self.do_focus_on_application(application)
             time.sleep(1)
+            # Wait for BTC signing screen
+            if not self.hw_emulator_page_objects.wait_for_screen_change(timeout=15):
+                print('[WARN] Speculos screen change not detected, proceeding anyway')
             self.hw_emulator_page_objects.click_right_arrow_key(5)
             self.hw_emulator_page_objects.press_left_and_right()
         else:
             # NIA/CFA/receive/IFA issue: 4 right + both
+            # Wait for signing screen
+            if not self.hw_emulator_page_objects.wait_for_screen_change(timeout=15):
+                print('[WARN] Speculos screen change not detected, proceeding anyway')
             self.hw_emulator_page_objects.click_right_arrow_key(4)
             self.hw_emulator_page_objects.press_left_and_right()
 
