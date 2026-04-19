@@ -1254,7 +1254,7 @@ def test_offline_multisig_setup_and_issue_nia(test_environment: TestEnvironment,
         wallets_and_operations.second_page_objects.issue_nia_page_objects.click_issue_nia_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1290,7 +1290,7 @@ def test_offline_multisig_issue_cfa(test_environment: TestEnvironment, wallets_a
         wallets_and_operations.second_page_objects.issue_cfa_page_objects.click_issue_cfa_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1326,7 +1326,7 @@ def test_offline_multisig_issue_ifa(test_environment: TestEnvironment, wallets_a
         wallets_and_operations.second_page_objects.issue_ifa_page_objects.click_issue_ifa_button()
         wallets_and_operations.second_page_objects.success_page_objects.click_home_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1391,7 +1391,7 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_offline_multisig_instances(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
