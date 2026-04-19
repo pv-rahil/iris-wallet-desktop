@@ -1,4 +1,4 @@
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -45,6 +45,10 @@ class BaseOperations:
             application (Node, optional): The root node of the GUI application. Defaults to None.
         """
         self.application = application
+        # Store application name for recovery when node becomes stale
+        self._application_name = None
+        if application and hasattr(application, 'name'):
+            self._application_name = application.name
 
         # Circuit breaker pattern for element searches
         self._consecutive_failures = 0
@@ -383,6 +387,7 @@ class BaseOperations:
         Ensures self.application is a valid, showing node.
         If it's not showing, attempts to find a showing one with the same name and role.
         Also forces refresh of children to ensure AT-SPI tree is populated.
+        Uses stored _application_name as fallback when node attributes are inaccessible.
         """
         if self.application and hasattr(self.application, 'showing') and self.application.showing:
             # Force refresh of children by accessing them
@@ -390,12 +395,31 @@ class BaseOperations:
                 _ = list(self.application.children)
             except Exception:
                 pass
+            # Update stored name if not set
+            if not self._application_name and hasattr(self.application, 'name'):
+                self._application_name = self.application.name
             return
 
         # Node is dead or hidden. Try to find a showing one with same name and role.
-        if self.application and hasattr(self.application, 'name') and hasattr(self.application, 'roleName'):
-            name = self.application.name
-            role = self.application.roleName
+        # First try to get name/role from the stale node
+        name = None
+        role = 'frame'  # Default role for application windows
+
+        if self.application:
+            try:
+                if hasattr(self.application, 'name'):
+                    name = self.application.name
+                if hasattr(self.application, 'roleName'):
+                    role = self.application.roleName
+            except Exception:
+                # Node is completely dead, attributes inaccessible
+                pass
+
+        # Fallback to stored application name
+        if not name and self._application_name:
+            name = self._application_name
+
+        if name:
             try:
                 # Search from root for a showing node with same identity
                 new_node = root.child(
@@ -403,13 +427,15 @@ class BaseOperations:
                 )
                 if new_node:
                     self.application = new_node
+                    self._application_name = name  # Update stored name
                     # Force refresh of children
                     _ = list(self.application.children)
                     print(f"""
                           [RECOVERY] Switched to showing
                           {role} node for '{name}'""")
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"""[RECOVERY] Failed to find showing node for
+                      {name}: {e}""")
 
     def _find_elements_by_criteria(self, role_name, name=None, description=None, application_node=None):
         """

@@ -289,7 +289,7 @@ jobs:
           fi
 
       - name: Upload screen recording
-        if: always()
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
@@ -302,7 +302,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: allure-results-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
-          path: allure-results/${{ matrix.test_file }}-${{ matrix.wallet_variant }}/
+          path: allure-results/${{ matrix.wallet_variant }}/
           retention-days: 7
           if-no-files-found: ignore
 

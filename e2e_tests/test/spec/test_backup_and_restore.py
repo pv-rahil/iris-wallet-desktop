@@ -1359,7 +1359,7 @@ def test_offline_multisig_send_nia(test_environment: TestEnvironment, wallets_an
         NIA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_offline_multisig_instances(reset_data=False)
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1391,7 +1391,7 @@ def test_offline_multisig_send_cfa(test_environment: TestEnvironment, wallets_an
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.second_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.second_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_offline_multisig_instances(reset_data=False)
+    test_environment.reset_second_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_single_sig
@@ -1440,44 +1440,65 @@ def test_offline_multisig_backup(test_environment: TestEnvironment, wallets_and_
     _is_load_variant = wallet_variant_name in MULTISIG_LOAD_VARIANTS
     is_watch_only = wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY
 
-    # Backup first wallet (offline signer)
-    with allure.step('Backup first offline multisig wallet (signer)'):
+    # USB sync first wallet (offline signer) to create backup on fake USB
+    with allure.step('USB sync first offline multisig wallet (signer)'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
         wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
-        wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
-        if is_hardware or is_watch_only:
-            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_vanilla_copy_button()
-            XPUB_VANILLA = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
-            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_colored_copy_button()
-            XPUB_COLORED = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
-            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_fingerprint_copy_button()
-            MASTER_FINGERPRINT = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
-        else:
-            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
-            MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
-        wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
-        PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
-        wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
 
-    # Configure backup and take backup
-    if wallet_variant_name == ONLINE_MULTISIG_WATCH_ONLY:
-        with allure.step('Configure backup for first offline multisig wallet'):
-            wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
-            wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
-            wallets_and_operations.first_page_features.wallet_features.google_auth()
-            wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
+    # Copy credentials from appropriate app based on variant
+    if is_watch_only:
+        # For watch-only multisig, SECOND app is the watch-only wallet
+        # Copy xpubs from SECOND app since backup is taken from there (hash must match)
+        with allure.step('Copy xpubs from watch-only multisig wallet (SECOND app)'):
+            wallets_and_operations.second_page_operations.do_focus_on_application(
+                SECOND_APPLICATION,
+            )
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_settings_button()
+            wallets_and_operations.second_page_objects.settings_page_objects.click_keyring_toggle_button()
+            wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_xpub_vanilla_copy_button()
+            XPUB_VANILLA = wallets_and_operations.second_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_xpub_colored_copy_button()
+            XPUB_COLORED = wallets_and_operations.second_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_fingerprint_copy_button()
+            MASTER_FINGERPRINT = wallets_and_operations.second_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
+            PASSWORD = wallets_and_operations.second_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.second_page_objects.keyring_dialog_page_objects.click_cancel_button()
 
-        with allure.step('Take backup of first offline multisig wallet'):
-            wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
-            wallets_and_operations.first_page_operations.wait_for_toaster_message()
-            _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        with allure.step('Configure backup for watch-only multisig wallet'):
+            wallets_and_operations.second_page_objects.sidebar_page_objects.click_backup_button()
+            wallets_and_operations.second_page_objects.backup_page_objects.click_configurable_button()
+            wallets_and_operations.second_page_features.wallet_features.google_auth()
+            wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_close_button()
+
+        with allure.step('Take backup of watch-only multisig wallet'):
+            wallets_and_operations.second_page_objects.backup_page_objects.click_backup_wallet_data_button()
+            wallets_and_operations.second_page_operations.wait_for_toaster_message()
+            _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
             assert description == INFO_BACKUP_COMPLETED
     else:
+        # For hardware/on-device variants, copy credentials from FIRST app and do USB sync
+        with allure.step('Copy credentials from first offline multisig wallet'):
+            wallets_and_operations.first_page_objects.sidebar_page_objects.click_settings_button()
+            wallets_and_operations.first_page_objects.settings_page_objects.click_keyring_toggle_button()
+            if is_hardware:
+                wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_vanilla_copy_button()
+                XPUB_VANILLA = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+                wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_xpub_colored_copy_button()
+                XPUB_COLORED = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+                wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_fingerprint_copy_button()
+                MASTER_FINGERPRINT = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            else:
+                wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_mnemonic_copy_button()
+                MNEMONIC = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_keyring_password_copy_button()
+            PASSWORD = wallets_and_operations.first_page_objects.keyring_dialog_page_objects.do_get_copied_address()
+            wallets_and_operations.first_page_objects.keyring_dialog_page_objects.click_cancel_button()
+
         # For hardware/on-device variants, perform USB sync to create backup .zip on fake USB
         with allure.step('USB sync to create backup for offline multisig wallet'):
             wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -1548,16 +1569,10 @@ def test_offline_multisig_restore(test_environment, wallets_and_operations: Wall
             wallets_and_operations.first_page_operations.wait_for_toaster_message()
             _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
             assert description == INFO_RESTORE_COMPLETED
-            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
-                password=PASSWORD,
-            )
-            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
-
-    # USB sync to get updated state
-    with allure.step('USB sync to get updated state'):
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.first_page_objects.fungible_page_objects.click_usb_sync_frame()
-        wallets_and_operations.first_page_objects.usb_sync_dialog_page_objects.click_continue_button()
+        wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
+            password=PASSWORD,
+        )
+        wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.click_login_button()
 
     # Verify NIA balance after restore
     with allure.step('Verify NIA balance after restore'):
