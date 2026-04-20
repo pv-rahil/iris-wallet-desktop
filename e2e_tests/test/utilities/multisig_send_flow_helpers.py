@@ -652,6 +652,7 @@ def offline_single_sig_create_utxo_for_send_test_flow(
         wallets_and_operations, wallet_variant_name,
         wallets_and_operations.second_page_operations,
         wallets_and_operations.second_page_features,
+        is_rgb=False,
     )
 
     return invoice

@@ -39,7 +39,6 @@ from accessible_constant import THIRD_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 from e2e_tests.test.utilities.dogtail_config import warm_up_atspi
 from e2e_tests.test.utilities.fake_usb import setup_fake_usb
 from e2e_tests.test.utilities.reset_app import delete_app_data
@@ -155,13 +154,6 @@ class TestEnvironment:
         """Launches the required iris wallet applications and maximizes the windows."""
         env = os.environ.copy()
         env['QT_ACCESSIBILITY'] = '1'
-
-        # Use software rendering in CI to avoid OpenGL context limits
-        if is_ci_environment():
-            env['QT_QUICK_BACKEND'] = 'software'
-            env['QSG_RHI_BACKEND'] = 'software'
-            env['LIBGL_ALWAYS_SOFTWARE'] = '1'
-
         if self.wallet_variant_name in REQUIRE_USB_VARIANTS:
             usb_env, _ = setup_fake_usb()
             env.update(usb_env)
@@ -226,6 +218,8 @@ class TestEnvironment:
             )
 
         if self.num_instances >= 3:
+            # Wait for second app to be fully stable before launching third
+            self._wait_for_app_stability(self.second_application)
             self.third_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
@@ -255,6 +249,8 @@ class TestEnvironment:
             )
 
         if self.num_instances >= 4:
+            # Wait for third app to be fully stable before launching fourth
+            self._wait_for_app_stability(self.third_application)
             self.fourth_process = subprocess.Popen(
                 [f'e2e_tests/applications/iris-wallet-vault_{
                     APP4_NAME
@@ -282,6 +278,18 @@ class TestEnvironment:
             self.fourth_page_operations = BaseOperations(
                 self.fourth_application,
             )
+
+    def _wait_for_app_stability(self, app_frame, timeout: int = 10):
+        """Wait for app to be fully stable by checking for UI element."""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                if app_frame and app_frame.child(roleName='radio button', requireResult=False):
+                    return True
+            except Exception:
+                pass
+            time.sleep(0.5)
+        return False
 
     def _find_application_node(self, app_name):
         """Helper to find the stable application node for a given app name."""
