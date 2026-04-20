@@ -32,7 +32,14 @@ Before you begin, ensure you have the following installed:
   ```bash
   sudo apt install default-jre default-jre-headless openjdk-11-jdk
   ```
-- **Allure** (for detailed test reporting)
+- **Biscuit CLI**: Required for generating authentication tokens for multisig tests (version 0.6.0+).
+  1. Download the binary from the [Biscuit Releases](https://github.com/biscuit-auth/biscuit-rust/releases).
+  2. Extract and move the `biscuit` binary to `/usr/local/bin/`:
+     ```bash
+     sudo mv biscuit /usr/local/bin/
+     sudo chmod +x /usr/local/bin/biscuit
+     ```
+- **Allure**: (for detailed test reporting)
    1. Download the `.tgz` file from the [Allure Releases](https://github.com/allure-framework/allure2/releases).
    2. Extract the file:
       ```bash
@@ -86,7 +93,23 @@ Before you begin, ensure you have the following installed:
    poetry run regtest-start
    ```
 
-6. **Run test cases**<br>
+6. **Configure the Multisig Hub** (Optional, for multisig tests)<br>
+   The Multisig Hub requires a `config.toml` file in `e2e_tests/hub/`.
+   ```bash
+   mkdir -p e2e_tests/hub
+   cat <<EOF > e2e_tests/hub/config.toml
+   cosigner_xpubs = [
+       "PLACEHOLDER_COLORED_XPUB_1",
+       "PLACEHOLDER_COLORED_XPUB_2",
+   ]
+   threshold_colored = 2
+   threshold_vanilla = 2
+   root_public_key = "PLACEHOLDER_ROOT_KEY"
+   rgb_lib_version = "0.3"
+   EOF
+   ```
+
+7. **Run test cases**<br>
    Run test cases with the following options:
    ```bash
    # Run all tests
@@ -99,17 +122,19 @@ Before you begin, ensure you have the following installed:
    poetry run e2e-test all force-build
    poetry run single-test <TEST_NAME> force-build
 
+   # Run a specific test with a specific wallet variant
+   poetry run single-test <TEST_NAME> --wallet-variant <WALLET_VARIANT>
+
    ```
    **Note:** `force-build` flags are optional.
 
-7. **List test cases**<br>
+8. **List test cases**<br>
    ```bash
    poetry run list-tests
    ```
 
-8. **Check test results**
-   ```bash
-   # For results
-   poetry run allure-result
-
-   ```
+## Check test results
+```bash
+# For results
+poetry run allure-result
+```

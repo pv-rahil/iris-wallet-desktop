@@ -147,6 +147,7 @@ class ToasterPageObjects(BaseOperations):
     def click_toaster_frame(self):
         """
         Waits for toaster, captures description immediately, then clicks it.
+        Uses fallback search if immediate extraction fails.
 
         Returns:
             tuple: (toaster_element, description) if successful, (False, None) otherwise.
@@ -154,6 +155,12 @@ class ToasterPageObjects(BaseOperations):
         toaster_element, description = self.wait_for_toaster()
         if not toaster_element:
             return (False, None)
+
+        # If immediate extraction failed, try fallback search
+        if not description:
+            description = self._fallback_description_search()
+            if description:
+                print(f'[TOASTER] Got description via fallback: {description}')
 
         try:
             self.do_click(toaster_element)
@@ -165,6 +172,7 @@ class ToasterPageObjects(BaseOperations):
     def click_and_get_description(self, filter_pattern=None):
         """
         Convenience method that waits for toaster, captures description, and clicks it.
+        Uses fallback search if immediate extraction fails.
 
         Args:
             filter_pattern (str, optional): A substring to filter the toaster text.
@@ -176,7 +184,14 @@ class ToasterPageObjects(BaseOperations):
         if not toaster_element:
             return None
 
-        # Apply filter if needed
+        # If still no description, try fallback with filter
+        if not description:
+            description = self._fallback_description_search(filter_pattern)
+            if description:
+                print(f"""[TOASTER] Got description via fallback in click_and_get:
+                      {description}""")
+
+        # Apply filter if needed (for non-fallback path)
         if filter_pattern and description:
             if filter_pattern not in description:
                 return None

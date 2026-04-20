@@ -163,7 +163,7 @@ def test_offline_single_sig_inflate_ifa(test_environment: TestEnvironment, walle
         second_page_objects.receive_asset_page_objects.click_receive_asset_close_button()
         second_page_features.wallet_features.usb_sync()
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name,
+            FIRST_APPLICATION, wallet_variant_name, is_inflate=True,
         )
 
     with allure.step('Broadcast inflation PSBT'):

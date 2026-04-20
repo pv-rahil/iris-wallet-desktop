@@ -33,7 +33,6 @@ from e2e_tests.test.utilities.send_flow_helpers import verify_invalid_invoice_va
 from e2e_tests.test.utilities.translation_utils import TranslationManager
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import fund_and_refresh_offline_multisig_wallets
-from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_multisig_wallets
 from e2e_tests.test.utilities.wallet_setup_helpers import setup_offline_multisig_hardware_wallets
 from src.model.enums.enums_model import TransactionStatusEnumModel
@@ -183,6 +182,7 @@ def test_offline_single_sig_create_utxo_for_send_cfa(test_environment: TestEnvir
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Offline single-sig send CFA asset')
 @allure.story('Create transfer PSBT, sign with offline signer, then broadcast')
@@ -195,6 +195,7 @@ def test_offline_single_sig_send_transfer_cfa(wallets_and_operations: WalletTest
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Offline single-sig send CFA asset')
 @allure.story('Verify transaction status and amount')

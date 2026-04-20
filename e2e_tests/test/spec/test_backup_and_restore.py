@@ -1015,7 +1015,7 @@ def test_issue_ifa_for_multisig(test_environment, wallets_and_operations: Wallet
         )
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name, is_issue_ifa=True,
+            SECOND_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Issue IFA from draft'):

@@ -13,6 +13,13 @@ Before you begin, ensure you have the following installed:
 - **Python 3.12**
 - **Poetry** (Python dependency management tool)
 - **Docker** (required for running the regtest environment)
+- **Biscuit CLI**: Required for generating authentication tokens for multisig (version 0.6.0+).
+  1. Download the binary from the [Biscuit Releases](https://github.com/biscuit-auth/biscuit-rust/releases).
+  2. Extract and move the `biscuit` binary to `/usr/local/bin/`:
+     ```bash
+     sudo mv biscuit /usr/local/bin/
+     sudo chmod +x /usr/local/bin/biscuit
+     ```
 
 ---
 
@@ -103,6 +110,19 @@ client_config = {
 
 6. **Update Your Configuration:**
    - Save the modified JSON file and add it to your `config.py` file.
+
+#### 6.3 Create Multisig Hub `config.toml` (For Multisig variants)
+   - The Multisig Hub requires a `config.toml` file in `e2e_tests/hub/` for coordination:
+      ```toml
+      cosigner_xpubs = [
+         "PLACEHOLDER_COLORED_XPUB_1",
+         "PLACEHOLDER_COLORED_XPUB_2",
+      ]
+      threshold_colored = 2
+      threshold_vanilla = 2
+      root_public_key = "PLACEHOLDER_ROOT_KEY"
+      rgb_lib_version = "0.3"
+      ```
 
 ### 7. Start the Application
 You can now start the Iris Wallet application using:

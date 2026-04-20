@@ -293,7 +293,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
             sidebar_page.click_fungibles_button()
         return xpub_vanilla, xpub_colored, fingerprint, password
 
-    def sign_psbt(self, application, variant_name, is_rgb: bool = False, is_issue_ifa: bool = False, is_btc: bool = False):
+    def sign_psbt(self, application, variant_name, is_rgb: bool = False, is_inflate: bool = False, is_btc: bool = False):
         """
         Sign psbt.
         """
@@ -351,7 +351,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
                     self.confirm_transaction_on_hardware_wallet(
                         LEDGER_EMULATOR_APP_NAME,
                         is_rgb=is_rgb,
-                        is_ifa=is_issue_ifa,
+                        is_inflate=is_inflate,
                         is_btc=is_btc,
                         is_online=is_online,
                     )
@@ -411,7 +411,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
         return description
 
     def confirm_transaction_on_hardware_wallet(
-        self, application, is_rgb: bool = False, is_ifa: bool = False,
+        self, application, is_rgb: bool = False,
         is_inflate: bool = False, is_online: bool = True, is_btc: bool = False,
     ):
         """
@@ -441,13 +441,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
         # Determine UTXO count for online single-sig hardware wallet
         utxo_count = 0
         if is_online:
-            # Online hardware variants need UTXO signing before final transaction
-            if is_ifa:
-                # IFA issue/inflate needs 2 UTXOs
-                utxo_count = 2
-            elif is_rgb:
-                # RGB send needs 3 UTXOs
-                utxo_count = 3
+            utxo_count = 2
 
         # Sign UTXOs first (for online hardware wallet)
         for _ in range(utxo_count):

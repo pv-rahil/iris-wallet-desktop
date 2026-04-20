@@ -64,9 +64,10 @@ class SendOperation(MainPageObjects, BaseOperations):
             if is_hardware_wallet:
                 # RGB app handles both BTC and RGB transactions
                 is_rgb = purpose == 'send_asset'
+                is_btc = not is_rgb  # BTC send only when NOT sending RGB asset
                 # Assume online hardware wallet for send operations
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb, is_online=True, is_btc=True,
+                    LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb, is_online=True, is_btc=is_btc,
                 )
         except Exception as e:
             raise e
@@ -120,6 +121,8 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.hardware_wallet = handle_hardware_wallet(
                     app_name=RGB_LEDGER_APP_NAME,
                 )
+                # Wait for emulator to be fully initialized
+                time.sleep(3)
 
             self.do_focus_on_application(application)
 

@@ -138,7 +138,7 @@ def test_issue_ifa_with_sufficient_sats_and_no_utxo_offline_wallet(wallets_and_o
 
     with allure.step('Sign the IFA PSBT'):
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name, is_issue_ifa=True,
+            FIRST_APPLICATION, wallet_variant_name,
         )
 
     with allure.step('Broadcast the IFA PSBT'):
@@ -222,10 +222,10 @@ def test_issue_ifa_multisig_with_sufficient_sats_for_multisig_wallet(wallets_and
 
     with allure.step('Sign and broadcast from second wallet'):
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name, is_issue_ifa=True,
+            SECOND_APPLICATION, wallet_variant_name,
         )
 
-    with allure.step('refresh first multisig wallet'):
+    with allure.step('refresh first multisig wallet for fetching updated data from multisig bridge'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
         )
@@ -292,7 +292,6 @@ def test_issue_ifa_with_sufficient_sats_for_offline_multisig(wallets_and_operati
         wallets_and_operations.second_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet,
         ASSET_TICKER,
         asset_type='ifa',
-        is_issue_ifa=True,
     )
 
     # Refresh second wallet and issue from draft

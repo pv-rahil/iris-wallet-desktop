@@ -12,8 +12,6 @@ from accessible_constant import LOAD_WALLET_VARIANT
 from accessible_constant import MULTISIG_VARIANTS
 from accessible_constant import OFFLINE_CREATE_HARDWARE
 from accessible_constant import OFFLINE_CREATE_ON_DEVICE
-from accessible_constant import OFFLINE_MULTISIG_HARDWARE
-from accessible_constant import OFFLINE_MULTISIG_LOAD_HARDWARE
 from accessible_constant import ONLINE_CREATE_HARDWARE
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import ONLINE_LOAD_HARDWARE
@@ -100,7 +98,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     # Skip tests marked with @pytest.mark.skip_for_hardware_wallet if running in hardware wallet mode
     if wallet_mode in [
         ONLINE_CREATE_HARDWARE, ONLINE_LOAD_HARDWARE, ONLINE_MULTISIG_HARDWARE,
-        OFFLINE_MULTISIG_HARDWARE, ONLINE_MULTISIG_LOAD_HARDWARE, OFFLINE_MULTISIG_LOAD_HARDWARE,
+        ONLINE_MULTISIG_LOAD_HARDWARE,
     ] and any(
         True for _ in item.iter_markers('skip_for_hardware_wallet')
     ):

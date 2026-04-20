@@ -100,8 +100,8 @@ def reset_bridge_config() -> None:
         print(f"Created bridge directory at {bridge_dir}")
 
     default_config = """cosigner_xpubs = [
-    "PLACEHOLDER_XPUB_1",
-    "PLACEHOLDER_XPUB_2",
+    "PLACEHOLDER_COLORED_XPUB_1",
+    "PLACEHOLDER_COLORED_XPUB_2",
 ]
 threshold_colored = 2
 threshold_vanilla = 2

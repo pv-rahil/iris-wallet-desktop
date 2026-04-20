@@ -11,6 +11,7 @@ import allure
 from dogtail.tree import root
 
 from accessible_constant import FIRST_APPLICATION
+from accessible_constant import HARDWARE_WALLET_VARIANTS
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.translation_utils import TranslationManager
@@ -327,10 +328,13 @@ def send_asset_with_invoice(
         amount: Amount to send.
         wallet_variant_name: Wallet variant name.
     """
+    is_hardware = wallet_variant_name in HARDWARE_WALLET_VARIANTS
     send_features.send(
         application=application,
         receiver_invoice=invoice,
         amount=amount,
+        is_hardware_wallet=is_hardware,
+        purpose='send_asset',
     )
 
 

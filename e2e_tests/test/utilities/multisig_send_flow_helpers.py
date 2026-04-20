@@ -345,7 +345,6 @@ def offline_multisig_issue_asset_test_flow(
     issue_func,
     asset_identifier,
     asset_type: str = 'ifa',
-    is_issue_ifa: bool = False,
 ) -> None:
     """
     Execute offline multisig issue asset test flow with 3 apps.
@@ -387,7 +386,7 @@ def offline_multisig_issue_asset_test_flow(
     with allure.step('Refresh third wallet and sign PSBT'):
         _refresh_third_wallet_by_asset_type(wallets_and_operations, asset_type)
         wallets_and_operations.third_page_features.wallet_features.sign_psbt(
-            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE, is_issue_ifa=is_issue_ifa,
+            THIRD_APPLICATION, ONLINE_MULTISIG_ON_DEVICE,
         )
 
     with allure.step('Sign PSBT from first wallet (offline hardware signer)'):
@@ -395,7 +394,7 @@ def offline_multisig_issue_asset_test_flow(
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_features.wallet_features.sign_psbt(
-            FIRST_APPLICATION, wallet_variant_name, is_issue_ifa=is_issue_ifa,
+            FIRST_APPLICATION, wallet_variant_name,
         )
 
     # Broadcast from second wallet

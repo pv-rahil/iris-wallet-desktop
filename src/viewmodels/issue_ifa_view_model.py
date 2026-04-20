@@ -32,7 +32,6 @@ from src.utils.info_message import INFO_ASSET_ISSUED
 from src.utils.info_message import INFO_OPERATION_POSTED_TO_MULTISIG_BRIDGE
 from src.utils.info_message import INFO_TX_BROADCAST
 from src.utils.worker import ThreadManager
-from src.viewmodels.viewmodel_helpers import handle_viewmodel_error
 from src.viewmodels.viewmodel_helpers import post_signed_psbt_to_bridge
 from src.viewmodels.viewmodel_helpers import process_psbt_result
 from src.views.components.toast import ToastManager
@@ -153,7 +152,11 @@ class IssueIFAViewModel(QObject, ThreadManager):
             if getattr(error, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)
                 return
-        handle_viewmodel_error(self, error)
+        ToastManager.error(
+            description=error.message if isinstance(
+                error, CommonException,
+            ) else ERROR_SOMETHING_WENT_WRONG,
+        )
 
     def on_success_native_auth_inflate(self, success: bool) -> None:
         """Callback after native authentication for inflate."""
