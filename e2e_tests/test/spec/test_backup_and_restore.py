@@ -26,6 +26,7 @@ from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wall
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wallet_and_refresh_fungible
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_second_wallet_and_click_fungibles
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_second_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_second_wallet_refresh_inflatable_and_sign
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_third_wallet_and_click_bitcoin_frame
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_third_wallet_and_refresh_bitcoin
 from e2e_tests.test.utilities.multisig_send_flow_helpers import offline_issue_sign_refresh_multisig
@@ -1010,12 +1011,8 @@ def test_issue_ifa_for_multisig(test_environment, wallets_and_operations: Wallet
         wallets_and_operations.first_page_features.issue_ifa_features.issue_ifa_with_sufficient_sats_and_no_utxo_multisig_wallet(
             FIRST_APPLICATION, IFA_TICKER, wallet_variant_name, utxo_required=True,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
+        focus_second_wallet_refresh_inflatable_and_sign(
+            wallets_and_operations, wallet_variant_name,
         )
 
     with allure.step('Issue IFA from draft'):

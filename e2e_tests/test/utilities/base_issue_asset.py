@@ -103,7 +103,7 @@ class BaseIssueAsset(IFAOperationsMixin):
             self.hardware_wallet_emulator = None
 
     def _confirm_on_hardware_wallet(
-        self, wallet_feature, is_ifa: bool = False, is_inflate: bool = False,
+        self, wallet_feature, is_inflate: bool = False,
         is_online: bool = True,
     ) -> None:
         """
@@ -111,13 +111,12 @@ class BaseIssueAsset(IFAOperationsMixin):
 
         Args:
             wallet_feature: Wallet feature instance.
-            is_ifa: Whether this is an IFA issue or inflate operation (for UTXO count).
             is_inflate: Whether this is an IFA inflate operation (for final RGB signing).
             is_online: Whether this is an online hardware wallet.
         """
         if self.hardware_wallet_emulator:
             wallet_feature.confirm_transaction_on_hardware_wallet(
-                LEDGER_EMULATOR_APP_NAME, is_ifa=is_ifa, is_inflate=is_inflate,
+                LEDGER_EMULATOR_APP_NAME, is_inflate=is_inflate,
                 is_online=is_online,
             )
 
@@ -220,7 +219,7 @@ class BaseIssueAsset(IFAOperationsMixin):
             self.enter_native_password()  # type: ignore[attr-defined]
 
     def _handle_issue_confirmation_and_success(
-        self, application, is_native_auth_enabled: bool, is_ifa: bool = False,
+        self, application, is_native_auth_enabled: bool,
         is_inflate: bool = False, is_online: bool = True,
     ) -> None:
         """
@@ -229,12 +228,11 @@ class BaseIssueAsset(IFAOperationsMixin):
         Args:
             application: Application instance.
             is_native_auth_enabled: Whether native auth is enabled.
-            is_ifa: Whether this is an IFA issue or inflate operation (for UTXO count).
             is_inflate: Whether this is an IFA inflate operation (for final RGB signing).
             is_online: Whether this is an online hardware wallet.
         """
         self._confirm_on_hardware_wallet(
-            self.wallet_feature, is_ifa=is_ifa, is_inflate=is_inflate,
+            self.wallet_feature, is_inflate=is_inflate,
             is_online=is_online,
         )
         handle_native_auth_and_focus(self, application, is_native_auth_enabled)

@@ -63,7 +63,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
 
             is_online = self._is_online_hardware(variant_name)
             self._handle_issue_confirmation_and_success(
-                application, is_native_auth_enabled, is_ifa=True, is_online=is_online,
+                application, is_native_auth_enabled, is_online=is_online,
             )
 
     def issue_ifa_asset_without_sat(self, application, asset_ticker, asset_name, issue_amount, total_supply):

@@ -163,15 +163,15 @@ jobs:
           - test_inflate_asset
         wallet_variant:
           # All single-sig variants
-          # - online_watch_only
-          # - online_create_on_device
+          - online_watch_only
+          - online_create_on_device
           - online_create_hardware
-          # - online_load_on_device
-          # - online_load_hardware
-          # - offline_create_on_device
+          - online_load_on_device
+          - online_load_hardware
+          - offline_create_on_device
           - offline_create_hardware
-          # - offline_load_on_device
-          # - offline_load_hardware
+          - offline_load_on_device
+          - offline_load_hardware
           # All multisig variants
           # - online_multisig_on_device
           # - online_multisig_hardware
@@ -354,7 +354,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Delete all artifacts
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const artifacts = await github.rest.actions.listArtifactsForRepo({

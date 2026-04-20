@@ -53,7 +53,7 @@ class Inflate(MainPageObjects, BaseOperations, BaseIssueAsset):
 
             is_online = self._is_online_hardware(variant_name)
             self._handle_issue_confirmation_and_success(
-                application, is_native_auth_enabled, is_ifa=True, is_inflate=True,
+                application, is_native_auth_enabled, is_inflate=True,
                 is_online=is_online,
             )
 
@@ -117,7 +117,7 @@ class Inflate(MainPageObjects, BaseOperations, BaseIssueAsset):
 
             is_online = self._is_online_hardware(variant_name)
             self._confirm_on_hardware_wallet(
-                self.wallet_feature, is_ifa=True, is_inflate=True, is_online=is_online,
+                self.wallet_feature, is_inflate=True, is_online=is_online,
             )
             try:
                 if self.do_is_displayed(self.receive_asset_page_objects.receive_asset_close_button()):

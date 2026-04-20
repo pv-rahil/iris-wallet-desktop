@@ -29,10 +29,8 @@ from src.model.enums.enums_model import TransactionStatusEnumModel
 
 def multisig_send_asset_flow_with_verification(
     wallets_and_operations,
-    invoice: str,
-    asset_name: str,
-    asset_ticker: str,
-    send_amount: str,
+    invoice: str, asset_name: str,
+    asset_ticker: str, send_amount: str,
     wallet_variant_name: str,
     asset_type: str = 'ifa',
     verify_assertions: bool = True,
@@ -180,10 +178,8 @@ def multisig_send_asset_flow_with_verification(
 
 def generate_multisig_invoice_and_send(
     wallets_and_operations,
-    asset_name: str,
-    asset_ticker: str,
-    send_amount: str,
-    wallet_variant_name: str,
+    asset_name: str, asset_ticker: str,
+    send_amount: str, wallet_variant_name: str,
     asset_type: str = 'nia',
     verify_assertions: bool = True,
 ) -> None:
@@ -253,12 +249,9 @@ def handle_success_home_button(self) -> None:
 
 
 def handle_native_auth_utxo_and_success(
-    self,
-    application: str,
-    wallet_feature,
-    is_native_auth_enabled: bool = False,
-    utxo_required: bool = False,
-    is_hardware: bool = False,
+    self, application: str,
+    wallet_feature, is_native_auth_enabled: bool = False,
+    utxo_required: bool = False, is_hardware: bool = False,
     ledger_app_name: str = LEDGER_EMULATOR_APP_NAME,
 ) -> None:
     """
@@ -277,10 +270,8 @@ def handle_native_auth_utxo_and_success(
 
 
 def handle_offline_multisig_utxo_confirmation_and_usb_sync(
-    self,
-    application: str,
-    wallet_feature,
-    is_native_auth_enabled: bool = False,
+    self, application: str,
+    wallet_feature, is_native_auth_enabled: bool = False,
 ) -> None:
     """
     Handle UTXO confirmation dialog and USB sync for offline multisig wallet.
@@ -935,6 +926,21 @@ def focus_second_wallet_and_refresh_inflatable(wallets_and_operations) -> None:
     focus_second_wallet(wallets_and_operations)
     wallets_and_operations.second_page_objects.sidebar_page_objects.click_inflatable_button()
     wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+
+
+def focus_second_wallet_refresh_inflatable_and_sign(
+    wallets_and_operations, wallet_variant_name: str,
+) -> None:
+    """
+    Focus on second wallet, refresh inflatable assets, and sign PSBT.
+    """
+    wallets_and_operations.second_page_operations.do_focus_on_application(
+        SECOND_APPLICATION,
+    )
+    wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
+    wallets_and_operations.second_page_features.wallet_features.sign_psbt(
+        SECOND_APPLICATION, wallet_variant_name,
+    )
 
 
 def focus_third_wallet_and_sign_online_multisig(

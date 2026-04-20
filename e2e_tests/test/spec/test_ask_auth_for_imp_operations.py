@@ -20,9 +20,8 @@ from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wallet_and_click_collectibles
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wallet_and_click_inflatable
-from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wallet_and_refresh_fungible
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_second_wallet_and_click_inflatable
-from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_second_wallet_and_refresh_fungible
+from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_second_wallet_refresh_inflatable_and_sign
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_third_wallet_and_click_bitcoin_frame
 from e2e_tests.test.utilities.multisig_send_flow_helpers import issue_cfa_multisig_flow
 from e2e_tests.test.utilities.multisig_send_flow_helpers import issue_nia_multisig_flow
@@ -845,12 +844,8 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment: Te
         )
 
     with allure.step('Cosign transfer from second multisig wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
+        focus_second_wallet_refresh_inflatable_and_sign(
+            wallets_and_operations, wallet_variant_name,
         )
 
     with allure.step('Send IFA asset from multisig with native auth'):
@@ -865,12 +860,8 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment: Te
         wallets_and_operations.first_page_features.send_features.send_asset_for_multisig(
             FIRST_APPLICATION, wallet_variant_name, is_native_auth_enabled=True,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
+        focus_second_wallet_refresh_inflatable_and_sign(
+            wallets_and_operations, wallet_variant_name,
         )
         _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 
@@ -1206,12 +1197,8 @@ def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(test_environment: T
         )
 
     with allure.step('Cosign transfer from second multisig wallet'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
+        focus_second_wallet_refresh_inflatable_and_sign(
+            wallets_and_operations, wallet_variant_name,
         )
 
     with allure.step('Send IFA asset from multisig without native auth'):
@@ -1226,12 +1213,8 @@ def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(test_environment: T
         wallets_and_operations.first_page_features.send_features.send_asset_for_multisig(
             FIRST_APPLICATION, wallet_variant_name,
         )
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()
-        wallets_and_operations.second_page_features.wallet_features.sign_psbt(
-            SECOND_APPLICATION, wallet_variant_name,
+        focus_second_wallet_refresh_inflatable_and_sign(
+            wallets_and_operations, wallet_variant_name,
         )
         _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
 

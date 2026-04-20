@@ -145,16 +145,16 @@ class IssueIFAViewModel(QObject, ThreadManager):
         self.success_page_message.emit(response.name)
         self.is_loading.emit(False)
 
-    def on_error(self, error) -> None:
+    def on_error(self, e) -> None:
         """Handle error response of IFA issuance."""
         self.is_loading.emit(False)
-        if isinstance(error, CommonException):
-            if getattr(error, 'message', '') == 'NoAvailableUtxos':
+        if isinstance(e, CommonException):
+            if getattr(e, 'message', '') == 'NoAvailableUtxos':
                 self.utxo_creation_started.emit(True)
                 return
         ToastManager.error(
-            description=error.message if isinstance(
-                error, CommonException,
+            description=e.message if isinstance(
+                e, CommonException,
             ) else ERROR_SOMETHING_WENT_WRONG,
         )
 

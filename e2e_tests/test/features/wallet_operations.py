@@ -430,7 +430,6 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
         Args:
             application: Application name.
             is_rgb: Whether this is an RGB send transaction.
-            is_ifa: Whether this is an IFA issue or inflate operation (for UTXO count).
             is_inflate: Whether this is an IFA inflate operation (for final RGB signing).
             is_online: Whether this is an online hardware wallet (True for online, False for offline).
             is_btc: Whether this is a BTC send transaction.
@@ -440,7 +439,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
 
         # Determine UTXO count for online single-sig hardware wallet
         utxo_count = 0
-        if is_online:
+        if is_online and not is_btc:
             utxo_count = 2
 
         # Sign UTXOs first (for online hardware wallet)
