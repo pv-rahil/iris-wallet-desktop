@@ -917,6 +917,6 @@ class Wallet(WalletOperationsMixin):
                 self.wallet_mode_summary_dialog_page_objects.click_continue_button()
                 break
             if self.do_is_displayed(self.selection_page_objects.continue_button()):
-                self.selection_page_objects.click_continue_button()
+                self.selection_page_objects.continue_button().click()
             else:
                 break
