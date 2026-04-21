@@ -292,20 +292,16 @@ class TestEnvironment:
                 self.fourth_application,
             )
 
-    def _wait_for_app_stability(self, app_frame, timeout=15):
-        """Wait until app has at least one stable UI element."""
+    def _wait_for_app_stability(self, app_frame, timeout: int = 10):
+        """Wait for app to be fully stable by checking for UI element."""
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                if app_frame and app_frame.showing:
-                    # Minimal check instead of deep tree scan
-                    children = app_frame.children
-                    if children:
-                        return True
+                if app_frame and app_frame.child(roleName='radio button', requireResult=False):
+                    return True
             except Exception:
                 pass
             time.sleep(0.5)
-        print('[WARN] App stability not confirmed, continuing anyway')
         return False
 
     def _find_application_node(self, app_name):
@@ -340,20 +336,48 @@ class TestEnvironment:
         return root.application(app_name)
 
     def _find_application_frame(self, app_name):
-        """Fast frame lookup without scanning full AT-SPI tree."""
+        """
+        Helper to find the frame node for a given app name.
+        This is used for single-sig to ensure element searches are scoped to the correct frame.
+        Returns frame node instead of application node for better element scoping.
+        """
+        # Extract app identifier from frame name
+        match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
+        target_app_identifier = match.group(1) if match else None
+
+        # Search through all applications to find the correct frame
         try:
-            app = root.application(app_name)
+            apps = [a for a in root.applications() if 'iris' in a.name.lower()]
 
-            if app:
-                frame = app.child(roleName='frame', name=app_name)
-                if frame:
-                    print(f"[DEBUG] Found frame for {app_name}")
-                    return frame
+            # Sort apps to prioritize the target app
+            if target_app_identifier:
+                apps = sorted(
+                    apps, key=lambda a: 0 if target_app_identifier in a.name else 1,
+                )
 
+            for app in apps:
+                # Check if this app matches the target identifier
+                if target_app_identifier and target_app_identifier not in app.name:
+                    continue
+
+                # Find the frame within this application
+                for child in app.children:
+                    if child.roleName == 'frame' and child.name == app_name:
+                        print(f"""[DEBUG] Found frame '
+                              {app_name}' under app '{app.name}'""")
+                        return child
         except Exception:
             pass
 
-        print(f"[WARN] Frame not found for {app_name}")
+        # Fallback - find frame directly from root
+        try:
+            frame = root.child(roleName='frame', name=app_name)
+            if frame:
+                return frame
+        except Exception:
+            pass
+
+        print(f"[WARN] No frame found for '{app_name}'")
         return None
 
     def _find_showing_frame(self, app_name, retry_count=3, retry_delay=1.0):
@@ -428,47 +452,75 @@ class TestEnvironment:
         print(f"[FIND_FRAME] Using fallback direct search for '{app_name}'")
         return root.child(roleName='frame', name=app_name)
 
-    def wait_for_application(self, name, timeout=120, process=None):
-        """Wait for the application frame to be visible using optimized lookup."""
-        print(f"[SETUP] Waiting for {name} (timeout {timeout}s)")
-        start_time = time.time()
+    def wait_for_application(self, name, timeout=60, process=None):
+        """Wait for the application and its main frame to be visible.
+        """
+        def timeout_handler(signum, frame):
+            raise TimeoutError('AT-SPI call timed out')
 
-        last_error_log = 0
+        print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
+        start_time = time.time()
+        poll_interval = 0.5
+        last_refresh_time = 0
 
         while time.time() - start_time < timeout:
-            # Check if process died
+            # Early failure detection: check if process died
             if process and process.poll() is not None:
-                raise RuntimeError(
-                    f"{name} exited early with code {process.poll()}",
-                )
-
-            try:
-                # 🔥 Direct lookup (FAST)
-                app = root.application(name)
-
-                if app:
+                exit_code = process.poll()
+                # Try to capture any stderr output for debugging
+                stderr_output = ''
+                if hasattr(process, 'stderr') and process.stderr:
                     try:
-                        frame = app.child(roleName='frame', name=name)
-                        if frame and frame.showing:
-                            print(f"[SETUP] {name} ready ✅")
-                            return True
+                        stderr_output = process.stderr.read().decode('utf-8', errors='ignore')
                     except Exception:
                         pass
+                error_msg = f"Application '{
+                    name
+                }' process exited unexpectedly with code {exit_code}"
+                if stderr_output:
+                    # Last 500 chars
+                    error_msg += f"\nStderr: {stderr_output[-500:]}"
+                raise RuntimeError(error_msg)
 
-            except Exception:
-                pass
-
-            # 🔥 Light refresh only every 5 sec (not aggressive)
-            if time.time() - last_error_log > 5:
+            # Force AT-SPI tree refresh every 2 seconds to detect new apps
+            # This is critical for CI where AT-SPI caching causes stale data
+            current_time = time.time()
+            if current_time - last_refresh_time > 2.0:
                 try:
-                    _ = root.children  # minimal refresh
+                    _ = root.children  # Force refresh
+                    last_refresh_time = current_time
                 except Exception:
                     pass
-                last_error_log = time.time()
 
-            time.sleep(0.5)
+            try:
+                # Set timeout for AT-SPI calls
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(5)  # 5 second timeout per iteration
 
-        raise TimeoutError(f"{name} failed to appear in {timeout}s")
+                try:
+                    # Use our helper to see if an application node with a frame exists
+                    app = self._find_application_node(name)
+                    if app:
+                        # Also check if it has a showing frame
+                        frame = app.child(roleName='frame', name=name)
+                        if frame and frame.showing:
+                            signal.alarm(0)  # Cancel alarm
+                            print(f"[SETUP] {name} is showing and ready.")
+                            return True
+                except TimeoutError:
+                    print(f"[SETUP] AT-SPI timeout while searching for {name}")
+                finally:
+                    signal.alarm(0)  # Ensure alarm is cancelled
+
+            except Exception as e:
+                signal.alarm(0)
+                print(f"[SETUP] Exception while searching for {name}: {e}")
+            time.sleep(poll_interval)
+        raise TimeoutError(
+            f"""Application '{name}' failed to start or show frame within {
+                timeout
+            } seconds""",
+        )
 
     def get_child_pids(self, parent_pid):
         """Returns a list of child process PIDs for a given parent process."""

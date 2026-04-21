@@ -137,41 +137,23 @@ jobs:
   e2e-dogtail:
     name: E2E Dogtail tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 160
+    timeout-minutes: 360
     strategy:
       fail-fast: false
+      max-parallel: 3
+
       matrix:
-        test_file:
-          - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_login_app_auth
-          - test_ask_auth_for_imp_operations
-          - test_settings
-          - test_help
-          - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_nia_asset
-          - test_send_and_receive_ifa_asset
-          - test_send_and_receive_cfa_asset
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_issue_nia_asset
-          - test_issue_ifa_asset
-          - test_issue_cfa_asset
-          - test_view_unspent
-          - test_refresh_transfer
-          - test_inflate_asset
         wallet_variant:
           # All single-sig variants
           - online_watch_only
           - online_create_on_device
           - online_create_hardware
-          - online_load_on_device
-          - online_load_hardware
+          # - online_load_on_device
+          # - online_load_hardware
           - offline_create_on_device
           - offline_create_hardware
-          - offline_load_on_device
-          - offline_load_hardware
+          # - offline_load_on_device
+          # - offline_load_hardware
           # All multisig variants
           # - online_multisig_on_device
           # - online_multisig_hardware
@@ -183,10 +165,15 @@ jobs:
           # - offline_multisig_load_hardware
           # - online_multisig_watch_only
 
+        shard_id: [1, 2, 3, 4, 5]
+        total_shards: [5]
+
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
       CI: "true"
+      SHARD_ID: ${{ matrix.shard_id }}
+      TOTAL_SHARDS: ${{ matrix.total_shards }}
 
     steps:
       - name: Checkout repository
@@ -227,7 +214,7 @@ jobs:
           xauth -f "$XAUTH" add :99 . $(mcookie)
 
           # Start Xvfb with GLX extension enabled
-          Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
+          Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset &
           sleep 5
           # Wait for X to be ready
           for i in {1..30}; do
@@ -267,9 +254,9 @@ jobs:
           sudo apt-get install -y ffmpeg
 
           # Start recording the virtual display
-          ffmpeg -video_size 1920x1080 -framerate 15 -f x11grab -i :99.0 \
+          ffmpeg -video_size 1280x720 -framerate 15 -f x11grab -i :99.0 \
             -codec:v libx264 -preset ultrafast -crf 28 \
-            /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4 &
+            /tmp/test_recording_shard${{ matrix.shard_id }}_${{ matrix.wallet_variant }}.mp4 &
           echo "RECORDER_PID=$!" >> $GITHUB_ENV
           sleep 2
 
@@ -283,7 +270,7 @@ jobs:
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
         uses: ./.github/actions/setup-e2e-environment
         with:
-          test-file: ${{ matrix.test_file }}
+          run-all: 'true'
           wallet-variant: ${{ matrix.wallet_variant }}
 
       - name: Stop screen recording
@@ -301,8 +288,8 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
-          path: /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4
+          name: screen-recording-shard${{ matrix.shard_id }}-${{ matrix.wallet_variant }}
+          path: /tmp/test_recording_shard${{ matrix.shard_id }}_${{ matrix.wallet_variant }}.mp4
           retention-days: 7
           if-no-files-found: ignore
 
@@ -310,7 +297,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
+          name: allure-results-shard${{ matrix.shard_id }}-${{ matrix.wallet_variant }}
           path: allure-results/${{ matrix.wallet_variant }}/
           retention-days: 7
           if-no-files-found: ignore

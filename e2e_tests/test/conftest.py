@@ -91,6 +91,30 @@ def wallet_variant_name(request) -> str:
     return request.config.getoption('--wallet-variant')
 
 
+def pytest_collection_modifyitems(_, items):
+    """
+    Shard test collection for parallel CI execution.
+
+    When SHARD_ID and TOTAL_SHARDS env vars are set, splits tests across shards.
+    Each shard runs a subset of tests, enabling parallel execution.
+    """
+    shard_id = int(os.getenv('SHARD_ID', '1'))
+    total_shards = int(os.getenv('TOTAL_SHARDS', '1'))
+
+    if total_shards <= 1:
+        return
+
+    # Select tests for this shard using modulo distribution
+    selected = [
+        item for i, item in enumerate(items)
+        if i % total_shards == (shard_id - 1)
+    ]
+
+    print(f"""[SHARD] {len(selected)} tests selected for shard
+          {shard_id}/{total_shards}""")
+    items[:] = selected
+
+
 def pytest_runtest_setup(item: pytest.Item) -> None:
     """Skip tests based on wallet mode via markers."""
     wallet_mode = item.config.getoption('--wallet-variant')
