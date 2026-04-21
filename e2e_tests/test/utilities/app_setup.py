@@ -160,6 +160,7 @@ class TestEnvironment:
                 APP1_NAME
             }-{__version__}-x86_64.AppImage"""],
             env=env,
+            stderr=subprocess.PIPE,
         )
         self.wait_for_application(
             FIRST_APPLICATION, process=self.first_process,
@@ -192,6 +193,7 @@ class TestEnvironment:
                     APP2_NAME
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
+                stderr=subprocess.PIPE,
             )
             self.wait_for_application(
                 SECOND_APPLICATION, process=self.second_process,
@@ -221,11 +223,14 @@ class TestEnvironment:
         if self.num_instances >= 3:
             # Wait for second app to be fully stable before launching third
             self._wait_for_app_stability(self.second_application)
+            # Force AT-SPI tree refresh before launching third app
+            self._refresh_atspi_for_new_app()
             self.third_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
+                stderr=subprocess.PIPE,
             )
             self.wait_for_application(
                 THIRD_APPLICATION, process=self.third_process,
@@ -254,11 +259,14 @@ class TestEnvironment:
         if self.num_instances >= 4:
             # Wait for third app to be fully stable before launching fourth
             self._wait_for_app_stability(self.third_application)
+            # Force AT-SPI tree refresh before launching fourth app
+            self._refresh_atspi_for_new_app()
             self.fourth_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP4_NAME
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
+                stderr=subprocess.PIPE,
             )
             self.wait_for_application(
                 FOURTH_APPLICATION, process=self.fourth_process,
@@ -459,11 +467,20 @@ class TestEnvironment:
             # Early failure detection: check if process died
             if process and process.poll() is not None:
                 exit_code = process.poll()
-                raise RuntimeError(
-                    f"Application '{
-                        name
-                    }' process exited unexpectedly with code {exit_code}",
-                )
+                # Try to capture any stderr output for debugging
+                stderr_output = ''
+                if hasattr(process, 'stderr') and process.stderr:
+                    try:
+                        stderr_output = process.stderr.read().decode('utf-8', errors='ignore')
+                    except Exception:
+                        pass
+                error_msg = f"Application '{
+                    name
+                }' process exited unexpectedly with code {exit_code}"
+                if stderr_output:
+                    # Last 500 chars
+                    error_msg += f"\nStderr: {stderr_output[-500:]}"
+                raise RuntimeError(error_msg)
 
             # Force AT-SPI tree refresh every 2 seconds to detect new apps
             # This is critical for CI where AT-SPI caching causes stale data
@@ -573,14 +590,7 @@ class TestEnvironment:
         self.launch_applications()
 
     def reset_first_instance(self, reset_data: bool = True, skip_warmup: bool = False):
-        """Reset and relaunch only the first application instance.
-
-        This is used for multisig load flow where we:
-        1. Init multisig on both apps
-        2. Collect credentials from FIRST app
-        3. Reset FIRST app (not second)
-        4. Load first app with its own credentials
-        """
+        """Reset and relaunch only the first application instance."""
         # Kill only the first process
         self.terminate_process(self.first_process)
         self.first_process = None
@@ -645,12 +655,7 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_second_instance(self, reset_data: bool = True, skip_warmup: bool = False):
-        """Reset and relaunch only the second application instance.
-
-        This is useful when a test uses the second app to prepare credentials/backup
-        for a load/restore flow in the first app, and needs the second app to be
-        re-initialized immediately after the load completes for the remainder of the suite.
-        """
+        """Reset and relaunch only the second application instance."""
         # If only one instance is active, nothing to do
         if self.num_instances < 2:
             return
@@ -709,11 +714,7 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_third_instance(self, reset_data: bool = True, skip_warmup: bool = False):
-        """Reset and relaunch only the third application instance.
-
-        This is used for offline multisig tests where we need to refresh
-        the third app (cosigner) to update the AT-SPI tree.
-        """
+        """Reset and relaunch only the third application instance."""
         # If less than 3 instances are active, nothing to do
         if self.num_instances < 3:
             return
@@ -771,12 +772,7 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_fourth_instance(self, reset_data: bool = False, skip_warmup: bool = False):
-        """Reset and relaunch only the fourth application instance.
-
-        Args:
-            reset_data (bool): If True, clears the fourth app's data directory before relaunching.
-            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
-        """
+        """Reset and relaunch only the fourth application instance."""
         # If only less than 4 instances are active, nothing to do
         if self.num_instances < 4:
             return
@@ -830,14 +826,7 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_offline_multisig_instances(self, reset_data: bool = False):
-        """Reset first, second, third, and fourth application instances for offline multisig tests.
-
-        This refreshes the AT-SPI tree for all four apps without clearing data,
-        which is needed before backup/restore tests to ensure fresh page objects.
-
-        Args:
-            reset_data (bool): If True, clears app data directories before relaunching.
-        """
+        """Reset first, second, third, and fourth application instances for offline multisig tests."""
         # Reset all instances with skip_warmup=True to avoid redundant AT-SPI calls
         # Each reset adds 2s delay between kills to prevent AT-SPI bus overload
         self.reset_first_instance(reset_data=reset_data, skip_warmup=True)
