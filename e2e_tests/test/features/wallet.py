@@ -195,6 +195,10 @@ class Wallet(WalletOperationsMixin):
 
         self._handle_password_setup()
 
+        # Refresh AT-SPI tree after wallet creation to get fresh element references
+        refresh_atspi_tree()
+        time.sleep(0.5)
+
         # For watch-only multisig, the UI shows cosigner import cards, not export buttons
         # Register the application but skip key export (watch-only doesn't have its own keys)
         if effective_variant == ONLINE_MULTISIG_WATCH_ONLY:
@@ -552,6 +556,10 @@ class Wallet(WalletOperationsMixin):
         if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
             self.enter_wallet_password_page_objects.click_login_button()
 
+        # Refresh AT-SPI tree after wallet load to get fresh element references
+        refresh_atspi_tree()
+        time.sleep(1)
+
     def setup_multisig_watch_only_with_temp_signer(self, wallets_and_operations):
         """
         Setup watch-only wallet for 2-app multisig tests.
@@ -755,6 +763,10 @@ class Wallet(WalletOperationsMixin):
             self.enter_wallet_password_page_objects.enter_password(password)
         if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
             self.enter_wallet_password_page_objects.click_login_button()
+
+        # Refresh AT-SPI tree after wallet load to get fresh element references
+        refresh_atspi_tree()
+        time.sleep(1)
 
         if variant not in REQUIRE_USB_VARIANTS and fund:
             self.fund_wallet(application)

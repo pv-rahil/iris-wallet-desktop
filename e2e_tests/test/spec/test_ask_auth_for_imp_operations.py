@@ -27,7 +27,6 @@ from e2e_tests.test.utilities.multisig_send_flow_helpers import issue_cfa_multis
 from e2e_tests.test.utilities.multisig_send_flow_helpers import issue_nia_multisig_flow
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet
 from e2e_tests.test.utilities.send_flow_helpers import focus_second_wallet_and_navigate_to_ifa_tx
-from e2e_tests.test.utilities.send_flow_helpers import focus_third_wallet
 from e2e_tests.test.utilities.send_flow_helpers import refresh_collectibles_on_app2
 from e2e_tests.test.utilities.send_flow_helpers import verify_tx_on_third_wallet
 from e2e_tests.test.utilities.wallet_setup_helpers import get_fresh_page_objects
@@ -323,6 +322,9 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
         )
+        # Navigate back to bitcoin detail page since it was closed earlier
+        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
+        wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_refresh_button()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
         bitcoin_tx_id = wallets_and_operations.second_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()

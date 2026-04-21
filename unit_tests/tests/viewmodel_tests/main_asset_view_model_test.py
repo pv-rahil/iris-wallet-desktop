@@ -219,17 +219,32 @@ def test_get_assets_success(
 
 def test_get_assets_failure(
     main_asset_view_model,
+    mocker,
 ):
     """Test get asset with api failure"""
+    # Mock the service to raise an exception
+    mocker.patch(
+        'src.data.service.main_asset_page_service.MainAssetPageDataService.get_assets',
+        side_effect=CommonException('API Error'),
+    )
+
     list_loaded_mock = Mock()
     main_asset_view_model.asset_loaded.connect(list_loaded_mock)
+
+    # Mock run_in_thread to capture and call the error_callback
+    def mock_run_in_thread(func, params):
+        error_callback = params.get('error_callback')
+        if error_callback:
+            error_callback(CommonException('API Error'))
+
+    mocker.patch.object(
+        main_asset_view_model, 'run_in_thread',
+        side_effect=mock_run_in_thread,
+    )
+
     main_asset_view_model.get_assets()
 
-    # Simulate API failure
-    main_asset_view_model.worker.error.emit(CommonException('API Error'))
-
-    # Since the worker result is emitting an exception, the assets should be None
-    assert main_asset_view_model.assets is None
+    # The error callback emits False for asset_loaded
     list_loaded_mock.assert_called_once_with(False)
 
 

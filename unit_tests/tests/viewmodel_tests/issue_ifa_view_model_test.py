@@ -360,11 +360,12 @@ def test_on_error_hardware(vm, mocker):
         'src.viewmodels.issue_ifa_view_model.SettingRepository.get_key_storage_type',
         return_value=KeyStorageType.HARDWARE_WALLET,
     )
-    slot = Mock()
-    vm.hw_dialog_update.connect(slot)
+    mock_toast = mocker.patch(
+        'src.viewmodels.issue_ifa_view_model.ToastManager.error',
+    )
 
     vm.on_error(CommonException('hw failed'))
-    slot.assert_called_once()
+    mock_toast.assert_called_once()
 
 
 def test_native_auth_inflate_flow(vm, mocker):

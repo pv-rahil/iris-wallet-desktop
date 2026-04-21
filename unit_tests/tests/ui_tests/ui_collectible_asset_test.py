@@ -22,11 +22,10 @@ from PySide6.QtWidgets import QSpacerItem
 from PySide6.QtWidgets import QWidget
 
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.constant import IRIS_WALLET_TRANSLATIONS_CONTEXT
 from src.viewmodels.main_view_model import MainViewModel
+from src.views.components.ui_helpers import WalletTypeFlags
 from src.views.ui_collectible_asset import CollectiblesAssetWidget
 
 
@@ -508,12 +507,13 @@ def test_init_top_row_offline_and_watch_only_branches(qtbot, mocker, mock_collec
     """Covers branches adding outdated label and usb layout when offline/watch-only."""
     # Make flags true during __init__ so conditional branches at lines 129 and 133 execute
     mocker.patch(
-        'src.views.ui_collectible_asset.SettingRepository.get_wallet_type',
-        return_value=WalletType.OFFLINE_TYPE_WALLET,
-    )
-    mocker.patch(
-        'src.views.ui_collectible_asset.SettingRepository.get_wallet_access_type',
-        return_value=WalletAccessType.WATCH_ONLY,
+        'src.views.ui_collectible_asset.get_wallet_type_flags',
+        return_value=WalletTypeFlags(
+            is_hardware_wallet=False,
+            is_offline_wallet=True,
+            is_watch_only=True,
+            is_multisig=False,
+        ),
     )
 
     widget = CollectiblesAssetWidget(mock_collectible_asset_view_model)
@@ -530,8 +530,13 @@ def test_update_grid_layout_covers_drafts_and_remove_item(collectible_asset_widg
     """Covers drafts path (191-196) and removeItem branch (212)."""
     # Mock wallet access type as WATCH_ONLY so draft frames are created
     mocker.patch(
-        'src.views.ui_collectible_asset.SettingRepository.get_wallet_access_type',
-        return_value=WalletAccessType.WATCH_ONLY,
+        'src.views.ui_collectible_asset.get_wallet_type_flags',
+        return_value=WalletTypeFlags(
+            is_hardware_wallet=False,
+            is_offline_wallet=False,
+            is_watch_only=True,
+            is_multisig=False,
+        ),
     )
     collectible_asset_widget.is_watch_only = True
 
