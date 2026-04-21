@@ -6,8 +6,6 @@ import subprocess
 import time
 from typing import Tuple
 
-from dogtail.tree import root
-
 from accessible_constant import NAME_TO_STEPS
 from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 from e2e_tests.test.utilities.executable_shell_script import reset_regtest
@@ -108,8 +106,7 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
         stderr=subprocess.DEVNULL,
     )
 
-    # Wait for emulator window to be visible (poll-based, not arbitrary sleep)
-    _wait_for_emulator_window(timeout=10)
+    time.sleep(1)
 
     if not is_ci_environment():
         # Move Speculos window to background
@@ -121,29 +118,3 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
         )
 
     return proc
-
-
-def _wait_for_emulator_window(timeout: int = 10):
-    """
-    Wait for the hardware wallet emulator window to be visible.
-
-    Args:
-        timeout: Maximum time to wait in seconds.
-    """
-    start_time = time.time()
-    poll_interval = 0.2
-
-    while time.time() - start_time < timeout:
-        try:
-            # Check if the emulator window exists and is showing
-            emulator_window = root.child(
-                roleName='filler',
-                name='Ledger Nano SP Emulator',
-                requireResult=False,
-                showingOnly=True,
-            )
-            if emulator_window:
-                return
-        except Exception:
-            pass
-        time.sleep(poll_interval)

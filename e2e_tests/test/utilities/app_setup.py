@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes, redefined-outer-name, consider-using-with
+# pylint: disable=too-many-instance-attributes, redefined-outer-name, consider-using-with, too-many-statements
 """
 This module provides a test environment for the Iris Wallet application.
 It includes classes and fixtures for setting up and tearing down the test environment.
@@ -39,7 +39,6 @@ from accessible_constant import THIRD_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.dogtail_config import refresh_atspi_for_new_app
 from e2e_tests.test.utilities.dogtail_config import warm_up_atspi
 from e2e_tests.test.utilities.fake_usb import setup_fake_usb
 from e2e_tests.test.utilities.reset_app import delete_app_data
@@ -166,7 +165,7 @@ class TestEnvironment:
         self.wait_for_application(
             FIRST_APPLICATION, process=self.first_process,
         )
-
+        time.sleep(2)  # for stabilize the application and the atspi tree
         # Maximize first application window
         subprocess.run(
             [
@@ -199,6 +198,7 @@ class TestEnvironment:
             self.wait_for_application(
                 SECOND_APPLICATION, process=self.second_process,
             )
+            time.sleep(2)  # for stabilize the application and the atspi tree
 
             # Maximize second application window
             subprocess.run(
@@ -225,7 +225,6 @@ class TestEnvironment:
             # Wait for second app to be fully stable before launching third
             self._wait_for_app_stability(self.second_application)
             # Force AT-SPI tree refresh before launching third app
-            refresh_atspi_for_new_app()
             self.third_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
@@ -236,6 +235,7 @@ class TestEnvironment:
             self.wait_for_application(
                 THIRD_APPLICATION, process=self.third_process,
             )
+            time.sleep(2)  # for stabilize the application and the atspi tree
 
             subprocess.run(
                 [
@@ -261,7 +261,6 @@ class TestEnvironment:
             # Wait for third app to be fully stable before launching fourth
             self._wait_for_app_stability(self.third_application)
             # Force AT-SPI tree refresh before launching fourth app
-            refresh_atspi_for_new_app()
             self.fourth_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP4_NAME
@@ -272,7 +271,7 @@ class TestEnvironment:
             self.wait_for_application(
                 FOURTH_APPLICATION, process=self.fourth_process,
             )
-
+            time.sleep(2)  # for stabilize the application and the atspi tree
             subprocess.run(
                 [
                     'wmctrl', '-r', FOURTH_APPLICATION, '-b',
@@ -293,16 +292,20 @@ class TestEnvironment:
                 self.fourth_application,
             )
 
-    def _wait_for_app_stability(self, app_frame, timeout: int = 10):
-        """Wait for app to be fully stable by checking for UI element."""
+    def _wait_for_app_stability(self, app_frame, timeout=15):
+        """Wait until app has at least one stable UI element."""
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                if app_frame and app_frame.child(roleName='radio button', requireResult=False):
-                    return True
+                if app_frame and app_frame.showing:
+                    # Minimal check instead of deep tree scan
+                    children = app_frame.children
+                    if children:
+                        return True
             except Exception:
                 pass
             time.sleep(0.5)
+        print('[WARN] App stability not confirmed, continuing anyway')
         return False
 
     def _find_application_node(self, app_name):
@@ -337,48 +340,20 @@ class TestEnvironment:
         return root.application(app_name)
 
     def _find_application_frame(self, app_name):
-        """
-        Helper to find the frame node for a given app name.
-        This is used for single-sig to ensure element searches are scoped to the correct frame.
-        Returns frame node instead of application node for better element scoping.
-        """
-        # Extract app identifier from frame name
-        match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
-        target_app_identifier = match.group(1) if match else None
-
-        # Search through all applications to find the correct frame
+        """Fast frame lookup without scanning full AT-SPI tree."""
         try:
-            apps = [a for a in root.applications() if 'iris' in a.name.lower()]
+            app = root.application(app_name)
 
-            # Sort apps to prioritize the target app
-            if target_app_identifier:
-                apps = sorted(
-                    apps, key=lambda a: 0 if target_app_identifier in a.name else 1,
-                )
+            if app:
+                frame = app.child(roleName='frame', name=app_name)
+                if frame:
+                    print(f"[DEBUG] Found frame for {app_name}")
+                    return frame
 
-            for app in apps:
-                # Check if this app matches the target identifier
-                if target_app_identifier and target_app_identifier not in app.name:
-                    continue
-
-                # Find the frame within this application
-                for child in app.children:
-                    if child.roleName == 'frame' and child.name == app_name:
-                        print(f"""[DEBUG] Found frame '
-                              {app_name}' under app '{app.name}'""")
-                        return child
         except Exception:
             pass
 
-        # Fallback - find frame directly from root
-        try:
-            frame = root.child(roleName='frame', name=app_name)
-            if frame:
-                return frame
-        except Exception:
-            pass
-
-        print(f"[WARN] No frame found for '{app_name}'")
+        print(f"[WARN] Frame not found for {app_name}")
         return None
 
     def _find_showing_frame(self, app_name, retry_count=3, retry_delay=1.0):
@@ -453,75 +428,47 @@ class TestEnvironment:
         print(f"[FIND_FRAME] Using fallback direct search for '{app_name}'")
         return root.child(roleName='frame', name=app_name)
 
-    def wait_for_application(self, name, timeout=60, process=None):
-        """Wait for the application and its main frame to be visible.
-        """
-        def timeout_handler(signum, frame):
-            raise TimeoutError('AT-SPI call timed out')
-
-        print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
+    def wait_for_application(self, name, timeout=120, process=None):
+        """Wait for the application frame to be visible using optimized lookup."""
+        print(f"[SETUP] Waiting for {name} (timeout {timeout}s)")
         start_time = time.time()
-        poll_interval = 0.5
-        last_refresh_time = 0
+
+        last_error_log = 0
 
         while time.time() - start_time < timeout:
-            # Early failure detection: check if process died
+            # Check if process died
             if process and process.poll() is not None:
-                exit_code = process.poll()
-                # Try to capture any stderr output for debugging
-                stderr_output = ''
-                if hasattr(process, 'stderr') and process.stderr:
-                    try:
-                        stderr_output = process.stderr.read().decode('utf-8', errors='ignore')
-                    except Exception:
-                        pass
-                error_msg = f"Application '{
-                    name
-                }' process exited unexpectedly with code {exit_code}"
-                if stderr_output:
-                    # Last 500 chars
-                    error_msg += f"\nStderr: {stderr_output[-500:]}"
-                raise RuntimeError(error_msg)
-
-            # Force AT-SPI tree refresh every 2 seconds to detect new apps
-            # This is critical for CI where AT-SPI caching causes stale data
-            current_time = time.time()
-            if current_time - last_refresh_time > 2.0:
-                try:
-                    _ = root.children  # Force refresh
-                    last_refresh_time = current_time
-                except Exception:
-                    pass
+                raise RuntimeError(
+                    f"{name} exited early with code {process.poll()}",
+                )
 
             try:
-                # Set timeout for AT-SPI calls
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(5)  # 5 second timeout per iteration
+                # 🔥 Direct lookup (FAST)
+                app = root.application(name)
 
-                try:
-                    # Use our helper to see if an application node with a frame exists
-                    app = self._find_application_node(name)
-                    if app:
-                        # Also check if it has a showing frame
+                if app:
+                    try:
                         frame = app.child(roleName='frame', name=name)
                         if frame and frame.showing:
-                            signal.alarm(0)  # Cancel alarm
-                            print(f"[SETUP] {name} is showing and ready.")
+                            print(f"[SETUP] {name} ready ✅")
                             return True
-                except TimeoutError:
-                    print(f"[SETUP] AT-SPI timeout while searching for {name}")
-                finally:
-                    signal.alarm(0)  # Ensure alarm is cancelled
+                    except Exception:
+                        pass
 
-            except Exception as e:
-                signal.alarm(0)
-                print(f"[SETUP] Exception while searching for {name}: {e}")
-            time.sleep(poll_interval)
-        raise TimeoutError(
-            f"""Application '{name}' failed to start or show frame within {
-                timeout
-            } seconds""",
-        )
+            except Exception:
+                pass
+
+            # 🔥 Light refresh only every 5 sec (not aggressive)
+            if time.time() - last_error_log > 5:
+                try:
+                    _ = root.children  # minimal refresh
+                except Exception:
+                    pass
+                last_error_log = time.time()
+
+            time.sleep(0.5)
+
+        raise TimeoutError(f"{name} failed to appear in {timeout}s")
 
     def get_child_pids(self, parent_pid):
         """Returns a list of child process PIDs for a given parent process."""

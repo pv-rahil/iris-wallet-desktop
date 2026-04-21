@@ -7,7 +7,6 @@ may be slower to respond.
 """
 from __future__ import annotations
 
-import gc
 import os
 import time
 
@@ -144,23 +143,6 @@ def get_element_search_timeout():
         int: Timeout in seconds (30s in CI, 20s locally).
     """
     return get_default_timeout(20)
-
-
-def refresh_atspi_for_new_app():
-    """
-    Force AT-SPI tree refresh before launching a new application.
-    This clears stale caches and ensures the accessibility registry
-    is ready to detect the new app.
-    """
-    # Force garbage collection to clear any stale references
-    gc.collect()
-    # Multiple refreshes to ensure AT-SPI registry is synced
-    for _ in range(3):
-        try:
-            _ = root.children
-            _ = root.applications()
-        except Exception:
-            pass
 
 
 # Initialize dogtail configuration when module is imported

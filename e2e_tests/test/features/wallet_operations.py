@@ -8,8 +8,6 @@ import os
 import time
 
 from dogtail.tree import root
-from Xlib import display as xdisplay
-from Xlib import X
 
 from accessible_constant import CONFIRMATION_DIALOG
 from accessible_constant import FIRST_APPLICATION
@@ -419,55 +417,6 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
 
         return description
 
-    def _wait_for_hw_emulator_ready(self, application, timeout: int = 30):
-        """
-        Wait for hardware wallet emulator to receive PSBT and be ready for signing.
-
-        This polls for the emulator window to become the active window, which indicates
-        that the app has sent the PSBT and the emulator is displaying the signing prompt.
-
-        Args:
-            application: The hardware wallet emulator application name.
-            timeout: Maximum time to wait in seconds.
-
-        Raises:
-            TimeoutError: If emulator is not ready within timeout.
-        """
-        start_time = time.time()
-        poll_interval = 0.3
-
-        while time.time() - start_time < timeout:
-            try:
-                d = xdisplay.Display()
-                # Get the currently active window
-                active_window_atom = d.intern_atom('_NET_ACTIVE_WINDOW')
-                root_screen = d.screen().root
-                active_window_prop = root_screen.get_full_property(
-                    active_window_atom, X.AnyPropertyType,
-                )
-
-                if active_window_prop and active_window_prop.value:
-                    active_window_id = active_window_prop.value[0]
-                    active_window = d.create_resource_object(
-                        'window', active_window_id,
-                    )
-                    active_window_name = active_window.get_wm_name()
-
-                    # Check if the active window is the Ledger emulator
-                    if active_window_name and 'Ledger' in active_window_name:
-                        # Emulator is now active - PSBT has been received
-                        self.do_focus_on_application(
-                            application, verify_ready=False,
-                        )
-                        return
-            except Exception:
-                pass
-            time.sleep(poll_interval)
-
-        raise TimeoutError(
-            f"Hardware wallet emulator not ready within {timeout} seconds",
-        )
-
     def confirm_transaction_on_hardware_wallet(
         self, application, is_rgb: bool = False,
         is_inflate: bool = False, is_online: bool = True, is_btc: bool = False,
@@ -493,8 +442,8 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
             is_online: Whether this is an online hardware wallet (True for online, False for offline).
             is_btc: Whether this is a BTC send transaction.
         """
-        # Wait for hardware wallet to receive the PSBT and be ready for signing
-        self._wait_for_hw_emulator_ready(application)
+        self.do_focus_on_application(application)
+        time.sleep(3)
 
         # Determine UTXO count for online single-sig hardware wallet
         utxo_count = 0
@@ -538,16 +487,18 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
         Called after app sends SIGN_PSBT request.
         Sequence: 13 right + left+right (register policy), then 4 right + left+right (sign)
         """
-        # Wait for hardware wallet to receive the PSBT
-        self._wait_for_hw_emulator_ready(application)
+        time.sleep(2)
+        self.do_focus_on_application(application)
         # First sequence: 13 right arrows then left+right (register wallet policy)
         self.hw_emulator_page_objects.click_right_arrow_key(13, delay=0.8)
         self.hw_emulator_page_objects.press_left_and_right(duration=0.2)
-        # Wait for sign transaction screen to appear (poll for emulator to be active again)
-        self._wait_for_hw_emulator_ready(application)
+        # Wait for sign transaction screen to appear
+        self.do_focus_on_application(application)
+        time.sleep(3)
         # Second sequence: 4 right arrows then left+right (sign transaction)
         self.hw_emulator_page_objects.click_right_arrow_key(4, delay=0.8)
         self.hw_emulator_page_objects.press_left_and_right(duration=0.2)
+        time.sleep(2)
 
     def usb_sync(self, is_receive=False):
         """

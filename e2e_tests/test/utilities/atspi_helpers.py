@@ -10,19 +10,6 @@ import time
 from dogtail.tree import root
 
 
-def aggressive_cleanup():
-    """Aggressive cleanup to prevent AT-SPI exhaustion in long tests."""
-    # Refresh AT-SPI tree
-    try:
-        _ = root.children
-    except Exception:
-        pass
-    # Force garbage collection
-    gc.collect()
-    # Small delay to let UI settle
-    time.sleep(0.5)
-
-
 def refresh_atspi_tree():
     """
     Force AT-SPI tree refresh by accessing root.
@@ -30,5 +17,7 @@ def refresh_atspi_tree():
     """
     try:
         _ = root.children
+        gc.collect()
+        time.sleep(2)  # for stabilize the tree
     except Exception:
         pass

@@ -122,6 +122,8 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.hardware_wallet = handle_hardware_wallet(
                     app_name=RGB_LEDGER_APP_NAME,
                 )
+                # Wait for emulator to be fully initialized
+                time.sleep(3)
 
             self.do_focus_on_application(application)
 
@@ -134,15 +136,10 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
-            toaster_element = None
-            if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-                toaster_element, description = self.toaster_page_objects.click_toaster_frame()
-
-            # Filter description if we got one
-            if toaster_element and description:
-                filter_text = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0]
-                if filter_text not in description:
-                    description = None
+            filter_pattern = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0]
+            description = self.toaster_page_objects.get_toaster_description(
+                filter_pattern=filter_pattern,
+            )
         except Exception as e:
             raise e
         finally:
