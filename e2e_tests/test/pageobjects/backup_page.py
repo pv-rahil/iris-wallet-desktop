@@ -267,3 +267,12 @@ class BackupPageObjects(BaseOperations):
             True if the wrong code label is displayed, False otherwise.
         """
         return self.do_is_displayed(self.wrong_code_label())
+
+    def clear_code_field(self):
+        """
+        Clear code field
+        """
+        if self.do_is_displayed(self.enter_code()):
+            self.enter_code().text = ''
+            return True
+        return False

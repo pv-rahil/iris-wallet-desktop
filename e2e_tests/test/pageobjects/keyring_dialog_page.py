@@ -4,6 +4,8 @@ Keyring dialog box page objects for E2E tests.
 """
 from __future__ import annotations
 
+from dogtail.rawinput import keyCombo
+
 from accessible_constant import KEYRING_CANCEL_BUTTON
 from accessible_constant import KEYRING_CONTINUE_BUTTON
 from accessible_constant import KEYRING_DIALOG_BOX
@@ -214,7 +216,10 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Clicks the continue button.
         """
         try:
-            return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
+            if self.do_is_displayed(self.continue_button()):
+                self.continue_button().grabFocus()
+                keyCombo('space')
+            return True
         except Exception:
             return None
 

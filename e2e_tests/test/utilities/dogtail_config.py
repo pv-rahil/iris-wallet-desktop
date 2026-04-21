@@ -146,7 +146,7 @@ def get_element_search_timeout():
     return get_default_timeout(20)
 
 
-def _refresh_atspi_for_new_app():
+def refresh_atspi_for_new_app():
     """
     Force AT-SPI tree refresh before launching a new application.
     This clears stale caches and ensures the accessibility registry

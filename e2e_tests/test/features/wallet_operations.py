@@ -99,6 +99,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
 
         if self.backup_page_objects.is_wrong_code_label_displayed():
             code = self.backup_page_objects.get_security_otp()
+            self.backup_page_objects.clear_code_field()
             self.backup_page_objects.enter_security_code(code)
             self.backup_page_objects.click_next_button()
 

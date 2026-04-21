@@ -39,6 +39,7 @@ from accessible_constant import THIRD_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.dogtail_config import refresh_atspi_for_new_app
 from e2e_tests.test.utilities.dogtail_config import warm_up_atspi
 from e2e_tests.test.utilities.fake_usb import setup_fake_usb
 from e2e_tests.test.utilities.reset_app import delete_app_data
@@ -224,7 +225,7 @@ class TestEnvironment:
             # Wait for second app to be fully stable before launching third
             self._wait_for_app_stability(self.second_application)
             # Force AT-SPI tree refresh before launching third app
-            self._refresh_atspi_for_new_app()
+            refresh_atspi_for_new_app()
             self.third_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
@@ -260,7 +261,7 @@ class TestEnvironment:
             # Wait for third app to be fully stable before launching fourth
             self._wait_for_app_stability(self.third_application)
             # Force AT-SPI tree refresh before launching fourth app
-            self._refresh_atspi_for_new_app()
+            refresh_atspi_for_new_app()
             self.fourth_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP4_NAME
