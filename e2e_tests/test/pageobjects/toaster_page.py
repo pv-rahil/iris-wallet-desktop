@@ -213,8 +213,6 @@ class ToasterPageObjects(BaseOperations):
     def get_toaster_description(self, filter_pattern=None, max_retries=4, toaster_element=None):
         """
         Gets the text of the toaster description element.
-        DEPRECATED: Prefer using click_toaster_frame() which returns description immediately.
-        This method is kept for backward compatibility but may fail if toaster disappears.
 
         Args:
             filter_pattern (str, optional): A substring to filter the toaster text.

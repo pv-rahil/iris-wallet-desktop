@@ -16,6 +16,7 @@ from e2e_tests.test.utilities.base_operation import BaseOperations
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_dialog
 from e2e_tests.test.utilities.psbt_helpers import handle_utxo_confirmation_with_hardware_wallet
 from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
+from src.utils.info_message import INFO_BITCOIN_SENT
 
 
 class SendOperation(MainPageObjects, BaseOperations):
@@ -121,8 +122,6 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.hardware_wallet = handle_hardware_wallet(
                     app_name=RGB_LEDGER_APP_NAME,
                 )
-                # Wait for emulator to be fully initialized
-                time.sleep(3)
 
             self.do_focus_on_application(application)
 
@@ -135,7 +134,15 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
-            description = self.toaster_page_objects.get_toaster_description()
+            toaster_element = None
+            if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
+                toaster_element, description = self.toaster_page_objects.click_toaster_frame()
+
+            # Filter description if we got one
+            if toaster_element and description:
+                filter_text = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0]
+                if filter_text not in description:
+                    description = None
         except Exception as e:
             raise e
         finally:
