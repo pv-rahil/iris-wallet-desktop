@@ -12,6 +12,7 @@ from src.data.repository.setting_repository import SettingRepository
 from src.data.service.common_operation_service import CommonOperationService
 from src.model.common_operation_model import RestoreRequestModel
 from src.model.common_operation_model import RestoreResponseModel
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.build_app_path import app_paths
 from src.utils.constant import COMPATIBLE_RGB_LIB_VERSION
 from src.utils.custom_exception import CommonException
@@ -103,18 +104,21 @@ class RestoreService:
             )
 
             # Check for and restore multisig properties if applicable
-            multisig_file_name = f"{hashed_mnemonic}.multisig.json"
-            multisig_success = restore.download_from_drive(
-                file_name=multisig_file_name, destination_dir=restore_folder_path,
-            )
-
-            if multisig_success:
-                multisig_file_path = os.path.join(
-                    restore_folder_path, multisig_file_name,
+            if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+                multisig_file_name = f"{hashed_mnemonic}.multisig.json"
+                multisig_success = restore.download_from_drive(
+                    file_name=multisig_file_name, destination_dir=restore_folder_path,
                 )
-                if restore_multisig_config_from_file(multisig_file_path):
-                    response.is_multisig = True
-                    logger.info('Restored multisig configuration successfully')
+
+                if multisig_success:
+                    multisig_file_path = os.path.join(
+                        restore_folder_path, multisig_file_name,
+                    )
+                    if restore_multisig_config_from_file(multisig_file_path):
+                        response.is_multisig = True
+                        logger.info(
+                            'Restored multisig configuration successfully',
+                        )
 
             return response
         except Exception as exc:

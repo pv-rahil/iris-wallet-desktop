@@ -128,6 +128,59 @@ Before you begin, ensure you have the following installed:
    ```
    **Note:** `force-build` flags are optional.
 
+### Wallet Variants
+
+The following wallet variants can be passed using the `--wallet-variant` flag:
+
+#### Single-Signature Variants
+
+| Variant | Description | Requires Hardware |
+|---------|-------------|-------------------|
+| `online_watch_only` | Online watch-only wallet | No |
+| `online_create_on_device` | Online wallet created on device | No |
+| `online_create_hardware` | Online wallet created with hardware | Yes (Ledger Emulator) |
+| `online_load_on_device` | Online wallet loaded from device | No |
+| `online_load_hardware` | Online wallet loaded from hardware | Yes (Ledger Emulator) |
+| `offline_create_on_device` | Offline wallet created on device | No |
+| `offline_create_hardware` | Offline wallet created with hardware | Yes (Ledger Emulator) |
+| `offline_load_on_device` | Offline wallet loaded from device | No |
+| `offline_load_hardware` | Offline wallet loaded from hardware | Yes (Ledger Emulator) |
+
+#### Multi-Signature Variants
+
+| Variant | Description | Requires Hardware |
+|---------|-------------|-------------------|
+| `online_multisig_on_device` | Online multisig wallet created on device | No |
+| `online_multisig_hardware` | Online multisig wallet created with hardware | Yes (Ledger Emulator) |
+| `online_multisig_watch_only` | Online multisig watch-only wallet | No |
+| `online_multisig_load_on_device` | Online multisig wallet loaded from device | No |
+| `online_multisig_load_hardware` | Online multisig wallet loaded from hardware | Yes (Ledger Emulator) |
+| `offline_multisig_on_device` | Offline multisig wallet created on device | No |
+| `offline_multisig_hardware` | Offline multisig wallet created with hardware | Yes (Ledger Emulator) |
+| `offline_multisig_load_on_device` | Offline multisig wallet loaded from device | No |
+| `offline_multisig_load_hardware` | Offline multisig wallet loaded from hardware | Yes (Ledger Emulator) |
+
+#### Example Usage
+
+```bash
+# Run with online watch-only wallet
+poetry run single-test test_keyring_dialog --wallet-variant online_watch_only
+
+# Run with hardware wallet (requires Ledger Emulator)
+poetry run single-test test_backup_and_restore --wallet-variant online_create_hardware
+
+# Run with offline multisig wallet
+poetry run single-test test_receive_and_send_bitcoin --wallet-variant offline_multisig_on_device
+```
+
+#### Hardware Wallet Setup
+
+For variants that require hardware wallet emulation:
+
+1. The Ledger Nano SP Emulator is automatically launched by the test framework
+2. Ensure the `rgb_ledger_app` binary is available in the `e2e_tests/ledger_app/` directory
+3. Hardware wallet interactions are automated through the emulator UI
+
 8. **List test cases**<br>
    ```bash
    poetry run list-tests

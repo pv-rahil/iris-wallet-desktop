@@ -11,6 +11,7 @@ import pytest
 
 from src.data.service.restore_service import RestoreService
 from src.model.common_operation_model import RestoreResponseModel
+from src.model.enums.enums_model import WalletSignatureType
 from src.utils.constant import CURRENT_RGB_LIB_VERSION
 from src.utils.custom_exception import CommonException
 from src.utils.error_message import ERROR_NOT_BACKUP_FILE
@@ -220,6 +221,7 @@ def test_restore_incompatible_version(mock_read_version, mock_google_drive_manag
 @patch('src.data.service.restore_service.GoogleDriveManager')
 @patch('src.data.repository.common_operations_repository.CommonOperationRepository.restore')
 @patch('src.viewmodels.viewmodel_helpers.SettingRepository.set_wallet_signature_type')
+@patch('src.data.service.restore_service.SettingRepository.get_wallet_signature_type')
 @patch('src.data.service.restore_service.SettingRepository')
 @patch('src.data.service.restore_service.os.path.exists', return_value=True)
 @patch('src.viewmodels.viewmodel_helpers.os.path.exists', return_value=True)
@@ -229,13 +231,14 @@ def test_restore_incompatible_version(mock_read_version, mock_google_drive_manag
 @patch('src.data.service.restore_service.app_paths')
 def test_restore_multisig(
     mock_app_paths, mock_json_load, mock_open, mock_remove,
-    mock_os_exists_restore, mock_os_exists_helpers, mock_setting_repo, mock_set_sign_type,
-    mock_restore_repo, mock_google_drive, mock_read_version, mock_hashed,
+    mock_os_exists_restore, mock_os_exists_helpers, mock_setting_repo, mock_get_sign_type,
+    mock_set_sign_type, mock_restore_repo, mock_google_drive, mock_read_version, mock_hashed,
 ):
     """Case 8: Test restore service with multisig restoration."""
     mock_hashed.return_value = 'e23ddff3cc'
     mock_read_version.return_value = CURRENT_RGB_LIB_VERSION
     mock_restore_repo.return_value = RestoreResponseModel(status=True)
+    mock_get_sign_type.return_value = WalletSignatureType.MULTI_SIG_WALLET
 
     mock_app_paths.iriswallet_temp_folder_path = '/tmp/dummy_temp'
     mock_app_paths.restore_folder_path = '/tmp/restore'

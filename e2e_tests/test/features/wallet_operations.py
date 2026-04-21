@@ -97,6 +97,11 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.backup_page_objects.next_button()):
             self.backup_page_objects.click_next_button()
 
+        if self.backup_page_objects.is_wrong_code_label_displayed():
+            code = self.backup_page_objects.get_security_otp()
+            self.backup_page_objects.enter_security_code(code)
+            self.backup_page_objects.click_next_button()
+
         if self.do_is_displayed(self.backup_page_objects.continue_button()):
             self.backup_page_objects.click_continue_button()
 
@@ -293,7 +298,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
             sidebar_page.click_fungibles_button()
         return xpub_vanilla, xpub_colored, fingerprint, password
 
-    def sign_psbt(self, application, variant_name, is_rgb: bool = False, is_inflate: bool = False, is_btc: bool = False):
+    def sign_psbt(self, application, variant_name, is_rgb: bool = False, is_inflate: bool = False, is_btc: bool = False, is_ifa: bool = False):
         """
         Sign psbt.
         """
@@ -354,6 +359,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
                         is_inflate=is_inflate,
                         is_btc=is_btc,
                         is_online=is_online,
+                        is_ifa=is_ifa,
                     )
 
                 self.do_focus_on_application(application)
@@ -413,6 +419,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
     def confirm_transaction_on_hardware_wallet(
         self, application, is_rgb: bool = False,
         is_inflate: bool = False, is_online: bool = True, is_btc: bool = False,
+        is_ifa: bool = False,
     ):
         """
         Confirm transaction on hardware wallet for single-sig.
@@ -456,15 +463,20 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
             time.sleep(1)
             self.hw_emulator_page_objects.click_right_arrow_key(5)
             self.hw_emulator_page_objects.press_left_and_right()
-        elif is_btc:
+        elif is_btc and is_online:
             self.do_focus_on_application(application)
             time.sleep(1)
             self.hw_emulator_page_objects.click_right_arrow_key(5)
             self.hw_emulator_page_objects.press_left_and_right()
         else:
-            # NIA/CFA/receive/IFA issue: 4 right + both
-            self.hw_emulator_page_objects.click_right_arrow_key(4)
-            self.hw_emulator_page_objects.press_left_and_right()
+            itr = 2 if (is_ifa and is_online) else 1
+            self.do_focus_on_application(application)
+            for _ in range(itr):
+                self.do_focus_on_application(application)
+                time.sleep(2)
+                self.hw_emulator_page_objects.click_right_arrow_key(4)
+                self.hw_emulator_page_objects.press_left_and_right()
+                time.sleep(1)
 
         time.sleep(2)
 

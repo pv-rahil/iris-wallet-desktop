@@ -104,7 +104,7 @@ class BaseIssueAsset(IFAOperationsMixin):
 
     def _confirm_on_hardware_wallet(
         self, wallet_feature, is_inflate: bool = False,
-        is_online: bool = True,
+        is_online: bool = True, is_ifa: bool = False,
     ) -> None:
         """
         Confirm transaction on hardware wallet if emulator exists.
@@ -117,7 +117,7 @@ class BaseIssueAsset(IFAOperationsMixin):
         if self.hardware_wallet_emulator:
             wallet_feature.confirm_transaction_on_hardware_wallet(
                 LEDGER_EMULATOR_APP_NAME, is_inflate=is_inflate,
-                is_online=is_online,
+                is_online=is_online, is_ifa=is_ifa,
             )
 
     @contextmanager
@@ -221,6 +221,7 @@ class BaseIssueAsset(IFAOperationsMixin):
     def _handle_issue_confirmation_and_success(
         self, application, is_native_auth_enabled: bool,
         is_inflate: bool = False, is_online: bool = True,
+        is_ifa: bool = False,
     ) -> None:
         """
         Handle hardware wallet confirmation, native auth, and success flow.
@@ -233,7 +234,7 @@ class BaseIssueAsset(IFAOperationsMixin):
         """
         self._confirm_on_hardware_wallet(
             self.wallet_feature, is_inflate=is_inflate,
-            is_online=is_online,
+            is_online=is_online, is_ifa=is_ifa,
         )
         handle_native_auth_and_focus(self, application, is_native_auth_enabled)
         handle_success_home_button(self)

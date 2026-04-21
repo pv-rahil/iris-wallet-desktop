@@ -80,6 +80,9 @@ class BackupPageObjects(BaseOperations):
         self.mnemonic_frame = lambda: self.perform_action_on_element(
             role_name='panel', name=MNEMONIC_FRAME,
         )
+        self.wrong_code_label = lambda: self.perform_action_on_element(
+            role_name='label', name='Wrong code. Try again.', application_node=self.backup_window(),
+        )
 
     def click_show_mnemonic_button(self):
         """Clicks the mnemonic button."""
@@ -255,3 +258,12 @@ class BackupPageObjects(BaseOperations):
 
         # Join words into a single string
         return ' '.join(cleaned_mnemonic)
+
+    def is_wrong_code_label_displayed(self):
+        """
+        Checks if the wrong code label is displayed.
+
+        Returns:
+            True if the wrong code label is displayed, False otherwise.
+        """
+        return self.do_is_displayed(self.wrong_code_label())
