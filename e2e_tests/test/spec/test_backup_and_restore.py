@@ -161,7 +161,7 @@ def test_nia_and_cfa_transfer(test_environment, wallets_and_operations: WalletTe
             FIRST_APPLICATION,
         )
         cfa_invoice_a = wallets_and_operations.first_page_features.receive_features.receive_asset_from_sidebar(
-            FIRST_APPLICATION, variant_name=wallet_variant_name,
+            FIRST_APPLICATION,
         )
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -523,7 +523,7 @@ def test_cfa_transfer_for_offline_wallet(test_environment: TestEnvironment, wall
             SECOND_APPLICATION,
         )
         cfa_invoice_a = second_page_features.receive_features.receive_asset_from_sidebar(
-            application=SECOND_APPLICATION, variant_name=wallet_variant_name,
+            application=SECOND_APPLICATION,
         )
 
     with allure.step('Create PSBT for CFA transfer in Wallet B'):

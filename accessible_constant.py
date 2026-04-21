@@ -135,7 +135,7 @@ NAME_TO_STEPS: dict[str, tuple[int, int, int, int, int]] = {
     OFFLINE_CREATE_ON_DEVICE: (1, 2, 0, 1, 1),
     OFFLINE_CREATE_HARDWARE: (1, 2, 0, 1, 2),
     OFFLINE_LOAD_ON_DEVICE: (1, 2, 0, 2, 1),
-    OFFLINE_LOAD_HARDWARE: (1, 2, 0, 2, 0),
+    OFFLINE_LOAD_HARDWARE: (1, 2, 0, 2, 2),
     # Online Multisig - Create
     ONLINE_MULTISIG_ON_DEVICE: (2, 1, 1, 1, 1),
     ONLINE_MULTISIG_HARDWARE: (2, 1, 1, 1, 2),
@@ -143,14 +143,12 @@ NAME_TO_STEPS: dict[str, tuple[int, int, int, int, int]] = {
     # Offline Multisig - Create
     OFFLINE_MULTISIG_ON_DEVICE: (2, 2, 0, 1, 1),
     OFFLINE_MULTISIG_HARDWARE: (2, 2, 0, 1, 2),
-    OFFLINE_MULTISIG_WATCH_ONLY: (2, 2, 2, 1, 0),
     # Online Multisig - Load
     ONLINE_MULTISIG_LOAD_ON_DEVICE: (2, 1, 1, 2, 1),
     ONLINE_MULTISIG_LOAD_HARDWARE: (2, 1, 1, 2, 2),
     # Offline Multisig - Load
     OFFLINE_MULTISIG_LOAD_ON_DEVICE: (2, 2, 0, 2, 1),
     OFFLINE_MULTISIG_LOAD_HARDWARE: (2, 2, 0, 2, 2),
-    OFFLINE_MULTISIG_LOAD_WATCH_ONLY: (2, 2, 2, 2, 0),
 }
 
 

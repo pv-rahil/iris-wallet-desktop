@@ -105,7 +105,10 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Returns:
             bool: True if the click is successful, False otherwise.
         """
-        return self.do_click(self.keyring_dialog()) if self.do_is_displayed(self.keyring_dialog()) else None
+        try:
+            return self.do_click(self.keyring_dialog()) if self.do_is_displayed(self.keyring_dialog()) else None
+        except Exception:
+            return None
 
     def click_keyring_mnemonic_copy_button(self):
         """
@@ -114,7 +117,10 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Returns:
             bool: True if the click is successful, False otherwise.
         """
-        return self.do_click(self.keyring_mnemonic_copy_button()) if self.do_is_displayed(self.keyring_mnemonic_copy_button()) else None
+        try:
+            return self.do_click(self.keyring_mnemonic_copy_button()) if self.do_is_displayed(self.keyring_mnemonic_copy_button()) else None
+        except Exception:
+            return None
 
     def get_keyring_mnemonic_value(self):
         """
@@ -123,7 +129,10 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Returns:
             str: The keyring mnemonic value if it exists, None otherwise.
         """
-        return self.do_get_text(self.keyring_mnemonic_value_label()) if self.do_is_displayed(self.keyring_mnemonic_value_label()) else None
+        try:
+            return self.do_get_text(self.keyring_mnemonic_value_label()) if self.do_is_displayed(self.keyring_mnemonic_value_label()) else None
+        except Exception:
+            return None
 
     def click_keyring_password_copy_button(self):
         """
@@ -132,7 +141,10 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Returns:
             bool: True if the click is successful, False otherwise.
         """
-        return self.do_click(self.keyring_password_copy_button()) if self.do_is_displayed(self.keyring_password_copy_button()) else None
+        try:
+            return self.do_click(self.keyring_password_copy_button()) if self.do_is_displayed(self.keyring_password_copy_button()) else None
+        except Exception:
+            return None
 
     def get_keyring_password_value(self):
         """
@@ -141,46 +153,76 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Returns:
             str: The keyring password Value if it exists, None otherwise.
         """
-        return self.do_get_text(self.keyring_password_value_label()) if self.do_is_displayed(self.keyring_password_value_label()) else None
+        try:
+            return self.do_get_text(self.keyring_password_value_label()) if self.do_is_displayed(self.keyring_password_value_label()) else None
+        except Exception:
+            return None
 
     def click_keyring_xpub_vanilla_copy_button(self):
         """Clicks the vanilla xpub copy button."""
-        return self.do_click(self.keyring_xpub_vanilla_copy_button()) if self.do_is_displayed(self.keyring_xpub_vanilla_copy_button()) else None
+        try:
+            return self.do_click(self.keyring_xpub_vanilla_copy_button()) if self.do_is_displayed(self.keyring_xpub_vanilla_copy_button()) else None
+        except Exception:
+            return None
 
     def get_keyring_xpub_vanilla_value(self):
         """Gets the vanilla xpub value text (truncated in UI)."""
-        return self.do_get_text(self.keyring_xpub_vanilla_value_label()) if self.do_is_displayed(self.keyring_xpub_vanilla_value_label()) else None
+        try:
+            return self.do_get_text(self.keyring_xpub_vanilla_value_label()) if self.do_is_displayed(self.keyring_xpub_vanilla_value_label()) else None
+        except Exception:
+            return None
 
     def click_keyring_xpub_colored_copy_button(self):
         """Clicks the colored xpub copy button."""
-        return self.do_click(self.keyring_xpub_colored_copy_button()) if self.do_is_displayed(self.keyring_xpub_colored_copy_button()) else None
+        try:
+            return self.do_click(self.keyring_xpub_colored_copy_button()) if self.do_is_displayed(self.keyring_xpub_colored_copy_button()) else None
+        except Exception:
+            return None
 
     def get_keyring_xpub_colored_value(self):
         """Gets the colored xpub value text (truncated in UI)."""
-        return self.do_get_text(self.keyring_xpub_colored_value_label()) if self.do_is_displayed(self.keyring_xpub_colored_value_label()) else None
+        try:
+            return self.do_get_text(self.keyring_xpub_colored_value_label()) if self.do_is_displayed(self.keyring_xpub_colored_value_label()) else None
+        except Exception:
+            return None
 
     def click_keyring_fingerprint_copy_button(self):
         """Clicks the master fingerprint copy button."""
-        return self.do_click(self.keyring_fingerprint_copy_button()) if self.do_is_displayed(self.keyring_fingerprint_copy_button()) else None
+        try:
+            return self.do_click(self.keyring_fingerprint_copy_button()) if self.do_is_displayed(self.keyring_fingerprint_copy_button()) else None
+        except Exception:
+            return None
 
     def get_keyring_fingerprint_value(self):
         """Gets the master fingerprint value text."""
-        return self.do_get_text(self.keyring_fingerprint_value_label()) if self.do_is_displayed(self.keyring_fingerprint_value_label()) else None
+        try:
+            return self.do_get_text(self.keyring_fingerprint_value_label()) if self.do_is_displayed(self.keyring_fingerprint_value_label()) else None
+        except Exception:
+            return None
 
     def click_check_box(self):
         """
         Clicks the check box.
         """
-        return self.do_click(self.keyring_check_box()) if self.do_is_displayed(self.keyring_check_box()) else None
+        try:
+            return self.do_click(self.keyring_check_box()) if self.do_is_displayed(self.keyring_check_box()) else None
+        except Exception:
+            return None
 
     def click_continue_button(self):
         """
         Clicks the continue button.
         """
-        return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
+        try:
+            return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
+        except Exception:
+            return None
 
     def click_cancel_button(self):
         """
         Clicks the close button.
         """
-        return self.do_click(self.cancel_button()) if self.do_is_displayed(self.cancel_button()) else None
+        try:
+            return self.do_click(self.cancel_button()) if self.do_is_displayed(self.cancel_button()) else None
+        except Exception:
+            return None

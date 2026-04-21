@@ -622,7 +622,7 @@ def test_ask_auth_for_imp_question_send_nia_on_for_multisig(test_environment: Te
             THIRD_APPLICATION,
         )
         nia_invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION, wallet_variant_name,
+            THIRD_APPLICATION,
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
@@ -723,7 +723,7 @@ def test_ask_auth_for_imp_question_send_cfa_on_for_multisig(wallets_and_operatio
             THIRD_APPLICATION,
         )
         cfa_invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION, wallet_variant_name,
+            THIRD_APPLICATION,
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
@@ -832,7 +832,7 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment: Te
             THIRD_APPLICATION,
         )
         ifa_invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION, wallet_variant_name,
+            THIRD_APPLICATION,
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
@@ -972,7 +972,7 @@ def test_ask_auth_for_imp_question_send_nia_off_for_multisig(wallets_and_operati
             THIRD_APPLICATION,
         )
         nia_invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION, wallet_variant_name,
+            THIRD_APPLICATION,
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
@@ -1061,7 +1061,7 @@ def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(test_environment: T
             THIRD_APPLICATION,
         )
         cfa_invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION, wallet_variant_name,
+            THIRD_APPLICATION,
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):
@@ -1185,7 +1185,7 @@ def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(test_environment: T
             THIRD_APPLICATION,
         )
         ifa_invoice = wallets_and_operations.third_page_features.receive_features.receive_asset_from_sidebar(
-            THIRD_APPLICATION, wallet_variant_name,
+            THIRD_APPLICATION,
         )
 
     with allure.step('Create UTXO PSBT for multisig wallet'):

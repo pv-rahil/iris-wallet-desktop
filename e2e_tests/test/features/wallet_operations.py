@@ -439,7 +439,7 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
 
         # Determine UTXO count for online single-sig hardware wallet
         utxo_count = 0
-        if is_online and not is_btc:
+        if is_online and (is_inflate or is_rgb):
             utxo_count = 2
 
         # Sign UTXOs first (for online hardware wallet)

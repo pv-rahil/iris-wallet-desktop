@@ -179,10 +179,6 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
         tx_id = wallets_and_operations.second_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
 
-    with allure.step('Verify transaction id'):
-        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
-        assert description == INFO_BITCOIN_SENT.format(tx_id)
-
     with allure.step('Close transaction detail page'):
         wallets_and_operations.second_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
 
@@ -194,6 +190,10 @@ def test_send_bitcoin_with_custom_fee_rate(wallets_and_operations: WalletTestSet
             FIRST_APPLICATION,
         )
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+    with allure.step('Verify transaction id'):
+        tx_id = re.sub(r'[\u200B\u200C\u200D\u2060\uFEFF]', '', tx_id)
+        assert description == INFO_BITCOIN_SENT.format(tx_id)
 
 
 @pytest.mark.skip_for_offline_wallet

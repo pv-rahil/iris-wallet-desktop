@@ -135,7 +135,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
-            _, description = self.toaster_page_objects.click_toaster_frame()
+            description = self.toaster_page_objects.get_toaster_description()
         except Exception as e:
             raise e
         finally:

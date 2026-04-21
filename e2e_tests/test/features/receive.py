@@ -3,14 +3,9 @@ Module for handling receive operations in the application.
 """
 from __future__ import annotations
 
-from accessible_constant import LEDGER_EMULATOR_APP_NAME
-from accessible_constant import ONLINE_CREATE_HARDWARE
-from accessible_constant import ONLINE_LOAD_HARDWARE
-from accessible_constant import RGB_LEDGER_APP_NAME
 from e2e_tests.test.features.wallet import Wallet
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
-from e2e_tests.test.utilities.wallet_variants import handle_hardware_wallet
 
 
 class ReceiveOperation(MainPageObjects, BaseOperations):
@@ -46,24 +41,15 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
 
         return address, copied_address
 
-    def receive_asset_from_sidebar(self, application, variant_name=None):
+    def receive_asset_from_sidebar(self, application):
         """
         Navigate through the sidebar menu to receive an asset.
         """
         try:
             invoice = None
-            if variant_name in (ONLINE_CREATE_HARDWARE, ONLINE_LOAD_HARDWARE):
-                self.hardware_wallet_emulator = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.sidebar_page_objects.receive_asset_button()):
                 self.sidebar_page_objects.click_receive_asset_button()
-            if self.hardware_wallet_emulator:
-                # Assume online hardware wallet for receive operations
-                self.wallet_feature.confirm_transaction_on_hardware_wallet(
-                    LEDGER_EMULATOR_APP_NAME, is_online=True,
-                )
             if self.do_is_displayed(self.receive_asset_page_objects.invoice_copy_button()):
                 self.receive_asset_page_objects.click_invoice_copy_button()
             if self.do_is_displayed(self.receive_asset_page_objects.invoice_copy_button()):

@@ -93,111 +93,123 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_click(self, element):
+    def do_click(self, element, max_retries=2):
         """
         Clicks on the specified element with debouncing to prevent rapid repeated clicks.
-
-        Args:
-            element (Node): The element to click on.
-
-        Returns:
-            None
         """
         # Validate element exists and has required attributes
         if not element:
             print('[CLICK ERROR] Element is None')
             return
 
-        # Perform the click
-        try:
-            # In CI, verify element is stable before clicking
-            if is_ci_environment():
-                self._wait_for_element_stable(element, timeout=2.0)
+        # Store element attributes for potential re-find after stale error
+        element_name = getattr(element, 'name', 'unknown')
+        element_role = getattr(element, 'roleName', None)
 
-            element.grabFocus()
-            time.sleep(0.5)
+        for attempt in range(max_retries + 1):
+            # Perform the click
+            try:
+                # In CI, verify element is stable before clicking
+                if is_ci_environment():
+                    self._wait_for_element_stable(element, timeout=2.0)
 
-            is_copy_button = any(
-                kw in (element.name or '').lower() for kw in [
-                    'copy', 'indexer_url_copy_button', 'rgb_proxy_url_copy_button',
-                ]
-            )
-
-            if is_copy_button:
-                pos = element.position
-                center_x = int(pos[0] + element.size[0]//2)
-                center_y = int(pos[1] + element.size[1]//2)
-
-                press(center_x, center_y)
-                time.sleep(0.2)
-                release(center_x, center_y)
-
-                # Extra wait for clipboard synchronization
-                time.sleep(1.0)
-            elif element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue']:
-                element.queryAction().doAction(0)
+                element.grabFocus()
                 time.sleep(0.5)
-            else:
-                element.click()
-        except Exception as e:
-            print(f"[CLICK ERROR] Failed to click '{element.name}': {e}")
+
+                is_copy_button = any(
+                    kw in (element.name or '').lower() for kw in [
+                        'copy', 'indexer_url_copy_button', 'rgb_proxy_url_copy_button',
+                    ]
+                )
+
+                if is_copy_button:
+                    pos = element.position
+                    center_x = int(pos[0] + element.size[0]//2)
+                    center_y = int(pos[1] + element.size[1]//2)
+
+                    press(center_x, center_y)
+                    time.sleep(0.2)
+                    release(center_x, center_y)
+
+                    # Extra wait for clipboard synchronization
+                    time.sleep(1.0)
+                elif element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue']:
+                    element.queryAction().doAction(0)
+                    time.sleep(0.5)
+                else:
+                    element.click()
+                return  # Success, exit the retry loop
+
+            except Exception as e:
+                error_str = str(e)
+                # Check for stale element errors (AT-SPI object path no longer exists)
+                if 'No such object path' in error_str or 'atspi_error' in error_str:
+                    if attempt < max_retries:
+                        print(f"""[CLICK RETRY] Stale element '
+                              {element_name}', refreshing AT-SPI tree (attempt {attempt + 1}/{max_retries})""")
+                        # Refresh AT-SPI tree and wait before retry
+                        self._refresh_atspi_tree()
+                        time.sleep(1.0)
+                        # Try to re-find element using stored attributes
+                        if element_name and element_role and self.application:
+                            try:
+                                element = self.application.child(
+                                    roleName=element_role, name=element_name,
+                                )
+                            except Exception:
+                                pass
+                        continue
+                print(f"[CLICK ERROR] Failed to click '{element_name}': {e}")
+                return
 
     def do_set_value(self, element, value: str):
         """
         Sets the value of the specified element.
-
-        Args:
-            element (Node): The element to set the value for.
-            value (str): The value to set.
-
-        Returns:
-            None
         """
-        if self.do_is_displayed(element) and value:
-            element.typeText(value)
+        if not element or not value:
+            return
+        try:
+            if self.do_is_displayed(element):
+                element.typeText(value)
+        except Exception:
+            pass
 
     def do_set_text(self, element, value: str):
         """
         Sets the value of the specified element.
-
-        Args:
-            element (Node): The element to set the value for.
-            value (str): The value to set.
-
-        Returns:
-            None
         """
-        if self.do_is_displayed(element) and value:
-            element.text = value
+        if not element or not value:
+            return
+        try:
+            if self.do_is_displayed(element):
+                element.text = value
+        except Exception:
+            pass
 
     def do_get_text(self, element) -> str:
         """
         Gets the text of the specified element.
-
-        Args:
-            element (Node): The element to get the text from.
-
-        Returns:
-            str: The text of the element.
         """
-        if self.do_is_displayed(element):
-            return element.name
-
+        if not element:
+            return ''
+        try:
+            if self.do_is_displayed(element):
+                return element.name if element.name else ''
+        except Exception:
+            pass
         return ''
 
     def do_get_value(self, element) -> str:
         """
         Gets the value (text content) of the specified element.
-
-        Args:
-            element (Node): The element to get the value from.
-
-        Returns:
-            str: The value of the element.
         """
-        if self.do_is_displayed(element):
-            return element.text if element.text is not None else ''
-
+        if not element:
+            return ''
+        try:
+            if self.do_is_displayed(element):
+                return element.text if element.text is not None else ''
+        except Exception:
+            pass
         return ''
 
     def do_is_displayed(
@@ -259,7 +271,12 @@ class BaseOperations:
         Returns:
             bool: True if the element is enabled, False otherwise.
         """
-        return element.enabled
+        if not element:
+            return False
+        try:
+            return element.enabled
+        except Exception:
+            return False
 
     def click_copy_button(self):
         """
@@ -309,6 +326,9 @@ class BaseOperations:
             root_screen = d.screen().root
             root_screen.change_attributes(event_mask=X.SubstructureNotifyMask)
 
+            # Sync with X server to ensure fresh window list
+            d.sync()
+
             # Get window list
             try:
                 raw_data = root_screen.get_full_property(
@@ -345,7 +365,8 @@ class BaseOperations:
 
             # Window not found in this attempt, retry if we have attempts left
             if attempt < max_retries - 1:
-                time.sleep(0.5)
+                # Longer delay in CI for window manager to update
+                time.sleep(1.0 if is_ci_environment() else 0.5)
 
         print(f"Window '{window_name}' not found after {max_retries} attempts")
 
@@ -477,9 +498,14 @@ class BaseOperations:
         Returns:
             bool: True if element is ready, False otherwise.
         """
-        return element.showing and (
-            not hasattr(element, 'sensitive') or element.sensitive
-        )
+        if not element:
+            return False
+        try:
+            return element.showing and (
+                not hasattr(element, 'sensitive') or element.sensitive
+            )
+        except Exception:
+            return False
 
     def _wait_for_element_stable(self, element, timeout=1.5):
         """
@@ -541,10 +567,15 @@ class BaseOperations:
         Returns:
             Node or None: The first ready element, or None if none found.
         """
+        if not elements:
+            return None
         for element in elements:
-            if element.showing and element.sensitive:
-                element.grabFocus()
-                return element
+            try:
+                if element.showing and element.sensitive:
+                    element.grabFocus()
+                    return element
+            except Exception:
+                continue
         return None
 
     def _validate_and_return_element(self, element):

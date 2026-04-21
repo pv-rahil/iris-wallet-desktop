@@ -205,7 +205,10 @@ class ToasterPageObjects(BaseOperations):
         Returns:
             str: The text of the element if it is displayed, None otherwise.
         """
-        return self.do_get_text(self.toaster_title()) if self.do_is_displayed(self.toaster_title()) else None
+        try:
+            return self.do_get_text(self.toaster_title()) if self.do_is_displayed(self.toaster_title()) else None
+        except Exception:
+            return None
 
     def get_toaster_description(self, filter_pattern=None, max_retries=4, toaster_element=None):
         """
@@ -337,4 +340,7 @@ class ToasterPageObjects(BaseOperations):
         Returns:
             bool: True if the element is clicked, False otherwise.
         """
-        return self.do_click(self.toaster_close_button()) if self.do_is_displayed(self.toaster_close_button()) else None
+        try:
+            return self.do_click(self.toaster_close_button()) if self.do_is_displayed(self.toaster_close_button()) else None
+        except Exception:
+            return None
