@@ -82,7 +82,7 @@ def test_backup(
     result = BackupService.backup(mock_valid_mnemonic, mock_password)
 
     # Assert the result
-    assert result is False
+    assert result is True
 
 # Test function
 

@@ -134,11 +134,13 @@ class BackupService:
             success, version_success = BackupService._upload_backup_to_drive(
                 backup, backup_file_path, backup_file_name, hashed_mnemonic,
             )
-            multisig_success = BackupService._upload_multisig_config(
-                backup, hashed_mnemonic, backup_folder_path,
-            )
+            if SettingRepository.get_wallet_signature_type() == WalletSignatureType.MULTI_SIG_WALLET:
+                multisig_success = BackupService._upload_multisig_config(
+                    backup, hashed_mnemonic, backup_folder_path,
+                )
+                return success and version_success and multisig_success
 
-            return success and version_success and multisig_success
+            return success and version_success
 
         except Exception as exc:
             return handle_exceptions(exc)
