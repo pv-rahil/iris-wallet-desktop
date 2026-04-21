@@ -117,6 +117,7 @@ class IssueIfa(MainPageObjects, BaseOperations, BaseIssueAsset):
             self, self, utxo_required=utxo_required,
         )
         self.do_focus_on_application(application)
+        self.receive_asset_page_objects.click_receive_asset_close_button()
 
         self.wallet_feature.usb_sync(is_receive=False)
 

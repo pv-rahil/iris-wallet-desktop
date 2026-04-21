@@ -22,12 +22,8 @@ from rgb_lib import AssetSchema
 
 import src.resources_rc
 from accessible_constant import ISSUE_CFA_ASSET
-from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
 from src.utils.common_utils import format_epoch_time

@@ -114,13 +114,13 @@ def test_on_error_handles_no_available_utxos(vm, mocker):
     slot.assert_called_once_with(True)
 
 
-@patch('src.viewmodels.issue_ifa_view_model.handle_viewmodel_error')
-def test_on_error_generic_message(mock_handle_error, vm):
+@patch('src.viewmodels.issue_ifa_view_model.ToastManager.error')
+def test_on_error_generic_message(mock_toast, vm):
     """Test on error generic message."""
     e = CommonException('x')
     e.message = 'x'
     vm.on_error(e)
-    mock_handle_error.assert_called_once_with(vm, e)
+    mock_toast.assert_called_once()
 
 
 @patch('src.views.components.toast.ToastManager.success')

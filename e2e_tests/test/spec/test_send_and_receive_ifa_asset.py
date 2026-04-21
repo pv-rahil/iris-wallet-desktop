@@ -6,7 +6,6 @@ import allure
 import pytest
 
 from accessible_constant import FIRST_APPLICATION
-from accessible_constant import FOURTH_APPLICATION
 from accessible_constant import ONLINE_CREATE_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
@@ -218,7 +217,7 @@ def test_offline_single_sig_verify_for_ifa(wallets_and_operations: WalletTestSet
         wallets_and_operations.third_page_operations,
         wallets_and_operations.third_page_objects,
         IFA_ASSET_NAME, asset_type='ifa',
-        application=THIRD_APPLICATION,
+        application=THIRD_APPLICATION, refresh_count=1,
     )
     assert received_amount == SEND_AMOUNT
 

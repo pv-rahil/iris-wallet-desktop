@@ -381,6 +381,9 @@ HEADER_PSBT_INFO_FRAME = 'header_psbt_info_frame'
 # Fungibles page
 FUNGIBLES_SCROLL_WIDGETS = 'fungibles_scroll_widget'
 
+# Inflatables page
+INFLATABLE_SCROLL_WIDGETS = 'inflatable_scroll_widget'
+
 # Help page
 HELP_CARD_TITLE_ACCESSIBLE_DESCRIPTION = 'help_card_title'
 

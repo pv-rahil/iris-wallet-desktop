@@ -25,15 +25,12 @@ from PySide6.QtWidgets import QWidget
 from rgb_lib import AssetSchema
 
 import src.resources_rc
-from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
+from accessible_constant import INFLATABLE_SCROLL_WIDGETS
 from accessible_constant import ISSUE_IFA_ASSET
 from src.data.repository.setting_repository import SettingRepository
 from src.data.service.wallet_data_service import WalletDataService
 from src.model.enums.enums_model import NetworkEnumModel
 from src.model.enums.enums_model import ToastPreset
-from src.model.enums.enums_model import WalletAccessType
-from src.model.enums.enums_model import WalletSignatureType
-from src.model.enums.enums_model import WalletType
 from src.model.rgb_model import DraftAsset
 from src.model.rgb_model import RgbAssetPageLoadModel
 from src.utils.clickable_frame import ClickableFrame
@@ -189,7 +186,7 @@ class InflatableAssetWidget(QWidget, ThreadManager):
             'scrollAreaWidgetContents_2',
         )
         self.scroll_area_widget_inflatable.setAccessibleName(
-            FUNGIBLES_SCROLL_WIDGETS,
+            INFLATABLE_SCROLL_WIDGETS,
         )
         self.scroll_area_widget_inflatable.setGeometry(QRect(0, 0, 1182, 2000))
         self.scroll_area_widget_inflatable.setContentsMargins(0, -1, 10, -1)

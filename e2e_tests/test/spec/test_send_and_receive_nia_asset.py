@@ -180,6 +180,7 @@ def test_offline_single_sig_create_utxo_for_send_nia(test_environment: TestEnvir
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Offline single-sig send NIA asset')
 @allure.story('Create transfer PSBT, sign with offline signer, then broadcast')
@@ -192,6 +193,7 @@ def test_offline_single_sig_send_transfer_nia(test_environment: TestEnvironment,
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Offline single-sig send NIA asset')
 @allure.story('Verify transaction status and amount')

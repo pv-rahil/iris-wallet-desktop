@@ -3,9 +3,9 @@ Inflatable page objects class for interacting with IFA assets.
 """
 from __future__ import annotations
 
-from accessible_constant import FUNGIBLES_SCROLL_WIDGETS
 from accessible_constant import HEADER_PSBT_INFO_FRAME
 from accessible_constant import HEADER_USB_SYNC_FRAME
+from accessible_constant import INFLATABLE_SCROLL_WIDGETS
 from accessible_constant import ISSUE_IFA_ASSET
 from accessible_constant import NETWORK_AND_BACKUP_FRAME
 from e2e_tests.test.utilities.base_operation import BaseOperations
@@ -32,7 +32,7 @@ class InflatablePageObjects(BaseOperations):
             role_name='panel', name=NETWORK_AND_BACKUP_FRAME,
         )
         self.scroll_area = lambda: self.perform_action_on_element(
-            role_name='filler', name=FUNGIBLES_SCROLL_WIDGETS,
+            role_name='filler', name=INFLATABLE_SCROLL_WIDGETS,
         )
         self.psbt_info_frame = lambda: self.perform_action_on_element(
             role_name='panel', name=HEADER_PSBT_INFO_FRAME,
