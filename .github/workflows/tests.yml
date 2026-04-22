@@ -239,6 +239,25 @@ jobs:
           name: appimages
           path: e2e_tests/applications
 
+      - name: Verify downloaded AppImages
+        run: |
+          echo "=== Downloaded AppImages ==="
+          echo "Contents of e2e_tests/applications:"
+          ls -la e2e_tests/applications/ 2>/dev/null || echo "Directory not found"
+          echo ""
+          echo "Contents of current directory:"
+          ls -la *.AppImage 2>/dev/null || echo "No AppImages in root"
+          echo ""
+          echo "Expected AppImage names (version from src/version.py):"
+          VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
+          echo "  iris-wallet-vault_test_app_1-${VERSION}-x86_64.AppImage"
+          echo "  iris-wallet-vault_test_app_2-${VERSION}-x86_64.AppImage"
+          echo "  iris-wallet-vault_test_app_3-${VERSION}-x86_64.AppImage"
+          echo "  iris-wallet-vault_test_app_4-${VERSION}-x86_64.AppImage"
+          echo ""
+          echo "Making AppImages executable..."
+          chmod +x e2e_tests/applications/*.AppImage 2>/dev/null || echo "No AppImages to chmod"
+
       - name: Set up Python 3.12.3
         uses: actions/setup-python@v5
         with:

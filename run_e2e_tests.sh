@@ -186,6 +186,14 @@ while IFS= read -r -d '' file; do
 done < <(find "$TESTS_DIR" -name "test_*.py" -print0 | sort -z)
 
 ensure_applications_exist() {
+    echo "[DEBUG] Checking for AppImages in: $APPLICATIONS_DIR"
+    echo "[DEBUG] APP1_PATH: $APP1_PATH"
+    echo "[DEBUG] APP2_PATH: $APP2_PATH"
+    echo "[DEBUG] APP3_PATH: $APP3_PATH"
+    echo "[DEBUG] APP4_PATH: $APP4_PATH"
+    echo "[DEBUG] Directory contents:"
+    ls -la "$APPLICATIONS_DIR" 2>/dev/null || echo "[DEBUG] Directory does not exist"
+
     if [[ "$FORCE_BUILD" == true ]]; then
         echo "--force-build flag detected. Rebuilding applications..."
         build_applications
