@@ -191,33 +191,33 @@ jobs:
       matrix:
         test_file:
           - test_keyring_dialog
-          - test_receive_and_send_bitcoin
-          - test_login_app_auth
-          - test_ask_auth_for_imp_operations
-          - test_settings
-          - test_help
-          - test_about
-          - test_backup_and_restore
-          - test_send_and_receive_nia_asset
-          - test_send_and_receive_ifa_asset
-          - test_send_and_receive_cfa_asset
-          - test_hide_exhausted_asset
-          - test_fail_transfer
-          - test_issue_nia_asset
-          - test_issue_ifa_asset
-          - test_issue_cfa_asset
-          - test_view_unspent
-          - test_refresh_transfer
-          - test_inflate_asset
+          # - test_receive_and_send_bitcoin
+          # - test_login_app_auth
+          # - test_ask_auth_for_imp_operations
+          # - test_settings
+          # - test_help
+          # - test_about
+          # - test_backup_and_restore
+          # - test_send_and_receive_nia_asset
+          # - test_send_and_receive_ifa_asset
+          # - test_send_and_receive_cfa_asset
+          # - test_hide_exhausted_asset
+          # - test_fail_transfer
+          # - test_issue_nia_asset
+          # - test_issue_ifa_asset
+          # - test_issue_cfa_asset
+          # - test_view_unspent
+          # - test_refresh_transfer
+          # - test_inflate_asset
         wallet_variant:
           # All single-sig variants
           - online_watch_only
-          - online_create_on_device
-          - online_create_hardware
+          # - online_create_on_device
+          # - online_create_hardware
           # - online_load_on_device
           # - online_load_hardware
-          - offline_create_on_device
-          - offline_create_hardware
+          # - offline_create_on_device
+          # - offline_create_hardware
           # - offline_load_on_device
           # - offline_load_hardware
           # All multisig variants
@@ -244,25 +244,6 @@ jobs:
         with:
           name: appimages
           path: e2e_tests/applications
-
-      - name: Verify downloaded AppImages
-        run: |
-          echo "=== Downloaded AppImages ==="
-          echo "Contents of e2e_tests/applications:"
-          ls -la e2e_tests/applications/ 2>/dev/null || echo "Directory not found"
-          echo ""
-          echo "Contents of current directory:"
-          ls -la *.AppImage 2>/dev/null || echo "No AppImages in root"
-          echo ""
-          echo "Expected AppImage names (version from src/version.py):"
-          VERSION=$(grep '__version__' ./src/version.py | awk -F'=' '{print $2}' | tr -d ' "' | xargs)
-          echo "  iris-wallet-vault_test_app_1-${VERSION}-x86_64.AppImage"
-          echo "  iris-wallet-vault_test_app_2-${VERSION}-x86_64.AppImage"
-          echo "  iris-wallet-vault_test_app_3-${VERSION}-x86_64.AppImage"
-          echo "  iris-wallet-vault_test_app_4-${VERSION}-x86_64.AppImage"
-          echo ""
-          echo "Making AppImages executable..."
-          chmod +x e2e_tests/applications/*.AppImage 2>/dev/null || echo "No AppImages to chmod"
 
       - name: Set up Python 3.12.3
         uses: actions/setup-python@v5

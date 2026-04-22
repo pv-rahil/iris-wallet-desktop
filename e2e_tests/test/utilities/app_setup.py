@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes, redefined-outer-name, consider-using-with
+# pylint: disable=too-many-instance-attributes, redefined-outer-name, consider-using-with, too-many-statements
 """
 This module provides a test environment for the Iris Wallet application.
 It includes classes and fixtures for setting up and tearing down the test environment.
@@ -158,12 +158,28 @@ class TestEnvironment:
             usb_env, _ = setup_fake_usb()
             env.update(usb_env)
 
+        # Debug: Verify DISPLAY is set correctly
+        print(f"""[DEBUG] Launching AppImage with DISPLAY=
+              {env.get('DISPLAY', 'NOT SET')}""")
+        print(f"""[DEBUG] AppImage path: e2e_tests/applications/iris-wallet-vault_
+              {APP1_NAME}-{__version__}-x86_64.AppImage""")
+
         self.first_process = subprocess.Popen(
             [f"""e2e_tests/applications/iris-wallet-vault_{
                 APP1_NAME
             }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
+        print(f"""[DEBUG] AppImage process started with PID:
+              {self.first_process.pid}""")
+        # Give the process a moment to start or fail
+        time.sleep(2)
+        # Check if process is still running
+        if self.first_process.poll() is not None:
+            print(f"""[ERROR] AppImage process exited immediately with code:
+                  {self.first_process.returncode}""")
+        else:
+            print('[DEBUG] AppImage process is running')
         self.wait_for_application(FIRST_APPLICATION)
 
         # Maximize first application window
@@ -327,12 +343,6 @@ class TestEnvironment:
         Helper to find the frame node for a given app name.
         This is used for single-sig to ensure element searches are scoped to the correct frame.
         Returns frame node instead of application node for better element scoping.
-
-        Args:
-            app_name: Name of the frame to find (e.g., "Iris Wallet Regtest test_app_1").
-
-        Returns:
-            Node: The frame node for the application.
         """
         # Extract app identifier from frame name
         match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
@@ -375,18 +385,10 @@ class TestEnvironment:
 
     def _find_showing_frame(self, app_name, retry_count=3, retry_delay=1.0):
         """Helper to find a showing frame for a given app name.
-
-        Args:
-            app_name: Name of the frame to find.
-            retry_count: Number of retries if frame not found or not showing.
-            retry_delay: Delay between retries in seconds.
         """
         def timeout_handler(signum, frame):
             raise TimeoutError('AT-SPI call timed out')
 
-        # Extract app identifier from frame name (e.g., "test_app_1" from "Iris Wallet Regtest test_app_1")
-        # The frame name format is "Iris Wallet Regtest {app_identifier}"
-        # The application name format is "iris-wallet-vault_{app_identifier}"
         match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
         target_app_identifier = match.group(1) if match else None
 
@@ -459,6 +461,9 @@ class TestEnvironment:
         def timeout_handler(signum, frame):
             raise TimeoutError('AT-SPI call timed out')
 
+        # Debug: Show current DISPLAY when searching for app
+        print(f"""[DEBUG] wait_for_application: DISPLAY=
+              {os.environ.get('DISPLAY', 'NOT SET')}""")
         print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
         start_time = time.time()
         while time.time() - start_time < timeout:
@@ -543,13 +548,6 @@ class TestEnvironment:
 
     def restart_single_instance(self, reset_data: bool = True, preserve_fake_usb: bool = False):
         """Restart only the first application instance and ensure environment runs single-instance.
-
-        This is useful for flows where we initially needed multiple instances (e.g. load/on-device),
-        but subsequent tests should continue with a single app instance only.
-
-        Args:
-            reset_data: If True, clears app data directories before relaunching.
-            preserve_fake_usb: If True, preserves the fake USB mount (for backup/restore tests).
         """
         # Terminate any running processes (first/second/third if present)
         self.terminate()
@@ -566,16 +564,6 @@ class TestEnvironment:
 
     def reset_first_instance(self, reset_data: bool = True, skip_warmup: bool = False):
         """Reset and relaunch only the first application instance.
-
-        This is used for multisig load flow where we:
-        1. Init multisig on both apps
-        2. Collect credentials from FIRST app
-        3. Reset FIRST app (not second)
-        4. Load first app with its own credentials
-
-        Args:
-            reset_data (bool): If True, clears the first app's data directory before relaunching.
-            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # Kill only the first process
         self.terminate_process(self.first_process)
@@ -640,14 +628,6 @@ class TestEnvironment:
 
     def reset_second_instance(self, reset_data: bool = True, skip_warmup: bool = False):
         """Reset and relaunch only the second application instance.
-
-        This is useful when a test uses the second app to prepare credentials/backup
-        for a load/restore flow in the first app, and needs the second app to be
-        re-initialized immediately after the load completes for the remainder of the suite.
-
-        Args:
-            reset_data (bool): If True, clears the second app's data directory before relaunching.
-            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # If only one instance is active, nothing to do
         if self.num_instances < 2:
@@ -706,13 +686,6 @@ class TestEnvironment:
 
     def reset_third_instance(self, reset_data: bool = True, skip_warmup: bool = False):
         """Reset and relaunch only the third application instance.
-
-        This is used for offline multisig tests where we need to refresh
-        the third app (cosigner) to update the AT-SPI tree.
-
-        Args:
-            reset_data (bool): If True, clears the third app's data directory before relaunching.
-            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # If less than 3 instances are active, nothing to do
         if self.num_instances < 3:
@@ -770,10 +743,6 @@ class TestEnvironment:
 
     def reset_fourth_instance(self, reset_data: bool = False, skip_warmup: bool = False):
         """Reset and relaunch only the fourth application instance.
-
-        Args:
-            reset_data (bool): If True, clears the fourth app's data directory before relaunching.
-            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
         """
         # If only less than 4 instances are active, nothing to do
         if self.num_instances < 4:
@@ -827,12 +796,6 @@ class TestEnvironment:
 
     def reset_offline_multisig_instances(self, reset_data: bool = False):
         """Reset first, second, third, and fourth application instances for offline multisig tests.
-
-        This refreshes the AT-SPI tree for all four apps without clearing data,
-        which is needed before backup/restore tests to ensure fresh page objects.
-
-        Args:
-            reset_data (bool): If True, clears app data directories before relaunching.
         """
         # Reset all instances with skip_warmup=True to avoid redundant AT-SPI calls
         # Each reset adds 2s delay between kills to prevent AT-SPI bus overload
