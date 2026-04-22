@@ -206,7 +206,7 @@ def cleanup_between_tests(request):
         print(f'[CLEANUP] Warning: Cleanup encountered an error: {e}')
 
 
-@pytest.hookimpl(hooktry=True)
+@pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """
     Capture screenshot on test failure and attach to Allure report.

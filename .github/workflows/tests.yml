@@ -155,15 +155,21 @@ jobs:
 
       - name: Build all test AppImages
         run: |
-          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_1
-          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_2
-          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_3
-          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_4
-
-          # Move AppImages from root to applications directory
           mkdir -p e2e_tests/applications
+
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_1
           mv *.AppImage e2e_tests/applications/ 2>/dev/null || true
-          echo "AppImages found:"
+
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_2
+          mv *.AppImage e2e_tests/applications/ 2>/dev/null || true
+
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_3
+          mv *.AppImage e2e_tests/applications/ 2>/dev/null || true
+
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_4
+          mv *.AppImage e2e_tests/applications/ 2>/dev/null || true
+
+          echo "AppImages built:"
           ls -la e2e_tests/applications/
 
       - name: Upload AppImages artifact
