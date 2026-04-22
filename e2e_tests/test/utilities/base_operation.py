@@ -221,14 +221,6 @@ class BaseOperations:
     ) -> bool:
         """
         Check if the UI element is displayed within a given timeout.
-
-        Args:
-            element: The UI element to check (must support grabFocus & showing attributes).
-            timeout (int): Maximum time to wait, in seconds. If None, uses CI-aware default.
-            interval (float): How often to retry, in seconds.
-
-        Returns:
-            bool: True if element is visible within timeout, False otherwise.
         """
         if timeout is None:
             timeout = get_default_timeout(15)
@@ -265,12 +257,6 @@ class BaseOperations:
     def do_is_enabled(self, element) -> bool:
         """
         Checks if the specified element is enabled.
-
-        Args:
-            element (Node): The element to check.
-
-        Returns:
-            bool: True if the element is enabled, False otherwise.
         """
         if not element:
             return False
@@ -290,15 +276,9 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
-    def do_get_copied_address(self, timeout=5.0) -> str:
+    def do_get_copied_address(self, timeout: float = 5.0, exclude_previous: str | None = None) -> str:
         """
         Gets the copied address, waiting for the clipboard to be updated if necessary.
-
-        Args:
-            timeout (float): Maximum time to wait for the clipboard to become non-empty.
-
-        Returns:
-            str: The copied address, or an empty string if timeout is reached.
         """
         start_time = time.time()
         while time.time() - start_time < timeout:
@@ -316,7 +296,10 @@ class BaseOperations:
                     },
                 )
                 if result.returncode == 0 and result.stdout.strip():
-                    return result.stdout.strip()
+                    text = result.stdout.strip()
+                    # If exclude_previous is set, wait for different content
+                    if exclude_previous is None or text != exclude_previous:
+                        return text
             except Exception:
                 pass
 
@@ -324,12 +307,41 @@ class BaseOperations:
             try:
                 text = pyperclip.paste()
                 if text and text.strip():
-                    return text
+                    text = text.strip()
+                    # If exclude_previous is set, wait for different content
+                    if exclude_previous is None or text != exclude_previous:
+                        return text
             except Exception:
                 pass
 
             time.sleep(0.5)
         return ''
+
+    def do_clear_clipboard(self) -> None:
+        """
+        Clear the clipboard to avoid stale data issues.
+        Should be called before clicking a copy button.
+        """
+        try:
+            # Clear using xclip
+            subprocess.run(
+                ['xclip', '-selection', 'clipboard', '-i', '/dev/null'],
+                capture_output=True,
+                timeout=2,
+                check=False,
+                env={
+                    **os.environ,
+                    'DISPLAY': os.environ.get('DISPLAY', ':0'),
+                },
+            )
+        except Exception:
+            pass
+
+        try:
+            # Also try pyperclip
+            pyperclip.copy('')
+        except Exception:
+            pass
 
     def activate_window_by_name(self, window_name, max_retries=3):
         """
@@ -441,9 +453,6 @@ class BaseOperations:
             if not self._application_name and hasattr(self.application, 'name'):
                 self._application_name = self.application.name
             return
-
-        # Node is dead or hidden. Try to find a showing one with same name and role.
-        # First try to get name/role from the stale node
         name = None
         role = 'frame'  # Default role for application windows
 
@@ -482,15 +491,6 @@ class BaseOperations:
     def _find_elements_by_criteria(self, role_name, name=None, description=None, application_node=None):
         """
         Find elements matching the given criteria.
-
-        Args:
-            role_name (str): The role of the element.
-            name (str, optional): The name of the element.
-            description (str, optional): The description of the element.
-            application_node (Node, optional): The node to search within. Defaults to self.application.
-
-        Returns:
-            list: List of matching elements.
         """
         self._ensure_application_node()
         search_root = application_node if application_node else self.application
@@ -512,12 +512,6 @@ class BaseOperations:
     def _is_element_ready(self, element):
         """
         Check if the element is ready for interaction (showing and sensitive).
-
-        Args:
-            element: The element to check.
-
-        Returns:
-            bool: True if element is ready, False otherwise.
         """
         if not element:
             return False
@@ -532,13 +526,6 @@ class BaseOperations:
         """
         Wait for element to become stable (not changing state).
         This prevents race conditions where elements are found but still updating.
-
-        Args:
-            element: The element to check
-            timeout: How long to wait for stability (default 1.5s local, 5.0s in CI)
-
-        Returns:
-            bool: True if stable, False if timeout
         """
         # Increase timeout in CI for slower environments
         if is_ci_environment():
