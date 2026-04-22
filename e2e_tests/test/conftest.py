@@ -5,8 +5,11 @@ End-to-End testing script.
 from __future__ import annotations
 
 import os
+import subprocess
+import tempfile
 import time
 
+import allure
 import pytest
 
 from accessible_constant import LOAD_WALLET_VARIANT
@@ -201,3 +204,49 @@ def cleanup_between_tests(request):
     except Exception as e:
         # Don't fail tests if cleanup has issues
         print(f'[CLEANUP] Warning: Cleanup encountered an error: {e}')
+
+
+@pytest.hookimpl(hooktry=True)
+def pytest_runtest_makereport(item, call):
+    """
+    Capture screenshot on test failure and attach to Allure report.
+    """
+    if call.when == 'call' and call.excinfo is not None:
+        # Test failed - capture screenshot
+        test_name = item.name.replace(' ', '_').replace('/', '_')
+
+        try:
+            # Create temp file for screenshot
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                screenshot_path = tmp.name
+
+            # Capture screenshot using scrot
+            result = subprocess.run(
+                ['scrot', screenshot_path],
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+
+            if result.returncode == 0 and os.path.exists(screenshot_path):
+                # Attach to Allure report
+                allure.attach.file(
+                    screenshot_path,
+                    name=f'{test_name}_failure_screenshot',
+                    attachment_type=allure.attachment_type.PNG,
+                )
+                print(f"""[FAIL] Screenshot attached to Allure:
+                    {test_name}_failure_screenshot""")
+
+                # Clean up temp file
+                os.unlink(screenshot_path)
+            else:
+                print(f"""[FAIL] Could not capture screenshot:
+                      {result.stderr.decode()}""")
+
+        except subprocess.TimeoutExpired:
+            print('[FAIL] Screenshot capture timed out')
+        except FileNotFoundError:
+            print('[FAIL] scrot not available - skipping screenshot')
+        except Exception as e:
+            print(f'[FAIL] Error capturing screenshot: {e}')

@@ -40,7 +40,21 @@ runs:
       run: |
         dbus-run-session -- bash -lc '
         set -euo pipefail
-        export DISPLAY=:99
+
+        # Dynamic DISPLAY for isolation
+        DISPLAY_NUM=$((100 + RANDOM % 50))
+        export DISPLAY=:$DISPLAY_NUM
+        echo "[SETUP] Using DISPLAY=$DISPLAY"
+
+        # Start Xvfb with GLX support
+        Xvfb $DISPLAY -screen 0 1280x720x24 -ac +extension GLX +render -noreset &
+        sleep 2
+
+        # Start window manager (critical for proper window management)
+        openbox &
+        sleep 2
+
+        # Environment for GUI/AT-SPI
         export LIBGL_DEBUG=verbose
         export MESA_DEBUG=1
         export GALLIUM_DRIVER=llvmpipe
@@ -102,13 +116,37 @@ runs:
         # Set accessibility and enable debugging for better AT-SPI stability
         gsettings set org.gnome.desktop.interface toolkit-accessibility true 2>/dev/null || true
         gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false 2>/dev/null || true
-        # Start AT-SPI services and wait for them to initialize (increased to 18s for reliability on slower runners)
+
+        # Kill any stale AT-SPI processes first
+        killall -q at-spi2-registryd 2>/dev/null || true
+        killall -q at-spi-bus-launcher 2>/dev/null || true
+        sleep 1
+
+        # Start AT-SPI services
         /usr/libexec/at-spi-bus-launcher --launch-immediately 2>/dev/null &
         /usr/libexec/at-spi2-registryd 2>/dev/null &
-        sleep 18
+
+        # Wait for AT-SPI to be ready (proper check instead of blind sleep)
+        echo "[SETUP] Waiting for AT-SPI to be ready..."
+        for i in {1..30}; do
+          if gdbus call --session \
+            --dest org.a11y.Bus \
+            --object-path /org/a11y/bus \
+            --method org.a11y.Bus.GetAddress 2>/dev/null; then
+            echo "[SETUP] AT-SPI is ready after ${i}s"
+            break
+          fi
+          sleep 1
+        done
+
         # Verify AT-SPI services are running
-        pgrep -f "at-spi-bus-launcher" >/dev/null || echo "AT-SPI bus launcher not running"
-        pgrep -f "at-spi2-registryd" >/dev/null || echo "AT-SPI registryd not running"
+        pgrep -f "at-spi-bus-launcher" >/dev/null || echo "[WARN] AT-SPI bus launcher not running"
+        pgrep -f "at-spi2-registryd" >/dev/null || echo "[WARN] AT-SPI registryd not running"
+
+        # Debug logging
+        echo "[SETUP] DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"
+        echo "[SETUP] DISPLAY=$DISPLAY"
+
         # Ensure the test password is visible to the AppImage subprocesses
         export NATIVE_AUTHENTICATION_PASSWORD="123456"
         # Dogtail configuration for CI stability (exported for Python tests)
@@ -130,7 +168,7 @@ runs:
         # Add poetry venv bin to PATH for speculos (Ledger emulator) accessibility
         POETRY_VENV_BIN="$(poetry env info --path)/bin"
         export PATH="$POETRY_VENV_BIN:$PATH"
-        sleep 3  # Increased to 3s for better UI stability
+        sleep 2
         poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
         '
       shell: bash

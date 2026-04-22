@@ -147,6 +147,9 @@ jobs:
         with:
           python-version: "3.12.3"
 
+      - name: Install E2E system dependencies
+        uses: ./.github/actions/install-e2e-dependencies
+
       - name: Install Python dependencies
         uses: ./.github/actions/install-python-dependencies
 
@@ -222,7 +225,6 @@ jobs:
           # - online_multisig_watch_only
 
     env:
-      DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
       CI: "true"
 
@@ -264,22 +266,6 @@ jobs:
         run: |
           poetry run pip install keyring keyrings.alt
 
-      - name: Start Xvfb with GLX & openbox
-        run: |
-          XAUTH="$RUNNER_TEMP/.Xauthority"
-          touch "$XAUTH"; echo "XAUTHORITY=$XAUTH" >> $GITHUB_ENV
-          xauth -f "$XAUTH" add :99 . $(mcookie)
-
-          # Start Xvfb with GLX extension enabled
-          Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset &
-          sleep 5
-          # Wait for X to be ready
-          for i in {1..30}; do
-            xdpyinfo -display :99 >/dev/null 2>&1 && break
-            sleep 1
-          done
-          openbox & sleep 3
-
       - name: Compile QT resources
         run: |
           poetry run pyside6-rcc src/resources.qrc -o src/resources_rc.py
@@ -305,18 +291,6 @@ jobs:
           # Disable GTK client-side decorations to prevent window shadows from offsetting click coordinates
           echo "GTK_CSD=0" >> $GITHUB_ENV
 
-      - name: Start screen recording
-        run: |
-          # Install ffmpeg for screen recording
-          sudo apt-get install -y ffmpeg
-
-          # Start recording the virtual display
-          ffmpeg -video_size 1280x720 -framerate 15 -f x11grab -i :99.0 \
-            -codec:v libx264 -preset ultrafast -crf 28 \
-            /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4 &
-          echo "RECORDER_PID=$!" >> $GITHUB_ENV
-          sleep 2
-
       - name: Run E2E Dogtail Test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -329,26 +303,6 @@ jobs:
         with:
           test-file: ${{ matrix.test_file }}
           wallet-variant: ${{ matrix.wallet_variant }}
-
-      - name: Stop screen recording
-        if: always()
-        run: |
-          # Stop ffmpeg gracefully
-          if [ -n "$RECORDER_PID" ]; then
-            kill -INT $RECORDER_PID 2>/dev/null || true
-            sleep 3
-            # Force kill if still running
-            kill -9 $RECORDER_PID 2>/dev/null || true
-          fi
-
-      - name: Upload screen recording
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
-          path: /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4
-          retention-days: 7
-          if-no-files-found: ignore
 
       - name: Upload Allure results
         if: always()
