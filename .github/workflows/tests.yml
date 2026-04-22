@@ -17,26 +17,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: 'pip'
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pypoetry
-            ~/.local/share/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            poetry-${{ runner.os }}-
-
-      - name: Cache apt packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt/archives
-          key: apt-${{ runner.os }}-${{ hashFiles('.github/actions/install-e2e-dependencies/action.yml') }}
-          restore-keys: |
-            apt-${{ runner.os }}-
 
       - name: Install system build dependencies
         run: |
@@ -85,17 +65,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: 'pip'
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pypoetry
-            ~/.local/share/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            poetry-${{ runner.os }}-
 
       - name: Install required system dependencies
         run: |
@@ -177,26 +146,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: 'pip'
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pypoetry
-            ~/.local/share/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            poetry-${{ runner.os }}-
-
-      - name: Cache apt packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt/archives
-          key: apt-${{ runner.os }}-${{ hashFiles('.github/actions/install-e2e-dependencies/action.yml') }}
-          restore-keys: |
-            apt-${{ runner.os }}-
 
       - name: Install E2E system dependencies
         uses: ./.github/actions/install-e2e-dependencies
@@ -225,6 +174,8 @@ jobs:
           python generate_config.py
           cd ../../
 
+      - name: Build all test AppImages
+        run: |
           mkdir -p e2e_tests/applications
 
           poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_1
@@ -322,26 +273,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.3"
-          cache: 'pip'
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pypoetry
-            ~/.local/share/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            poetry-${{ runner.os }}-
-
-      - name: Cache apt packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt/archives
-          key: apt-${{ runner.os }}-${{ hashFiles('.github/actions/install-e2e-dependencies/action.yml') }}
-          restore-keys: |
-            apt-${{ runner.os }}-
 
       - name: Install E2E system dependencies
         uses: ./.github/actions/install-e2e-dependencies
@@ -355,6 +286,16 @@ jobs:
           echo "QT_QUICK_BACKEND=software" >> $GITHUB_ENV
           echo "QSG_RENDER_LOOP=basic" >> $GITHUB_ENV
 
+      - name: Preinstall keyring backends (system Python)
+        run: |
+          pip install keyring keyrings.alt
+
+      - name: Install Python dependencies
+        uses: ./.github/actions/install-python-dependencies
+
+      - name: Install keyring backends in Poetry venv
+        run: |
+          poetry run pip install keyring keyrings.alt
 
       - name: Prepare runtime Python deps for AppImage
         run: |
