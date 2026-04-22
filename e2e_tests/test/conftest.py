@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import time
+from collections import OrderedDict
 
 import pytest
 
@@ -97,7 +98,7 @@ def pytest_collection_modifyitems(config, items):
     Shard test collection for parallel CI execution.
 
     When SHARD_ID and TOTAL_SHARDS env vars are set, splits tests across shards.
-    Each shard runs a subset of tests, enabling parallel execution.
+    Groups tests by file to keep dependent tests together.
     """
     shard_id = int(os.getenv('SHARD_ID', '1'))
     total_shards = int(os.getenv('TOTAL_SHARDS', '1'))
@@ -105,14 +106,29 @@ def pytest_collection_modifyitems(config, items):
     if total_shards <= 1:
         return
 
-    # Select tests for this shard using modulo distribution
-    selected = [
-        item for i, item in enumerate(items)
+    # Group tests by their source file
+    file_groups = OrderedDict()
+    for item in items:
+        # Get the file path from the test item
+        file_path = item.location[0] if item.location else str(item.fspath)
+        if file_path not in file_groups:
+            file_groups[file_path] = []
+        file_groups[file_path].append(item)
+
+    # Get list of files and distribute them across shards
+    files = list(file_groups.keys())
+    selected_files = [
+        f for i, f in enumerate(files)
         if i % total_shards == (shard_id - 1)
     ]
 
-    print(f"""[SHARD] {len(selected)} tests selected for shard
-          {shard_id}/{total_shards}""")
+    # Collect all tests from selected files
+    selected = []
+    for f in selected_files:
+        selected.extend(file_groups[f])
+
+    print(f"""[SHARD] {len(selected)} tests from {len(selected_files)} files
+          selected for shard {shard_id}/{total_shards}""")
     items[:] = selected
 
 
