@@ -548,7 +548,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on_for_multisig(wallets_and_oper
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.create_psbt(
-            FIRST_APPLICATION, address, ASSET_AMOUNT, is_native_auth_enabled=True,
+            FIRST_APPLICATION, address, ASSET_AMOUNT, is_native_auth_enabled=True, utxo_required=False,
         )
 
     with allure.step('Sign PSBT from second multisig wallet'):
@@ -933,7 +933,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_off_for_multisig(wallets_and_ope
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_send_bitcoin_button()
         wallets_and_operations.first_page_features.send_features.create_psbt(
-            FIRST_APPLICATION, address, ASSET_AMOUNT,
+            FIRST_APPLICATION, address, ASSET_AMOUNT, utxo_required=False,
         )
 
     with allure.step('Sign PSBT from second multisig wallet'):

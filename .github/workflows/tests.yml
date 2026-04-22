@@ -245,6 +245,9 @@ jobs:
           name: appimages
           path: e2e_tests/applications
 
+      - name: Make AppImages executable
+        run: chmod +x e2e_tests/applications/*.AppImage
+
       - name: Set up Python 3.12.3
         uses: actions/setup-python@v5
         with:
