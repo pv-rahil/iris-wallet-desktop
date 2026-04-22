@@ -1,3 +1,4 @@
+# pylint: disable=unused-argument
 """
 End-to-End testing script.
 """
@@ -91,7 +92,7 @@ def wallet_variant_name(request) -> str:
     return request.config.getoption('--wallet-variant')
 
 
-def pytest_collection_modifyitems(_, items):
+def pytest_collection_modifyitems(config, items):
     """
     Shard test collection for parallel CI execution.
 
