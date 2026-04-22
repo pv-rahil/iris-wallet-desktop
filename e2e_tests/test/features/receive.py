@@ -31,8 +31,6 @@ class ReceiveOperation(MainPageObjects, BaseOperations):
             address = self.receive_asset_page_objects.get_receiver_invoice()
 
         if self.do_is_displayed(self.receive_asset_page_objects.invoice_copy_button()):
-            # Clear clipboard first to avoid stale data
-            self.do_clear_clipboard()
             self.receive_asset_page_objects.click_invoice_copy_button()
 
         if self.do_is_displayed(self.receive_asset_page_objects.receiver_invoice()):

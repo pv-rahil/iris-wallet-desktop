@@ -43,7 +43,7 @@ runs:
 
         # Dynamic DISPLAY for isolation
         DISPLAY_NUM=$((100 + RANDOM % 50))
-        export DISPLAY=:$DISPLAY_NUM
+        export DISPLAY=:99
         echo "[SETUP] Using DISPLAY=$DISPLAY"
 
         # Create Xauthority file with auth entry

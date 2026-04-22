@@ -221,8 +221,6 @@ class Wallet(WalletOperationsMixin):
             self.bitcoin_detail_page_objects.click_receive_bitcoin_button()
 
         if self.do_is_displayed(self.receive_asset_page_objects.receiver_invoice()):
-            # Clear clipboard first to avoid stale data
-            self.do_clear_clipboard()
             self.receive_asset_page_objects.click_invoice_copy_button()
 
         if self.do_is_displayed(self.receive_asset_page_objects.receiver_invoice()):
