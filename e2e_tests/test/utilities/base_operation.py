@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import time
 
 import pyperclip
@@ -301,12 +302,32 @@ class BaseOperations:
         """
         start_time = time.time()
         while time.time() - start_time < timeout:
+            # Try xclip first (works in headless Xvfb CI environment)
+            try:
+                result = subprocess.run(
+                    ['xclip', '-selection', 'clipboard', '-o'],
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                    check=False,
+                    env={
+                        **os.environ,
+                        'DISPLAY': os.environ.get('DISPLAY', ':0'),
+                    },
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip()
+            except Exception:
+                pass
+
+            # Fallback to pyperclip (works in local desktop environments)
             try:
                 text = pyperclip.paste()
                 if text and text.strip():
                     return text
             except Exception:
                 pass
+
             time.sleep(0.5)
         return ''
 
