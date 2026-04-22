@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes, redefined-outer-name, consider-using-with, too-many-statements
+# pylint: disable=too-many-instance-attributes, redefined-outer-name, consider-using-with
 """
 This module provides a test environment for the Iris Wallet application.
 It includes classes and fixtures for setting up and tearing down the test environment.
@@ -118,6 +118,9 @@ class TestEnvironment:
             self.remove_keyring_entries(
                 service=FOURTH_SERVICE, app_name=APP4_NAME,
             )
+
+        # Warm up AT-SPI before launching applications
+        # This ensures the accessibility tree is initialized and cached
         print('[TEST ENV] Warming up AT-SPI before launching applications...')
         warm_up_atspi(timeout=15)
 
@@ -160,12 +163,9 @@ class TestEnvironment:
                 APP1_NAME
             }-{__version__}-x86_64.AppImage"""],
             env=env,
-            stderr=subprocess.PIPE,
         )
-        self.wait_for_application(
-            FIRST_APPLICATION, process=self.first_process,
-        )
-        time.sleep(2)  # for stabilize the application and the atspi tree
+        self.wait_for_application(FIRST_APPLICATION)
+
         # Maximize first application window
         subprocess.run(
             [
@@ -193,12 +193,8 @@ class TestEnvironment:
                     APP2_NAME
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
-                stderr=subprocess.PIPE,
             )
-            self.wait_for_application(
-                SECOND_APPLICATION, process=self.second_process,
-            )
-            time.sleep(2)  # for stabilize the application and the atspi tree
+            self.wait_for_application(SECOND_APPLICATION)
 
             # Maximize second application window
             subprocess.run(
@@ -224,18 +220,13 @@ class TestEnvironment:
         if self.num_instances >= 3:
             # Wait for second app to be fully stable before launching third
             self._wait_for_app_stability(self.second_application)
-            # Force AT-SPI tree refresh before launching third app
             self.third_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
-                stderr=subprocess.PIPE,
             )
-            self.wait_for_application(
-                THIRD_APPLICATION, process=self.third_process,
-            )
-            time.sleep(2)  # for stabilize the application and the atspi tree
+            self.wait_for_application(THIRD_APPLICATION)
 
             subprocess.run(
                 [
@@ -260,18 +251,14 @@ class TestEnvironment:
         if self.num_instances >= 4:
             # Wait for third app to be fully stable before launching fourth
             self._wait_for_app_stability(self.third_application)
-            # Force AT-SPI tree refresh before launching fourth app
             self.fourth_process = subprocess.Popen(
-                [f"""e2e_tests/applications/iris-wallet-vault_{
+                [f'e2e_tests/applications/iris-wallet-vault_{
                     APP4_NAME
-                }-{__version__}-x86_64.AppImage"""],
+                }-{__version__}-x86_64.AppImage'],
                 env=env,
-                stderr=subprocess.PIPE,
             )
-            self.wait_for_application(
-                FOURTH_APPLICATION, process=self.fourth_process,
-            )
-            time.sleep(2)  # for stabilize the application and the atspi tree
+            self.wait_for_application(FOURTH_APPLICATION)
+
             subprocess.run(
                 [
                     'wmctrl', '-r', FOURTH_APPLICATION, '-b',
@@ -340,6 +327,12 @@ class TestEnvironment:
         Helper to find the frame node for a given app name.
         This is used for single-sig to ensure element searches are scoped to the correct frame.
         Returns frame node instead of application node for better element scoping.
+
+        Args:
+            app_name: Name of the frame to find (e.g., "Iris Wallet Regtest test_app_1").
+
+        Returns:
+            Node: The frame node for the application.
         """
         # Extract app identifier from frame name
         match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
@@ -382,9 +375,18 @@ class TestEnvironment:
 
     def _find_showing_frame(self, app_name, retry_count=3, retry_delay=1.0):
         """Helper to find a showing frame for a given app name.
+
+        Args:
+            app_name: Name of the frame to find.
+            retry_count: Number of retries if frame not found or not showing.
+            retry_delay: Delay between retries in seconds.
         """
         def timeout_handler(signum, frame):
             raise TimeoutError('AT-SPI call timed out')
+
+        # Extract app identifier from frame name (e.g., "test_app_1" from "Iris Wallet Regtest test_app_1")
+        # The frame name format is "Iris Wallet Regtest {app_identifier}"
+        # The application name format is "iris-wallet-vault_{app_identifier}"
         match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
         target_app_identifier = match.group(1) if match else None
 
@@ -452,46 +454,14 @@ class TestEnvironment:
         print(f"[FIND_FRAME] Using fallback direct search for '{app_name}'")
         return root.child(roleName='frame', name=app_name)
 
-    def wait_for_application(self, name, timeout=60, process=None):
-        """Wait for the application and its main frame to be visible.
-        """
+    def wait_for_application(self, name, timeout=60):
+        """Wait for the application and its main frame to be visible."""
         def timeout_handler(signum, frame):
             raise TimeoutError('AT-SPI call timed out')
 
         print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
         start_time = time.time()
-        poll_interval = 0.5
-        last_refresh_time = 0
-
         while time.time() - start_time < timeout:
-            # Early failure detection: check if process died
-            if process and process.poll() is not None:
-                exit_code = process.poll()
-                # Try to capture any stderr output for debugging
-                stderr_output = ''
-                if hasattr(process, 'stderr') and process.stderr:
-                    try:
-                        stderr_output = process.stderr.read().decode('utf-8', errors='ignore')
-                    except Exception:
-                        pass
-                error_msg = f"Application '{
-                    name
-                }' process exited unexpectedly with code {exit_code}"
-                if stderr_output:
-                    # Last 500 chars
-                    error_msg += f"\nStderr: {stderr_output[-500:]}"
-                raise RuntimeError(error_msg)
-
-            # Force AT-SPI tree refresh every 2 seconds to detect new apps
-            # This is critical for CI where AT-SPI caching causes stale data
-            current_time = time.time()
-            if current_time - last_refresh_time > 2.0:
-                try:
-                    _ = root.children  # Force refresh
-                    last_refresh_time = current_time
-                except Exception:
-                    pass
-
             try:
                 # Set timeout for AT-SPI calls
                 signal.signal(signal.SIGALRM, timeout_handler)
@@ -515,7 +485,7 @@ class TestEnvironment:
             except Exception as e:
                 signal.alarm(0)
                 print(f"[SETUP] Exception while searching for {name}: {e}")
-            time.sleep(poll_interval)
+            time.sleep(1.0)
         raise TimeoutError(
             f"""Application '{name}' failed to start or show frame within {
                 timeout
@@ -573,8 +543,13 @@ class TestEnvironment:
 
     def restart_single_instance(self, reset_data: bool = True, preserve_fake_usb: bool = False):
         """Restart only the first application instance and ensure environment runs single-instance.
+
         This is useful for flows where we initially needed multiple instances (e.g. load/on-device),
         but subsequent tests should continue with a single app instance only.
+
+        Args:
+            reset_data: If True, clears app data directories before relaunching.
+            preserve_fake_usb: If True, preserves the fake USB mount (for backup/restore tests).
         """
         # Terminate any running processes (first/second/third if present)
         self.terminate()
@@ -590,7 +565,18 @@ class TestEnvironment:
         self.launch_applications()
 
     def reset_first_instance(self, reset_data: bool = True, skip_warmup: bool = False):
-        """Reset and relaunch only the first application instance."""
+        """Reset and relaunch only the first application instance.
+
+        This is used for multisig load flow where we:
+        1. Init multisig on both apps
+        2. Collect credentials from FIRST app
+        3. Reset FIRST app (not second)
+        4. Load first app with its own credentials
+
+        Args:
+            reset_data (bool): If True, clears the first app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
+        """
         # Kill only the first process
         self.terminate_process(self.first_process)
         self.first_process = None
@@ -616,9 +602,7 @@ class TestEnvironment:
             }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
-        self.wait_for_application(
-            FIRST_APPLICATION, process=self.first_process,
-        )
+        self.wait_for_application(FIRST_APPLICATION)
 
         subprocess.run(
             [
@@ -655,7 +639,16 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_second_instance(self, reset_data: bool = True, skip_warmup: bool = False):
-        """Reset and relaunch only the second application instance."""
+        """Reset and relaunch only the second application instance.
+
+        This is useful when a test uses the second app to prepare credentials/backup
+        for a load/restore flow in the first app, and needs the second app to be
+        re-initialized immediately after the load completes for the remainder of the suite.
+
+        Args:
+            reset_data (bool): If True, clears the second app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
+        """
         # If only one instance is active, nothing to do
         if self.num_instances < 2:
             return
@@ -685,9 +678,7 @@ class TestEnvironment:
             }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
-        self.wait_for_application(
-            SECOND_APPLICATION, process=self.second_process,
-        )
+        self.wait_for_application(SECOND_APPLICATION)
 
         subprocess.run(
             [
@@ -714,7 +705,15 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_third_instance(self, reset_data: bool = True, skip_warmup: bool = False):
-        """Reset and relaunch only the third application instance."""
+        """Reset and relaunch only the third application instance.
+
+        This is used for offline multisig tests where we need to refresh
+        the third app (cosigner) to update the AT-SPI tree.
+
+        Args:
+            reset_data (bool): If True, clears the third app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
+        """
         # If less than 3 instances are active, nothing to do
         if self.num_instances < 3:
             return
@@ -744,9 +743,7 @@ class TestEnvironment:
             }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
-        self.wait_for_application(
-            THIRD_APPLICATION, process=self.third_process,
-        )
+        self.wait_for_application(THIRD_APPLICATION)
 
         subprocess.run(
             [
@@ -772,7 +769,12 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_fourth_instance(self, reset_data: bool = False, skip_warmup: bool = False):
-        """Reset and relaunch only the fourth application instance."""
+        """Reset and relaunch only the fourth application instance.
+
+        Args:
+            reset_data (bool): If True, clears the fourth app's data directory before relaunching.
+            skip_warmup (bool): If True, skip warm_up_atspi (used when resetting multiple instances).
+        """
         # If only less than 4 instances are active, nothing to do
         if self.num_instances < 4:
             return
@@ -798,9 +800,7 @@ class TestEnvironment:
             }-{__version__}-x86_64.AppImage'],
             env=env,
         )
-        self.wait_for_application(
-            FOURTH_APPLICATION, process=self.fourth_process,
-        )
+        self.wait_for_application(FOURTH_APPLICATION)
 
         subprocess.run(
             [
@@ -826,7 +826,14 @@ class TestEnvironment:
             print('[RESET] AT-SPI tree refreshed')
 
     def reset_offline_multisig_instances(self, reset_data: bool = False):
-        """Reset first, second, third, and fourth application instances for offline multisig tests."""
+        """Reset first, second, third, and fourth application instances for offline multisig tests.
+
+        This refreshes the AT-SPI tree for all four apps without clearing data,
+        which is needed before backup/restore tests to ensure fresh page objects.
+
+        Args:
+            reset_data (bool): If True, clears app data directories before relaunching.
+        """
         # Reset all instances with skip_warmup=True to avoid redundant AT-SPI calls
         # Each reset adds 2s delay between kills to prevent AT-SPI bus overload
         self.reset_first_instance(reset_data=reset_data, skip_warmup=True)
