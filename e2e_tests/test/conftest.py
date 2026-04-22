@@ -211,7 +211,11 @@ def pytest_runtest_makereport(item, call):
     """
     Capture screenshot on test failure and attach to Allure report.
     """
-    if call.when == 'call' and call.excinfo is not None:
+    # Execute the hook and get the result
+    outcome = yield
+    report = outcome.get_result()
+
+    if call.when == 'call' and report.failed:
         # Test failed - capture screenshot
         test_name = item.name.replace(' ', '_').replace('/', '_')
 
@@ -236,7 +240,7 @@ def pytest_runtest_makereport(item, call):
                     attachment_type=allure.attachment_type.PNG,
                 )
                 print(f"""[FAIL] Screenshot attached to Allure:
-                    {test_name}_failure_screenshot""")
+                      {test_name}_failure_screenshot""")
 
                 # Clean up temp file
                 os.unlink(screenshot_path)
