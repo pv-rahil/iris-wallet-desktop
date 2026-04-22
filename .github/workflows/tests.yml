@@ -134,15 +134,71 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  build-apps:
+    name: Build AppImages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12.3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+
+      - name: Install Python dependencies
+        uses: ./.github/actions/install-python-dependencies
+
+      - name: Build all test AppImages
+        run: |
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_1
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_2
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_3
+          poetry run build-iris-wallet --network regtest --distribution appimage --app-name test_app_4
+
+          # Move to applications directory
+          mkdir -p e2e_tests/applications
+          mv dist/*.AppImage e2e_tests/applications/ 2>/dev/null || true
+          ls -la e2e_tests/applications/
+
+      - name: Upload AppImages artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appimages
+          path: e2e_tests/applications/*.AppImage
+          retention-days: 1
+          if-no-files-found: error
+
   e2e-dogtail:
     name: E2E Dogtail tests
+    needs: build-apps
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
       fail-fast: false
-      max-parallel: 3
 
       matrix:
+        test_file:
+          - test_keyring_dialog
+          - test_receive_and_send_bitcoin
+          - test_login_app_auth
+          - test_ask_auth_for_imp_operations
+          - test_settings
+          - test_help
+          - test_about
+          - test_backup_and_restore
+          - test_send_and_receive_nia_asset
+          - test_send_and_receive_ifa_asset
+          - test_send_and_receive_cfa_asset
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_issue_nia_asset
+          - test_issue_ifa_asset
+          - test_issue_cfa_asset
+          - test_view_unspent
+          - test_refresh_transfer
+          - test_inflate_asset
         wallet_variant:
           # All single-sig variants
           - online_watch_only
@@ -165,19 +221,20 @@ jobs:
           # - offline_multisig_load_hardware
           # - online_multisig_watch_only
 
-        shard_id: [1, 2, 3, 4, 5]
-        total_shards: [5]
-
     env:
       DISPLAY: :99
       QT_IM_MODULE: virtualkeyboard
       CI: "true"
-      SHARD_ID: ${{ matrix.shard_id }}
-      TOTAL_SHARDS: ${{ matrix.total_shards }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download AppImages
+        uses: actions/download-artifact@v4
+        with:
+          name: appimages
+          path: e2e_tests/applications
 
       - name: Set up Python 3.12.3
         uses: actions/setup-python@v5
@@ -256,7 +313,7 @@ jobs:
           # Start recording the virtual display
           ffmpeg -video_size 1280x720 -framerate 15 -f x11grab -i :99.0 \
             -codec:v libx264 -preset ultrafast -crf 28 \
-            /tmp/test_recording_shard${{ matrix.shard_id }}_${{ matrix.wallet_variant }}.mp4 &
+            /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4 &
           echo "RECORDER_PID=$!" >> $GITHUB_ENV
           sleep 2
 
@@ -270,7 +327,7 @@ jobs:
           GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
         uses: ./.github/actions/setup-e2e-environment
         with:
-          run-all: 'true'
+          test-file: ${{ matrix.test_file }}
           wallet-variant: ${{ matrix.wallet_variant }}
 
       - name: Stop screen recording
@@ -288,8 +345,8 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: screen-recording-shard${{ matrix.shard_id }}-${{ matrix.wallet_variant }}
-          path: /tmp/test_recording_shard${{ matrix.shard_id }}_${{ matrix.wallet_variant }}.mp4
+          name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
+          path: /tmp/test_recording_${{ matrix.test_file }}_${{ matrix.wallet_variant }}.mp4
           retention-days: 7
           if-no-files-found: ignore
 
@@ -297,7 +354,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results-shard${{ matrix.shard_id }}-${{ matrix.wallet_variant }}
+          name: allure-results-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
           path: allure-results/${{ matrix.wallet_variant }}/
           retention-days: 7
           if-no-files-found: ignore

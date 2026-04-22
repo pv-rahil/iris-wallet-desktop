@@ -260,31 +260,18 @@ run_e2e_tests() {
         mkdir -p "$results_dir"
 
         if [[ "$RUN_ALL" == true ]]; then
-            if [[ "${CI:-false}" == "true" ]]; then
-                echo "[CI MODE] Running sharded full test suite"
-                if ! pytest -s "$TESTS_DIR" --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
-                    print_failure "ALL_TESTS" "$SPECIFIED_WALLET_VARIANT"
+            echo "Running full test suite (per-file)..."
+            for test_file in "${TEST_FILES[@]}"; do
+                print_test_header "$(basename "$test_file")" "$test_file" "$SPECIFIED_WALLET_VARIANT"
+                if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                    print_failure "$(basename "$test_file")" "$SPECIFIED_WALLET_VARIANT"
                     EXIT_CODE=1
                 fi
+            done
 
-                if [[ $EXIT_CODE -ne 0 ]]; then
-                    print_summary_failure "$SPECIFIED_WALLET_VARIANT"
-                    exit $EXIT_CODE
-                fi
-            else
-                echo "[LOCAL MODE] Running per-file tests (original behavior)"
-                for test_file in "${TEST_FILES[@]}"; do
-                    print_test_header "$(basename "$test_file")" "$test_file" "$SPECIFIED_WALLET_VARIANT"
-                    if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$SPECIFIED_WALLET_VARIANT" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
-                        print_failure "$(basename "$test_file")" "$SPECIFIED_WALLET_VARIANT"
-                        EXIT_CODE=1
-                    fi
-                done
-
-                if [[ $EXIT_CODE -ne 0 ]]; then
-                    print_summary_failure "$SPECIFIED_WALLET_VARIANT"
-                    exit $EXIT_CODE
-                fi
+            if [[ $EXIT_CODE -ne 0 ]]; then
+                print_summary_failure "$SPECIFIED_WALLET_VARIANT"
+                exit $EXIT_CODE
             fi
         elif [[ -n "$TEST_FILE" ]]; then
             print_test_header "$TEST_FILE" "$TESTS_DIR/$TEST_FILE" "$SPECIFIED_WALLET_VARIANT"
@@ -320,31 +307,18 @@ run_e2e_tests() {
             local variant_exit_code=0
 
             if [[ "$RUN_ALL" == true ]]; then
-                if [[ "${CI:-false}" == "true" ]]; then
-                    echo "[CI MODE] Running sharded full test suite for variant: $variant"
-                    if ! pytest -s "$TESTS_DIR" --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
-                        print_failure "ALL_TESTS" "$variant"
+                echo "Running full test suite (per-file)..."
+                for test_file in "${TEST_FILES[@]}"; do
+                    print_test_header "$(basename "$test_file")" "$test_file" "$variant"
+                    if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
+                        print_failure "$(basename "$test_file")" "$variant"
                         variant_exit_code=1
                     fi
+                done
 
-                    if [[ $variant_exit_code -ne 0 ]]; then
-                        print_summary_failure "$variant"
-                        failures+=("$variant")
-                    fi
-                else
-                    echo "[LOCAL MODE] Running per-file tests (original behavior) for variant: $variant"
-                    for test_file in "${TEST_FILES[@]}"; do
-                        print_test_header "$(basename "$test_file")" "$test_file" "$variant"
-                        if ! pytest -s "$test_file" --alluredir="$results_dir" --wallet-variant "$variant" ${PYTEST_EXTRA_ARGS[@]:+"${PYTEST_EXTRA_ARGS[@]}"}; then
-                            print_failure "$(basename "$test_file")" "$variant"
-                            variant_exit_code=1
-                        fi
-                    done
-
-                    if [[ $variant_exit_code -ne 0 ]]; then
-                        print_summary_failure "$variant"
-                        failures+=("$variant")
-                    fi
+                if [[ $variant_exit_code -ne 0 ]]; then
+                    print_summary_failure "$variant"
+                    failures+=("$variant")
                 fi
             elif [[ -n "$TEST_FILE" ]]; then
                 print_test_header "$TEST_FILE" "$TESTS_DIR/$TEST_FILE" "$variant"

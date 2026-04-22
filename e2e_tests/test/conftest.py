@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 import time
-from collections import OrderedDict
 
 import pytest
 
@@ -91,45 +90,6 @@ def wallet_variant_name(request) -> str:
     Expose the CLI-provided wallet mode key to tests.
     """
     return request.config.getoption('--wallet-variant')
-
-
-def pytest_collection_modifyitems(config, items):
-    """
-    Shard test collection for parallel CI execution.
-
-    When SHARD_ID and TOTAL_SHARDS env vars are set, splits tests across shards.
-    Groups tests by file to keep dependent tests together.
-    """
-    shard_id = int(os.getenv('SHARD_ID', '1'))
-    total_shards = int(os.getenv('TOTAL_SHARDS', '1'))
-
-    if total_shards <= 1:
-        return
-
-    # Group tests by their source file
-    file_groups = OrderedDict()
-    for item in items:
-        # Get the file path from the test item
-        file_path = item.location[0] if item.location else str(item.fspath)
-        if file_path not in file_groups:
-            file_groups[file_path] = []
-        file_groups[file_path].append(item)
-
-    # Get list of files and distribute them across shards
-    files = list(file_groups.keys())
-    selected_files = [
-        f for i, f in enumerate(files)
-        if i % total_shards == (shard_id - 1)
-    ]
-
-    # Collect all tests from selected files
-    selected = []
-    for f in selected_files:
-        selected.extend(file_groups[f])
-
-    print(f"""[SHARD] {len(selected)} tests from {len(selected_files)} files
-          selected for shard {shard_id}/{total_shards}""")
-    items[:] = selected
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
