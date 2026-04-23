@@ -309,7 +309,7 @@ class TestEnvironment:
             time.sleep(0.5)
         return False
 
-    def _find_application_node(self, app_name):
+    def find_application_node(self, app_name):
         """Helper to find the stable application node for a given app name."""
         # Method 1: Direct frame search first (most reliable for multiple apps)
         try:
@@ -447,77 +447,18 @@ class TestEnvironment:
         print(f"[FIND_FRAME] Using fallback direct search for '{app_name}'")
         return root.child(roleName='frame', name=app_name)
 
-    def _get_process_for_app(self, name):
-        """Get the process object for a given application name."""
-        process_map = {
-            FIRST_APPLICATION: self.first_process,
-            SECOND_APPLICATION: self.second_process,
-            THIRD_APPLICATION: self.third_process,
-            FOURTH_APPLICATION: self.fourth_process,
-        }
-        return process_map.get(name)
-
-    def _check_frame_visible(self, name, app):
-        """Check if application frame is visible. Returns True if showing."""
-        frame = app.child(roleName='frame', name=name, requireResult=False)
-        if not frame:
-            return False, None
-        print(f"[SETUP] Found frame for {name}, showing={frame.showing}")
-        if frame.showing:
-            return True, True
-        # Frame exists but not showing - try to raise it
-        try:
-            subprocess.run(
-                ['wmctrl', '-a', name],
-                check=False, capture_output=True, timeout=2,
-            )
-        except Exception:
-            pass
-        return True, False
-
-    def wait_for_application(self, name, timeout=60):
-        """Wait for the application and its main frame to be visible."""
-        def timeout_handler(signum, frame):
-            raise TimeoutError('AT-SPI call timed out')
-        print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
+    def wait_for_application(self, app_name, timeout=60):
+        """Waits for an application to be fully loaded dynamically."""
         start_time = time.time()
-        process = self._get_process_for_app(name)
-
         while time.time() - start_time < timeout:
-            if process and process.poll() is not None:
-                break
-
             try:
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(5)
-                try:
-                    app = self._find_application_node(name)
-                    if app:
-                        found, showing = self._check_frame_visible(name, app)
-                        if found and showing:
-                            signal.alarm(0)
-                            return True
-                except TimeoutError:
-                    pass
-                finally:
-                    signal.alarm(0)
+                if root.child(roleName='frame', name=app_name, requireResult=False):
+                    return True
             except Exception:
-                signal.alarm(0)
-            time.sleep(1.0)
-
-        # Final attempt: check if frame exists even if not showing
-        try:
-            frame = root.child(
-                roleName='frame', name=name,
-                requireResult=False,
-            )
-            if frame:
-                return True
-        except Exception:
-            pass
-
+                pass
+            time.sleep(0.5)
         raise TimeoutError(
-            f"Application '{name}' failed to start or show frame within {
+            f"Application '{app_name}' failed to start within {
                 timeout
             } seconds",
         )

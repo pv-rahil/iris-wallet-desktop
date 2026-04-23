@@ -280,8 +280,7 @@ class Wallet(WalletOperationsMixin):
                 check=True,
             )
             # Use TestEnvironment's method to find the application frame
-            # pylint: disable=protected-access
-            app_node = env._find_application_node(SECOND_APPLICATION)
+            app_node = env.find_application_node(SECOND_APPLICATION)
             if app_node:
                 second_app = app_node.child(
                     roleName='frame', name=SECOND_APPLICATION,
@@ -628,8 +627,7 @@ class Wallet(WalletOperationsMixin):
             )
 
             # Get reference to temp third app
-            # pylint: disable=protected-access
-            app3_node = env._find_application_node(THIRD_APPLICATION)
+            app3_node = env.find_application_node(THIRD_APPLICATION)
             if app3_node:
                 third_app = app3_node.child(
                     roleName='frame', name=THIRD_APPLICATION,
