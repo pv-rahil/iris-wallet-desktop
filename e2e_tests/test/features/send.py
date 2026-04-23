@@ -122,8 +122,6 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.hardware_wallet = handle_hardware_wallet(
                     app_name=RGB_LEDGER_APP_NAME,
                 )
-                # Wait for emulator to be fully initialized
-                time.sleep(3)
 
             self.do_focus_on_application(application)
 

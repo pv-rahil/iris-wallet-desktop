@@ -2,15 +2,22 @@
 """Wallet variant utilities."""
 from __future__ import annotations
 
+import socket
 import subprocess
 import time
 from typing import Tuple
+
+import requests
 
 from accessible_constant import NAME_TO_STEPS
 from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 from e2e_tests.test.utilities.executable_shell_script import reset_regtest
 
 Steps = Tuple[int, int, int, int, int]
+
+SPECULOS_API_HOST = '127.0.0.1'
+SPECULOS_API_PORT = 5000
+SPECULOS_APDU_PORT = 9999
 
 # Lookup tables
 name_to_steps: dict[str, Steps] = {
@@ -89,6 +96,47 @@ def map_load_to_create(variant_name: str) -> str:
     return mapped
 
 
+def _wait_for_speculos_ready(timeout: float = 10.0) -> bool:
+    """
+    Wait for speculos emulator to be fully ready.
+
+    Checks both the REST API and APDU port to ensure the emulator
+    can receive commands before returning.
+
+    Args:
+        timeout: Maximum time to wait in seconds.
+
+    Returns:
+        True if emulator is ready, False if timeout reached.
+    """
+    start_time = time.time()
+    api_url = f'http://{SPECULOS_API_HOST}:{SPECULOS_API_PORT}'
+
+    while time.time() - start_time < timeout:
+        # Check APDU port is listening
+        try:
+            with socket.create_connection(
+                (SPECULOS_API_HOST, SPECULOS_APDU_PORT), timeout=1.0,
+            ):
+                apdu_ready = True
+        except (OSError, ConnectionRefusedError):
+            apdu_ready = False
+
+        # Check REST API is responding
+        try:
+            response = requests.get(f'{api_url}/', timeout=1.0)
+            api_ready = response.status_code == 200
+        except Exception:
+            api_ready = False
+
+        if apdu_ready and api_ready:
+            return True
+
+        time.sleep(0.5)
+
+    return False
+
+
 def handle_hardware_wallet(app_name: str, reset: bool = False):
     """
     Handle hardware wallet setup and teardown.
@@ -106,7 +154,10 @@ def handle_hardware_wallet(app_name: str, reset: bool = False):
         stderr=subprocess.DEVNULL,
     )
 
-    time.sleep(1)
+    # Wait for emulator to be fully ready to receive APDU commands
+    if not _wait_for_speculos_ready(timeout=10.0):
+        proc.terminate()
+        raise RuntimeError('Speculos emulator failed to start within timeout')
 
     if not is_ci_environment():
         # Move Speculos window to background
