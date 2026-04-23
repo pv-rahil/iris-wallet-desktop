@@ -232,15 +232,15 @@ jobs:
           - test_inflate_asset
         wallet_variant:
           # All single-sig variants
-          # - online_watch_only
+          - online_watch_only
           - online_create_on_device
-          # - online_create_hardware
-          # - online_load_on_device
-          # - online_load_hardware
-          # - offline_create_on_device
-          # - offline_create_hardware
-          # - offline_load_on_device
-          # - offline_load_hardware
+          - online_create_hardware
+          - online_load_on_device
+          - online_load_hardware
+          - offline_create_on_device
+          - offline_create_hardware
+          - offline_load_on_device
+          - offline_load_hardware
           # All multisig variants
           # - online_multisig_on_device
           # - online_multisig_hardware
@@ -319,6 +319,7 @@ jobs:
           echo "GTK_CSD=0" >> $GITHUB_ENV
 
       - name: Run E2E Dogtail Test
+        id: e2e-test
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -330,6 +331,13 @@ jobs:
         with:
           test-file: ${{ matrix.test_file }}
           wallet-variant: ${{ matrix.wallet_variant }}
+
+      - name: Upload screen recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
+          path: ${{ runner.temp }}/recordings/test_recording.mp4
 
       - name: Upload Allure results
         if: always()

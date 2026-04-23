@@ -977,3 +977,16 @@ class BaseOperations:
             return True
         except Exception:
             return False
+
+    def _safe_find_dialog(self, role_name, name):
+        """
+        Safely find a dialog element, returning None if not found.
+        This prevents SearchError when the dialog doesn't exist yet.
+        """
+        try:
+            return self.application.parent.findChild(
+                lambda x: x.roleName == role_name and x.name == name,
+                retry=False, requireResult=False,
+            )
+        except Exception:
+            return None

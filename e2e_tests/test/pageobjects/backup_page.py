@@ -50,8 +50,8 @@ class BackupPageObjects(BaseOperations):
         self.show_mnemonic_button = lambda: self.perform_action_on_element(
             role_name='push button', name=SHOW_MNEMONIC_BUTTON,
         )
-        self.backup_window = lambda: self.application.parent.child(
-            roleName='filler', name=BACKUP_WINDOW,
+        self.backup_window = lambda: self._safe_find_dialog(
+            'filler', BACKUP_WINDOW,
         )
         self.email_input = lambda: self.perform_action_on_element(
             role_name='text', name='Email or phone', application_node=self.backup_window(),

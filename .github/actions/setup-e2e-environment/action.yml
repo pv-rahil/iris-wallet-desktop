@@ -9,6 +9,11 @@ inputs:
     description: 'Wallet variant to test (e.g., online_create_on_device, online_load_on_device)'
     required: true
 
+outputs:
+  recording-file:
+    description: 'Path to screen recording file'
+    value: ${{ steps.run-test.outputs.RECORDING_FILE }}
+
 runs:
   using: "composite"
   steps:
@@ -37,6 +42,7 @@ runs:
       shell: bash
 
     - name: Run E2E test in configured environment
+      id: run-test
       run: |
         dbus-run-session -- bash -lc '
         set -euo pipefail
@@ -158,6 +164,15 @@ runs:
         echo "[SETUP] DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"
         echo "[SETUP] DISPLAY=$DISPLAY"
 
+        # Start screen recording
+        RECORDING_DIR="$RUNNER_TEMP/recordings"
+        mkdir -p "$RECORDING_DIR"
+        RECORDING_FILE="$RECORDING_DIR/test_recording.mp4"
+        echo "[SETUP] Starting screen recording to $RECORDING_FILE"
+        ffmpeg -y -f x11grab -draw_mouse 1 -r 15 -s 1920x1080 -i $DISPLAY+0,0 -codec:v libx264 -preset ultrafast -pix_fmt yuv420p "$RECORDING_FILE" > "$RECORDING_DIR/ffmpeg.log" 2>&1 &
+        FFMPEG_PID=$!
+        echo "[SETUP] ffmpeg started with PID $FFMPEG_PID"
+
         # Ensure the test password is visible to the AppImage subprocesses
         export NATIVE_AUTHENTICATION_PASSWORD="123456"
         # Dogtail configuration for CI stability (exported for Python tests)
@@ -180,6 +195,25 @@ runs:
         POETRY_VENV_BIN="$(poetry env info --path)/bin"
         export PATH="$POETRY_VENV_BIN:$PATH"
         sleep 2
-        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }}
+
+        # Run the test
+        TEST_EXIT_CODE=0
+        poetry run single-test ${{ inputs.test-file }}.py --wallet-variant ${{ inputs.wallet-variant }} || TEST_EXIT_CODE=$?
+
+        # Stop screen recording
+        echo "[CLEANUP] Stopping screen recording..."
+        if kill -0 $FFMPEG_PID 2>/dev/null; then
+          kill -INT $FFMPEG_PID 2>/dev/null || true
+          sleep 3  # Wait for ffmpeg to finish writing
+          kill -9 $FFMPEG_PID 2>/dev/null || true
+        fi
+
+        # Upload recording as artifact
+        if [ -f "$RECORDING_FILE" ]; then
+          echo "[CLEANUP] Uploading screen recording..."
+          echo "RECORDING_FILE=$RECORDING_FILE" >> $GITHUB_OUTPUT
+        fi
+
+        exit $TEST_EXIT_CODE
         '
       shell: bash
