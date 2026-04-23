@@ -236,8 +236,6 @@ class TestEnvironment:
         if self.num_instances >= 3:
             # Wait for second app to be fully stable before launching third
             self._wait_for_app_stability(self.second_application)
-            # Force AT-SPI cache refresh before launching third app
-            warm_up_atspi(timeout=5)
             self.third_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
@@ -309,69 +307,80 @@ class TestEnvironment:
             time.sleep(0.5)
         return False
 
-    def find_application_node(self, app_name):
+    def _find_application_node(self, app_name):
         """Helper to find the stable application node for a given app name."""
-        # Method 1: Direct frame search first (most reliable for multiple apps)
-        try:
-            frame = root.child(
-                roleName='frame', name=app_name, requireResult=False,
-            )
-            if frame:
-                parent = frame.parent
-                if parent and parent.roleName == 'application':
-                    return parent
-                return frame  # Return frame itself if parent not found
-        except Exception:
-            pass
+        print(f"[DEBUG] Searching for parent application of: {app_name}")
 
-        # Method 2: Search through all iris applications
+        # Method 1: Search through all applications to find one containing the target frame
         try:
             for app in root.applications():
                 if 'iris' in app.name.lower():
+                    # Check if this app has the frame we're looking for
                     for child in app.children:
                         if child.roleName == 'frame' and child.name == app_name:
+                            print(f"""[DEBUG] Found parent application '
+                                  {app.name}' for frame '{app_name}'""")
                             return app
         except Exception:
             pass
 
-        # Method 3: This is dogtail's standard way to get application root by hint
+        # Method 2: Fallback - find the frame and get its parent
         try:
-            return root.application(app_name)
+            frame = root.child(roleName='frame', name=app_name)
+            if frame:
+                parent = frame.parent
+                if parent and parent.roleName == 'application':
+                    return parent
+                return frame  # Return frame as last resort if parent is not app
         except Exception:
             pass
 
-        return None
+        # This is dogtail's standard way to get application root by hint
+        return root.application(app_name)
 
     def _find_application_frame(self, app_name):
         """
         Helper to find the frame node for a given app name.
+        This is used for single-sig to ensure element searches are scoped to the correct frame.
         Returns frame node instead of application node for better element scoping.
         """
+        # Extract app identifier from frame name
         match = re.search(r'(test_app_\d+|app_\d+)$', app_name)
         target_app_identifier = match.group(1) if match else None
 
+        # Search through all applications to find the correct frame
         try:
             apps = [a for a in root.applications() if 'iris' in a.name.lower()]
+
+            # Sort apps to prioritize the target app
             if target_app_identifier:
                 apps = sorted(
                     apps, key=lambda a: 0 if target_app_identifier in a.name else 1,
                 )
 
             for app in apps:
+                # Check if this app matches the target identifier
                 if target_app_identifier and target_app_identifier not in app.name:
                     continue
+
+                # Find the frame within this application
                 for child in app.children:
                     if child.roleName == 'frame' and child.name == app_name:
+                        print(f"""[DEBUG] Found frame '
+                              {app_name}' under app '{app.name}'""")
                         return child
         except Exception:
             pass
 
         # Fallback - find frame directly from root
         try:
-            return root.child(roleName='frame', name=app_name)
+            frame = root.child(roleName='frame', name=app_name)
+            if frame:
+                return frame
         except Exception:
             pass
 
+        print(f"[WARN] No frame found for '{app_name}'")
         return None
 
     def _find_showing_frame(self, app_name, retry_count=3, retry_delay=1.0):
@@ -447,20 +456,45 @@ class TestEnvironment:
         print(f"[FIND_FRAME] Using fallback direct search for '{app_name}'")
         return root.child(roleName='frame', name=app_name)
 
-    def wait_for_application(self, app_name, timeout=60):
-        """Waits for an application to be fully loaded dynamically."""
+    def wait_for_application(self, name, timeout=60):
+        """Wait for the application and its main frame to be visible."""
+        def timeout_handler(signum, frame):
+            raise TimeoutError('AT-SPI call timed out')
+
+        # Debug: Show current DISPLAY when searching for app
+        print(f"""[DEBUG] wait_for_application: DISPLAY=
+              {os.environ.get('DISPLAY', 'NOT SET')}""")
+        print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                if root.child(roleName='frame', name=app_name, requireResult=False):
-                    return True
-            except Exception:
-                pass
-            time.sleep(0.5)
+                # Set timeout for AT-SPI calls
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(5)  # 5 second timeout per iteration
+
+                try:
+                    # Use our helper to see if an application node with a frame exists
+                    app = self._find_application_node(name)
+                    if app:
+                        # Also check if it has a showing frame
+                        frame = app.child(roleName='frame', name=name)
+                        if frame and frame.showing:
+                            signal.alarm(0)  # Cancel alarm
+                            print(f"[SETUP] {name} is showing and ready.")
+                            return True
+                except TimeoutError:
+                    print(f"[SETUP] AT-SPI timeout while searching for {name}")
+                finally:
+                    signal.alarm(0)  # Ensure alarm is cancelled
+
+            except Exception as e:
+                signal.alarm(0)
+                print(f"[SETUP] Exception while searching for {name}: {e}")
+            time.sleep(1.0)
         raise TimeoutError(
-            f"Application '{app_name}' failed to start within {
+            f"""Application '{name}' failed to start or show frame within {
                 timeout
-            } seconds",
+            } seconds""",
         )
 
     def get_child_pids(self, parent_pid):
