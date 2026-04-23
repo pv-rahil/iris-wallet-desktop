@@ -242,6 +242,8 @@ class TestEnvironment:
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
             )
+            # Verify process started before waiting for AT-SPI
+            self._wait_for_process_ready(self.third_process)
             self.wait_for_application(THIRD_APPLICATION)
 
             subprocess.run(
@@ -273,6 +275,8 @@ class TestEnvironment:
                 }-{__version__}-x86_64.AppImage'],
                 env=env,
             )
+            # Verify process started before waiting for AT-SPI
+            self._wait_for_process_ready(self.fourth_process)
             self.wait_for_application(FOURTH_APPLICATION)
 
             subprocess.run(
@@ -306,6 +310,26 @@ class TestEnvironment:
                 pass
             time.sleep(0.5)
         return False
+
+    def _wait_for_process_ready(self, process, timeout: int = 10):
+        """
+        Wait for process to be running and have child processes spawned.
+        This ensures the app has actually started before looking for it in AT-SPI.
+        """
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                # Check process is still running (not crashed immediately)
+                if process.poll() is not None:
+                    raise RuntimeError(f"""Process exited with code
+                                       {process.returncode}""")
+                # Check if process has spawned children (AppImage extraction done)
+                if self.get_child_pids(process.pid):
+                    return True
+            except psutil.NoSuchProcess:
+                pass
+            time.sleep(0.2)
+        raise TimeoutError('Process failed to start within timeout')
 
     def find_application_node(self, app_name):
         """Helper to find the stable application node for a given app name."""
@@ -466,8 +490,16 @@ class TestEnvironment:
               {os.environ.get('DISPLAY', 'NOT SET')}""")
         print(f"[SETUP] Waiting for visibility of {name} (timeout {timeout}s)")
         start_time = time.time()
+        last_refresh = 0
         while time.time() - start_time < timeout:
             try:
+                # Force AT-SPI tree refresh periodically (every 2s) to discover new apps
+                # Avoids constant polling while still catching new apps
+                current_time = time.time()
+                if current_time - last_refresh > 2.0:
+                    _ = root.children
+                    last_refresh = current_time
+
                 # Set timeout for AT-SPI calls
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(5)  # 5 second timeout per iteration
@@ -490,7 +522,7 @@ class TestEnvironment:
             except Exception as e:
                 signal.alarm(0)
                 print(f"[SETUP] Exception while searching for {name}: {e}")
-            time.sleep(1.0)
+            time.sleep(0.5)  # Short poll interval
         raise TimeoutError(
             f"""Application '{name}' failed to start or show frame within {
                 timeout
@@ -716,6 +748,8 @@ class TestEnvironment:
             }-{__version__}-x86_64.AppImage"""],
             env=env,
         )
+        # Verify process started before waiting for AT-SPI
+        self._wait_for_process_ready(self.third_process)
         self.wait_for_application(THIRD_APPLICATION)
 
         subprocess.run(
@@ -769,6 +803,8 @@ class TestEnvironment:
             }-{__version__}-x86_64.AppImage'],
             env=env,
         )
+        # Verify process started before waiting for AT-SPI
+        self._wait_for_process_ready(self.fourth_process)
         self.wait_for_application(FOURTH_APPLICATION)
 
         subprocess.run(

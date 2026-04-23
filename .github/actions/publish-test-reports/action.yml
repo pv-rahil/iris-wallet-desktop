@@ -4,19 +4,11 @@ description: Generate Allure reports and publish to GitHub Pages with coverage
 runs:
   using: "composite"
   steps:
-    - name: Download Allure results (embedded)
+    - name: Download Allure results
       uses: actions/download-artifact@v4
       with:
-        pattern: allure-results-embedded-*
-        path: allure-results-embedded
-        merge-multiple: true
-      continue-on-error: true
-
-    - name: Download Allure results (remote)
-      uses: actions/download-artifact@v4
-      with:
-        pattern: allure-results-remote-*
-        path: allure-results-remote
+        pattern: allure-results-*
+        path: allure-results
         merge-multiple: true
       continue-on-error: true
 
