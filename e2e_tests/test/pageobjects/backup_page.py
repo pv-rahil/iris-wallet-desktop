@@ -272,7 +272,4 @@ class BackupPageObjects(BaseOperations):
         """
         Clear code field
         """
-        if self.do_is_displayed(self.enter_code()):
-            self.enter_code().text = ''
-            return True
-        return False
+        return self.do_clear_text(self.enter_code()) if self.do_is_displayed(self.enter_code()) else False

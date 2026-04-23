@@ -207,7 +207,10 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Clicks the check box.
         """
         try:
-            return self.do_click(self.keyring_check_box()) if self.do_is_displayed(self.keyring_check_box()) else None
+            if self.do_is_displayed(self.keyring_check_box()):
+                self.keyring_check_box().grabFocus()
+                keyCombo('space')
+            return True
         except Exception:
             return None
 
@@ -216,10 +219,7 @@ class KeyringDialogBoxPageObjects(BaseOperations):
         Clicks the continue button.
         """
         try:
-            if self.do_is_displayed(self.continue_button()):
-                self.continue_button().grabFocus()
-                keyCombo('space')
-            return True
+            return self.do_click(self.continue_button()) if self.do_is_displayed(self.continue_button()) else None
         except Exception:
             return None
 
