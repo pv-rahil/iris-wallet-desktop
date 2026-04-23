@@ -136,7 +136,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
-            filter_pattern = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0]
+            filter_pattern = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[-1]
             description = self.toaster_page_objects.get_toaster_description(
                 filter_pattern=filter_pattern,
             )

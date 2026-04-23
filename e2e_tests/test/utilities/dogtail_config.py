@@ -67,7 +67,11 @@ def warm_up_atspi(timeout=10):
 
     while time.time() - start_time < timeout and attempts < max_attempts:
         try:
+            # Force cache refresh by accessing children multiple times
             _ = root.children
+            # Also iterate through applications to force registration
+            for app in root.applications():
+                _ = app.children
             time.sleep(1)
             return True
         except Exception:
