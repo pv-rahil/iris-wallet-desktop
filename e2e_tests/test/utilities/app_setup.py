@@ -307,7 +307,7 @@ class TestEnvironment:
             time.sleep(0.5)
         return False
 
-    def _find_application_node(self, app_name):
+    def find_application_node(self, app_name):
         """Helper to find the stable application node for a given app name."""
         print(f"[DEBUG] Searching for parent application of: {app_name}")
 
@@ -474,7 +474,7 @@ class TestEnvironment:
 
                 try:
                     # Use our helper to see if an application node with a frame exists
-                    app = self._find_application_node(name)
+                    app = self.find_application_node(name)
                     if app:
                         # Also check if it has a showing frame
                         frame = app.child(roleName='frame', name=name)
