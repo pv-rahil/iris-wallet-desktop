@@ -8,8 +8,8 @@ runs:
       uses: actions/download-artifact@v4
       with:
         pattern: allure-results-*
-        path: allure-results
-        merge-multiple: true
+        path: .
+        merge-multiple: false
       continue-on-error: true
 
     - name: Download coverage report

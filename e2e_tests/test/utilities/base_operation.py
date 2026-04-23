@@ -21,6 +21,7 @@ from Xlib import X
 from Xlib.error import BadWindow
 
 from accessible_constant import TOASTER_DESCRIPTION
+from e2e_tests.test.utilities.atspi_mixin import AtspiMixin
 from e2e_tests.test.utilities.dogtail_config import get_default_timeout
 from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 
@@ -29,7 +30,7 @@ NATIVE_AUTHENTICATION_PASSWORD = os.getenv('NATIVE_AUTHENTICATION_PASSWORD')
 _CURRENT_ENV = None
 
 
-class BaseOperations:
+class BaseOperations(AtspiMixin):
     """
     A class for performing base operations on a GUI application.
 
@@ -93,66 +94,70 @@ class BaseOperations:
         if self.do_is_displayed(button):
             self.do_click(button)
 
+    def _execute_click(self, element):
+        """
+        Execute the actual click on an element.
+        Handles different click strategies based on environment and element type.
+        """
+        element.grabFocus()
+        time.sleep(0.5)
+
+        if not is_ci_environment():
+            is_copy_button = any(
+                kw in (element.name or '').lower() for kw in [
+                    'copy', 'indexer_url_copy_button', 'rgb_proxy_url_copy_button',
+                ]
+            )
+            if is_copy_button:
+                pos = element.position
+                center_x = int(pos[0] + element.size[0]//2)
+                center_y = int(pos[1] + element.size[1]//2)
+                press(center_x, center_y)
+                time.sleep(0.2)
+                release(center_x, center_y)
+                time.sleep(1.0)
+                return
+
+        if is_ci_environment() and element.roleName in ('push button', 'button'):
+            if element.name not in ['Next', 'Try another way', 'Continue']:
+                element.queryAction().doAction(0)
+                time.sleep(0.5)
+                return
+
+        element.click()
+
     def do_click(self, element, max_retries=2):
         """
         Clicks on the specified element with debouncing to prevent rapid repeated clicks.
         """
-        # Validate element exists and has required attributes
         if not element:
             print('[CLICK ERROR] Element is None')
             return
 
-        # Store element attributes for potential re-find after stale error
         element_name = getattr(element, 'name', 'unknown')
         element_role = getattr(element, 'roleName', None)
 
         for attempt in range(max_retries + 1):
-            # Perform the click
             try:
-                # In CI, verify element is stable before clicking
                 if is_ci_environment():
-                    self._wait_for_element_stable(element, timeout=2.0)
+                    if not self._wait_for_element_stable(element, timeout=2.0):
+                        raise RuntimeError('Element not stable within timeout')
 
-                element.grabFocus()
-                time.sleep(0.5)
-
-                is_copy_button = any(
-                    kw in (element.name or '').lower() for kw in [
-                        'copy', 'indexer_url_copy_button', 'rgb_proxy_url_copy_button',
-                    ]
-                )
-
-                if is_copy_button:
-                    pos = element.position
-                    center_x = int(pos[0] + element.size[0]//2)
-                    center_y = int(pos[1] + element.size[1]//2)
-
-                    press(center_x, center_y)
-                    time.sleep(0.2)
-                    release(center_x, center_y)
-
-                    # Extra wait for clipboard synchronization
-                    time.sleep(1.0)
-                elif element.roleName in ('push button', 'button') and not element.name in ['Next', 'Try another way', 'Continue'] and is_ci_environment():
-                    element.queryAction().doAction(0)
-                    time.sleep(0.5)
-                else:
-                    element.click()
-                return  # Success, exit the retry loop
+                self._ensure_valid_application()
+                self._execute_click(element)
+                return
 
             except Exception as e:
-                error_str = str(e)
-                # Check for stale element errors (AT-SPI object path no longer exists)
-                if 'No such object path' in error_str or 'atspi_error' in error_str:
+                error_str = str(e).lower()
+                if any(err in error_str for err in ['no such object path', 'atspi_error', 'not stable', 'stale', 'object not found']):
                     if attempt < max_retries:
                         print(f"""[CLICK RETRY] Stale element '
                               {element_name}', refreshing AT-SPI tree (attempt {attempt + 1}/{max_retries})""")
-                        # Refresh AT-SPI tree and wait before retry
                         self._refresh_atspi_tree()
                         time.sleep(1.0)
-                        # Try to re-find element using stored attributes
                         if element_name and element_role and self.application:
                             try:
+                                self._ensure_valid_application()
                                 element = self.application.child(
                                     roleName=element_role, name=element_name,
                                 )
@@ -518,6 +523,9 @@ class BaseOperations:
 
         Returns:
             bool: True if stable, False if timeout
+
+        Raises:
+            RuntimeError: If element appears to be stale (AT-SPI object invalid)
         """
         # Increase timeout in CI for slower environments
         if is_ci_environment():
@@ -527,6 +535,7 @@ class BaseOperations:
         last_state = None
         stable_checks = 0
         required_stable_checks = 3 if is_ci_environment() else 2
+        consecutive_errors = 0
 
         while time.time() - start_time < timeout:
             try:
@@ -540,6 +549,9 @@ class BaseOperations:
                     element.name,
                 )
 
+                # Reset error counter on success
+                consecutive_errors = 0
+
                 if current_state == last_state:
                     stable_checks += 1
                     if stable_checks >= required_stable_checks:
@@ -550,8 +562,12 @@ class BaseOperations:
                 last_state = current_state
                 time.sleep(0.2)
 
-            except Exception:
-                return False
+            except Exception as e:
+                consecutive_errors += 1
+                # If we get multiple consecutive errors, element is likely stale
+                if consecutive_errors >= 3:
+                    raise RuntimeError(f'Stale element detected: {e}') from e
+                time.sleep(0.2)
 
         return False
 
@@ -923,70 +939,3 @@ class BaseOperations:
                 time.sleep(0.3)
 
         return False
-
-    def _verify_application_ready(self, timeout=3.0):
-        """
-        Verify that the application's AT-SPI tree is accessible and stable.
-
-        Args:
-            timeout (float): Maximum time to wait for readiness
-
-        Returns:
-            bool: True if ready, False if timeout
-        """
-        start_time = time.time()
-
-        while time.time() - start_time < timeout:
-            try:
-                if self.application and hasattr(self.application, 'children'):
-                    children_count = len(self.application.children)
-                    if children_count > 0:
-                        return True
-            except Exception:
-                pass
-
-            time.sleep(0.2)
-
-        return False
-
-    def _should_break_circuit(self):
-        """
-        Check if circuit breaker should trigger.
-
-        Returns:
-            bool: True if circuit should break, False otherwise.
-        """
-        return self._consecutive_failures >= self._max_consecutive_failures
-
-    def _reset_circuit_breaker(self):
-        """Reset the circuit breaker counter after a successful element find."""
-        self._consecutive_failures = 0
-        self._circuit_broken = False
-
-    def _refresh_atspi_tree(self):
-        """
-        Force AT-SPI to refresh its tree cache.
-        Use this when experiencing stale element issues or corrupted tree state.
-
-        Returns:
-            bool: True if refresh successful, False otherwise
-        """
-        try:
-            _ = root.children
-            time.sleep(0.3)
-            return True
-        except Exception:
-            return False
-
-    def _safe_find_dialog(self, role_name, name):
-        """
-        Safely find a dialog element, returning None if not found.
-        This prevents SearchError when the dialog doesn't exist yet.
-        """
-        try:
-            return self.application.parent.findChild(
-                lambda x: x.roleName == role_name and x.name == name,
-                retry=False, requireResult=False,
-            )
-        except Exception:
-            return None

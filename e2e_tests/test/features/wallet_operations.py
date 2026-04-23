@@ -97,11 +97,16 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
         if self.do_is_displayed(self.backup_page_objects.next_button()):
             self.backup_page_objects.click_next_button()
 
-        if self.backup_page_objects.is_wrong_code_label_displayed():
-            code = self.backup_page_objects.get_security_otp()
-            self.backup_page_objects.clear_code_field()
-            self.backup_page_objects.enter_security_code(code)
-            self.backup_page_objects.click_next_button()
+        # Retry wrong code handling up to 4 times until continue button appears
+        max_retries = 4
+        for _retry in range(max_retries):
+            if self.do_is_displayed(self.backup_page_objects.continue_button()):
+                break
+            if self.backup_page_objects.is_wrong_code_label_displayed():
+                code = self.backup_page_objects.get_security_otp()
+                self.backup_page_objects.clear_code_field()
+                self.backup_page_objects.enter_security_code(code)
+                self.backup_page_objects.click_next_button()
 
         if self.do_is_displayed(self.backup_page_objects.continue_button()):
             self.backup_page_objects.click_continue_button()

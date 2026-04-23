@@ -20,33 +20,33 @@
 
       .header {
         background: #3d2314;
-        padding: 20px 40px;
+        padding: 15px 30px;
         display: flex;
         align-items: center;
         gap: 12px;
       }
 
       .header svg {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
       }
 
       .header h1 {
         color: #fff;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 500;
       }
 
       .nav {
         margin-left: auto;
         display: flex;
-        gap: 24px;
+        gap: 20px;
       }
 
       .nav a {
         color: #f5ebe0;
         text-decoration: none;
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .nav a:hover {
@@ -55,74 +55,169 @@
 
       .hero {
         text-align: center;
-        padding: 60px 20px 40px;
+        padding: 30px 20px 20px;
       }
 
       .hero h2 {
         color: #3d2314;
-        font-size: 36px;
-        margin-bottom: 16px;
+        font-size: 28px;
+        margin-bottom: 8px;
       }
 
       .hero p {
         color: #5c4033;
-        font-size: 16px;
-        max-width: 400px;
+        font-size: 14px;
+        max-width: 600px;
         margin: 0 auto;
-        line-height: 1.6;
+        line-height: 1.5;
       }
 
-      .cards {
-        display: flex;
-        justify-content: center;
-        gap: 24px;
-        padding: 20px;
-        flex-wrap: wrap;
-        max-width: 900px;
+      .section {
+        padding: 15px 20px;
+        max-width: 1600px;
         margin: 0 auto;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #d4a574;
+      }
+
+      .section-header h3 {
+        color: #3d2314;
+        font-size: 18px;
+      }
+
+      .section-header .count {
+        background: #d4a574;
+        color: #3d2314;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 12px;
       }
 
       .card {
         background: #fff;
-        border-radius: 12px;
-        padding: 32px;
-        width: 320px;
+        border-radius: 10px;
+        padding: 16px;
         text-decoration: none;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
         transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
       }
 
       .card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      }
-
-      .card h3 {
-        color: #3d2314;
-        font-size: 20px;
-        margin-bottom: 12px;
-      }
-
-      .card p {
-        color: #5c4033;
-        font-size: 14px;
-        line-height: 1.5;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
 
       .card .icon {
-        font-size: 32px;
-        margin-bottom: 16px;
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+
+      .card h4 {
+        color: #3d2314;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        line-height: 1.3;
+      }
+
+      .card .subtitle {
+        color: #8b7355;
+        font-size: 11px;
+        line-height: 1.3;
+        margin-bottom: 8px;
+      }
+
+      .card .badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .badge-online { background: #d4edda; color: #155724; }
+      .badge-offline { background: #cce5ff; color: #004085; }
+      .badge-multisig { background: #fff3cd; color: #856404; }
+      .badge-coverage { background: #e2e3e5; color: #383d41; }
+
+      .coverage-section {
+        padding: 20px;
+        max-width: 1600px;
+        margin: 0 auto;
+      }
+
+      .coverage-card {
+        background: linear-gradient(135deg, #fff 0%, #f8f4f0 100%);
+        border-radius: 12px;
+        padding: 24px;
+        text-decoration: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .coverage-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      }
+
+      .coverage-card .icon {
+        font-size: 36px;
+      }
+
+      .coverage-card h4 {
+        color: #3d2314;
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+
+      .coverage-card p {
+        color: #5c4033;
+        font-size: 13px;
       }
 
       .footer {
         text-align: center;
-        padding: 40px 20px;
+        padding: 30px 20px;
         color: #5c4033;
         font-size: 12px;
       }
 
       .footer a {
         color: #d4a574;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 10px;
+        }
+        .section-header h3 {
+          font-size: 16px;
+        }
       }
     </style>
   </head>
@@ -135,50 +230,167 @@
       <h1>Iris Wallet Vault</h1>
       <nav class="nav">
         <a href="https://iriswallet.com" target="_blank">Website</a>
-        <a
-          href="https://github.com/RGB-Tools/iris-wallet-vault"
-          target="_blank"
-          >GitHub</a
-        >
+        <a href="https://github.com/RGB-Tools/iris-wallet-vault" target="_blank">GitHub</a>
       </nav>
     </header>
 
     <section class="hero">
       <h2>E2E Test Reports</h2>
-      <p>
-        Automated end-to-end test results for Iris Wallet Vault application
-      </p>
+      <p>Automated end-to-end test results for Iris Wallet Vault, organized by wallet variant (18 variants + coverage)</p>
     </section>
 
-    <div class="cards">
-      <a class="card" href="./embedded/">
-        <div class="icon">📦</div>
-        <h3>Embedded Mode</h3>
-        <p>
-          Tests running with embedded RGB Node managed by the
-          application
-        </p>
-      </a>
-      <a class="card" href="./remote/">
-        <div class="icon">🌐</div>
-        <h3>Remote Mode</h3>
-        <p>Tests running with external RGB Node connection</p>
-      </a>
-      <a class="card" href="./coverage/">
+    <!-- Single-Signature Section -->
+    <div class="section">
+      <div class="section-header">
+        <h3>🔐 Single-Signature Wallets</h3>
+        <span class="count">9 variants</span>
+      </div>
+
+      <div class="grid">
+        <!-- Online Single-Sig -->
+        <a class="card" href="./online_watch_only/">
+          <div class="icon">👁️</div>
+          <h4>Watch Only</h4>
+          <div class="subtitle">Online</div>
+          <span class="badge badge-online">Online</span>
+        </a>
+        <a class="card" href="./online_create_on_device/">
+          <div class="icon">📱</div>
+          <h4>Create On Device</h4>
+          <div class="subtitle">Online</div>
+          <span class="badge badge-online">Online</span>
+        </a>
+        <a class="card" href="./online_create_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Create Hardware</h4>
+          <div class="subtitle">Online</div>
+          <span class="badge badge-online">Online</span>
+        </a>
+        <a class="card" href="./online_load_on_device/">
+          <div class="icon">📂</div>
+          <h4>Load On Device</h4>
+          <div class="subtitle">Online</div>
+          <span class="badge badge-online">Online</span>
+        </a>
+        <a class="card" href="./online_load_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Load Hardware</h4>
+          <div class="subtitle">Online</div>
+          <span class="badge badge-online">Online</span>
+        </a>
+        <!-- Offline Single-Sig -->
+        <a class="card" href="./offline_create_on_device/">
+          <div class="icon">📱</div>
+          <h4>Create On Device</h4>
+          <div class="subtitle">Offline</div>
+          <span class="badge badge-offline">Offline</span>
+        </a>
+        <a class="card" href="./offline_create_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Create Hardware</h4>
+          <div class="subtitle">Offline</div>
+          <span class="badge badge-offline">Offline</span>
+        </a>
+        <a class="card" href="./offline_load_on_device/">
+          <div class="icon">📂</div>
+          <h4>Load On Device</h4>
+          <div class="subtitle">Offline</div>
+          <span class="badge badge-offline">Offline</span>
+        </a>
+        <a class="card" href="./offline_load_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Load Hardware</h4>
+          <div class="subtitle">Offline</div>
+          <span class="badge badge-offline">Offline</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Multisig Section -->
+    <div class="section">
+      <div class="section-header">
+        <h3>🔐🔐 Multisig Wallets</h3>
+        <span class="count">9 variants</span>
+      </div>
+
+      <div class="grid">
+        <!-- Online Multisig -->
+        <a class="card" href="./online_multisig_watch_only/">
+          <div class="icon">👁️</div>
+          <h4>Watch Only</h4>
+          <div class="subtitle">Online Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <a class="card" href="./online_multisig_on_device/">
+          <div class="icon">📱</div>
+          <h4>Create On Device</h4>
+          <div class="subtitle">Online Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <a class="card" href="./online_multisig_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Create Hardware</h4>
+          <div class="subtitle">Online Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <a class="card" href="./online_multisig_load_on_device/">
+          <div class="icon">📂</div>
+          <h4>Load On Device</h4>
+          <div class="subtitle">Online Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <a class="card" href="./online_multisig_load_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Load Hardware</h4>
+          <div class="subtitle">Online Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <!-- Offline Multisig -->
+        <a class="card" href="./offline_multisig_on_device/">
+          <div class="icon">📱</div>
+          <h4>Create On Device</h4>
+          <div class="subtitle">Offline Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <a class="card" href="./offline_multisig_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Create Hardware</h4>
+          <div class="subtitle">Offline Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <a class="card" href="./offline_multisig_load_on_device/">
+          <div class="icon">�</div>
+          <h4>Load On Device</h4>
+          <div class="subtitle">Offline Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+        <a class="card" href="./offline_multisig_load_hardware/">
+          <div class="icon">🔐</div>
+          <h4>Load Hardware</h4>
+          <div class="subtitle">Offline Multisig</div>
+          <span class="badge badge-multisig">Multisig</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Coverage Section -->
+    <div class="coverage-section">
+      <div class="section-header">
+        <h3>📊 Coverage Report</h3>
+      </div>
+      <a class="coverage-card" href="./coverage/">
         <div class="icon">📊</div>
-        <h3>Coverage Report</h3>
-        <p>Code coverage report showing which parts of the code are tested</p>
+        <div>
+          <h4>Code Coverage Report</h4>
+          <p>Detailed analysis of which parts of the codebase are tested</p>
+        </div>
       </a>
     </div>
 
     <footer class="footer">
       <p>
         Iris Wallet Vault •
-        <a
-          href="https://github.com/RGB-Tools/iris-wallet-vault"
-          target="_blank"
-          >GitHub</a
-        >
+        <a href="https://github.com/RGB-Tools/iris-wallet-vault" target="_blank">GitHub</a>
         • <a href="https://rgb.info" target="_blank">rgb.info</a>
       </p>
     </footer>

@@ -134,10 +134,15 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
-            filter_pattern = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[-1]
-            description = self.toaster_page_objects.get_toaster_description(
-                filter_pattern=filter_pattern,
-            )
+            toaster_element = None
+            if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
+                toaster_element, description = self.toaster_page_objects.click_toaster_frame()
+
+            # Filter description if we got one
+            if toaster_element and description:
+                filter_text = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0]
+                if filter_text not in description:
+                    description = None
         except Exception as e:
             raise e
         finally:

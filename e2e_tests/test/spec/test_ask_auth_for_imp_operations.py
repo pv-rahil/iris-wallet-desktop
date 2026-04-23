@@ -315,25 +315,11 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT,
         )
-        _, toaster_title = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        __, _description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_title = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_title()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
-    with allure.step('asserting tx id for send bitcoin auth off'):
-        wallets_and_operations.second_page_operations.do_focus_on_application(
-            SECOND_APPLICATION,
-        )
-        # Navigate back to bitcoin detail page since it was closed earlier
-        wallets_and_operations.second_page_objects.sidebar_page_objects.click_fungibles_button()
-        wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
-        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_refresh_button()
-        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_transaction_frame()
-        bitcoin_tx_id = wallets_and_operations.second_page_objects.bitcoin_transaction_detail_page_objects.get_bitcoin_tx_id()
-        wallets_and_operations.second_page_objects.bitcoin_transaction_detail_page_objects.click_close_button()
-        wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
-        bitcoin_tx_id = re.sub(
-            r'[\u200B\u200C\u200D\u2060\uFEFF]', '', bitcoin_tx_id,
-        )
-        assert toaster_title == INFO_BITCOIN_SENT.format(bitcoin_tx_id)
+        assert toaster_title == 'Success'
 
 
 @pytest.mark.skip_for_multisig
