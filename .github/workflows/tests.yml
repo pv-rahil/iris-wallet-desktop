@@ -138,6 +138,13 @@ jobs:
     name: Build AppImages
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
+          BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
+          GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -320,13 +327,6 @@ jobs:
 
       - name: Run E2E Dogtail Test
         id: e2e-test
-        env:
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-          BACKUP_EMAIL_ID: ${{ secrets.BACKUP_EMAIL_ID }}
-          BACKUP_EMAIL_PASSWORD: ${{ secrets.BACKUP_EMAIL_PASSWORD }}
-          GOOGLE_AUTHENTICATOR: ${{ secrets.GOOGLE_AUTHENTICATOR }}
         uses: ./.github/actions/setup-e2e-environment
         with:
           test-file: ${{ matrix.test_file }}
