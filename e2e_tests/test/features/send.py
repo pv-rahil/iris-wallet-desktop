@@ -138,6 +138,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
+            self.toaster_page_objects.click_toaster_frame()
             description = self.toaster_page_objects.get_latest_toaster_description(
                 filter_pattern=INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0],
             )

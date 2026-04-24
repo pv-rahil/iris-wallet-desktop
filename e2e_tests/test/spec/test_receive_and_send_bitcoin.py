@@ -17,6 +17,7 @@ from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import load_qm_translation
 from e2e_tests.test.utilities.app_setup import test_environment
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.multisig_send_flow_helpers import focus_first_wallet_and_click_bitcoin_frame
@@ -75,7 +76,7 @@ def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup,
 @pytest.mark.skip_for_multisig
 @allure.feature('Iris wallet receive and send operation automation for bitcoin')
 @allure.story('Wallet receive and send operation automation for bitcoin')
-def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_receive_and_send_bitcoin(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test receiving and sending bitcoin."""
 
     with allure.step('Fund first wallet'):
@@ -129,6 +130,8 @@ def test_receive_and_send_bitcoin(wallets_and_operations: WalletTestSetup, walle
 
     with allure.step('Close bitcoin detail page'):
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
+
+    test_environment.reset_first_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_offline_wallet

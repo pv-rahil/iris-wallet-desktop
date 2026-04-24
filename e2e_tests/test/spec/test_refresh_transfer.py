@@ -40,7 +40,7 @@ SEND_AMOUNT = '50'
 @pytest.mark.skip_for_multisig
 @allure.feature('Test for refresh transfer')
 @allure.story('Test for refresh transfer from home refresh and then check the status to success after mine the transaction')
-def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_refresh_transfer(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for refresh transfer"""
 
     with allure.step('Create and fund first wallet for refresh transfer'):
@@ -57,7 +57,17 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_varian
         wallets_and_operations.first_page_features.issue_nia_features.issue_nia_with_sufficient_sats_and_utxo(
             application=FIRST_APPLICATION, asset_ticker=ASSET_TICKER, asset_name=ASSET_NAME, asset_amount=ASSET_AMOUNT, variant_name=wallet_variant_name,
         )
+    test_environment.reset_first_instance(reset_data=False)
 
+
+@pytest.mark.skip_for_offline_wallet
+@pytest.mark.skip_for_multisig
+@allure.feature('Test for send nia refresh transfer')
+@allure.story('Test for send nia refresh transfer from home refresh and then check the status to success after mine the transaction')
+def test_send_nia_asset_for_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    Test for send nia refresh transfer from home refresh and then check the status to success after mine the transaction
+    """
     with allure.step('Generate invoice'):
         invoice = wallets_and_operations.second_page_features.receive_features.receive_asset_from_sidebar(
             SECOND_APPLICATION,
@@ -71,7 +81,6 @@ def test_refresh_transfer(wallets_and_operations: WalletTestSetup, wallet_varian
         wallets_and_operations.first_page_objects.fungible_page_objects.click_nia_frame(
             ASSET_NAME,
         )
-
     with allure.step('Click on send button'):
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
     with allure.step('Send NIA asset to correct invoice'):

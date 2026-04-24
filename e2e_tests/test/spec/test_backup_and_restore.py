@@ -131,14 +131,14 @@ def test_mnemonic_and_backup_configure(wallets_and_operations: WalletTestSetup, 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Backup and Restore with asset transfers')
-@allure.story('RGB20 from A->B, RGB25 from B->A, backup A, reset and restore A, then assert state')
-def test_nia_and_cfa_transfer(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+@allure.story('RGB25 from B->A, backup A, reset and restore A, then assert state')
+def test_cfa_transfer(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     E2E: Create two apps, fund both, create NIA (RGB20) in Wallet A and send to B.
     Create CFA (RGB25) in Wallet B and send to A. Backup Wallet A, reset first app,
     restore it and verify send/receive state is intact in Wallet A across variants.
     """
-    global NIA_RECEIVE_AMOUNT_BEFORE, CFA_RECEIVE_AMOUNT_BEFORE
+    global CFA_RECEIVE_AMOUNT_BEFORE
 
     with allure.step('Issue NIA (RGB20) in Wallet A'):
         wallets_and_operations.first_page_operations.do_focus_on_application(
@@ -184,6 +184,20 @@ def test_nia_and_cfa_transfer(test_environment, wallets_and_operations: WalletTe
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
 
+    test_environment.reset_second_instance(reset_data=False)
+
+
+@pytest.mark.skip_for_multisig
+@pytest.mark.skip_for_offline_wallet
+@allure.feature('Backup and Restore with asset transfers')
+@allure.story('RGB20 from A->B, backup A, reset and restore A, then assert state')
+def test_nia_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+    """
+    E2E: Create two apps, fund both, create NIA (RGB20) in Wallet A and send to B.
+    Create CFA (RGB25) in Wallet B and send to A. Backup Wallet A, reset first app,
+    restore it and verify send/receive state is intact in Wallet A across variants.
+    """
+    global NIA_RECEIVE_AMOUNT_BEFORE
     with allure.step('Generate invoice in Wallet B for NIA receive'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -576,6 +590,7 @@ def test_cfa_transfer_for_offline_wallet(test_environment: TestEnvironment, wall
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_online_wallet
+@pytest.mark.skip_for_hardware_wallet
 @pytest.mark.parametrize('test_environment', [3], indirect=True)
 @allure.feature('Restore page (offline wallet)')
 @allure.story('Restore page functionality for offline wallet')
