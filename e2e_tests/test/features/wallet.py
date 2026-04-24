@@ -762,9 +762,12 @@ class Wallet(WalletOperationsMixin):
         if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
             self.enter_wallet_password_page_objects.click_login_button()
 
-        # Refresh AT-SPI tree after wallet load to get fresh element references
+        # Aggressive AT-SPI refresh after wallet load to ensure fresh element references
+        # The UI may have changed significantly, so we need multiple refreshes
         refresh_atspi_tree()
-        time.sleep(1)
+        time.sleep(0.5)
+        refresh_atspi_tree()
+        time.sleep(1.0)  # Longer delay to let UI settle after wallet load
 
         if variant not in REQUIRE_USB_VARIANTS and fund:
             self.fund_wallet(application)

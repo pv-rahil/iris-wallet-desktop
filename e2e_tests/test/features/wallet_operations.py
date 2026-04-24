@@ -448,7 +448,9 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
             is_btc: Whether this is a BTC send transaction.
         """
         self.do_focus_on_application(application)
-        time.sleep(3)
+        # Longer delay for RGB sends to ensure Ledger is ready for UTXO signing
+        initial_delay = 5 if (is_online and (is_inflate or is_rgb)) else 3
+        time.sleep(initial_delay)
 
         # Determine UTXO count for online single-sig hardware wallet
         utxo_count = 0
@@ -456,12 +458,14 @@ class WalletOperationsMixin(MainPageObjects, BaseOperations):
             utxo_count = 2
 
         # Sign UTXOs first (for online hardware wallet)
-        for _ in range(utxo_count):
+        for i in range(utxo_count):
             self.do_focus_on_application(application)
             time.sleep(2)
             self.hw_emulator_page_objects.click_right_arrow_key(4)
             self.hw_emulator_page_objects.press_left_and_right()
-            time.sleep(1)
+            # Longer delay after each UTXO signing to let Ledger process
+            # 2s between UTXOs, 1s before final
+            time.sleep(2 if i < utxo_count - 1 else 1)
 
         # Final transaction signing
         if is_inflate or is_rgb:

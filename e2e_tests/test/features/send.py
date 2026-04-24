@@ -66,6 +66,11 @@ class SendOperation(MainPageObjects, BaseOperations):
                 # RGB app handles both BTC and RGB transactions
                 is_rgb = purpose == 'send_asset'
                 is_btc = not is_rgb  # BTC send only when NOT sending RGB asset
+                # For RGB sends, we need extra delay to ensure Ledger is ready
+                # The app sends signing requests immediately after send button click
+                if is_rgb:
+                    # Give Ledger time to receive the signing request
+                    time.sleep(2)
                 # Assume online hardware wallet for send operations
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME, is_rgb=is_rgb, is_online=True, is_btc=is_btc,
@@ -134,15 +139,10 @@ class SendOperation(MainPageObjects, BaseOperations):
                 )
 
             self.do_focus_on_application(application)
-            toaster_element = None
-            if self.do_is_displayed(self.toaster_page_objects.toaster_frame()):
-                toaster_element, description = self.toaster_page_objects.click_toaster_frame()
+            description = self.toaster_page_objects.get_latest_toaster_description(
+                filter_pattern=INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0],
+            )
 
-            # Filter description if we got one
-            if toaster_element and description:
-                filter_text = INFO_BITCOIN_SENT.split('{}', maxsplit=1)[0]
-                if filter_text not in description:
-                    description = None
         except Exception as e:
             raise e
         finally:

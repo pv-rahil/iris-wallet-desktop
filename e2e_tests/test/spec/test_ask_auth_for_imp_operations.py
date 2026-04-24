@@ -315,6 +315,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT,
         )
+        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_title = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_title()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 

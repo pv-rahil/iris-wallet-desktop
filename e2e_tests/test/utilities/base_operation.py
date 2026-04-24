@@ -463,7 +463,7 @@ class BaseOperations(AtspiMixin):
                 print(f"""[RECOVERY] Failed to find showing node for
                       {name}: {e}""")
 
-    def _find_elements_by_criteria(self, role_name, name=None, description=None, application_node=None):
+    def _find_elements_by_criteria(self, role_name, name=None, description=None, application_node=None, refresh_on_empty=True):
         """
         Find elements matching the given criteria.
 
@@ -472,26 +472,52 @@ class BaseOperations(AtspiMixin):
             name (str, optional): The name of the element.
             description (str, optional): The description of the element.
             application_node (Node, optional): The node to search within. Defaults to self.application.
+            refresh_on_empty (bool): Whether to refresh AT-SPI tree if no elements found. Default True.
 
         Returns:
             list: List of matching elements.
         """
         self._ensure_application_node()
         search_root = application_node if application_node else self.application
-        if name and search_root:
-            return list(
-                search_root.findChildren(
-                    lambda n: n.roleName == role_name and n.name == name,
-                ),
+
+        def _search():
+            if name and search_root:
+                return list(
+                    search_root.findChildren(
+                        lambda n: n.roleName == role_name and n.name == name,
+                    ),
+                )
+            if description and search_root:
+                return list(
+                    search_root.findChildren(
+                        lambda n: n.roleName == role_name
+                        and n.description == description,
+                    ),
+                )
+            return []
+
+        elements = _search()
+
+        # If no elements found and refresh is enabled, try refreshing AT-SPI tree once
+        if not elements and refresh_on_empty:
+            identifier = name if name else description
+            print(
+                f"[AT-SPI] No elements found for {role_name}/{
+                    identifier
+                }, refreshing tree...",
             )
-        if description and search_root:
-            return list(
-                search_root.findChildren(
-                    lambda n: n.roleName == role_name
-                    and n.description == description,
-                ),
-            )
-        return []
+            self._refresh_atspi_tree()
+            time.sleep(0.5)  # Give tree time to update after refresh
+            # Re-ensure application node after refresh
+            self._ensure_application_node()
+            search_root = application_node if application_node else self.application
+            elements = _search()
+            if elements:
+                print(f"[AT-SPI] Found {
+                    len(elements)
+                } element(s) after refresh")
+
+        return elements
 
     def _is_element_ready(self, element):
         """
