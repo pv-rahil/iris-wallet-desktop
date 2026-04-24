@@ -100,7 +100,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on(wallets_and_operations: Walle
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT, is_native_auth_enabled=True,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
     with allure.step('asserting tx id'):
@@ -156,7 +156,7 @@ def test_ask_auth_for_imp_question_send_nia_on(wallets_and_operations: WalletTes
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, nia_invoice, SEND_AMOUNT, is_native_auth_enabled=True,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
     with allure.step('asserting tx id'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
             SECOND_APPLICATION,
@@ -211,7 +211,7 @@ def test_ask_auth_for_imp_question_send_cfa_on(wallets_and_operations: WalletTes
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, cfa_invoice, SEND_AMOUNT, is_native_auth_enabled=True,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
     with allure.step('asserting tx id'):
         refresh_collectibles_on_app2(wallets_and_operations)
         wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
@@ -261,7 +261,7 @@ def test_ask_auth_for_imp_question_send_ifa_on(wallets_and_operations: WalletTes
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, ifa_invoice, SEND_AMOUNT, is_native_auth_enabled=True,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
     with allure.step('asserting tx id'):
         focus_second_wallet_and_navigate_to_ifa_tx(
             wallets_and_operations, IFA_ASSET_NAME_1,
@@ -315,7 +315,6 @@ def test_ask_auth_for_imp_question_send_bitcoin_off(wallets_and_operations: Wall
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, address, ASSET_AMOUNT,
         )
-        __, _description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_title = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_title()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_bitcoin_close_button()
 
@@ -358,7 +357,7 @@ def test_ask_auth_for_imp_question_send_nia_off(wallets_and_operations: WalletTe
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, nia_invoice, SEND_AMOUNT,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
         wallets_and_operations.first_page_objects.fungible_page_objects.click_refresh_button()
     with allure.step('asserting tx id'):
         wallets_and_operations.second_page_operations.do_focus_on_application(
@@ -415,7 +414,7 @@ def test_ask_auth_for_imp_question_send_cfa_off(wallets_and_operations: WalletTe
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, cfa_invoice, SEND_AMOUNT,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
     with allure.step('asserting tx id'):
         refresh_collectibles_on_app2(wallets_and_operations)
         wallets_and_operations.second_page_objects.collectible_page_objects.click_cfa_frame(
@@ -547,7 +546,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_on_for_multisig(wallets_and_oper
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, toaster_description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.second_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('asserting tx id for multisig'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -655,7 +654,7 @@ def test_ask_auth_for_imp_question_send_nia_on_for_multisig(test_environment: Te
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, toaster_description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.second_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('Verify received amount on App 3'):
         tx_id = verify_tx_on_third_wallet(
@@ -754,7 +753,7 @@ def test_ask_auth_for_imp_question_send_cfa_on_for_multisig(wallets_and_operatio
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('Refresh from third app and first app'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -854,7 +853,7 @@ def test_ask_auth_for_imp_question_send_ifa_on_for_multisig(test_environment: Te
         focus_second_wallet_refresh_inflatable_and_sign(
             wallets_and_operations, wallet_variant_name,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('Verify received amount on App 3'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -932,7 +931,7 @@ def test_ask_auth_for_imp_question_send_bitcoin_off_for_multisig(wallets_and_ope
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, toaster_title = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_title = wallets_and_operations.second_page_objects.toaster_page_objects.get_latest_toaster_description()
 
         assert toaster_title == 'Success'
 
@@ -1005,7 +1004,7 @@ def test_ask_auth_for_imp_question_send_nia_off_for_multisig(wallets_and_operati
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('Verify received amount on App 3'):
         tx_id = verify_tx_on_third_wallet(
@@ -1096,7 +1095,7 @@ def test_ask_auth_for_imp_question_send_cfa_off_for_multisig(test_environment: T
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('Verify received amount on App 3'):
         wallets_and_operations.third_page_operations.do_focus_on_application(
@@ -1207,7 +1206,7 @@ def test_ask_auth_for_imp_question_send_ifa_off_for_multisig(test_environment: T
         focus_second_wallet_refresh_inflatable_and_sign(
             wallets_and_operations, wallet_variant_name,
         )
-        _, toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('Verify received amount on App 3'):
         wallets_and_operations.third_page_operations.do_focus_on_application(

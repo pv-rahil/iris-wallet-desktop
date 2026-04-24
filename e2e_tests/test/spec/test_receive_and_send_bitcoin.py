@@ -510,7 +510,7 @@ def test_send_bitcoin_for_multisig(wallets_and_operations: WalletTestSetup, wall
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        description = wallets_and_operations.second_page_objects.toaster_page_objects.get_latest_toaster_description()
 
         focus_first_wallet_and_refresh_fungible(wallets_and_operations)
 
@@ -572,7 +572,7 @@ def test_send_bitcoin_with_custom_fee_rate_for_multisig(wallets_and_operations: 
         wallets_and_operations.second_page_features.wallet_features.sign_psbt(
             SECOND_APPLICATION, wallet_variant_name,
         )
-        _, description = wallets_and_operations.second_page_objects.toaster_page_objects.click_toaster_frame()
+        description = wallets_and_operations.second_page_objects.toaster_page_objects.get_latest_toaster_description()
 
     with allure.step('Refresh and verify transaction'):
         wallets_and_operations.third_page_operations.do_focus_on_application(

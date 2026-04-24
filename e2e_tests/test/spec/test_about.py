@@ -66,7 +66,7 @@ def test_download_debug_log(wallets_and_operations: WalletTestSetup):
         complete_file_path = homepath+'/'+file_name
         wallets_and_operations.first_page_objects.about_page_objects.press_enter()
 
-        _, toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
         assert toaster_desc == INFO_LOG_SAVE_DESCRIPTION.format(
             complete_file_path,
         )
@@ -126,7 +126,7 @@ def test_download_debug_log_for_multisig_wallet(wallets_and_operations: WalletTe
         complete_file_path = homepath+'/'+file_name
         wallets_and_operations.first_page_objects.about_page_objects.press_enter()
 
-        _, toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
         assert toaster_desc == INFO_LOG_SAVE_DESCRIPTION.format(
             complete_file_path,
         )
@@ -196,7 +196,7 @@ def test_download_debug_log_for_offline_multisig_wallet(wallets_and_operations: 
         complete_file_path = homepath+'/'+file_name
         wallets_and_operations.first_page_objects.about_page_objects.press_enter()
 
-        _, toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
+        toaster_desc = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
         assert toaster_desc == INFO_LOG_SAVE_DESCRIPTION.format(
             complete_file_path,
         )

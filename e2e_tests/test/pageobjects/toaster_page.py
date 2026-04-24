@@ -48,6 +48,85 @@ class ToasterPageObjects(BaseOperations):
             role_name='push button', name=TOASTER_CLOSE_BUTTON,
         )
 
+    def get_latest_toaster_description(self, filter_pattern: str | None = None, timeout: int = 15, click_toaster: bool = True) -> str | None:
+        """
+        Unified method to get the latest toaster description with optional filter pattern.
+        Always gets the latest toaster at index -1 from AT-SPI tree.
+
+        Args:
+            filter_pattern: Optional substring to filter the toaster description.
+            timeout: Maximum seconds to wait for toaster. Default 15s.
+            click_toaster: Whether to click the toaster after getting description. Default True.
+
+        Returns:
+            The toaster description text if found, None otherwise.
+        """
+        if is_ci_environment():
+            timeout = 20
+
+        start_time = time.time()
+        attempt = 0
+
+        print(f"""[TOASTER] Waiting for toaster (timeout=
+              {timeout}s, filter={filter_pattern})...""")
+
+        while time.time() - start_time < timeout:
+            attempt += 1
+            try:
+                # Get all toaster descriptions from AT-SPI tree
+                matches = self.application.findChildren(
+                    lambda node: node.roleName == 'label' and node.description == TOASTER_DESCRIPTION,
+                )
+
+                if matches:
+                    # Always get the LAST one (index -1) - most recent toaster
+                    latest_match = matches[-1]
+                    description = latest_match.name if hasattr(
+                        latest_match, 'name',
+                    ) else None
+
+                    if description:
+                        # Apply filter if provided
+                        if filter_pattern and filter_pattern not in description:
+                            # Continue waiting for matching toaster
+                            time.sleep(0.2)
+                            continue
+
+                        elapsed = time.time() - start_time
+                        print(f"""[TOASTER] Found toaster after
+                              {attempt} attempts ({elapsed:.2f}s): {description}""")
+
+                        # Click toaster if requested
+                        if click_toaster:
+                            self._click_latest_toaster()
+
+                        return description
+
+            except Exception as e:
+                if attempt % 10 == 0:
+                    print(f"[TOASTER] Attempt {attempt}: {e}")
+
+            time.sleep(0.2)
+
+        print(f"[TOASTER] Timeout after {attempt} attempts ({timeout}s)")
+        return None
+
+    def _click_latest_toaster(self):
+        """
+        Click the latest toaster frame at index -1.
+        """
+        try:
+            toasters = self.application.findChildren(
+                lambda node: node.roleName == 'panel' and node.name == TOASTER_FRAME,
+            )
+            if toasters:
+                latest_toaster = toasters[-1]
+                if latest_toaster.showing:
+                    self.do_click(latest_toaster)
+                    print('[TOASTER] Clicked latest toaster')
+        except Exception as e:
+            print(f"[TOASTER] Failed to click toaster: {e}")
+
     def wait_for_toaster(self, timeout=15, poll_interval=0.2):
         """
         Wait for toaster to appear in AT-SPI tree with aggressive polling.
