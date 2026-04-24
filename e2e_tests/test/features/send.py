@@ -66,8 +66,6 @@ class SendOperation(MainPageObjects, BaseOperations):
                 # RGB app handles both BTC and RGB transactions
                 is_rgb = purpose == 'send_asset'
                 is_btc = not is_rgb  # BTC send only when NOT sending RGB asset
-                # For RGB sends, we need extra delay to ensure Ledger is ready
-                # The app sends signing requests immediately after send button click
                 if is_rgb:
                     # Give Ledger time to receive the signing request
                     time.sleep(2)
@@ -134,6 +132,7 @@ class SendOperation(MainPageObjects, BaseOperations):
                 self.send_asset_page_objects.click_send_button()
 
             if is_hardware_wallet:
+                time.sleep(2)
                 self.wallet_features.confirm_transaction_on_hardware_wallet(
                     LEDGER_EMULATOR_APP_NAME, is_btc=True,
                 )
