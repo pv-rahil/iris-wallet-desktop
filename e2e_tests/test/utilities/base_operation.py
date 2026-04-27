@@ -1,4 +1,4 @@
-# pylint: disable=too-many-arguments,too-many-instance-attributes
+# pylint: disable=too-many-arguments,too-many-instance-attributes, too-many-branches
 """
 This module provides a class for performing base operations on a graphical user interface (GUI) application.
 """
@@ -416,11 +416,15 @@ class BaseOperations(AtspiMixin):
         Uses stored _application_name as fallback when node attributes are inaccessible.
         """
         if self.application and hasattr(self.application, 'showing') and self.application.showing:
-            # Force refresh of children by accessing them
-            try:
-                _ = list(self.application.children)
-            except Exception:
-                pass
+            # Force refresh of children by accessing them multiple times in CI
+            refresh_count = 3 if is_ci_environment() else 1
+            for _ in range(refresh_count):
+                try:
+                    _ = list(self.application.children)
+                    if is_ci_environment():
+                        time.sleep(0.1)  # Small delay between refreshes in CI
+                except Exception:
+                    pass
             # Update stored name if not set
             if not self._application_name and hasattr(self.application, 'name'):
                 self._application_name = self.application.name
@@ -446,22 +450,34 @@ class BaseOperations(AtspiMixin):
             name = self._application_name
 
         if name:
-            try:
-                # Search from root for a showing node with same identity
-                new_node = root.child(
-                    roleName=role, name=name, showingOnly=True,
-                )
-                if new_node:
-                    self.application = new_node
-                    self._application_name = name  # Update stored name
-                    # Force refresh of children
-                    _ = list(self.application.children)
-                    print(f"""
-                          [RECOVERY] Switched to showing
-                          {role} node for '{name}'""")
-            except Exception as e:
-                print(f"""[RECOVERY] Failed to find showing node for
-                      {name}: {e}""")
+            # More aggressive search in CI with multiple attempts
+            max_attempts = 3 if is_ci_environment() else 1
+            for attempt in range(max_attempts):
+                try:
+                    # Refresh root tree before searching
+                    _ = root.children
+                    if is_ci_environment():
+                        time.sleep(0.3)
+                    # Search from root for a showing node with same identity
+                    new_node = root.child(
+                        roleName=role, name=name, showingOnly=True,
+                    )
+                    if new_node:
+                        self.application = new_node
+                        self._application_name = name  # Update stored name
+                        # Force refresh of children
+                        _ = list(self.application.children)
+                        print(f"""[RECOVERY] Switched to showing
+                              {role} node for '{name}'""")
+                        return
+                except Exception as e:
+                    if attempt < max_attempts - 1:
+                        print(f"""[RECOVERY] Attempt
+                              {attempt + 1} failed, retrying...""")
+                        time.sleep(0.5)
+                    else:
+                        print(f"""[RECOVERY] Failed to find showing node for
+                              {name}: {e}""")
 
     def _find_elements_by_criteria(self, role_name, name=None, description=None, application_node=None, refresh_on_empty=True):
         """
@@ -498,24 +514,30 @@ class BaseOperations(AtspiMixin):
 
         elements = _search()
 
-        # If no elements found and refresh is enabled, try refreshing AT-SPI tree once
+        # If no elements found and refresh is enabled, try refreshing AT-SPI tree
         if not elements and refresh_on_empty:
             identifier = name if name else description
-            print(
-                f"[AT-SPI] No elements found for {role_name}/{
-                    identifier
-                }, refreshing tree...",
-            )
-            self._refresh_atspi_tree()
-            time.sleep(0.5)  # Give tree time to update after refresh
-            # Re-ensure application node after refresh
-            self._ensure_application_node()
-            search_root = application_node if application_node else self.application
-            elements = _search()
-            if elements:
-                print(f"[AT-SPI] Found {
-                    len(elements)
-                } element(s) after refresh")
+            # More aggressive refresh in CI - try multiple times with increasing delays
+            max_refresh_attempts = 3 if is_ci_environment() else 1
+            refresh_delay = 1.0 if is_ci_environment() else 0.5
+
+            for attempt in range(max_refresh_attempts):
+                print(
+                    f"""[AT-SPI] No elements found for
+                    {role_name}/{identifier}, """
+                    f"""refreshing tree (attempt
+                    {attempt + 1}/{max_refresh_attempts})...""",
+                )
+                self._refresh_atspi_tree()
+                time.sleep(refresh_delay * (attempt + 1))  # Increasing delay
+                # Re-ensure application node after refresh
+                self._ensure_application_node()
+                search_root = application_node if application_node else self.application
+                elements = _search()
+                if elements:
+                    print(f"""[AT-SPI] Found
+                          {len(elements)} element(s) after refresh""")
+                    break
 
         return elements
 

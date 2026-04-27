@@ -467,6 +467,7 @@ def test_ask_auth_for_imp_question_send_ifa_off(wallets_and_operations: WalletTe
             FIRST_APPLICATION, ifa_invoice, SEND_AMOUNT,
         )
         filter_pattern = INFO_ASSET_SENT.split('{}', maxsplit=1)[-1]
+        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
             filter_pattern=filter_pattern,
         )

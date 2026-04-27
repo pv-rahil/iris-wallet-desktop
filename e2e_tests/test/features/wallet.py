@@ -30,6 +30,7 @@ from accessible_constant import THIRD_APPLICATION
 from accessible_constant import THIRD_APPLICATION_PATH
 from e2e_tests.test.features.wallet_operations import WalletOperationsMixin
 from e2e_tests.test.utilities.atspi_helpers import refresh_atspi_tree
+from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 from e2e_tests.test.utilities.executable_shell_script import mine
 from e2e_tests.test.utilities.executable_shell_script import send_to_address
 from e2e_tests.test.utilities.fake_usb import clear_fake_usb_mount_all
@@ -761,13 +762,12 @@ class Wallet(WalletOperationsMixin):
             self.enter_wallet_password_page_objects.enter_password(password)
         if self.do_is_displayed(self.enter_wallet_password_page_objects.login_button()):
             self.enter_wallet_password_page_objects.click_login_button()
-
-        # Aggressive AT-SPI refresh after wallet load to ensure fresh element references
-        # The UI may have changed significantly, so we need multiple refreshes
-        refresh_atspi_tree()
-        time.sleep(0.5)
-        refresh_atspi_tree()
-        time.sleep(1.0)  # Longer delay to let UI settle after wallet load
+        if is_ci_environment():
+            for _ in range(3):
+                refresh_atspi_tree()
+                time.sleep(0.5)
+            # Longer delay to let UI settle after wallet load in CI
+            time.sleep(1.5)
 
         if variant not in REQUIRE_USB_VARIANTS and fund:
             self.fund_wallet(application)

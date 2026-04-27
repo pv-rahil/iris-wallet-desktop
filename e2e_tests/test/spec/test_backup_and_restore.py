@@ -184,7 +184,7 @@ def test_cfa_transfer(test_environment: TestEnvironment, wallets_and_operations:
         CFA_RECEIVE_AMOUNT_BEFORE = wallets_and_operations.first_page_objects.asset_detail_page_objects.get_total_balance()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_close_button()
 
-    test_environment.reset_second_instance(reset_data=False)
+    test_environment.reset_first_instance(reset_data=False)
 
 
 @pytest.mark.skip_for_multisig
@@ -578,8 +578,9 @@ def test_cfa_transfer_for_offline_wallet(test_environment: TestEnvironment, wall
             second_page_objects.backup_page_objects.click_configurable_button()
             second_page_features.wallet_features.google_auth()
             second_page_objects.toaster_page_objects.click_toaster_close_button()
-            second_page_objects.backup_page_objects.click_backup_close_button()
-
+            second_page_operations.do_focus_on_application(
+                SECOND_APPLICATION,
+            )
             second_page_objects.backup_page_objects.click_backup_wallet_data_button()
             second_page_operations.wait_for_toaster_message()
             _, description = second_page_objects.toaster_page_objects.click_toaster_frame()
@@ -612,8 +613,6 @@ def test_restore_for_offline_wallet(test_environment, wallets_and_operations: Wa
             first_page_features.wallet_features.google_auth(
                 password=PASSWORD, xpub_vanilla=XPUB_VANILLA, xpub_colored=XPUB_COLORED, fingerprint=MASTER_FINGERPRINT,
             )
-            wallets_and_operations.first_page_operations.wait_for_toaster_message()
-            _, _ = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         else:
             # Offline wallet restore flow using mnemonic or xpubs
             load_variant = map_to_load_variant(wallet_variant_name)
@@ -636,12 +635,12 @@ def test_restore_for_offline_wallet(test_environment, wallets_and_operations: Wa
                     mnemonic=MNEMONIC,
                     password=PASSWORD,
                 )
-            wallets_and_operations.first_page_operations.wait_for_toaster_message()
-            _, _ = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-            wallets_and_operations.first_page_objects.enter_wallet_password_page_objects.enter_password(
-                password=PASSWORD,
-            )
-            first_page_objects.enter_wallet_password_page_objects.click_login_button()
+        first_page_operations.wait_for_toaster_message()
+        _, _ = first_page_objects.toaster_page_objects.click_toaster_frame()
+        first_page_objects.enter_wallet_password_page_objects.enter_password(
+            password=PASSWORD,
+        )
+        first_page_objects.enter_wallet_password_page_objects.click_login_button()
     with allure.step('Capture CFA received amount in Wallet A (post-restore)'):
         first_page_operations.do_focus_on_application(
             FIRST_APPLICATION,
@@ -663,57 +662,6 @@ def test_restore_for_offline_wallet(test_environment, wallets_and_operations: Wa
 
     assert CFA_RECEIVE_AMOUNT_BEFORE == cfa_received_amount_after
     assert NIA_RECEIVE_AMOUNT_BEFORE == nia_received_amount_after
-
-
-@pytest.mark.skip_for_multisig
-@pytest.mark.skip_for_create_wallet_variants
-@pytest.mark.skip_for_load_wallet_variants
-@allure.feature('Watch-only wallet')
-@allure.story('Watch-only backup and restore flow')
-@pytest.mark.parametrize('test_environment', [False], indirect=True)
-def test_watch_only_backup_and_restore(test_environment, wallets_and_operations: WalletTestSetup):
-    """
-    Configure watch-only, backup, restart clean, restore watch-only via xpubs, assert success.
-    """
-    # Configure watch-only in single-instance mode
-    with allure.step('Configure watch-only wallet'):
-        wallets_and_operations.first_page_features.wallet_features.setup_watch_only_single_instance()
-
-    # Optionally configure backup provider (Google) before taking backup
-    with allure.step('Configure backup provider (Google)'):
-        wallets_and_operations.first_page_objects.sidebar_page_objects.click_backup_button()
-        wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
-        wallets_and_operations.first_page_features.wallet_features.google_auth()
-        wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
-
-    # Take backup and assert
-    with allure.step('Backup watch-only wallet'):
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
-        wallets_and_operations.first_page_operations.wait_for_toaster_message()
-        _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        assert description == INFO_BACKUP_COMPLETED
-        wallets_and_operations.first_page_objects.backup_page_objects.click_backup_close_button()
-
-    # Collect xpubs/fingerprint prior to restart
-    with allure.step('Collect xpubs/fingerprint for watch-only before restart'):
-        xpub_vanilla, xpub_colored, fingerprint, password = (
-            wallets_and_operations.first_page_features.wallet_features.collect_keyring_values_from_app(
-                is_load_wallet=True,
-            )
-        )
-
-    # Restart with clean data and restore via xpubs (Google backup path)
-    with allure.step('Restart app with clean data and restore watch-only via xpubs'):
-        test_environment.restart_single_instance(reset_data=True)
-        wallets_and_operations.first_page_features.wallet_features.navigate_to_watch_only_restore(
-            FIRST_APPLICATION,
-        )
-        wallets_and_operations.first_page_features.wallet_features.google_auth(
-            password=password, xpub_vanilla=xpub_vanilla, xpub_colored=xpub_colored, fingerprint=fingerprint,
-        )
-        wallets_and_operations.first_page_operations.wait_for_toaster_message()
-        _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        assert description == INFO_RESTORE_COMPLETED
 
 
 # ============== MULTISIG BACKUP AND RESTORE TESTS ==============

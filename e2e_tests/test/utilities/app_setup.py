@@ -39,7 +39,10 @@ from accessible_constant import THIRD_SERVICE
 from e2e_tests.test.features.main_features import MainFeatures
 from e2e_tests.test.pageobjects.main_page_objects import MainPageObjects
 from e2e_tests.test.utilities.base_operation import BaseOperations
+from e2e_tests.test.utilities.dogtail_config import is_ci_environment
 from e2e_tests.test.utilities.dogtail_config import warm_up_atspi
+from e2e_tests.test.utilities.environment_cache import EnvironmentCache
+from e2e_tests.test.utilities.environment_cache import HandlesProxy
 from e2e_tests.test.utilities.fake_usb import setup_fake_usb
 from e2e_tests.test.utilities.reset_app import delete_app_data
 from e2e_tests.test.utilities.translation_utils import TranslationManager
@@ -172,14 +175,11 @@ class TestEnvironment:
         )
         print(f"""[DEBUG] AppImage process started with PID:
               {self.first_process.pid}""")
-        # Give the process a moment to start or fail
-        time.sleep(2)
-        # Check if process is still running
-        if self.first_process.poll() is not None:
-            print(f"""[ERROR] AppImage process exited immediately with code:
-                  {self.first_process.returncode}""")
+        # Verify process started before waiting for AT-SPI (only in CI)
+        if is_ci_environment():
+            self._wait_for_process_ready(self.first_process)
         else:
-            print('[DEBUG] AppImage process is running')
+            time.sleep(2)  # Give process a moment to start in local
         self.wait_for_application(FIRST_APPLICATION)
 
         # Maximize first application window
@@ -210,6 +210,9 @@ class TestEnvironment:
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
             )
+            # Verify process started before waiting for AT-SPI (only in CI)
+            if is_ci_environment():
+                self._wait_for_process_ready(self.second_process)
             self.wait_for_application(SECOND_APPLICATION)
 
             # Maximize second application window
@@ -235,15 +238,17 @@ class TestEnvironment:
 
         if self.num_instances >= 3:
             # Wait for second app to be fully stable before launching third
-            self._wait_for_app_stability(self.second_application)
+            if is_ci_environment():
+                self._wait_for_app_stability(self.second_application)
             self.third_process = subprocess.Popen(
                 [f"""e2e_tests/applications/iris-wallet-vault_{
                     APP3_NAME
                 }-{__version__}-x86_64.AppImage"""],
                 env=env,
             )
-            # Verify process started before waiting for AT-SPI
-            self._wait_for_process_ready(self.third_process)
+            # Verify process started before waiting for AT-SPI (only in CI)
+            if is_ci_environment():
+                self._wait_for_process_ready(self.third_process)
             self.wait_for_application(THIRD_APPLICATION)
 
             subprocess.run(
@@ -268,15 +273,17 @@ class TestEnvironment:
 
         if self.num_instances >= 4:
             # Wait for third app to be fully stable before launching fourth
-            self._wait_for_app_stability(self.third_application)
+            if is_ci_environment():
+                self._wait_for_app_stability(self.third_application)
             self.fourth_process = subprocess.Popen(
                 [f'e2e_tests/applications/iris-wallet-vault_{
                     APP4_NAME
                 }-{__version__}-x86_64.AppImage'],
                 env=env,
             )
-            # Verify process started before waiting for AT-SPI
-            self._wait_for_process_ready(self.fourth_process)
+            # Verify process started before waiting for AT-SPI (only in CI)
+            if is_ci_environment():
+                self._wait_for_process_ready(self.fourth_process)
             self.wait_for_application(FOURTH_APPLICATION)
 
             subprocess.run(
@@ -316,8 +323,10 @@ class TestEnvironment:
         Wait for process to be running and have child processes spawned.
         This ensures the app has actually started before looking for it in AT-SPI.
         """
+        # Use longer timeout in CI to allow for slower AppImage extraction
+        actual_timeout = 30 if is_ci_environment() else timeout
         start_time = time.time()
-        while time.time() - start_time < timeout:
+        while time.time() - start_time < actual_timeout:
             try:
                 # Check process is still running (not crashed immediately)
                 if process.poll() is not None:
@@ -329,7 +338,8 @@ class TestEnvironment:
             except psutil.NoSuchProcess:
                 pass
             time.sleep(0.2)
-        raise TimeoutError('Process failed to start within timeout')
+        raise TimeoutError(f"""Process failed to start within
+                           {actual_timeout}s timeout""")
 
     def find_application_node(self, app_name):
         """Helper to find the stable application node for a given app name."""
@@ -864,125 +874,39 @@ class TestEnvironment:
 
 @pytest.fixture(scope='module')
 def test_environment(request, wallet_variant_name: str):
-    """
-    A fixture that sets up and tears down the test environment.
-
-    Use `request.param` to determine if multi-instance should be enabled.
-    """
+    """A fixture that sets up and tears down the test environment."""
     multi_instance = getattr(request, 'param', True)
+
+    env, cache_key, is_reused = EnvironmentCache.get_or_create(
+        multi_instance, wallet_variant_name,
+    )
+
+    if is_reused:
+        yield env
+        return  # Don't terminate - let the original creator handle it
+
+    # Create new environment
+    print(f"[SETUP] Creating new environment with {cache_key[0]} instances")
     env = TestEnvironment(
         multi_instance=multi_instance,
         wallet_variant_name=wallet_variant_name,
     )
-    # Register the environment so features can trigger environment-level resets
+    EnvironmentCache.cache(cache_key, env)
+
     base_operation = BaseOperations()
     base_operation.register_current_environment(env)
     yield env
-    env.terminate()
+
+    # Only terminate if we're the original creator
+    if EnvironmentCache.exists(cache_key):
+        env.terminate()
+        EnvironmentCache.remove(cache_key)
 
 
 @pytest.fixture
 def wallets_and_operations(test_environment: TestEnvironment):
-    """
-    A fixture that provides dynamic access to the TestEnvironment handles.
-    """
-
-    class _HandlesProxy:
-        """
-        A proxy class that provides dynamic access to the TestEnvironment handles.
-        """
-
-        def __init__(self, env: TestEnvironment):
-            self._env = env
-
-        # Features
-        @property
-        def first_page_features(self):
-            """
-            Returns the first page features.
-            """
-            return self._env.first_page_features
-
-        @property
-        def second_page_features(self):
-            """
-            Returns the second page features.
-            """
-            return self._env.second_page_features if self._env.num_instances >= 2 else None
-
-        @property
-        def third_page_features(self):
-            """
-            Returns the third page features.
-            """
-            return self._env.third_page_features if self._env.num_instances >= 3 else None
-
-        @property
-        def fourth_page_features(self):
-            """
-            Returns the fourth page features.
-            """
-            return self._env.fourth_page_features if self._env.num_instances >= 4 else None
-
-        # Objects
-        @property
-        def first_page_objects(self):
-            """
-            Returns the first page objects.
-            """
-            return self._env.first_page_objects
-
-        @property
-        def second_page_objects(self):
-            """
-            Returns the second page objects.
-            """
-            return self._env.second_page_objects if self._env.num_instances >= 2 else None
-
-        @property
-        def third_page_objects(self):
-            """
-            Returns the third page objects.
-            """
-            return self._env.third_page_objects if self._env.num_instances >= 3 else None
-
-        @property
-        def fourth_page_objects(self):
-            """
-            Returns the fourth page objects.
-            """
-            return self._env.fourth_page_objects if self._env.num_instances >= 4 else None
-
-        # Operations
-        @property
-        def first_page_operations(self):
-            """
-            Returns the first page operations.
-            """
-            return self._env.first_page_operations
-
-        @property
-        def second_page_operations(self):
-            """
-            Returns the second page operations.
-            """
-            return self._env.second_page_operations if self._env.num_instances >= 2 else None
-
-        @property
-        def third_page_operations(self):
-            """
-            Returns the third page operations.
-            """
-            return self._env.third_page_operations if self._env.num_instances >= 3 else None
-
-        @property
-        def fourth_page_operations(self):
-            """
-            Returns the fourth page operations.
-            """
-            return self._env.fourth_page_operations if self._env.num_instances >= 4 else None
-
-    return _HandlesProxy(test_environment)
+    """A fixture that provides dynamic access to the TestEnvironment handles."""
+    return HandlesProxy(test_environment)
 
 
 @pytest.fixture(scope='session', autouse=True)
