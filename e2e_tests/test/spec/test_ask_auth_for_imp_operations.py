@@ -466,11 +466,9 @@ def test_ask_auth_for_imp_question_send_ifa_off(wallets_and_operations: WalletTe
         wallets_and_operations.first_page_features.send_features.send(
             FIRST_APPLICATION, ifa_invoice, SEND_AMOUNT,
         )
-        filter_pattern = INFO_ASSET_SENT.split('{}', maxsplit=1)[-1]
         wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
-        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_toaster_description(
-            filter_pattern=filter_pattern,
-        )
+        toaster_description = wallets_and_operations.first_page_objects.toaster_page_objects.get_latest_toaster_description()
+
     with allure.step('asserting tx id'):
         focus_second_wallet_and_click_inflatable(wallets_and_operations)
         wallets_and_operations.second_page_objects.inflatable_page_objects.click_refresh_button()

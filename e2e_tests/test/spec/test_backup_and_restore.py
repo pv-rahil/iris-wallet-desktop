@@ -247,7 +247,7 @@ def test_nia_transfer(wallets_and_operations: WalletTestSetup, wallet_variant_na
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Backup page')
 @allure.story('Backup page functionality')
-def test_backup(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_backup(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     Test the backup page functionality.
     This test case covers the following scenarios:
@@ -262,19 +262,21 @@ def test_backup(test_environment, wallets_and_operations: WalletTestSetup, walle
             wallets_and_operations.first_page_objects.backup_page_objects.click_configurable_button()
             wallets_and_operations.first_page_features.wallet_features.google_auth()
             wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
+            wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
+            wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_close_button()
     with allure.step('Take a backup of wallet'):
         wallets_and_operations.first_page_objects.backup_page_objects.click_backup_wallet_data_button()
         wallets_and_operations.first_page_operations.wait_for_toaster_message()
         _, description = wallets_and_operations.first_page_objects.toaster_page_objects.click_toaster_frame()
         assert description == INFO_BACKUP_COMPLETED
-        test_environment.restart_single_instance()
+    test_environment.restart_single_instance()
 
 
 @pytest.mark.skip_for_multisig
 @pytest.mark.skip_for_offline_wallet
 @allure.feature('Restore page')
 @allure.story('Restore page functionality')
-def test_restore(test_environment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_restore(wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """
     This test case is used to restore the wallet from the backup.
     """

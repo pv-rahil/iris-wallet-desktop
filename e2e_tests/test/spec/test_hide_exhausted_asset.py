@@ -13,6 +13,7 @@ from accessible_constant import ONLINE_MULTISIG_ON_DEVICE
 from accessible_constant import SECOND_APPLICATION
 from accessible_constant import THIRD_APPLICATION
 from e2e_tests.test.utilities.app_setup import test_environment
+from e2e_tests.test.utilities.app_setup import TestEnvironment
 from e2e_tests.test.utilities.app_setup import wallets_and_operations
 from e2e_tests.test.utilities.model import WalletTestSetup
 from e2e_tests.test.utilities.multisig_send_flow_helpers import generate_multisig_invoice_and_send
@@ -277,7 +278,7 @@ def test_hide_exhausted_asset_off_multisig(wallets_and_operations: WalletTestSet
 @pytest.mark.parametrize('test_environment', [4], indirect=True)
 @allure.feature('Hide exhausted asset for offline multisig')
 @allure.story('Toggling on hide exhausted asset for offline multisig')
-def test_hide_exhausted_asset_on_offline_multisig(wallets_and_operations: WalletTestSetup, wallet_variant_name):
+def test_hide_exhausted_asset_on_offline_multisig(test_environment: TestEnvironment, wallets_and_operations: WalletTestSetup, wallet_variant_name):
     """Test for hiding exhausted asset for offline multisig (hardware and on-device)"""
 
     setup_offline_multisig_hardware_wallets(

@@ -861,8 +861,7 @@ class Wallet(WalletOperationsMixin):
         if wallet.do_is_displayed(wallet.backup_page_objects.configure_button()):
             wallet.backup_page_objects.click_configurable_button()
         wallet.google_auth()
-        if wallet.do_is_displayed(wallet.toaster_page_objects.toaster_close_button()):
-            wallet.toaster_page_objects.click_toaster_close_button()
+        wallet.do_focus_on_application(wallet.application)
         if wallet.do_is_displayed(wallet.backup_page_objects.backup_wallet_data_button()):
             wallet.backup_page_objects.click_backup_wallet_data_button()
         if wallet.do_is_displayed(wallet.toaster_page_objects.toaster_frame()):

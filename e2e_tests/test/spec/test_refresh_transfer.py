@@ -82,6 +82,7 @@ def test_send_nia_asset_for_refresh_transfer(wallets_and_operations: WalletTestS
             ASSET_NAME,
         )
     with allure.step('Click on send button'):
+        wallets_and_operations.first_page_objects.asset_detail_page_objects.click_refresh_button()
         wallets_and_operations.first_page_objects.asset_detail_page_objects.click_send_button()
     with allure.step('Send NIA asset to correct invoice'):
         if wallet_variant_name in HARDWARE_WALLET_VARIANTS:

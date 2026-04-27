@@ -48,6 +48,9 @@ def test_send_bitcoin_with_zero_balance(wallets_and_operations: WalletTestSetup,
         )
 
     with allure.step('Get bitcoin address'):
+        wallets_and_operations.first_page_operations.do_focus_on_application(
+            FIRST_APPLICATION,
+        )
         wallets_and_operations.first_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.first_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, copied_address = wallets_and_operations.first_page_features.receive_features.receive(
@@ -245,6 +248,9 @@ def test_send_bitcoin_with_zero_balance_for_offline(wallets_and_operations: Wall
         )
 
     with allure.step('Get bitcoin address'):
+        wallets_and_operations.second_page_operations.do_focus_on_application(
+            SECOND_APPLICATION,
+        )
         wallets_and_operations.second_page_objects.fungible_page_objects.click_bitcoin_frame()
         wallets_and_operations.second_page_objects.bitcoin_detail_page_objects.click_receive_bitcoin_button()
         address, copied_address = wallets_and_operations.second_page_features.receive_features.receive(
