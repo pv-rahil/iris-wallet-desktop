@@ -25,10 +25,26 @@ jobs:
 
       - name: Install required system dependencies
         run: |
-          sudo apt update
-          sudo apt install libxcb-cursor0 -y # Required by the application
-          sudo apt-get install ruby-dev build-essential libgirepository1.0-dev python3-dev -y && sudo gem i fpm -f
-          sudo apt-get update && sudo apt-get install -y libfuse2 # Required for AppImage creation
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-cursor0 \
+            libegl1 \
+            libgl1 \
+            ruby-dev \
+            build-essential \
+            libgirepository1.0-dev \
+            python3-dev \
+            libfuse2 \
+            gobject-introspection \
+            meson \
+            ninja-build \
+            pkg-config \
+            libcairo2-dev \
+            libffi-dev \
+            libhidapi-hidraw0 \
+            libhidapi-libusb0 \
+            libhidapi-dev
+          sudo gem install fpm -f
 
       - name: Set environment variables from GitHub Secrets and generate config.py
         env:

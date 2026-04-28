@@ -109,6 +109,11 @@ class SendOperation(MainPageObjects, BaseOperations):
 
             description = None
 
+            if is_hardware_wallet:
+                self.hardware_wallet = handle_hardware_wallet(
+                    app_name=RGB_LEDGER_APP_NAME,
+                )
+
             self.do_focus_on_application(application)
             if self.do_is_displayed(self.send_asset_page_objects.invoice_input()):
                 self.send_asset_page_objects.enter_asset_invoice(
@@ -120,11 +125,6 @@ class SendOperation(MainPageObjects, BaseOperations):
 
             if self.do_is_displayed(self.send_asset_page_objects.fee_rate_input()):
                 self.send_asset_page_objects.enter_fee_rate(fee_rate)
-
-            if is_hardware_wallet:
-                self.hardware_wallet = handle_hardware_wallet(
-                    app_name=RGB_LEDGER_APP_NAME,
-                )
 
             self.do_focus_on_application(application)
 

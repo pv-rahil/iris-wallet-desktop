@@ -218,25 +218,25 @@ jobs:
 
       matrix:
         test_file:
-          # - test_keyring_dialog
+          - test_keyring_dialog
           - test_receive_and_send_bitcoin
-          # - test_login_app_auth
-          # - test_ask_auth_for_imp_operations
-          # - test_settings
-          # - test_help
-          # - test_about
+          - test_login_app_auth
+          - test_ask_auth_for_imp_operations
+          - test_settings
+          - test_help
+          - test_about
           - test_backup_and_restore
-          # - test_send_and_receive_nia_asset
-          # - test_send_and_receive_ifa_asset
-          # - test_send_and_receive_cfa_asset
-          # - test_hide_exhausted_asset
-          # - test_fail_transfer
-          # - test_issue_nia_asset
-          # - test_issue_ifa_asset
-          # - test_issue_cfa_asset
-          # - test_view_unspent
+          - test_send_and_receive_nia_asset
+          - test_send_and_receive_ifa_asset
+          - test_send_and_receive_cfa_asset
+          - test_hide_exhausted_asset
+          - test_fail_transfer
+          - test_issue_nia_asset
+          - test_issue_ifa_asset
+          - test_issue_cfa_asset
+          - test_view_unspent
           - test_refresh_transfer
-          # - test_inflate_asset
+          - test_inflate_asset
         wallet_variant:
           # All single-sig variants
           - online_watch_only
@@ -248,7 +248,7 @@ jobs:
           - offline_create_hardware
           - offline_load_on_device
           - offline_load_hardware
-          # All multisig variants
+          # All multisig variants //multisig e2e setup in CI is pending
           # - online_multisig_on_device
           # - online_multisig_hardware
           # - offline_multisig_on_device
@@ -344,6 +344,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screen-recording-${{ matrix.test_file }}-${{ matrix.wallet_variant }}
+          retention-days: 2
           path: ${{ runner.temp }}/recordings/test_recording.mp4
 
       - name: Upload Allure results
@@ -355,31 +356,31 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  # publish-test-report:
-  #   name: Publish Test Report
-  #   needs: e2e-dogtail
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   permissions:
-  #     contents: read
-  #     pages: write
-  #     id-token: write
+  publish-test-report:
+    name: Publish Test Report
+    needs: e2e-dogtail
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
-  #   environment:
-  #     name: github-pages
+    environment:
+      name: github-pages
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  #     - name: Generate and publish reports
-  #       uses: ./.github/actions/publish-test-reports
+      - name: Generate and publish reports
+        uses: ./.github/actions/publish-test-reports
 
   cleanup-artifacts:
     name: Cleanup Artifacts
     if: always()
     runs-on: ubuntu-latest
-    needs: [lint, unit-tests, e2e-dogtail]
+    needs: [lint, unit-tests, e2e-dogtail, publish-test-report]
     steps:
       - name: Delete Test Artifacts
         uses: geekyeggo/delete-artifact@v5
@@ -388,26 +389,3 @@ jobs:
             allure-results-*
             coverage-report
           failOnError: false
-
-  cleanup-old-artifactes:
-    name: Cleanup Artifacts
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete all artifacts
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const artifacts = await github.rest.actions.listArtifactsForRepo({
-              owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  per_page: 100
-                });
-
-                for (const artifact of artifacts.data.artifacts) {
-                  await github.rest.actions.deleteArtifact({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    artifact_id: artifact.id
-                  });
-                  console.log(`Deleted artifact: ${artifact.name}`);
-                }
